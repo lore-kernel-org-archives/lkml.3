@@ -1,280 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab3I0CDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 22:03:06 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:58471 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750843Ab3I0CDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 22:03:04 -0400
-X-Greylist: delayed 2574 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Sep 2013 22:03:04 EDT
-From: Feng Kan <fkan@apm.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH 1/1] arm64: X-Gene AHBC platform bus driver
-Date: Thu, 26 Sep 2013 18:19:21 -0700
-Message-Id: <1380244761-15143-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
+	id S1751616Ab3I0CE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 22:04:27 -0400
+Received: from gmmr3.centrum.cz ([46.255.225.251]:54909 "EHLO gmmr3.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794Ab3I0CEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 22:04:25 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Fri, 27 Sep 2013 04:04:23 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130916152548.GF3674@dhcp22.suse.cz>, <20130916225246.A633145B@pobox.sk>, <20130917000244.GD3278@cmpxchg.org>, <20130917131535.94E0A843@pobox.sk>, <20130917141013.GA30838@dhcp22.suse.cz>, <20130918160304.6EDF2729@pobox.sk>, <20130918180455.GD856@cmpxchg.org>, <20130918181946.GE856@cmpxchg.org>, <20130918195504.GF856@cmpxchg.org>, <20130926185459.E5D2987F@pobox.sk> <20130926192743.GP856@cmpxchg.org>
+In-Reply-To: <20130926192743.GP856@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130927040423.FBF382D2@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver setup the AHBC for SPI and SD drivers to use.
+> CC: "Michal Hocko" <mhocko@suse.cz>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>Hi azur,
+>
+>On Thu, Sep 26, 2013 at 06:54:59PM +0200, azurIt wrote:
+>> On Wed, Sep 18, 2013 at 02:19:46PM -0400, Johannes Weiner wrote:
+>> >Here is an update.  Full replacement on top of 3.2 since we tried a
+>> >dead end and it would be more painful to revert individual changes.
+>> >
+>> >The first bug you had was the same task entering OOM repeatedly and
+>> >leaking the memcg reference, thus creating undeletable memcgs.  My
+>> >fixup added a condition that if the task already set up an OOM context
+>> >in that fault, another charge attempt would immediately return -ENOMEM
+>> >without even trying reclaim anymore.  This dropped __getblk() into an
+>> >endless loop of waking the flushers and performing global reclaim and
+>> >memcg returning -ENOMEM regardless of free memory.
+>> >
+>> >The update now basically only changes this -ENOMEM to bypass, so that
+>> >the memory is not accounted and the limit ignored.  OOM killed tasks
+>> >are granted the same right, so that they can exit quickly and release
+>> >memory.  Likewise, we want a task that hit the OOM condition also to
+>> >finish the fault quickly so that it can invoke the OOM killer.
+>> >
+>> >Does the following work for you, azur?
+>> 
+>> 
+>> Johannes,
+>> 
+>> bad news everyone! :(
+>> 
+>> Unfortunaely, two different problems appears today:
+>> 
+>> 1.) This looks like my very original problem - stucked processes inside one cgroup. I took stacks from all of them over time but server was very slow so i had to kill them soon:
+>> http://watchdog.sk/lkmlmemcg-bug-9.tar.gz
+>> 
+>> 2.) This was just like my last problem where few processes were doing huge i/o. As sever was almost unoperable i barely killed them so no more info here, sorry.
+>
+>From one of the tasks:
+>
+>1380213238/11210/stack:[<ffffffff810528f1>] sys_sched_yield+0x41/0x70
+>1380213238/11210/stack:[<ffffffff81148ef1>] free_more_memory+0x21/0x60
+>1380213238/11210/stack:[<ffffffff8114957d>] __getblk+0x14d/0x2c0
+>1380213238/11210/stack:[<ffffffff81198a2b>] ext3_getblk+0xeb/0x240
+>1380213238/11210/stack:[<ffffffff8119d2df>] ext3_find_entry+0x13f/0x480
+>1380213238/11210/stack:[<ffffffff8119dd6d>] ext3_lookup+0x4d/0x120
+>1380213238/11210/stack:[<ffffffff81122a55>] d_alloc_and_lookup+0x45/0x90
+>1380213238/11210/stack:[<ffffffff81122ff8>] do_lookup+0x278/0x390
+>1380213238/11210/stack:[<ffffffff81124c40>] path_lookupat+0x120/0x800
+>1380213238/11210/stack:[<ffffffff81125355>] do_path_lookup+0x35/0xd0
+>1380213238/11210/stack:[<ffffffff811254d9>] user_path_at_empty+0x59/0xb0
+>1380213238/11210/stack:[<ffffffff81125541>] user_path_at+0x11/0x20
+>1380213238/11210/stack:[<ffffffff81115b70>] sys_faccessat+0xd0/0x200
+>1380213238/11210/stack:[<ffffffff81115cb8>] sys_access+0x18/0x20
+>1380213238/11210/stack:[<ffffffff815ccc26>] system_call_fastpath+0x18/0x1d
+>
+>Should have seen this coming... it's still in that braindead
+>__getblk() loop, only from a syscall this time (no OOM path).  The
+>group's memory.stat looks like this:
+>
+>cache 0
+>rss 0
+>mapped_file 0
+>pgpgin 0
+>pgpgout 0
+>swap 0
+>pgfault 0
+>pgmajfault 0
+>inactive_anon 0
+>active_anon 0
+>inactive_file 0
+>active_file 0
+>unevictable 0
+>hierarchical_memory_limit 209715200
+>hierarchical_memsw_limit 209715200
+>total_cache 0
+>total_rss 209715200
+>total_mapped_file 0
+>total_pgpgin 1028153297
+>total_pgpgout 1028102097
+>total_swap 0
+>total_pgfault 1352903120
+>total_pgmajfault 45342
+>total_inactive_anon 0
+>total_active_anon 209715200
+>total_inactive_file 0
+>total_active_file 0
+>total_unevictable 0
+>
+>with anonymous pages to the limit and you probably don't have any swap
+>space enabled to anything in the group.
+>
+>I guess there is no way around annotating that __getblk() loop.  The
+>best solution right now is probably to use __GFP_NOFAIL.  For one, we
+>can let the allocation bypass the memcg limit if reclaim can't make
+>progress.  But also, the loop is then actually happening inside the
+>page allocator, where it should happen, and not around ad-hoc direct
+>reclaim in buffer.c.
+>
+>Can you try this on top of our ever-growing stack of patches?
 
-Signed-off-by: Feng Kan <fkan@apm.com>
 
----
- arch/arm64/boot/dts/apm-storm.dtsi |    6 +
- drivers/bus/Kconfig                |    9 ++
- drivers/bus/Makefile               |    2 +
- drivers/bus/xgene_ahbc.c           |  193 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 210 insertions(+), 0 deletions(-)
- create mode 100644 drivers/bus/xgene_ahbc.c
+Installed, thank you!
 
-diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-index d994806..b9477ec 100644
---- a/arch/arm64/boot/dts/apm-storm.dtsi
-+++ b/arch/arm64/boot/dts/apm-storm.dtsi
-@@ -178,6 +178,12 @@
- 			};
- 		};
- 
-+                ahbc: ahbc@1f2a0000 {
-+                        device_type = "ahbc";
-+                        compatible = "apm,xgene-ahbc";
-+                        reg =  <0x0 0x1f2a0000 0x0 0x80000>;
-+                };
-+
- 		serial0: serial@1c020000 {
- 			device_type = "serial";
- 			compatible = "ns16550";
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index 1f70e84..6cc361c68 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -42,4 +42,13 @@ config ARM_CCI
- 	help
- 	  Driver supporting the CCI cache coherent interconnect for ARM
- 	  platforms.
-+
-+config XGENE_AHBC
-+	tristate "X-Gene SoC AHB Bus Driver"
-+	depends on ARM64 && ARCH_XGENE
-+	default y if ARCH_XGENE
-+	help
-+	  X-Gene SoC AHB bus driver is required for SPI and
-+	  SDIO to function properly.
-+
- endmenu
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-index 8947bdd..0c7a4ca 100644
---- a/drivers/bus/Makefile
-+++ b/drivers/bus/Makefile
-@@ -10,3 +10,5 @@ obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
- obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
- # CCI cache coherent interconnect for ARM platforms
- obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
-+
-+obj-$(CONFIG_XGENE_AHBC)     += xgene_ahbc.o
-diff --git a/drivers/bus/xgene_ahbc.c b/drivers/bus/xgene_ahbc.c
-new file mode 100644
-index 0000000..9554bb4
---- /dev/null
-+++ b/drivers/bus/xgene_ahbc.c
-@@ -0,0 +1,193 @@
-+/**
-+ * AppliedMicro X-Gene AHBC Driver
-+ *
-+ * Copyright (c) 2013, Applied Micro Circuits Corporation
-+ * Author: Loc Ho <lho@apm.com>
-+ * Author: Feng Kan <fkan@apm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ *
-+ */
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/delay.h>
-+#include <linux/memblock.h>
-+
-+#define AHBC_DRIVER_VER			"0.1"
-+
-+#define AIM_8_SIZE_CTL_ADDR					0x00000104
-+#define AIM_8_AXI_LO_ADDR					0x00000108
-+#define AIM_8_AXI_HI_ADDR					0x0000010c
-+
-+#define ARSB_F8_WR(src)			(((u32)(src)<<23) & 0x03800000)
-+#define AWSB_F8_WR(src)			(((u32)(src)<<20) & 0x00700000)
-+#define AIM_AXI_ADDRESS_LO_8_WR(src)	(((u32)(src)) & 0x000fffff)
-+
-+/*	Global Base Address	*/
-+#define REGSPEC_AHBC_GLBL_DIAG_CSR_I_BASE_ADDR			0x01f2ad000ULL
-+
-+#define REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR			0x00000070
-+#define REGSPEC_BLOCK_MEM_RDY_ADDR				0x00000074
-+
-+static void xgene_ahb_write(void *base, u32 offset, u32 val)
-+{
-+	if (base == NULL)
-+		return;
-+
-+	writel_relaxed(val, base + offset);
-+}
-+
-+static void xgene_ahbc_init_mem(struct platform_device *pdev)
-+{
-+	void *ahbc_base = platform_get_drvdata(pdev);
-+	u32 diag_offset = REGSPEC_AHBC_GLBL_DIAG_CSR_I_BASE_ADDR & 0xFFFF;
-+	void *diagcsr_base = ahbc_base + diag_offset;
-+	int timeout;
-+	u32 val;
-+
-+	if (ahbc_base == NULL)
-+		return;
-+
-+	if (readl(diagcsr_base + REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR) == 0)
-+		return;
-+
-+	dev_dbg(&pdev->dev, "AHBC clear memory shutdown\n");
-+	writel(0x00, diagcsr_base + REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR);
-+	readl(diagcsr_base + REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR);
-+
-+	val = readl(diagcsr_base + REGSPEC_BLOCK_MEM_RDY_ADDR);
-+	timeout = 5000;
-+	while (val != 0xFFFFFFFF && timeout-- > 0) {
-+		val = readl(diagcsr_base + REGSPEC_BLOCK_MEM_RDY_ADDR);
-+		if (val != 0xFFFFFFFF)
-+			udelay(1);
-+	}
-+	if (timeout <= 0)
-+		dev_err(&pdev->dev, "AHBC failed to remove RAM out of reset\n");
-+}
-+
-+static int xgene_ahbc_hw_init(struct platform_device *pdev)
-+{
-+	void *ahbc_base = platform_get_drvdata(pdev);
-+	phys_addr_t ddr_phy;
-+
-+	/**
-+	 * Set AHBC AIM windows for 4GB regardless of DDR size. This
-+	 * must map to Kernel memory space.
-+	 */
-+	ddr_phy = memblock_phys_mem_size();
-+	dev_dbg(&pdev->dev, "Setup AHBC AIM windows DDR 0x%llX\n", ddr_phy);
-+	xgene_ahb_write(ahbc_base, AIM_8_SIZE_CTL_ADDR, 0x00000000);
-+	xgene_ahb_write(ahbc_base, AIM_8_AXI_LO_ADDR,
-+			ARSB_F8_WR(1) | AWSB_F8_WR(1) |
-+			AIM_AXI_ADDRESS_LO_8_WR((u32) ddr_phy));
-+	xgene_ahb_write(ahbc_base, AIM_8_AXI_HI_ADDR,
-+			(u32) ((ddr_phy >> 32) << 20));
-+
-+	return 0;
-+}
-+
-+static int __init xgene_ahbc_probe(struct platform_device *pdev)
-+{
-+	struct resource res;
-+	int rc;
-+	void *reg;
-+
-+	rc = of_address_to_resource(pdev->dev.of_node, 0, &res);
-+	if (rc != 0) {
-+		dev_err(&pdev->dev, "invalid resource address\n");
-+		return -ENODEV;
-+	}
-+	reg = ioremap(res.start, res.end - res.start + 1);
-+	if (reg == NULL) {
-+		dev_err(&pdev->dev, "can not map resource\n");
-+		return -ENODEV;
-+	}
-+
-+	platform_set_drvdata(pdev, reg);
-+
-+	/* Initialize the hardware */
-+	xgene_ahbc_init_mem(pdev);
-+	xgene_ahbc_hw_init(pdev);
-+
-+	dev_info(&pdev->dev, "AHBC driver v%s\n", AHBC_DRIVER_VER);
-+	return 0;
-+}
-+
-+static int xgene_ahbc_remove(struct platform_device *pdev)
-+{
-+	void *ahbc_base = platform_get_drvdata(pdev);
-+
-+	iounmap(ahbc_base);
-+	platform_set_drvdata(pdev, NULL);
-+	return 0;
-+}
-+
-+#if defined(CONFIG_PM)
-+static int xgene_ahbc_suspend(struct platform_device *dev, pm_message_t state)
-+{
-+	/* Nothing to do here */
-+	return 0;
-+}
-+
-+static int xgene_ahbc_resume(struct platform_device *pdev)
-+{
-+	/* Initialize the hardware */
-+	xgene_ahbc_init_mem(pdev);
-+	xgene_ahbc_hw_init(pdev);
-+	return 0;
-+}
-+#endif
-+
-+static const struct of_device_id xgene_ahbc_match[] = {
-+	{.compatible = "apm,xgene-ahbc",},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, xgene_ahbc_match);
-+
-+static struct platform_driver ahbc_driver = {
-+	.probe = xgene_ahbc_probe,
-+	.remove = xgene_ahbc_remove,
-+#if defined(CONFIG_PM)
-+	.suspend = xgene_ahbc_suspend,
-+	.resume = xgene_ahbc_resume,
-+#endif
-+	.driver = {
-+		   .name = "xgene-ahbc",
-+		   .owner = THIS_MODULE,
-+		   .of_match_table = xgene_ahbc_match,
-+		   },
-+};
-+
-+static int __init xgene_ahbc_init(void)
-+{
-+	return platform_driver_register(&ahbc_driver);
-+}
-+subsys_initcall(xgene_ahbc_init);
-+
-+static void __exit xgene_ahbc_exit(void)
-+{
-+	platform_driver_unregister(&ahbc_driver);
-+}
-+module_exit(xgene_ahbc_exit);
-+
-+MODULE_AUTHOR("Loc Ho <lho@apm.com>");
-+MODULE_DESCRIPTION("X-Gene AHBC driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.6.1
-
+azur
