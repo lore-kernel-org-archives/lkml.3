@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3I0I1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:27:12 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:50930 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab3I0I1I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:27:08 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] ARC: Use clockevents_config_and_register over
- clockevents_register_device
-Thread-Topic: [PATCH] ARC: Use clockevents_config_and_register over
- clockevents_register_device
-Thread-Index: AQHOuWnXV2EnR3HE+ka1d+uinqE/yA==
-Date: Fri, 27 Sep 2013 08:26:58 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514EB8B@IN01WEMBXA.internal.synopsys.com>
-References: <1380056737-3471-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <C2D7FE5348E1B147BCA15975FBA2307514E943@IN01WEMBXA.internal.synopsys.com>
- <20130927081738.GL16106@pengutronix.de>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.237]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753195Ab3I0I25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:28:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34106 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab3I0I2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 04:28:55 -0400
+Message-ID: <1380270519.27811.10.camel@pasglop>
+Subject: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Sep 2013 18:28:39 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 01:47 PM, Uwe Kleine-König wrote:
-> On Thu, Sep 26, 2013 at 12:01:49PM +0000, Vineet Gupta wrote:
->> On 09/25/2013 02:35 AM, Uwe Kleine-König wrote:
->>> clockevents_config_and_register is more clever and correct than doing it
->>> by hand; so use it.
->>>
->>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->> Acked-by: Vineet Gupta <vgupta@synopsys.com>
-> Thanks for the ack, but I expected that it will be you who takes that
-> patch. Am I wrong? Who will take it instead?
+Hi Linus, Yinghai !
 
-Well that really depends - if there's a series of such fixes, people generally
-route it thru mm or some such.
-But, sure I can take it.
+Please consider reverting:
 
-Thx again,
--Vineet
+928bea964827d7824b548c1f8e06eccbbc4d0d7d
+PCI: Delay enabling bridges until they're needed
+
+(I'd suggest to revert now and maybe merge a better patch later)
+
+This breaks PCI on the PowerPC "powernv" platform (which is booted via
+kexec) and probably x86 as well under similar circumstances. It will
+basically break PCIe if the bus master bit of the bridge isn't set at
+boot (by the firmware for example, or because kexec'ing cleared it).
+
+The reason is that the PCIe port driver will call pci_enable_device() on
+the bridge (on everything under the sun actually), which will marked the
+device enabled (but will not do a set_master).
+
+Because of that, pci_enable_bridge() later on (called as a result of the
+child device driver doing pci_enable_device) will see the bridge as
+already enabled and will not call pci_set_master() on it.
+
+Now, this could probably be fixed by simply doing pci_set_master() in
+the PCIe port driver, but I find the whole logic very fragile (anything
+that "enables" the bridge without setting master or for some reason
+clears master will forever fail to re-enable it).
+
+Maybe a better option is to unconditionally do pci_set_mater() in
+pci_enable_bridge(), ie, move the call to before the enabled test.
+
+However I am not too happy with that either. My experience with bridges
+is that if bus master isn't set, they will also fail to report AER
+errors and other similar upstream transactions. We might want to get
+these reported properly even if no downstream device got successfully
+enabled.
+
+So I think the premises of the patches are flawed, at least on PCI
+express, and we should stick to always enabling bridges (at least the
+bus master bit on them).
+
+Cheers,
+Ben.
 
 
