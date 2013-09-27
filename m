@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab3I0PtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:49:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48903 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719Ab3I0PtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:49:09 -0400
-Message-ID: <5245A8CA.4020805@ti.com>
-Date: Fri, 27 Sep 2013 10:48:26 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753542Ab3I0PvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:51:05 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:54999 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab3I0PvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 11:51:03 -0400
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Paul Walmsley <paul@pwsan.com>
-CC: Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Kumar Gala <galak@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 0/9] omap hwspinlock dt support
-References: <cover.1379445653.git.s-anna@ti.com>
-In-Reply-To: <cover.1379445653.git.s-anna@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <000401ce86b7$0463f580$0d2be080$@samsung.com>
+References: <000401ce86b7$0463f580$0d2be080$@samsung.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 27 Sep 2013 09:50:39 -0600
+Message-ID: <CAErSpo51GFB+yCuaHrwBqWjHxd0GboHgvWGov5pj4V6aGPfQHg@mail.gmail.com>
+Subject: Re: [PATCH] kernel: replace strict_strto*() with kstrto*()
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 02:30 PM, Suman Anna wrote:
-> Hi,
-> 
-> This is an updated series for adding the device tree support to
-> the OMAP hwspinlock driver. The series is based on 3.12-rc1, and
-> includes patches on hwspinlock driver, OMAP hwmod data files and
-> OMAP DTS files. The updated series adds new patches to enable the
-> hwspinlock driver on OMAP5 and AM335x SoCs as well.
-> 
-> Tested this on Panda4, BeagleBone Black and OMAP5 uEVM (with
-> out-of-tree clock patches from Tero).
+[+cc Jean]
 
-Ohad, Benoit,
-A gentle reminder - can you please provide your review comments on these
-patches. I am hoping that this series can make it to 3.13.
+On Mon, Jul 22, 2013 at 2:39 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> The usage of strict_strto*() is not preferred, because
+> strict_strto*() is obsolete. Thus, kstrto*() should be
+> used.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  kernel/gcov/fs.c |    2 +-
+>  kernel/ksysfs.c  |    2 +-
+>  kernel/params.c  |   14 +++++++-------
+>  3 files changed, 9 insertions(+), 9 deletions(-)
+>
+> diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
+> index 9bd0934..7a7d2ee 100644
+> --- a/kernel/gcov/fs.c
+> +++ b/kernel/gcov/fs.c
+> @@ -74,7 +74,7 @@ static int __init gcov_persist_setup(char *str)
+>  {
+>         unsigned long val;
+>
+> -       if (strict_strtoul(str, 0, &val)) {
+> +       if (kstrtoul(str, 0, &val)) {
+>                 pr_warning("invalid gcov_persist parameter '%s'\n", str);
+>                 return 0;
+>         }
+> diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+> index 6ada93c..9659d38 100644
+> --- a/kernel/ksysfs.c
+> +++ b/kernel/ksysfs.c
+> @@ -113,7 +113,7 @@ static ssize_t kexec_crash_size_store(struct kobject *kobj,
+>         unsigned long cnt;
+>         int ret;
+>
+> -       if (strict_strtoul(buf, 0, &cnt))
+> +       if (kstrtoul(buf, 0, &cnt))
+>                 return -EINVAL;
+>
+>         ret = crash_shrink_memory(cnt);
+> diff --git a/kernel/params.c b/kernel/params.c
+> index 440e65d..1f228a3 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -252,13 +252,13 @@ int parse_args(const char *doing,
+>         EXPORT_SYMBOL(param_ops_##name)
+>
+>
+> -STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, strict_strtoul);
+> -STANDARD_PARAM_DEF(short, short, "%hi", long, strict_strtol);
+> -STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, strict_strtoul);
+> -STANDARD_PARAM_DEF(int, int, "%i", long, strict_strtol);
+> -STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, strict_strtoul);
+> -STANDARD_PARAM_DEF(long, long, "%li", long, strict_strtol);
+> -STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_strtoul);
+> +STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, kstrtoul);
+> +STANDARD_PARAM_DEF(short, short, "%hi", long, kstrtol);
+> +STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, kstrtoul);
+> +STANDARD_PARAM_DEF(int, int, "%i", long, kstrtol);
+> +STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, kstrtoul);
+> +STANDARD_PARAM_DEF(long, long, "%li", long, kstrtol);
+> +STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, kstrtoul);
+>
+>  int param_set_charp(const char *val, const struct kernel_param *kp)
+>  {
+> --
 
-Paul,
-The hwmod data patches needs to be merged only after the respective DT
-node patches are merged, without which the hwmod entry will not have a
-base address while enabling and idling (using sysc) the hwmod during
-hwmod initialization.
+Hi Jingoo,
 
-regards
-Suman
+There's some indication that this change might have broken handling of
+signed types.  See
+https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-September/111758.html
+and https://bugzilla.kernel.org/show_bug.cgi?id=61811.
 
-> 
-> Changes new in v2:
-> - Added a new common DT binding documentation and OF helpers (Patch1),
->   addressing the review comments from v1 [2]. The MSM support [1] needs
->   to be reworked on top of this common patch. 
-> - Revised OMAP DT parse support to use the new OF helper (Patch2)
-> - OMAP5 hwspinlock support including the hwmod entry and DT node (Patches 4, 5)
-> - Add AM335x support to OMAP hwspinlock driver, including a fix
->   needed in driver given that AM335 spinlock module requires s/w wakeup
->   (Patches 6, 7)
-> - AM335 DT node for spinlock, and a hwmod change to enable smart-idle
->   for AM335 (Patches 8, 9). The sysc patch is not essential for AM335
->   spinlock functionality, but is needed for smart-idling the IP when
->   the module is enabled.
-> - OMAP4 DT node patch is unchanged (Patch 3)
-> 
-> v1:
-> - Add DT parse support to OMAP hwspinlock driver
-> - Add OMAP4 DT node and bindings information
-> http://marc.info/?l=linux-omap&m=137823082308009&w=2
-> 
-> [1] https://lkml.org/lkml/2013/8/14/528
-> [2] http://marc.info/?t=137823090300005&r=1&w=2
-> 
-> 
-> Suman Anna (9):
->   hwspinlock/core: add common dt bindings and OF helpers
->   hwspinlock/omap: add support for dt nodes
->   ARM: dts: OMAP4: Add hwspinlock node
->   ARM: OMAP5: hwmod data: Add spinlock data
->   ARM: dts: OMAP5: Add hwspinlock node
->   hwspinlock/omap: support AM33xx
->   hwspinlock/omap: enable module before reading SYSSTATUS register
->   ARM: dts: AM33XX: Add hwspinlock node
->   ARM: AM33xx: hwmod_data: add the sysc configuration for spinlock
-> 
->  .../devicetree/bindings/hwlock/hwlock.txt          | 26 +++++++++
->  .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
->  arch/arm/boot/dts/am33xx.dtsi                      |  6 +++
->  arch/arm/boot/dts/omap4.dtsi                       |  6 +++
->  arch/arm/boot/dts/omap5.dtsi                       |  6 +++
->  arch/arm/mach-omap2/Makefile                       |  3 --
->  arch/arm/mach-omap2/hwspinlock.c                   | 60 ---------------------
->  arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 13 +++++
->  arch/arm/mach-omap2/omap_hwmod_54xx_data.c         | 44 ++++++++++++++++
->  drivers/hwspinlock/Kconfig                         |  2 +-
->  drivers/hwspinlock/hwspinlock_core.c               | 61 +++++++++++++++++++++-
->  drivers/hwspinlock/omap_hwspinlock.c               | 44 ++++++++++++----
->  include/linux/hwspinlock.h                         | 11 ++--
->  13 files changed, 233 insertions(+), 80 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
->  create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->  delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
-> 
+Actually, your patch above looks like it handles byte, short, and long
+the same way as in Jean's fix (using kstrtol, not kstrtoul).  So maybe
+an earlier, buggy, version got merged as 6072ddc852?
 
+Can you check it out?
+
+Bjorn
