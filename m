@@ -1,138 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3I0QgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:36:07 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:7960 "EHLO SMTP.CITRIX.COM"
+	id S1754214Ab3I0QgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:36:14 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:36930 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753500Ab3I0QgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:36:03 -0400
+	id S1753400Ab3I0QgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:36:10 -0400
 X-IronPort-AV: E=Sophos;i="4.90,994,1371081600"; 
-   d="scan'208";a="58131108"
+   d="scan'208";a="58131142"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v6 17/19] xen: introduce XENMEM_pin
-Date: Fri, 27 Sep 2013 17:10:05 +0100
-Message-ID: <1380298207-29151-17-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v6 12/19] swiotlb: don't assume that io_tlb_start-io_tlb_end is coherent
+Date: Fri, 27 Sep 2013 17:10:00 +0100
+Message-ID: <1380298207-29151-12-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new hypercall to pin one or more pages whose machine
-addresses respect a dma_mask passed as an argument
+The swiotlb code has appropriate calls to dma_mark_clean in place for
+buffers passed to swiotlb_map_page as an argument. However it assumes
+that the swiotlb bounce buffer (io_tlb_start-io_tlb_end) is already
+coherent and doesn't need any calls to dma_mark_clean.
+
+On ARM the swiotlb bounce buffer is not coherent (the memory is
+writealloc while it should be bufferable) and therefore we need to call
+dma_mark_clean appropriately on the bounce buffer code paths too.
+
+Note that most architecures have an empty dma_mark_clean implementation
+anyway.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/xen/mm.c              |   16 ++++++++++++++++
- arch/x86/xen/mmu.c             |    7 +++++++
- include/xen/interface/memory.h |   32 ++++++++++++++++++++++++++++++++
- include/xen/xen-ops.h          |    1 +
- 4 files changed, 56 insertions(+), 0 deletions(-)
+ lib/swiotlb.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index b305b94..146c1c3 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -55,6 +55,22 @@ static int xen_exchange_memory(xen_ulong_t extents_in,
- 	return success;
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 4e8686c..eb45d17 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -515,6 +515,7 @@ found:
+ 		io_tlb_orig_addr[index+i] = orig_addr + (i << IO_TLB_SHIFT);
+ 	if (dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)
+ 		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_TO_DEVICE);
++	dma_mark_clean(phys_to_virt(tlb_addr), size);
+ 
+ 	return tlb_addr;
  }
+@@ -547,7 +548,10 @@ void swiotlb_tbl_unmap_single(struct device *hwdev, phys_addr_t tlb_addr,
+ 	 * First, sync the memory before unmapping the entry
+ 	 */
+ 	if (orig_addr && ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
++	{
++		dma_mark_clean(phys_to_virt(tlb_addr), size);
+ 		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_FROM_DEVICE);
++	}
  
-+int xen_pin_page(xen_pfn_t *in_frame, unsigned int address_bits)
-+{
-+	struct xen_pin pin = {
-+		.in = {
-+			.nr_extents   = 1,
-+			.extent_order = 0,
-+			.domid        = DOMID_SELF,
-+			.address_bits = address_bits
-+		},
-+	};
-+	set_xen_guest_handle(pin.in.extent_start, in_frame);
-+
-+	return HYPERVISOR_memory_op(XENMEM_pin, &pin);
-+}
-+EXPORT_SYMBOL_GPL(xen_pin_page);
-+
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 8830883..8f76ce2 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2568,3 +2568,10 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- 	return -EINVAL;
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
-+
-+int xen_pin_page(xen_pfn_t *in_frame, unsigned int address_bits)
-+{
-+	return -ENOSYS;
-+}
-+EXPORT_SYMBOL_GPL(xen_pin_page);
-+
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index 49db252..66ab578 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -314,4 +314,36 @@ struct xen_unpin {
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_unpin);
+ 	/*
+ 	 * Return the buffer to the free list by setting the corresponding
+@@ -587,17 +591,20 @@ void swiotlb_tbl_sync_single(struct device *hwdev, phys_addr_t tlb_addr,
  
-+/*
-+ * XENMEM_pin pins a set of pages to make sure that the hypervisor does
-+ * not change the p2m mappings for them.
-+ *
-+ */
-+#define XENMEM_pin               28
-+struct xen_pin {
-+    /*
-+     * [IN/OUT] Details of memory extents to be pinned (GMFN bases).
-+     * Xen copies back the MFNs corresponding to the GMFNs passed in as
-+     * argument.
-+     * @in.address_bits contains the maximum number of bits addressable
-+     * by the caller. If the machine addresses of the pages to be pinned
-+     * are not addressable according to @in.address_bits, the hypercall
-+     * fails and returns an errors. The pages are not pinned. Otherwise
-+     * the hypercall succeeds.
-+     */
-+    struct xen_memory_reservation in;
-+
-+    /*
-+     * [OUT] Number of input extents that were successfully pinned.
-+     *  1. The first @nr_pinned input extents were successfully
-+     *     pinned.
-+     *  2. All other input extents are untouched.
-+     *  3. If not all input extents are pinned then the return code of this
-+     *     command will be non-zero.
-+     */
-+    xen_ulong_t nr_pinned;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_pin);
-+
-+
- #endif /* __XEN_PUBLIC_MEMORY_H__ */
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index fb2ea8f..4cf4fc5 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -22,6 +22,7 @@ extern unsigned long *xen_contiguous_bitmap;
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				unsigned int address_bits,
- 				dma_addr_t *dma_handle);
-+int xen_pin_page(xen_pfn_t *in_frame, unsigned int address_bits);
- 
- void xen_destroy_contiguous_region(phys_addr_t pstart, unsigned int order);
- 
+ 	switch (target) {
+ 	case SYNC_FOR_CPU:
+-		if (likely(dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL))
++		if (likely(dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL)) {
++			dma_mark_clean(phys_to_virt(tlb_addr), size);
+ 			swiotlb_bounce(orig_addr, tlb_addr,
+ 				       size, DMA_FROM_DEVICE);
++		}
+ 		else
+ 			BUG_ON(dir != DMA_TO_DEVICE);
+ 		break;
+ 	case SYNC_FOR_DEVICE:
+-		if (likely(dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL))
++		if (likely(dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)) {
+ 			swiotlb_bounce(orig_addr, tlb_addr,
+ 				       size, DMA_TO_DEVICE);
+-		else
++			dma_mark_clean(phys_to_virt(tlb_addr), size);
++		} else
+ 			BUG_ON(dir != DMA_FROM_DEVICE);
+ 		break;
+ 	default:
 -- 
 1.7.2.5
 
