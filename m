@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab3I0Phj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:37:39 -0400
-Received: from mailrelay.sea-ab.se ([91.223.232.53]:41636 "EHLO
-	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab3I0Phc (ORCPT
+	id S1753711Ab3I0PjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:39:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48245 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab3I0PjH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:37:32 -0400
-From: Martin Berglund <martin@rogsta.net>
-To: dan.carpenter@oracle.com
-Cc: teddy.wang@siliconmotion.com.cn, gregkh@linuxfoundation.org,
-        wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, martin@rogsta.net
-Subject: Re: [PATCH] Staging: sm7xxfb: fixed line break coding style issues
-Date: Fri, 27 Sep 2013 17:39:11 +0200
-Message-Id: <1380296351-18906-1-git-send-email-martin@rogsta.net>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <20130927122728.GE6192@mwanda>
+	Fri, 27 Sep 2013 11:39:07 -0400
+Subject: Re: [dtc PATCH V2] Warn on node name unit-address presence/absence mismatch
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1380245438.28561.86.camel@pasglop>
+Date: Fri, 27 Sep 2013 10:39:08 -0500
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Jon Loeliger <jdl@jdl.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Olof Johansson <olof@lixom.net>, frowand.list@gmail.com,
+        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <23CCE8D1-AEB2-42C8-B8C6-0B782117C4C2@codeaurora.org>
+References: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org> <3D2FE31C-A6BB-4F70-9B3B-C55012CB56B3@codeaurora.org> <5244BF7A.4000100@wwwdotorg.org> <1380245438.28561.86.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 03:27:29PM +0300, Dan Carpenter wrote:
-> On Fri, Sep 27, 2013 at 02:08:07PM +0200, Martin Berglund wrote:
-> > @@ -508,9 +506,8 @@ static void sm7xx_set_timing(struct smtcfb_info *sfb)
-> >  
-> >  			/* init SEQ register SR30 - SR75 */
-> >  			for (i = 0; i < SIZE_SR30_SR75; i++)
-> > -				if (((i + 0x30) != 0x62) \
-> > -					&& ((i + 0x30) != 0x6a) \
-> > -					&& ((i + 0x30) != 0x6b))
-> > +				if (((i + 0x30) != 0x62) && ((i + 0x30) != 0x6a)
-> > +							&& ((i + 0x30) != 0x6b))
-> 
-> The prefered way would be to align this like this:
-> 
-> 				if ((i + 0x30) != 0x62 &&
-> 				    (i + 0x30) != 0x6a &&
-> 				    (i + 0x30) != 0x6b)
-> 
-> regards,
-> dan carpenter
-> 
 
-New patch.
+On Sep 26, 2013, at 8:30 PM, Benjamin Herrenschmidt wrote:
 
-Signed-off-by: Martin Berglund <martin@rogsta.net>
----
- drivers/staging/sm7xxfb/sm7xxfb.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+> On Thu, 2013-09-26 at 17:12 -0600, Stephen Warren wrote:
+>> Well, ePAPR seems pretty specific that unit address and reg are
+>> related,
+>> but says nothing about ranges in the section on node naming, nor about
+>> node naming in the section about ranges.
+>> 
+>> I'd claim that the existing PPC trees are nonconforming, and should be
+>> fixed too:-)
+> 
+> This is tricky, we should probably fix ePAPR here.
 
-diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
-index 8add64b..8ba0097 100644
---- a/drivers/staging/sm7xxfb/sm7xxfb.c
-+++ b/drivers/staging/sm7xxfb/sm7xxfb.c
-@@ -259,8 +259,7 @@ static int smtc_setcolreg(unsigned regno, unsigned red, unsigned green,
- 			if (sfb->fb.var.bits_per_pixel == 16) {
- 				u32 *pal = sfb->fb.pseudo_palette;
- 				val = chan_to_field(red, &sfb->fb.var.red);
--				val |= chan_to_field(green, \
--						&sfb->fb.var.green);
-+				val |= chan_to_field(green, &sfb->fb.var.green);
- 				val |= chan_to_field(blue, &sfb->fb.var.blue);
- #ifdef __BIG_ENDIAN
- 				pal[regno] =
-@@ -274,8 +273,7 @@ static int smtc_setcolreg(unsigned regno, unsigned red, unsigned green,
- 			} else {
- 				u32 *pal = sfb->fb.pseudo_palette;
- 				val = chan_to_field(red, &sfb->fb.var.red);
--				val |= chan_to_field(green, \
--						&sfb->fb.var.green);
-+				val |= chan_to_field(green, &sfb->fb.var.green);
- 				val |= chan_to_field(blue, &sfb->fb.var.blue);
- #ifdef __BIG_ENDIAN
- 				val =
-@@ -508,9 +506,9 @@ static void sm7xx_set_timing(struct smtcfb_info *sfb)
- 
- 			/* init SEQ register SR30 - SR75 */
- 			for (i = 0; i < SIZE_SR30_SR75; i++)
--				if (((i + 0x30) != 0x62) \
--					&& ((i + 0x30) != 0x6a) \
--					&& ((i + 0x30) != 0x6b))
-+				if ((i + 0x30) != 0x62 &&
-+				    (i + 0x30) != 0x6a &&
-+				    (i + 0x30) != 0x6b)
- 					smtc_seqw(i + 0x30,
- 						VGAMode[j].Init_SR30_SR75[i]);
- 
+I'll poke Stuart to see what's going w/updating ePAPR.
+
+> If you have a "soc" bus covering a given range of addresses which it
+> forwards to its children devices but doesn't have per-se its own
+> registers in that area, then it wouldn't have a "reg" property. I would
+> thus argue that in the absence of a "reg" property, if a "ranges" one is
+> present, the "parent address" entry in there is an acceptable substitute
+> for the "reg" property as far as unit addresses are concerned.
+
+Either we update the section in general about 'ranges' or at least update the simple-bus binding to state that rules about the node name.
+
+> Also don't forget that in real OFW land, the unit address is something
+> that's somewhat bus specific ... for example, PCI uses "dev,fn" rather
+> than the full 96-bit number of the "reg" entry :-)
+> 
+> Another option which would more strictly conform to ePAPR and in fact to
+> of1275 would be to require such bus nodes to have a "reg" property with
+> the address value set to the beginning of the range and the size value
+> set to 0 :-)
+
+- k
+
 -- 
-1.8.4
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
