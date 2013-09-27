@@ -1,191 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab3I0OdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:33:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39875 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab3I0OdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:33:17 -0400
-Date: Fri, 27 Sep 2013 17:35:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH net-next] virtio-net: switch to use XPS to choose txq
-Message-ID: <20130927143529.GA30007@redhat.com>
-References: <1380261444-40918-1-git-send-email-jasowang@redhat.com>
+	id S1753921Ab3I0Odl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:33:41 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44297 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab3I0Odh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:33:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380261444-40918-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
+References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 27 Sep 2013 15:33:16 +0100
+X-Google-Sender-Auth: Y8kRbLUyVbnm4ckVLAYOt2Qq8oA
+Message-ID: <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
+Subject: Re: [QUERY] Building and testing Aarch64
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 01:57:24PM +0800, Jason Wang wrote:
-> We used to use a percpu structure vq_index to record the cpu to queue
-> mapping, this is suboptimal since it duplicates the work of XPS and
-> loses all other XPS functionality such as allowing use to configure
-> their own transmission steering strategy.
-> 
-> So this patch switches to use XPS and suggest a default mapping when
-> the number of cpus is equal to the number of queues. With XPS support,
-> there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
-> so they were removed also.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Hi,
 
-More lines deleted that added is good :)
-But how does the result perform?
-About the same?
+On 27 September 2013 09:58, Ramkumar Ramachandra <artagnon@gmail.com> wrote:
+> I'm interested in cross-compiling for ARM v8, and fixing some early
+> papercuts to begin with; my host machine is a normal x86_64 box.
+> Although I managed to use Linaro's toolchain [1] to build an Aarch64
+> kernel, and found a suitable rootfs [2] to use it with, I am not able
+> to find an ARM64 machine emulator. qemu-system-arm seems to emulate
+> only a 32-bit ARM machine, and is hence unsuitable for the task. How
+> is everyone else working on the /arch/arm64 tree?
 
-> ---
->  drivers/net/virtio_net.c |   55 +++++++--------------------------------------
->  1 files changed, 9 insertions(+), 46 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index defec2b..4102c1b 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -127,9 +127,6 @@ struct virtnet_info {
->  	/* Does the affinity hint is set for virtqueues? */
->  	bool affinity_hint_set;
->  
-> -	/* Per-cpu variable to show the mapping from CPU to virtqueue */
-> -	int __percpu *vq_index;
-> -
->  	/* CPU hot plug notifier */
->  	struct notifier_block nb;
->  };
-> @@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
->  static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
->  {
->  	int i;
-> -	int cpu;
->  
->  	if (vi->affinity_hint_set) {
->  		for (i = 0; i < vi->max_queue_pairs; i++) {
-> @@ -1073,20 +1069,11 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
->  
->  		vi->affinity_hint_set = false;
->  	}
-> -
-> -	i = 0;
-> -	for_each_online_cpu(cpu) {
-> -		if (cpu == hcpu) {
-> -			*per_cpu_ptr(vi->vq_index, cpu) = -1;
-> -		} else {
-> -			*per_cpu_ptr(vi->vq_index, cpu) =
-> -				++i % vi->curr_queue_pairs;
-> -		}
-> -	}
->  }
->  
->  static void virtnet_set_affinity(struct virtnet_info *vi)
->  {
-> +	cpumask_var_t cpumask;
->  	int i;
->  	int cpu;
->  
-> @@ -1100,15 +1087,21 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
->  		return;
->  	}
->  
-> +	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
-> +		return;
-> +
->  	i = 0;
->  	for_each_online_cpu(cpu) {
->  		virtqueue_set_affinity(vi->rq[i].vq, cpu);
->  		virtqueue_set_affinity(vi->sq[i].vq, cpu);
-> -		*per_cpu_ptr(vi->vq_index, cpu) = i;
-> +		cpumask_clear(cpumask);
-> +		cpumask_set_cpu(cpu, cpumask);
-> +		netif_set_xps_queue(vi->dev, cpumask, i);
->  		i++;
->  	}
->  
->  	vi->affinity_hint_set = true;
-> +	free_cpumask_var(cpumask);
->  }
->  
->  static int virtnet_cpu_callback(struct notifier_block *nfb,
-> @@ -1217,28 +1210,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->  	return 0;
->  }
->  
-> -/* To avoid contending a lock hold by a vcpu who would exit to host, select the
-> - * txq based on the processor id.
-> - */
-> -static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
-> -{
-> -	int txq;
-> -	struct virtnet_info *vi = netdev_priv(dev);
-> -
-> -	if (skb_rx_queue_recorded(skb)) {
-> -		txq = skb_get_rx_queue(skb);
-> -	} else {
-> -		txq = *__this_cpu_ptr(vi->vq_index);
-> -		if (txq == -1)
-> -			txq = 0;
-> -	}
-> -
-> -	while (unlikely(txq >= dev->real_num_tx_queues))
-> -		txq -= dev->real_num_tx_queues;
-> -
-> -	return txq;
-> -}
-> -
->  static const struct net_device_ops virtnet_netdev = {
->  	.ndo_open            = virtnet_open,
->  	.ndo_stop   	     = virtnet_close,
-> @@ -1250,7 +1221,6 @@ static const struct net_device_ops virtnet_netdev = {
->  	.ndo_get_stats64     = virtnet_stats,
->  	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
->  	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
-> -	.ndo_select_queue     = virtnet_select_queue,
->  #ifdef CONFIG_NET_POLL_CONTROLLER
->  	.ndo_poll_controller = virtnet_netpoll,
->  #endif
-> @@ -1559,10 +1529,6 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (vi->stats == NULL)
->  		goto free;
->  
-> -	vi->vq_index = alloc_percpu(int);
-> -	if (vi->vq_index == NULL)
-> -		goto free_stats;
-> -
->  	mutex_init(&vi->config_lock);
->  	vi->config_enable = true;
->  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-> @@ -1589,7 +1555,7 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
->  	err = init_vqs(vi);
->  	if (err)
-> -		goto free_index;
-> +		goto free_stats;
->  
->  	netif_set_real_num_tx_queues(dev, 1);
->  	netif_set_real_num_rx_queues(dev, 1);
-> @@ -1640,8 +1606,6 @@ free_recv_bufs:
->  free_vqs:
->  	cancel_delayed_work_sync(&vi->refill);
->  	virtnet_del_vqs(vi);
-> -free_index:
-> -	free_percpu(vi->vq_index);
->  free_stats:
->  	free_percpu(vi->stats);
->  free:
-> @@ -1678,7 +1642,6 @@ static void virtnet_remove(struct virtio_device *vdev)
->  
->  	flush_work(&vi->config_work);
->  
-> -	free_percpu(vi->vq_index);
->  	free_percpu(vi->stats);
->  	free_netdev(vi->dev);
->  }
-> -- 
-> 1.7.1
+Linaro has a page with links for running Linux on ARMv8
+
+http://www.linaro.org/engineering/engineering-projects/armv8
+
+ARM provides an emulator, ARMv8 Foundation Model (free as in free beer
+but you need to register to be able to download, just like the
+architecture documentation):
+
+http://www.arm.com/products/tools/models/fast-models/foundation-model.php
+
+I think the direct download link is at the bottom of the page:
+
+https://silver.arm.com/browse/FM00A
+
+-- 
+Catalin
