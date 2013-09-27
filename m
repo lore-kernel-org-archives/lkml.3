@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3I0QL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:11:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:29435 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab3I0QKy (ORCPT
+	id S1754102Ab3I0QMN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:12:13 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:16581 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab3I0QMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:10:54 -0400
-X-IronPort-AV: E=Sophos;i="4.90,994,1371081600"; 
-   d="scan'208";a="55582483"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v6 07/19] swiotlb-xen: introduce xen_swiotlb_set_dma_mask
-Date: Fri, 27 Sep 2013 17:09:55 +0100
-Message-ID: <1380298207-29151-7-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+	Fri, 27 Sep 2013 12:12:09 -0400
+Message-ID: <1380298323.2031.13.camel@j-VirtualBox>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Jason Low <jason.low2@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Date: Fri, 27 Sep 2013 09:12:03 -0700
+In-Reply-To: <20130927060213.GA6673@gmail.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
+	 <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
+	 <1380226997.2602.11.camel@j-VirtualBox>
+	 <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
+	 <1380229794.2602.36.camel@j-VirtualBox>
+	 <1380231702.3467.85.camel@schen9-DESK>
+	 <1380235333.3229.39.camel@j-VirtualBox>
+	 <1380236265.3467.103.camel@schen9-DESK> <20130927060213.GA6673@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement xen_swiotlb_set_dma_mask, use it for set_dma_mask on arm.
+On Fri, 2013-09-27 at 08:02 +0200, Ingo Molnar wrote:
+> Would be nice to have this as a separate, add-on patch. Every single 
+> instruction removal that has no downside is an upside!
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Okay, so here is a patch. Tim, would you like to add this to v7?
+
+...
+Subject: MCS lock: Remove and reorder unnecessary assignments in mcs_spin_lock()
+
+In mcs_spin_lock(), if (likely(prev == NULL)) is true, then the lock is free
+and we won't spin on the local node. In that case, we don't have to assign
+node->locked because it won't be used. We can also move the node->locked = 0
+assignment so that it occurs after the if (likely(prev == NULL)) check.
+
+This might also help make it clearer as to how the node->locked variable
+is used in MCS locks.
+
+Signed-off-by: Jason Low <jason.low2@hp.com>
 ---
- arch/arm/xen/mm.c         |    1 +
- drivers/xen/swiotlb-xen.c |   12 ++++++++++++
- include/xen/swiotlb-xen.h |    2 ++
- 3 files changed, 15 insertions(+), 0 deletions(-)
+ include/linux/mcslock.h |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index b065c98..4330b15 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -110,6 +110,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
- 	.map_page = xen_swiotlb_map_page,
- 	.unmap_page = xen_swiotlb_unmap_page,
- 	.dma_supported = xen_swiotlb_dma_supported,
-+	.set_dma_mask = xen_swiotlb_set_dma_mask,
- };
+diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
+index 20fd3f0..1167d57 100644
+--- a/include/linux/mcslock.h
++++ b/include/linux/mcslock.h
+@@ -21,15 +21,14 @@ void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+ 	struct mcs_spin_node *prev;
  
- int __init xen_mm_init(void)
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index a1cb0f4..deb9131 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -754,3 +754,15 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask)
- 	return xen_virt_to_bus(xen_io_tlb_end - 1) <= mask;
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_dma_supported);
-+
-+int
-+xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
-+{
-+	if (!dev->dma_mask || !xen_swiotlb_dma_supported(dev, dma_mask))
-+		return -EIO;
-+
-+	*dev->dma_mask = dma_mask;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
-diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
-index de8bcc6..7b64465 100644
---- a/include/xen/swiotlb-xen.h
-+++ b/include/xen/swiotlb-xen.h
-@@ -55,4 +55,6 @@ xen_swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr);
- extern int
- xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
+ 	/* Init node */
+-	node->locked = 0;
+ 	node->next   = NULL;
  
-+extern int
-+xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
- #endif /* __LINUX_SWIOTLB_XEN_H */
+ 	prev = xchg(lock, node);
+ 	if (likely(prev == NULL)) {
+ 		/* Lock acquired */
+-		node->locked = 1;
+ 		return;
+ 	}
++	node->locked = 0;
+ 	ACCESS_ONCE(prev->next) = node;
+ 	smp_wmb();
+ 	/* Wait until the lock holder passes the lock down */
 -- 
-1.7.2.5
+1.7.1
+
 
