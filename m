@@ -1,112 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab3I0GjA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 02:39:00 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38347 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab3I0Gi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 02:38:58 -0400
-Message-ID: <524526EF.1080101@linux.vnet.ibm.com>
-Date: Fri, 27 Sep 2013 12:04:23 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1751868Ab3I0Gpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 02:45:35 -0400
+Received: from mx5.zte.com.cn ([63.217.80.70]:46259 "EHLO mx5.zte.com.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab3I0Gpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 02:45:33 -0400
+In-Reply-To: <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
+References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn> <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: Re: [PATCH] futex: Remove the owner check when waking task in
+ handle_futex_death
+X-KeepSent: FC4F71E6:FCD3279D-48257BF3:000E2A58;
+ type=4; name=$KeepSent
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OFFC4F71E6.FCD3279D-ON48257BF3.000E2A58-48257BF3.00251AFA@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Fri, 27 Sep 2013 14:45:05 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-09-27 14:45:10
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-CC: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, riel@redhat.com,
-        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
-        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "maxime.coquelin@stericsson.com" <maxime.coquelin@stericsson.com>,
-        "loic.pallardy@stericsson.com" <loic.pallardy@stericsson.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "amit.kachhap@linaro.org" <amit.kachhap@linaro.org>
-Subject: Re: [RFC PATCH v4 06/40] mm: Demarcate and maintain pageblocks in
- region-order in the zones' freelists
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com> <5244B22C.9020503@sr71.net>
-In-Reply-To: <5244B22C.9020503@sr71.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092706-7014-0000-0000-000003ADF03C
+Content-type: text/plain; charset=GB2312
+X-MAIL: mse01.zte.com.cn r8R6jHPS049311
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8R6ji2J020973
 
-On 09/27/2013 03:46 AM, Dave Hansen wrote:
-> On 09/25/2013 04:14 PM, Srivatsa S. Bhat wrote:
->> @@ -605,16 +713,22 @@ static inline void __free_one_page(struct page *page,
->>  		buddy_idx = __find_buddy_index(combined_idx, order + 1);
->>  		higher_buddy = higher_page + (buddy_idx - combined_idx);
->>  		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
->> -			list_add_tail(&page->lru,
->> -				&zone->free_area[order].free_list[migratetype].list);
->> +
->> +			/*
->> +			 * Implementing an add_to_freelist_tail() won't be
->> +			 * very useful because both of them (almost) add to
->> +			 * the tail within the region. So we could potentially
->> +			 * switch off this entire "is next-higher buddy free?"
->> +			 * logic when memory regions are used.
->> +			 */
->> +			add_to_freelist(page, &area->free_list[migratetype]);
->>  			goto out;
->>  		}
->>  	}
-> 
-> Commit 6dda9d55b says that this had some discrete performance gains.
 
-I had seen the comments about this but not the patch which made that change.
-Thanks for pointing the commit to me! But now that I went through the changelog
-carefully, it appears as if there were only some slight benefits in huge page
-allocation benchmarks, and the results were either inconclusive or unsubstantial
-in most other benchmarks that the author tried.
 
-> It's a bummer that this deoptimizes it, and I think that (expected)
-> performance degredation at least needs to be referenced _somewhere_.
+Darren Hart <dvhart@linux.intel.com> wrote on 2013/09/27 02:15:17:
+
+
+> Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
+>
+> On Thu, 2013-09-26 at 09:09 +0800, zhang.yi20@zte.com.cn wrote:
+> > Hi all,
+> >
+> > Task processes all its owned robust futex when it is exiting,
+> > to ensure the futexes can be taken by other tasks.
+> >
+> > Though this can not work good in sometimes.
+> > Think about this scene£º
+> > 1. A robust mutex is shared for two processes, each process has
+> >    multi threads to lock the mutex.
+> > 2. One of the threads locks the mutex, and the others are waiting
+> >    and sorted in order of priority.
+> > 3. The process to which the mutex owner thread belongs is dying
+> >    without unlocking the mutex£¬and handle_futex_death is invoked
+> >    to wake the first waiter.
+> > 4. If the first waiter belongs to the same process£¬it has no chance
+> >    to return to the userspace to lock the mutex, and it won't wake
+> >    the next waiter because it is not the owner of the mutex.
+> > 5. The rest waiters of the other process may block forever.
+> >
+> > This patch remove the owner check when waking task in handle_futex_death.
+> > If above occured, The dying task can wake the next waiter by processing its list_op_pending.
+> > The waked task could return to userspace and try to lock the mutex again.
+> >
+>
+> The problem is if you allow the non-owner to do the wake, you risk
+> multiple threads calling futex_wake(). Or is that your intention? Wake
+> one waiter for every thread that calls handle_futex_death()?
+
+Yes.
+
+> >
+> > Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+> > Reviewed-by: Xie Baoyou <xie.baoyou@zte.com.cn>
+> > Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+> >
+> >
+> >
+> > --- linux/kernel/futex.c   2013-09-25 09:24:34.639634244 +0000
+> > +++ linux/kernel/futex.c   2013-09-25 10:12:17.619673546 +0000
+> > @@ -2541,14 +2541,15 @@ retry:
+> >        }
+> >        if (nval != uval)
+> >           goto retry;
+> > -
+> > -      /*
+> > -       * Wake robust non-PI futexes here. The wakeup of
+> > -       * PI futexes happens in exit_pi_state():
+> > -       */
+> > -      if (!pi && (uval & FUTEX_WAITERS))
+> > -         futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
+> >     }
+> > +
+> > +   /*
+> > +    * Wake robust non-PI futexes here. The wakeup of
+> > +    * PI futexes happens in exit_pi_state():
+> > +    */
+> > +   if (!pi)
+>
+>
+> Why did you drop the FUTEX_WAITERS condition?
+>
+> You sent a different patch earlier this year that didn't appear to get
+> any review:
+>
+> https://lkml.org/lkml/2013/4/8/65
+>
+> This one woke all the waiters and let them sort it out.
+>
+> It seems we've hashed through this already, but I'm not finding the
+> email logs and I don't recall off the top of my head.
+>
+> > +      futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
+> > +
+> >     return 0;
+> >  }
 >
 
-I'm not so sure about that. Yes, I know that my patchset treats all pages
-equally (by adding all of them _far_ _away_ from the head of the list), but
-given that the above commit didn't show any significant improvements, I doubt
-whether my patchset will lead to any noticeable _degradation_. Perhaps I'll try
-out the huge-page allocation benchmark and observe what happens with my patchset.
- 
-> I also find it very hard to take code seriously which stuff like this:
-> 
->> +#ifdef CONFIG_DEBUG_PAGEALLOC
->> +		WARN(region->nr_free == 0, "%s: nr_free messed up\n", __func__);
->> +#endif
-> 
-> nine times.
-> 
+The earlier patch cannot solve another problem:
+The owner wakes the next waiter through normal unlocking which make the
+futex value as zero, the waked task exits before actually locking the mutex.
+In this case, the owner doesn't call handle_futex_death() and the waked task
+doesn't call futex_wake() when they are dying. The rest waiters will still
+block as the same.
 
-Hmm, those debug checks were pretty invaluable for me when testing the code.
-I retained them in the patches so that if other people test it and find
-problems, they would be able to send bug reports with good amount of info as
-to what exactly went wrong. Besides, this patchset adds a ton of new code, and
-this list manipulation framework along with the bitmap-based radix tree is one
-of the core components. If that goes for a toss, everything from there onwards
-will be a train-wreck! So I felt having these checks and balances would be very
-useful to validate the correct working of each piece and to debug complex
-problems easily.
+This is also the reason that I drop the owner and FUTEX_WAITERS check,
+because the futex value can be zero at that time.
 
-But please help me understand your point correctly - are you suggesting that
-I remove these checks completely or just make them gel well with the other code
-so that they don't become such an eyesore as they are at the moment (with all
-the #ifdefs sticking out etc)?
-
-If you are suggesting the latter, I completely agree with you. I'll find out
-a way to do that, and if you have any suggestions, please let me know!
-
-Thank you!
-
-Regards,
-Srivatsa S. Bhat
-
+In normal case, the userspace code ensure that the owner of lock in robust-list
+is current task, we may do redundant waking just for the  list_op_pending.
+So I think the patch results in little negative effect.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
