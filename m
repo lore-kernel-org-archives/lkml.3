@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3I0Bd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 21:33:57 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43916 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab3I0Bd4 convert rfc822-to-8bit (ORCPT
+	id S1750956Ab3I0CBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 22:01:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51349 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab3I0CBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 21:33:56 -0400
-X-AuditID: 9c930179-b7c8bae000006c65-19-5244e081332d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf: fix infinite loop with corrupted header
-References: <1380172836-13936-1-git-send-email-sonnyrao@chromium.org>
-	<52443800.5080200@gmail.com>
-	<20130926134640.GA26159@ghostprotocols.net>
-	<1380203977.1810.0.camel@leonhard>
-	<20130926140613.GB26159@ghostprotocols.net>
-Date: Fri, 27 Sep 2013 10:33:53 +0900
-In-Reply-To: <20130926140613.GB26159@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Thu, 26 Sep 2013 11:06:13 -0300")
-Message-ID: <87mwmzoxoe.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 26 Sep 2013 22:01:22 -0400
+Date: Fri, 27 Sep 2013 12:01:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fan Du <fan.du@windriver.com>, Joe Perches <joe@perches.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the ipsec-next tree with the
+ net-next tree
+Message-Id: <20130927120107.99925373bcc260b50e0b3ed8@canb.auug.org.au>
+In-Reply-To: <20130925052923.GU7660@secunet.com>
+References: <20130924121629.f818475ddf308b0494cfce2a@canb.auug.org.au>
+	<20130924102505.GS7660@secunet.com>
+	<20130925095919.143635403832766c1b190202@canb.auug.org.au>
+	<20130925052923.GU7660@secunet.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 26 Sep 2013 11:06:13 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Sep 26, 2013 at 10:59:37PM +0900, Namhyung Kim escreveu:
->> 2013-09-26 (목), 10:46 -0300, Arnaldo Carvalho de Melo:
->> > Em Thu, Sep 26, 2013 at 07:34:56AM -0600, David Ahern escreveu:
->> > > Other changes went in around that time as well. Are you still seeing
->> > > the loop on latest source?
->> 
->> Did you mean this?
+Hi Steffen,
+
+On Wed, 25 Sep 2013 07:29:23 +0200 Steffen Klassert <steffen.klassert@secun=
+et.com> wrote:
 >
-> Not at that moment, but yes, I looked up the discussion and found this,
-> which I think is sensible, would like just to do some testing, and if
-> you could submit a patch combining your change with David's, I think it
-> would be good.
+> On Wed, Sep 25, 2013 at 09:59:19AM +1000, Stephen Rothwell wrote:
+> >=20
+> > On Tue, 24 Sep 2013 12:25:05 +0200 Steffen Klassert <steffen.klassert@s=
+ecunet.com> wrote:
+> > >
+> > > On Tue, Sep 24, 2013 at 12:16:29PM +1000, Stephen Rothwell wrote:
+> > > >=20
+> > > > Today's linux-next merge of the ipsec-next tree got a conflict in
+> > > > include/net/xfrm.h between commit d511337a1eda ("xfrm.h: Remove ext=
+ern
+> > > > from function prototypes") from the net-next tree and commit aba826=
+958830
+> > > > ("{ipv4,xfrm}: Introduce xfrm_tunnel_notifier for xfrm tunnel mode
+> > > > callback") from the ipsec-next tree.
+> > >=20
+> > > Thanks for the information, I'll do a rebase of the ipsec-next
+> > > tree tomorrow.
+> >=20
+> > Did you miss the end of the next paragraph:  "no action is required"?
+> > Dave can fix this up (like I did) when he merges your tree into his.
+>=20
+> I applied this patch shortly before the merge window opened, it is a left
+> over from the last develpoment cycle. I already rebased my tree onto
+> net-next in the past if that happened, even if there were no merge
+> conflicts. I did that just to see if everything still works. But I
+> could also do a test merge to see if everything still works and ask
+> to pull without a rebase then if this is the prefered way. Would make
+> my life easier :)
 
-I'll resend it after some testing.
+That would be up to Dave ...
 
-Thanks,
-Namhyung
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSROboAAoJEMDTa8Ir7ZwVoRQQAIJQotoVoy91whcLvi1VEeTP
+MKKLBQ+IKIF0s/qQHVEXmRindn4gjl7IDNLstpu+xXlRhXuBjzO/7HdfnsQk4KDx
+VH0M9bfdY/NRT/XpjnPadqdItNw6f+KBt5dFndoEgVgMmmtcosjbeNT1I2bgdGZD
+1hRMlPmN/GQjbXO8xW8WItsLHnwWccSsZDbNs6nZpxIdGAaFdL9sozIRpweHnEbr
+BDjGdEunaVfL1kYdGA1hYWIEEhQgYAivJsGdHEHilRImvQuS1BYeyj8Fq2JQE7Cz
+iMw3cx6IheynatCmH4ClczzTUuMnyGd/6iR2TQVJd7X8BMup12GNZD037RZZwrqh
+K3/dwHSCU6nxk1ltHQ0jrzB7niSHmLq6j9susp5bNWbw6Qm96zOg+TCLhj6ajkbw
+DOiCR24yqwr5DSa8DGnziDkjggBfKPOGC1CRzF0Mt3dedbx2VxqcReGxcALGB7O7
+uJCDftBNiyFG21OBurFaud8FJ+dtpOBDdCFmrAkuVRmJxZdHhLXcNNtA1gpRy3mH
+L78OKTUOfesoeLFjWAPjWs/1cVZOExEFgIfYmBIvv48sitnizjgOPbLqZuiJvofz
+6EXQiKGcbMkfuft82tFHY5ubj5Gxj50uCbpu01iKYAFcNmOACXJdLP89INz+CER2
+lMPUxFazuc65cccTG6YE
+=SwBO
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Sep_2013_12_01_07_+1000_Bpt5QyrZT9zDdR=2--
