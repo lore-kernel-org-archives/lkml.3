@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3I0N2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:28:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55655 "EHLO mx2.suse.de"
+	id S1754526Ab3I0Nio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:38:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55745 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab3I0N2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:11 -0400
+	id S1751134Ab3I0N2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:22 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 20/63] sched: Select a preferred node with the most numa hinting faults
-Date: Fri, 27 Sep 2013 14:27:05 +0100
-Message-Id: <1380288468-5551-21-git-send-email-mgorman@suse.de>
+Subject: [PATCH 31/63] mm: numa: only unmap migrate-on-fault VMAs
+Date: Fri, 27 Sep 2013 14:27:16 +0100
+Message-Id: <1380288468-5551-32-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,76 +22,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch selects a preferred node for a task to run on based on the
-NUMA hinting faults. This information is later used to migrate tasks
-towards the node during balancing.
+There is a 90% regression observed with a large Oracle performance test
+on a 4 node system. Profiles indicated that the overhead was due to
+contention on sp_lock when looking up shared memory policies. These
+policies do not have the appropriate flags to allow them to be
+automatically balanced so trapping faults on them is pointless. This
+patch skips VMAs that do not have MPOL_F_MOF set.
 
+[riel@redhat.com: Initial patch]
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reported-and-tested-by: Joe Mario <jmario@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/core.c   |  1 +
- kernel/sched/fair.c   | 17 +++++++++++++++--
- 3 files changed, 17 insertions(+), 2 deletions(-)
+ include/linux/mempolicy.h |  1 +
+ kernel/sched/fair.c       |  2 +-
+ mm/mempolicy.c            | 24 ++++++++++++++++++++++++
+ 3 files changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index dfba435..d6ec68a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1336,6 +1336,7 @@ struct task_struct {
- 	struct callback_head numa_work;
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 0d7df39..f6b2c4d 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -136,6 +136,7 @@ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
  
- 	unsigned long *numa_faults;
-+	int numa_preferred_nid;
- #endif /* CONFIG_NUMA_BALANCING */
+ struct mempolicy *get_vma_policy(struct task_struct *tsk,
+ 		struct vm_area_struct *vma, unsigned long addr);
++bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma);
  
- 	struct rcu_head rcu;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index dbc2de6..0235ab8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1643,6 +1643,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
- 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
-+	p->numa_preferred_nid = -1;
- 	p->numa_work.next = &p->numa_work;
- 	p->numa_faults = NULL;
- #endif /* CONFIG_NUMA_BALANCING */
+ extern void numa_default_policy(void);
+ extern void numa_policy_init(void);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 55ec7ad..f9bc867 100644
+index f136057..f9329d5 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -879,7 +879,8 @@ static unsigned int task_scan_max(struct task_struct *p)
+@@ -1130,7 +1130,7 @@ void task_numa_work(struct callback_head *work)
+ 		vma = mm->mmap;
+ 	}
+ 	for (; vma; vma = vma->vm_next) {
+-		if (!vma_migratable(vma))
++		if (!vma_migratable(vma) || !vma_policy_mof(p, vma))
+ 			continue;
  
- static void task_numa_placement(struct task_struct *p)
- {
--	int seq;
-+	int seq, nid, max_nid = -1;
-+	unsigned long max_faults = 0;
+ 		do {
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index adc93b2..54004a8 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1633,6 +1633,30 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 	return pol;
+ }
  
- 	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
- 		return;
-@@ -889,7 +890,19 @@ static void task_numa_placement(struct task_struct *p)
- 	p->numa_scan_seq = seq;
- 	p->numa_scan_period_max = task_scan_max(p);
- 
--	/* FIXME: Scheduling placement policy hints go here */
-+	/* Find the node with the highest number of faults */
-+	for_each_online_node(nid) {
-+		unsigned long faults = p->numa_faults[nid];
-+		p->numa_faults[nid] >>= 1;
-+		if (faults > max_faults) {
-+			max_faults = faults;
-+			max_nid = nid;
++bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma)
++{
++	struct mempolicy *pol = get_task_policy(task);
++	if (vma) {
++		if (vma->vm_ops && vma->vm_ops->get_policy) {
++			bool ret = false;
++
++			pol = vma->vm_ops->get_policy(vma, vma->vm_start);
++			if (pol && (pol->flags & MPOL_F_MOF))
++				ret = true;
++			mpol_cond_put(pol);
++
++			return ret;
++		} else if (vma->vm_policy) {
++			pol = vma->vm_policy;
 +		}
 +	}
 +
-+	/* Update the tasks preferred node if necessary */
-+	if (max_faults && max_nid != p->numa_preferred_nid)
-+		p->numa_preferred_nid = max_nid;
- }
- 
- /*
++	if (!pol)
++		return default_policy.flags & MPOL_F_MOF;
++
++	return pol->flags & MPOL_F_MOF;
++}
++
+ static int apply_policy_zone(struct mempolicy *policy, enum zone_type zone)
+ {
+ 	enum zone_type dynamic_policy_zone = policy_zone;
 -- 
 1.8.1.4
 
