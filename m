@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab3I0OjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:39:21 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:42742 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab3I0OjQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:39:16 -0400
+	id S1753939Ab3I0OkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:40:15 -0400
+Received: from void.printf.net ([89.145.121.20]:42613 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753734Ab3I0OkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:40:12 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dong Aisheng <b29396@freescale.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+References: <20130927183246.13094a90de1676232e17d30e@canb.auug.org.au>
+Date: Fri, 27 Sep 2013 15:40:10 +0100
+In-Reply-To: <20130927183246.13094a90de1676232e17d30e@canb.auug.org.au>
+	(Stephen Rothwell's message of "Fri, 27 Sep 2013 18:32:46 +1000")
+Message-ID: <86a9iycoqd.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <52458F79.8040801@redhat.com>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
-	<CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
-	<20130925183828.GA30372@lenny.home.zabbo.net>
-	<CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
-	<20130925190620.GB30372@lenny.home.zabbo.net>
-	<20130925195526.GA18971@fieldses.org>
-	<20130925210742.GG30372@lenny.home.zabbo.net>
-	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
-	<20130926153359.GE704@fieldses.org>
-	<CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
-	<20130926190611.GP30372@lenny.home.zabbo.net>
-	<CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com>
-	<5244A5E7.90808@redhat.com>
-	<CAJfpegufnsU0LLvvZDmKpvRn8AaJ7NvKeegg-4YJ5AK9mBDBYQ@mail.gmail.com>
-	<52458F79.8040801@redhat.com>
-Date: Fri, 27 Sep 2013 16:39:15 +0200
-Message-ID: <CAJfpegseipg6DAseBTG4Z6024noQa7owv48rOJznCPiXK+hezw@mail.gmail.com>
-Subject: Re: [RFC] extending splice for copy offloading
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: Zach Brown <zab@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 4:00 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+Hi Stephen,
 
-> I think that you are an order of magnitude off here in thinking about the
-> scale of the operations.
->
-> An enabled, synchronize copy offload to an array (or one that turns into a
-> reflink locally) is effectively the cost of the call itself. Let's say no
-> slower than one IO to a S-ATA disk (10ms?) as a pessimistic guess.
-> Realistically, that call is much faster than that worst case number.
->
-> Copying any substantial amount of data - like the target workload of VM
-> images or media files - would be hundreds of MB's per copy and that would
-> take seconds or minutes.
+On Fri, Sep 27 2013, Stephen Rothwell wrote:
+> drivers/mmc/host/sdhci-of-esdhc.c: In function 'esdhc_of_set_clock':
+> drivers/mmc/host/sdhci-of-esdhc.c:230:10: error: 'host_clock' undeclared (first use in this function)
+>    clock, host_clock / pre_div / div);
 
-Will a single splice-copy operation be interruptible/restartable?  If
-not, how should apps size one request so that it doesn't take too much
-time?  Even for slow devices (usb stick)?  If it will be restartable,
-how?   Can remote copy be done with this?  Over a high latency
-network?
-
-Those are the questions I'm worried about.
-
->
-> We should really work on getting the basic mechanism working and robust
-> without any complications, then we can look at real, measured performance
-> and see if there is any justification for adding complexity.
-
-Go for that.  But don't forget that at the end of the day actual apps
-will need to be converted like file managers and "dd" and "cp" and we
-definitely don't wont a userspace library to be able to figure out how
-the copy is done most efficiently; it's something for the kernel to
-figure out.
+Sorry about that.  I've pushed the proper fix out to mmc-next now,
+so you can drop your temporary fix.
 
 Thanks,
-Miklos
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
