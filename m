@@ -1,157 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3I0T0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 15:26:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60733 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab3I0T0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 15:26:45 -0400
-Message-ID: <5245DBC8.4050304@ti.com>
-Date: Fri, 27 Sep 2013 14:26:00 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754456Ab3I0T2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 15:28:19 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:47777 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab3I0T2Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 15:28:16 -0400
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 1/9] hwspinlock/core: add common dt bindings and OF
- helpers
-References: <cover.1379445653.git.s-anna@ti.com> <4df03ac30dcc79132e3acc2e586d0ca99b431258.1379445653.git.s-anna@ti.com> <14DB8294-1148-446A-A6D3-34E66BA8732C@codeaurora.org> <5245B6F9.7030505@ti.com> <3C582FCF-7A24-48AC-B98B-AF1D18C1E22B@codeaurora.org>
-In-Reply-To: <3C582FCF-7A24-48AC-B98B-AF1D18C1E22B@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+Date: Fri, 27 Sep 2013 12:28:15 -0700
+X-Google-Sender-Auth: DBKK_92H1qvmMvA4CtVAhwILoio
+Message-ID: <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kumar,
+On Fri, Sep 27, 2013 at 12:00 PM, Waiman Long <Waiman.Long@hp.com> wrote:
+>
+> On a large NUMA machine, it is entirely possible that a fairly large
+> number of threads are queuing up in the ticket spinlock queue to do
+> the wakeup operation. In fact, only one will be needed.  This patch
+> tries to reduce spinlock contention by doing just that.
+>
+> A new wakeup field is added to the rwsem structure. This field is
+> set on entry to rwsem_wake() and __rwsem_do_wake() to mark that a
+> thread is pending to do the wakeup call. It is cleared on exit from
+> those functions.
 
->>
->> On 09/27/2013 11:04 AM, Kumar Gala wrote:
->>>
->>> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
->>>
->>>> All the platform-specific hwlock driver implementations need the
->>>> number of locks and the associated base id for registering the
->>>> locks present within a hwspinlock device with the driver core.
->>>> These two variables are represented by 'hwlock-num-locks' and
->>>> 'hwlock-base-id' properties. The documentation and OF helpers to
->>>> retrieve these common properties have been added to the driver core.
->>>>
->>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>> ---
->>>> .../devicetree/bindings/hwlock/hwlock.txt          | 26 +++++++++
->>>> drivers/hwspinlock/hwspinlock_core.c               | 61 +++++++++++++++++++++-
->>>> include/linux/hwspinlock.h                         | 11 ++--
->>>> 3 files changed, 93 insertions(+), 5 deletions(-)
->>>> create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
->>>> new file mode 100644
->>>> index 0000000..789930e
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
->>>> @@ -0,0 +1,26 @@
->>>> +Generic hwlock bindings
->>>> +=======================
->>>> +
->>>> +Generic bindings that are common to all the hwlock platform specific driver
->>>> +implementations, the retrieved values are used for registering the device
->>>> +specific parameters with the hwspinlock core.
->>>> +
->>>> +The validity and need of these common properties may vary from one driver
->>>> +implementation to another. Look through the individual hwlock driver
->>>> +binding documentations for identifying which are mandatory and which are
->>>> +optional for that specific driver.
->>>> +
->>>> +Common properties:
->>>> +- hwlock-base-id:	Base Id for the locks for a particular hwlock device.
->>>> +			This property is used for representing a set of locks
->>>> +			present in a hwlock device with a unique base id in
->>>> +			the driver core. This property is mandatory ONLY if a
->>>> +			SoC has several hwlock devices.
->>>> +
->>>> +			See documentation on struct hwspinlock_pdata in
->>>> +			linux/hwspinlock.h for more details.
->>>> +
->>>> +- hwlock-num-locks:	Number of locks present in a hwlock device. This
->>>> +			property is needed on hwlock devices, where the number
->>>> +			of supported locks within a hwlock device cannot be
->>>> +			read from a register.
-> 
-> Was meaning to say this before, another reason for hwlock-num-locks is to limit the # of locks available to the processors running linux vs what other processors in the SoC might be using.
+Ok, this is *much* simpler than adding the new MCS spinlock, so I'm
+wondering what the performance difference between the two are.
 
-Yes, I understand the usecase/scenario since we had a similar need on
-our product. That said, I guess this should be left to the individual
-driver implementation/integration/documentation since this can be
-achieved in different ways and depends on how you partition the
-resources on your system (static partition vs resource reservation at
-linux init time). Mentioning that here begs the question if you are
-gonna use the starting 'n' locks, ending 'n' locks or range of 'n' locks
-beginning in the middle. It would also imply it has to work together
-with the hwlock-base-id as well in the last case. I would prefer to keep
-the documentation generic here.
+I'm obviously always in favor of just removing lock contention over
+trying to improve the lock scalability, so I really like Waiman's
+approach over Tim's new MCS lock. Not because I dislike MCS locks in
+general (or you, Tim ;), it's really more fundamental: I just
+fundamentally believe more in trying to avoid lock contention than in
+trying to improve lock behavior when that contention happens.
 
-> 
-> 
->>>> diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
->>>> index 461a0d7..aec32e7 100644
->>>> --- a/drivers/hwspinlock/hwspinlock_core.c
->>>> +++ b/drivers/hwspinlock/hwspinlock_core.c
->>>> @@ -1,7 +1,7 @@
->>>> /*
->>>> * Hardware spinlock framework
->>>> *
->>>> - * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
->>>> + * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
->>>> *
->>>> * Contact: Ohad Ben-Cohen <ohad@wizery.com>
->>>> *
->>>> @@ -27,6 +27,7 @@
->>>> #include <linux/hwspinlock.h>
->>>> #include <linux/pm_runtime.h>
->>>> #include <linux/mutex.h>
->>>> +#include <linux/of.h>
->>>>
->>>> #include "hwspinlock_internal.h"
->>>>
->>>> @@ -308,6 +309,64 @@ out:
->>>> }
->>>>
->>>> /**
->>>> + * of_hwspin_lock_get_base_id() - OF helper to retrieve base id
->>>> + * @dn: device node pointer
->>>> + *
->>>> + * This is an OF helper function that can be called by the underlying
->>>> + * platform-specific implementations, to retrieve the base id for the
->>>> + * set of locks present within a hwspinlock device instance.
->>>> + *
->>>> + * Returns the base id value on success, -ENODEV on generic failure or
->>>> + * an appropriate error code as returned by the OF layer
->>>> + */
->>>> +int of_hwspin_lock_get_base_id(struct device_node *dn)
->>>> +{
->>>> +	unsigned int val;
->>>> +	int ret = -ENODEV;
->>>> +
->>>> +#ifdef CONFIG_OF
->>>> +	if (!dn)
->>>> +		return -ENODEV;
->>>
->>> Checking !dn is done in of_property_read_u32, so you don't need to duplicate
->>
->> I have added this specifically since my intention is to differentiate
->> the validity of the node vs the presence of the property within a node.
->> This property may be optional for some platforms and a must for some
->> others, and differentiating would allow the individual driver
->> implementations to make the distinction.
-> 
-> Maybe add a comment for both cases.
+As such, I love exactly these kinds of things that Wainman's patch
+does, and I'm heavily biased.
 
-OK, will do.
+But I know I'm heavily biased, so I'd really like to get comparative
+numbers for these things. Waiman, can you compare your patch with
+Tim's (and Alex's) 6-patch series to make the rwsem's use MCS locks
+for the spinlock?
 
-regards
-Suman
+The numbers Tim quotes for the MCS patch series ("high_systime (+7%)")
+are lower than the ones you quote (16-20%), but that may be due to
+hardware platform differences and just methodology. Tim was also
+looking at exim performance.
 
+So Tim/Waiman, mind comparing the two approaches on the setups you have?
+
+                   Linus
