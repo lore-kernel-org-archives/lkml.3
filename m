@@ -1,118 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3I0IdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:33:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52229 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab3I0Ic4 (ORCPT
+	id S1753083Ab3I0Ieo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:34:44 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:54253 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab3I0Iel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:32:56 -0400
-Date: Fri, 27 Sep 2013 18:32:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dong Aisheng <b29396@freescale.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20130927183246.13094a90de1676232e17d30e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Sep_2013_18_32_46_+1000_nMNKTlfWPLafoASb"
+	Fri, 27 Sep 2013 04:34:41 -0400
+Date: Fri, 27 Sep 2013 09:34:35 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        tixxdz@gmail.com
+Subject: Re: [PATCH 04/12] seq_file: Make seq_file able to access the file's
+ opener cred
+Message-ID: <20130927083435.GA2340@dztty>
+References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
+ <1380140085-29712-5-git-send-email-tixxdz@opendz.org>
+ <CA+55aFwhb8rFbd8xT0==+r_QV-m8ANm+0sFEqUfk9Qg4rYpm-w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwhb8rFbd8xT0==+r_QV-m8ANm+0sFEqUfk9Qg4rYpm-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Sep_2013_18_32_46_+1000_nMNKTlfWPLafoASb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 25, 2013 at 05:22:51PM -0700, Linus Torvalds wrote:
+> On Wed, Sep 25, 2013 at 1:14 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >
+> > Therefor add the f_cred field to the seq_file struct and a helper
+> > seq_f_cred() to return it.
+> 
+> I hate how you've split up this patch from the next one that actually
+> _initializes_ the new field.
+> 
+> The two patches should have been one.
+Ok, noted.
 
-Hi all,
+> I think the patch should also remove the 'user_ns' member, since it's
+> now available as f_cred->user_ns.
+> 
+> I also suspect that it would be better to just make the the new
+> seq_file member point to the 'struct file' instead. Sure, it's an
+> extra level of indirection, but the lifetime of f_cred is not as clear
+> otherwise. You don't increment the reference count, which is correct
+> *only* because 'seq_file' has the same lifetime as 'struct file', and
+> thus the reference count from struct file for the f_cred is
+> sufficient.
+Yes.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+For the seq_file struct, yes we can make it point to the 'struct file'.
 
-In file included from include/linux/kernel.h:14:0,
-                 from include/linux/debug_locks.h:4,
-                 from include/linux/lockdep.h:23,
-                 from include/linux/sysfs.h:18,
-                 from include/linux/kobject.h:21,
-                 from include/linux/device.h:17,
-                 from arch/powerpc/include/asm/io.h:27,
-                 from include/linux/io.h:22,
-                 from drivers/mmc/host/sdhci-of-esdhc.c:17:
-drivers/mmc/host/sdhci-of-esdhc.c: In function 'esdhc_of_set_clock':
-drivers/mmc/host/sdhci-of-esdhc.c:230:10: error: 'host_clock' undeclared (f=
-irst use in this function)
-   clock, host_clock / pre_div / div);
-          ^
-include/linux/dynamic_debug.h:87:9: note: in definition of macro 'dynamic_d=
-ev_dbg'
-       ##__VA_ARGS__);  \
-         ^
-drivers/mmc/host/sdhci-of-esdhc.c:229:2: note: in expansion of macro 'dev_d=
-bg'
-  dev_dbg(mmc_dev(host->mmc), "desired SD clock: %d, actual: %d\n",
-  ^
+Or, I've also found other ways, perhaps they will make Al happy, one of
+them is to use the 'struct file' as you point, but in an other way, or
+change the file_operations of these sensitive files.
+Please Linus see my next response to Al, thanks
 
-Caused by commit d31fc00a71b4 ("mmc: sdhci-esdhc: move common
-esdhc_set_clock to platform driver") from the mmc tree.
+> [ Time passes, I look over the other patches ]
+> 
+> Oh, and I note that you remove user_ns in patch 12. Again, I think
+> that's just splitting things up too much. It actually gets harder to
+> see what happens when you do this.
+Ok, will improve it.
 
-I applied this temporary fix (reverting looked too hard):
+Will also wait to see what others think, then resend as a V2
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 27 Sep 2013 18:28:29 +1000
-Subject: [PATCH] mmc: sdhci-esdhc: temporary build fix
+Thanks.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/mmc/host/sdhci-of-esdhc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+>                Linus
 
-diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-=
-esdhc.c
-index b1605a1..82d22ff 100644
---- a/drivers/mmc/host/sdhci-of-esdhc.c
-+++ b/drivers/mmc/host/sdhci-of-esdhc.c
-@@ -226,8 +226,8 @@ static void esdhc_of_set_clock(struct sdhci_host *host,=
- unsigned int clock)
- 	while (host->max_clk / pre_div / div > clock && div < 16)
- 		div++;
-=20
--	dev_dbg(mmc_dev(host->mmc), "desired SD clock: %d, actual: %d\n",
--		clock, host_clock / pre_div / div);
-+	// dev_dbg(mmc_dev(host->mmc), "desired SD clock: %d, actual: %d\n",
-+	//	clock, host_clock / pre_div / div);
-=20
- 	pre_div >>=3D 1;
- 	div--;
---=20
-1.8.4.rc3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__27_Sep_2013_18_32_46_+1000_nMNKTlfWPLafoASb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSRUKyAAoJEMDTa8Ir7ZwVw94P/idQaD10dufANhNQFrwk4E0h
-jtiZx0o8RXNEMfkFVBwNYAIH3MErx08vVgvnfz8bns1TtqiRdnn+fVYTDZua+Cv1
-wflI2XImwU5TgKfBh5q4nHGXGS1vbJdYDfQrV3eaWvGymZVMSkxEFcgYntT33Hnx
-lR7DQSgI9X5DWqkczoxId/IlRUW2AHgvsrhkL4DFGaozVGHpRtszIRc31CTbM/zh
-ZmsINmKXo0V0qfPQohDK/EEOAeon+Z1IRwBt9AGO2+XVTrpqU1OcmuF4z5d2kXe3
-SjZVYUvT0oa5YPUAPTaCGKKrwF4AFfUj8VKkIv75LQyPkhFHyAOZKK/JWSM+b+fm
-w/9/v1fnmj5jx3BX0mDG8T7EbfPBxDh7uQHgKzblC7UNP7yLMtMjRTqud9Y4Js6c
-NSIf9I32WNOkyxLscDo2WKx1Ka0y078jdLnfnBvMt1rLg8VmEmyx8BtqeS2RAEit
-uC6PXHLYFrf1i8Gg6SmZdEEN70s45rE604W+1ILXljDlGuGc4SyngCKuAvJ8G21o
-tKoiNzldZ1nBTkbsl1SuqIt5MU01z3zma2kMDIxm4g3/RG8IRx+MbZKIGAQSn1Qx
-9Ts7ruckMtT4n50kLmmmaL4ckWaFTe+c5fIVXMqJTzF0oOlSVLBoBAAqLywA/Oxt
-2L88UZQggx5koHuDoEd0
-=w4dn
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_Sep_2013_18_32_46_+1000_nMNKTlfWPLafoASb--
+-- 
+Djalal Harouni
+http://opendz.org
