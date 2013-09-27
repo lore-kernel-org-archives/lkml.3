@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab3I0Xkf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 19:40:35 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:48407 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3I0Xkc (ORCPT
+	id S1754382Ab3I0Xkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 19:40:47 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:1855 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192Ab3I0Xke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 19:40:32 -0400
-Message-ID: <1380325227.1631.2.camel@linux-fkkt.site>
-Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
-From: Oliver Neukum <oliver@neukum.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
+	Fri, 27 Sep 2013 19:40:34 -0400
+Message-ID: <1380325232.12518.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 2/4] ipc,shm: prevent race with rmid in shmat(2)
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Date: Sat, 28 Sep 2013 01:40:27 +0200
-In-Reply-To: <20130927145007.GD15690@laptop.programming.kicks-ass.net>
-References: <1380231702.3467.85.camel@schen9-DESK>
-	 <1380235333.3229.39.camel@j-VirtualBox>
-	 <1380236265.3467.103.camel@schen9-DESK> <20130927060213.GA6673@gmail.com>
-	 <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
-	 <1380289495.17366.91.camel@joe-AO722>
-	 <20130927134802.GA15690@laptop.programming.kicks-ass.net>
-	 <1380291257.17366.103.camel@joe-AO722>
-	 <20130927142605.GC15690@laptop.programming.kicks-ass.net>
-	 <1380292495.17366.106.camel@joe-AO722>
-	 <20130927145007.GD15690@laptop.programming.kicks-ass.net>
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        sedat.dilek@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Sep 2013 16:40:32 -0700
+In-Reply-To: <52451B5D.4080908@colorfullife.com>
+References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
+	 <1379300677-24188-3-git-send-email-davidlohr@hp.com>
+	 <52451B5D.4080908@colorfullife.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.9.4 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-27 at 16:50 +0200, Peter Zijlstra wrote:
-> On Fri, Sep 27, 2013 at 07:34:55AM -0700, Joe Perches wrote:
-> > That would make it seem as if all barriers are SMP no?
+Hi Manfred,
+
+On Fri, 2013-09-27 at 07:45 +0200, Manfred Spraul wrote:
+> Hi Davidlohr,
 > 
-> I would think any memory barrier is ordering against someone else; if
-> not smp then a device/hardware -- like for instance the hardware page
-> table walker.
+> On 09/16/2013 05:04 AM, Davidlohr Bueso wrote:
+> > This fixes a race in shmat() between finding the msq and
+> > actually attaching the segment, as another thread can delete shmid
+> > underneath us if we are preempted before acquiring the kern_ipc_perm.lock.
+> According the the man page, Linux supports attaching to deleted shm 
+> segments:
 > 
-> Barriers are fundamentally about order; and order only makes sense if
-> there's more than 1 party to the game.
+> http://linux.die.net/man/2/shmat
+> >
+> > On Linux, it is possible to attach a shared memory segment even if it 
+> > is already marked to be deleted. However, POSIX.1-2001 does not 
+> > specify this behavior and many other implementations do not support it.
+> >
 
-But not necessarily more than 1 kind of parties. It is perfectly
-possible to have a barrier against other threads running the same
-function.
+Good catch!
 
-	Regards
-		Oliver
+> Does your patch change that?
 
+Yes, it should and furthermore it affects the following property:
+
+ shm_nattch is decremented by one.  If it becomes 0 and the segment is
+marked for deletion, the segment is deleted.
+
+
+
+> Unfortunately, I have neither any experience with ipc/shm nor any test 
+> cases.
+> 
+> And:
+> As far as I can see it's not a problem if we are attaching to a deleted 
+> segment: shm_close cleans up everything.
+
+Agreed, please disregard this patch.
+
+Thanks,
+Davidlohr
 
