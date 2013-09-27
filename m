@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab3I0Ndb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:33:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55910 "EHLO mx2.suse.de"
+	id S1753911Ab3I0N2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:28:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55754 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab3I0N2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:41 -0400
+	id S1753756Ab3I0N2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:23 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 52/63] sched: numa: add debugging
-Date: Fri, 27 Sep 2013 14:27:37 +0100
-Message-Id: <1380288468-5551-53-git-send-email-mgorman@suse.de>
+Subject: [PATCH 32/63] sched: Avoid overloading CPUs on a preferred NUMA node
+Date: Fri, 27 Sep 2013 14:27:17 +0100
+Message-Id: <1380288468-5551-33-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,170 +22,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+This patch replaces find_idlest_cpu_node with task_numa_find_cpu.
+find_idlest_cpu_node has two critical limitations. It does not take the
+scheduling class into account when calculating the load and it is unsuitable
+for using when comparing loads between NUMA nodes.
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+task_numa_find_cpu uses similar load calculations to wake_affine() when
+selecting the least loaded CPU within a scheduling domain common to the
+source and destimation nodes. It avoids causing CPU load imbalances in
+the machine by refusing to migrate if the relative load on the target
+CPU is higher than the source CPU.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-5giqjcqnc93a89q01ymtjxpr@git.kernel.org
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/sched.h |  6 ++++++
- kernel/sched/debug.c  | 60 +++++++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/fair.c   |  5 ++++-
- 3 files changed, 68 insertions(+), 3 deletions(-)
+ kernel/sched/fair.c | 131 ++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 102 insertions(+), 29 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 31d1740..11b873f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1357,6 +1357,7 @@ struct task_struct {
- 	unsigned long *numa_faults_buffer;
- 
- 	int numa_preferred_nid;
-+	unsigned long numa_pages_migrated;
- #endif /* CONFIG_NUMA_BALANCING */
- 
- 	struct rcu_head rcu;
-@@ -2581,6 +2582,11 @@ static inline unsigned int task_cpu(const struct task_struct *p)
- 	return task_thread_info(p)->cpu;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f9329d5..b130014 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -901,28 +901,114 @@ static inline unsigned long task_faults(struct task_struct *p, int nid)
  }
  
-+static inline int task_node(const struct task_struct *p)
+ static unsigned long weighted_cpuload(const int cpu);
++static unsigned long source_load(int cpu, int type);
++static unsigned long target_load(int cpu, int type);
++static unsigned long power_of(int cpu);
++static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
+ 
++struct numa_stats {
++	unsigned long load;
++	s64 eff_load;
++	unsigned long faults;
++};
+ 
+-static int
+-find_idlest_cpu_node(int this_cpu, int nid)
+-{
+-	unsigned long load, min_load = ULONG_MAX;
+-	int i, idlest_cpu = this_cpu;
++struct task_numa_env {
++	struct task_struct *p;
+ 
+-	BUG_ON(cpu_to_node(this_cpu) == nid);
++	int src_cpu, src_nid;
++	int dst_cpu, dst_nid;
+ 
+-	rcu_read_lock();
+-	for_each_cpu(i, cpumask_of_node(nid)) {
+-		load = weighted_cpuload(i);
++	struct numa_stats src_stats, dst_stats;
+ 
+-		if (load < min_load) {
+-			min_load = load;
+-			idlest_cpu = i;
++	unsigned long best_load;
++	int best_cpu;
++};
++
++static int task_numa_migrate(struct task_struct *p)
 +{
-+	return cpu_to_node(task_cpu(p));
-+}
++	int node_cpu = cpumask_first(cpumask_of_node(p->numa_preferred_nid));
++	struct task_numa_env env = {
++		.p = p,
++		.src_cpu = task_cpu(p),
++		.src_nid = cpu_to_node(task_cpu(p)),
++		.dst_cpu = node_cpu,
++		.dst_nid = p->numa_preferred_nid,
++		.best_load = ULONG_MAX,
++		.best_cpu = task_cpu(p),
++	};
++	struct sched_domain *sd;
++	int cpu;
++	struct task_group *tg = task_group(p);
++	unsigned long weight;
++	bool balanced;
++	int imbalance_pct, idx = -1;
 +
- extern void set_task_cpu(struct task_struct *p, unsigned int cpu);
++	/*
++	 * Find the lowest common scheduling domain covering the nodes of both
++	 * the CPU the task is currently running on and the target NUMA node.
++	 */
++	rcu_read_lock();
++	for_each_domain(env.src_cpu, sd) {
++		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
++			/*
++			 * busy_idx is used for the load decision as it is the
++			 * same index used by the regular load balancer for an
++			 * active cpu.
++			 */
++			idx = sd->busy_idx;
++			imbalance_pct = sd->imbalance_pct;
++			break;
+ 		}
+ 	}
+ 	rcu_read_unlock();
  
- #else
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index e076bdd..49ab782 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -15,6 +15,7 @@
- #include <linux/seq_file.h>
- #include <linux/kallsyms.h>
- #include <linux/utsname.h>
-+#include <linux/mempolicy.h>
- 
- #include "sched.h"
- 
-@@ -137,6 +138,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
- 	SEQ_printf(m, "%15Ld %15Ld %15Ld.%06ld %15Ld.%06ld %15Ld.%06ld",
- 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
- #endif
-+#ifdef CONFIG_NUMA_BALANCING
-+	SEQ_printf(m, " %d", cpu_to_node(task_cpu(p)));
-+#endif
- #ifdef CONFIG_CGROUP_SCHED
- 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
- #endif
-@@ -159,7 +163,7 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
- 	read_lock_irqsave(&tasklist_lock, flags);
- 
- 	do_each_thread(g, p) {
--		if (!p->on_rq || task_cpu(p) != rq_cpu)
-+		if (task_cpu(p) != rq_cpu)
- 			continue;
- 
- 		print_task(m, rq, p);
-@@ -345,7 +349,7 @@ static void sched_debug_header(struct seq_file *m)
- 	cpu_clk = local_clock();
- 	local_irq_restore(flags);
- 
--	SEQ_printf(m, "Sched Debug Version: v0.10, %s %.*s\n",
-+	SEQ_printf(m, "Sched Debug Version: v0.11, %s %.*s\n",
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
-@@ -488,6 +492,56 @@ static int __init init_sched_debug_procfs(void)
- 
- __initcall(init_sched_debug_procfs);
- 
-+#define __P(F) \
-+	SEQ_printf(m, "%-45s:%21Ld\n", #F, (long long)F)
-+#define P(F) \
-+	SEQ_printf(m, "%-45s:%21Ld\n", #F, (long long)p->F)
-+#define __PN(F) \
-+	SEQ_printf(m, "%-45s:%14Ld.%06ld\n", #F, SPLIT_NS((long long)F))
-+#define PN(F) \
-+	SEQ_printf(m, "%-45s:%14Ld.%06ld\n", #F, SPLIT_NS((long long)p->F))
+-	return idlest_cpu;
++	if (WARN_ON_ONCE(idx == -1))
++		return 0;
 +
++	/*
++	 * XXX the below is mostly nicked from wake_affine(); we should
++	 * see about sharing a bit if at all possible; also it might want
++	 * some per entity weight love.
++	 */
++	weight = p->se.load.weight;
++	env.src_stats.load = source_load(env.src_cpu, idx);
++	env.src_stats.eff_load = 100 + (imbalance_pct - 100) / 2;
++	env.src_stats.eff_load *= power_of(env.src_cpu);
++	env.src_stats.eff_load *= env.src_stats.load + effective_load(tg, env.src_cpu, -weight, -weight);
 +
-+static void sched_show_numa(struct task_struct *p, struct seq_file *m)
-+{
-+#ifdef CONFIG_NUMA_BALANCING
-+	struct mempolicy *pol;
-+	int node, i;
++	for_each_cpu(cpu, cpumask_of_node(env.dst_nid)) {
++		env.dst_cpu = cpu;
++		env.dst_stats.load = target_load(cpu, idx);
 +
-+	if (p->mm)
-+		P(mm->numa_scan_seq);
++		/* If the CPU is idle, use it */
++		if (!env.dst_stats.load) {
++			env.best_cpu = cpu;
++			goto migrate;
++		}
 +
-+	task_lock(p);
-+	pol = p->mempolicy;
-+	if (pol && !(pol->flags & MPOL_F_MORON))
-+		pol = NULL;
-+	mpol_get(pol);
-+	task_unlock(p);
++		/* Otherwise check the target CPU load */
++		env.dst_stats.eff_load = 100;
++		env.dst_stats.eff_load *= power_of(cpu);
++		env.dst_stats.eff_load *= env.dst_stats.load + effective_load(tg, cpu, weight, weight);
 +
-+	SEQ_printf(m, "numa_migrations, %ld\n", xchg(&p->numa_pages_migrated, 0));
++		/*
++		 * Destination is considered balanced if the destination CPU is
++		 * less loaded than the source CPU. Unfortunately there is a
++		 * risk that a task running on a lightly loaded CPU will not
++		 * migrate to its preferred node due to load imbalances.
++		 */
++		balanced = (env.dst_stats.eff_load <= env.src_stats.eff_load);
++		if (!balanced)
++			continue;
 +
-+	for_each_online_node(node) {
-+		for (i = 0; i < 2; i++) {
-+			unsigned long nr_faults = -1;
-+			int cpu_current, home_node;
-+
-+			if (p->numa_faults)
-+				nr_faults = p->numa_faults[2*node + i];
-+
-+			cpu_current = !i ? (task_node(p) == node) :
-+				(pol && node_isset(node, pol->v.nodes));
-+
-+			home_node = (p->numa_preferred_nid == node);
-+
-+			SEQ_printf(m, "numa_faults, %d, %d, %d, %d, %ld\n",
-+				i, node, cpu_current, home_node, nr_faults);
++		if (env.dst_stats.eff_load < env.best_load) {
++			env.best_load = env.dst_stats.eff_load;
++			env.best_cpu = cpu;
 +		}
 +	}
 +
-+	mpol_put(pol);
-+#endif
-+}
-+
- void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
- {
- 	unsigned long nr_switches;
-@@ -591,6 +645,8 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
- 		SEQ_printf(m, "%-45s:%21Ld\n",
- 			   "clock-delta", (long long)(t1-t0));
++migrate:
++	return migrate_task_to(p, env.best_cpu);
+ }
+ 
+ static void task_numa_placement(struct task_struct *p)
+@@ -966,22 +1052,10 @@ static void task_numa_placement(struct task_struct *p)
+ 	 * the working set placement.
+ 	 */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+-		int preferred_cpu;
+-
+-		/*
+-		 * If the task is not on the preferred node then find the most
+-		 * idle CPU to migrate to.
+-		 */
+-		preferred_cpu = task_cpu(p);
+-		if (cpu_to_node(preferred_cpu) != max_nid) {
+-			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
+-							     max_nid);
+-		}
+-
+ 		/* Update the preferred nid and migrate task if possible */
+ 		p->numa_preferred_nid = max_nid;
+ 		p->numa_migrate_seq = 1;
+-		migrate_task_to(p, preferred_cpu);
++		task_numa_migrate(p);
  	}
-+
-+	sched_show_numa(p, m);
  }
  
- void proc_sched_set_task(struct task_struct *p)
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 86511a5..cd1b862 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1137,7 +1137,7 @@ static int task_numa_migrate(struct task_struct *p)
- 		.p = p,
+@@ -3274,7 +3348,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ {
+ 	struct sched_entity *se = tg->se[cpu];
  
- 		.src_cpu = task_cpu(p),
--		.src_nid = cpu_to_node(task_cpu(p)),
-+		.src_nid = task_node(p),
+-	if (!tg->parent)	/* the trivial, non-cgroup case */
++	if (!tg->parent || !wl)	/* the trivial, non-cgroup case */
+ 		return wl;
  
- 		.imbalance_pct = 112,
- 
-@@ -1515,6 +1515,9 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
- 		numa_migrate_preferred(p);
- 
-+	if (migrated)
-+		p->numa_pages_migrated += pages;
-+
- 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
+ 	for_each_sched_entity(se) {
+@@ -3327,8 +3401,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
  }
+ #else
  
+-static inline unsigned long effective_load(struct task_group *tg, int cpu,
+-		unsigned long wl, unsigned long wg)
++static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ {
+ 	return wl;
+ }
 -- 
 1.8.1.4
 
