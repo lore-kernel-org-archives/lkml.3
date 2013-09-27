@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab3I0OdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:33:07 -0400
-Received: from smtp-out-079.synserver.de ([212.40.185.79]:1074 "EHLO
-	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab3I0OdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:33:04 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25502
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@kernel.org>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-spi@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 1/3] spi: Add a spi_w8r16be() helper
-Date: Fri, 27 Sep 2013 16:34:27 +0200
-Message-Id: <1380292469-17347-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	id S1753551Ab3I0Och (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:32:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753166Ab3I0Oce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:32:34 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [BUG/RFC 3/3] perf tools: Add missing GTK2_SUPPORT ifdefs
+Date: Fri, 27 Sep 2013 16:32:12 +0200
+Message-Id: <1380292332-6518-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1380292332-6518-1-git-send-email-jolsa@redhat.com>
+References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+ <1380292332-6518-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new spi_w8r16be() helper, which is similar to spi_w8r16()
-except that it converts the read data word from big endian to native endianness
-before returning it. The reason for introducing this new helper is that for SPI
-slave devices it is quite common that the read 16 bit data word is in big
-endian. So users of spi_w8r16() have to convert the result to native endianness
-manually. A second reason is that in this case the endianness of the return
-value of spi_w8r16() depends on its sign. If it is negative (i.e. a error code)
-it is already in native endianness, if it is positive it is in big endian. The
-sparse code checker doesn't like this kind of mixed endianness and special
-annotations are necessary to keep it quiet (E.g. casting to be16 using __force).
-Doing the conversion to native endianness in the helper function does not
-require such annotations since we are not mixing different endiannesses in the
-same variable.
+When building minimal perf via:
+  NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1 NO_DEMANGLE=1
+  NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1 NO_LIBNUMA=1 NO_LIBAUDIT=1
+  NO_LIBBIONIC=1
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
-I don't expect any conflicts, so in my opinion it should be fine to merge the
-two users also through the SPI tree. Otherwise we can also just hold them off by
-one release.
----
- include/linux/spi/spi.h | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+We dont link -ldl and that's causing error for gtk2 related code,
+which is disabled on command line (NO_GTK2), but not in the code
+(GTK2_SUPPORT).
 
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 887116d..0e0aebd 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -823,6 +823,33 @@ static inline ssize_t spi_w8r16(struct spi_device *spi, u8 cmd)
- 	return (status < 0) ? status : result;
- }
+We probably need some global fix/change for this browser
+enabled/disable code.
+
+Tested just by building it corretly.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-annotate.c | 6 ++++++
+ tools/perf/builtin-report.c   | 2 ++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 577c3a1..ddde407 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -142,6 +142,7 @@ find_next:
+ 		}
  
-+/**
-+ * spi_w8r16be - SPI synchronous 8 bit write followed by 16 bit big-endian read
-+ * @spi: device with which data will be exchanged
-+ * @cmd: command to be written before data is read back
-+ * Context: can sleep
-+ *
-+ * This returns the (unsigned) sixteen bit number returned by the device in cpu
-+ * endianness, or else a negative error code. Callable only from contexts that
-+ * can sleep.
-+ *
-+ * This function is similar to spi_w8r16, with the exception that it will
-+ * convert the read 16 bit data word from big-endian to native endianness.
-+ *
-+ */
-+static inline ssize_t spi_w8r16be(struct spi_device *spi, u8 cmd)
-+
-+{
-+	ssize_t status;
-+	__be16 result;
-+
-+	status = spi_write_then_read(spi, &cmd, 1, &result, 2);
-+	if (status < 0)
-+		return status;
-+
-+	return be16_to_cpu(result);
-+}
-+
- /*---------------------------------------------------------------------------*/
+ 		if (use_browser == 2) {
++#ifdef GTK2_SUPPORT
+ 			int ret;
+ 			int (*annotate)(struct hist_entry *he,
+ 					struct perf_evsel *evsel,
+@@ -161,6 +162,9 @@ find_next:
+ 			/* skip missing symbols */
+ 			nd = rb_next(nd);
+ 		} else if (use_browser == 1) {
++#else
++			use_browser = 1;
++#endif
+ 			key = hist_entry__tui_annotate(he, evsel, NULL);
+ 			switch (key) {
+ 			case -1:
+@@ -258,6 +262,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 		goto out_delete;
+ 	}
  
- /*
++#ifdef GTK2_SUPPORT
+ 	if (use_browser == 2) {
+ 		void (*show_annotations)(void);
+ 
+@@ -269,6 +274,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 		}
+ 		show_annotations();
+ 	}
++#endif
+ 
+ out_delete:
+ 	/*
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 295025e..c902229 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -591,6 +591,7 @@ static int __cmd_report(struct perf_report *rep)
+ 				ret = 0;
+ 
+ 		} else if (use_browser == 2) {
++#ifdef GTK2_SUPPORT
+ 			int (*hist_browser)(struct perf_evlist *,
+ 					    const char *,
+ 					    struct hist_browser_timer *,
+@@ -604,6 +605,7 @@ static int __cmd_report(struct perf_report *rep)
+ 			}
+ 			hist_browser(session->evlist, help, NULL,
+ 				     rep->min_percent);
++#endif
+ 		}
+ 	} else
+ 		perf_evlist__tty_browse_hists(session->evlist, rep, help);
 -- 
-1.8.0
+1.7.11.7
+
