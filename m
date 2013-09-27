@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab3I0KvE (ORCPT <rfc822;w@1wt.eu>);
+	id S1751539Ab3I0KvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 06:51:06 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44018 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751117Ab3I0KvE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Sep 2013 06:51:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48947 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750966Ab3I0KvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 06:51:02 -0400
-Date: Fri, 27 Sep 2013 12:50:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
- memdup
-In-Reply-To: <52432152.3030100@canonical.com>
-Message-ID: <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
- <52432152.3030100@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Date: Fri, 27 Sep 2013 11:50:46 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for arm64
+Message-ID: <20130927105045.GA11063@MacBook-Pro.local>
+References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Sep 2013, Joseph Salisbury wrote:
-
-> After further testing reverting the following commit does in fact
-> resolve the bug:
+On Fri, Sep 27, 2013 at 09:04:40AM +0100, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
 > 
-> commit b1a1442a23776756b254b69786848a94d92445ba
-> Author: Jiri Kosina <jkosina@suse.cz>
-> Date: Mon Jun 3 11:27:48 2013 +0200
+> This patchset enables FPSIMD lazy save and restore for ARM64, you could
+> apply it against v3.12-rc2.
 > 
->     HID: core: fix reporting of raw events
-> 
-> Reverting this commit in v3.12-rc2 prevents the system from locking up, 
-> which happens when connecting a bluetooth trackpad.
-> 
-> Jiri, do you think we should revert this patch, or is there some further 
-> debugging/data collecting you would like to do?
+> We have done basic functional tests on ARM fast model, but still lack
+> of detail performance benchmark on real hardware platforms. We would
+> appreciate if you could help to test it on really hardware platforms!
 
-Hi Joseph,
-
-in this mail:
-
-	Message-ID: <5241992E.3090805@canonical.com>
-	Date: Tue, 24 Sep 2013 09:52:46 -0400
-
-you said that reverting this commit doesn't prevent the lockups, so I am 
-rather confused ... ?
-
-Thanks,
+That's my issue as well, I would like to see some benchmarks before
+merging such patches.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Catalin
