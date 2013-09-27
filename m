@@ -1,37 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab3I0E0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 00:26:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54927 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab3I0E0K convert rfc822-to-8bit (ORCPT
+	id S1750946Ab3I0Ehl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 00:37:41 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:59037 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3I0Ehi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 00:26:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,990,1371106800"; 
-   d="scan'208";a="407910977"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Joe Perches <joe@perches.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 08/11] iwlwifi: Remove extern from function prototypes
-Thread-Topic: [PATCH 08/11] iwlwifi: Remove extern from function prototypes
-Thread-Index: AQHOuibxQmgLNIx7UEKik+RvvpDKYJnY/tIQ
-Date: Fri, 27 Sep 2013 04:25:54 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB301DB4D7E@HASMSX103.ger.corp.intel.com>
-References: <cover.1380137609.git.joe@perches.com>
- <b3818394ccdf68d834ca1060c1d5a1fc44e2daee.1380137610.git.joe@perches.com>
-In-Reply-To: <b3818394ccdf68d834ca1060c1d5a1fc44e2daee.1380137610.git.joe@perches.com>
-Accept-Language: en-US
+	Fri, 27 Sep 2013 00:37:38 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 06/21] arc: remove unnecessary prom.h includes
+Thread-Topic: [PATCH 06/21] arc: remove unnecessary prom.h includes
+Thread-Index: AQHOuuloNo9ll1Jybk2NcXWdcyEucA==
+Date: Fri, 27 Sep 2013 04:37:12 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514EA7C@IN01WEMBXA.internal.synopsys.com>
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+ <1380221456-11192-7-git-send-email-robherring2@gmail.com>
+Accept-Language: en-US, en-IN
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
+x-originating-ip: [10.12.239.237]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -39,22 +32,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH 08/11] iwlwifi: Remove extern from function prototypes
-> 
-> There are a mix of function prototypes with and without extern in the kernel
-> sources.  Standardize on not using extern for function prototypes.
-> 
-> Function prototypes don't need to be written with extern.
-> extern is assumed by the compiler.  Its use is as unnecessary as using auto to
-> declare automatic/local variables in a block.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/wireless/iwlwifi/dvm/agn.h | 2 +-
-> drivers/net/wireless/iwlwifi/dvm/dev.h | 2 +-
-> drivers/net/wireless/iwlwifi/dvm/rs.h  | 8 ++++----
-> drivers/net/wireless/iwlwifi/mvm/rs.h  | 9 ++++-----
->  4 files changed, 10 insertions(+), 11 deletions(-)
-> 
+On 09/27/2013 12:21 AM, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+>
+> Remove unnecessary prom.h includes in preparation to remove prom.h.
+>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
 
-ACK
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
+
+Thx for the continued cleanup.
+-Vineet
