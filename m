@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab3I0DQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 23:16:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33580 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab3I0DQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 23:16:03 -0400
+	id S1753682Ab3I0DVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 23:21:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58461 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab3I0DOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 23:14:43 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -15,201 +14,95 @@ CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv4 09/18] thermal: ti-soc-thermal: use thermal DT infrastructure
-Date: Thu, 26 Sep 2013 23:13:16 -0400
-Message-ID: <1380251605-3804-10-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv4 00/18] device thermal limits represented in device tree nodes (v4)
+Date: Thu, 26 Sep 2013 23:13:07 -0400
+Message-ID: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
-References: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improves the ti-soc-thermal driver by adding the
-support to build the thermal zones based on DT nodes.
+Hello all,
 
-The driver will have two options now to build the thermal
-zones. The first option is the zones originally coded
-in this driver. So, the driver behavior will be same
-if there is no DT node describing the zones. The second
-option, when it is found a DT node with thermal data,
-will used the common infrastructure to build the thermal
-zone and bind its cooling devices.
+Here is the continuation of work of representing hardware thermal properties
+in device tree infrastructure. The present patch series is the fourth version
+of this work. Previous versions were sent as RFCs and can be found here:
+V3: 
+RFCv2: http://lkml.org/lkml/2013/8/23/594
+RFCv1: http://lkml.org/lkml/2013/7/22/319
 
-In case the driver loads thermal data using the legacy
-mode, this driver still adds to the system
-a cpufreq cooling device. Loading the thermal data from
-DT, the driver assumes someone else will add the cpufreq
-cooling device, like the cpufreq driver.
+Major difference from V3 is on the parser itself. I have updated the binding
+documentation and improved the code accordingly to previous comments mainly
+from Mark R. and Joe P.
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 77 +++++++++++++++++-----
- 1 file changed, 62 insertions(+), 15 deletions(-)
+The changes on hwmon drivers have been accepted by Guenter, and in this
+series I am including his Acked-by, as I didn't change anything on that side.
 
-diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-index 4f8b9af..b80b5b8 100644
---- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-@@ -31,6 +31,7 @@
- #include <linux/cpufreq.h>
- #include <linux/cpumask.h>
- #include <linux/cpu_cooling.h>
-+#include <linux/of.h>
- 
- #include "ti-thermal.h"
- #include "ti-bandgap.h"
-@@ -44,6 +45,7 @@ struct ti_thermal_data {
- 	enum thermal_device_mode mode;
- 	struct work_struct thermal_wq;
- 	int sensor_id;
-+	bool our_zone;
- };
- 
- static void ti_thermal_work(struct work_struct *work)
-@@ -75,11 +77,10 @@ static inline int ti_thermal_hotspot_temperature(int t, int s, int c)
- 
- /* thermal zone ops */
- /* Get temperature callback function for thermal zone*/
--static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
--				      unsigned long *temp)
-+static inline int __ti_thermal_get_temp(void *devdata, long *temp)
- {
- 	struct thermal_zone_device *pcb_tz = NULL;
--	struct ti_thermal_data *data = thermal->devdata;
-+	struct ti_thermal_data *data = devdata;
- 	struct ti_bandgap *bgp;
- 	const struct ti_temp_sensor *s;
- 	int ret, tmp, slope, constant;
-@@ -117,6 +118,14 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 	return ret;
- }
- 
-+static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
-+				      unsigned long *temp)
-+{
-+	struct ti_thermal_data *data = thermal->devdata;
-+
-+	return __ti_thermal_get_temp(data, temp);
-+}
-+
- /* Bind callback functions for thermal zone */
- static int ti_thermal_bind(struct thermal_zone_device *thermal,
- 			   struct thermal_cooling_device *cdev)
-@@ -229,11 +238,9 @@ static int ti_thermal_get_trip_temp(struct thermal_zone_device *thermal,
- 	return 0;
- }
- 
--/* Get the temperature trend callback functions for thermal zone */
--static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
--				int trip, enum thermal_trend *trend)
-+static int __ti_thermal_get_trend(void *p, long *trend)
- {
--	struct ti_thermal_data *data = thermal->devdata;
-+	struct ti_thermal_data *data = p;
- 	struct ti_bandgap *bgp;
- 	int id, tr, ret = 0;
- 
-@@ -244,6 +251,22 @@ static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
- 	if (ret)
- 		return ret;
- 
-+	*trend = tr;
-+
-+	return 0;
-+}
-+
-+/* Get the temperature trend callback functions for thermal zone */
-+static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
-+				int trip, enum thermal_trend *trend)
-+{
-+	int ret;
-+	long tr;
-+
-+	ret = __ti_thermal_get_trend(thermal->devdata, &tr);
-+	if (ret)
-+		return ret;
-+
- 	if (tr > 0)
- 		*trend = THERMAL_TREND_RAISING;
- 	else if (tr < 0)
-@@ -307,16 +330,23 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
- 	if (!data)
- 		return -EINVAL;
- 
--	/* Create thermal zone */
--	data->ti_thermal = thermal_zone_device_register(domain,
-+	/* in case this is specified by DT */
-+	data->ti_thermal = thermal_zone_of_sensor_register(bgp->dev, id,
-+					data, __ti_thermal_get_temp,
-+					__ti_thermal_get_trend);
-+	if (IS_ERR(data->ti_thermal)) {
-+		/* Create thermal zone */
-+		data->ti_thermal = thermal_zone_device_register(domain,
- 				OMAP_TRIP_NUMBER, 0, data, &ti_thermal_ops,
- 				NULL, FAST_TEMP_MONITORING_RATE,
- 				FAST_TEMP_MONITORING_RATE);
--	if (IS_ERR(data->ti_thermal)) {
--		dev_err(bgp->dev, "thermal zone device is NULL\n");
--		return PTR_ERR(data->ti_thermal);
-+		if (IS_ERR(data->ti_thermal)) {
-+			dev_err(bgp->dev, "thermal zone device is NULL\n");
-+			return PTR_ERR(data->ti_thermal);
-+		}
-+		data->ti_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
-+		data->our_zone = true;
- 	}
--	data->ti_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
- 	ti_bandgap_set_sensor_data(bgp, id, data);
- 	ti_bandgap_write_update_interval(bgp, data->sensor_id,
- 					data->ti_thermal->polling_delay);
-@@ -330,7 +360,13 @@ int ti_thermal_remove_sensor(struct ti_bandgap *bgp, int id)
- 
- 	data = ti_bandgap_get_sensor_data(bgp, id);
- 
--	thermal_zone_device_unregister(data->ti_thermal);
-+	if (data && data->ti_thermal) {
-+		if (data->our_zone)
-+			thermal_zone_device_unregister(data->ti_thermal);
-+		else
-+			thermal_zone_of_sensor_unregister(bgp->dev,
-+							  data->ti_thermal);
-+	}
- 
- 	return 0;
- }
-@@ -349,6 +385,15 @@ int ti_thermal_report_sensor_temperature(struct ti_bandgap *bgp, int id)
- int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
- {
- 	struct ti_thermal_data *data;
-+	struct device_node *np = bgp->dev->of_node;
-+
-+	/*
-+	 * We are assuming here that if one deploys the zone
-+	 * using DT, then it must be aware that the cooling device
-+	 * loading has to happen via cpufreq driver.
-+	 */
-+	if (of_find_property(np, "#thermal-sensor-cells", NULL))
-+		return 0;
- 
- 	data = ti_bandgap_get_sensor_data(bgp, id);
- 	if (!data || IS_ERR(data))
-@@ -379,7 +424,9 @@ int ti_thermal_unregister_cpu_cooling(struct ti_bandgap *bgp, int id)
- 	struct ti_thermal_data *data;
- 
- 	data = ti_bandgap_get_sensor_data(bgp, id);
--	cpufreq_cooling_unregister(data->cool_dev);
-+
-+	if (data && data->cool_dev)
-+		cpufreq_cooling_unregister(data->cool_dev);
- 
- 	return 0;
- }
+I also found a bug while using all involved code built as modules, thus
+I have reworked a bit the cooling device registration part. This is why
+there are two new patches in this series (patches 02 and 04).
+
+Tests were done, just like in V3, on TI OMAP4430, OMAP4460, OMAP5430 and DRA7,
+although this series is not including the DRA7 part (I will be sending separately).
+
+Thanks all who have been contributing reviewing this code.
+
+All best,
+
+Eduardo Valentin (18):
+  thermal: allow registering without .get_temp
+  thermal: core: allow binding via .bind when tzp is present
+  thermal: introduce device tree parser
+  thermal: core: introduce thermal_of_cooling_device_register
+  thermal: cpu_cooling: introduce of_cpufreq_cooling_register
+  cpufreq: cpufreq-cpu0: add dt node parsing for cooling device
+    properties
+  hwmon: lm75: expose to thermal fw via DT nodes
+  hwmon: tmp102: expose to thermal fw via DT nodes
+  thermal: ti-soc-thermal: use thermal DT infrastructure
+  arm: dts: add omap4 CPU thermal data
+  arm: dts: add omap4430 thermal data
+  arm: dts: add omap4460 thermal data
+  arm: dts: add cooling properties on omap4430 cpu node
+  arm: dts: add cooling properties on omap4460 cpu node
+  arm: dts: add omap5 GPU thermal data
+  arm: dts: add omap5 CORE thermal data
+  arm: dts: add omap5 thermal data
+  arm: dts: add cooling properties on omap5 cpu node
+
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   7 +
+ .../devicetree/bindings/thermal/thermal.txt        | 537 +++++++++++++
+ arch/arm/boot/dts/omap4-cpu-thermal.dtsi           |  41 +
+ arch/arm/boot/dts/omap443x.dtsi                    |  15 +-
+ arch/arm/boot/dts/omap4460.dtsi                    |  15 +-
+ arch/arm/boot/dts/omap5-core-thermal.dtsi          |  28 +
+ arch/arm/boot/dts/omap5-gpu-thermal.dtsi           |  28 +
+ arch/arm/boot/dts/omap5.dtsi                       |  15 +-
+ drivers/cpufreq/Kconfig                            |   2 +-
+ drivers/cpufreq/cpufreq-cpu0.c                     |  16 +
+ drivers/hwmon/lm75.c                               |  35 +-
+ drivers/hwmon/tmp102.c                             |  19 +
+ drivers/thermal/Kconfig                            |  14 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/cpu_cooling.c                      |  56 +-
+ drivers/thermal/of-thermal.c                       | 845 +++++++++++++++++++++
+ drivers/thermal/thermal_core.c                     |  79 +-
+ drivers/thermal/thermal_core.h                     |   9 +
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  77 +-
+ include/dt-bindings/thermal/thermal.h              |  27 +
+ include/linux/cpu_cooling.h                        |  25 +
+ include/linux/thermal.h                            |  32 +-
+ 22 files changed, 1880 insertions(+), 43 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/thermal.txt
+ create mode 100644 arch/arm/boot/dts/omap4-cpu-thermal.dtsi
+ create mode 100644 arch/arm/boot/dts/omap5-core-thermal.dtsi
+ create mode 100644 arch/arm/boot/dts/omap5-gpu-thermal.dtsi
+ create mode 100644 drivers/thermal/of-thermal.c
+ create mode 100644 include/dt-bindings/thermal/thermal.h
+
 -- 
 1.8.2.1.342.gfa7285d
 
