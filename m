@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3I0Pct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:32:49 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:55260 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753497Ab3I0Pcq (ORCPT
+	id S1753928Ab3I0Pc5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:32:57 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:58922 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab3I0Pcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:32:46 -0400
-Date: Fri, 27 Sep 2013 11:32:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Robert Baldyga <r.baldyga@samsung.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <b.zolnierkie@samsung.com>,
-        <m.szyprowski@samsung.com>, <andrzej.p@samsung.com>
-Subject: Re: [PATCH] USB: gadget: epautoconf: fix ep maxpacket check
-In-Reply-To: <1380277808-17736-1-git-send-email-r.baldyga@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1309271126490.10254-100000@netrider.rowland.org>
+	Fri, 27 Sep 2013 11:32:53 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5rHSweG2GBQ=
+X-RZG-CLASS-ID: mo00
+Date: Fri, 27 Sep 2013 17:32:43 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Message-ID: <20130927153242.GA29462@aepfle.de>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <20130927151026.GA29416@aepfle.de>
+ <418dd0e9b1054189b61770edb57c5b37@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <418dd0e9b1054189b61770edb57c5b37@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep 2013, Robert Baldyga wrote:
+On Fri, Sep 27, KY Srinivasan wrote:
 
-> This patch fixes validation of maxpacket value given in endpoint descriptor.
-> Added check of maxpacket for bulk endpoints.
-> Correct maxpacket value is:
+> > This leads to build errors on 32bit:
+> > 
+> > linux-3.12-rc2/arch/x86/kernel/cpu/mshyperv.c:88: undefined reference to
+> > `__udivdi3'
+> > 
+> > Up to now I have only tested on 64bit, sorry for that.
 > 
->              FULL-SPEED  HIGH-SPEED
-> BULK         64          512
+> Thanks Olaf. I am travelling currently; I will fix it when I get back (early next week).
 
-Don't forget SuperSpeed.  It requires Bulk endpoints to have maxpacket 
-= 1024.
+This change seems to fix it:
 
-> INTERRUPT    64          1024
-> ISOCHRONOUS  1023        1024
-> 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> ---
->  drivers/usb/gadget/epautoconf.c |   16 +++++++++++++---
->  1 file changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
-> index a777f7b..35bde34 100644
-> --- a/drivers/usb/gadget/epautoconf.c
-> +++ b/drivers/usb/gadget/epautoconf.c
-> @@ -136,16 +136,26 @@ ep_matches (
->  	 * the usb spec fixes high speed bulk maxpacket at 512 bytes.
->  	 */
->  	max = 0x7ff & usb_endpoint_maxp(desc);
-> +	
-> +	if (ep->maxpacket < max)
-> +		return 0;
-> +	
->  	switch (type) {
-> +	case USB_ENDPOINT_XFER_BULK:
-> +		/* BULK:  limit 512 high/super speed */
+-+              hv_lapic_frequency /= HZ;
+++              div_u64(hv_lapic_frequency, HZ);
 
-512 high, 1024 super.
-
-> +		if (max > 512)
-> +			return 0;
-> +		/* FALLTHROUGH */
-> +		
->  	case USB_ENDPOINT_XFER_INT:
-> -		/* INT:  limit 64 bytes full speed, 1024 high/super speed */
-> +		/* BULK/INT:  limit 64 bytes full speed */
->  		if (!gadget_is_dualspeed(gadget) && max > 64)
->  			return 0;
->  		/* FALLTHROUGH */
->  
->  	case USB_ENDPOINT_XFER_ISOC:
-> -		/* ISO:  limit 1023 bytes full speed, 1024 high/super speed */
-> -		if (ep->maxpacket < max)
-> +		/* INT/ISO:  limit 1023 bytes full speed, 1024 high/super speed */
-
-The comment mentions INT/ISO.  But this code can also run in the BULK
-case.
-
-> +		if (max > 1024)
->  			return 0;
->  		if (!gadget_is_dualspeed(gadget) && max > 1023)
->  			return 0;
-
-I suspect this code would become a lot clearer if all the FALLTHROUGH 
-logic were eliminated and each case was handled on its own.
-
-Alan Stern
-
+Olaf
