@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3I0ICk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:02:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46723 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3I0ICd (ORCPT
+	id S1752915Ab3I0IEJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:04:09 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:55491 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab3I0IEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:02:33 -0400
-Date: Fri, 27 Sep 2013 18:02:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20130927180219.f15e4e7fa60ee7ffb929abef@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Sep_2013_18_02_19_+1000_PpK5qOhWuX93smtp"
+	Fri, 27 Sep 2013 04:04:01 -0400
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Waiman Long <waiman.long@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 0/3] changes to enable lockless lockref on s390
+Date: Fri, 27 Sep 2013 10:03:51 +0200
+Message-Id: <1380269034-38521-1-git-send-email-heiko.carstens@de.ibm.com>
+X-Mailer: git-send-email 1.8.3.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092708-1948-0000-0000-0000066D03CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Sep_2013_18_02_19_+1000_PpK5qOhWuX93smtp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-Hi Andrew,
+enabling the new lockless lockref variant on s390 would have been trivial
+until Tony Luck added a cpu_relax() call into the CMPXCHG_LOOP(), with
+d472d9d9 "lockref: Relax in cmpxchg loop".
 
-After merging the akpm-current tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+As already mentioned cpu_relax() is very expensive on s390 since it yields()
+the current virtual cpu. So we are talking of several thousand cycles.
+Considering this enabling the lockless lockref variant would contradict the
+intention of the new semantics. And also some quick measurements show
+performance regressions of 50% and more.
 
-arch/x86/mm/init.c: In function 'memory_map_bottom_up':
-arch/x86/mm/init.c:512:18: error: 'STEP_SIZE_SHIFT' undeclared (first use i=
-n this function)
-    step_size <<=3D STEP_SIZE_SHIFT;
-                  ^
+Simply removing the cpu_relax() call again seems also not very desireable
+since Waiman Long reported that for some workloads the call improved
+performance by 5%.
 
-Caused by commit 21376f622b03 ("x86/mem-hotplug: support initializing
-page tables in bottom-up mode") interacting with commit 6979287a7df6
-("x86/mm: Add 'step_size' comments to init_mem_mapping()") from the tip
-tree.
+So let's go for a special cpu_relax() variant which can be overridden by
+architectures. We have already an arch_mutex_cpu_relax() variant for the
+very same purpose, but especially for mutexes.
+Since I wouldn't like to add yet another cpu_relax() variant, e.g.
+"arch_lockref_cpu_relax()", rename the already present variant to
+cpu_relax_simple(), which can be used for both, mutexes and lockrefs.
 
-I added the following merge fix patch:
+Not sure if it would make sense to add a new "linux/processor.h"
+include file which includes "asm/processor.h", since there doesn't seem to
+be a common file where it is guaranteed that cpu_relax() is available.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 27 Sep 2013 17:58:55 +1000
-Subject: [PATCH] x86/mem-hotplug: fix for bad merge
+I simply added the cpu_relax_simple() define to "linux/spinlock_up.h"
+since that one explicitly includes "asm/processor.h" because of cpu_relax().
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/x86/mm/init.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Heiko Carstens (3):
+  mutex,spinlock: rename arch_mutex_cpu_relax() to cpu_relax_simple()
+  lockref: use cpu_relax_simple()
+  s390: enable ARCH_USE_CMPXCHG_LOCKREF
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index cb77179..58bb4e9 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -509,7 +509,7 @@ static void __init memory_map_bottom_up(unsigned long m=
-ap_start,
- 		start =3D next;
-=20
- 		if (new_mapped_ram_size > mapped_ram_size)
--			step_size <<=3D STEP_SIZE_SHIFT;
-+			step_size =3D get_new_step_size(step_size);
- 		mapped_ram_size +=3D new_mapped_ram_size;
- 	}
- }
---=20
-1.8.4.rc3
+ arch/Kconfig                      | 2 +-
+ arch/s390/Kconfig                 | 3 ++-
+ arch/s390/include/asm/mutex.h     | 2 --
+ arch/s390/include/asm/processor.h | 2 ++
+ arch/s390/include/asm/spinlock.h  | 5 +++++
+ include/linux/mutex.h             | 4 ----
+ include/linux/spinlock_up.h       | 4 ++++
+ kernel/mutex.c                    | 8 ++++----
+ lib/lockref.c                     | 2 +-
+ 9 files changed, 19 insertions(+), 13 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+1.8.3.4
 
---Signature=_Fri__27_Sep_2013_18_02_19_+1000_PpK5qOhWuX93smtp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSRTuPAAoJEMDTa8Ir7ZwVZCoP/R10JDMXWwSOifoFh0jXVgQk
-hsANilCSb5Y0qV3aLaZR+WRW/fKipK0J919bqZtwZ5hIUdd6pJLtQdHGVvS6aFPF
-10g0dRwEGvCl2WLClEj8/omcf/bN0N5Mi4aL+XJAuqM8D16PVAetu1OR1yzzKHiA
-SfbuwGE+2uuMciLtoRcvXUOl4vzwFcVRWMg/8+amPA3HUCg8EbOFzdKNXduw3Zi2
-avzN5Y/OmvWsO0jVpg8JZSs9AM/0YbyLbY+Tkue1CvVbkyuEX8HW2dUeSuQLLEw8
-GwvR4mrlq6XQZ2tnjyi7oWpY4YGQhMT5L6ZXryKMQ+IG1fPEm6iv1Mi+6SnaJdFi
-/4ea7ayG224Pktq8RXTu62OF4ddP9SexQzLa3/JVEIctD7gAPwGQFuUQkbDaiuvg
-FYGnv4CGXM8mMgz7xfdwp28sZ5RvhNJvMVJNFt6X3jXnyvGAjTW2g7UbW1AKQZrf
-0plCAnxMerDQV5zDQ7jIfBPxpX5qQ4GwW3y8EvMy1337o4nc6a3IU8dXgWd0NmP2
-WPxCgiUTqOJ5jKZI+msDO0n48svx/U2frZlD+XGIjeZQj4XvQyHhaeA4xIy9Q6HP
-gAh1iZKygJVvmSHDj2TvFDFCo0nkga41SRXeWhcEXMDEI4YyKabIeGBNbULMTmFI
-pI9hUrOv9XUzrU195mXJ
-=5U1N
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_Sep_2013_18_02_19_+1000_PpK5qOhWuX93smtp--
