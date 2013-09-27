@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab3I0QFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:05:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40571 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753045Ab3I0QFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:05:21 -0400
-Date: Fri, 27 Sep 2013 18:05:17 +0200
-From: Jan Kara <jack@suse.cz>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: avoid exposure of stale data in ext4_punch_hole()
- -v2
-Message-ID: <20130927160517.GA5777@quack.suse.cz>
-References: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
- <20130927155329.3272.64086.stgit@dhcp-10-30-17-2.sw.ru>
-MIME-Version: 1.0
+	id S1753435Ab3I0QGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:06:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50112 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab3I0QGg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:06:36 -0400
+Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
+Mime-Version: 1.0 (Apple Message framework v1283)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130927155329.3272.64086.stgit@dhcp-10-30-17-2.sw.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com>
+Date: Fri, 27 Sep 2013 11:06:38 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
+References: <cover.1379445653.git.s-anna@ti.com> <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 27-09-13 19:54:03, Maxim Patlasov wrote:
-> While handling punch-hole fallocate, it's useless to truncate page cache
-> before removing the range from extent tree (or block map in indirect case)
-> because page cache can be re-populated (by read-ahead or read(2) or mmap-ed
-> read) immediately after truncating page cache, but before updating extent
-> tree (or block map). In that case the user will see stale data even after
-> fallocate is completed.
+
+On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
+
+> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+> which are all device-tree boot only. This patch adds the
+> base support for parsing the DT nodes, and removes the code
+> dealing with the traditional platform device instantiation.
 > 
-> Changed in v2 (Thanks to Jan Kara):
->  - Until the problem of data corruption resulting from pages backed by
->    already freed blocks is fully resolved, the simple thing we can do now
->    is to add another truncation of pagecache after punch hole is done.
-  The patch looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
-
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> Signed-off-by: Suman Anna <s-anna@ti.com>
 > ---
->  fs/ext4/inode.c |    6 ++++++
->  1 file changed, 6 insertions(+)
+> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
+> arch/arm/mach-omap2/Makefile                       |  3 --
+> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+> drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
+> 4 files changed, 50 insertions(+), 67 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
 > 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 0d424d7..2984ddf 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -3621,6 +3621,12 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
->  	up_write(&EXT4_I(inode)->i_data_sem);
->  	if (IS_SYNC(inode))
->  		ext4_handle_sync(handle);
+> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> new file mode 100644
+> index 0000000..235b7c5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> @@ -0,0 +1,31 @@
+> +OMAP4+ HwSpinlock Driver
+> +========================
 > +
-> +	/* Now release the pages again to reduce race window */
-> +	if (last_block_offset > first_block_offset)
-> +		truncate_pagecache_range(inode, first_block_offset,
-> +					 last_block_offset);
+> +Required properties:
+> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+> +- reg:			Contains the hwspinlock register address range (base
+> +			address and length)
+> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
 > +
->  	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
->  	ext4_mark_inode_dirty(handle, inode);
->  out_stop:
-> 
+> +Common hwlock properties:
+> +The following describes the usage of the common hwlock properties (defined in
+> +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
+> +
+> +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
+> +			hwspinlock devices. The OMAP driver uses a default
+> +			base id value of 0 for the locks present within the
+> +			single hwspinlock device on all SoCs.
+> +- hwlock-num-locks:	This property is not required on OMAP SoCs, since the
+> +			number of locks present within a device can be deduced
+> +			from the SPINLOCK_SYSSTATUS device register.
+
+If you are going to be explicit about this properties, you should probably be a bit more clear about them NOT being in the OMAP dts because of the reasons you specify.
+
+> +
+> +
+> +Example:
+> +
+> +/* OMAP4 */
+> +hwspinlock: spinlock@4a0f6000 {
+> +	compatible = "ti,omap4-hwspinlock";
+> +	reg = <0x4a0f6000 0x1000>;
+> +	ti,hwmods = "spinlock";
+> +};
+
+- k
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
