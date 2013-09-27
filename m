@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab3I0HP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 03:15:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52452 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab3I0HPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 03:15:55 -0400
-Message-ID: <524530A4.9060300@ti.com>
-Date: Fri, 27 Sep 2013 10:15:48 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752238Ab3I0HR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 03:17:57 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:35423 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3I0HRy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 03:17:54 -0400
+Date: Fri, 27 Sep 2013 08:17:44 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] max77693: added device tree support
+Message-ID: <20130927071744.GA5100@lee--X1>
+References: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
+ <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
 MIME-Version: 1.0
-To: John Tapsell <johnflux@gmail.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Dave Airlie <airlied@redhat.com>, <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fbcon: fix deadlock in fbcon_generic_blank()
-References: <CAHQ6N+q13YeM60S_QfRF8Bh+Vc_7yHhCMSABQ=GOtOe5V0EXow@mail.gmail.com>
-In-Reply-To: <CAHQ6N+q13YeM60S_QfRF8Bh+Vc_7yHhCMSABQ=GOtOe5V0EXow@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="gnvICsxd21nxsqbVavbNslHgRFpjfUIUI"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---gnvICsxd21nxsqbVavbNslHgRFpjfUIUI
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, 21 Aug 2013, Andrzej Hajda wrote:
 
-Hi,
+> This patch adds only of_match_table.
+> There are no device specific properties.
+> 
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/mfd/max77693.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index 27f5da3..e0b11a9 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -225,11 +225,19 @@ static const struct dev_pm_ops max77693_pm = {
+>  	.resume = max77693_resume,
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +static struct of_device_id max77693_dt_match[] = {
+> +	{.compatible = "maxim,max77693"},
 
-On 18/09/13 01:29, John Tapsell wrote:
-> Do not lock fb_info when calling sending the FB_EVENT_CONBLANK
-> event.
->=20
-> In fbmem.c, the semantics are that we acquire the lock_fb_info first,
-> and then console_lock.  However when fbcon.c fbcon_generic_blank() is
-> called, the console lock could already be held.  Locking fb_info can
-> thus cause a deadlock.
+Please add spaces before ".comp.." and after "...693""
 
-So has this happened for you? Or is it just theoretical?
+> +	{},
+> +};
+> +#endif
+> +
+>  static struct i2c_driver max77693_i2c_driver = {
+>  	.driver = {
+>  		   .name = "max77693",
+>  		   .owner = THIS_MODULE,
+>  		   .pm = &max77693_pm,
+> +		   .of_match_table = of_match_ptr(max77693_dt_match),
+>  	},
+>  	.probe = max77693_i2c_probe,
+>  	.remove = max77693_i2c_remove,
 
-> fbmem.c sends the FB_EVENT_BLANK without locking lock_fb_info first, so=
-
-> this change introduces similar behaviour.
-
-I don't think this is true. FB_EVENT_BLANK is sent in fb_blank(). That
-one is called when FBIOBLANK ioctl is called, and it does lock_fb_info().=
-
-
-I'm not familiar with the console code, but removing a lock makes me
-feel rather uneasy... But looking at the code, I can also see that
-console_lock could already be held, so something here definitely looks
-broken.
-
-The only place using FB_EVENT_CONBLANK seems to be backlight, and if I'm
-not mistaken, it has its own lock, and doesn't depend on the fb_info
-being locked.
-
- Tomi
-
-
-
---gnvICsxd21nxsqbVavbNslHgRFpjfUIUI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSRTCkAAoJEPo9qoy8lh71PLsP/jDZyST05C3eKDZusDHUpV5b
-Q3KapU0A26GqSf6jiGZzCMz2sHVCdfaZFlB+02IS01bmY4Kx2AuFdfAZwgOEb73W
-x9RACkqpD9C39Weal0fLhtbpvUcsFxzwGJUYXwOL/ZGkwGW4n7t8QBwVCcANn5o2
-xGyrLZeC8H7uiC5EcTfkej0cOHsdkTTLB2ON7tu/+VWZzs5x7ZYo5uYTjO2VC3x2
-85zYcV+jV/SaAx74SRuiukcnH3DGgFP5/0ZvWbCyOdjI7XQKjwNMbMoD8zPCAQ57
-vRBcfoiztcxuzuu9llOHFSvsilKEFcYVhQpuGhwUaf03MmZFfw8VoG+VckqiUApV
-p31UdORFPEbCn0TIJ6SQct8cn4Br69vZkHHZ7IFs+O5YrIF0CKil4NdwDef1hg6/
-F4GsnS0iVv1MRFRXJCA/zRKr4XuE2yy/N1EW/hKguoXTwLbhKxH460ditDgI/0mu
-hi/QSVw8Ud/jbpUEzZ0Euqs2zXjpZ/IdfGzvLKLa7h4vXW+xzMTGnSQcAcuajewG
-gFQD5ks2d3Rp0hLxxqTJQE5zkcoVrHoBRUtyuzuHQ5QRDP5jS3+R/vR8KgiLfgT3
-vZsLHlqsDKV+K1AneK2zmqofxR9/zec9nZsEdFZDcZ/yAVm5AGs7YEHNkTp7N6VW
-V5xBboDoDdrxJAAPt/Dr
-=+yfv
------END PGP SIGNATURE-----
-
---gnvICsxd21nxsqbVavbNslHgRFpjfUIUI--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
