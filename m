@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab3I0FUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 01:20:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2239 "EHLO mx1.redhat.com"
+	id S1751453Ab3I0FVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 01:21:33 -0400
+Received: from ozlabs.org ([203.10.76.45]:54826 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab3I0FUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 01:20:14 -0400
-Subject: Re: [PATCH] tty: Fix SIGTTOU not sent with tcflush()
-From: Karel Srot <ksrot@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Matt Newsome <mnewsome@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-In-Reply-To: <20130926191034.GA26591@redhat.com>
-References: <52437AA2.5040907@hurleysoftware.com>
-	 <1380154395-4232-1-git-send-email-peter@hurleysoftware.com>
-	 <20130926163633.GA22849@redhat.com>  <20130926191034.GA26591@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Sep 2013 07:19:53 +0200
-Message-ID: <1380259193.5654.2.camel@dhcp-30-102.brq.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1750819Ab3I0FV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 01:21:29 -0400
+Date: Fri, 27 Sep 2013 15:17:18 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Kumar Gala <galak@codeaurora.org>,
+        Jon Loeliger <jdl@jdl.com>, Olof Johansson <olof@lixom.net>,
+        frowand.list@gmail.com, Tomasz Figa <tomasz.figa@gmail.com>,
+        devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Subject: Re: [dtc PATCH V2] Warn on node name unit-address presence/absence
+ mismatch
+Message-ID: <20130927051718.GE2716@voom.fritz.box>
+References: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org>
+ <3D2FE31C-A6BB-4F70-9B3B-C55012CB56B3@codeaurora.org>
+ <5244BF7A.4000100@wwwdotorg.org>
+ <1380245438.28561.86.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2qXFWqzzG3v1+95a"
+Content-Disposition: inline
+In-Reply-To: <1380245438.28561.86.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oleg,
 
-On Thu, 2013-09-26 at 21:10 +0200, Oleg Nesterov wrote:
-> On 09/26, Oleg Nesterov wrote:
-> >
-> > Thanks Peter.
-> >
-> > Well. I'am afraid my testing was wrong, because Karel reports
-> > it fixes the problem...
-> >
-> > But. I applied this patch to my 3.11 tree (last commit is bff157b3a)
-> > which also has the additional patch (03e12617 "tty: disassociate_ctty()
-> > sends the extra SIGCONT"), and
-> >
-> > 	TET_CONFIG=CFG TET_ROOT=.  ./T.tcflush 4
-> >
-> > still fails... T.tcflush was compiled on another (Karel's) machine,
-> > perhaps there is something in libc, I do not know.
-> >
-> > So let me ask just in case, I assume the fix below doesn't depend on
-> > other changes I could miss?
-> >
-> > I'll retest after git-pull and report...
-> 
-> Still fails under the Linus's tree + this patch.
-> 
-> However!!!
-> 
-> Tested-by: Oleg Nesterov <oleg@redhat.com>
-> 
-> 
-> 
-> 
-> It turns out, T.tcflush doesn't expect it can start as a process group
-> leader. In this case setsid() fails, then tty_open() doesn't set
-> signal->tty, and thus this patch makes no difference: tty_check_change()
-> fails because tty doesn't match signal->tty.
-> 
-> And indeed, this test passes if you run it under strace, or simply do
-> 
-> 	$ TET_CONFIG=CFG TET_ROOT=. perl -e "system './T.tcflush 4'"
-> 
-> And damn, the fact it doesn't fail under strace doesn't allow you to
-> see that setsid() fails ;)
-> 
-> This is probably explains why Karel reported success, perhaps he
-> didn't run this test individually.
+--2qXFWqzzG3v1+95a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is true, I didn't execute this particular test directly but through
-the LSB test suite framework.
+On Fri, Sep 27, 2013 at 11:30:38AM +1000, Benjamin Herrenschmidt wrote:
+> On Thu, 2013-09-26 at 17:12 -0600, Stephen Warren wrote:
+> > Well, ePAPR seems pretty specific that unit address and reg are
+> > related,
+> > but says nothing about ranges in the section on node naming, nor about
+> > node naming in the section about ranges.
+> >=20
+> > I'd claim that the existing PPC trees are nonconforming, and should be
+> > fixed too:-)
+>=20
+> This is tricky, we should probably fix ePAPR here.
+>=20
+> If you have a "soc" bus covering a given range of addresses which it
+> forwards to its children devices but doesn't have per-se its own
+> registers in that area, then it wouldn't have a "reg" property. I would
+> thus argue that in the absence of a "reg" property, if a "ranges" one is
+> present, the "parent address" entry in there is an acceptable substitute
+> for the "reg" property as far as unit addresses are concerned.
 
-> 
-> Thanks again Peter. Perhaps my analysis was wrong (and I do not see
-> setsid() in the sources), I do not really care. but perhaps tcflush.c
-> should be updated.
-> 
-> Oleg.
-> 
+So, that's been accepted practice in fdt world for a while; I think
+ePAPR already permits that, in fact.
 
+> Also don't forget that in real OFW land, the unit address is something
+> that's somewhat bus specific ... for example, PCI uses "dev,fn" rather
+> than the full 96-bit number of the "reg" entry :-)
+>=20
+> Another option which would more strictly conform to ePAPR and in fact to
+> of1275 would be to require such bus nodes to have a "reg" property with
+> the address value set to the beginning of the range and the size value
+> set to 0 :-)
+>=20
 
-Karel
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
 
--- 
-Karel Srot
-Quality Engineer, QE BaseOS Security team
+--2qXFWqzzG3v1+95a
+Content-Type: application/pgp-signature
 
-Email: ksrot@redhat.com
-Web: www.cz.redhat.com
-Red Hat Czech s.r.o., Purkyňova 99/71, 612 45, Brno, Czech Republic
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSRRTdAAoJEGw4ysog2bOS4V8P/3sQ8pCeV10i7RR0u4wEBg7j
+I9r5EVVegLN6svDp97tCrUu9B4DECDchwk4zXjwU4YJ7cnBFVP4dQqzkhfyFTwG6
+9RlzlJV/ewDf9Qpj78jHSUmsAanKR+YmrrfoXa6sDDdvX0wyQW5rmU230c5f4ZBO
+ud/LtpTN01tZct12bccgDLSB+XkmxkYgMgwejuPmi7zz/uTc+VcIrOomFG8YJx+6
+EhTaYcCezu1JicvL67zhiuqhrPJe6llbvcGZwqd3t4CDrNhEHuSYMAKm4xr4dhjC
+6ooWgVpR1rSgCjmzSIXYl7FE2he6s9yk3VIKUW8CH+nlWlPbMK0cyJzlIRjs8Scp
+GJXtH1eMIxO7BAWhtWLI22kUN6cPElnBYUVWYEDYec5msuiASQ3htnsIIk1JI+nW
+O5a0jtA4dydPjnFPbtbHeZ4UuRtEnoyR5Ov7dUzPmwr7UC/HKyApHUVP5my/Xa9f
++h9atkqHFR9/mDLf9RuRzrhdmEOxc38J05YItDWOPLMPjsYwJKM7D0ShY1AXuoXg
+wqz1Ffs8HW3zdNhF7eklafVVovOGUuUAsMyH1fyiqO18WgnURB/n7Fdnak2l6LHn
+cGgc5vxhiVC0SF76UDI0nMhqByh5HMGQL/XhI5QrlnbHPYYNHQwXpPHkKurjy/Y4
+daM0QMXluNwICjVp86Ib
+=lTKI
+-----END PGP SIGNATURE-----
+
+--2qXFWqzzG3v1+95a--
