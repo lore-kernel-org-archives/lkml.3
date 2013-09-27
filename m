@@ -1,101 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab3I0QWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:22:47 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:33913 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753855Ab3I0QWp (ORCPT
+	id S1753261Ab3I0Q3j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:29:39 -0400
+Received: from smtprelay0087.hostedemail.com ([216.40.44.87]:35075 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751719Ab3I0Q3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:22:45 -0400
-Date: Fri, 27 Sep 2013 12:22:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Ulf Hansson <ulf.hansson@linaro.org>
-cc: linux-kernel@vger.kernel.org, <linux-mmc@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>,
-        Tony Olech <tony.olech@elandigitalsystems.com>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 10/27] mmc: vub300: Remove redundant suspend and resume
- callbacks
-In-Reply-To: <1380207292-16968-11-git-send-email-ulf.hansson@linaro.org>
-Message-ID: <Pine.LNX.4.44L0.1309271219530.10254-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 27 Sep 2013 12:29:36 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:421:541:599:877:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3351:3622:3673:3865:3866:3867:3868:3871:3874:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12050:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fuel67_35cdebd3ffe5c
+X-Filterd-Recvd-Size: 1312
+Message-ID: <1380299368.17366.121.camel@joe-AO722>
+Subject: Re: linux-next: Tree for Sep 27
+From: Joe Perches <joe@perches.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 27 Sep 2013 09:29:28 -0700
+In-Reply-To: <20130927190520.ab376c737166be4841ff46e4@canb.auug.org.au>
+References: <20130927190520.ab376c737166be4841ff46e4@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013, Ulf Hansson wrote:
-
-> Suspend and resume of cards are handled by the protocol layer and
-> consequently the mmc_suspend|resume_host APIs are marked as deprecated.
+On Fri, 2013-09-27 at 19:05 +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> While moving away from using the deprecated APIs, there are nothing
-> left to be done for the suspend and resume callbacks, so remove them.
-> 
-> Cc: Tony Olech <tony.olech@elandigitalsystems.com>
-> Cc: linux-usb@vger.kernel.org
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
->  drivers/mmc/host/vub300.c |   30 ------------------------------
->  1 file changed, 30 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-> index e9028ad..db99edc 100644
-> --- a/drivers/mmc/host/vub300.c
-> +++ b/drivers/mmc/host/vub300.c
-> @@ -2389,34 +2389,6 @@ static void vub300_disconnect(struct usb_interface *interface)
->  	}
->  }
->  
-> -#ifdef CONFIG_PM
-> -static int vub300_suspend(struct usb_interface *intf, pm_message_t message)
-> -{
-> -	struct vub300_mmc_host *vub300 = usb_get_intfdata(intf);
-> -	if (!vub300 || !vub300->mmc) {
-> -		return 0;
-> -	} else {
-> -		struct mmc_host *mmc = vub300->mmc;
-> -		mmc_suspend_host(mmc);
-> -		return 0;
-> -	}
-> -}
-> -
-> -static int vub300_resume(struct usb_interface *intf)
-> -{
-> -	struct vub300_mmc_host *vub300 = usb_get_intfdata(intf);
-> -	if (!vub300 || !vub300->mmc) {
-> -		return 0;
-> -	} else {
-> -		struct mmc_host *mmc = vub300->mmc;
-> -		mmc_resume_host(mmc);
-> -		return 0;
-> -	}
-> -}
-> -#else
-> -#define vub300_suspend NULL
-> -#define vub300_resume NULL
-> -#endif
->  static int vub300_pre_reset(struct usb_interface *intf)
->  {				/* NOT irq */
->  	struct vub300_mmc_host *vub300 = usb_get_intfdata(intf);
-> @@ -2437,8 +2409,6 @@ static struct usb_driver vub300_driver = {
->  	.name = "vub300",
->  	.probe = vub300_probe,
->  	.disconnect = vub300_disconnect,
-> -	.suspend = vub300_suspend,
-> -	.resume = vub300_resume,
->  	.pre_reset = vub300_pre_reset,
->  	.post_reset = vub300_post_reset,
->  	.id_table = vub300_table,
+> Heads up: I will be having a 3 week break leading up to the kernel
+> summit.  This means that next-20130927 (today) will be the last
+> linux-next release until next-20131028 (or maybe 29).  I presume that
+> Linus will be up to v3.12-rc7 by then and -rc7 is often the last before
+> a release ... Please plan accordingly.
 
-You shouldn't do it this way.  The USB core treats drivers differently 
-depending on whether their suspend and resume callbacks are defined.  
-If those method pointers are NULL, the driver will be treated as though 
-it doesn't support power management at all.
+Any thought of automating the -next aggregation and release
+and letting any conflicts go unresolved during that time?
 
-You should keep the pointers and the routines.  The contents of the 
-routines can be removed, leaving nothing but a "return 0;" line.
-
-Alan Stern
 
