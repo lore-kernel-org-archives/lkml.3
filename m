@@ -1,146 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3I0MYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 08:24:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4799 "EHLO mx1.redhat.com"
+	id S1752837Ab3I0M0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 08:26:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38970 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab3I0MYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 08:24:07 -0400
-Message-ID: <524578D5.1030808@redhat.com>
-Date: Fri, 27 Sep 2013 14:23:49 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1751185Ab3I0M02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 08:26:28 -0400
+Date: Fri, 27 Sep 2013 07:24:39 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>,
+        <devicetree@vger.kernel.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        <grant.likely@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv4 11/18] arm: dts: add omap4430 thermal data
+Message-ID: <20130927122439.GA8360@kahuna>
+References: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
+ <1380251605-3804-12-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-CC: viro@zeniv.linux.org.uk, james.bottomley@hansenpartnership.com,
-        Jens Axboe <axboe@kernel.dk>, koverstreet@google.com,
-        Kai.Makisara@kolumbus.fi,
-        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>
-Subject: [PATCH v4 Repost 1/2] block: factor out vector mergeable decision
- to a, helper function
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380251605-3804-12-git-send-email-eduardo.valentin@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Vesely <jvesely@redhat.com>
+On 23:13-20130926, Eduardo Valentin wrote:
+> This patch changes the dtsi entry on omap4430 to contain
+> the thermal data. This data will enable the passive
+> cooling with CPUfreq cooling device at 100C and the
+> system will do a thermal shutdown at 125C.
+> 
+> Cc: "Benoît Cousson" <bcousson@baylibre.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-omap@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  arch/arm/boot/dts/omap443x.dtsi | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
+> index bcf455e..e9c97d6 100644
+> --- a/arch/arm/boot/dts/omap443x.dtsi
+> +++ b/arch/arm/boot/dts/omap443x.dtsi
+> @@ -12,7 +12,7 @@
+>  
+>  / {
+>  	cpus {
+> -		cpu@0 {
+> +		cpu0: cpu@0 {
+>  			/* OMAP443x variants OPP50-OPPNT */
+>  			operating-points = <
+>  				/* kHz    uV */
+> @@ -25,9 +25,15 @@
+>  		};
+>  	};
+>  
+> -	bandgap {
+> +	thermal-zones{
+> +		#include "omap4-cpu-thermal.dtsi"
+> +	};
+> +
+> +	bandgap: bandgap {
+>  		reg = <0x4a002260 0x4
+>  		       0x4a00232C 0x4>;
+>  		compatible = "ti,omap4430-bandgap";
+> +
+> +		#thermal-sensor-cells = <0>;
+2 cents:
+we might want to move bandgap under ocp?
 
-Export the function so it can be used to predict segment counts
-without calling the recalc function. This will be used in the next
-patch.
+>  	};
+>  };
+> -- 
+> 1.8.2.1.342.gfa7285d
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Signed-off-by: Jan Vesely <jvesely@redhat.com>
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
----
- block/blk-merge.c   | 52 +++++++++++++++++++++++++++++++---------------------
- include/linux/bio.h |  3 +++
- 2 files changed, 34 insertions(+), 21 deletions(-)
-
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 5f24482..f1ef657 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -9,11 +9,39 @@
- 
- #include "blk.h"
- 
-+bool bvec_mergeable(struct request_queue *q, struct bio_vec *lastbv,
-+		    struct bio_vec *newbv, unsigned int seg_size)
-+{
-+	unsigned long limit = queue_bounce_pfn(q);
-+
-+	if (!blk_queue_cluster(q))
-+		return false;
-+
-+	/*
-+	 * the trick here is to make sure that a high page is
-+	 * never considered part of another segment, since that
-+	 * might change with the bounce page.
-+	 */
-+	if ((page_to_pfn(lastbv->bv_page) > limit)
-+	    || (page_to_pfn(newbv->bv_page) > limit))
-+		return false;
-+
-+	if (seg_size + newbv->bv_len > queue_max_segment_size(q))
-+		return false;
-+
-+	if (!BIOVEC_PHYS_MERGEABLE(lastbv, newbv))
-+		return false;
-+	if (!BIOVEC_SEG_BOUNDARY(q, lastbv, newbv))
-+		return false;
-+	return true;
-+}
-+
-+
- static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 					     struct bio *bio)
- {
- 	struct bio_vec *bv, *bvprv = NULL;
--	int cluster, i, high, highprv = 1;
-+	int i;
- 	unsigned int seg_size, nr_phys_segs;
- 	struct bio *fbio, *bbio;
- 
-@@ -21,33 +49,16 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 		return 0;
- 
- 	fbio = bio;
--	cluster = blk_queue_cluster(q);
- 	seg_size = 0;
- 	nr_phys_segs = 0;
- 	for_each_bio(bio) {
- 		bio_for_each_segment(bv, bio, i) {
--			/*
--			 * the trick here is making sure that a high page is
--			 * never considered part of another segment, since that
--			 * might change with the bounce page.
--			 */
--			high = page_to_pfn(bv->bv_page) > queue_bounce_pfn(q);
--			if (high || highprv)
--				goto new_segment;
--			if (cluster) {
--				if (seg_size + bv->bv_len
--				    > queue_max_segment_size(q))
--					goto new_segment;
--				if (!BIOVEC_PHYS_MERGEABLE(bvprv, bv))
--					goto new_segment;
--				if (!BIOVEC_SEG_BOUNDARY(q, bvprv, bv))
--					goto new_segment;
--
-+			if (bvprv && bvec_mergeable(q, bvprv, bv, seg_size)) {
- 				seg_size += bv->bv_len;
- 				bvprv = bv;
- 				continue;
- 			}
--new_segment:
-+			/* new segment */
- 			if (nr_phys_segs == 1 && seg_size >
- 			    fbio->bi_seg_front_size)
- 				fbio->bi_seg_front_size = seg_size;
-@@ -55,7 +66,6 @@ new_segment:
- 			nr_phys_segs++;
- 			bvprv = bv;
- 			seg_size = bv->bv_len;
--			highprv = high;
- 		}
- 		bbio = bio;
- 	}
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ec48bac..929ac53 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -307,6 +307,9 @@ extern struct bio_vec *bvec_alloc(gfp_t, int, unsigned long *, mempool_t *);
- extern void bvec_free(mempool_t *, struct bio_vec *, unsigned int);
- extern unsigned int bvec_nr_vecs(unsigned short idx);
- 
-+extern bool bvec_mergeable(struct request_queue *q, struct bio_vec *lastbv,
-+			   struct bio_vec *newbv, unsigned int seg_size);
-+
- #ifdef CONFIG_BLK_CGROUP
- int bio_associate_current(struct bio *bio);
- void bio_disassociate_task(struct bio *bio);
 -- 
-1.8.3.1
-
-
+Regards,
+Nishanth Menon
