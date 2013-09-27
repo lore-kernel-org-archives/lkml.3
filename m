@@ -1,64 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3I0Omc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:42:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55873 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab3I0Om1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:42:27 -0400
-Message-ID: <52459942.3020600@canonical.com>
-Date: Fri, 27 Sep 2013 10:42:10 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754008Ab3I0OnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:43:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60255 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753354Ab3I0OnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:43:08 -0400
+Date: Fri, 27 Sep 2013 16:43:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu, linux-ext4@vger.kernel.org,
+        adilger.kernel@dilger.ca, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext4: avoid exposure of stale data in ext4_punch_hole()
+Message-ID: <20130927144304.GA3873@quack.suse.cz>
+References: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
+ <20130926185341.GA21811@quack.suse.cz>
+ <5245828E.3060501@parallels.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz> <52432152.3030100@canonical.com> <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5245828E.3060501@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 06:50 AM, Jiri Kosina wrote:
-> On Wed, 25 Sep 2013, Joseph Salisbury wrote:
->
->> After further testing reverting the following commit does in fact
->> resolve the bug:
->>
->> commit b1a1442a23776756b254b69786848a94d92445ba
->> Author: Jiri Kosina <jkosina@suse.cz>
->> Date: Mon Jun 3 11:27:48 2013 +0200
->>
->>     HID: core: fix reporting of raw events
->>
->> Reverting this commit in v3.12-rc2 prevents the system from locking up, 
->> which happens when connecting a bluetooth trackpad.
->>
->> Jiri, do you think we should revert this patch, or is there some further 
->> debugging/data collecting you would like to do?
-> Hi Joseph,
->
-> in this mail:
->
-> 	Message-ID: <5241992E.3090805@canonical.com>
-> 	Date: Tue, 24 Sep 2013 09:52:46 -0400
->
-> you said that reverting this commit doesn't prevent the lockups, so I am 
-> rather confused ... ?
->
-> Thanks,
->
-The testing was invalid.  Reverting commit b1a1442 does resolve the bug
-and stop the lockups.
+  Hi,
 
-Thanks,
+On Fri 27-09-13 17:05:18, Maxim Patlasov wrote:
+> On 09/26/2013 10:53 PM, Jan Kara wrote:
+> >   Hello,
+> >
+> >On Thu 26-09-13 21:32:07, Maxim Patlasov wrote:
+> >>While handling punch-hole fallocate, it's useless to truncate page cache
+> >>before removing the range from extent tree (or block map in indirect case)
+> >>because page cache can be re-populated (by read-ahead or read(2) or mmap-ed
+> >>read) immediately after truncating page cache, but before updating extent
+> >>tree (or block map). In that case the user will see stale data even after
+> >>fallocate is completed.
+> >   Yes, this is a known problem. The trouble is there isn't a reliable fix
+> >currently possible. If we don't truncate page cache before removing blocks,
+> >we will have pages in memory being backed by already freed blocks - not
+> >good as that can lead to data corruption. So you should't really remove the
+> >truncation from before we remove the blocks.
+> 
+> I'd like to understand the problem better. Could you please provide
+> any details about that data corruption? And if it was already
+> discussed somewhere, please point me to there.
+  It was discussed at linux-ext4 / linux-fsdevel sometime in spring but I'm
+not sure to which extent we covered details of the races. Anyway if you
+have blocks in pagecache which point to already freed blocks (lets say they
+belong to file foo), the following
+can happen:
+  1) Someone reallocates freed blocks for another file bar. And writes new
+     data to them. Writeback flushes the data to disk.
+  2) Someone dirties pages with stale mapping data in file foo.
+  3) Writeback writes dirty pages of foo, overwriting data in bar.
 
-Joe
+> >You are right that if punch hole races with page fault or read, we can
+> >create again pages with block mapping which will become stale soon and the
+> >same problem as I wrote above applies. Truncating pagecache after we
+> >removed blocks only narrows the race window but doesn't really fix the
+> >problem.
+> 
+> There seems to be two different problems: 1) pages backed by already
+> freed blocks; 2) keeping page-cache populated by pages with stale
+> data after fallocate completes. Your concerns refer to the first
+> problem. My patch was intended to resolve the second. It seems to me
+> that my patch really fixes the second problem and it doesn't make
+> things worse w.r.t. the fisrt problem. Do I miss something?
+  IMHO these are different aspects of the same problem but that's not
+important. Your patch actually makes things worse because currently if the
+file isn't written to via mmap while punch_hole is running, everything is
+fine. After your patch writeback of old data could race with punch hole
+freeing blocks resulting in data corruption I have described above. The
+'no-harm' solution would be to add another truncation of pagecache after
+punch hole is done. I think that would be a good way to reduce the race
+window before the problem gets fixed properly.
+
+								Honza
+
+> >>Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> >>---
+> >>  fs/ext4/inode.c |   17 +++++++++--------
+> >>  1 file changed, 9 insertions(+), 8 deletions(-)
+> >>
+> >>diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> >>index 0d424d7..6b71116 100644
+> >>--- a/fs/ext4/inode.c
+> >>+++ b/fs/ext4/inode.c
+> >>@@ -3564,14 +3564,6 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
+> >>  	}
+> >>-	first_block_offset = round_up(offset, sb->s_blocksize);
+> >>-	last_block_offset = round_down((offset + length), sb->s_blocksize) - 1;
+> >>-
+> >>-	/* Now release the pages and zero block aligned part of pages*/
+> >>-	if (last_block_offset > first_block_offset)
+> >>-		truncate_pagecache_range(inode, first_block_offset,
+> >>-					 last_block_offset);
+> >>-
+> >>  	/* Wait all existing dio workers, newcomers will block on i_mutex */
+> >>  	ext4_inode_block_unlocked_dio(inode);
+> >>  	inode_dio_wait(inode);
+> >>@@ -3621,6 +3613,15 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
+> >>  	up_write(&EXT4_I(inode)->i_data_sem);
+> >>  	if (IS_SYNC(inode))
+> >>  		ext4_handle_sync(handle);
+> >>+
+> >>+	first_block_offset = round_up(offset, sb->s_blocksize);
+> >>+	last_block_offset = round_down((offset + length), sb->s_blocksize) - 1;
+> >>+
+> >>+	/* Now release the pages and zero block aligned part of pages */
+> >>+	if (last_block_offset > first_block_offset)
+> >>+		truncate_pagecache_range(inode, first_block_offset,
+> >>+					 last_block_offset);
+> >>+
+> >>  	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+> >>  	ext4_mark_inode_dirty(handle, inode);
+> >>  out_stop:
+> >>
+> >>--
+> >>To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> >>the body of a message to majordomo@vger.kernel.org
+> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
