@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3I0QVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:21:08 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:36951 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3I0QVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:21:06 -0400
+	id S1753643Ab3I0QVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:21:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51824 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751719Ab3I0QVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:21:54 -0400
+Message-ID: <5245B076.1090008@ti.com>
+Date: Fri, 27 Sep 2013 11:21:10 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20130926063453.GA526@polaris.bitmath.org>
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
-	<20130925195628.GA1532@roeck-us.net>
-	<20130925214807.GA3234@polaris.bitmath.org>
-	<20130925220838.GB4184@roeck-us.net>
-	<20130926063453.GA526@polaris.bitmath.org>
-Date: Fri, 27 Sep 2013 12:21:04 -0400
-X-Google-Sender-Auth: 1Xqe6ZKOF68gx6WgDKi6lMCGI4c
-Message-ID: <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com>
-Subject: Re: applesmc oops in 3.10/3.11
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Guenter Roeck <linux@roeck-us.net>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        bugzilla@colorremedies.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kumar Gala <galak@codeaurora.org>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
+References: <cover.1379445653.git.s-anna@ti.com> <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com> <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
+In-Reply-To: <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> > > This suggests that initialization may be attempted more than once. The key cache
->> > > is allocated only once, but the number of keys is read for each attempt.
->> > >
->> > > No idea if that can happen, but if the number of keys can increase after
->> > > the first initialization attempt you would have an explanation for the crash.
->> >
->> > Good idea, and easy enough to test with the patch below.
->> >
->> Should we apply this patch even though it may not solve the specific problem ?
->
-> Yes, why not - it certainly won't hurt. I am running it right now, so
-> it is at least run-tested.
->
->> Again, not sure if the key count can change, but the current code is at the very
->> least inconsistent, as it keeps reading the key count without updating or
->> verifying the cache size.
->
-> Yes - I agree that the error state is far-fetched, but it is hard to
-> see any other logical explanation. There is of course always the
-> possibility that the problem is somewhere else completely.
->
-> Proper patch attached.
->
-> Thanks,
-> Henrik
->
-> ---
->
-> From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Thu, 26 Sep 2013 08:33:16 +0200
-> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
->
-> After reports from Chris and Josh Boyer of a rare crash in applesmc,
-> Guenter pointed at the initialization problem fixed below. The patch
-> has not been verified to fix the crash, but should be applied
-> regardless.
->
-> Reported-by: <jwboyer@fedoraproject.org>
-> Suggested-by: Guenter Roeck <linux@roeck-us.net>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hwmon/applesmc.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
+On 09/27/2013 11:06 AM, Kumar Gala wrote:
+> 
+> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
+> 
+>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+>> which are all device-tree boot only. This patch adds the
+>> base support for parsing the DT nodes, and removes the code
+>> dealing with the traditional platform device instantiation.
+>>
+>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>> ---
+>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
+>> arch/arm/mach-omap2/Makefile                       |  3 --
+>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+>> drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
+>> 4 files changed, 50 insertions(+), 67 deletions(-)
+>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>> new file mode 100644
+>> index 0000000..235b7c5
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>> @@ -0,0 +1,31 @@
+>> +OMAP4+ HwSpinlock Driver
+>> +========================
+>> +
+>> +Required properties:
+>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+>> +- reg:			Contains the hwspinlock register address range (base
+>> +			address and length)
+>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+>> +
+>> +Common hwlock properties:
+>> +The following describes the usage of the common hwlock properties (defined in
+>> +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
+>> +
+>> +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
+>> +			hwspinlock devices. The OMAP driver uses a default
+>> +			base id value of 0 for the locks present within the
+>> +			single hwspinlock device on all SoCs.
+>> +- hwlock-num-locks:	This property is not required on OMAP SoCs, since the
+>> +			number of locks present within a device can be deduced
+>> +			from the SPINLOCK_SYSSTATUS device register.
+> 
+> If you are going to be explicit about this properties, you should probably be a bit more clear about them NOT being in the OMAP dts because of the reasons you specify.
 
-Thanks for the quick reply.  I'll get this rolled into our kernels soon.
+You mean on the hwlock-base-id? I wanted to document how these
+properties (do not) apply for OMAP, I will revise the text to be a bit
+more explicit. Thanks for the review.
 
-josh
+regards
+Suman
