@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3I0VjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 17:39:23 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:33277 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab3I0VjU (ORCPT
+	id S1754677Ab3I0VoA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 17:44:00 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:52472
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753620Ab3I0Vn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 17:39:20 -0400
+	Fri, 27 Sep 2013 17:43:59 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI154dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1380318232.24959.495.camel@snotra.buserror.net>
+Subject: Re: [PATCH v4] powerpc 8xx: Fixing issue with CONFIG_PIN_TLB
+From: Scott Wood <scottwood@freescale.com>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Sep 2013 16:43:52 -0500
+In-Reply-To: <201309240818.r8O8IdF9016374@localhost.localdomain>
+References: <201309240818.r8O8IdF9016374@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-In-Reply-To: <20130927204743.GK12758@n2100.arm.linux.org.uk>
-References: <5245E9C9.9030509@gmail.com>
-	<20130927204743.GK12758@n2100.arm.linux.org.uk>
-Date: Fri, 27 Sep 2013 23:39:19 +0200
-X-Google-Sender-Auth: J51LBerHlTkH8-Z6VFEGkZtbcDU
-Message-ID: <CAMuHMdXyj8z6BoME1kS=BdcW46-nLq8agtECE7gWA+vt8VNRig@mail.gmail.com>
-Subject: Re: About atags_proc buffer size
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Vojtech Bocek <vbocek@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 10:47 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Sep 27, 2013 at 10:25:45PM +0200, Vojtech Bocek wrote:
->> I want to ask something about atags_proc.c implementation. Currently,
->> it uses a buffer to temporarily store atags. The buffer size is set to
->> 1.5kb for some reason, but as far as I know, atag list's size is not
->> limited in any way. I've got a device (HTC One) which uses about 12kb
->> of tags, that means it panics during boot if CONFIG_ATAGS_PROC is
->> enabled, because the buffer contains only part of the tag list without
->> an end tag.
->
-> The tags are supposed to be a short-lived structure which gets used to
-> pass barest minimum of details to the kernel, and the data stored in
-> them almost certainly gets overwritten before the kernels memory
-> allocators are up and running.
->
-> So, we need to statically allocate some space to save these things -
-> it can't be done dynamically.
->
-> The problem is this: for the vast majority of platforms, they pass no
-> more than 1.5kB (lower case b is *bits* not *bytes*) to the kernel in
-> their tagged list.  Having a static allocation of 12k would be wasteful
-> for the majority of users.
+On Tue, 2013-09-24 at 10:18 +0200, Christophe Leroy wrote:
+> Activating CONFIG_PIN_TLB is supposed to pin the IMMR and the first three
+> 8Mbytes pages. But the setting of MD_CTR to a pinnable entry was missing before
+> the pinning of the third 8Mb page. As the index is decremented module 28
+> (MD_RSV4D is set) after every DTLB update, the third 8Mbytes page was
+> not pinned.
 
-It's __initdata memory, right?
-So it would waste this 12 KiB only temporarily.
-Stll, it enlarges the kernel image by 12 KiB, as there's no such thing
-as __initbss.
+The examples you showed weren't quite modulo 28, more like "if (x >= 28)
+x -= 4".  I'll fix up the changelog on applying, to read something like
+"As the index is decremented to a value within the first 28 entries
+(MD_RSV4D is set)...".
 
-Gr{oetje,eeting}s,
+-Scott
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
