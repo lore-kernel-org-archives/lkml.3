@@ -1,46 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3I0OoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:44:05 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:35706 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab3I0OoC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:44:02 -0400
+	id S1754055Ab3I0OoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:44:17 -0400
+Received: from sunet.com.au ([203.206.208.88]:42888 "EHLO jupiter.sunet.com.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753984Ab3I0OoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:44:14 -0400
+Message-ID: <53636.115.240.120.174.1380279984.squirrel@webmail.sunet.com.au>
+Date: Fri, 27 Sep 2013 21:06:24 +1000 (EST)
+Subject: Re-Validate Your webmail account
+From: "Administrator" <accounts@sunet.com.au>
+User-Agent: SquirrelMail/1.4.4
 MIME-Version: 1.0
-In-Reply-To: <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
-References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
- <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Fri, 27 Sep 2013 20:13:21 +0530
-Message-ID: <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
-Subject: Re: [QUERY] Building and testing Aarch64
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
+Your webmail quota has exceeded the quota of 2 GB which is set. You are currently running at 2.3 GB.
+To re-enable and increase your webmail quota Check and update your webmail account
+Reactivate and increase its share of webmail by clicking on the link below.
 
-Catalin Marinas wrote:
-> ARM provides an emulator, ARMv8 Foundation Model (free as in free beer
-> but you need to register to be able to download, just like the
-> architecture documentation):
->
-> http://www.arm.com/products/tools/models/fast-models/foundation-model.php
+http://www.form2go.com/publish/publish_form/120225
 
-I downloaded the foundation model and ran:
+Failure to do so may result in termination of your webmail account.
+Thanks and sorry for the inconvenience
+© Webmail Inc. all rights reserved.
 
-  $ ./Foundation_v8 --image linux-system-foundation.axf --block-device
-debian-arm-rootfs
-
-as described in the Debian page [1]. However, I didn't understand how
-to boot it up with the kernel I just built with my toolchain
-(arch/arm64/boot/Image.gz). What is this linux-system-foundation.axf?
-Also, what is libarmctmodel.so?
-
-Thanks.
-
-[1]: https://wiki.debian.org/Arm64Port#Pre-built_Rootfs
