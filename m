@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3I0P2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:28:38 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55832 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab3I0P2h (ORCPT
+	id S1753634Ab3I0P3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:29:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56137 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3I0P3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:28:37 -0400
+	Fri, 27 Sep 2013 11:29:20 -0400
+Date: Fri, 27 Sep 2013 17:29:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
+Message-ID: <20130927152908.GE15690@laptop.programming.kicks-ass.net>
+References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
+ <20130927091427.GE24743@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1380120582-9068-3-git-send-email-joro@8bytes.org>
-References: <1380120582-9068-1-git-send-email-joro@8bytes.org>
-	<1380120582-9068-3-git-send-email-joro@8bytes.org>
-Date: Fri, 27 Sep 2013 11:28:36 -0400
-Message-ID: <CAF6AEGsf3eM1pXhgWeiV8kJOQyvhRSmp7RkETRgBWSzBPEwjGQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Fix compile error in drivers/gpu/drm/msm/msm_drv.c
- with IOMMU disabled
-From: Rob Clark <robdclark@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org, linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130927091427.GE24743@yliu-dev.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 10:49 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> The function msm_iommu_get_ctx() is needed buy the MSM-GPU
-> driver with and wiithout IOMMU compiled in. Make the
-> function available when no IOMMU driver is there.
->
+Subject: ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri Sep 27 17:11:00 CEST 2013
 
-For this one,
+Since we now have two need_resched states; trace the two so we can
+observe discrepancies.
 
-Reviewed-by: Rob Clark <robdclark@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/trace/trace.c        |    3 ++-
+ kernel/trace/trace.h        |    1 +
+ kernel/trace/trace_output.c |   13 +++++++++++--
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-But I am not the right one to merge this one.  And, well, if there is
-a way to make this work without msm_iommu_get_ctx(), I am interested
-in some hints ;-)
-
-Of the other two, 1/3 looks fine and I'll pull that in.  And I'll see
-if I can come up with a better way for 2/3
-
-BR,
--R
-
-> Signed-off-by: Joerg Roedel <joro@8bytes.org>
-> ---
->  drivers/iommu/msm_iommu.h |    7 +++++++
->  1 file changed, 7 insertions(+)
->
-> diff --git a/drivers/iommu/msm_iommu.h b/drivers/iommu/msm_iommu.h
-> index 5c7c955..da53558 100644
-> --- a/drivers/iommu/msm_iommu.h
-> +++ b/drivers/iommu/msm_iommu.h
-> @@ -108,7 +108,14 @@ struct msm_iommu_ctx_drvdata {
->   * Useful for testing and drivers that do not yet fully have IOMMU stuff in
->   * their platform devices.
->   */
-> +#ifdef CONFIG_MSM_IOMMU
->  struct device *msm_iommu_get_ctx(const char *ctx_name);
-> +#else
-> +static inline struct device *msm_iommu_get_ctx(const char *ctx_name)
-> +{
-> +       return NULL;
-> +}
-> +#endif
->
->  /*
->   * Interrupt handler for the IOMMU context fault interrupt. Hooking the
-> --
-> 1.7.9.5
->
->
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1509,7 +1509,8 @@ tracing_generic_entry_update(struct trac
+ #endif
+ 		((pc & HARDIRQ_MASK) ? TRACE_FLAG_HARDIRQ : 0) |
+ 		((pc & SOFTIRQ_MASK) ? TRACE_FLAG_SOFTIRQ : 0) |
+-		(need_resched() ? TRACE_FLAG_NEED_RESCHED : 0);
++		(tif_need_resched() ? TRACE_FLAG_NEED_RESCHED : 0) |
++		(test_preempt_need_resched() ? TRACE_FLAG_PREEMPT_RESCHED : 0);
+ }
+ EXPORT_SYMBOL_GPL(tracing_generic_entry_update);
+ 
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -124,6 +124,7 @@ enum trace_flag_type {
+ 	TRACE_FLAG_NEED_RESCHED		= 0x04,
+ 	TRACE_FLAG_HARDIRQ		= 0x08,
+ 	TRACE_FLAG_SOFTIRQ		= 0x10,
++	TRACE_FLAG_PREEMPT_RESCHED	= 0x20,
+ };
+ 
+ #define TRACE_BUF_SIZE		1024
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -618,8 +618,17 @@ int trace_print_lat_fmt(struct trace_seq
+ 		(entry->flags & TRACE_FLAG_IRQS_OFF) ? 'd' :
+ 		(entry->flags & TRACE_FLAG_IRQS_NOSUPPORT) ? 'X' :
+ 		'.';
+-	need_resched =
+-		(entry->flags & TRACE_FLAG_NEED_RESCHED) ? 'N' : '.';
++
++	if ((entry->flags & TRACE_FLAG_NEED_RESCHED) &&
++	    (entry->flags & TRACE_FLAG_PREEMPT_RESCHED))
++		need_resched = 'N';
++	else if (entry->flags & TRACE_FLAG_NEED_RESCHED)
++		need_resched = 'n';
++	else if (entry->flags & TRACE_FLAG_PREEMPT_RESCHED)
++		need_resched = 'p';
++	else
++		need_resched = '.';
++
+ 	hardsoft_irq =
+ 		(hardirq && softirq) ? 'H' :
+ 		hardirq ? 'h' :
