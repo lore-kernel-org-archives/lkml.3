@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab3I0BbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 21:31:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:29781 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab3I0BbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 21:31:17 -0400
-X-Spam-Score: -100.8
-Message-ID: <5244DFA5.5090200@asianux.com>
-Date: Fri, 27 Sep 2013 09:30:13 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
- in all related extern functions
-References: <524114B8.3070903@asianux.com> <20130924120429.GA2366@htj.dyndns.org> <5242331B.4010309@asianux.com> <20130925005802.GA25777@htj.dyndns.org> <5242372C.4010509@asianux.com> <20130925011404.GB25777@htj.dyndns.org> <52424094.3020504@asianux.com> <524267CD.4030007@asianux.com> <5243CD18.1060805@asianux.com> <5243D487.8000602@asianux.com> <20130926131544.GB31249@mtj.dyndns.org>
-In-Reply-To: <20130926131544.GB31249@mtj.dyndns.org>
-Content-Type: text/plain; charset=GB2312
+	id S1753408Ab3I0Bcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 21:32:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43603 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751147Ab3I0Bcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 21:32:41 -0400
+Message-ID: <1380245438.28561.86.camel@pasglop>
+Subject: Re: [dtc PATCH V2] Warn on node name unit-address presence/absence
+ mismatch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Kumar Gala <galak@codeaurora.org>, Jon Loeliger <jdl@jdl.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Olof Johansson <olof@lixom.net>, frowand.list@gmail.com,
+        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Date: Fri, 27 Sep 2013 11:30:38 +1000
+In-Reply-To: <5244BF7A.4000100@wwwdotorg.org>
+References: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org>
+	 <3D2FE31C-A6BB-4F70-9B3B-C55012CB56B3@codeaurora.org>
+	 <5244BF7A.4000100@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 09:15 PM, Tejun Heo wrote:
-> Hello, Chen.
+On Thu, 2013-09-26 at 17:12 -0600, Stephen Warren wrote:
+> Well, ePAPR seems pretty specific that unit address and reg are
+> related,
+> but says nothing about ranges in the section on node naming, nor about
+> node naming in the section about ranges.
 > 
-> On Thu, Sep 26, 2013 at 02:30:31PM +0800, Chen Gang wrote:
->>> Oh, not cause issue, the reason is "'groups' exports extern variable
->>> 'init_groups', when start process, default 'cred' will set it to be
->>> sure of groups always be initialized".
->>>
->>> Hmm... but after all, I still think this file need be improved: "remove
->>> the group_info checking in groups_search()", please help check, thanks.
-> 
-> Given the track record upto this point and how marginal the benefit of
-> the suggested change is, I'd rather not.  It's quite possible that we
-> had specific issue where that extra conditional is necessary and I
-> don't feel comfortable trusting your evaluation and analysis on the
-> subject at the moment, so the benefit / risk ratio seems way off from
-> my pov.
-> 
->>>   If groups_alloc() fails, the caller must not call any related API again
->>>   with the related invalid 'group_info'.
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> Nacked-by: Tejun Heo <tj@kernel.org>
-> 
+> I'd claim that the existing PPC trees are nonconforming, and should be
+> fixed too:-)
 
-The caller should not 'generate' a new 'groups_info' by itself, so, if
-invalid 'groups_info' should not pass to groups_free(), of cause it
-should not pass groups_search(), either.
+This is tricky, we should probably fix ePAPR here.
 
-If permit passing an invalid 'groups_info' to groups_search(), caller
-also can pass this invalid 'groups_info' to groups_free(), too.
+If you have a "soc" bus covering a given range of addresses which it
+forwards to its children devices but doesn't have per-se its own
+registers in that area, then it wouldn't have a "reg" property. I would
+thus argue that in the absence of a "reg" property, if a "ranges" one is
+present, the "parent address" entry in there is an acceptable substitute
+for the "reg" property as far as unit addresses are concerned.
 
-The original author exported extern variable 'init_groups', that means
-'groups' wants no duty to be sure 'group_info' whether valid, caller
-should be sure of that (or it is caller's bug, not 'groups' bug).
+Also don't forget that in real OFW land, the unit address is something
+that's somewhat bus specific ... for example, PCI uses "dev,fn" rather
+than the full 96-bit number of the "reg" entry :-)
+
+Another option which would more strictly conform to ePAPR and in fact to
+of1275 would be to require such bus nodes to have a "reg" property with
+the address value set to the beginning of the range and the size value
+set to 0 :-)
+
+Cheers,
+Ben
 
 
-In my opinion, it is enough to know 'groups' interface is inconsistent,
-it needs improvement (in fact, I don't think it's a good idea to export
-'init_groups', neither good to let caller sure of 'group_info' valid).
-
-
-As an integrator or large source code maintainer, we cannot only depend
-on testing, or tracing log, or some short directly causes; we also need
-find and solve issues by checking sub-systems' interface or documents.
-
-> Thanks.
-> 
-
-Thanks.
--- 
-Chen Gang
