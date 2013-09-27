@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3I0QD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:03:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753399Ab3I0QD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:03:27 -0400
-Date: Fri, 27 Sep 2013 18:01:25 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux.nics@intel.com,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: kobject_add_internal failed for msi_irqs with -EEXIST
-Message-ID: <20130927160125.GB14139@redhat.com>
-References: <5245896A.70705@redhat.com>
- <CAErSpo6L-Ud08=JPM7d=RYuPO=UFvq_9hZGbne0iQnCHiFbuHQ@mail.gmail.com>
+	id S1753002Ab3I0QE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:04:26 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:38474 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab3I0QEU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:04:20 -0400
+Date: Fri, 27 Sep 2013 09:04:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, tony.luck@intel.com,
+        fenghua.yu@intel.com, linux-ia64@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
+Message-ID: <20130927160406.GY9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130927060213.GA6673@gmail.com>
+ <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
+ <1380289495.17366.91.camel@joe-AO722>
+ <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+ <1380291257.17366.103.camel@joe-AO722>
+ <20130927142605.GC15690@laptop.programming.kicks-ass.net>
+ <1380292495.17366.106.camel@joe-AO722>
+ <20130927145007.GD15690@laptop.programming.kicks-ass.net>
+ <20130927151749.GA2149@linux.vnet.ibm.com>
+ <20130927153434.GG15690@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6L-Ud08=JPM7d=RYuPO=UFvq_9hZGbne0iQnCHiFbuHQ@mail.gmail.com>
+In-Reply-To: <20130927153434.GG15690@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092716-1542-0000-0000-000001CE3397
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 09:58:28AM -0600, Bjorn Helgaas wrote:
->[+cc Veaceslav, linux-pci]
->
->On Fri, Sep 27, 2013 at 7:34 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
->> Hi
->>
->> With recent build of 3.12-rc2 I'm getting this warning report from kernel:
->> (hw Lenovo T61, C2D, 4GB Ram)
->> (repost since linux-kernel@ rejected my gmail email....)
->
->This looks related to the MSI/kobject issues Veaceslav is working on.
->See http://lkml.kernel.org/r/1379382464-7920-2-git-send-email-vfalico@redhat.com
->and related messages.
->
->We don't have a resolution yet.  If you have
->CONFIG_DEBUG_KOBJECT_RELEASE=y, you could try turning that off.  I
->don't know if it would help, and it would only be a temporary
->workaround anyway.
+On Fri, Sep 27, 2013 at 05:34:34PM +0200, Peter Zijlstra wrote:
+> On Fri, Sep 27, 2013 at 08:17:50AM -0700, Paul E. McKenney wrote:
+> > > Barriers are fundamentally about order; and order only makes sense if
+> > > there's more than 1 party to the game.
+> > 
+> > Oddly enough, there is one exception that proves the rule...  On Itanium,
+> > suppose we have the following code, with x initially equal to zero:
+> > 
+> > CPU 1: ACCESS_ONCE(x) = 1;
+> > 
+> > CPU 2: r1 = ACCESS_ONCE(x); r2 = ACCESS_ONCE(x);
+> > 
+> > Itanium architects have told me that it really is possible for CPU 2 to
+> > see r1==1 and r2==0.  Placing a memory barrier between CPU 2's pair of
+> > fetches prevents this, but without any other memory barrier to pair with.
+> 
+> Oh man.. its really past time to sink that itanic already.
+> 
+> I suppose it allows the cpu to reorder the reads in its pipeline and the
+> memory barrier disallows this. Curious.. does our memory-barriers.txt
+> file mention this 'fun' fact?
 
-I've looked at the original post -
-http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg510798.html
-hope that's it - and it seems that it's disabling DEBUG_KOBJECT_RELEASE
-won't help - the warning is about the re-registering, not about freeing it.
+Probably not.  I was recently reminded of it by some people on the C++
+standards committee.  I had first heard of it about 5 years ago, but
+hadn't heard definitively until quite recently.
 
-As a workaround I'd suggest adding some kind of delay between removing and
-adding the msi - as in - rmmod e1000e; sleep 1; modprobe e1000e; - or
-something like that, so that there is enough time for the /msqi_irqs/ to go
-away.
+I defer to the Itanium maintainers to actually make the required changes,
+should they choose to do so.  I suppose that one way to handle it in the
+Linux kernel would be to make ACCESS_ONCE() be architecture specific,
+with Itanium placing a memory barrier either before or after --- either
+would work.  But since Itanium seems to run Linux reliably, I am guessing
+that the probability of misordering is quite low.  But again, the ball
+is firmly in the Itanium maintainers' courts, and I have added them on CC.
 
->
->Bjorn
+							Thanx, Paul
+
