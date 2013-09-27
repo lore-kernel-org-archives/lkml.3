@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab3I0RyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 13:54:10 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:22686 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab3I0RyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 13:54:07 -0400
-Date: Fri, 27 Sep 2013 19:53:53 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jingoo Han <jg1.han@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: replace strict_strto*() with kstrto*()
-Message-ID: <20130927195353.3643398a@endymion.delvare>
-In-Reply-To: <CAErSpo51GFB+yCuaHrwBqWjHxd0GboHgvWGov5pj4V6aGPfQHg@mail.gmail.com>
-References: <000401ce86b7$0463f580$0d2be080$@samsung.com>
-	<CAErSpo51GFB+yCuaHrwBqWjHxd0GboHgvWGov5pj4V6aGPfQHg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754314Ab3I0Rya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 13:54:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754098Ab3I0Ry0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 13:54:26 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: Trond.Myklebust@netapp.com, steved@redhat.com
+cc: dhowells@redhat.com, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
+        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] NFS/FS-Cache: Fix crash from accidentally starting caching whilst writing
+Date: Fri, 27 Sep 2013 18:54:22 +0100
+Message-ID: <32376.1380304462@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
 
-On Fri, 27 Sep 2013 09:50:39 -0600, Bjorn Helgaas wrote:
-> There's some indication that this change might have broken handling of
-> signed types.  See
-> https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-September/111758.html
-> and https://bugzilla.kernel.org/show_bug.cgi?id=61811.
+Hi Trond,
 
-It seems this is hurting more users than I would have expected, and
-people are spending significant amounts of time to figure out what the
-root cause to their problem is. May I suggest that my fix should find
-its way to Linus' tree rather sooner than later?
+Can you pull these commits to fix an issue with NFS whereby caching can be
+enabled on a file that is open for writing by subsequently opening it for
+reading.  This can be made to crash by opening it for writing again if you're
+quick enough.
+
+The gist of the patchset is that the cookie should be acquired at inode
+creation only and subsequently enabled and disabled as appropriate (which
+dispenses with the backing objects when they're not needed).
+
+The extra synchronisation that NFS does can then be dispensed with as it is
+thenceforth managed by FS-Cache.
+
+Could you send these on to Linus?
+
+This likely will need fixing also in CIFS and 9P also once the FS-Cache
+changes are upstream.  AFS and Ceph are probably safe.
 
 Thanks,
--- 
-Jean Delvare
+David
+---
+The following changes since commit 2457aaf73a97a97c8596ed3903bd09601976f3bc:
+
+  Merge tag 'pm+acpi-3.12-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm (2013-09-20 15:17:14 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git fscache
+
+for you to fetch changes up to f1fe29b4a02d0805aa7d0ff6b73410a9f9316d69:
+
+  NFS: Use i_writecount to control whether to get an fscache cookie in nfs_open() (2013-09-27 18:40:25 +0100)
+
+----------------------------------------------------------------
+(from the branch description for fscache local branch)
+
+clone of "master"
+----------------------------------------------------------------
+David Howells (3):
+      FS-Cache: Add use/unuse/wake cookie wrappers
+      FS-Cache: Provide the ability to enable/disable cookies
+      NFS: Use i_writecount to control whether to get an fscache cookie in nfs_open()
+
+ Documentation/filesystems/caching/netfs-api.txt |  73 +++++++--
+ fs/9p/cache.c                                   |   6 +-
+ fs/afs/cell.c                                   |   2 +-
+ fs/afs/inode.c                                  |   2 +-
+ fs/afs/vlocation.c                              |   3 +-
+ fs/afs/volume.c                                 |   2 +-
+ fs/cachefiles/interface.c                       |   2 +-
+ fs/ceph/cache.c                                 |   4 +-
+ fs/cifs/fscache.c                               |   8 +-
+ fs/fscache/cookie.c                             | 193 ++++++++++++++++------
+ fs/fscache/fsdef.c                              |   1 +
+ fs/fscache/netfs.c                              |   1 +
+ fs/fscache/object.c                             |   7 +-
+ fs/fscache/page.c                               |  59 +++++--
+ fs/nfs/dir.c                                    |   2 +-
+ fs/nfs/fscache.c                                | 202 +++++++-----------------
+ fs/nfs/fscache.h                                |  18 +--
+ fs/nfs/inode.c                                  |   6 +-
+ fs/nfs/nfs4file.c                               |   2 +-
+ include/linux/fs.h                              |   5 +
+ include/linux/fscache-cache.h                   |  50 +++---
+ include/linux/fscache.h                         | 113 +++++++++++--
+ include/linux/nfs_fs.h                          |   8 +-
+ 23 files changed, 464 insertions(+), 305 deletions(-)
