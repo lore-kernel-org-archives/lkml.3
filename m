@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3I0N23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:28:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55735 "EHLO mx2.suse.de"
+	id S1754507Ab3I0Nhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:37:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55800 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab3I0N2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:21 -0400
+	id S1753824Ab3I0N22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:28 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 30/63] sched: Do not migrate memory immediately after switching node
-Date: Fri, 27 Sep 2013 14:27:15 +0100
-Message-Id: <1380288468-5551-31-git-send-email-mgorman@suse.de>
+Subject: [PATCH 38/63] sched: Introduce migrate_swap()
+Date: Fri, 27 Sep 2013 14:27:23 +0100
+Message-Id: <1380288468-5551-39-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,108 +22,281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-The load balancer can move tasks between nodes and does not take NUMA
-locality into account. With automatic NUMA balancing this may result in the
-tasks working set being migrated to the new node. However, as the fault
-buffer will still store faults from the old node the schduler may decide to
-reset the preferred node and migrate the task back resulting in more
-migrations.
+Use the new stop_two_cpus() to implement migrate_swap(), a function that
+flips two tasks between their respective cpus.
 
-The ideal would be that the scheduler did not migrate tasks with a heavy
-memory footprint but this may result nodes being overloaded. We could
-also discard the fault information on task migration but this would still
-cause all the tasks working set to be migrated. This patch simply avoids
-migrating the memory for a short time after a task is migrated.
+I'm fairly sure there's a less crude way than employing the stop_two_cpus()
+method, but everything I tried either got horribly fragile and/or complex. So
+keep it simple for now.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
+The notable detail is how we 'migrate' tasks that aren't runnable
+anymore. We'll make it appear like we migrated them before they went to
+sleep. The sole difference is the previous cpu in the wakeup path, so we
+override this.
+
+TODO: I'm fairly sure we can get rid of the wake_cpu != -1 test by keeping
+wake_cpu to the actual task cpu; just couldn't be bothered to think through
+all the cases.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/core.c |  2 +-
- kernel/sched/fair.c | 18 ++++++++++++++++--
- mm/mempolicy.c      | 12 ++++++++++++
- 3 files changed, 29 insertions(+), 3 deletions(-)
+ include/linux/sched.h    |   1 +
+ kernel/sched/core.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sched/fair.c      |   3 +-
+ kernel/sched/idle_task.c |   2 +-
+ kernel/sched/rt.c        |   5 +--
+ kernel/sched/sched.h     |   3 +-
+ kernel/sched/stop_task.c |   2 +-
+ 7 files changed, 105 insertions(+), 14 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3418b0b..3e8c547 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1035,6 +1035,7 @@ struct task_struct {
+ #ifdef CONFIG_SMP
+ 	struct llist_node wake_entry;
+ 	int on_cpu;
++	int wake_cpu;
+ #endif
+ 	int on_rq;
+ 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e94509d..374da2b 100644
+index 374da2b..67f2b7b 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1641,7 +1641,7 @@ static void __sched_fork(struct task_struct *p)
+@@ -1032,6 +1032,90 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	__set_task_cpu(p, new_cpu);
+ }
  
- 	p->node_stamp = 0ULL;
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
--	p->numa_migrate_seq = 0;
-+	p->numa_migrate_seq = 1;
- 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
- 	p->numa_preferred_nid = -1;
- 	p->numa_work.next = &p->numa_work;
++static void __migrate_swap_task(struct task_struct *p, int cpu)
++{
++	if (p->on_rq) {
++		struct rq *src_rq, *dst_rq;
++
++		src_rq = task_rq(p);
++		dst_rq = cpu_rq(cpu);
++
++		deactivate_task(src_rq, p, 0);
++		set_task_cpu(p, cpu);
++		activate_task(dst_rq, p, 0);
++		check_preempt_curr(dst_rq, p, 0);
++	} else {
++		/*
++		 * Task isn't running anymore; make it appear like we migrated
++		 * it before it went to sleep. This means on wakeup we make the
++		 * previous cpu or targer instead of where it really is.
++		 */
++		p->wake_cpu = cpu;
++	}
++}
++
++struct migration_swap_arg {
++	struct task_struct *src_task, *dst_task;
++	int src_cpu, dst_cpu;
++};
++
++static int migrate_swap_stop(void *data)
++{
++	struct migration_swap_arg *arg = data;
++	struct rq *src_rq, *dst_rq;
++	int ret = -EAGAIN;
++
++	src_rq = cpu_rq(arg->src_cpu);
++	dst_rq = cpu_rq(arg->dst_cpu);
++
++	double_rq_lock(src_rq, dst_rq);
++	if (task_cpu(arg->dst_task) != arg->dst_cpu)
++		goto unlock;
++
++	if (task_cpu(arg->src_task) != arg->src_cpu)
++		goto unlock;
++
++	if (!cpumask_test_cpu(arg->dst_cpu, tsk_cpus_allowed(arg->src_task)))
++		goto unlock;
++
++	if (!cpumask_test_cpu(arg->src_cpu, tsk_cpus_allowed(arg->dst_task)))
++		goto unlock;
++
++	__migrate_swap_task(arg->src_task, arg->dst_cpu);
++	__migrate_swap_task(arg->dst_task, arg->src_cpu);
++
++	ret = 0;
++
++unlock:
++	double_rq_unlock(src_rq, dst_rq);
++
++	return ret;
++}
++
++/*
++ * XXX worry about hotplug
++ */
++int migrate_swap(struct task_struct *cur, struct task_struct *p)
++{
++	struct migration_swap_arg arg = {
++		.src_task = cur,
++		.src_cpu = task_cpu(cur),
++		.dst_task = p,
++		.dst_cpu = task_cpu(p),
++	};
++
++	if (arg.src_cpu == arg.dst_cpu)
++		return -EINVAL;
++
++	if (!cpumask_test_cpu(arg.dst_cpu, tsk_cpus_allowed(arg.src_task)))
++		return -EINVAL;
++
++	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
++		return -EINVAL;
++
++	return stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
++}
++
+ struct migration_arg {
+ 	struct task_struct *task;
+ 	int dest_cpu;
+@@ -1251,9 +1335,9 @@ out:
+  * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
+  */
+ static inline
+-int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
++int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
+ {
+-	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
++	cpu = p->sched_class->select_task_rq(p, cpu, sd_flags, wake_flags);
+ 
+ 	/*
+ 	 * In order not to call set_task_cpu() on a blocking task we need
+@@ -1528,7 +1612,12 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	if (p->sched_class->task_waking)
+ 		p->sched_class->task_waking(p);
+ 
+-	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
++	if (p->wake_cpu != -1) {	/* XXX make this condition go away */
++		cpu = p->wake_cpu;
++		p->wake_cpu = -1;
++	}
++
++	cpu = select_task_rq(p, cpu, SD_BALANCE_WAKE, wake_flags);
+ 	if (task_cpu(p) != cpu) {
+ 		wake_flags |= WF_MIGRATED;
+ 		set_task_cpu(p, cpu);
+@@ -1614,6 +1703,10 @@ static void __sched_fork(struct task_struct *p)
+ {
+ 	p->on_rq			= 0;
+ 
++#ifdef CONFIG_SMP
++	p->wake_cpu			= -1;
++#endif
++
+ 	p->se.on_rq			= 0;
+ 	p->se.exec_start		= 0;
+ 	p->se.sum_exec_runtime		= 0;
+@@ -1765,7 +1858,7 @@ void wake_up_new_task(struct task_struct *p)
+ 	 *  - cpus_allowed can change in the fork path
+ 	 *  - any previously selected cpu might disappear through hotplug
+ 	 */
+-	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
++	set_task_cpu(p, select_task_rq(p, task_cpu(p), SD_BALANCE_FORK, 0));
+ #endif
+ 
+ 	/* Initialize new task's runnable average */
+@@ -2093,7 +2186,7 @@ void sched_exec(void)
+ 	int dest_cpu;
+ 
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
++	dest_cpu = p->sched_class->select_task_rq(p, task_cpu(p), SD_BALANCE_EXEC, 0);
+ 	if (dest_cpu == smp_processor_id())
+ 		goto unlock;
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 891105c..f136057 100644
+index cd90e44..9b59f5d 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -884,7 +884,7 @@ static unsigned int task_scan_max(struct task_struct *p)
-  * the preferred node but still allow the scheduler to move the task again if
-  * the nodes CPUs are overloaded.
+@@ -3659,11 +3659,10 @@ done:
+  * preempt must be disabled.
   */
--unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
-+unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
- 
- static inline int task_faults_idx(int nid, int priv)
+ static int
+-select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
++select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags)
  {
-@@ -980,7 +980,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
+ 	int cpu = smp_processor_id();
+-	int prev_cpu = task_cpu(p);
+ 	int new_cpu = cpu;
+ 	int want_affine = 0;
+ 	int sync = wake_flags & WF_SYNC;
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index d8da010..516c3d9 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -9,7 +9,7 @@
  
- 		/* Update the preferred nid and migrate task if possible */
- 		p->numa_preferred_nid = max_nid;
--		p->numa_migrate_seq = 0;
-+		p->numa_migrate_seq = 1;
- 		migrate_task_to(p, preferred_cpu);
- 	}
+ #ifdef CONFIG_SMP
+ static int
+-select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
++select_task_rq_idle(struct task_struct *p, int cpu, int sd_flag, int flags)
+ {
+ 	return task_cpu(p); /* IDLE tasks as never migrated */
  }
-@@ -4074,6 +4074,20 @@ static void move_task(struct task_struct *p, struct lb_env *env)
- 	set_task_cpu(p, env->dst_cpu);
- 	activate_task(env->dst_rq, p, 0);
- 	check_preempt_curr(env->dst_rq, p, 0);
-+#ifdef CONFIG_NUMA_BALANCING
-+	if (p->numa_preferred_nid != -1) {
-+		int src_nid = cpu_to_node(env->src_cpu);
-+		int dst_nid = cpu_to_node(env->dst_cpu);
-+
-+		/*
-+		 * If the load balancer has moved the task then limit
-+		 * migrations from taking place in the short term in
-+		 * case this is a short-lived migration.
-+		 */
-+		if (src_nid != dst_nid && dst_nid != p->numa_preferred_nid)
-+			p->numa_migrate_seq = 0;
-+	}
-+#endif
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 01970c8..d81866d 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1169,13 +1169,10 @@ static void yield_task_rt(struct rq *rq)
+ static int find_lowest_rq(struct task_struct *task);
+ 
+ static int
+-select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
++select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+ {
+ 	struct task_struct *curr;
+ 	struct rq *rq;
+-	int cpu;
+-
+-	cpu = task_cpu(p);
+ 
+ 	if (p->nr_cpus_allowed == 1)
+ 		goto out;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 778f875..99b1ecd 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -556,6 +556,7 @@ static inline u64 rq_clock_task(struct rq *rq)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ extern int migrate_task_to(struct task_struct *p, int cpu);
++extern int migrate_swap(struct task_struct *, struct task_struct *);
+ static inline void task_numa_free(struct task_struct *p)
+ {
+ 	kfree(p->numa_faults);
+@@ -988,7 +989,7 @@ struct sched_class {
+ 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+ 
+ #ifdef CONFIG_SMP
+-	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
++	int  (*select_task_rq)(struct task_struct *p, int task_cpu, int sd_flag, int flags);
+ 	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
+ 
+ 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index e08fbee..47197de 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -11,7 +11,7 @@
+ 
+ #ifdef CONFIG_SMP
+ static int
+-select_task_rq_stop(struct task_struct *p, int sd_flag, int flags)
++select_task_rq_stop(struct task_struct *p, int cpu, int sd_flag, int flags)
+ {
+ 	return task_cpu(p); /* stop tasks as never migrate */
  }
- 
- /*
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 8e2a364..adc93b2 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2322,6 +2322,18 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 		last_nidpid = page_nidpid_xchg_last(page, this_nidpid);
- 		if (!nidpid_pid_unset(last_nidpid) && nidpid_to_nid(last_nidpid) != polnid)
- 			goto out;
-+
-+#ifdef CONFIG_NUMA_BALANCING
-+		/*
-+		 * If the scheduler has just moved us away from our
-+		 * preferred node, do not bother migrating pages yet.
-+		 * This way a short and temporary process migration will
-+		 * not cause excessive memory migration.
-+		 */
-+		if (polnid != current->numa_preferred_nid &&
-+				!current->numa_migrate_seq)
-+			goto out;
-+#endif
- 	}
- 
- 	if (curnid != polnid)
 -- 
 1.8.1.4
 
