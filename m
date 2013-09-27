@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329Ab3I0LYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 07:24:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49099 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab3I0LX5 (ORCPT
+	id S1751574Ab3I0LYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 07:24:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44831 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031Ab3I0LYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 07:23:57 -0400
-Date: Fri, 27 Sep 2013 13:23:23 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-Message-ID: <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
-References: <1380147049.3467.67.camel@schen9-DESK>
- <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
- <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
- <1380226997.2602.11.camel@j-VirtualBox>
- <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
- <1380229794.2602.36.camel@j-VirtualBox>
- <1380231702.3467.85.camel@schen9-DESK>
- <1380235333.3229.39.camel@j-VirtualBox>
- <1380236265.3467.103.camel@schen9-DESK>
- <20130927060213.GA6673@gmail.com>
+	Fri, 27 Sep 2013 07:24:02 -0400
+Date: Fri, 27 Sep 2013 12:23:32 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for arm64
+Message-ID: <20130927112332.GD9520@mudshark.cambridge.arm.com>
+References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
+ <20130927105045.GA11063@MacBook-Pro.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130927060213.GA6673@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130927105045.GA11063@MacBook-Pro.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 08:02:13AM +0200, Ingo Molnar wrote:
-> Would be nice to have this as a separate, add-on patch. Every single 
-> instruction removal that has no downside is an upside!
+On Fri, Sep 27, 2013 at 11:50:46AM +0100, Catalin Marinas wrote:
+> On Fri, Sep 27, 2013 at 09:04:40AM +0100, Jiang Liu wrote:
+> > From: Jiang Liu <jiang.liu@huawei.com>
+> > 
+> > This patchset enables FPSIMD lazy save and restore for ARM64, you could
+> > apply it against v3.12-rc2.
+> > 
+> > We have done basic functional tests on ARM fast model, but still lack
+> > of detail performance benchmark on real hardware platforms. We would
+> > appreciate if you could help to test it on really hardware platforms!
 > 
-> You can add a comment that explains it.
+> That's my issue as well, I would like to see some benchmarks before
+> merging such patches.
 
-If someone is going to do add-on patches to the mcslock.h file, please
-also consider doing a patch that adds comments to the memory barriers in
-there.
+Furthermore, with GCC's register allocator starting to use vector registers to
+optimise *integer* code instead of spilling to the stack, it's going to become
+more and more common to tasks to have live FP state at context switch. Lazy
+switching might simply introduce overhead in the form of additional trapping.
 
-Also, checkpatch.pl should really warn about that; and it appears there
-code in there for that; however:
-
-# grep -C3 smp_mb scripts/checkpatch.pl 
-                        }
-                }
-# check for memory barriers without a comment.
-                if ($line =~ /\b(mb|rmb|wmb|read_barrier_depends|smp_mb|smp_rmb|smp_wmb|smp_read_barrier_depends)\(/) {
-                        if (!ctx_has_comment($first_line, $linenr)) {
-                                CHK("MEMORY_BARRIER",
-                                    "memory barrier without comment\n" . $herecurr);
-# grep -C3 smp_wmb kernel/mutex.c
-                return;
-        }
-        ACCESS_ONCE(prev->next) = node;
-        smp_wmb();
-        /* Wait until the lock holder passes the lock down */
-        while (!ACCESS_ONCE(node->locked))
-                arch_mutex_cpu_relax();
---
-                        arch_mutex_cpu_relax();
-        }
-        ACCESS_ONCE(next->locked) = 1;
-        smp_wmb();
-}
-
-/*
-# scripts/checkpatch.pl -f kernel/mutex.c 2>&1 | grep memory
-#
-
-so that appears to be completely broken :/
-
-Joe, any clue what's up with that?
+Will
