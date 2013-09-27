@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3I0N2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:28:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55764 "EHLO mx2.suse.de"
+	id S1754269Ab3I0Ne2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:34:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753765Ab3I0N2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:23 -0400
+	id S1751638Ab3I0N2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:37 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 33/63] sched: Retry migration of tasks to CPU on a preferred node
-Date: Fri, 27 Sep 2013 14:27:18 +0100
-Message-Id: <1380288468-5551-34-git-send-email-mgorman@suse.de>
+Subject: [PATCH 48/63] sched: numa: stay on the same node if CLONE_VM
+Date: Fri, 27 Sep 2013 14:27:33 +0100
+Message-Id: <1380288468-5551-49-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,90 +22,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a preferred node is selected for a tasks there is an attempt to migrate
-the task to a CPU there. This may fail in which case the task will only
-migrate if the active load balancer takes action. This may never happen if
-the conditions are not right. This patch will check at NUMA hinting fault
-time if another attempt should be made to migrate the task. It will only
-make an attempt once every five seconds.
+From: Rik van Riel <riel@redhat.com>
 
+A newly spawned thread inside a process should stay on the same
+NUMA node as its parent. This prevents processes from being "torn"
+across multiple NUMA nodes every time they spawn a new thread.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/fair.c   | 30 +++++++++++++++++++++++-------
- 2 files changed, 24 insertions(+), 7 deletions(-)
+ include/linux/sched.h |  2 +-
+ kernel/fork.c         |  2 +-
+ kernel/sched/core.c   | 14 +++++++++-----
+ 3 files changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6eb8fa6..3418b0b 100644
+index 15888f5..4f51ceb 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1333,6 +1333,7 @@ struct task_struct {
- 	int numa_migrate_seq;
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
-+	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
+@@ -2005,7 +2005,7 @@ extern void wake_up_new_task(struct task_struct *tsk);
+ #else
+  static inline void kick_process(struct task_struct *tsk) { }
+ #endif
+-extern void sched_fork(struct task_struct *p);
++extern void sched_fork(unsigned long clone_flags, struct task_struct *p);
+ extern void sched_dead(struct task_struct *p);
  
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b130014..00ccc68 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1011,6 +1011,23 @@ migrate:
- 	return migrate_task_to(p, env.best_cpu);
- }
+ extern void proc_caches_init(void);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3b1f6af..51f6c4b 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1310,7 +1310,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ #endif
  
-+/* Attempt to migrate a task to a CPU on the preferred node. */
-+static void numa_migrate_preferred(struct task_struct *p)
-+{
-+	/* Success if task is already running on preferred CPU */
-+	p->numa_migrate_retry = 0;
-+	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
-+		return;
-+
-+	/* This task has no NUMA fault statistics yet */
-+	if (unlikely(p->numa_preferred_nid == -1))
-+		return;
-+
-+	/* Otherwise, try migrate to a CPU on the preferred node */
-+	if (task_numa_migrate(p) != 0)
-+		p->numa_migrate_retry = jiffies + HZ*5;
-+}
-+
- static void task_numa_placement(struct task_struct *p)
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+-	sched_fork(p);
++	sched_fork(clone_flags, p);
+ 
+ 	retval = perf_event_init_task(p);
+ 	if (retval)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 123ac92..336a8ba 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1699,7 +1699,7 @@ int wake_up_state(struct task_struct *p, unsigned int state)
+  *
+  * __sched_fork() is basic setup used by init_idle() too:
+  */
+-static void __sched_fork(struct task_struct *p)
++static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
  {
- 	int seq, nid, max_nid = -1;
-@@ -1045,17 +1062,12 @@ static void task_numa_placement(struct task_struct *p)
- 		}
+ 	p->on_rq			= 0;
+ 
+@@ -1732,11 +1732,15 @@ static void __sched_fork(struct task_struct *p)
+ 		p->mm->numa_scan_seq = 0;
  	}
  
--	/*
--	 * Record the preferred node as the node with the most faults,
--	 * requeue the task to be running on the idlest CPU on the
--	 * preferred node and reset the scanning rate to recheck
--	 * the working set placement.
--	 */
-+	/* Preferred node as the node with the most faults */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
- 		/* Update the preferred nid and migrate task if possible */
- 		p->numa_preferred_nid = max_nid;
- 		p->numa_migrate_seq = 1;
--		task_numa_migrate(p);
-+		numa_migrate_preferred(p);
- 	}
- }
- 
-@@ -1111,6 +1123,10 @@ void task_numa_fault(int last_nidpid, int node, int pages, bool migrated)
- 
- 	task_numa_placement(p);
- 
-+	/* Retry task to preferred node migration if it previously failed */
-+	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
-+		numa_migrate_preferred(p);
++	if (clone_flags & CLONE_VM)
++		p->numa_preferred_nid = current->numa_preferred_nid;
++	else
++		p->numa_preferred_nid = -1;
 +
- 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
- }
+ 	p->node_stamp = 0ULL;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_migrate_seq = 1;
+ 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+-	p->numa_preferred_nid = -1;
+ 	p->numa_work.next = &p->numa_work;
+ 	p->numa_faults = NULL;
+ 	p->numa_faults_buffer = NULL;
+@@ -1768,12 +1772,12 @@ void set_numabalancing_state(bool enabled)
+ /*
+  * fork()/clone()-time setup:
+  */
+-void sched_fork(struct task_struct *p)
++void sched_fork(unsigned long clone_flags, struct task_struct *p)
+ {
+ 	unsigned long flags;
+ 	int cpu = get_cpu();
+ 
+-	__sched_fork(p);
++	__sched_fork(clone_flags, p);
+ 	/*
+ 	 * We mark the process as running here. This guarantees that
+ 	 * nobody will actually run it, and a signal or other external
+@@ -4304,7 +4308,7 @@ void init_idle(struct task_struct *idle, int cpu)
+ 
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+ 
+-	__sched_fork(idle);
++	__sched_fork(0, idle);
+ 	idle->state = TASK_RUNNING;
+ 	idle->se.exec_start = sched_clock();
  
 -- 
 1.8.1.4
