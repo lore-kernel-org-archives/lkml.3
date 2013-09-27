@@ -1,181 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab3I0GJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 02:09:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab3I0GJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 02:09:34 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: Jason Wang <jasowang@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH net-next] virtio-net: switch to use XPS to choose txq
-Date: Fri, 27 Sep 2013 13:57:24 +0800
-Message-Id: <1380261444-40918-1-git-send-email-jasowang@redhat.com>
+	id S1752089Ab3I0GMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 02:12:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36074 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab3I0GMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 02:12:48 -0400
+Date: Fri, 27 Sep 2013 16:12:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: linux-next: manual merge of the tip tree with the h8300-remove tree
+Message-Id: <20130927161238.f168bf3544c56ae1c1dcf439@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to use a percpu structure vq_index to record the cpu to queue
-mapping, this is suboptimal since it duplicates the work of XPS and
-loses all other XPS functionality such as allowing use to configure
-their own transmission steering strategy.
+--Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So this patch switches to use XPS and suggest a default mapping when
-the number of cpus is equal to the number of queues. With XPS support,
-there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
-so they were removed also.
+Hi all,
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/virtio_net.c |   55 +++++++--------------------------------------
- 1 files changed, 9 insertions(+), 46 deletions(-)
+Today's linux-next merge of the tip tree got a conflict in
+arch/h8300/include/asm/Kbuild between commit 4b0847842204 ("Drop support
+for Renesas H8/300 (h8300) architecture") from the h8300-remove tree and
+commit a787870924db ("sched, arch: Create asm/preempt.h") from the tip
+tree.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index defec2b..4102c1b 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -127,9 +127,6 @@ struct virtnet_info {
- 	/* Does the affinity hint is set for virtqueues? */
- 	bool affinity_hint_set;
- 
--	/* Per-cpu variable to show the mapping from CPU to virtqueue */
--	int __percpu *vq_index;
--
- 	/* CPU hot plug notifier */
- 	struct notifier_block nb;
- };
-@@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
- static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- {
- 	int i;
--	int cpu;
- 
- 	if (vi->affinity_hint_set) {
- 		for (i = 0; i < vi->max_queue_pairs; i++) {
-@@ -1073,20 +1069,11 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- 
- 		vi->affinity_hint_set = false;
- 	}
--
--	i = 0;
--	for_each_online_cpu(cpu) {
--		if (cpu == hcpu) {
--			*per_cpu_ptr(vi->vq_index, cpu) = -1;
--		} else {
--			*per_cpu_ptr(vi->vq_index, cpu) =
--				++i % vi->curr_queue_pairs;
--		}
--	}
- }
- 
- static void virtnet_set_affinity(struct virtnet_info *vi)
- {
-+	cpumask_var_t cpumask;
- 	int i;
- 	int cpu;
- 
-@@ -1100,15 +1087,21 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
- 		return;
- 	}
- 
-+	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
-+		return;
-+
- 	i = 0;
- 	for_each_online_cpu(cpu) {
- 		virtqueue_set_affinity(vi->rq[i].vq, cpu);
- 		virtqueue_set_affinity(vi->sq[i].vq, cpu);
--		*per_cpu_ptr(vi->vq_index, cpu) = i;
-+		cpumask_clear(cpumask);
-+		cpumask_set_cpu(cpu, cpumask);
-+		netif_set_xps_queue(vi->dev, cpumask, i);
- 		i++;
- 	}
- 
- 	vi->affinity_hint_set = true;
-+	free_cpumask_var(cpumask);
- }
- 
- static int virtnet_cpu_callback(struct notifier_block *nfb,
-@@ -1217,28 +1210,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
- 	return 0;
- }
- 
--/* To avoid contending a lock hold by a vcpu who would exit to host, select the
-- * txq based on the processor id.
-- */
--static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
--{
--	int txq;
--	struct virtnet_info *vi = netdev_priv(dev);
--
--	if (skb_rx_queue_recorded(skb)) {
--		txq = skb_get_rx_queue(skb);
--	} else {
--		txq = *__this_cpu_ptr(vi->vq_index);
--		if (txq == -1)
--			txq = 0;
--	}
--
--	while (unlikely(txq >= dev->real_num_tx_queues))
--		txq -= dev->real_num_tx_queues;
--
--	return txq;
--}
--
- static const struct net_device_ops virtnet_netdev = {
- 	.ndo_open            = virtnet_open,
- 	.ndo_stop   	     = virtnet_close,
-@@ -1250,7 +1221,6 @@ static const struct net_device_ops virtnet_netdev = {
- 	.ndo_get_stats64     = virtnet_stats,
- 	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
--	.ndo_select_queue     = virtnet_select_queue,
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller = virtnet_netpoll,
- #endif
-@@ -1559,10 +1529,6 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (vi->stats == NULL)
- 		goto free;
- 
--	vi->vq_index = alloc_percpu(int);
--	if (vi->vq_index == NULL)
--		goto free_stats;
--
- 	mutex_init(&vi->config_lock);
- 	vi->config_enable = true;
- 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-@@ -1589,7 +1555,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
- 	err = init_vqs(vi);
- 	if (err)
--		goto free_index;
-+		goto free_stats;
- 
- 	netif_set_real_num_tx_queues(dev, 1);
- 	netif_set_real_num_rx_queues(dev, 1);
-@@ -1640,8 +1606,6 @@ free_recv_bufs:
- free_vqs:
- 	cancel_delayed_work_sync(&vi->refill);
- 	virtnet_del_vqs(vi);
--free_index:
--	free_percpu(vi->vq_index);
- free_stats:
- 	free_percpu(vi->stats);
- free:
-@@ -1678,7 +1642,6 @@ static void virtnet_remove(struct virtio_device *vdev)
- 
- 	flush_work(&vi->config_work);
- 
--	free_percpu(vi->vq_index);
- 	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
- }
--- 
-1.7.1
+I just removed the file and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSRSHaAAoJEMDTa8Ir7ZwV70IP/1rdfNuVoM8Ehjtm0uJfkqAK
+KZba64S10kVEK/pwZWZIfkOx6M7j8Wv7DB28y4g8OFzlnd8vS/LoDh/sYIlWTjpl
+qcke3RkCmr2qJvf99VzzUCKeaAXeuzeNWq73r/U6gJTjzGxxw2U9TRhbsW0o0EBJ
+qbPZX+EQ0ZetNjFCerx6B2vJbVA9qnMPMostAwrrOP+sYjDlH5Ugxk1gAJfjQLSP
+tPbNpnt6kzcBMf2V3PVEhL647v53RHseKsC6CwiIWwIrWHtOi529g5m8+95pqyzv
+HV+u8COJqutQa9ryNG4+kgZo4mQDCgks0ym/K0ObSZI63+l9SLMncLDihUAXLVpV
+fnmzuDSuy0XGZ6vkIIT4/t/HflHkX9enga+864yP04qzWK6IKD8pV2ZdSj58eRWq
+7KNsmzadkLgG/npc3bV5WyKicadoG3ST9jRnElfSTonsDBgwWy5lYL2MIrHWCXga
+I8tSj6KUebb/zogzMMnJYh+6KUUcDNcbqtwux0EXzUf0qliCdIZ+E2xeZJpi1aFt
+5aJhz/terZ//LqFw3KfaETl8OOy9wGTC7JCiy6NN975m3O0CpT2e5ZUhNwg2ijB7
+gv2QRmk6RzpcS7hOHkHylC3STLgthA3CxHa3XawpqnVmd5x0nuplqXCNC3IsTyoi
+RiXiIT2Q/nWh9wquKGgX
+=HbSL
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9--
