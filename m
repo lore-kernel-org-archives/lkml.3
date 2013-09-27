@@ -1,197 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab3I0PmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:42:09 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:46231 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab3I0PmH (ORCPT
+	id S1754022Ab3I0Pmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:42:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48827 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374Ab3I0Pmt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:42:07 -0400
-Message-ID: <5245A73F.9030207@gmail.com>
-Date: Fri, 27 Sep 2013 23:41:51 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-References: <1380105868-31985-1-git-send-email-liuj97@gmail.com> <1380105868-31985-3-git-send-email-liuj97@gmail.com> <CA+b37P2McAMq80jppqoD58QjhrJ7f2cEX4JJdivVfuRH1-69VQ@mail.gmail.com>
-In-Reply-To: <CA+b37P2McAMq80jppqoD58QjhrJ7f2cEX4JJdivVfuRH1-69VQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Sep 2013 11:42:49 -0400
+Subject: Re: "memory" binding issues
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1379492496.6148.35.camel@pasglop>
+Date: Fri, 27 Sep 2013 10:42:50 -0500
+Cc: Grant Likely <grant.likely@secretlab.ca>, devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CD611795-B45E-4E37-B387-76B5C855DEEA@codeaurora.org>
+References: <1379300274.4098.77.camel@pasglop> <20130918025714.A69D8C42C8F@trevor.secretlab.ca> <1379492496.6148.35.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 10:35 PM, Sandeepa Prabhu wrote:
-> On 25 September 2013 16:14, Jiang Liu <liuj97@gmail.com> wrote:
->> From: Jiang Liu <jiang.liu@huawei.com>
->>
->> Introduce aarch64_insn_patch_text() and __aarch64_insn_patch_text()
->> to patch kernel and module code.
->>
->> Function aarch64_insn_patch_text() is a heavy version which may use
->> stop_machine() to serialize all online CPUs, and function
->> __aarch64_insn_patch_text() is light version without explicitly
->> serialization.
-> Hi Jiang,
-> 
-> I have written kprobes support for aarch64, and need both the
-> functionality (lightweight and stop_machine() versions).
-> I would like to rebase these API in kprobes, however slight changes
-> would require in case of stop_machine version, which I explained
-> below.
-> [Though kprobes cannot share Instruction encode support of jump labels
-> as, decoding & simulation quite different for kprobes/uprobes and
-> based around single stepping]
-> 
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Jiang Liu <liuj97@gmail.com>
->> ---
->>  arch/arm64/include/asm/insn.h |  2 ++
->>  arch/arm64/kernel/insn.c      | 64 +++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 66 insertions(+)
->>
->> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
->> index e7d1bc8..0ea7193 100644
->> --- a/arch/arm64/include/asm/insn.h
->> +++ b/arch/arm64/include/asm/insn.h
->> @@ -49,5 +49,7 @@ __AARCH64_INSN_FUNCS(nop,     0xFFFFFFFF, 0xD503201F)
->>  enum aarch64_insn_class aarch64_get_insn_class(u32 insn);
->>
->>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
->> +int aarch64_insn_patch_text(void *addr, u32 *insns, int cnt);
->> +int __aarch64_insn_patch_text(void *addr, u32 *insns, int cnt);
->>
->>  #endif /* _ASM_ARM64_INSN_H */
->> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
->> index 8541c3a..50facfc 100644
->> --- a/arch/arm64/kernel/insn.c
->> +++ b/arch/arm64/kernel/insn.c
->> @@ -15,6 +15,8 @@
->>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->>   */
->>  #include <linux/kernel.h>
->> +#include <linux/stop_machine.h>
->> +#include <asm/cacheflush.h>
->>  #include <asm/insn.h>
->>
->>  static int aarch64_insn_cls[] = {
->> @@ -69,3 +71,65 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
->>         return __aarch64_insn_hotpatch_safe(old_insn) &&
->>                __aarch64_insn_hotpatch_safe(new_insn);
->>  }
->> +
->> +struct aarch64_insn_patch {
->> +       void    *text_addr;
->> +       u32     *new_insns;
->> +       int     insn_cnt;
->> +};
->> +
->> +int __kprobes __aarch64_insn_patch_text(void *addr, u32 *insns, int cnt)
->> +{
->> +       int i;
->> +       u32 *tp = addr;
->> +
->> +       /* instructions must be word aligned */
->> +       if (cnt <= 0 || ((uintptr_t)addr & 0x3))
->> +               return -EINVAL;
->> +
->> +       for (i = 0; i < cnt; i++)
->> +               tp[i] = insns[i];
->> +
->> +       flush_icache_range((uintptr_t)tp, (uintptr_t)tp + cnt * sizeof(u32));
->> +
->> +       return 0;
->> +}
-> Looks fine, but do you need to check for CPU big endian mode here? (I
-> think swab32() needed if EL1 is in big-endian mode)
-Hi Sandeepa,
-	Thanks for reminder, we do need to take care of data access endian
-issue here, will fix it in next version.
 
-> 
->> +
->> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
->> +{
->> +       struct aarch64_insn_patch *pp = arg;
->> +
->> +       return __aarch64_insn_patch_text(pp->text_addr, pp->new_insns,
->> +                                        pp->insn_cnt);
->> +}
->> +
->> +int __kprobes aarch64_insn_patch_text(void *addr, u32 *insns, int cnt)
->> +{
->> +       int ret;
->> +       bool safe = false;
->> +
->> +       /* instructions must be word aligned */
->> +       if (cnt <= 0 || ((uintptr_t)addr & 0x3))
->> +               return -EINVAL;
->> +
->> +       if (cnt == 1)
->> +               safe = aarch64_insn_hotpatch_safe(*(u32 *)addr, insns[0]);
->> +
->> +       if (safe) {
->> +               ret = __aarch64_insn_patch_text(addr, insns, cnt);
->> +       } else {
-> 
-> Can you move the code below this into separate API that just apply
-> patch with stop_machine? And then a wrapper function for jump label
-> specific handling that checks for aarch64_insn_hotpatch_safe() ?
-> Also, it will be good to move the patching code out of insn.c to
-> patch.c (refer to arch/arm/kernel/patch.c).
-> 
-> Please refer to attached file (my current implementation) to make
-> sense of exactly what kprobes would need (ignore the big-endian part
-> for now). I think splitting the code should be straight-forward and we
-> can avoid two different implementations. Please let me know if this
-> can be done, I will rebase my patches above your next version.
+On Sep 18, 2013, at 3:21 AM, Benjamin Herrenschmidt wrote:
 
-After reading the attached file, I feel current implementation of
-aarch64_insn_patch_text() should satisfy kprobe's requirements too.
-
-The extra optimization of aarch64_insn_hotpatch_safe() should work
-for kprobe too. For example, if we install a kprobe on a function call
-instruction(BL), we need to replace "BL offset1" with "BRK" or "BL
-offset2". In such cases, we could directly patch the code without
-stop_machine(). Is there any special requirement that we must use
-stop_machine() for kprobe here?
-
-Thanks!
-Gerry
-
+> On Tue, 2013-09-17 at 21:57 -0500, Grant Likely wrote:
 > 
-> Thanks,
-> Sandeepa
->> +               struct aarch64_insn_patch patch = {
->> +                       .text_addr = addr,
->> +                       .new_insns = insns,
->> +                       .insn_cnt = cnt,
->> +               };
->> +
->> +               /*
->> +                * Execute __aarch64_insn_patch_text() on every online CPU,
->> +                * which ensure serialization among all online CPUs.
->> +                */
->> +               ret = stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
->> +       }
->> +
->> +       return ret;
->> +}
->> --
->> 1.8.1.2
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>>> - It provides no indication of what a given region is used for (or used
+>>> by). In the example, "display_region" is a label (thus information that
+>>> is lost) and unless it's referenced by another node there is no good way
+>>> to know what this region is about which is quite annoying.
+>> 
+>> Does this actually matter? In most cases the regions are completely
+>> anonymous until referenced by a specific device and by default the
+>> kernel should not use until it knows what the region is for.
+> 
+> First it's handy for the developer to know for
+> debug/diagnostic/you-name-it purposes. You don't always know what the
+> heck the firmware is doing and there are some cases where such regions
+> exist independently of any specific device.
+> 
+> The ability of the node of the driver to have a phandle pointing to a is
+> indeed a nice feature and that's a good point in favor of making them
+> nodes. But I would be against *requiring* it.
+> 
+> I might have some architecture code that knows that this region is for
+> use by some internal DMA translation cache or god knows what without
+> having a clear device node as the "owner" of the region, there are going
+> to be a few special cases like that and we still want to be able to
+> identify it.
+> 
+> So I would definitely want them named. Guess what ? They are all
+> children of /reserved-memory right ? So their individual name doesn't
+> matter one bit, thus the node name can perfectly well serve that
+> purpose.
+> 
+>> We can however add properties to give the kernel hints on the usage. For
+>> instance, if a regions isn't in use at boot time, then it would be fine
+>> for the kernel to use it for movable pages up until the time a device
+>> asks for the region (ie. CMA regions can be used this way).
+> 
+> Let's not get into something overly Linux-centric though...
+> 
+>>> - The "memory-region" property is a phandle to a "reserved-memory"
+>>> region, this is not intuitive. If anything, the property should have
+>>> been called "reserved-memory-region".
+>> 
+>> Sure. I don't see the problem, but I have no problem changing it if you
+>> feel strongly about it.
+> 
+> Well it all boils down to whether we turn that whole thing into a way to
+> describe arbitrary memory regions (and not just reserved ones), for
+> example, CMA stuff as mentioned above doesn't strictly need to be
+> reserved, in which case, we would call the whole thing /memory-regions
+> and the property could be named the same. In that case we do want a
+> specific property however in each region node to indicate whether it
+> should be strictly reserved or not.
+> 
+> But I would argue against that unless we have a very clear use case,
+> because it's starting to smell a lot like trying to solve world hunger
+> with over engineering :-)
+> 
+>>> - The way the "compatible" property is documented breaks a basic
+>>> premise that the device-tree is a hardware description and not some
+>>> convenient way to pass linux specific kernel parameters accross. It is
+>>> *ok* to pass some linux specific stuff and to make compromise based on
+>>> what a driver generally might expect but the whole business of using
+>>> that to describe what to put in CMA is pushing it pretty far ...
+>> 
+>> I disagree. Originally I had the same reaction, but I've been swayed to
+>> the point of view that setting aside regions is actually a pretty
+>> hardware-centric thing because it describes how the hardware needs to be
+>> used.
+> 
+> I would still not use the "compatible" property for that. Maybe
+> recommended-usage ? Or simply "usage" property with well defined
+> semantics ? "reserved" would be one, "consistent-memory" would be
+> another (not strictly reserved but thrown into the CMA pool at first
+> notice) etc... ?
+> 
+>> I've already used the example of a framebuffer. It may not stricly
+>> be hardware, but it is a description of how the hardware is setup that
+>> the kernel should respect. Similarly, the size and placement of CMA
+>> regions are more than merely a software parameter because they are
+>> defined specifically to support the hardware devices.
+> 
+> Right and the advantage of using a node with a "reg" property here is
+> that a region can actually be made of separate ranges.
+> 
+>>> - The implementation of early_init_dt_scan_reserved_mem() will not work
+>>> on a setup whose /memory node has a unit address (typically /memory@0)
+>> 
+>> Agreed, that should be fixed. It should work regardless of whether or
+>> not the memory node(s) have a unit address.
+>> 
+>>> Now, I'd like to understand why not use the simpler binding originally
+>>> proposed by Jeremy, which had the advantage of proposing a unique name
+>>> per region in the traditional form "vendor,name", which then allows
+>>> drivers to pick up the region directly if they wish to query, remove or
+>>> update it in the tree for example (because they changed the framebuffer
+>>> address for example and want kexec to continue working).
+>> 
+>> Hmmm... I don't follow. How is query/remove/update any more or less
+>> difficult between the two approaches? Updating the reg property should
+>> be doable in-place with both methods, but finding a specific region
+>> associated with a device is explicit in the nodes-and-phandles approach.
+>> (unless the 'name' part of vendor,name is an instance name and the
+>> device node has a property containing the name; ie "acme,framebuffer1",
+>> "acme,framebuffer2", and then in the device node something like:
+>> framebuffer-region = "acme,framebuffer2";)
+>> 
+>>> I don't object to having a node per region, though it seemed unnecessary
+>>> at the time, but in any case, the current binding is crap and need to be
+>>> fixed urgently before its use spreads.
+>> 
+>> It seems to me that the 'top-level' objection is the creation of a new
+>> binding using a node per region. I think it is warrented. If you
+>> disagree strongly then we'll revert the whole series and try again for
+>> v3.13. Otherwise I think the other objections are fixable in this cycle.
+> 
+> No. I don't fundamentally object to using a node per region, it does
+> have some advantages indeed as I have mentioned in a few places.
+> 
+> My main issues are:
+> 
+> - Documentation of the "memory" binding. This is a separate thing that
+> shouldn't have been there and should not document the node without the
+> unit address (it's ok to specify I suppose that it can be ommitted
+> though I don't like it).
+> 
+> - Location. I don't want that under /memory. I have to deal with
+> machines with multiple /memory nodes and regions potentially straddling
+> them.
+> 
+> - The choice of properties for describing, naming and defining their
+> usage. I think we can come to an agreement here.
+> 
+> In fact the use of a node per region is the *least* of my worries :-)
+
+
+So where have we gotten on this?
+
+It seems we are in agreement that:
+1. reserve memory should be probably be described in nodes
+2. it should be pulled out of the memory node and put at root level
+3. Use reg to describe the memory regions for a given node
+
+Now to figure out about how to convey usage information for the region and possibly driver association.  I agree with Ben that there are probably cases that an associated device node may not exist so that shouldn't be a hard requirement.
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
