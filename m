@@ -1,182 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3I0QLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:11:55 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:32635 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab3I0QKz (ORCPT
+	id S1754174Ab3I0QNP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:13:15 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:39689 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab3I0QNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:10:55 -0400
-X-IronPort-AV: E=Sophos;i="4.90,994,1371081600"; 
-   d="scan'208";a="55582485"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v6 10/19] xen: introduce xen_alloc/free_coherent_pages
-Date: Fri, 27 Sep 2013 17:09:58 +0100
-Message-ID: <1380298207-29151-10-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
+	Fri, 27 Sep 2013 12:13:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <1380269034-38521-2-git-send-email-heiko.carstens@de.ibm.com>
+References: <1380269034-38521-1-git-send-email-heiko.carstens@de.ibm.com>
+	<1380269034-38521-2-git-send-email-heiko.carstens@de.ibm.com>
+Date: Fri, 27 Sep 2013 09:13:10 -0700
+X-Google-Sender-Auth: lnbWvGSlSE1T0FoHBtqo2WNODdQ
+Message-ID: <CA+55aFyXRsEKYg6TAr4p=RY9TSY+XhJBJ-h5ApugP7YemfAmkQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mutex,spinlock: rename arch_mutex_cpu_relax() to cpu_relax_simple()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>, Waiman Long <waiman.long@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
-and devices. On native x86 and ARMv8 is sufficient to call
-__get_free_pages in order to get a coherent buffer, while on ARM we need
-to call the native dma_ops->alloc implementation.
+On Fri, Sep 27, 2013 at 1:03 AM, Heiko Carstens
+<heiko.carstens@de.ibm.com> wrote:
+> s390 needs a special version of cpu_relax() for the new lockref code.
+> The new variant should be a no-op but also have memory barrier semantics,
+> since that is what the default cpu_relax() variant implements.
 
-When arm64 stops using the swiotlb by default and starts having multiple
-dma_ops implementations, we'll use __get_dma_ops there too.
+I'd actually prefer you do this without the renaming, and we just use
+arch_mutex_cpu_relax() in the lockref code.
 
-Introduce xen_alloc_coherent_pages to abstract the arch specific buffer
-allocation.
+We have another set of patches kind-of pending that uses
+arch_mutex_cpu_relax() (MCS lock for rwsem), and I don't want to screw
+them up.
 
-Similarly introduce xen_free_coherent_pages to free a coherent buffer:
-on x86 and ARM64 is simply a call to free_pages while on ARM is
-arm_dma_ops.free.
+The _one_ thing I'd suggest is that you replace this:
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+ #ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
+ #define arch_mutex_cpu_relax() cpu_relax()
+ #endif
 
+with just a simple
 
-Changes in v6:
-- call __get_dma_ops to get the native dma_ops pointer on arm.
----
- arch/arm/include/asm/xen/page-coherent.h   |   22 ++++++++++++++++++++++
- arch/arm64/include/asm/xen/page-coherent.h |   24 ++++++++++++++++++++++++
- arch/ia64/include/asm/xen/page-coherent.h  |   24 ++++++++++++++++++++++++
- arch/x86/include/asm/xen/page-coherent.h   |   24 ++++++++++++++++++++++++
- 4 files changed, 94 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/xen/page-coherent.h
- create mode 100644 arch/arm64/include/asm/xen/page-coherent.h
- create mode 100644 arch/ia64/include/asm/xen/page-coherent.h
- create mode 100644 arch/x86/include/asm/xen/page-coherent.h
+  #ifndef arch_mutex_cpu_relax
+  # define arch_mutex_cpu_relax() cpu_relax()
+  #endif
 
-diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..92b7a8a
---- /dev/null
-+++ b/arch/arm/include/asm/xen/page-coherent.h
-@@ -0,0 +1,22 @@
-+#ifndef _ASM_ARM_XEN_PAGE_COHERENT_H
-+#define _ASM_ARM_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	return __get_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	__get_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
-+}
-+
-+#endif /* _ASM_ARM_XEN_PAGE_COHERENT_H */
-diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..0d6ad25
---- /dev/null
-+++ b/arch/arm64/include/asm/xen/page-coherent.h
-@@ -0,0 +1,24 @@
-+#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
-+#define _ASM_ARM64_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	void *vstart = (void*)__get_free_pages(flags, get_order(size));
-+	*dma_handle = virt_to_phys(vstart);
-+	return vstart;
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	free_pages((unsigned long) cpu_addr, get_order(size));
-+}
-+
-+#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
-diff --git a/arch/ia64/include/asm/xen/page-coherent.h b/arch/ia64/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..37b929c
---- /dev/null
-+++ b/arch/ia64/include/asm/xen/page-coherent.h
-@@ -0,0 +1,24 @@
-+#ifndef _ASM_IA64_XEN_PAGE_COHERENT_H
-+#define _ASM_IA64_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	void *vstart = (void*)__get_free_pages(flags, get_order(size));
-+	*dma_handle = virt_to_phys(vstart);
-+	return vstart;
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	free_pages((unsigned long) cpu_addr, get_order(size));
-+}
-+
-+#endif /* _ASM_IA64_XEN_PAGE_COHERENT_H */
-diff --git a/arch/x86/include/asm/xen/page-coherent.h b/arch/x86/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..31de2e0
---- /dev/null
-+++ b/arch/x86/include/asm/xen/page-coherent.h
-@@ -0,0 +1,24 @@
-+#ifndef _ASM_X86_XEN_PAGE_COHERENT_H
-+#define _ASM_X86_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	void *vstart = (void*)__get_free_pages(flags, get_order(size));
-+	*dma_handle = virt_to_phys(vstart);
-+	return vstart;
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	free_pages((unsigned long) cpu_addr, get_order(size));
-+}
-+
-+#endif /* _ASM_X86_XEN_PAGE_COHERENT_H */
--- 
-1.7.2.5
+and get rid of that unnecessary CONFIG variable. I'm ok with CONFIG
+variables, but they should be for bigger things than "I have this
+particular function". The "I have this particular function" is
+particularly easily solved with just using the function name as a
+preprocessor symbol (either _because_ it is a macro in the first
+place, or with a simple "#define fn_name fn_name" to let the generic
+code know it exists).
 
+So if you just move the
+
+  #define arch_mutex_cpu_relax()    barrier()
+
+into arch/s390/include/asm/processor.h (so that you always have it
+when  you have the regular cpu_relax() one, and people don't need to
+include <mutex.h> to get it), and then put that #ifdef into
+lib/lockref.c, and we're all ok. We already did the equivalent for the
+ARM use of cmpxchg64_relaxed().
+
+And we can maybe rename it later, when there isn't any new use pending...
+
+                Linus
