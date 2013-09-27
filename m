@@ -1,190 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab3I0SwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:52:08 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39597 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab3I0SwG (ORCPT
+	id S1754599Ab3I0Swt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:52:49 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:35382 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab3I0Swr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:52:06 -0400
-Date: Fri, 27 Sep 2013 11:52:00 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.4.1
-Message-ID: <20130927185200.GL9464@google.com>
+	Fri, 27 Sep 2013 14:52:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130926024517.GA24271@kroah.com>
+References: <20130925000648.404447782@linuxfoundation.org>
+	<52439A60.3080501@samsung.com>
+	<20130926024517.GA24271@kroah.com>
+Date: Sat, 28 Sep 2013 02:52:45 +0800
+Message-ID: <CAEwRVpPoowYnTGJoeQ9Adh3Z_QjFbUYpKMARPARgwGjNVc1X2g@mail.gmail.com>
+Subject: Re: [ 00/28] 3.0.97-stable review
+From: Teck Choon Giam <giamteckchoon@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Shuah Khan <shuah.kh@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.4.1 is now available.
+On Thu, Sep 26, 2013 at 10:45 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Sep 25, 2013 at 08:22:24PM -0600, Shuah Khan wrote:
+>> On 09/24/2013 06:07 PM, Greg Kroah-Hartman wrote:
+>> > This is the start of the stable review cycle for the 3.0.97 release.
+>> > There are 28 patches in this series, all will be posted as a response
+>> > to this one.  If anyone has any issues with these being applied, please
+>> > let me know.
+>> >
+>> > Responses should be made by Fri Sep 27 00:05:34 UTC 2013.
+>> > Anything received after that time might be too late.
+>> >
+>> > The whole patch series can be found in one patch at:
+>> >     kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.97-rc1.gz
+>> > and the diffstat can be found below.
+>> >
+>> > thanks,
+>> >
+>> > greg k-h
+>> >
+>>
+>> 3.0.97-rc1 applied with the following warning from line 103 to 3.0.96
+>>
+>> patch-3.0.97-rc1:103: space before tab in indent.
+>>                          return -1;
+>> warning: 1 line adds whitespace errors.
+>
+> Any hint as to what file that was for?
 
-The release tarballs are found at:
+git am ../patches/v3.0.97/0019-HID-validate-HID-report-id-size.patch ...
+Applying: HID: validate HID report id size
+/home/choon/build/choon-GT-I9100-HK-JB-kernel-u2/.git/rebase-apply/patch:30:
+space before tab in indent.
+             return -1;
+warning: 1 line adds whitespace errors.
 
-    http://alioth.debian.org/~jrnieder-guest/git/
+So it is 0019-HID-validate-HID-report-id-size.patch
 
-and their SHA-1 checksums are:
+I got it from doing the following:
 
-49004a8dfcbb7c0848147737d9877fd7313a42ec  git-1.8.4.1.tar.gz
-1f0e5c5934ec333b5630a8c93a0fb0b1895dfcb8  git-htmldocs-1.8.4.1.tar.gz
-dc0f9de1cacc8912f131b67dc5a19a96768ecc95  git-manpages-1.8.4.1.tar.gz
+git format-patch -o ../patches/v3.0.97 v3.0.96..v3.0.97
 
-The following public repositories all have a copy of the v1.8.4.1
-tag and the maint branch that the tag points at:
+Thanks.
 
-  url = https://googlers.googlesource.com/jrn/git
-  url = git://repo.or.cz/git/jrn.git
-  url = git://gitorious.org/git/jrn.git
-  url = https://github.com/jrn/git
-
-Git v1.8.4.1 Release Notes
-========================
-
-Fixes since v1.8.4
-------------------
-
- * Some old versions of bash do not grok some constructs like
-   'printf -v varname' which the prompt and completion code started
-   to use recently.  The completion and prompt scripts have been
-   adjusted to work better with these old versions of bash.
-
- * In FreeBSD's and NetBSD's "sh", a return in a dot script in a
-   function returns from the function, not only in the dot script,
-   breaking "git rebase" on these platforms (regression introduced
-   in 1.8.4-rc1).
-
- * "git rebase -i" and other scripted commands were feeding a
-   random, data dependant error message to 'echo' and expecting it
-   to come out literally.
-
- * Setting the "submodule.<name>.path" variable to the empty
-   "true" caused the configuration parser to segfault.
-
- * Output from "git log --full-diff -- <pathspec>" looked strange
-   because comparison was done with the previous ancestor that
-   touched the specified <pathspec>, causing the patches for paths
-   outside the pathspec to show more than the single commit has
-   changed.
-
- * The auto-tag-following code in "git fetch" tries to reuse the
-   same transport twice when the serving end does not cooperate and
-   does not give tags that point to commits that are asked for as
-   part of the primary transfer.  Unfortunately, Git-aware transport
-   helper interface is not designed to be used more than once, hence
-   this did not work over smart-http transfer.  Fixed.
-
- * Send a large request to read(2)/write(2) as a smaller but still
-   reasonably large chunks, which would improve the latency when the
-   operation needs to be killed and incidentally works around broken
-   64-bit systems that cannot take a 2GB write or read in one go.
-
- * A ".mailmap" file that ends with an incomplete line, when read
-   from a blob, was not handled properly.
-
- * The recent "short-cut clone connectivity check" topic broke a
-   shallow repository when a fetch operation tries to auto-follow
-   tags.
-
- * When send-email comes up with an error message to die with upon
-   failure to start an SSL session, it tried to read the error
-   string from a wrong place.
-
- * A call to xread() was used without a loop to cope with short
-   read in the codepath to stream large blobs to a pack.
-
- * On platforms with fgetc() and friends defined as macros, the
-   configuration parser did not compile.
-
- * New versions of MediaWiki introduced a new API for returning
-   more than 500 results in response to a query, which would cause
-   the MediaWiki remote helper to go into an infinite loop.
-
- * Subversion's serf access method (the only one available in
-   Subversion 1.8) for http and https URLs in skelta mode tells its
-   caller to open multiple files at a time, which made "git svn
-   fetch" complain that "Temp file with moniker 'svn_delta' already
-   in use" instead of fetching.
+Kindest regards,
+Giam Teck Choon
 
 
-Also contains a handful of trivial code clean-ups, documentation
-updates, updates to the test suite, etc.
-
-----------------------------------------------------------------
-
-Changes since v1.8.4 are as follows:
-
-Andreas Schwab (1):
-      Documentation/git-merge.txt: fix formatting of example block
-
-Benoit Person (1):
-      git-remote-mediawiki: bugfix for pages w/ >500 revisions
-
-Brandon Casey (3):
-      git-completion.bash: use correct Bash/Zsh array length syntax
-      t9902-completion.sh: old Bash still does not support array+=('') notation
-      contrib/git-prompt.sh: handle missing 'printf -v' more gracefully
-
-Jeff King (2):
-      config: do not use C function names as struct members
-      mailmap: handle mailmap blobs without trailing newlines
-
-Jharrod LaFon (1):
-      avoid segfault on submodule.*.path set to an empty "true"
-
-Johannes Sixt (1):
-      stream_to_pack: xread does not guarantee to read all requested bytes
-
-Jonathan Nieder (1):
-      Git 1.8.4.1
-
-Junio C Hamano (6):
-      t5802: add test for connect helper
-      fetch: rename file-scope global "transport" to "gtransport"
-      fetch: refactor code that prepares a transport
-      fetch: refactor code that fetches leftover tags
-      fetch: work around "transport-take-over" hack
-      Start preparing for 1.8.4.1
-
-Kyle J. McKay (3):
-      Git.pm: add new temp_is_locked function
-      git-svn: allow git-svn fetching to work using serf
-      Git.pm: revert _temp_cache use of temp_is_locked
-
-Matthieu Moy (2):
-      die_with_status: use "printf '%s\n'", not "echo"
-      rebase: fix run_specific_rebase's use of "return" on FreeBSD
-
-Nguyễn Thái Ngọc Duy (1):
-      fetch-pack: do not remove .git/shallow file when --depth is not specified
-
-Ralf Thielow (1):
-      l10n: de.po: use "das Tag" instead of "der Tag"
-
-Ramsay Allan Jones (1):
-      builtin/fetch.c: Fix a sparse warning
-
-Sebastien Helleu (1):
-      l10n: fr.po: hotfix for commit 6b388fc
-
-Steffen Prohaska (2):
-      xread, xwrite: limit size of IO to 8MB
-      Revert "compat/clipped-write.c: large write(2) fails on Mac OS X/XNU"
-
-Tay Ray Chuan (1):
-      t7406-submodule-update: add missing &&
-
-Thomas Rast (2):
-      log: use true parents for diff even when rewriting
-      log: use true parents for diff when walking reflogs
-
-Thorsten Glaser (1):
-      fix shell syntax error in template
-
-brian m. carlson (1):
-      send-email: don't call methods on undefined values
-
+>
+>> Compiled and booted on the following systems:
+>>
+>> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+>>
+>> dmesgs look good. No regressions compared to the previous dmesgs for
+>> this release. dmesg emerg, crit, alert, err are clean. No regressions in
+>> warn.
+>
+> Great, thanks for testing and letting me know.
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
