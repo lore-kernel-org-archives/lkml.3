@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab3I0SUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:20:00 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:43648 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab3I0ST5 (ORCPT
+	id S1754394Ab3I0SWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:22:03 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:35253 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3I0SV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:19:57 -0400
-Message-ID: <5245CC50.9050906@cogentembedded.com>
-Date: Fri, 27 Sep 2013 22:20:00 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mina86@mina86.com,
-        b.zolnierkie@samsung.com, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com
-Subject: Re: [PATCH] USB: gadget: f_fs: fix error handling
-References: <1380277734-17590-1-git-send-email-r.baldyga@samsung.com>
-In-Reply-To: <1380277734-17590-1-git-send-email-r.baldyga@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 27 Sep 2013 14:21:58 -0400
+Message-ID: <5245CCBF.3070206@gmail.com>
+Date: Fri, 27 Sep 2013 20:21:51 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Barry Song <21cnbao@gmail.com>
+CC: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>, Barry Song <baohua.song@csr.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 04/26] clk: prima2: declare OF clock provider
+References: <1379526839-14798-1-git-send-email-sebastian.hesselbarth@gmail.com> <1379526839-14798-5-git-send-email-sebastian.hesselbarth@gmail.com> <CAGsJ_4xC_g1C-pGQGrcLOBhKLSMG3D8369DRPoFgNZhKqs-aTQ@mail.gmail.com> <523ABA7A.50305@gmail.com> <523EDEB0.1060601@gmail.com> <CAGsJ_4yPcM4YM_i-JMCoDeRb5zKWJyNEt+jnMJ6LqoF5gC3KhA@mail.gmail.com>
+In-Reply-To: <CAGsJ_4yPcM4YM_i-JMCoDeRb5zKWJyNEt+jnMJ6LqoF5gC3KhA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 09/27/2013 02:28 PM, Robert Baldyga wrote:
-
-> This patch add missing error check in ffs_func_bind() function, after
-> ffs_do_descs() funcion call for hs descriptors. Without this check it's
-
-    s/funcion/function/.
-    Perhaps it's worth expanding "hs" to "high speed" for clarity?
-
-> possible that the module will try dereference incorrect pointer.
-
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> ---
->   drivers/usb/gadget/f_fs.c |    3 +++
->   1 file changed, 3 insertions(+)
-
-> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-> index 1a66c5b..fe7d532 100644
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
-> @@ -2264,7 +2264,10 @@ static int ffs_func_bind(struct usb_configuration *c,
->   				   data->raw_descs + ret,
->   				   (sizeof data->raw_descs) - ret,
->   				   __ffs_func_bind_do_descs, func);
-> +		if (unlikely(ret < 0))
-> +			goto error;
->   	}
-> +	
+On 09/22/2013 12:37 PM, Barry Song wrote:
+> 2013/9/22 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
+>> On 09/19/2013 10:48 AM, Sebastian Hesselbarth wrote:
+>>>
+>>> On 09/19/13 10:45, Barry Song wrote:
+>>>>>
+>>>>> @@ -1124,3 +1106,4 @@ void __init sirfsoc_of_clk_init(void)
+>>>>>
+>>>>>           of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+>>>>>    }
+>>>>> +CLK_OF_DECLARE(sirfsoc_clk, "sirf,prima2-clkc", sirfsoc_clk_init);
+>>>>
+>>>>
+>>>> hi Sebastian,
+>>>> what if the driver is compatible with multiple clk controllers and we
+>>>> want to add another compatible string here except "sirf,prima2-clkc"?
+>>>>
+>>>> -barry
+>>>>
+>>>
+>>> Just add
+>>> CLK_OF_DECLARE(other_fancy_clk, "sirf,different-compatible",
+>>> sirfsoc_clk_init);
+>>
+>>
+>> Barry, BTW, do I get your Acked-By for this and the corresponding
+>> removal patch?
 >
+> Sebastian, would you wait for a while as i need to merge them and make a test.
 
-    Why add second empty line here?
+Sure, take your time.
+I now have almost all Acked-by's for the other patches, would be
+great if you find some time to test this on prima2 anytime soon.
 
->   	/*
->   	 * Now handle interface numbers allocation and interface and
-
-WBR, Sergei
-
+Sebastian
