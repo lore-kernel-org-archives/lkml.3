@@ -1,174 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab3I0LfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 07:35:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45088 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751025Ab3I0LfK (ORCPT
+	id S1751453Ab3I0LxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 07:53:23 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:62683 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab3I0LxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 07:35:10 -0400
-Date: Fri, 27 Sep 2013 12:34:58 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] media: rc: OF: Add Generic bindings for
- remote-control
-Message-ID: <20130927113458.GB18672@e106331-lin.cambridge.arm.com>
-References: <1380274391-26577-1-git-send-email-srinivas.kandagatla@st.com>
+	Fri, 27 Sep 2013 07:53:21 -0400
+Date: Fri, 27 Sep 2013 07:53:18 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info' in
+ all related extern functions
+Message-ID: <20130927115318.GA12206@mtj.dyndns.org>
+References: <5242372C.4010509@asianux.com>
+ <20130925011404.GB25777@htj.dyndns.org>
+ <52424094.3020504@asianux.com>
+ <524267CD.4030007@asianux.com>
+ <5243CD18.1060805@asianux.com>
+ <5243D487.8000602@asianux.com>
+ <20130926131544.GB31249@mtj.dyndns.org>
+ <5244DFA5.5090200@asianux.com>
+ <20130927033651.GA9768@htj.dyndns.org>
+ <524530EB.6080109@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380274391-26577-1-git-send-email-srinivas.kandagatla@st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <524530EB.6080109@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 10:33:11AM +0100, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Hello,
+
+On Fri, Sep 27, 2013 at 03:16:59PM +0800, Chen Gang wrote:
+> Hmm... do you mean: "can not evaluate an interface before implement(or
+> read details) them all"?
+
+No, I'm saying there are a lot more steps necessary between
+recognizing that an interface needs an improvement and actually
+improving it than what you're doing now.
+
+> If we are agree with each other that "this interface can be improved",
+> I will go ahead:
 > 
-> This patch attempts to collate generic bindings which can be used by
-> the remote control hardwares. Currently the list is not long as there
-> are only 2 drivers which are device tree'd.
+>   I will reference the information which Paul McKenney provided.
+>   And also, I will use LTP's some features to give a test.
+>   And also, I will reference some contents you said above.
 > 
-> Mainly this patch tries to document few bindings used by ST IRB driver
-> which can be generic as well. This document also add fews common
-> bindings used by most of the drivers like, interrupts, regs, clocks and
-> pinctrls.
+>   Hope I can finish within next month (2013-10-31).
+
+If you want to, go ahead but please see below.
+
+> > So, please take some time to mull over why your initial patch was
+> > completely wrong and I didn't even have to read the code to predict
+> > that your patch has high chance of being wrong.  Now, you're doing the
+> > *exactly* same thing in the opposite direction.  You should be able to
+> > recognize that there's something very wrong with that.
 > 
-> This document can also be holding place to describe generic bindings
-> used in remote controls devices.
+> No, I don't think so, in my opinion, for evaluate an api interface,
+> don't need see the details implementation, even don't need know all
+> demands.
 > 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> ---
-> Hi All, 
-> Following Stephen Warren's suggestions at https://lkml.org/lkml/2013/9/24/452
-> this patch is an attempt to document such generic bindings in a common
-> document.
+> During discussing, anyone can make mistakes, in fact, that is the main
+> reason why we need discussing.
 > 
-> This document currently collates all the generic bindings used with
-> remote-controls and act as holding place to describe generic bindings for
-> remote controls.
-> 
-> Comments?
-> 
-> Thanks,
-> srini
-> 
->  .../devicetree/bindings/media/remote-control.txt   |   31 ++++++++++++++++++++
->  1 files changed, 31 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/media/remote-control.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/media/remote-control.txt b/Documentation/devicetree/bindings/media/remote-control.txt
-> new file mode 100644
-> index 0000000..901ea56
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/media/remote-control.txt
-> @@ -0,0 +1,31 @@
-> +Generic device tree bindings for remote control.
-> +
-> +properties:
-> +	- compatible: Can contain any remote control driver compatible string.
-> +	  example: "st-comms-irb, "gpio-ir-receiver".
+> Hmm... in my opinion, for evaluate one's way/method whether suitable or
+> not, it is not based on 1-2 mistakes, it need based on mistake/correct ratio.
 
-This is more generic than remote control, could this not just be left
-for the specific binding to describe?
+The thing is you are showing a classical and common failure pattern
+which is known to lead to bad code.  The only safe thing you'd be able
+to do with your current pattern is making changes which are completely
+contained and don't affect its interaction with large body of code,
+and by not doing the necessary steps, you're shifting what you should
+have done to your reviewers.
 
-> +	- reg: Base physical address of the controller and length of memory
-> +	  mapped region.
+Your patch is bascially just saying "this part looks a bit
+inconsistent and may need to be improved" and that's all it is.  This
+is bad in two ways.  Firstly, the workload on reviewer is higher as
+they have to do the actual work.  Secondly, it's a lot more likely to
+lead to bugs as the developer is supposed to be our first and best
+line of defense against introducing silliness and reviewers operate on
+the assumption that the developer did her role.
 
-What if it's on a bus that isn't memory mapped (e.g. i2c, SPI)?
+Please recognize that obvious local changes and changes which may
+affect larger interaction are different.  You will need to either
+stick to obvious local changes or put a lot of effort into learning
+how to do larger scope work.
 
-> +	- interrupts: Interrupt-specifier for the sole interrupt generated by
-> +	  the device. The interrupt specifier format depends on the
-> +	  interrupt controller parent. Iff the device supports interrupts.
+I hope you understand what I mean.  If not, I don't know what else I
+can do.  I already spent too much time on this thread and probably
+won't be as verbose in my future interactions, so if you can come up
+with a good patch with convincing enough presentation, go for it.  If
+not, I'm likely to nack it again.
 
-What if it has multiple interrupts, and has interrupts-names?
+Thanks.
 
-It might be better to only describe the properties that relate
-specifically to remote controls, rather than listing all of the generic
-properties that device tree bidnings may have. That would match the
-style of the clock bindings.
-
-> +	- rx-mode: Can be "infrared" or "uhf". rx-mode should be present iff
-> +	  the rx pins are wired up.
-
-I'm unsure on this. What if the device has multiple receivers that can
-be independently configured? What if it supports something other than
-"infrared" or "uhf"? What if a device can only be wired up as
-"infrared"? 
-
-I'm not sure how generic these are, though we should certainly encourage
-bindings that can be described this way to be described in the same way.
-
-> +	- tx-mode: Can be "infrared" or "uhf". tx-mode should be present iff
-> +	  the tx pins are wired up.
-
-I have similar concerns here to those for the rx-mode property.
-
-> +
-> +Optional properties:
-> +	- linux,rc-map-name: Linux specific remote control map name. Refer to
-> +	  include/media/rc-map.h for full list of maps.
-
-We shouldn't refer to Linux specifics (i.e. headers) in general in
-bindings. While it's possible to relax that a bit for linux,*
-properties, I'd prefer to explicitly list elements in the binding. That
-prevents the ABI from changing under our feet by someone altering what
-looks like a completely internal header file.
-
-> +	- pinctrl-names, pinctrl-0: The pincontrol settings to configure muxing
-> +	  properly for the device pins.
-> +	- clocks : phandle with clock-specifier pair for the device specified
-> +	  in compatible.
-
-While devices may have these, they're also more general than remote
-control devices. I'm not sure that they need to be listed here when they
-need to be described fully in any binding that needs them anyway,
-especially as this gives an impression that they are valid for bindings
-that don't need them.
-
-I think what we actually need to document is the process of creating a
-binding in such a way as to encourage uniformity. Something like the
-following steps:
-
-1. Look to see if a binding already exists. If so, use it.
-
-2. Is there a binding for a compatible device? If so, use/extend it.
-
-3. Is there a binding for a similar (but incompatible) device? Use it as
-   a template, possibly factor out portions into a class binding if
-   those portions are truly general.
-
-4. Is there a binding for the class of device? If so, build around that,
-   possibly extending it.
-
-5. If there's nothing relevant, create a binding aiming for as much
-   commonality as possible with other devices of that class that may
-   have bindings later.
-
-Cheers,
-Mark.
-
-> +
-> +example:
-> +
-> +	rc: rc@fe518000 {
-> +		compatible	= "st,comms-irb";
-> +		reg		= <0xfe518000 0x234>;
-> +		interrupts	= <0 203 0>;
-> +		rx-mode		= "infrared";
-> +	};
-> -- 
-> 1.7.6.5
-> 
-> 
+-- 
+tejun
