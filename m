@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab3I0QTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:19:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48455 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab3I0QTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:19:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,994,1371106800"; 
-   d="scan'208";a="410477768"
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1380298323.2031.13.camel@j-VirtualBox>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-	 <1380147049.3467.67.camel@schen9-DESK>
-	 <CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
-	 <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
-	 <1380226997.2602.11.camel@j-VirtualBox>
-	 <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
-	 <1380229794.2602.36.camel@j-VirtualBox>
-	 <1380231702.3467.85.camel@schen9-DESK>
-	 <1380235333.3229.39.camel@j-VirtualBox>
-	 <1380236265.3467.103.camel@schen9-DESK> <20130927060213.GA6673@gmail.com>
-	 <1380298323.2031.13.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Sep 2013 09:19:01 -0700
-Message-ID: <1380298741.3467.104.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753577Ab3I0QTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:19:16 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52354 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752485Ab3I0QTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:19:12 -0400
+Date: Fri, 27 Sep 2013 17:16:22 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for
+ arm64
+Message-ID: <20130927161622.GH26069@arm.com>
+References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
+ <20130927105045.GA11063@MacBook-Pro.local>
+ <20130927112332.GD9520@mudshark.cambridge.arm.com>
+ <5245A22F.7020305@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5245A22F.7020305@gmail.com>
+Thread-Topic: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for
+ arm64
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-27 at 09:12 -0700, Jason Low wrote:
-> On Fri, 2013-09-27 at 08:02 +0200, Ingo Molnar wrote:
-> > Would be nice to have this as a separate, add-on patch. Every single 
-> > instruction removal that has no downside is an upside!
+On Fri, Sep 27, 2013 at 04:20:15PM +0100, Jiang Liu wrote:
+> 	The patchset actually includes three optimizations.
 > 
-> Okay, so here is a patch. Tim, would you like to add this to v7?
+> The first one uses PF_USED_MATH to track whether the thread has
+> accessed FPSIMD registers since it has been created. If the thread
+> hasn't accessed FPSIMD registers since it's birth, we don't need to
+> save and restore FPSIMD context on thread context switching.
 
-Okay.  Will do.
+But for detecting whether a thread used the FP/SIMD registers, you need
+to disable the FP at context switch and trap the initial access. That's
+one of the main issues with lazy saving/restoring and sometimes it could
+be less efficient.
 
-Tim
+> The second one uses a percpu variable to track the owner of the
+> FPSIMD hardware. When switching a thread, if it's the owner of
+> the FPSIMD hardware, we don't need to load FPSIMD registers again.
+> This is useful when context switching between user thread and
+> kernel(idle) threads.
 
-> 
-> ...
-> Subject: MCS lock: Remove and reorder unnecessary assignments in mcs_spin_lock()
-> 
-> In mcs_spin_lock(), if (likely(prev == NULL)) is true, then the lock is free
-> and we won't spin on the local node. In that case, we don't have to assign
-> node->locked because it won't be used. We can also move the node->locked = 0
-> assignment so that it occurs after the if (likely(prev == NULL)) check.
-> 
-> This might also help make it clearer as to how the node->locked variable
-> is used in MCS locks.
-> 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> ---
->  include/linux/mcslock.h |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/mcslock.h b/include/linux/mcslock.h
-> index 20fd3f0..1167d57 100644
-> --- a/include/linux/mcslock.h
-> +++ b/include/linux/mcslock.h
-> @@ -21,15 +21,14 @@ void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
->  	struct mcs_spin_node *prev;
->  
->  	/* Init node */
-> -	node->locked = 0;
->  	node->next   = NULL;
->  
->  	prev = xchg(lock, node);
->  	if (likely(prev == NULL)) {
->  		/* Lock acquired */
-> -		node->locked = 1;
->  		return;
->  	}
-> +	node->locked = 0;
->  	ACCESS_ONCE(prev->next) = node;
->  	smp_wmb();
->  	/* Wait until the lock holder passes the lock down */
+fpsimd_thread_switch() checks whether it switches to/from kernel thread.
+I think we could do a bit better and avoid restoring if returning to the
+same user thread but without the need for disabling the FP on thread
+switch. I'm happy to take this part if factored out of the lazy patches
+(for the rest I'd like to see benchmarks).
 
+> The third one disable access to FPSIMD registers when switching a
+> thread. When the thread tries to access FPSIMD registers the first
+> time since it has been switched in, an exception is raised and then
+> we will load FPSIMD context onto hardware.
+> 
+> The overhead (penalty) of the first and second optimizations is
+> relatively small, so we could always enable them.
 
+How do you detect that a thread used fpsimd?
+
+-- 
+Catalin
