@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3I0CFE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 22:05:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:55374 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab3I0CFC (ORCPT
+	id S1750945Ab3I0CIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 22:08:10 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:63037 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab3I0CIJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 22:05:02 -0400
-Message-ID: <5244E7BA.4040408@windriver.com>
-Date: Fri, 27 Sep 2013 10:04:42 +0800
-From: Ming Liu <ming.liu@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 26 Sep 2013 22:08:09 -0400
+X-AuditID: 9c93017e-b7ca5ae0000013bb-3b-5244e8861a0b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain merging (v4)
+References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
+	<20130926093426.GA24596@gmail.com>
+Date: Fri, 27 Sep 2013 11:08:06 +0900
+In-Reply-To: <20130926093426.GA24596@gmail.com> (Ingo Molnar's message of
+	"Thu, 26 Sep 2013 11:34:26 +0200")
+Message-ID: <87ioxnow3d.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <akpm@linux-foundation.org>, <mhocko@suse.cz>, <rusty@rustcorp.com.au>,
-        <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1] oom: avoid selecting threads sharing mm with init
-References: <1380182957-3231-1-git-send-email-ming.liu@windriver.com> <alpine.DEB.2.02.1309261143160.10904@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1309261143160.10904@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.145]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 02:44 AM, David Rientjes wrote:
-> On Thu, 26 Sep 2013, Ming Liu wrote:
->
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 314e9d2..7e50a95 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -113,11 +113,22 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
->>   static bool oom_unkillable_task(struct task_struct *p,
->>   		const struct mem_cgroup *memcg, const nodemask_t *nodemask)
->>   {
->> +	struct task_struct *init_tsk;
->> +
->>   	if (is_global_init(p))
->>   		return true;
->>   	if (p->flags & PF_KTHREAD)
->>   		return true;
->>   
->> +	/* It won't help free memory if p is sharing mm with init */
->> +	rcu_read_lock();
->> +	init_tsk = find_task_by_pid_ns(1, &init_pid_ns);
->> +	if(p->mm == init_tsk->mm) {
->> +		rcu_read_unlock();
->> +		return true;
->> +	}
->> +	rcu_read_unlock();
->> +
->>   	/* When mem_cgroup_out_of_memory() and p is not member of the group */
->>   	if (memcg && !task_in_mem_cgroup(p, memcg))
->>   		return true;
-> You're aware of init_mm?
-I might mislead you, when I talked about init, I meant the pid 1 process 
-but not the idle, and isn't the idle a kthread and has not this risk 
-getting killed by oom?
-This panic was observed in a busybox shell with a 2.6.27 kernel, MIPS 
-board, but after some investigation, I think the upstream also has the 
-problem, the kernel log is as following:
+Hi Ingo,
 
-Out of memory: kill process 938 (crond) score 5 or a child
-Killed process 938 (crond)
-out_of_memory:tsk_rick info, name:init pid:1 mm:a8000001e0767700 task_struct:a8000001e0110000    //struct task_struct *tsk_rick = find_task_by_vpid(1);
-out_of_memory:will close init process pid:1128 mm:a8000001e0767700 task_strct:a8000001f37e2800
-Out of memory: kill process 1128 (init) score 4 or a child
-oom_kill_process:will close init process pid:1128 mm:a8000001e0767700 task_struct:a8000001f37e2800
-oom_kill_task:will close init process pid:1128 mm:a8000001e0767700 task_struct:a8000001f37e2800
-Killed process 1128 (init)
-do_exit: task_rick name:init , pid:1, mm:a8000001e0767700, &task_stuct:a8000001e0110000
-do_exit: will kill process name:init , pid:1128, mm:a8000001e0767700, &task_stuct:a8000001f37e2800
-do_exit: task_rick name:init , pid:1, mm:a8000001e0767700, &task_stuct:a8000001e0110000
-find_new_reaper: will kill process name:init , pid:1128, mm:0000000000000000, &task_stuct:a8000001f37e2800
-do_exit: will kill process name:init , pid:1, mm:a8000001e0767700, &task_stuct:a8000001e0110000
-Call Trace:
-[<ffffffff8143ab80>] dump_stack+0x8/0x34
-[<ffffffff8116a0d4>] do_exit+0x94c/0x978
-[<ffffffff8116a14c>] do_group_exit+0x4c/0xd0
-[<ffffffff81177804>] get_signal_to_deliver+0x1ec/0x498
-[<ffffffff81137088>] do_notify_resume+0x80/0x2b0
-[<ffffffff81133184>] work_notifysig+0xc/0x14
-find_new_reaper: will kill process name:init , pid:1, mm:0000000000000000, &tsk_stuct:a8000001e0110000
-Kernel panic - not syncing: Attempted to kill init!
+On Thu, 26 Sep 2013 11:34:26 +0200, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> Hello,
+>> 
+>> This is a new version of callchain improvement patchset.  I found and
+>> fixed bugs in the previous version.  I verified that it produced
+>> exactly same output before and after applying rbtree conversion patch
+>> (#1).  However after Frederic's new comm infrastructure patches are
+>> applied it'd be little different.
+>> 
+>> The patches are on 'perf/callchain-v4' branch in my tree
+>> 
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+>
+> I pulled this into a test-branch and resolved the builtin-trace.c conflict 
+> with tip:master.
+>
+> I tried your new code out with Linus's testcase of a parallel kernel 
+> build:
+>
+>    perf record -g -- make -j8 bzImage
+>
+> The 'perf record' session went mostly fine except for lost events:
+>
+>   Kernel: arch/x86/boot/bzImage is ready  (#25)
+>   [ perf record: Woken up 553 times to write data ]
+>   [ perf record: Captured and wrote 196.811 MB perf.data (~8598789 samples) ]
+>   Warning:
+>   Processed 2631982 events and lost 54 chunks!
+>
+>   Check IO/CPU overload!
+>
+> So, for completeness I'll mention that perf fails in two ways here:
+>
+>   - UI bug: it prints some scary warnings about 'IO/CPU overload' but 
+>     does not give any idea what the user could do about it. At minimum it 
+>     should print something about increasing --mmap-pages. It should also 
+>     print the current value of --mmap-pages so that the user knows to what 
+>     value to increase it ...
+>
+>   - defaults bug: this isn't an extreme workload on an extreme box - it's
+>     a relatively bog standard system with 8 cores and 16 CPUs. The kernel
+>     build was mild as well, with -j8. So losing events in perf record is
+>     absolutely unacceptable. A solution might be to automatically increase 
+>     the ring-buffer if -g is used, in expectation of a higher data rate.
 
-the best,
-thank you
->
-> Can you post the kernel log when one of these "extreme cases" happens?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+Both look sensible.  I'll try to cook patches for them.
 
+>
+> Once perf record was done I had the ~200 MB perf.data - and the 'perf 
+> report' session went much smoother than ever before: the analysis went 
+> very quickly, it finished within 10 seconds and displayed a nice progress 
+> bar. So this is entirely usable IMO.
+>
+> One small 'perf report' annoyance is that during the analysis passes 
+> missing symbol printouts flash in the TUI - without the user having a 
+> chance to read them. So those messages should either linger, or be 
+> displayed at a later stage, for example when the user is confronted with 
+> non-resolved symbols like:
+>
+> +  28.63%             cc1  cc1                                [.] 0x00000000006a92cb                                  ◆
+>
+> that is the point where the message would be useful - but nothing 
+> indicates at all that this is an undesirable symbol entry and nothing 
+> helps the user what to do about it!
+>
+> A solution might be to display non-intrusive messages about non-resolved 
+> symbols when such a symbol is manipulated (its children are openened, or 
+> annotation is attempted).
+
+Hmm.. I'll think about it more how to do it.
+
+>
+> Here there is a second annoyance: on the detailed screen the 'annotate' 
+> entry is simply missing when the symbol has not been resolved. If I hit 
+> 'a' on the symbol entry itself in the graph view, then sometimes 
+> annotation works - sometimes it does not and there's no UI feedback 
+> whatsoever why it's not working.
+>
+> I'm not suggesting to change the keyboard flow - that is very smooth - but 
+> display information about failed annotations in the status line at the 
+> bottom of the screen would be very useful. Remember: it's _always_ an UI 
+> bug if the user hits a key and absolutely nothing happens. At minimum a 
+> low-key, non-intrusive 'key X not bound' message should appear in the 
+> status line bottom. Deterministic action/reaction sequences are utterly 
+> important when interacting with computers.
+>
+> Anyway, very nice progress with the tree here!
+
+Hehe, thanks!
+Namhyung
