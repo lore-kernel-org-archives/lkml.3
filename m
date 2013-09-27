@@ -1,116 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3I0OFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:05:18 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:47547 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab3I0OFM (ORCPT
+	id S1753363Ab3I0OO0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:14:26 -0400
+Received: from smtprelay0055.hostedemail.com ([216.40.44.55]:34179 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752710Ab3I0OOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:05:12 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Robert Baldyga <r.baldyga@samsung.com>, balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, andrzej.p@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: Re: [PATCH] USB: gadget: f_fs: fix error handling
-In-Reply-To: <1380277734-17590-1-git-send-email-r.baldyga@samsung.com>
-Organization: http://mina86.com/
-References: <1380277734-17590-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:130927:linux-usb@vger.kernel.org::T0WNHe0zgHHb2iFY:00000000000000000000000000000000000005M4
-X-Hashcash: 1:20:130927:m.szyprowski@samsung.com::5UqOM/CG9o+roQz6:00000000000000000000000000000000000000GRE
-X-Hashcash: 1:20:130927:andrzej.p@samsung.com::nnEyLFJRaYhotJ4x:00000000000000000000000000000000000000000rqm
-X-Hashcash: 1:20:130927:r.baldyga@samsung.com::WVGrTWhZXxcffZGR:00000000000000000000000000000000000000000vQu
-X-Hashcash: 1:20:130927:b.zolnierkie@samsung.com::efiHg+tKsA9PY7A4:00000000000000000000000000000000000001+QS
-X-Hashcash: 1:20:130927:gregkh@linuxfoundation.org::kAFGcWZ63dUrNVvE:000000000000000000000000000000000001y5H
-X-Hashcash: 1:20:130927:linux-kernel@vger.kernel.org::i8yq29FWulynOKeP:00000000000000000000000000000000088Jz
-X-Hashcash: 1:20:130927:balbi@ti.com::ykdbAZ+Z/Xus2A+w:00000D3Zv
-X-Hashcash: 1:20:130927:r.baldyga@samsung.com::zb30r6DfkSLEpDJo:0000000000000000000000000000000000000000E7E0
-Date: Fri, 27 Sep 2013 16:05:03 +0200
-Message-ID: <xa1thad6xsvk.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+	Fri, 27 Sep 2013 10:14:23 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:38
+X-HE-Tag: rail99_25aadbac1062a
+X-Filterd-Recvd-Size: 3115
+Message-ID: <1380291257.17366.103.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Make the memory barrier test noisier
+From: Joe Perches <joe@perches.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Jason Low <jason.low2@hp.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Date: Fri, 27 Sep 2013 07:14:17 -0700
+In-Reply-To: <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+References: <1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
+	 <1380226997.2602.11.camel@j-VirtualBox>
+	 <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
+	 <1380229794.2602.36.camel@j-VirtualBox>
+	 <1380231702.3467.85.camel@schen9-DESK>
+	 <1380235333.3229.39.camel@j-VirtualBox>
+	 <1380236265.3467.103.camel@schen9-DESK> <20130927060213.GA6673@gmail.com>
+	 <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
+	 <1380289495.17366.91.camel@joe-AO722>
+	 <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Peter Zijlstra prefers that comments be required near uses
+of memory barriers.
 
-On Fri, Sep 27 2013, Robert Baldyga wrote:
-> This patch add missing error check in ffs_func_bind() function, after
-> ffs_do_descs() funcion call for hs descriptors. Without this check it's
-> possible that the module will try dereference incorrect pointer.
->
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Change the message level for memory barrier uses from a
+--strict test only to a normal WARN so it's always emitted.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+This might produce false positives around insertions of
+memory barriers when a comment is outside the patch context
+block.
 
-> ---
->  drivers/usb/gadget/f_fs.c |    3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-> index 1a66c5b..fe7d532 100644
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
-> @@ -2264,7 +2264,10 @@ static int ffs_func_bind(struct usb_configuration =
-*c,
->  				   data->raw_descs + ret,
->  				   (sizeof data->raw_descs) - ret,
->  				   __ffs_func_bind_do_descs, func);
-> +		if (unlikely(ret < 0))
-> +			goto error;
->  	}
-> +=09
+And checkpatch is still stupid, it only looks for existence
+of any comment, not at the comment content.
 
-This new line with only a tab in it is not needed here though.
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->=20=20
->  	/*
->  	 * Now handle interface numbers allocation and interface and
-
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
-
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index c03e427..bd4103a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3816,8 +3816,8 @@ sub string_find_replace {
+ # check for memory barriers without a comment.
+ 		if ($line =~ /\b(mb|rmb|wmb|read_barrier_depends|smp_mb|smp_rmb|smp_wmb|smp_read_barrier_depends)\(/) {
+ 			if (!ctx_has_comment($first_line, $linenr)) {
+-				CHK("MEMORY_BARRIER",
+-				    "memory barrier without comment\n" . $herecurr);
++				WARN("MEMORY_BARRIER",
++				     "memory barrier without comment\n" . $herecurr);
+ 			}
+ 		}
+ # check of hardware specific defines
 
 
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRZCPAAoJECBgQBJQdR/0rS0P/jMKAVMUaVSy5/bcekKFpR33
-vYPzxC4sJTV5AfLRkHJNOgnvVTTlFnkvOcY6nmySakUF2FhUVXkTp1phosvasqKq
-N27mO6YMh8ga1R4M/vlZtiRl/ASy4DgDvDpmLNrBmWIlo37Nlw4Fv2lHKmB+xAmY
-eP/34JvVzrGtsLkT+zwagdAb3NwaA7EX+R5PUUR1lvqhafKyl6bS0NVXcYpQAJ4A
-gOu2eQgudCblGrShEmwmjYofN+b1cLVE42ucmgmu1bcQb/Ha56K2D0puMxuQF6On
-zomC5dwTRb2ycsN67qkDS+OEBhZ1uiQppmjsPqyu46/MTFmaZJ5Pz+vxtygt1CPv
-WayVRfT28SDNYK/RPFz0XDVCB6i2pxkj6bnEkkhOYBwAmJTsHgvsmG6PCB+GRCvS
-9EqcXoWSagc/Y32zAaj8x5Kl//KtssdMteF/xVltM5r25D9vpwjRBD+WCOMclMUq
-YLir7ERLLRpZ5yY+qmyvPt/NXwREkEw8ZpguJzxk0wjtlF/YYwcXnVqApRZFIIaN
-O7896r5eEZM0Era6jqpCChoaPmpHHpUOwACsoNZ0F+saM8ku7hhSdPEwtqueWLcw
-o88vgF9ZMfln2DcmL5BT7WAusxJZZELCdPq39Q/PZS76GrD1wMaefCnhOkv9IU1q
-/nbiPnBv3y8+NxJImQ7O
-=CIg8
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
