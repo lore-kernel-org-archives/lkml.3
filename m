@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3I0QnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:43:22 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63146 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab3I0QnS (ORCPT
+	id S1753633Ab3I0Qrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:47:43 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:49942 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab3I0Qrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:43:18 -0400
-Date: Fri, 27 Sep 2013 09:43:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.12-rc3
-Message-ID: <20130927164313.GA12414@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Sep 2013 12:47:40 -0400
+From: Abbas Raza <abbas_raza@mentor.com>
+To: linux-kernel@vger.kernel.org
+Cc: Abbas Raza <Abbas_Raza@mentor.com>
+Subject: [PATCH] kthread_bind: don't wait in kthread_bind for presmp initcalls
+Date: Fri, 27 Sep 2013 21:47:31 +0500
+Message-Id: <1380300451-396-1-git-send-email-abbas_raza@mentor.com>
+X-Mailer: git-send-email 1.8.3.2
+X-OriginalArrivalTime: 27 Sep 2013 16:47:40.0560 (UTC) FILETIME=[47981100:01CEBBA1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Abbas Raza <Abbas_Raza@mentor.com>
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+wait_task_inactive shouldn't be called in __kthread_bind for presmp
+initcalls the same way it is done in !SMP case.
 
-Hi Linus,
+more info here:
+http://permalink.gmane.org/gmane.linux.kernel.embedded/4046
 
-Please pull hwmon fixes for Linux 3.12-rc3 from signed tag:
+This patch improves boot time for pre-smp initcalls as given below
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+boot time with this patch:
 
-Thanks,
-Guenter
-------
+calling  spawn_ksoftirqd+0x0/0x30 @ 1
+initcall spawn_ksoftirqd+0x0/0x30 returned 0 after 0 usecs
 
-The following changes since commit 4b97280675f45c1650ee4e388bd711ecbb18c4b4:
+boot time without this patch:
 
-  Merge tag 'stable/for-linus-3.12-rc2-tag' of git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip (2013-09-25 15:50:53 -0700)
+calling  spawn_ksoftirqd+0x0/0x30 @ 1
+initcall spawn_ksoftirqd+0x0/0x30 returned 0 after 19531 usecs
 
-are available in the git repository at:
+Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+---
+ kernel/kthread.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 760e86d..28b5c4b 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -290,11 +290,17 @@ EXPORT_SYMBOL(kthread_create_on_node);
+ 
+ static void __kthread_bind(struct task_struct *p, unsigned int cpu, long state)
+ {
+-	/* Must have done schedule() in kthread() before we set_task_cpu */
+-	if (!wait_task_inactive(p, state)) {
+-		WARN_ON(1);
+-		return;
++	if (!((num_online_cpus() == 1) && !cpu)) {
++		/*
++		 * Must have done schedule() in kthread() before
++		 * we set_task_cpu
++		 */
++		if (!wait_task_inactive(p, state)) {
++			WARN_ON(1);
++			return;
++		}
+ 	}
++
+ 	/* It's safe because the task is inactive. */
+ 	do_set_cpus_allowed(p, cpumask_of(cpu));
+ 	p->flags |= PF_NO_SETAFFINITY;
+-- 
+1.8.3.2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon
-
-for you to fetch changes up to 5f4513864304672e6ea9eac60583eeac32e679f2:
-
-  hwmon: (applesmc) Check key count before proceeding (2013-09-26 03:48:43 -0700)
-
-----------------------------------------------------------------
-Fix potential crash condition in applesmc driver
-
-----------------------------------------------------------------
-Henrik Rydberg (1):
-      hwmon: (applesmc) Check key count before proceeding
-
- drivers/hwmon/applesmc.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRbWhAAoJEMsfJm/On5mBzFsP/2UciNm8c4HEQWHUhKJVfNzF
-/Xg7VquXiN2VlD1wuXCeyNLizmTnDt0TdyAsNGEneJSedHvGIarCURcrPyA1sn+2
-oPumBqHOqo2MhLxgxKl75+QFSmdIwUXPBxajbCQSl3RNhVKc7uuSd8V3qaI87ZJ0
-7l/BA4I1JDIx6O4Ioob3QQ/M2K2uXD0mL8O6j4UCuKi7dR9SB6EUfaOp/xbYxrsd
-XbLm0fnJKZnqRCW4q0+kdrFny/FgKb076veGPP4yofcPGh0BIit/Z3XD0JvCh6JR
-wPVgNdo4+42CYVLIwhTpmPQZPGGvYMcwlZ4/NToGO3olK/CtNzngMrnH6iPtSEp4
-jUf8o6JvhVkR9X8DGij214Z6ifixBK/QqcjoCbHmlbDLMsui0/au3Ll1g+Vg6Iti
-Tgh71H5WYoeDU/NfG76Ai+ErSMU9bdRyWZSWs4vnfeWKMn6FlzcZe1Wjv+2Av7vI
-XEVKzO3xZGNgu6oTAT/Cx/HjUx5HffrMLWPPNKVWwuanmS+XLsdghxC+RshfioHO
-xAGLp1cKqxDz9A3qp9oxniaYdy9D6OxzF/T+OoVTS8eErwz5HaCIBZNFuvkJJRRI
-aIw2OVfuN0oBBoptz08o9VNjjAEreaAj9UOKjmcj/te8YXTrjxQcTsR0BYjisTrZ
-NyXarfw6vwU28jeW3HOE
-=x/4A
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
