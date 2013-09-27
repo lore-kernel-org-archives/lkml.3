@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab3I0LA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 07:00:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44229 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753265Ab3I0LAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 07:00:20 -0400
-Date: Fri, 27 Sep 2013 11:59:58 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT PATCH v1 1/7] arm64: fix possible invalid FPSIMD
- initialization state
-Message-ID: <20130927105957.GB11063@MacBook-Pro.local>
-References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
- <1380269087-8520-2-git-send-email-liuj97@gmail.com>
+	id S1753340Ab3I0LCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 07:02:01 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751170Ab3I0LB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 07:01:58 -0400
+Message-ID: <52456595.6080202@nod.at>
+Date: Fri, 27 Sep 2013 13:01:41 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380269087-8520-2-git-send-email-liuj97@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
+References: <1380141125-11063-1-git-send-email-richard@nod.at> <5243E033.7010403@gmail.com> <5243E130.3040200@nod.at> <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com> <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
+In-Reply-To: <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 09:04:41AM +0100, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> If context switching happens during executing fpsimd_flush_thread(),
-> stale value in FPSIMD registers will be saved into current thread's
-> fpsimd_state by fpsimd_thread_switch(). That may cause invalid
-> initialization state for the new process, so disable preemption
-> when executing fpsimd_flush_thread().
+Am 26.09.2013 11:25, schrieb Richard Genoud:
+> I added some traces and I found that : (dumping ec_header after
+> "ubi_io_read_ec_hdr(ubi, pnum, ech, 0); " in ubi_scan_fastmap())
+> [    0.812500] UBI: default fastmap pool size: 95
+> [    0.820312] UBI: default fastmap WL pool size: 25
+> [    0.828125] UBI: attaching mtd2 to ubi0
+> [    0.851562] ubi_scan_fastmap:
+> [    0.859375] Erase counter header dump:
+> [    0.859375]  magic          0x55424923
+> [    0.867187]  version        1
+> [    0.867187]  ec             1
+> [    0.867187]  vid_hdr_offset 2048
+> [    0.875000]  data_offset    4096
+> [    0.875000]  image_seq      891983656 <- image seq is good.
+> [    0.875000]  hdr_crc        0x13cc9a78
+> [    0.882812] erase counter header hexdump:
+> [    0.882812] 00000000: 55 42 49 23 01 00 00 00 00 00 00 00 00 00 00
+> 01 00 00 08 00 00 00 10 00 35 2a 97
+> 28 00 00 00 00  UBI#....................5*.(....
+> [    0.890625] 00000020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> 00 00 00 00 00 00 00 00 00 00 00 00
+> 00 13 cc 9a 78  ...............................x
+> [    0.960937] UBI error: scan_pool: bad image seq: 0x0, expected: 0x352a9728
 
-Good catch.
+BTW: Do you really print the same PEB as scan_pool() complains about?
+Do you know how many PEBs for one fastmap are needed on your target?
 
--- 
-Catalin
+Thanks,
+//richard
