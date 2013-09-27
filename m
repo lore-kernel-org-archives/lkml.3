@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab3I0LYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 07:24:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44831 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751031Ab3I0LYC (ORCPT
+	id S1751801Ab3I0LYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 07:24:38 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:46015 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab3I0LYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 07:24:02 -0400
-Date: Fri, 27 Sep 2013 12:23:32 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for arm64
-Message-ID: <20130927112332.GD9520@mudshark.cambridge.arm.com>
-References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
- <20130927105045.GA11063@MacBook-Pro.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130927105045.GA11063@MacBook-Pro.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Sep 2013 07:24:36 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] ll_temac: Reset dma descriptors on ndo_open
+Date: Fri, 27 Sep 2013 13:24:28 +0200
+Message-Id: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 11:50:46AM +0100, Catalin Marinas wrote:
-> On Fri, Sep 27, 2013 at 09:04:40AM +0100, Jiang Liu wrote:
-> > From: Jiang Liu <jiang.liu@huawei.com>
-> > 
-> > This patchset enables FPSIMD lazy save and restore for ARM64, you could
-> > apply it against v3.12-rc2.
-> > 
-> > We have done basic functional tests on ARM fast model, but still lack
-> > of detail performance benchmark on real hardware platforms. We would
-> > appreciate if you could help to test it on really hardware platforms!
-> 
-> That's my issue as well, I would like to see some benchmarks before
-> merging such patches.
+The dma descriptors are only initialized on the probe function.
 
-Furthermore, with GCC's register allocator starting to use vector registers to
-optimise *integer* code instead of spilling to the stack, it's going to become
-more and more common to tasks to have live FP state at context switch. Lazy
-switching might simply introduce overhead in the form of additional trapping.
+If a packet is on the buffer when temac_stop is called, the dma
+descriptors can be left on a incorrect status where no other package can
+be sent.
 
-Will
+So an interface could be left in an usable state after ifdow/ifup.
+
+This patch makes sure that the descriptors are in a proper status when
+the device is started.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/net/ethernet/xilinx/ll_temac_main.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index b88121f..8bae87f 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -229,6 +229,25 @@ static void temac_dma_bd_release(struct net_device *ndev)
+ }
+ 
+ /**
++ * temac_dma_bd_reset - Reset buffer descriptor rings
++ */
++static void temac_dma_bd_reset(struct net_device *ndev)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	int i;
++
++	for (i = 0; i < TX_BD_NUM; i++)
++		lp->tx_bd_v[i].app0 = 0;
++
++	lp->tx_bd_ci = 0;
++	lp->tx_bd_next = 0;
++	lp->tx_bd_tail = 0;
++	lp->rx_bd_ci = 0;
++
++	return;
++}
++
++/**
+  * temac_dma_bd_init - Setup buffer descriptor rings
+  */
+ static int temac_dma_bd_init(struct net_device *ndev)
+@@ -864,6 +883,8 @@ static int temac_open(struct net_device *ndev)
+ 	if (rc)
+ 		goto err_rx_irq;
+ 
++	temac_dma_bd_reset(ndev);
++
+ 	return 0;
+ 
+  err_rx_irq:
+-- 
+1.8.4.rc3
+
