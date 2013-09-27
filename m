@@ -1,128 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156Ab3I0Afy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 20:35:54 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:33983 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3I0Afv (ORCPT
+	id S1752706Ab3I0Aih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 20:38:37 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52542 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3I0Aig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 20:35:51 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Fabio Kung <fabio.kung@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-References: <20130723174711.GE21100@mtj.dyndns.org>
-	<8761vui4cr.fsf@xmission.com> <20130729075939.GA4678@dhcp22.suse.cz>
-	<87ehahg312.fsf@xmission.com> <20130729095109.GB4678@dhcp22.suse.cz>
-	<20130729161026.GD22605@mtj.dyndns.org> <87r4eh70yg.fsf@xmission.com>
-	<51F71DE2.4020102@huawei.com>
-	<87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
-	<87ppu03td7.fsf@tw-ebiederman.twitter.com>
-	<CAHyO6Z33pUJ1_MjPO2OeUY_+ZRmc1niPiFm5DzGVDokm5vb4rw@mail.gmail.com>
-Date: Thu, 26 Sep 2013 17:35:43 -0700
-In-Reply-To: <CAHyO6Z33pUJ1_MjPO2OeUY_+ZRmc1niPiFm5DzGVDokm5vb4rw@mail.gmail.com>
-	(Fabio Kung's message of "Thu, 26 Sep 2013 16:41:19 -0700")
-Message-ID: <87y56jnlsw.fsf@xmission.com>
+	Thu, 26 Sep 2013 20:38:36 -0400
+X-AuditID: 9c93017e-b7ca5ae0000013bb-d5-5244d3880384
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf tools: Use per-file CFLAGS in Makefile
+References: <1379297476-20793-1-git-send-email-namhyung@kernel.org>
+	<20130920230132.GK9574@pd.tnic> <878uynrjaa.fsf@sejong.aot.lge.com>
+	<20130923092659.GD2527@pd.tnic> <87vc1qprny.fsf@sejong.aot.lge.com>
+	<20130924170842.GA2634@ghostprotocols.net>
+Date: Fri, 27 Sep 2013 09:38:32 +0900
+In-Reply-To: <20130924170842.GA2634@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 24 Sep 2013 14:08:42 -0300")
+Message-ID: <87r4cbp08n.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/y6Aw0Hh7T924GSxVuQbGEFe5BH3R9qeQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2831]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Fabio Kung <fabio.kung@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: memcg creates an unkillable task in 3.11-rc2
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fabio Kung <fabio.kung@gmail.com> writes:
+Hi Arnaldo,
 
-> On Tue, Jul 30, 2013 at 9:28 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>
->> ebiederm@xmission.com (Eric W. Biederman) writes:
->>
->> Ok.  I have been trying for an hour and I have not been able to
->> reproduce the weird hang with the memcg, and it used to be something I
->> could reproduce trivially.  So it appears the patch below is the fix.
->>
->> After I sleep I will see if I can turn it into a proper patch.
+On Tue, 24 Sep 2013 14:08:42 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Sep 24, 2013 at 05:09:21PM +0900, Namhyung Kim escreveu:
+>> I don't know.  I just thought there's not much thing we can do for those
+>> files other than shutting up all warnings.
+>  
+>> But if you think that's not the right thing, I'll keep the existing
+>> options.  What do you think, Arnaldo?
 >
->
-> Contributing with another data point: I am seeing similar issues with
-> un-killable tasks inside LXC containers on a vanilla 3.8.11 kernel.
-> The stack from zombie tasks look like this:
->
-> # cat /proc/12499/stack
-> [<ffffffff81186226>] __mem_cgroup_try_charge+0xa96/0xbf0
-> [<ffffffff8118670b>] __mem_cgroup_try_charge_swapin+0xab/0xd0
-> [<ffffffff8118678d>] mem_cgroup_try_charge_swapin+0x5d/0x70
-> [<ffffffff811524f5>] handle_pte_fault+0x315/0xac0
-> [<ffffffff81152f11>] handle_mm_fault+0x271/0x3d0
-> [<ffffffff815bbf3b>] __do_page_fault+0x20b/0x4c0
-> [<ffffffff815bc1fe>] do_page_fault+0xe/0x10
-> [<ffffffff815b8718>] page_fault+0x28/0x30
-> [<ffffffff81056327>] mm_release+0x127/0x140
-> [<ffffffff8105ece1>] do_exit+0x171/0xa70
-> [<ffffffff8105f635>] do_group_exit+0x55/0xd0
-> [<ffffffff8106fa8f>] get_signal_to_deliver+0x23f/0x5d0
-> [<ffffffff81014402>] do_signal+0x42/0x600
-> [<ffffffff81014a48>] do_notify_resume+0x88/0xc0
-> [<ffffffff815c0b92>] int_signal+0x12/0x17
-> [<ffffffffffffffff>] 0xffffffffffffffff
->
-> Same symptoms that Eric described: a race condition in memcg when
-> there is a page fault and the process is exiting.
->
-> I went ahead and reproduced the bug described earlier here on the same
-> 3.8.11 kernel, also using the Mesos framework
-> (http://mesos.apache.org/) memory Ballooning tests. The call trace
-> from zombie tasks in this case look very similar:
->
-> # cat /proc/22827/stack
-> [<ffffffff81186280>] __mem_cgroup_try_charge+0xaf0/0xbf0
-> [<ffffffff8118670b>] __mem_cgroup_try_charge_swapin+0xab/0xd0
-> [<ffffffff8118678d>] mem_cgroup_try_charge_swapin+0x5d/0x70
-> [<ffffffff811524f5>] handle_pte_fault+0x315/0xac0
-> [<ffffffff81152f11>] handle_mm_fault+0x271/0x3d0
-> [<ffffffff815bbf3b>] __do_page_fault+0x20b/0x4c0
-> [<ffffffff815bc1fe>] do_page_fault+0xe/0x10
-> [<ffffffff815b8718>] page_fault+0x28/0x30
-> [<ffffffff81056327>] mm_release+0x127/0x140
-> [<ffffffff8105ece1>] do_exit+0x171/0xa70
-> [<ffffffff8105f635>] do_group_exit+0x55/0xd0
-> [<ffffffff8106fa8f>] get_signal_to_deliver+0x23f/0x5d0
-> [<ffffffff81014402>] do_signal+0x42/0x600
-> [<ffffffff81014a48>] do_notify_resume+0x88/0xc0
-> [<ffffffff815c0b92>] int_signal+0x12/0x17
-> [<ffffffffffffffff>] 0xffffffffffffffff
->
-> Then, I applied Eric's patch below, and I can't reproduce the problem
-> anymore. Before the patch, it was very easy to reproduce it with some
-> extra memory pressure from other processes in the instance (increasing
-> the probability of page faults when processes are exiting).
->
-> We also tried a vanilla 3.11.1 kernel, and we could reproduce the bug
-> on it pretty easily.
+> I think keeping the existing options is the right thing to do, if some
+> of that can be simplified or made like you did it in your patch, then
+> that is the matter for a separate patch, with proper explanation.
 
-There are some significant fixes in 3.12-rcX.  I haven't had a chance to
-look at them in detail yet but they look very promising.
+Okay, I'll just keep them and resend v2.
 
-Eric
+Thanks,
+Namhyung
