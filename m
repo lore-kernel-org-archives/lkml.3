@@ -1,69 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab3I0GMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 02:12:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36074 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab3I0GMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 02:12:48 -0400
-Date: Fri, 27 Sep 2013 16:12:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: linux-next: manual merge of the tip tree with the h8300-remove tree
-Message-Id: <20130927161238.f168bf3544c56ae1c1dcf439@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9"
+	id S1751580Ab3I0GYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 02:24:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38333 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab3I0GYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 02:24:50 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>,
+        <bcousson@baylibre.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <balbi@ti.com>, <s.nawrocki@samsung.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <jkosina@suse.cz>, <m.chehab@samsung.com>,
+        <cesarb@cesarb.net>, <joe@perches.com>, <davem@davemloft.net>,
+        <davidb@codeaurora.org>, <sameo@linux.intel.com>,
+        <peter.ujfalusi@ti.com>, <t-kristo@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <balajitk@ti.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>, <rogerq@ti.com>
+Subject: [PATCH v12 0/7] PHY framework
+Date: Fri, 27 Sep 2013 11:53:24 +0530
+Message-ID: <1380263012-9687-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Added a generic PHY framework that provides a set of APIs for the PHY drivers
+to create/destroy a PHY and APIs for the PHY users to obtain a reference to
+the PHY with or without using phandle.
 
-Hi all,
+This framework will be of use only to devices that uses external PHY (PHY
+functionality is not embedded within the controller).
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/h8300/include/asm/Kbuild between commit 4b0847842204 ("Drop support
-for Renesas H8/300 (h8300) architecture") from the h8300-remove tree and
-commit a787870924db ("sched, arch: Create asm/preempt.h") from the tip
-tree.
+The intention of creating this framework is to bring the phy drivers spread
+all over the Linux kernel to drivers/phy to increase code re-use and to
+increase code maintainability.
 
-I just removed the file and can carry the fix as necessary (no action
-is required).
+Comments to make PHY as bus wasn't done because PHY devices can be part of
+other bus and making a same device attached to multiple bus leads to bad
+design.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+If the PHY driver has to send notification on connect/disconnect, the PHY
+driver should make use of the extcon framework. Using this susbsystem
+to use extcon framwork will have to be analysed.
 
---Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9
-Content-Type: application/pgp-signature
+You can find this patch series @
+git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+I'll create a new branch *next* once this patch series is finalized. All the
+PHY driver development that depends on PHY framework can be based on this
+branch.
 
-iQIcBAEBCAAGBQJSRSHaAAoJEMDTa8Ir7ZwV70IP/1rdfNuVoM8Ehjtm0uJfkqAK
-KZba64S10kVEK/pwZWZIfkOx6M7j8Wv7DB28y4g8OFzlnd8vS/LoDh/sYIlWTjpl
-qcke3RkCmr2qJvf99VzzUCKeaAXeuzeNWq73r/U6gJTjzGxxw2U9TRhbsW0o0EBJ
-qbPZX+EQ0ZetNjFCerx6B2vJbVA9qnMPMostAwrrOP+sYjDlH5Ugxk1gAJfjQLSP
-tPbNpnt6kzcBMf2V3PVEhL647v53RHseKsC6CwiIWwIrWHtOi529g5m8+95pqyzv
-HV+u8COJqutQa9ryNG4+kgZo4mQDCgks0ym/K0ObSZI63+l9SLMncLDihUAXLVpV
-fnmzuDSuy0XGZ6vkIIT4/t/HflHkX9enga+864yP04qzWK6IKD8pV2ZdSj58eRWq
-7KNsmzadkLgG/npc3bV5WyKicadoG3ST9jRnElfSTonsDBgwWy5lYL2MIrHWCXga
-I8tSj6KUebb/zogzMMnJYh+6KUUcDNcbqtwux0EXzUf0qliCdIZ+E2xeZJpi1aFt
-5aJhz/terZ//LqFw3KfaETl8OOy9wGTC7JCiy6NN975m3O0CpT2e5ZUhNwg2ijB7
-gv2QRmk6RzpcS7hOHkHylC3STLgthA3CxHa3XawpqnVmd5x0nuplqXCNC3IsTyoi
-RiXiIT2Q/nWh9wquKGgX
-=HbSL
------END PGP SIGNATURE-----
+Did USB enumeration testing in panda and beagle after applying [1] (needed for
+non-dt)
 
---Signature=_Fri__27_Sep_2013_16_12_38_+1000_HjQS8z=Z8=9kJNu9--
+Changes from v11:
+* rebased to 3.12-rc2
+* dropped "usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2"
+patch. It will be added in the patch series that adapts dwc3 to generic phy
+framework.
+* Fixed checkpatch warning that shows up newly for having extern in header file.
+
+Changes from v10:
+* fixed a mistake in devm_of_phy_provider_register macro which was carried over
+from earlier version.
+* used ida_simple_get for obtaining the id.
+
+Changes from v9:
+* Fixed Greg's concern on having *find PHY by string* and changed it to Tomasz
+  pseudo code.
+* move omap-usb2 phy and twl4030-usb phy to drivers/phy
+* made all the dependent drivers select GENERIC_PHY instead of having depends
+  on
+* Made PHY core to assign the id's (so changed the phy_create API).
+* Adapted twl4030-usb to the new design.
+
+Changes from v8:
+* Added phy_set_drvdata and phy_get_drvdata in phy.h.
+* Changed phy_create API not to take void *priv. private data should now be set
+  using phy_set_drvdata now.
+Changes from v7:
+* Fixed Documentation
+* Added to_phy, of_phy_provider_register and devm_of_phy_provider_register
+* modified runtime_pm usage in phy_init, phy_exit, phy_power_on and
+  phy_power_off. Now phy_power_on will enable the clocks and phy_power_off will
+  disable the clocks.
+* pm_runtime_no_callbacks() is added so that pm_runtime_get_sync doesn't fail
+* modified other patches to adhere to the changes in the PHY framework
+* removed usb: phy: twl4030: twl4030 shouldn't be subsys_initcall as it will
+  be merged separately.
+* reference counting has been added to protect phy ops when the PHY is shared
+  by multiple consumers.
+
+Changes from v6
+* corrected few typos in Documentation
+* Changed PHY Subsystem to *bool* in Kconfig (to avoid compilation errors when
+  PHY Subsystem is kept as module and the dependent modules are built-in)
+* Added if pm_runtime_enabled check before runtime pm calls.
+
+Changes from v5:
+* removed the new sysfs entries as it dint have any new information other than
+  what is already there in /sys/devices/...
+* removed a bunch of APIs added to get the PHY and now only phy_get and
+  devm_phy_get are used.
+* Added new APIs to register/unregister the PHY provider. This is needed for
+  dt boot case.
+* Enabled pm runtime and incorporated the comments given by Alan Stern in a
+  different patch series by Gautam.
+* Removed the *phy_bind* API. Now the phy binding information should be passed
+  using the platform data to the controller devices.
+* Fixed a few typos.
+
+Changes from v4:
+* removed of_phy_get_with_args/devm_of_phy_get_with_args. Now the *phy providers*
+  should use their custom implementation of of_xlate or use of_phy_xlate to get
+  *phy instance* from *phy providers*.
+* Added of_phy_xlate to be used by *phy providers* if it provides only one PHY.
+* changed phy_core from having subsys_initcall to module_init.
+* other minor fixes.
+
+Changes from v3:
+* Changed the return value of PHY APIs to ENOSYS
+* Added APIs of_phy_get_with_args/devm_of_phy_get_with_args to support getting
+  PHYs if the same IP implements multiple PHYs.
+* modified phy_bind API so that the binding information can now be _updated_.
+  In effect of this removed the binding information added in board files and
+  added only in usb-musb.c. If a particular board uses a different phy binding,
+  it can update it in board file after usb_musb_init().
+* Added Documentation/devicetree/bindings/phy/phy-bindings.txt for dt binding
+  information.
+
+Changes from v2:
+* removed phy_descriptor structure completely so changed the APIs which were
+  taking phy_descriptor as parameters
+* Added 2 more APIs *of_phy_get_byname* and *devm_of_phy_get_byname* to be used
+  by PHY user drivers which has *phy* and *phy-names* binding in the dt data
+* Fixed a few typos
+* Removed phy_list and we now use class_dev_iter_init, class_dev_iter_next and
+  class_dev_iter_exit for traversing through the phy list. (Note we still need
+  phy_bind list and phy_bind_mutex).
+* Changed the sysfs entry name from *bind* to *phy_bind*.
+
+Changes from v1:
+* Added Documentation for the PHY framework
+* Added few more APIs mostly w.r.t devres
+* Modified omap-usb2 and twl4030 to make use of the new framework
+
+Kishon Vijay Abraham I (7):
+  drivers: phy: add generic PHY framework
+  usb: phy: omap-usb2: use the new generic PHY framework
+  usb: phy: twl4030: use the new generic PHY framework
+  arm: omap3: twl: add phy consumer data in twl4030_usb_data
+  ARM: dts: omap: update usb_otg_hs data
+  usb: musb: omap2430: use the new generic PHY framework
+  usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops
+
+ .../devicetree/bindings/phy/phy-bindings.txt       |   66 ++
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +
+ Documentation/devicetree/bindings/usb/usb-phy.txt  |    6 +
+ Documentation/phy.txt                              |  166 +++++
+ MAINTAINERS                                        |    8 +
+ arch/arm/boot/dts/omap3-beagle-xm.dts              |    2 +
+ arch/arm/boot/dts/omap3-evm.dts                    |    2 +
+ arch/arm/boot/dts/omap3-overo.dtsi                 |    2 +
+ arch/arm/boot/dts/omap4.dtsi                       |    3 +
+ arch/arm/boot/dts/twl4030.dtsi                     |    1 +
+ arch/arm/mach-omap2/twl-common.c                   |   11 +
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    2 +
+ drivers/phy/Kconfig                                |   41 ++
+ drivers/phy/Makefile                               |    7 +
+ drivers/phy/phy-core.c                             |  698 ++++++++++++++++++++
+ drivers/{usb => }/phy/phy-omap-usb2.c              |   45 +-
+ drivers/{usb => }/phy/phy-twl4030-usb.c            |   69 +-
+ drivers/usb/musb/Kconfig                           |    1 +
+ drivers/usb/musb/musb_core.h                       |    2 +
+ drivers/usb/musb/omap2430.c                        |   26 +-
+ drivers/usb/phy/Kconfig                            |   21 -
+ drivers/usb/phy/Makefile                           |    2 -
+ include/linux/i2c/twl.h                            |    2 +
+ include/linux/phy/phy.h                            |  270 ++++++++
+ 25 files changed, 1402 insertions(+), 58 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-bindings.txt
+ create mode 100644 Documentation/phy.txt
+ create mode 100644 drivers/phy/Kconfig
+ create mode 100644 drivers/phy/Makefile
+ create mode 100644 drivers/phy/phy-core.c
+ rename drivers/{usb => }/phy/phy-omap-usb2.c (88%)
+ rename drivers/{usb => }/phy/phy-twl4030-usb.c (94%)
+ create mode 100644 include/linux/phy/phy.h
+
+-- 
+1.7.10.4
+
