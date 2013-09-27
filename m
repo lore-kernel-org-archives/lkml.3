@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3I0W0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 18:26:05 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:16837 "EHLO
+	id S1754258Ab3I0WbY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 18:31:24 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:18354 "EHLO
 	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3I0W0C (ORCPT
+	with ESMTP id S1752706Ab3I0WbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 18:26:02 -0400
-Message-ID: <1380320637.14046.44.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v5 1/6] memblock: Factor out of top-down allocation
+	Fri, 27 Sep 2013 18:31:22 -0400
+Message-ID: <1380320960.14046.48.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v5 2/6] memblock: Introduce bottom-up allocation mode
 From: Toshi Kani <toshi.kani@hp.com>
 To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
 Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
@@ -28,9 +28,9 @@ Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
         imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Date: Fri, 27 Sep 2013 16:23:57 -0600
-In-Reply-To: <5241D90D.6030203@gmail.com>
-References: <5241D897.1090905@gmail.com> <5241D90D.6030203@gmail.com>
+Date: Fri, 27 Sep 2013 16:29:20 -0600
+In-Reply-To: <5241D9A4.4080305@gmail.com>
+References: <5241D897.1090905@gmail.com> <5241D9A4.4080305@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -39,57 +39,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-25 at 02:25 +0800, Zhang Yanfei wrote:
+On Wed, 2013-09-25 at 02:27 +0800, Zhang Yanfei wrote:
 > From: Tang Chen <tangchen@cn.fujitsu.com>
 > 
-> This patch creates a new function __memblock_find_range_rev
-> to factor out of top-down allocation from memblock_find_in_range_node.
-> This is a preparation because we will introduce a new bottom-up
-> allocation mode in the following patch.
+> The Linux kernel cannot migrate pages used by the kernel. As a result, kernel
+> pages cannot be hot-removed. So we cannot allocate hotpluggable memory for
+> the kernel.
 > 
-> Acked-by: Tejun Heo <tj@kernel.org>
+> ACPI SRAT (System Resource Affinity Table) contains the memory hotplug info.
+> But before SRAT is parsed, memblock has already started to allocate memory
+> for the kernel. So we need to prevent memblock from doing this.
+> 
+> In a memory hotplug system, any numa node the kernel resides in should
+> be unhotpluggable. And for a modern server, each node could have at least
+> 16GB memory. So memory around the kernel image is highly likely unhotpluggable.
+> 
+> So the basic idea is: Allocate memory from the end of the kernel image and
+> to the higher memory. Since memory allocation before SRAT is parsed won't
+> be too much, it could highly likely be in the same node with kernel image.
+> 
+> The current memblock can only allocate memory top-down. So this patch introduces
+> a new bottom-up allocation mode to allocate memory bottom-up. And later
+> when we use this allocation direction to allocate memory, we will limit
+> the start address above the kernel.
+> 
 > Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 > Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+ :
 
-A minor comment below...
-
-> ---
->  mm/memblock.c |   47 ++++++++++++++++++++++++++++++++++-------------
->  1 files changed, 34 insertions(+), 13 deletions(-)
-> 
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 0ac412a..3d80c74 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -83,33 +83,25 @@ static long __init_memblock memblock_overlaps_region(struct memblock_type *type,
->  }
->  
 >  /**
-> - * memblock_find_in_range_node - find free area in given range and node
-> + * __memblock_find_range_rev - find free area utility, in reverse order
+> + * __memblock_find_range - find free area utility
+> + * @start: start of candidate range
+> + * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
+> + * @size: size of free area to find
+> + * @align: alignment of free area to find
+> + * @nid: nid of the free area to find, %MAX_NUMNODES for any node
+> + *
+> + * Utility called from memblock_find_in_range_node(), find free area bottom-up.
+> + *
+> + * RETURNS:
+> + * Found address on success, 0 on failure.
+> + */
+> +static phys_addr_t __init_memblock
+> +__memblock_find_range(phys_addr_t start, phys_addr_t end, phys_addr_t size,
+
+Similarly, how about name this function as
+__memblock_find_range_bottom_up()?
+
+
+> +		      phys_addr_t align, int nid)
+> +{
+> +	phys_addr_t this_start, this_end, cand;
+> +	u64 i;
+> +
+> +	for_each_free_mem_range(i, nid, &this_start, &this_end, NULL) {
+> +		this_start = clamp(this_start, start, end);
+> +		this_end = clamp(this_end, start, end);
+> +
+> +		cand = round_up(this_start, align);
+> +		if (cand < this_end && this_end - cand >= size)
+> +			return cand;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+>   * __memblock_find_range_rev - find free area utility, in reverse order
 >   * @start: start of candidate range
 >   * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
->   * @size: size of free area to find
->   * @align: alignment of free area to find
->   * @nid: nid of the free area to find, %MAX_NUMNODES for any node
->   *
-> - * Find @size free area aligned to @align in the specified range and node.
-> + * Utility called from memblock_find_in_range_node(), find free area top-down.
+> @@ -93,7 +128,7 @@ static long __init_memblock memblock_overlaps_region(struct memblock_type *type,
+>   * Utility called from memblock_find_in_range_node(), find free area top-down.
 >   *
 >   * RETURNS:
->   * Found address on success, %0 on failure.
+> - * Found address on success, %0 on failure.
+> + * Found address on success, 0 on failure.
 >   */
-> -phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
-> -					phys_addr_t end, phys_addr_t size,
-> -					phys_addr_t align, int nid)
-> +static phys_addr_t __init_memblock
-> +__memblock_find_range_rev(phys_addr_t start, phys_addr_t end,
+>  static phys_addr_t __init_memblock
+>  __memblock_find_range_rev(phys_addr_t start, phys_addr_t end,
+> @@ -127,13 +162,24 @@ __memblock_find_range_rev(phys_addr_t start, phys_addr_t end,
+>   *
+>   * Find @size free area aligned to @align in the specified range and node.
+>   *
+> + * When allocation direction is bottom-up, the @start should be greater
+> + * than the end of the kernel image. Otherwise, it will be trimmed. The
+> + * reason is that we want the bottom-up allocation just near the kernel
+> + * image so it is highly likely that the allocated memory and the kernel
+> + * will reside in the same node.
+> + *
+> + * If bottom-up allocation failed, will try to allocate memory top-down.
+> + *
+>   * RETURNS:
+> - * Found address on success, %0 on failure.
+> + * Found address on success, 0 on failure.
+>   */
+>  phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>  					phys_addr_t end, phys_addr_t size,
+>  					phys_addr_t align, int nid)
+>  {
+> +	int ret;
+> +	phys_addr_t kernel_end;
+> +
+>  	/* pump up @end */
+>  	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+>  		end = memblock.current_limit;
+> @@ -141,6 +187,37 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>  	/* avoid allocating the first page */
+>  	start = max_t(phys_addr_t, start, PAGE_SIZE);
+>  	end = max(start, end);
+> +	kernel_end = __pa_symbol(_end);
 
-Since we are now using the terms "top down" and "bottom up"
-consistently, how about name this function as
-__memblock_find_range_top_down()? 
+Please address the issue in __pa_symbol() that Andrew pointed out.
 
 Thanks,
 -Toshi
