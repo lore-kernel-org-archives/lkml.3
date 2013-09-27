@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3I0Ug1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 16:36:27 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:38755 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3I0UgY (ORCPT
+	id S1754279Ab3I0Uik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 16:38:40 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:36059 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab3I0Uij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 16:36:24 -0400
-Date: Fri, 27 Sep 2013 23:36:15 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de,
-        Paul Walmsley <paul@pwsan.com>, joelf@ti.com
-Subject: Re: [RFC v2] gpio/omap: auto-setup a GPIO when used as an IRQ
-Message-ID: <20130927203615.GA4572@blackmetal.musicnaut.iki.fi>
-References: <1380009480-4975-1-git-send-email-javier.martinez@collabora.co.uk>
- <5244C0C4.2030004@wwwdotorg.org>
- <52453545.3090504@collabora.co.uk>
+	Fri, 27 Sep 2013 16:38:39 -0400
+Message-ID: <5245ECC3.8070200@gmail.com>
+Date: Fri, 27 Sep 2013 13:38:27 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52453545.3090504@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>
+CC: "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        =?ISO-8859-1?Q?=22Andersson=2C?= =?ISO-8859-1?Q?_Bj=F6rn=22?= 
+	<Bjorn.Andersson@sonymobile.com>
+Subject: [PATCH] slub: Proper kmemleak tracking if CONFIG_SLUB_DEBUG disabled
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Roman Bobniev <roman.bobniev@sonymobile.com>
 
-On Fri, Sep 27, 2013 at 09:35:33AM +0200, Javier Martinez Canillas wrote:
-> I cc'ed Aaro Koskinen and Paul Walmsley now which seems to have OMAP1
-> platforms to test. Could you please test [1] and [2] on a OMAP1 board?
+When kmemleak checking is enabled and CONFIG_SLUB_DEBUG is
+disabled, the kmemleak code for small block allocation is
+disabled.  This results in false kmemleak errors when memory
+is freed.
 
-[...]
+Move the kmemleak code for small block allocation out from
+under CONFIG_SLUB_DEBUG.
 
-> [1]: https://patchwork.kernel.org/patch/2937351/
-> [2]: https://patchwork.kernel.org/patch/2937371/
+Signed-off-by: Roman Bobniev <roman.bobniev@sonymobile.com>
+Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+---
+ mm/slub.c |    6 	3 +	3 -	0 !
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-
-I applied these patches on top of 3.12-rc2 and tested them on Nokia
-770 (OMAP1, Touchscreen & Retu powerbutton GPIO IRQs) and N800 (OMAP2,
-Retu powerbutton). Seems to work fine on both boards.
-
-A.
+Index: b/mm/slub.c
+===================================================================
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -947,13 +947,10 @@ static inline void slab_post_alloc_hook(
+ {
+ 	flags &= gfp_allowed_mask;
+ 	kmemcheck_slab_alloc(s, flags, object, slab_ksize(s));
+-	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags, flags);
+ }
+ 
+ static inline void slab_free_hook(struct kmem_cache *s, void *x)
+ {
+-	kmemleak_free_recursive(x, s->flags);
+-
+ 	/*
+ 	 * Trouble is that we may no longer disable interupts in the fast path
+ 	 * So in order to make the debug calls that expect irqs to be
+@@ -2418,6 +2415,8 @@ redo:
+ 		memset(object, 0, s->object_size);
+ 
+ 	slab_post_alloc_hook(s, gfpflags, object);
++	kmemleak_alloc_recursive(object, s->objsize, 1, s->flags,
++				 gfpflags & gfp_allowed_mask);
+ 
+ 	return object;
+ }
+@@ -2614,6 +2613,7 @@ static __always_inline void slab_free(st
+ 	struct kmem_cache_cpu *c;
+ 	unsigned long tid;
+ 
++	kmemleak_free_recursive(x, s->flags);
+ 	slab_free_hook(s, x);
+ 
+ redo:
