@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab3I0N2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:28:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55557 "EHLO mx2.suse.de"
+	id S1754591Ab3I0Njk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:39:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55702 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753532Ab3I0N2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:00 -0400
+	id S1753708Ab3I0N2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:17 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 08/63] mm: Do not flush TLB during protection change if !pte_present && !migration_entry
-Date: Fri, 27 Sep 2013 14:26:53 +0100
-Message-Id: <1380288468-5551-9-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/63] sched: Check current->mm before allocating NUMA faults
+Date: Fri, 27 Sep 2013 14:27:11 +0100
+Message-Id: <1380288468-5551-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,32 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA PTE scanning is expensive both in terms of the scanning itself and
-the TLB flush if there are any updates. Currently non-present PTEs are
-accounted for as an update and incurring a TLB flush where it is only
-necessary for anonymous migration entries. This patch addresses the
-problem and should reduce TLB flushes.
+task_numa_placement checks current->mm but after buffers for faults
+have already been uselessly allocated. Move the check earlier.
 
+[peterz@infradead.org: Identified the problem]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/mprotect.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 2bbb648..7bdbd4b 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -101,8 +101,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 				make_migration_entry_read(&entry);
- 				set_pte_at(mm, addr, pte,
- 					swp_entry_to_pte(entry));
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 96f6f08..7b7bc48 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -930,8 +930,6 @@ static void task_numa_placement(struct task_struct *p)
+ 	int seq, nid, max_nid = -1;
+ 	unsigned long max_faults = 0;
+ 
+-	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
+-		return;
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+ 		return;
+@@ -998,6 +996,10 @@ void task_numa_fault(int last_nid, int node, int pages, bool migrated)
+ 	if (!numabalancing_enabled)
+ 		return;
+ 
++	/* for example, ksmd faulting in a user's mm */
++	if (!p->mm)
++		return;
 +
-+				pages++;
- 			}
--			pages++;
- 		}
- 	} while (pte++, addr += PAGE_SIZE, addr != end);
- 	arch_leave_lazy_mmu_mode();
+ 	/* For now, do not attempt to detect private/shared accesses */
+ 	priv = 1;
+ 
 -- 
 1.8.1.4
 
