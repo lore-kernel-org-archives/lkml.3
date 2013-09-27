@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3I0BMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 21:12:48 -0400
-Received: from fieldses.org ([174.143.236.118]:50180 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab3I0BMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 21:12:46 -0400
-Date: Thu, 26 Sep 2013 21:12:46 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jongman Heo <jongman.heo@samsung.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Re: Re: Regression caused by commit 4bdc33ed ("NFSDv4.2: Add NFS
- v4.2 support to the NFS server")
-Message-ID: <20130927011246.GA10245@fieldses.org>
-References: <26120922.5161380239877162.JavaMail.weblogic@epml04>
+	id S1752643Ab3I0BTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 21:19:22 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34792 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3I0BTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Sep 2013 21:19:21 -0400
+Message-ID: <5244DD11.30806@linux.vnet.ibm.com>
+Date: Fri, 27 Sep 2013 09:19:13 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26120922.5161380239877162.JavaMail.weblogic@epml04>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] sched: Avoid select_idle_sibling() for wake_affine(.sync=true)
+References: <20130925075341.GB3081@twins.programming.kicks-ass.net> <1380099377.8523.9.camel@marge.simpson.net> <20130926095812.GR3081@twins.programming.kicks-ass.net> <52444E3A.5070503@linux.vnet.ibm.com> <20130926154419.GF3657@laptop.programming.kicks-ass.net>
+In-Reply-To: <20130926154419.GF3657@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092701-3864-0000-0000-00000A43661B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 11:57:57PM +0000, Jongman Heo wrote:
-> >------- Original Message -------
-> >Sender : J. Bruce Fields<bfields@fieldses.org>
-> >This is pretty weird--it's not at all obvious how that patch would
-> >affect this.
-> >
-> >You're absolutely positive that the *only* thing you're changing on the
-> >server between the "good" and "bad" cases is that one kernel patch?
-> >You're not changing anything in userspace?
-> >
+On 09/26/2013 11:44 PM, Peter Zijlstra wrote:
+> On Thu, Sep 26, 2013 at 11:09:46PM +0800, Michael wang wrote:
+>>> +	if (sync)
+>>> +		p->se.last_sync_wakeup = sched_clock_cpu(cpu);
+>>
+>> Forgive me but I'm trying to understand it... why not 'current' but 'p'
+>> here? we want the get off speed of waker or the working time of wakee?
 > 
-> Yes, pretty sure.
-> 
-> >What does "cat /proc/fs/nfsd/versions" report in the good and bad cases?
-> >
-> >(BTW, out of curiosity: what kind of client is this that only supports
-> >NFSv2 and NFSv3?  Even for an embedded system that's a bit surprising.)
-> >
-> >--b.
-> >
-> 
-> Here are /proc/fs/nfsd/versions information for good and bad cases ;
-> 
-> good (commit 4bdc33ed reverted)
-> 
-> # cat /proc/fs/nfsd/versions 
-> +2 +3 +4 +4.1
-> 
-> 
-> bad (current linus git)
-> 
-> # cat /proc/fs/nfsd/versions  
-> -2 +3 +4 +4.1 -4.2
-> 
-> 
-> I don't know why the commit 4bdc33ed makes this difference ( from +2 to -2 ).
-> 
-> My NFS server just uses Fedora 19 + latest kernel (which is not a rare setup...), 
+> Because I'm an idiot? ;-)
 
-The thing is, nfs-utils *did* make exactly this change with commit
-6b4e4965a6b82e8d49cea1c0316b951ba4e9e83e "rpc.nfsd: No longer advertise
-NFS v2 support." in 1.2.9-rc4 which entered f19 recently.  And that
-kernel commit doesn't look related.  So I strongly suspect that you got
-the nfs-utils update (or rebooted after the update) at the same time as
-bisecting, and that confused the bisect results.
+Well, I know you are full of good ideas ;-)
 
-> so I think some people can verify if this version information change happens w/ and w/o the commit revert.
+Regards,
+Michael Wang
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> Don't know the detail of NFS protocol, but our NFS client seems not to try with v3 and v4 in case v2 fails...
-> Is this an unexpected (buggy) behavior of my old embedded box (NFS client of kernel 2.6.35), or expected one from the NFS protocol?
 
-Digging into a historical git repo just for fun.... It looks like NFSv3
-support was added in 2.3.99pre4-3, probably in 2000?  (The date on that
-commit is 2007, so obviously this repo I have is very confused.  Maybe I
-should go find if there's a better one someplace.)
-
-So anyway it's either configured out of the kernel or the mount
-commandline's asking for v2, or I don't know what....
-
---b.
