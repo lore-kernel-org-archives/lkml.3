@@ -1,131 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab3I0Gpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 02:45:35 -0400
-Received: from mx5.zte.com.cn ([63.217.80.70]:46259 "EHLO mx5.zte.com.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab3I0Gpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 02:45:33 -0400
-In-Reply-To: <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
-References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn> <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: Re: [PATCH] futex: Remove the owner check when waking task in
- handle_futex_death
-X-KeepSent: FC4F71E6:FCD3279D-48257BF3:000E2A58;
- type=4; name=$KeepSent
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OFFC4F71E6.FCD3279D-ON48257BF3.000E2A58-48257BF3.00251AFA@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Fri, 27 Sep 2013 14:45:05 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-09-27 14:45:10
+	id S1751891Ab3I0GvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 02:51:21 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:59517 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab3I0GvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 02:51:20 -0400
+Date: Fri, 27 Sep 2013 08:51:15 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
+        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/smpboot: Fix announce_cpu() to printk() the
+ last "OK" properly
+Message-ID: <20130927065115.GA6852@gmail.com>
+References: <1378378676-18276-1-git-send-email-huawei.libin@huawei.com>
+ <tip-52239484bf8aec031afa84ae08aa88224d819b93@git.kernel.org>
+ <20130925100722.GB3433@nazgul.tnic>
+ <20130925182936.GD16693@gmail.com>
+ <20130926231545.GD10123@pd.tnic>
 MIME-Version: 1.0
-Content-type: text/plain; charset=GB2312
-X-MAIL: mse01.zte.com.cn r8R6jHPS049311
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926231545.GD10123@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8R6ji2J020973
 
 
+* Borislav Petkov <bp@alien8.de> wrote:
 
-Darren Hart <dvhart@linux.intel.com> wrote on 2013/09/27 02:15:17:
+> On Wed, Sep 25, 2013 at 08:29:36PM +0200, Ingo Molnar wrote:
+> > Indeed, that should be fixed.
+> 
+> Ok, how does a right alighment look like:
+> 
+> [    0.072399] smpboot: Booting Node   0, Processors   #1   #2   #3   #4   #5   #6   #7 OK
+> [    0.617005] smpboot: Booting Node   1, Processors   #8   #9  #10  #11  #12  #13  #14  #15 OK
+> [    1.230005] smpboot: Booting Node   2, Processors  #16  #17  #18  #19  #20  #21  #22  #23 OK
+> [    1.835005] smpboot: Booting Node   3, Processors  #24  #25  #26  #27  #28  #29  #30  #31 OK
+> [    2.437005] smpboot: Booting Node   4, Processors  #32  #33  #34  #35  #36  #37  #38  #39 OK
+> [    3.053005] smpboot: Booting Node   5, Processors  #40  #41  #42  #43  #44  #45  #46  #47 OK
+> [    3.657009] smpboot: Booting Node   6, Processors  #48  #49  #50  #51  #52  #53  #54  #55 OK
+> [    4.256005] smpboot: Booting Node   7, Processors  #56  #57  #58  #59  #60  #61  #62  #63 OK
+> 
+> ?
+
+Looks cool. The perfectionist in me would love to skip CPU0's space so 
+that we get:
+
+[    0.072399] smpboot: Booting Node   0, Processors        #1   #2   #3   #4   #5   #6   #7 OK
+[    0.617005] smpboot: Booting Node   1, Processors   #8   #9  #10  #11  #12  #13  #14  #15 OK
+[    1.230005] smpboot: Booting Node   2, Processors  #16  #17  #18  #19  #20  #21  #22  #23 OK
+[    1.835005] smpboot: Booting Node   3, Processors  #24  #25  #26  #27  #28  #29  #30  #31 OK
+[    2.437005] smpboot: Booting Node   4, Processors  #32  #33  #34  #35  #36  #37  #38  #39 OK
+
+Pretty please? :-)
+
+> With lockdep butting in-between it is still readable:
+> 
+> [    0.063330] SMP alternatives: lockdep: fixing up alternatives
+> [    0.064032] smpboot: Booting Node   0, Processors   #1
+> [    0.141231] SMP alternatives: lockdep: fixing up alternatives
+> [    0.142007]    #2
+> [    0.230210] SMP alternatives: lockdep: fixing up alternatives
+> [    0.231007]    #3
+> [    0.307237] SMP alternatives: lockdep: fixing up alternatives
+> [    0.308007]    #4
+> [    0.384231] SMP alternatives: lockdep: fixing up alternatives
+> [    0.385006]    #5
+> [    0.468237] SMP alternatives: lockdep: fixing up alternatives
+> [    0.469007]    #6
+> [    0.545230] SMP alternatives: lockdep: fixing up alternatives
+> [    0.546006]    #7 OK
+> [    0.626323] Brought up 8 CPUs
+> [    0.627004] smpboot: Total of 8 processors activated (64217.00 BogoMIPS)
 
 
-> Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
->
-> On Thu, 2013-09-26 at 09:09 +0800, zhang.yi20@zte.com.cn wrote:
-> > Hi all,
-> >
-> > Task processes all its owned robust futex when it is exiting,
-> > to ensure the futexes can be taken by other tasks.
-> >
-> > Though this can not work good in sometimes.
-> > Think about this scene£º
-> > 1. A robust mutex is shared for two processes, each process has
-> >    multi threads to lock the mutex.
-> > 2. One of the threads locks the mutex, and the others are waiting
-> >    and sorted in order of priority.
-> > 3. The process to which the mutex owner thread belongs is dying
-> >    without unlocking the mutex£¬and handle_futex_death is invoked
-> >    to wake the first waiter.
-> > 4. If the first waiter belongs to the same process£¬it has no chance
-> >    to return to the userspace to lock the mutex, and it won't wake
-> >    the next waiter because it is not the owner of the mutex.
-> > 5. The rest waiters of the other process may block forever.
-> >
-> > This patch remove the owner check when waking task in handle_futex_death.
-> > If above occured, The dying task can wake the next waiter by processing its list_op_pending.
-> > The waked task could return to userspace and try to lock the mutex again.
-> >
->
-> The problem is if you allow the non-owner to do the wake, you risk
-> multiple threads calling futex_wake(). Or is that your intention? Wake
-> one waiter for every thread that calls handle_futex_death()?
+Hm, I realize that this was a nice test for the printout robustness, but 
+could you please also remove the alternatives message in another patch?
 
-Yes.
+That message was cool and interesting back in the days when we wrote 
+lockdep ('hey, look ma, it really works!!'), but there hasn't been any 
+breakage in that area for a long time and it definitely does not deserve 
+one line of log spam per CPU! Especially if it messes up such a nice CPU 
+bootup table.
 
-> >
-> > Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-> > Reviewed-by: Xie Baoyou <xie.baoyou@zte.com.cn>
-> > Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
-> >
-> >
-> >
-> > --- linux/kernel/futex.c   2013-09-25 09:24:34.639634244 +0000
-> > +++ linux/kernel/futex.c   2013-09-25 10:12:17.619673546 +0000
-> > @@ -2541,14 +2541,15 @@ retry:
-> >        }
-> >        if (nval != uval)
-> >           goto retry;
-> > -
-> > -      /*
-> > -       * Wake robust non-PI futexes here. The wakeup of
-> > -       * PI futexes happens in exit_pi_state():
-> > -       */
-> > -      if (!pi && (uval & FUTEX_WAITERS))
-> > -         futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
-> >     }
-> > +
-> > +   /*
-> > +    * Wake robust non-PI futexes here. The wakeup of
-> > +    * PI futexes happens in exit_pi_state():
-> > +    */
-> > +   if (!pi)
->
->
-> Why did you drop the FUTEX_WAITERS condition?
->
-> You sent a different patch earlier this year that didn't appear to get
-> any review:
->
-> https://lkml.org/lkml/2013/4/8/65
->
-> This one woke all the waiters and let them sort it out.
->
-> It seems we've hashed through this already, but I'm not finding the
-> email logs and I don't recall off the top of my head.
->
-> > +      futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
-> > +
-> >     return 0;
-> >  }
->
+> I admit the digits calculation is a bit clumsy but I didn't want to do 
+> any log_10 crazy jumps through hoops and besides, it should be faster 
+> this way:
 
-The earlier patch cannot solve another problem:
-The owner wakes the next waiter through normal unlocking which make the
-futex value as zero, the waked task exits before actually locking the mutex.
-In this case, the owner doesn't call handle_futex_death() and the waked task
-doesn't call futex_wake() when they are dying. The rest waiters will still
-block as the same.
+> -		pr_cont(" #%4d%s", cpu, cpu == max_cpu_present ? " OK\n" : "");
+> +		num_digits = 1 + 1 * (cpu > 9) + 1 * (cpu > 99);
+> +
+> +		pr_cont("%*s#%d", 4 - num_digits, " ", cpu);
+> +
+> +		if (cpu == num_present_cpus() - 1)
+> +			pr_cont(" OK\n");
 
-This is also the reason that I drop the owner and FUTEX_WAITERS check,
-because the futex value can be zero at that time.
+So how about taking log10(num_possible_cpus()) as the width of the 
+printout? (If it wraps out of the screen on 4K CPU systems then those 
+lucky people can resize their terminals or so.)
 
-In normal case, the userspace code ensure that the owner of lock in robust-list
-is current task, we may do redundant waking just for the  list_op_pending.
-So I think the patch results in little negative effect.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+There's absolutely no speed consideration here, and people do keep staring 
+at the CPU bootup printout frequently. A small helper function can 
+construct a fixed-width entry into a string, which can be printed using %s.
+
+Width only has to be calculated once:
+
+static int num_digits(val)
+{
+	int digits = 0;
+
+	while (val) {
+		val /= 10;
+		digits++;
+	}
+
+	return digits;
+}
+
+...
+	width = num_digits(num_possible_cpus());
+...
+
+And the beauty of it is that small, slow systems will naturally spend a 
+few cycles less time in num_digits() than large, fast systems.
+
+(and I hope you learned the lesson about sending improvement patches 
+against long-bitrotten code, as the new x86 CPU bootup printout format 
+code maintainer!)
+
+Thanks,
+
+	Ingo
