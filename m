@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab3I0CZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 22:25:42 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:63427 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab3I0CZf (ORCPT
+	id S1752406Ab3I0C0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 22:26:16 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:33776 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab3I0CZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 22:25:35 -0400
+	Thu, 26 Sep 2013 22:25:32 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 6/6] dts: calxeda: add ARM PSCI binding
-Date: Thu, 26 Sep 2013 21:24:54 -0500
-Message-Id: <1380248694-13388-7-git-send-email-robherring2@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH 4/6] ARM: PSCI: remove unnecessary include of arm-gic.h
+Date: Thu, 26 Sep 2013 21:24:52 -0500
+Message-Id: <1380248694-13388-5-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1380248694-13388-1-git-send-email-robherring2@gmail.com>
 References: <1380248694-13388-1-git-send-email-robherring2@gmail.com>
@@ -26,38 +23,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Add the PSCI binding node for Calxeda SOCs. Only claiming "arm,psci"
-support since there is no agreement on 0.2 binding definition.
+Now that gic_secondary_init is no longer needed to be called by SMP init
+functions, the header is not needed.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: devicetree@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/arm/boot/dts/ecx-common.dtsi | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/kernel/psci_smp.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/ecx-common.dtsi b/arch/arm/boot/dts/ecx-common.dtsi
-index e8559b7..bc22557 100644
---- a/arch/arm/boot/dts/ecx-common.dtsi
-+++ b/arch/arm/boot/dts/ecx-common.dtsi
-@@ -19,6 +19,14 @@
- 		bootargs = "console=ttyAMA0";
- 	};
+diff --git a/arch/arm/kernel/psci_smp.c b/arch/arm/kernel/psci_smp.c
+index 70ded3f..570a48c 100644
+--- a/arch/arm/kernel/psci_smp.c
++++ b/arch/arm/kernel/psci_smp.c
+@@ -14,7 +14,6 @@
+  */
  
-+	psci {
-+		compatible	= "arm,psci";
-+		method		= "smc";
-+		cpu_suspend	= <0x84000002>;
-+		cpu_off		= <0x84000004>;
-+		cpu_on		= <0x84000006>;
-+	};
-+
- 	soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
+ #include <linux/init.h>
+-#include <linux/irqchip/arm-gic.h>
+ #include <linux/smp.h>
+ #include <linux/of.h>
+ 
 -- 
 1.8.1.2
 
