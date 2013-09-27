@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab3I0N2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:28:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55544 "EHLO mx2.suse.de"
+	id S1754608Ab3I0Nkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:40:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55678 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab3I0N17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:27:59 -0400
+	id S1753511Ab3I0N2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:14 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/63] mm: Prevent parallel splits during THP migration
-Date: Fri, 27 Sep 2013 14:26:51 +0100
-Message-Id: <1380288468-5551-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 23/63] sched: Resist moving tasks towards nodes with fewer hinting faults
+Date: Fri, 27 Sep 2013 14:27:08 +0100
+Message-Id: <1380288468-5551-24-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,112 +22,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-THP migrations are serialised by the page lock but on its own that does
-not prevent THP splits. If the page is split during THP migration then
-the pmd_same checks will prevent page table corruption but the unlock page
-and other fix-ups potentially will cause corruption. This patch takes the
-anon_vma lock to prevent parallel splits during migration.
+Just as "sched: Favour moving tasks towards the preferred node" favours
+moving tasks towards nodes with a higher number of recorded NUMA hinting
+faults, this patch resists moving tasks towards nodes with lower faults.
 
+[mgorman@suse.de: changelog]
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/huge_memory.c | 44 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 14 deletions(-)
+ kernel/sched/fair.c     | 33 +++++++++++++++++++++++++++++++++
+ kernel/sched/features.h |  8 ++++++++
+ 2 files changed, 41 insertions(+)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d0a3fce..cb34b7a 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1290,18 +1290,18 @@ out:
- int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a9509c..051529e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4060,12 +4060,43 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ 
+ 	return false;
+ }
++
++
++static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
++{
++	int src_nid, dst_nid;
++
++	if (!sched_feat(NUMA) || !sched_feat(NUMA_RESIST_LOWER))
++		return false;
++
++	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++		return false;
++
++	src_nid = cpu_to_node(env->src_cpu);
++	dst_nid = cpu_to_node(env->dst_cpu);
++
++	if (src_nid == dst_nid ||
++	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++		return false;
++
++	if (p->numa_faults[dst_nid] < p->numa_faults[src_nid])
++		return true;
++
++	return false;
++}
++
+ #else
+ static inline bool migrate_improves_locality(struct task_struct *p,
+ 					     struct lb_env *env)
  {
-+	struct anon_vma *anon_vma = NULL;
- 	struct page *page;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
- 	int target_nid;
- 	int current_nid = -1;
--	bool migrated;
-+	bool migrated, page_locked;
+ 	return false;
+ }
++
++static inline bool migrate_degrades_locality(struct task_struct *p,
++					     struct lb_env *env)
++{
++	return false;
++}
+ #endif
  
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
- 		goto out_unlock;
- 
- 	page = pmd_page(pmd);
--	get_page(page);
- 	current_nid = page_to_nid(page);
- 	count_vm_numa_event(NUMA_HINT_FAULTS);
- 	if (current_nid == numa_node_id())
-@@ -1311,12 +1311,29 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * Acquire the page lock to serialise THP migrations but avoid dropping
- 	 * page_table_lock if at all possible
+ /*
+@@ -4130,6 +4161,8 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 3) too many balance attempts have failed.
  	 */
--	if (trylock_page(page))
--		goto got_lock;
-+	page_locked = trylock_page(page);
-+	target_nid = mpol_misplaced(page, vma, haddr);
-+	if (target_nid == -1) {
-+		/* If the page was locked, there are no parallel migrations */
-+		if (page_locked) {
-+			unlock_page(page);
-+			goto clear_pmdnuma;
-+		}
+ 	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
++	if (!tsk_cache_hot)
++		tsk_cache_hot = migrate_degrades_locality(p, env);
  
--	/* Serialise against migrationa and check placement check placement */
-+		/* Otherwise wait for potential migrations and retry fault */
-+		spin_unlock(&mm->page_table_lock);
-+		wait_on_page_locked(page);
-+		goto out;
-+	}
+ 	if (migrate_improves_locality(p, env)) {
+ #ifdef CONFIG_SCHEDSTATS
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index d9278ce..5716929 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -74,4 +74,12 @@ SCHED_FEAT(NUMA,	false)
+  * balancing.
+  */
+ SCHED_FEAT(NUMA_FAVOUR_HIGHER, true)
 +
-+	/* Page is misplaced, serialise migrations and parallel THP splits */
-+	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
--	lock_page(page);
-+	if (!page_locked) {
-+		lock_page(page);
-+		page_locked = true;
-+	}
-+	anon_vma = page_lock_anon_vma_read(page);
- 
- 	/* Confirm the PMD did not change while page_table_lock was released */
- 	spin_lock(&mm->page_table_lock);
-@@ -1326,14 +1343,6 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out_unlock;
- 	}
- 
--got_lock:
--	target_nid = mpol_misplaced(page, vma, haddr);
--	if (target_nid == -1) {
--		unlock_page(page);
--		put_page(page);
--		goto clear_pmdnuma;
--	}
--
- 	/* Migrate the THP to the requested node */
- 	spin_unlock(&mm->page_table_lock);
- 	migrated = migrate_misplaced_transhuge_page(mm, vma,
-@@ -1342,6 +1351,8 @@ got_lock:
- 		goto check_same;
- 
- 	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
-+	if (anon_vma)
-+		page_unlock_anon_vma_read(anon_vma);
- 	return 0;
- 
- check_same:
-@@ -1358,6 +1369,11 @@ clear_pmdnuma:
- 	update_mmu_cache_pmd(vma, addr, pmdp);
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
-+
-+out:
-+	if (anon_vma)
-+		page_unlock_anon_vma_read(anon_vma);
-+
- 	if (current_nid != -1)
- 		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
- 	return 0;
++/*
++ * NUMA_RESIST_LOWER will resist moving tasks towards nodes where a
++ * lower number of hinting faults have been recorded. As this has
++ * the potential to prevent a task ever migrating to a new node
++ * due to CPU overload it is disabled by default.
++ */
++SCHED_FEAT(NUMA_RESIST_LOWER, false)
+ #endif
 -- 
 1.8.1.4
 
