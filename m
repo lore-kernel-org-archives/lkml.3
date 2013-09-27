@@ -1,322 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3I0Irs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:47:48 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:57079 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751905Ab3I0Iro (ORCPT
+	id S1753248Ab3I0IsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:48:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44993 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3I0IsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:47:44 -0400
-To: Feng Kan <fkan@apm.com>
-Subject: Re: [PATCH 1/1] arm64: X-Gene AHBC platform bus driver
-X-PHP-Originating-Script: 0:main.inc
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 27 Sep 2013 09:47:42 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Organization: ARM Ltd
-In-Reply-To: <1380244761-15143-1-git-send-email-fkan@apm.com>
-References: <1380244761-15143-1-git-send-email-fkan@apm.com>
-Message-ID: <02e353fa5db73dd8c344389e58dd2678@www.loen.fr>
-User-Agent: Roundcube Webmail/0.7.2
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: fkan@apm.com, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
+	Fri, 27 Sep 2013 04:48:14 -0400
+Date: Fri, 27 Sep 2013 18:48:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>
+Subject: linux-next: build failure after merge of the final tree (char-misc
+ tree related)
+Message-Id: <20130927184804.ddb460377bcd3fb35f8b41d2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Sep_2013_18_48_04_+1000_Lk4J1=YKKSJmhhQf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Feng,
+--Signature=_Fri__27_Sep_2013_18_48_04_+1000_Lk4J1=YKKSJmhhQf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 2013-09-27 02:19, Feng Kan wrote:
-> This driver setup the AHBC for SPI and SD drivers to use.
+Hi all,
 
-That's a bit thin for a description. What is AHBC? How does it relate 
-to SPI and SD? How is it used?
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-> Signed-off-by: Feng Kan <fkan@apm.com>
->
-> ---
->  arch/arm64/boot/dts/apm-storm.dtsi |    6 +
->  drivers/bus/Kconfig                |    9 ++
->  drivers/bus/Makefile               |    2 +
->  drivers/bus/xgene_ahbc.c           |  193
-> ++++++++++++++++++++++++++++++++++++
->  4 files changed, 210 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/bus/xgene_ahbc.c
->
-> diff --git a/arch/arm64/boot/dts/apm-storm.dtsi
-> b/arch/arm64/boot/dts/apm-storm.dtsi
-> index d994806..b9477ec 100644
-> --- a/arch/arm64/boot/dts/apm-storm.dtsi
-> +++ b/arch/arm64/boot/dts/apm-storm.dtsi
-> @@ -178,6 +178,12 @@
->  			};
->  		};
->
-> +                ahbc: ahbc@1f2a0000 {
-> +                        device_type = "ahbc";
-> +                        compatible = "apm,xgene-ahbc";
-> +                        reg =  <0x0 0x1f2a0000 0x0 0x80000>;
-> +                };
+drivers/misc/mic/card/mic_x100.c: In function 'mic_init':
+drivers/misc/mic/card/mic_x100.c:215:9: error: implicit declaration of func=
+tion 'cpu_data' [-Werror=3Dimplicit-function-declaration]
+  struct cpuinfo_x86 *c =3D &cpu_data(0);
+         ^
+drivers/misc/mic/card/mic_x100.c:215:26: error: lvalue required as unary '&=
+' operand
+  struct cpuinfo_x86 *c =3D &cpu_data(0);
+                          ^
+drivers/misc/mic/card/mic_x100.c:217:9: error: dereferencing pointer to inc=
+omplete type
+  if (!(c->x86 =3D=3D 11 && c->x86_model =3D=3D 1)) {
+         ^
+drivers/misc/mic/card/mic_x100.c:217:25: error: dereferencing pointer to in=
+complete type
+  if (!(c->x86 =3D=3D 11 && c->x86_model =3D=3D 1)) {
+                         ^
+In file included from drivers/misc/mic/host/mic_device.h:27:0,
+                 from drivers/misc/mic/host/mic_boot.c:26:
+drivers/misc/mic/host/mic_intr.h:134:58: warning: 'struct pci_dev' declared=
+ inside parameter list [enabled by default]
+ int mic_setup_interrupts(struct mic_device *mdev, struct pci_dev *pdev);
+                                                          ^
+drivers/misc/mic/host/mic_intr.h:134:58: warning: its scope is only this de=
+finition or declaration, which is probably not what you want [enabled by de=
+fault]
+drivers/misc/mic/host/mic_intr.h:135:58: warning: 'struct pci_dev' declared=
+ inside parameter list [enabled by default]
+ void mic_free_interrupts(struct mic_device *mdev, struct pci_dev *pdev);
+                                                          ^
+In file included from drivers/misc/mic/host/mic_boot.c:26:0:
+drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_read':
+drivers/misc/mic/host/mic_device.h:164:2: error: implicit declaration of fu=
+nction 'ioread32' [-Werror=3Dimplicit-function-declaration]
+  return ioread32(mw->va + offset);
+  ^
+drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_write':
+drivers/misc/mic/host/mic_device.h:178:2: error: implicit declaration of fu=
+nction 'iowrite32' [-Werror=3Dimplicit-function-declaration]
+  iowrite32(val, mw->va + offset);
+  ^
+In file included from arch/powerpc/include/asm/io.h:37:0,
+                 from arch/powerpc/include/asm/dma.h:21,
+                 from arch/powerpc/include/asm/scatterlist.h:12,
+                 from include/linux/scatterlist.h:9,
+                 from include/linux/virtio.h:6,
+                 from include/linux/virtio_config.h:6,
+                 from drivers/misc/mic/host/mic_virtio.h:24,
+                 from drivers/misc/mic/host/mic_boot.c:28:
+include/asm-generic/iomap.h: At top level:
+include/asm-generic/iomap.h:31:21: error: conflicting types for 'ioread32'
+ extern unsigned int ioread32(void __iomem *);
+                     ^
+In file included from drivers/misc/mic/host/mic_boot.c:26:0:
+drivers/misc/mic/host/mic_device.h:164:9: note: previous implicit declarati=
+on of 'ioread32' was here
+  return ioread32(mw->va + offset);
+         ^
+In file included from arch/powerpc/include/asm/io.h:37:0,
+                 from arch/powerpc/include/asm/dma.h:21,
+                 from arch/powerpc/include/asm/scatterlist.h:12,
+                 from include/linux/scatterlist.h:9,
+                 from include/linux/virtio.h:6,
+                 from include/linux/virtio_config.h:6,
+                 from drivers/misc/mic/host/mic_virtio.h:24,
+                 from drivers/misc/mic/host/mic_boot.c:28:
+include/asm-generic/iomap.h:37:13: warning: conflicting types for 'iowrite3=
+2' [enabled by default]
+ extern void iowrite32(u32, void __iomem *);
+             ^
+In file included from drivers/misc/mic/host/mic_boot.c:26:0:
+drivers/misc/mic/host/mic_device.h:178:2: note: previous implicit declarati=
+on of 'iowrite32' was here
+  iowrite32(val, mw->va + offset);
+  ^
+drivers/misc/mic/host/mic_x100.c: In function 'mic_x100_load_ramdisk':
+drivers/misc/mic/host/mic_x100.c:402:49: error: dereferencing pointer to in=
+complete type
+  iowrite32(cpu_to_le32(mdev->bootaddr << 1), &bp->hdr.ramdisk_image);
+                                                 ^
+drivers/misc/mic/host/mic_x100.c:403:38: error: dereferencing pointer to in=
+complete type
+  iowrite32(cpu_to_le32(fw->size), &bp->hdr.ramdisk_size);
+                                      ^
+drivers/misc/mic/host/mic_debugfs.c: In function 'mic_log_buf_show':
+drivers/misc/mic/host/mic_debugfs.c:55:51: error: '__START_KERNEL_map' unde=
+clared (first use in this function)
+  aper_offset =3D (unsigned long)mdev->log_buf_len - __START_KERNEL_map;
+                                                   ^
+drivers/misc/mic/host/mic_debugfs.c:55:51: note: each undeclared identifier=
+ is reported only once for each function it appears in
+In file included from drivers/misc/mic/host/mic_device.h:27:0,
+                 from drivers/misc/mic/host/mic_fops.c:25:
+drivers/misc/mic/host/mic_intr.h:134:58: warning: 'struct pci_dev' declared=
+ inside parameter list [enabled by default]
+ int mic_setup_interrupts(struct mic_device *mdev, struct pci_dev *pdev);
+                                                          ^
+drivers/misc/mic/host/mic_intr.h:134:58: warning: its scope is only this de=
+finition or declaration, which is probably not what you want [enabled by de=
+fault]
+drivers/misc/mic/host/mic_intr.h:135:58: warning: 'struct pci_dev' declared=
+ inside parameter list [enabled by default]
+ void mic_free_interrupts(struct mic_device *mdev, struct pci_dev *pdev);
+                                                          ^
+In file included from drivers/misc/mic/host/mic_fops.c:25:0:
+drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_read':
+drivers/misc/mic/host/mic_device.h:164:2: error: implicit declaration of fu=
+nction 'ioread32' [-Werror=3Dimplicit-function-declaration]
+  return ioread32(mw->va + offset);
+  ^
+drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_write':
+drivers/misc/mic/host/mic_device.h:178:2: error: implicit declaration of fu=
+nction 'iowrite32' [-Werror=3Dimplicit-function-declaration]
+  iowrite32(val, mw->va + offset);
+  ^
+make[5]: *** [drivers/misc/mic/host/mic_debugfs.o] Error 1
+In file included from arch/powerpc/include/asm/io.h:37:0,
+                 from arch/powerpc/include/asm/dma.h:21,
+                 from arch/powerpc/include/asm/scatterlist.h:12,
+                 from include/linux/scatterlist.h:9,
+                 from include/linux/virtio.h:6,
+                 from include/linux/virtio_config.h:6,
+                 from drivers/misc/mic/host/mic_virtio.h:24,
+                 from drivers/misc/mic/host/mic_fops.c:27:
+include/asm-generic/iomap.h: At top level:
+include/asm-generic/iomap.h:31:21: error: conflicting types for 'ioread32'
+ extern unsigned int ioread32(void __iomem *);
+                     ^
+In file included from drivers/misc/mic/host/mic_fops.c:25:0:
+drivers/misc/mic/host/mic_device.h:164:9: note: previous implicit declarati=
+on of 'ioread32' was here
+  return ioread32(mw->va + offset);
+         ^
+In file included from arch/powerpc/include/asm/io.h:37:0,
+                 from arch/powerpc/include/asm/dma.h:21,
+                 from arch/powerpc/include/asm/scatterlist.h:12,
+                 from include/linux/scatterlist.h:9,
+                 from include/linux/virtio.h:6,
+                 from include/linux/virtio_config.h:6,
+                 from drivers/misc/mic/host/mic_virtio.h:24,
+                 from drivers/misc/mic/host/mic_fops.c:27:
+include/asm-generic/iomap.h:37:13: warning: conflicting types for 'iowrite3=
+2' [enabled by default]
+ extern void iowrite32(u32, void __iomem *);
+             ^
+In file included from drivers/misc/mic/host/mic_fops.c:25:0:
+drivers/misc/mic/host/mic_device.h:178:2: note: previous implicit declarati=
+on of 'iowrite32' was here
+  iowrite32(val, mw->va + offset);
+  ^
 
-Where is the binding documentation for this?
+I assume all that is the result of commit aa27badd8972 ("Intel MIC Card
+Driver for X100 family") from the char-misc tree.
 
->  		serial0: serial@1c020000 {
->  			device_type = "serial";
->  			compatible = "ns16550";
-> diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-> index 1f70e84..6cc361c68 100644
-> --- a/drivers/bus/Kconfig
-> +++ b/drivers/bus/Kconfig
-> @@ -42,4 +42,13 @@ config ARM_CCI
->  	help
->  	  Driver supporting the CCI cache coherent interconnect for ARM
->  	  platforms.
-> +
-> +config XGENE_AHBC
-> +	tristate "X-Gene SoC AHB Bus Driver"
-> +	depends on ARM64 && ARCH_XGENE
-> +	default y if ARCH_XGENE
-> +	help
-> +	  X-Gene SoC AHB bus driver is required for SPI and
-> +	  SDIO to function properly.
-> +
->  endmenu
-> diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-> index 8947bdd..0c7a4ca 100644
-> --- a/drivers/bus/Makefile
-> +++ b/drivers/bus/Makefile
-> @@ -10,3 +10,5 @@ obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
->  obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
->  # CCI cache coherent interconnect for ARM platforms
->  obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
-> +
-> +obj-$(CONFIG_XGENE_AHBC)     += xgene_ahbc.o
-> diff --git a/drivers/bus/xgene_ahbc.c b/drivers/bus/xgene_ahbc.c
-> new file mode 100644
-> index 0000000..9554bb4
-> --- /dev/null
-> +++ b/drivers/bus/xgene_ahbc.c
-> @@ -0,0 +1,193 @@
-> +/**
-> + * AppliedMicro X-Gene AHBC Driver
-> + *
-> + * Copyright (c) 2013, Applied Micro Circuits Corporation
-> + * Author: Loc Ho <lho@apm.com>
-> + * Author: Feng Kan <fkan@apm.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of
-> + * the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-> + * MA 02111-1307 USA
-> + *
-> + */
-> +#include <linux/module.h>
-> +#include <linux/io.h>
-> +#include <linux/clk.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_address.h>
-> +#include <linux/delay.h>
-> +#include <linux/memblock.h>
-> +
-> +#define AHBC_DRIVER_VER			"0.1"
-> +
-> +#define AIM_8_SIZE_CTL_ADDR					0x00000104
-> +#define AIM_8_AXI_LO_ADDR					0x00000108
-> +#define AIM_8_AXI_HI_ADDR					0x0000010c
-> +
-> +#define ARSB_F8_WR(src)			(((u32)(src)<<23) & 0x03800000)
-> +#define AWSB_F8_WR(src)			(((u32)(src)<<20) & 0x00700000)
-> +#define AIM_AXI_ADDRESS_LO_8_WR(src)	(((u32)(src)) & 0x000fffff)
-> +
-> +/*	Global Base Address	*/
-> +#define REGSPEC_AHBC_GLBL_DIAG_CSR_I_BASE_ADDR			0x01f2ad000ULL
+I have disabled that driver for today (that commit did not revert
+cleanly):
 
-Global base address? Why isn't this part of your DT binding? Or is it 
-always included in the reg property? In any case, nuke this #define.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 27 Sep 2013 18:38:55 +1000
+Subject: [PATCH] disable broken Intel MIC Card Driver for X100 family for n=
+ow
 
-> +#define REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR			0x00000070
-> +#define REGSPEC_BLOCK_MEM_RDY_ADDR				0x00000074
-> +
-> +static void xgene_ahb_write(void *base, u32 offset, u32 val)
-> +{
-> +	if (base == NULL)
-> +		return;
-> +
-> +	writel_relaxed(val, base + offset);
-> +}
-> +
-> +static void xgene_ahbc_init_mem(struct platform_device *pdev)
-> +{
-> +	void *ahbc_base = platform_get_drvdata(pdev);
-> +	u32 diag_offset = REGSPEC_AHBC_GLBL_DIAG_CSR_I_BASE_ADDR & 0xFFFF;
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/misc/mic/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-So diag_offset is always 0xd000?
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index d453768..aa9805a 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -5,6 +5,7 @@ config INTEL_MIC_HOST
+ 	depends on 64BIT && PCI
+ 	select VHOST_RING
+ 	default N
++	depends on BROKEN
+ 	help
+ 	  This enables Host Driver support for the Intel Many Integrated
+ 	  Core (MIC) family of PCIe form factor coprocessor devices that
+@@ -26,6 +27,7 @@ config INTEL_MIC_CARD
+ 	depends on 64BIT
+ 	select VIRTIO
+ 	default N
++	depends on BROKEN
+ 	help
+ 	  This enables card driver support for the Intel Many Integrated
+ 	  Core (MIC) device family. The card driver communicates shutdown/
+--=20
+1.8.4.rc3
 
-> +	void *diagcsr_base = ahbc_base + diag_offset;
-> +	int timeout;
-> +	u32 val;
-> +
-> +	if (ahbc_base == NULL)
-> +		return;
-> +
-> +	if (readl(diagcsr_base + REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR) == 0)
-> +		return;
-> +
-> +	dev_dbg(&pdev->dev, "AHBC clear memory shutdown\n");
-> +	writel(0x00, diagcsr_base + REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR);
-> +	readl(diagcsr_base + REGSPEC_CFG_MEM_RAM_SHUTDOWN_ADDR);
-> +
-> +	val = readl(diagcsr_base + REGSPEC_BLOCK_MEM_RDY_ADDR);
-> +	timeout = 5000;
-> +	while (val != 0xFFFFFFFF && timeout-- > 0) {
-> +		val = readl(diagcsr_base + REGSPEC_BLOCK_MEM_RDY_ADDR);
-> +		if (val != 0xFFFFFFFF)
-> +			udelay(1);
-> +	}
-> +	if (timeout <= 0)
-> +		dev_err(&pdev->dev, "AHBC failed to remove RAM out of reset\n");
-
-In that case, why not report the error to the caller?
-
-> +}
-> +
-> +static int xgene_ahbc_hw_init(struct platform_device *pdev)
-> +{
-> +	void *ahbc_base = platform_get_drvdata(pdev);
-> +	phys_addr_t ddr_phy;
-> +
-> +	/**
-> +	 * Set AHBC AIM windows for 4GB regardless of DDR size. This
-> +	 * must map to Kernel memory space.
-> +	 */
-> +	ddr_phy = memblock_phys_mem_size();
-> +	dev_dbg(&pdev->dev, "Setup AHBC AIM windows DDR 0x%llX\n", 
-> ddr_phy);
-> +	xgene_ahb_write(ahbc_base, AIM_8_SIZE_CTL_ADDR, 0x00000000);
-> +	xgene_ahb_write(ahbc_base, AIM_8_AXI_LO_ADDR,
-> +			ARSB_F8_WR(1) | AWSB_F8_WR(1) |
-> +			AIM_AXI_ADDRESS_LO_8_WR((u32) ddr_phy));
-> +	xgene_ahb_write(ahbc_base, AIM_8_AXI_HI_ADDR,
-> +			(u32) ((ddr_phy >> 32) << 20));
-> +
-> +	return 0;
-> +}
-> +
-> +static int __init xgene_ahbc_probe(struct platform_device *pdev)
-> +{
-> +	struct resource res;
-> +	int rc;
-> +	void *reg;
-> +
-> +	rc = of_address_to_resource(pdev->dev.of_node, 0, &res);
-> +	if (rc != 0) {
-> +		dev_err(&pdev->dev, "invalid resource address\n");
-> +		return -ENODEV;
-> +	}
-> +	reg = ioremap(res.start, res.end - res.start + 1);
-> +	if (reg == NULL) {
-> +		dev_err(&pdev->dev, "can not map resource\n");
-> +		return -ENODEV;
-> +	}
-
-Use of_iomap instead of dealing with resources yourself.
-
-> +
-> +	platform_set_drvdata(pdev, reg);
-> +
-> +	/* Initialize the hardware */
-> +	xgene_ahbc_init_mem(pdev);
-> +	xgene_ahbc_hw_init(pdev);
-> +
-> +	dev_info(&pdev->dev, "AHBC driver v%s\n", AHBC_DRIVER_VER);
-> +	return 0;
-> +}
-> +
-> +static int xgene_ahbc_remove(struct platform_device *pdev)
-> +{
-> +	void *ahbc_base = platform_get_drvdata(pdev);
-> +
-> +	iounmap(ahbc_base);
-> +	platform_set_drvdata(pdev, NULL);
-> +	return 0;
-> +}
-> +
-> +#if defined(CONFIG_PM)
-> +static int xgene_ahbc_suspend(struct platform_device *dev,
-> pm_message_t state)
-> +{
-> +	/* Nothing to do here */
-> +	return 0;
-> +}
-> +
-> +static int xgene_ahbc_resume(struct platform_device *pdev)
-> +{
-> +	/* Initialize the hardware */
-> +	xgene_ahbc_init_mem(pdev);
-> +	xgene_ahbc_hw_init(pdev);
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static const struct of_device_id xgene_ahbc_match[] = {
-> +	{.compatible = "apm,xgene-ahbc",},
-> +	{},
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, xgene_ahbc_match);
-> +
-> +static struct platform_driver ahbc_driver = {
-> +	.probe = xgene_ahbc_probe,
-> +	.remove = xgene_ahbc_remove,
-> +#if defined(CONFIG_PM)
-> +	.suspend = xgene_ahbc_suspend,
-> +	.resume = xgene_ahbc_resume,
-> +#endif
-
-It would be nicer to define xgene_ahbc_{suspend,ersume} to NULL if 
-!CONFIG_PM.
-
-> +	.driver = {
-> +		   .name = "xgene-ahbc",
-> +		   .owner = THIS_MODULE,
-> +		   .of_match_table = xgene_ahbc_match,
-> +		   },
-> +};
-> +
-> +static int __init xgene_ahbc_init(void)
-> +{
-> +	return platform_driver_register(&ahbc_driver);
-> +}
-> +subsys_initcall(xgene_ahbc_init);
-> +
-> +static void __exit xgene_ahbc_exit(void)
-> +{
-> +	platform_driver_unregister(&ahbc_driver);
-> +}
-> +module_exit(xgene_ahbc_exit);
-> +
-> +MODULE_AUTHOR("Loc Ho <lho@apm.com>");
-> +MODULE_DESCRIPTION("X-Gene AHBC driver");
-> +MODULE_LICENSE("GPL");
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-         M.
--- 
-Fast, cheap, reliable. Pick two.
+--Signature=_Fri__27_Sep_2013_18_48_04_+1000_Lk4J1=YKKSJmhhQf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSRUZKAAoJEMDTa8Ir7ZwVXHwP/RQrR7UJMCLO6+sXjbhGSQFS
+HSm0CxV0mKRN3oWl3m0e+sfiN8D7BuaAZYRpgniPab6kE3VqyKVR3rCaNopoU1TH
+LVBAmBLMSIBtQcqPb+sL93cJyKz89MKVwrc1uN0Qazr/UnLCDBPhLnSQC50lyHHv
+2KrVJlLSLGpEFIX17bVrh01lcs1pPbqwrNoPupjRYD19h3SKdPx5K2NjU+6JZJ6s
+Nnci1g8CtIdHUTZBvUjd6wzg5OdIMgUg/H84Q/npLzBiMeOoidmERlC2BQLgKE+a
+suWX2L1gMepOuTkucLAmSSvxAZklH8tRAqWbQ9DxcG5y3gblzIBhfWviglrRCnDD
+3xYHdZ5xPXs4i6jIb446GowvB+neRMKV2rnKhkE/AFkp83Je4nzPgq9sDXSivIXC
+Dwm8/zdaJj9Wx0+QGmaY4iKYJE614/KaXeWWJ+lKx+3BAIhop+RgxJcmds0jkwTH
+0E1+4TgeYLjjyUNr4AFh9G6ZvFfTmbyI2gF02UWNx6mBnAMLcGo4jDUgZ7mpSrdF
+Hh4e8KfpMrzGhpsT5qtwhIjKDcf4Opz2xym0mwuBrTSZ20cve2NaWJQUI1/WuddJ
+kyxAhJnkIHiNSEgJpjagkb95E0vy4UozXfLsTossVjsDHKdC/LYdmC3d1LwPLyU8
+l/Qq89XiGa45juXcskwk
+=4YU8
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Sep_2013_18_48_04_+1000_Lk4J1=YKKSJmhhQf--
