@@ -1,125 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab3I0Sb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:31:56 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:36575 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754197Ab3I0Sby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:31:54 -0400
-Date: Fri, 27 Sep 2013 13:31:50 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [XFS MAINTAINERS] fs/xfs/xfs_dir2_node.c: xfs:
- xfs_dir2_leafn_add: Variables Uninitialized
-Message-ID: <20130927183150.GG10553@sgi.com>
-References: <CAGG-pURO7QrMcU1btzh_RvQkLB=4QFqrLntW3n6BeMfU4iFdUQ@mail.gmail.com>
- <CAGG-pUQr39G3QiiS=yoDQk+RmVihr59N8Z6Wk5G05QFB=gJF4g@mail.gmail.com>
+	id S1754458Ab3I0Sf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:35:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754203Ab3I0Sf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 14:35:26 -0400
+Date: Fri, 27 Sep 2013 14:35:07 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, cesarb@cesarb.net,
+        joe@perches.com, akpm@linux-foundation.org, agk@redhat.com,
+        m.chehab@samsung.com, ejt@redhat.com, dan.carpenter@oracle.com
+Subject: Re: Reworking dm-writeboost [was: Re: staging: Add dm-writeboost]
+Message-ID: <20130927183507.GA16553@redhat.com>
+References: <5223208D.4000008@gmail.com>
+ <20130916215357.GA5015@redhat.com>
+ <52384E66.6050101@gmail.com>
+ <20130917205936.GB12001@redhat.com>
+ <523E3522.2060607@gmail.com>
+ <524183A2.9050301@gmail.com>
+ <20130925173757.GA24076@redhat.com>
+ <5243922B.6070705@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGG-pUQr39G3QiiS=yoDQk+RmVihr59N8Z6Wk5G05QFB=gJF4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5243922B.6070705@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geyslan,
+On Wed, Sep 25 2013 at  9:47pm -0400,
+Akira Hayakawa <ruby.wktk@gmail.com> wrote:
 
-On Fri, Sep 27, 2013 at 02:59:12PM -0300, Geyslan Gregório Bem wrote:
-> Hi Maintainers,
+> Hi, Mike
 > 
-> I suppose the variables "highstale" and "lowstale" are being used despite
-> not having been initialized.
+> The monolithic source code (3.2k)
+> is nicely splitted into almost 20 *.c files
+> according to the functionality and
+> data strucutures in OOP style.
 > 
-> File: fs/xfs/xfs_dir2_node.c
-> Function: xfs_dir2_leafn_add
+> The aim of this posting
+> is to share how the splitting looks like.
 > 
-> L491:
-> > /*
-> > * Insert the new entry, log everything.
-> > */
-> > lep = xfs_dir3_leaf_find_entry(&leafhdr, ents, index, compact, lowstale,
-> > highstale, &lfloglow, &lfloghigh);
+> I believe that
+> at least reading the *.h files
+> can convince you the splitting is clear.
 > 
-> The only place they are started up is within this condition:
+> The code is now tainted with
+> almost 20 version switch macros
+> and WB* debug macros
+> but I will clean them up
+> for sending patch.
 > 
-> L480:
-> > if (compact)
-> > xfs_dir3_leaf_compact_x1(&leafhdr, ents, &index, &lowstale,
-> > &highstale, &lfloglow, &lfloghigh);
+> Again,
+> the latest code can be cloned by
+> git clone https://github.com/akiradeveloper/dm-writeboost.git
 > 
-> So, if it is not compact, both have garbage.
+> I will make few updates to the source codes on this weekend
+> so please track it to follow the latest version.
+> Below is only the snapshot.
+> 
+> Akira
+> 
+> ---------- Summary ----------
+> 33 Makefile
+> 10 bigarray.h
+> 19 cache-alloc.h
+> 10 defer-barrier.h
+> 8 dirty-sync.h
+> 8 flush-daemon.h
+> 10 format-cache.h
+> 24 handle-io.h
+> 16 hashtable.h
+> 18 migrate-daemon.h
+> 7 migrate-modulator.h
+> 12 queue-flush-job.h
+> 8 rambuf.h
+> 13 recover.h
+> 18 segment.h
+> 8 superblock-recorder.h
+> 9 target.h
+> 30 util.h
+> 384 writeboost.h
+> 99 bigarray.c
+> 192 cache-alloc.c
+> 36 defer-barrier.c
+> 33 dirty-sync.c
+> 85 flush-daemon.c
+> 234 format-cache.c
+> 553 handle-io.c
+> 109 hashtable.c
+> 345 migrate-daemon.c
+> 41 migrate-modulator.c
+> 169 queue-flush-job.c
+> 52 rambuf.c
+> 308 recover.c
+> 118 segment.c
+> 61 superblock-recorder.c
+> 376 target.c
+> 126 util.c
 
-Thanks for the report.  That sounds pretty bad.  Lets see...
+Unfortunately I think you went too far with all these different small
+files, I was hoping to see 2 or 3 .c files and a couple .h files.
 
-421 static int                                      /* error */
-422 xfs_dir2_leafn_add(
-423         struct xfs_buf          *bp,            /* leaf buffer */
-424         xfs_da_args_t           *args,          /* operation arguments */
-425         int                     index)          /* insertion pt for new entry */
-426 {
-...
-476         /*
-477          * Compact out all but one stale leaf entry.  Leaves behind
-478          * the entry closest to index.
-479          */
-480         if (compact)
-481                 xfs_dir3_leaf_compact_x1(&leafhdr, ents, &index, &lowstale,
-482                                          &highstale, &lfloglow, &lfloghigh);
-483         else if (leafhdr.stale) {
-484                 /*
-485                  * Set impossible logging indices for this case.
-486                  */
-487                 lfloglow = leafhdr.count;
-488                 lfloghigh = -1;
-489         }
-490
-491         /*
-492          * Insert the new entry, log everything.
-493          */
-494         lep = xfs_dir3_leaf_find_entry(&leafhdr, ents, index, compact, lowstale,
-495                                        highstale, &lfloglow, &lfloghigh);
+Maybe fold all the daemon code into a 1 .c and 1 .h ?
 
-If compact is set at 481 we pass the addresses of highstale and lowstale to
-xfs_dir3_leaf_compact_x1, which passes them to xfs_dir3_leaf_find_stale, which
-makes assignments to both variables unconditionally.  Later at 494 we pass
-compact, lowstale, and highstale to xfs_dir3_leaf_find_entry.
+The core of the writeboost target in dm-writeboost-target.c ?
 
-So we're ok if compact is set...
+And fold all the other data structures into a 1 .c and 1 .h ?
 
-555 struct xfs_dir2_leaf_entry *
-556 xfs_dir3_leaf_find_entry(
-557         struct xfs_dir3_icleaf_hdr *leafhdr,
-558         struct xfs_dir2_leaf_entry *ents,
-559         int                     index,          /* leaf table position */
-560         int                     compact,        /* need to compact leaves */
-561         int                     lowstale,       /* index of prev stale leaf */
-562         int                     highstale,      /* index of next stale leaf */
-563         int                     *lfloglow,      /* low leaf logging index */
-564         int                     *lfloghigh)     /* high leaf logging index */
-565 {
-...
-587         /*
-588          * There are stale entries.
-589          *
-590          * We will use one of them for the new entry.  It's probably not at
-591          * the right location, so we'll have to shift some up or down first.
-592          *
-593          * If we didn't compact before, we need to find the nearest stale
-594          * entries before and after our insertion point.
-595          */
-596         if (compact == 0)
-597                 xfs_dir3_leaf_find_stale(leafhdr, ents, index,
-598                                          &lowstale, &highstale);
+When folding these files together feel free to use dividers in the code
+like dm-thin.c and dm-cache-target.c do, e.g.:
 
-In xfs_dir3_leaf_find_entry, it looks like if compact is not set, we will pass
-the addresses of lowstale and highstale to xfs_dir3_leaf_find_stale which
-appears to make assignments to them unconditionally.  It looks like
-xfs_dir3_leaf_find_entry doesn't read from lowstale and highstale until after
-598.  I think this should take care of the !compact case too.  Do you agree?
+/*-----------------------------------------------------------------*/
 
-Thanks much,
-Ben
+Mike
