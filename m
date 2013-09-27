@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3I0Peu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:34:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47787 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3I0Per convert rfc822-to-8bit (ORCPT
+	id S1753662Ab3I0PfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:35:00 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:51976 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab3I0Pe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:34:47 -0400
-Subject: Re: [dtc PATCH V2] Warn on node name unit-address presence/absence mismatch
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130927051718.GE2716@voom.fritz.box>
-Date: Fri, 27 Sep 2013 10:34:48 -0500
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jon Loeliger <jdl@jdl.com>,
-        Olof Johansson <olof@lixom.net>, frowand.list@gmail.com,
-        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2F513172-55DB-4482-8561-872420B07737@codeaurora.org>
-References: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org> <3D2FE31C-A6BB-4F70-9B3B-C55012CB56B3@codeaurora.org> <5244BF7A.4000100@wwwdotorg.org> <1380245438.28561.86.camel@pasglop> <20130927051718.GE2716@voom.fritz.box>
-To: David Gibson <david@gibson.dropbear.id.au>
-X-Mailer: Apple Mail (2.1283)
+	Fri, 27 Sep 2013 11:34:56 -0400
+Message-ID: <1380295986.16310.19.camel@scapa>
+Subject: Re: [PATCH v3 4/4] thinkpad-acpi: fix handle locate for video and
+ query of _BCL
+From: Yves-Alexis Perez <corsac@debian.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>
+Date: Fri, 27 Sep 2013 17:33:06 +0200
+In-Reply-To: <20130927152035.GB4140@khazad-dum.debian.net>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
+	 <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
+	 <20130927152035.GB4140@khazad-dum.debian.net>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-+j8p4duVHF2ZP2+D9Bhc"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Sep 27, 2013, at 12:17 AM, David Gibson wrote:
+--=-+j8p4duVHF2ZP2+D9Bhc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, Sep 27, 2013 at 11:30:38AM +1000, Benjamin Herrenschmidt wrote:
->> On Thu, 2013-09-26 at 17:12 -0600, Stephen Warren wrote:
->>> Well, ePAPR seems pretty specific that unit address and reg are
->>> related,
->>> but says nothing about ranges in the section on node naming, nor about
->>> node naming in the section about ranges.
->>> 
->>> I'd claim that the existing PPC trees are nonconforming, and should be
->>> fixed too:-)
->> 
->> This is tricky, we should probably fix ePAPR here.
->> 
->> If you have a "soc" bus covering a given range of addresses which it
->> forwards to its children devices but doesn't have per-se its own
->> registers in that area, then it wouldn't have a "reg" property. I would
->> thus argue that in the absence of a "reg" property, if a "ranges" one is
->> present, the "parent address" entry in there is an acceptable substitute
->> for the "reg" property as far as unit addresses are concerned.
-> 
-> So, that's been accepted practice in fdt world for a while; I think
-> ePAPR already permits that, in fact.
+On ven., 2013-09-27 at 12:20 -0300, Henrique de Moraes Holschuh wrote:
+> Some testing on a *60 (T60,X60...) would also be best, I cannot test
+> this on
+> my T43.
+>=20
+> Anyway, the code itself looks fine, so:
 
-Are you saying that the bus binding would cover this case or something else?
+I can test on T61, would that help?
 
->> Also don't forget that in real OFW land, the unit address is something
->> that's somewhat bus specific ... for example, PCI uses "dev,fn" rather
->> than the full 96-bit number of the "reg" entry :-)
->> 
->> Another option which would more strictly conform to ePAPR and in fact to
->> of1275 would be to require such bus nodes to have a "reg" property with
->> the address value set to the beginning of the range and the size value
->> set to 0 :-)
+Regards,
+--=20
+Yves-Alexis
 
-Uugh, that's a bit ugly.  I wonder what breaks if we had reg w/size 0.
+--=-+j8p4duVHF2ZP2+D9Bhc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-- k
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+iQEcBAABCAAGBQJSRaUyAAoJEG3bU/KmdcClGfcH/ilpwErStr6ZuonaoV7Vv4Po
+auEw+jydVdKblf9SM9cjPI9wuwAweuLF4GJ523iroaddx23zWYe6myH3kygGmUa8
+sMU94IS/RgT93zJNdDbHLB7S0wPmq7P33TffVk4v/hhtEll/GqKyvJ1ihsvQYh0U
+iw3ABOG4g4IzOxAsSEFoOGzHFMp9ltYuh3JNmh4gG0vPtGbaTyslsRpZqqfi5LK4
+2zfZXKcOE8EeWK+CC3sgyM96cHcZNlbw9FC3IHThaPy30aVF4OHQl6r6e1Ug6RyR
+9FxDId5db1m2kYVuDweFeO9fI3axgMAE39ztTM2MO8Fhhb8z4U9SW0qBLdKGZgs=
+=u2bI
+-----END PGP SIGNATURE-----
 
+--=-+j8p4duVHF2ZP2+D9Bhc--
