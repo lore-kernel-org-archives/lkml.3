@@ -1,163 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3I0TBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 15:01:22 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:32342 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab3I0TBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 15:01:20 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-Date: Fri, 27 Sep 2013 15:00:24 -0400
-Message-Id: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+	id S1754680Ab3I0TBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 15:01:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49692 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754341Ab3I0TBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 15:01:34 -0400
+Message-ID: <5245D609.1060809@suse.com>
+Date: Fri, 27 Sep 2013 15:01:29 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blktrace: fix race with open trace files and directory
+ removal
+References: <52425444.204@suse.com> <x49k3i2ds1a.fsf@segfault.boston.devel.redhat.com> <5245D414.1020002@suse.com> <x49eh8adrg3.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49eh8adrg3.fsf@segfault.boston.devel.redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="1oWu9EBEgVSXCU6RwOdK9tWnnVM2N26Oh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the 3.12-rc2 kernel, there is sizable spinlock contention on
-the rwsem wakeup code path when running AIM7's high_systime workload
-on a 8-socket 80-core DL980 (HT off) as reported by perf:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--1oWu9EBEgVSXCU6RwOdK9tWnnVM2N26Oh
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-  7.64%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
-             |--41.77%-- rwsem_wake
-  1.61%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irq
-             |--92.37%-- rwsem_down_write_failed
+On 9/27/13 2:56 PM, Jeff Moyer wrote:
+> Jeff Mahoney <jeffm@suse.com> writes:
+>=20
+>> On 9/27/13 2:43 PM, Jeff Moyer wrote:
+>>> Jeff Mahoney <jeffm@suse.com> writes:
+>>>
+>>>> There's a bug in the blktrace client where it will stop and tear dow=
+n
+>>>> all of the tracing instances for devices it's opened whether it
+>>>> successfully completed the setup or not.
+>>>>
+>>>> By starting multiple blktrace processes on the same device, it's pos=
+sible
+>>>> to permanently disable blktrace on that device. The cause is that wh=
+en
+>>>> the first blktrace process to exit tears down the directory structur=
+e,
+>>>> the trace files are still held open. Debugfs removes the dentries fo=
+r the
+>>>> open files just fine but the relay implementation doesn't remove the=
 
-That was 4.7% of recorded CPU cycles.
+>>>> dentries until all of the references to the file are dropped. This m=
+eans
+>>>> that if there are open files when debugfs_remove is called for the d=
+evice
+>>>> directory, the directory is not empty and can't be removed. Since th=
+e
+>>>> shutdown of the blktrace structure xchg's the structure out, there's=
+ no
+>>>> way to clean up the directory and any new blktrace processes will fa=
+il
+>>>> to start because it can't create the directory.
+>>>>
+>>>> This patch adds a kref to blk_trace so that we can release it after =
+the
+>>>> initial reference as well as all of the references accumulated by th=
+e
+>>>> relay files are dropped.
+>>>
+>>> Can't we just do proper unwinding of errors in the do_blktrace_setup
+>>> function?  In other words, don't just blindly call blk_trace_free, bu=
+t
+>>> instead just undo anything we've done.
+>>
+>> No. It's not the setup that's causing the problem. It's one process
+>> holding the trace files open while another process calls BLKTRACETEARD=
+OWN.
+>=20
+> Ah, right.  So, in that case I'd rather restrict the ioctl to just the
+> process that setup the trace.  Jens, Tejun, any opinions?
 
-On a large NUMA machine, it is entirely possible that a fairly large
-number of threads are queuing up in the ticket spinlock queue to do
-the wakeup operation. In fact, only one will be needed.  This patch
-tries to reduce spinlock contention by doing just that.
+We'd also need to check to see if the task that started the trace is
+still around.
 
-A new wakeup field is added to the rwsem structure. This field is
-set on entry to rwsem_wake() and __rwsem_do_wake() to mark that a
-thread is pending to do the wakeup call. It is cleared on exit from
-those functions.
+-Jeff
 
-By checking if the wakeup flag is set, a thread can exit rwsem_wake()
-immediately if another thread is pending to do the wakeup instead of
-waiting to get the spinlock and find out that nothing need to be done.
+--=20
+Jeff Mahoney
+SUSE Labs
 
-The setting of the wakeup flag may not be visible on all processors in
-some architectures. However, this won't affect program correctness. The
-clearing of the wakeup flag before spin_unlock will ensure that it is
-visible to all processors.
 
-With this patch, the performance improvement on jobs per minute (JPM)
-of the high_systime workload (at 1500 users) was as follows:
+--1oWu9EBEgVSXCU6RwOdK9tWnnVM2N26Oh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-HT	JPM w/o patch	JPM with patch	% Change
---	-------------	--------------	--------
-off	   128466	   150000	 +16.8%
-on	   121606	   146778	 +20.7%
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.19 (Darwin)
 
-The new perf profile (HT off) was as follows:
+iQIcBAEBAgAGBQJSRdYKAAoJEB57S2MheeWy3tAP/1Ag1q3tJSVrwyS7CH/B6fho
+EcI6To4ZhluW+KA/1e2b2meYMHEFR7HBgrW9EfRQ/cFmLoFCYFuPRrKNlv/NWyTM
+Z4Y1MPmIfT0nIkX72eZ8mJNTbhy94DpxWCmlyfnm7R2LC9K12SNs2krzV1kCc8yC
+OdcadrfQB5rNrKnnswpv69kvROyS44kcphf59nH6DVv0B2RT2Dj40nEL0Tu9uZhf
+OrxGiFcDIfp4lTeTZ70gFZzLEm+Fze07VlZ/jmyxANUHiLiZEQ2Z9PndPjsciJAv
+RcY2Lc8rsv0eNjPtUxEdxM/ytalaW1fz9nb0pHApxVlMfH1KSfkKz6/969nJ8yZT
+5pBuH1MwqKQy+ZB3puTuPMTYzgSfHnO/TrQLDmySag/bekc1Kl0CL7wu53EPFzoc
+hrVg3vfjO6b7fKnn4uDclWX7eYd92CwE+JaVEwY1r5FM+IfhBrbYPWza3IegNhn7
+sL7Kny0bljFP21dxU2QKMxIcriwaDLV5uLzH6pBCBjrdAMDAVnfgQ6vF5KIqUGo+
+3XBDZ9mJOUJusgIXw/bwPxCYSKVuqK71DN2CDvcmlTVbt36Zz6umKss8cOoKbcoS
+ItlSHygP9VQnXLsHR7OWw432jOJMhtehYRYv5qbgot8kTh0CBJ2la9Lup1m53fh5
+yh1kBiy0nzy6PacG4TUv
+=+Z7c
+-----END PGP SIGNATURE-----
 
-  2.96%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
-             |--0.94%-- rwsem_wake
-  1.00%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irq
-             |--88.70%-- rwsem_down_write_failed
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- include/linux/rwsem.h |    2 ++
- lib/rwsem.c           |   19 +++++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 0616ffe..e25792e 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -25,6 +25,7 @@ struct rw_semaphore;
- struct rw_semaphore {
- 	long			count;
- 	raw_spinlock_t		wait_lock;
-+	int			wakeup;	/* Waking-up in progress flag */
- 	struct list_head	wait_list;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
-@@ -58,6 +59,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
- #define __RWSEM_INITIALIZER(name)			\
- 	{ RWSEM_UNLOCKED_VALUE,				\
- 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
-+	  0,						\
- 	  LIST_HEAD_INIT((name).wait_list)		\
- 	  __RWSEM_DEP_MAP_INIT(name) }
- 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 19c5fa9..39290a5 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -25,6 +25,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	lockdep_init_map(&sem->dep_map, name, key, 0);
- #endif
- 	sem->count = RWSEM_UNLOCKED_VALUE;
-+	sem->wakeup = 0;
- 	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
- }
-@@ -66,6 +67,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	struct list_head *next;
- 	long oldcount, woken, loop, adjustment;
- 
-+	sem->wakeup = 1;	/* Waking up in progress */
- 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
- 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
- 		if (wake_type == RWSEM_WAKE_ANY)
-@@ -137,6 +139,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	next->prev = &sem->wait_list;
- 
-  out:
-+	sem->wakeup = 0;
- 	return sem;
- }
- 
-@@ -256,11 +259,27 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
- {
- 	unsigned long flags;
- 
-+	if (sem->wakeup)
-+		return sem;	/* Waking up in progress already */
-+	/*
-+	 * Optimistically set the wakeup flag to indicate that the current
-+	 * flag is going to wakeup the sleeping waiters so that the
-+	 * following threads don't need to wait for doing the wakeup.
-+	 * It is perfectly fine if another thread resets the flag. It just
-+	 * leads to another thread waiting to call __rwsem_do_wake().
-+	 */
-+	sem->wakeup = 1;
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	/* do nothing if list empty */
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
-+	else
-+		sem->wakeup = 0;	/* Make sure wakeup flag is reset */
-+	/*
-+	 * The spin_unlock() call will force the nulled wakeup flag to
-+	 * be visible to all the processors.
-+	 */
- 
- 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
--- 
-1.7.1
-
+--1oWu9EBEgVSXCU6RwOdK9tWnnVM2N26Oh--
