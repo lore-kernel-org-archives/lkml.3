@@ -1,140 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab3I0B2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 21:28:43 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:26417 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3I0B2U (ORCPT
+	id S1753164Ab3I0BbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 21:31:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52976 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3I0BbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 21:28:20 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-e5-5244df32dd93
-Message-id: <5244DF34.9090909@samsung.com>
-Date: Fri, 27 Sep 2013 10:28:20 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon next for 3.13
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsWyRsSkSNfovkuQwYk94hbXvzxntWhevJ7N
-	4mzTG3aLy7vmsFncblzB5sDqsX/uGnaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyphzYTZT
-	wVPZiq0nV7A1MK4S72Lk5JAQMJE4vmUfE4QtJnHh3nq2LkYuDiGBpYwSb1fvZoQp2n7+EBNE
-	YjqjxJRTx9ghnFeMEtMvngFr5xXQktj9aiIbiM0ioCrx8812FhCbDSi+/8UNsLioQJjEyulX
-	WCDqBSV+TL4HZosIaEi8PHoLzGYWWMsoced5AogtDBRfcucpI0RcR2J/6zQ2CFteYvOat8wg
-	R0gI9LNLfH+9nxlisYDEt8mHgAZxACVkJTYdYIb4QFLi4IobLBMYRWYhWT0LydhZSMYuYGRe
-	xSiaWpBcUJyUXmSsV5yYW1yal66XnJ+7iREYIaf/PevfwXj3gPUhxmSglROZpUST84ERllcS
-	b2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxpPSZTy6
-	C6bXeX99u+UTr8Rvr6MTLrHdVVJX+yTy5WHdlS3L3+3fJXH285KLX4Ov3Hk1tYBf7bvU55pZ
-	MdeCpt3YEbjLRuPx6lmHTzja3sxaEao9halaLDL5rw1b2KclLuz1G6ImnS8MfXxs98VrD9Zv
-	lnvM7PVn1uW7MnnPp7kxv7pm6P//iH2qEktxRqKhFnNRcSIAYEZUTaYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jQV2j+y5BBs9e8ltc//Kc1aJ58Xo2
-	i7NNb9gtLu+aw2Zxu3EFmwOrx/65a9g9+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/d
-	Vsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2inkkJZYk4pUCggsbhYSd8O04TQEDdd
-	C5jGCF3fkCC4HiMDNJCwhjFjzoXZTAVPZSu2nlzB1sC4SryLkZNDQsBEYvv5Q0wQtpjEhXvr
-	2boYuTiEBKYzSkw5dYwdwnnFKDH94hmwKl4BLYndryaygdgsAqoSP99sZwGx2YDi+1/cAIuL
-	CoRJrJx+hQWiXlDix+R7YLaIgIbEy6O3wGxmgbWMEneeJ4DYwkDxJXeeMkLEdST2t05jg7Dl
-	JTavecs8gZFvFpJRs5CUzUJStoCReRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcPw9k97B
-	uKrB4hCjAAejEg9vRpZLkBBrYllxZe4hRgkOZiUR3vWxQCHelMTKqtSi/Pii0pzU4kOMyUCf
-	TmSWEk3OB6aGvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpg
-	FPsyZ8aLsnqh7Cne6ast9NpMF0Qoh3Lvzd0Sb/fw1BTVmIvBIvwK1g2z42exlEft36D/NyJm
-	7Vlfr89X/m/5mMScsrHBMr9NeE6IEG9uifidq86NkjaNTx875cZuLX7v90Vzjk2V/rS9n0pr
-	v500Urb8LulmJvPdVTOjJSxAd9K0mRddZ/5VYinOSDTUYi4qTgQAerdwxQMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 26 Sep 2013 21:31:10 -0400
+Date: Fri, 27 Sep 2013 11:31:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        majianpeng <majianpeng@gmail.com>, Zach Brown <zab@zabbo.net>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: linux-next: build failure after merge of the ceph tree
+Message-Id: <20130927113100.5c261c61856e26da4cf8f949@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Sep_2013_11_31_00_+1000__ltvY_kw=mlkBwmp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--Signature=_Fri__27_Sep_2013_11_31_00_+1000__ltvY_kw=mlkBwmp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is extcon-next pull request for 3.13. I add detailed description of this
-pull request on below. Please pull extcon with following updates.
+Hi Sage,
 
-Best Regards,
-Chanwoo Choi
+After merging the ceph tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+fs/ceph/file.c: In function 'ceph_sync_direct_write':
+fs/ceph/file.c:545:24: error: 'struct iov_iter' has no member named 'iov'
+   void __user *data =3D i.iov->iov_base + i.iov_offset;
+                        ^
+fs/ceph/file.c:546:14: error: 'struct iov_iter' has no member named 'iov'
+   u64 len =3D i.iov->iov_len - i.iov_offset;
+              ^
 
-  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+This also happened yesterday but was swamped by the other error (now fixed).
 
-are available in the git repository at:
+Caused by commit d4ce96db671b ("ceph: Implement writev/pwritev for sync
+operation") interacting with commit f6794d33a5ec ("iov_iter: hide iovec
+details behind ops function pointers") from the aio-direct tree.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.13
+I applied the following merge fix patch (but there may be a better
+solution):
 
-for you to fetch changes up to 42d7d7539a7bcf1d493b989465283c464f4a0525:
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 27 Sep 2013 11:28:05 +1000
+Subject: [PATCH] ceph: fix up for iov_iter changes
 
-  extcon: Simplify extcon_dev_register() prototype by removing unnecessary parameter (2013-09-27 09:37:01 +0900)
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/ceph/file.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-----------------------------------------------------------------
-Update extcon for 3.13
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 5cf034e..1216372 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -542,8 +542,8 @@ ceph_sync_direct_write(struct kiocb *iocb, const struct=
+ iovec *iov,
+ 	iov_iter_init(&i, iov, nr_segs, count, 0);
+=20
+ 	while (iov_iter_count(&i) > 0) {
+-		void __user *data =3D i.iov->iov_base + i.iov_offset;
+-		u64 len =3D i.iov->iov_len - i.iov_offset;
++		void __user *data =3D iov_iter_iovec(&i)->iov_base + i.iov_offset;
++		u64 len =3D iov_iter_iovec(&i)->iov_len - i.iov_offset;
+=20
+ 		page_align =3D (unsigned long)data & ~PAGE_MASK;
+=20
+--=20
+1.8.4.rc3
 
-This patchset modify extcon core to remove unnecessary allocation sequence for
-'dev' instance and change extcon_dev_register() interface. extcon-gpio use
-gpiolib API to get debounce time and include small fix of extcon core/device
-driver.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Detailed description for patchset:
-1. Modify extcon core driver
-- The extcon-gpio driver use gpio_set_debounce() API provided from gpiolib
-if gpio driver for SoC support gpio_set_debounce() function and support 'gpio_
-activ_low' filed to check whether gpio active state is 1(high) or 0(low).
-- Change field type of 'dev' in structure extcon_dev and remove the sequence
-of allocating memory of 'struct dev' on extcon_dev_register() function because
-extcon device must need 'struct device.
-- Change extcon_dev_register() prototype to simplify it and remove unnecessary
-parameter as below:
+--Signature=_Fri__27_Sep_2013_11_31_00_+1000__ltvY_kw=mlkBwmp
+Content-Type: application/pgp-signature
 
-2. Fix coding style and typo
-- extcon core     : Fix indentation coding style and remove unnecessary casting
-- extcon-max8997  : Fix checkpatch warning
-- extcon-max77693 : Fix checkpatch warning
-- extcon-arizona  : Fix typo of comment and modify minor issue
-- extcon-palmas   : Use dev_get_platdata()
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-3. Modify extcon-arizona driver
-- Modify minor issue about micbias and comparision statement
+iQIcBAEBCAAGBQJSRN/YAAoJEMDTa8Ir7ZwVeusP/32ZDwhz0Nzkchp6CrCJugtw
+SKHT5UH6nDdha277DhiBOrL9LqIaC+fMTYpzsMKXUWmh1vlH6kdGYBmvrbh1nSM8
+ThGMXhRCUdZZPsZ5EL0DQarA1Q+lpdb+83T2thLfeOJ4RpjsA9G5I6kxc8/cwD8M
+slEh7al5/TtfTANY2S1W3vsDxMvtzNrS+MMoK4IUeGmcgo2mdtv9fXlGVnHC3AAK
+PVD2l1o5kBZRtWu33yw9tjHaaMVp/Jtt/KgAJrQNtUA/JAlCuL2lrEW30ebjPWAJ
+CyKPWy0ioJT/AfZhuzVNqAHvK7wezQxqiGILhIVps2nOJKgoAl1hAV4iVCzac6Xy
+1GESBkLoKb5FI80u71AmTF3/ksPLL5jPx3zxjoQEJJqDrJvWtETvRkT6jqhlk11f
+MzWfE/Qe5lO8MJNXaCjc8zC5iYAtVhb8S9irvzb2+YNZonbCqt4LPxMmL9gi1ilj
+Pl9dEHbvHWYMACHpgijkgcN1JrZIWDzWm4H5qbCL0AaUWYe92e4m56bkI787xaJr
+UXSlkwNggBD9YhG+JEgwNrhJOh0pAsbKHEJaLDYsgzC/JyzQ+NgGiCjW+E/pzWtD
+mTXsY5Jdd8SCphcOkV41yI8XQirbed7+nmeucuDqlI8r1i7QiCx5t8yZ1eacjPcy
+psfoZ8J1V7nzI7E5iA0W
+=McEv
+-----END PGP SIGNATURE-----
 
-----------------------------------------------------------------
-Chanwoo Choi (3):
-      extcon: Fix indentation coding style to improve readability
-      extcon: Change field type of 'dev' in extcon_dev structure
-      extcon: Simplify extcon_dev_register() prototype by removing unnecessary parameter
-
-Charles Keepax (3):
-      extcon: arizona: Clear trig_sts bits on all paths
-      extcon: arizona: Correct typo in headphone detect range transitions
-      extcon: arizona: Don't require micbias to be shifted in pdata
-
-Guenter Roeck (3):
-      extcon: gpio: Do not unnecessarily initialize variables
-      extcon: gpio: Use gpio driver/chip debounce if supported
-      extcon: gpio: Add support for active-low presence to detect pins
-
-Jingoo Han (2):
-      extcon: Remove casting the return value which is a void pointer
-      extcon: use dev_get_platdata()
-
-Sachin Kamat (3):
-      extcon: max8997: Fix checkpatch warning
-      extcon: arizona: Fix a typo in a comment
-      extcon: max77693: Fix checkpatch warning
-
- Documentation/extcon/porting-android-switch-class |  6 +-
- drivers/extcon/extcon-adc-jack.c                  | 27 +++----
- drivers/extcon/extcon-arizona.c                   | 20 ++---
- drivers/extcon/extcon-class.c                     | 95 +++++++++++------------
- drivers/extcon/extcon-gpio.c                      | 19 ++++-
- drivers/extcon/extcon-max77693.c                  |  7 +-
- drivers/extcon/extcon-max8997.c                   |  5 +-
- drivers/extcon/extcon-palmas.c                    |  5 +-
- include/linux/extcon.h                            | 72 ++++++++---------
- include/linux/extcon/extcon-adc-jack.h            | 42 +++++-----
- include/linux/extcon/extcon-gpio.h                | 20 +++--
- 11 files changed, 170 insertions(+), 148 deletions(-)
+--Signature=_Fri__27_Sep_2013_11_31_00_+1000__ltvY_kw=mlkBwmp--
