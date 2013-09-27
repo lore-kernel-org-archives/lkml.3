@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3I0Q4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:56:02 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:49620 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab3I0Qz7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:55:59 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pci@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
-        Joerg Roedel <joro@8bytes.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH] iommu: Remove stack trace from broken irq remapping warning
-Date: Fri, 27 Sep 2013 12:53:35 -0400
-Message-Id: <1380300815-1864-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Spam-Score: -2.9 (--)
+	id S1754170Ab3I0Q5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:57:06 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:33362 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004Ab3I0Q5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 12:57:01 -0400
+From: Georgi Djakov <gdjakov@mm-sol.com>
+To: linux-mmc@vger.kernel.org
+Cc: cjb@laptop.org, grant.likely@linaro.org, rob.herring@calxeda.com,
+        devicetree@vger.kernel.org, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH v6 0/2] mmc: sdhci-msm: Add support for MSM chipsets
+Date: Fri, 27 Sep 2013 19:57:19 +0300
+Message-Id: <1380301041-26405-1-git-send-email-gdjakov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The warning for the irq remapping broken check in intel_irq_remapping.c is
-pretty pointless.  We need the warning, but we know where its comming from, the
-stack trace will always be the same, and it needlessly triggers things like
-Abrt.  This changes the warning to just print a text warning about BIOS being
-broken, without the stack trace, then sets the appropriate taint bit.  Since we
-automatically disable irq remapping, theres no need to contiue making Abrt jump
-at this problem
+This patchset adds support of the Secure Digital Host Controller
+Interface compliant controller found in Qualcomm MSM chipsets.
+It has been tested on a APQ8074 Dragonboard.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Joerg Roedel <joro@8bytes.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- drivers/iommu/intel_irq_remapping.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+Changes from v5:
+- Driver is split into multiple patches
+- Do not initialize variables that are assigned later in code
+- Remove some useless comments
+- Use shorter variable names
+- Change pr_err() to dev_err()
+- Optimized sdhci_msm_setup_vreg()
+- Some code alignment fixes
+- Improved DT values sanity check
+- Added dev_dbg print for sdhci controller version in probe()
+- Added usleep_range() after SW reset - it can take some time
+- Added SDHCI_QUIRK_SINGLE_POWER_WRITE - power handled by PMIC
+- Renamed DT property vdd-io to vddio
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index f71673d..b97d70b 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -525,12 +525,13 @@ static int __init intel_irq_remapping_supported(void)
- 	if (disable_irq_remap)
- 		return 0;
- 	if (irq_remap_broken) {
--		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
--			   "This system BIOS has enabled interrupt remapping\n"
--			   "on a chipset that contains an erratum making that\n"
--			   "feature unstable.  To maintain system stability\n"
--			   "interrupt remapping is being disabled.  Please\n"
--			   "contact your BIOS vendor for an update\n");
-+		printk(KERN_WARNING
-+			"This system BIOS has enabled interrupt remapping\n"
-+			"on a chipset that contains an erratum making that\n"
-+			"feature unstable.  To maintain system stability\n"
-+			"interrupt remapping is being disabled.  Please\n"
-+			"contact your BIOS vendor for an update\n");
-+		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
- 		disable_irq_remap = 1;
- 		return 0;
- 	}
+Changes from v4:
+- Simplified sdhci_msm_vreg_disable() and sdhci_msm_set_vdd_io_vol()
+- Use devm_ioremap_resource() instead of devm_ioremap()
+- Converted IS_ERR_OR_NULL to IS_ERR
+- Disable regulators in sdhci_msm_remove()
+- Check for DT node at the beginning in sdhci_msm_probe()
+- Removed more redundant code
+- Changes in some error messages
+- Minor fixes
+
+Changes from v3:
+- Allocate memory for all required structs at once
+- Added termination entry in sdhci_msm_dt_match[]
+- Fixed a missing sdhci_pltfm_free() in probe()
+- Removed redundant of_match_ptr
+- Removed the unneeded function sdhci_msm_vreg_reset()
+
+Changes from v2:
+- Added DT bindings for clocks
+- Moved voltage regulators data to platform data
+- Removed unneeded includes
+- Removed obsolete and wrapper functions
+- Removed error checking where unnecessary
+- Removed redundant _clk suffix from clock names
+- Just return instead of goto where possible
+- Minor fixes
+
+Changes from v1:
+- GPIO references are replaced by pinctrl
+- DT parsing is done mostly by mmc_of_parse()
+- Use of_match_device() for DT matching
+- A few minor changes
+
+Georgi Djakov (2):
+  mmc: sdhci-msm: Initial SDHCI MSM driver documentation
+  mmc: sdhci-msm: Initial support for MSM chipsets
+
+ .../devicetree/bindings/mmc/sdhci-msm.txt          |   70 +++
+ drivers/mmc/host/Kconfig                           |   13 +
+ drivers/mmc/host/Makefile                          |    1 +
+ drivers/mmc/host/sdhci-msm.c                       |  644 ++++++++++++++++++++
+ 4 files changed, 728 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+ create mode 100644 drivers/mmc/host/sdhci-msm.c
+
 -- 
-1.8.3.1
+1.7.9.5
 
