@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab3I0PRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:17:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55107 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751638Ab3I0PRE (ORCPT
+	id S1753650Ab3I0PSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:18:01 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39253 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab3I0PR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:17:04 -0400
-X-Sasl-enc: j/VOj1dMwNVO4fWHXQF47yYE90r4R5XJrLdTSC+/+q3H 1380295022
-Date: Fri, 27 Sep 2013 12:16:59 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: Re: [PATCH v3 4/4] thinkpad-acpi: fix handle locate for video and
- query of _BCL
-Message-ID: <20130927151659.GA4140@khazad-dum.debian.net>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
- <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
- <20130925195839.GB23810@khazad-dum.debian.net>
- <20130926014411.GA14158@aaronlu.linux.com>
+	Fri, 27 Sep 2013 11:17:59 -0400
+Date: Fri, 27 Sep 2013 08:17:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
+Message-ID: <20130927151749.GA2149@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1380235333.3229.39.camel@j-VirtualBox>
+ <1380236265.3467.103.camel@schen9-DESK>
+ <20130927060213.GA6673@gmail.com>
+ <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
+ <1380289495.17366.91.camel@joe-AO722>
+ <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+ <1380291257.17366.103.camel@joe-AO722>
+ <20130927142605.GC15690@laptop.programming.kicks-ass.net>
+ <1380292495.17366.106.camel@joe-AO722>
+ <20130927145007.GD15690@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130926014411.GA14158@aaronlu.linux.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <20130927145007.GD15690@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092715-1542-0000-0000-000001CDEB87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013, Aaron Lu wrote:
-> I checked the git log for the commit to use tpacpi_acpi_handle_locate to
-> locate video controller's ACPI handle, it's:
+On Fri, Sep 27, 2013 at 04:50:07PM +0200, Peter Zijlstra wrote:
+> On Fri, Sep 27, 2013 at 07:34:55AM -0700, Joe Perches wrote:
+> > That would make it seem as if all barriers are SMP no?
 > 
-> commit 122f26726b5e16174bf8a707df14be1d93c49d62
-> Author: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> Date:   Mon Aug 9 23:48:18 2010 -0300
-
-Yeah...
-
-> So I checked out that commit and found that it shouldn't work either,
-> since it has the same problem of the current code.
+> I would think any memory barrier is ordering against someone else; if
+> not smp then a device/hardware -- like for instance the hardware page
+> table walker.
 > 
-> The ACPI video controller device is given an id of ACPI_VIDEO_HID, but
-> it's only known to Linux ACPI, not ACPICA, so the function provided by
-> ACPICA acpi_get_devices will not work in this case, as that function will
-> really check the control method of _HID under the handle, which does not
-> exist no matter if Linux ACPI has added an id to its device structure or
-> not. OTOH, the function provided by Linux ACPI acpi_device_hid will see
-> the added id. In a word, the add of the HID will not affect the ASL
-> namespace layout of the device node(thus, no _HID control method will
-> be added to the device node).
+> Barriers are fundamentally about order; and order only makes sense if
+> there's more than 1 party to the game.
 
-Erk.  It went broken for a long time, and the users didn't notice(!)...
+Oddly enough, there is one exception that proves the rule...  On Itanium,
+suppose we have the following code, with x initially equal to zero:
 
-> commit ff413195e830541afeae469fc866ecd0319abd7e
-> Author: Alex Hung <alex.hung@canonical.com>
-> Date:   Tue Apr 24 16:40:52 2012 +0800
+CPU 1: ACCESS_ONCE(x) = 1;
+
+CPU 2: r1 = ACCESS_ONCE(x); r2 = ACCESS_ONCE(x);
+
+Itanium architects have told me that it really is possible for CPU 2 to
+see r1==1 and r2==0.  Placing a memory barrier between CPU 2's pair of
+fetches prevents this, but without any other memory barrier to pair with.
+
+> > Maybe just refer to Documentation/memory-barriers.txt
+> > and/or say something like "please document appropriately"
 > 
->     thinkpad-acpi: fix issuing duplicated key events for brightness up/down
->     
->     The tp_features.bright_acpimode will not be set correctly for brightness
->     control because ACPI_VIDEO_HID will not be located in ACPI. As a result,
->     a duplicated key event will always be sent. acpi_video_backlight_support()
->     is sufficient to detect standard ACPI brightness control.
->     
->     Signed-off-by: Alex Hung <alex.hung@canonical.com>
->     Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Documentation/memory-barriers.txt is always good; appropriately doesn't
+> seem to quantify anything much at all. Someone might think:
+> 
+> /*  */
+> smp_mb();
+> 
+> appropriate... 
 
-Until that.  And unfortunately I did not connect the dots at the time.
+I end up doing this:
 
-Thanks for explaining the issue properly.
+/* */
+smp_mb(); /* See above block comment. */
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+But it would be nice for the prior comment to be recognized as belonging
+to the memory barrier without the additional "See above" comment.
+
+In any case, please feel free to add:
+
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+to the original checkpatch.pl patch.
+
+							Thanx, Paul
+
