@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab3I0Msx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 08:48:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40446 "EHLO mail.skyhub.de"
+	id S1752835Ab3I0MuL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 08:50:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53941 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab3I0Msw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 08:48:52 -0400
-Date: Fri, 27 Sep 2013 14:48:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
-        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        guohanjun@huawei.com, paul.gortmaker@windriver.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/smpboot: Fix announce_cpu() to printk() the
- last "OK" properly
-Message-ID: <20130927124850.GB4422@pd.tnic>
-References: <1378378676-18276-1-git-send-email-huawei.libin@huawei.com>
- <tip-52239484bf8aec031afa84ae08aa88224d819b93@git.kernel.org>
- <20130925100722.GB3433@nazgul.tnic>
- <20130925182936.GD16693@gmail.com>
- <20130926231545.GD10123@pd.tnic>
- <20130927065115.GA6852@gmail.com>
+	id S1751574Ab3I0MuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 08:50:05 -0400
+Date: Fri, 27 Sep 2013 14:49:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Subject: Re: Fedora Kernel Patch Report
+In-Reply-To: <52336AF5.3040104@zytor.com>
+Message-ID: <alpine.LRH.2.00.1309271449100.8203@twin.jikos.cz>
+References: <CA+5PVA7Y-r67u7K5R5XJOEcyCmyTe9Q8fJNQr=6-i1n6QitrPA@mail.gmail.com> <52336AF5.3040104@zytor.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130927065115.GA6852@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 08:51:15AM +0200, Ingo Molnar wrote:
-> That message was cool and interesting back in the days when we wrote
-> lockdep ('hey, look ma, it really works!!'), but there hasn't been
-> any breakage in that area for a long time and it definitely does not
-> deserve one line of log spam per CPU! Especially if it messes up such
-> a nice CPU bootup table.
+On Fri, 13 Sep 2013, H. Peter Anvin wrote:
 
-Right. The comment in alternatives_enable_smp() talks about older
-binutils and could be a useful info if we encounter the issue again. Should I
-keep it or are we talking really old, i.e.
+> > crash-driver.patch
+> >   - The patch to add /dev/crash.  Dave Anderson keeps making this work (mostly).
+> > 
+> 
+> It is also a security hole.
 
-obsolete-we-will-never-use-them-anywhere-and-if-someone-does-we-dont-care
-
-binutils?
-
-Thanks.
+More than /dev/[k]mem? How so?
 
 -- 
-Regards/Gruss,
-    Boris.
+Jiri Kosina
+SUSE Labs
 
-Sent from a fat crate under my desk. Formatting is fine.
---
