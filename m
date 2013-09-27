@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3I0OBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:01:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482Ab3I0OBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:01:40 -0400
-Message-ID: <52458F79.8040801@redhat.com>
-Date: Fri, 27 Sep 2013 10:00:25 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753421Ab3I0OCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:02:16 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50960 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab3I0OCP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:02:15 -0400
+Date: Fri, 27 Sep 2013 15:01:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130927140151.GH19304@sirena.org.uk>
+References: <1380288314-24064-1-git-send-email-nm@ti.com>
+ <1380288314-24064-3-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Ric Wheeler <rwheeler@redhat.com>, Zach Brown <zab@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-References: <1378919210-10372-1-git-send-email-zab@redhat.com> <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com> <20130925183828.GA30372@lenny.home.zabbo.net> <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com> <20130925190620.GB30372@lenny.home.zabbo.net> <20130925195526.GA18971@fieldses.org> <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926153359.GE704@fieldses.org> <CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com> <20130926190611.GP30372@lenny.home.zabbo.net> <CAJfpegvvWhs+jv2J9kOQrB31PEO3kyn_sLm_e2w9YKp=y6EDhA@mail.gmail.com> <5244A5E7.90808@redhat.com> <CAJfpegufnsU0LLvvZDmKpvRn8AaJ7NvKeegg-4YJ5AK9mBDBYQ@mail.gmail.com>
-In-Reply-To: <CAJfpegufnsU0LLvvZDmKpvRn8AaJ7NvKeegg-4YJ5AK9mBDBYQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LWVQOr/QoF/fPPTS"
+Content-Disposition: inline
+In-Reply-To: <1380288314-24064-3-git-send-email-nm@ti.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regulator: ti-abb: Fix bias voltage glitch in
+ transition to bypass mode with ldo voltage override
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 12:47 AM, Miklos Szeredi wrote:
-> On Thu, Sep 26, 2013 at 11:23 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
->> On 09/26/2013 03:53 PM, Miklos Szeredi wrote:
->>> On Thu, Sep 26, 2013 at 9:06 PM, Zach Brown <zab@redhat.com> wrote:
->>>
->>>>> But I'm not sure it's worth the effort; 99% of the use of this
->>>>> interface will be copying whole files.  And for that perhaps we need a
->>>>> different API, one which has been discussed some time ago:
->>>>> asynchronous copyfile() returns immediately with a pollable event
->>>>> descriptor indicating copy progress, and some way to cancel the copy.
->>>>> And that can internally rely on ->direct_splice(), with appropriate
->>>>> algorithms for determine the optimal  chunk size.
->>>> And perhaps we don't.  Perhaps we can provide this much simpler
->>>> data-plane interface that works well enough for most everyone and can
->>>> avoid going down the async rat hole, yet again.
->>> I think either buffering or async is needed to get good perforrmace
->>> without too much complexity in the app (which is not good).  Buffering
->>> works quite well for regular I/O, so maybe its the way to go here as
->>> well.
->>>
->>> Thanks,
->>> Miklos
->>>
->> Buffering  misses the whole point of the copy offload - the idea is *not* to
->> read or write the actual data in the most interesting cases which offload
->> the operation to a smart target device or file system.
-> I meant buffering the COPY, not the data.  Doing the COPY
-> synchronously will always incur a performance penalty, the amount
-> depending on the latency, which can be significant with networking.
->
-> We think of write(2) as a synchronous interface, because that's the
-> appearance we get from all that hard work the page cache and delayed
-> writeback code does to make an asynchronous operation look as if it
-> was synchronous.  So from a userspace API perspective a sync interface
-> is nice, but inside we almost always have async interfaces to do the
-> actual work.
->
-> Thanks,
-> Miklos
 
-I think that you are an order of magnitude off here in thinking about the scale 
-of the operations.
+--LWVQOr/QoF/fPPTS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-An enabled, synchronize copy offload to an array (or one that turns into a 
-reflink locally) is effectively the cost of the call itself. Let's say no slower 
-than one IO to a S-ATA disk (10ms?) as a pessimistic guess. Realistically, that 
-call is much faster than that worst case number.
+On Fri, Sep 27, 2013 at 08:25:14AM -0500, Nishanth Menon wrote:
+> As documented in Application Note SWPA117 v2.1(NDA), LDO override has a
+> requirement that when switching from Bias active + override active
+> mode(FBB/RBB) to Bypass(nominal) mode, LDO reset must be performed
+> *after* LDO transitions to Bypass(nominal) mode.
 
-Copying any substantial amount of data - like the target workload of VM images 
-or media files - would be hundreds of MB's per copy and that would take seconds 
-or minutes.
+Applied, thanks.
 
-We should really work on getting the basic mechanism working and robust without 
-any complications, then we can look at real, measured performance and see if 
-there is any justification for adding complexity.
+--LWVQOr/QoF/fPPTS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-thanks!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-Ric
+iQIcBAEBAgAGBQJSRY/MAAoJELSic+t+oim9P8EP/jv7eJCO4rHw4sIVOkH4dZ7a
+1LzT+T9N+rTWgCTtkfQge2vh/Ur+FvdR/76neMrsb8l90wU4dmPfCAsk842f9T+P
+C64LwhPgyW2eIKYbWgyHCefX36S/Un8qZ44oTzgtch3MD/0sZAjUHYRXWK/UNysC
+8IlyTw7eXVgN2FE7y+yzQAwbTR3kFJY2gLLmkIoQK04d7j6OD+23rxsgTlnbylWT
+wYN2ZFJiJMOIs97TF9ycCivQkpZLZo8UR5PCPmY1EIOpF1+Nu43QMerUwz+gLG7y
+41e5/P7rbjpp5rRtFkbUL76RAJgJ/L82zFWyTjF/g+n32hamV2vJYD2J+87n8s7j
+IZlyICjPMCDvVGEXBL9AOesLfpYqbVSESLKtGNQHODBeFJDrJBIPTO7v9Dvx2ROq
+RO2AZh9qRf6R4qhhYnCuySDvhblvPuXP4VN1EZKC8H78v0biQ8ZMFvRctjKf2x6x
+F7WTdb4HHF20J9f0Nxjb+nA4XISZGxKhKvjZqLZ/OO89anubtRrX0dRE+rLnQr4N
+y8TBz9T6x2uYm0wUJ0NWwyVACM+k8lEs61PT8b82cqCmNu3N+b8asGxfXsVeaV8y
+jQmMtviZgzdJsRpe1OHTciAb7RzfhCPQyVW54S9Vot2w1ATk9CQV9rbPYvBI/uf9
+2vhw55NNeLjEW2TmOCk1
+=c2dV
+-----END PGP SIGNATURE-----
 
->
-
+--LWVQOr/QoF/fPPTS--
