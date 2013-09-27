@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab3I0NQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:16:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22451 "EHLO mga02.intel.com"
+	id S1753062Ab3I0NQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:16:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22147 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860Ab3I0NQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:16:41 -0400
+	id S1752710Ab3I0NQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:16:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,992,1371106800"; 
-   d="scan'208";a="384397395"
+   d="scan'208";a="401936280"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -30,9 +30,9 @@ Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 01/10] mm: rename USE_SPLIT_PTLOCKS to USE_SPLIT_PTE_PTLOCKS
-Date: Fri, 27 Sep 2013 16:16:18 +0300
-Message-Id: <1380287787-30252-2-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 09/10] mm: implement split page table lock for PMD level
+Date: Fri, 27 Sep 2013 16:16:26 +0300
+Message-Id: <1380287787-30252-10-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -40,144 +40,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're going to introduce split page table lock for PMD level.
-Let's rename existing split ptlock for PTE level to avoid confusion.
+The basic idea is the same as with PTE level: the lock is embedded into
+struct page of table's page.
 
+We can't use mm->pmd_huge_pte to store pgtables for THP, since we don't
+take mm->page_table_lock anymore. Let's reuse page->lru of table's page
+for that.
+
+pgtable_pmd_page_ctor() returns true, if initialization is successful
+and false otherwise. Current implementation never fails, but assumption
+that constructor can fail will help to port it to -rt where spinlock_t
+is rather huge and cannot be embedded into struct page -- dynamic
+allocation is required.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Tested-by: Alex Thorlton <athorlton@sgi.com>
 ---
- arch/arm/mm/fault-armv.c | 6 +++---
- arch/x86/xen/mmu.c       | 6 +++---
- include/linux/mm.h       | 6 +++---
- include/linux/mm_types.h | 8 ++++----
- 4 files changed, 13 insertions(+), 13 deletions(-)
+ include/linux/mm.h       | 32 ++++++++++++++++++++++++++++++++
+ include/linux/mm_types.h |  8 +++++++-
+ kernel/fork.c            |  4 ++--
+ mm/Kconfig               |  3 +++
+ 4 files changed, 44 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mm/fault-armv.c b/arch/arm/mm/fault-armv.c
-index 2a5907b5c8..ff379ac115 100644
---- a/arch/arm/mm/fault-armv.c
-+++ b/arch/arm/mm/fault-armv.c
-@@ -65,7 +65,7 @@ static int do_adjust_pte(struct vm_area_struct *vma, unsigned long address,
- 	return ret;
- }
- 
--#if USE_SPLIT_PTLOCKS
-+#if USE_SPLIT_PTE_PTLOCKS
- /*
-  * If we are using split PTE locks, then we need to take the page
-  * lock here.  Otherwise we are using shared mm->page_table_lock
-@@ -84,10 +84,10 @@ static inline void do_pte_unlock(spinlock_t *ptl)
- {
- 	spin_unlock(ptl);
- }
--#else /* !USE_SPLIT_PTLOCKS */
-+#else /* !USE_SPLIT_PTE_PTLOCKS */
- static inline void do_pte_lock(spinlock_t *ptl) {}
- static inline void do_pte_unlock(spinlock_t *ptl) {}
--#endif /* USE_SPLIT_PTLOCKS */
-+#endif /* USE_SPLIT_PTE_PTLOCKS */
- 
- static int adjust_pte(struct vm_area_struct *vma, unsigned long address,
- 	unsigned long pfn)
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index fdc3ba28ca..455c873ce0 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -796,7 +796,7 @@ static spinlock_t *xen_pte_lock(struct page *page, struct mm_struct *mm)
- {
- 	spinlock_t *ptl = NULL;
- 
--#if USE_SPLIT_PTLOCKS
-+#if USE_SPLIT_PTE_PTLOCKS
- 	ptl = __pte_lockptr(page);
- 	spin_lock_nest_lock(ptl, &mm->page_table_lock);
- #endif
-@@ -1637,7 +1637,7 @@ static inline void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn,
- 
- 			__set_pfn_prot(pfn, PAGE_KERNEL_RO);
- 
--			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
-+			if (level == PT_PTE && USE_SPLIT_PTE_PTLOCKS)
- 				__pin_pagetable_pfn(MMUEXT_PIN_L1_TABLE, pfn);
- 
- 			xen_mc_issue(PARAVIRT_LAZY_MMU);
-@@ -1671,7 +1671,7 @@ static inline void xen_release_ptpage(unsigned long pfn, unsigned level)
- 		if (!PageHighMem(page)) {
- 			xen_mc_batch();
- 
--			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
-+			if (level == PT_PTE && USE_SPLIT_PTE_PTLOCKS)
- 				__pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, pfn);
- 
- 			__set_pfn_prot(pfn, PAGE_KERNEL);
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 8b6e55ee88..6cf8ddb45b 100644
+index b96aac9622..75735f6171 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -1232,7 +1232,7 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
- }
- #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
+@@ -1294,13 +1294,45 @@ static inline void pgtable_page_dtor(struct page *page)
+ 	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
+ 		NULL: pte_offset_kernel(pmd, address))
  
--#if USE_SPLIT_PTLOCKS
-+#if USE_SPLIT_PTE_PTLOCKS
- /*
-  * We tuck a spinlock to guard each pagetable page into its struct page,
-  * at page->private, with BUILD_BUG_ON to make sure that this will not
-@@ -1245,14 +1245,14 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
- } while (0)
- #define pte_lock_deinit(page)	((page)->mapping = NULL)
- #define pte_lockptr(mm, pmd)	({(void)(mm); __pte_lockptr(pmd_page(*(pmd)));})
--#else	/* !USE_SPLIT_PTLOCKS */
-+#else	/* !USE_SPLIT_PTE_PTLOCKS */
- /*
-  * We use mm->page_table_lock to guard all pagetable pages of the mm.
-  */
- #define pte_lock_init(page)	do {} while (0)
- #define pte_lock_deinit(page)	do {} while (0)
- #define pte_lockptr(mm, pmd)	({(void)(pmd); &(mm)->page_table_lock;})
--#endif /* USE_SPLIT_PTLOCKS */
-+#endif /* USE_SPLIT_PTE_PTLOCKS */
- 
- static inline void pgtable_page_ctor(struct page *page)
++#if USE_SPLIT_PMD_PTLOCKS
++
++static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
++{
++	return &virt_to_page(pmd)->ptl;
++}
++
++static inline bool pgtable_pmd_page_ctor(struct page *page)
++{
++	spin_lock_init(&page->ptl);
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	page->pmd_huge_pte = NULL;
++#endif
++	return true;
++}
++
++static inline void pgtable_pmd_page_dtor(struct page *page)
++{
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	VM_BUG_ON(page->pmd_huge_pte);
++#endif
++}
++
++#define pmd_huge_pte(mm, pmd) (virt_to_page(pmd)->pmd_huge_pte)
++
++#else
++
+ static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
  {
+ 	return &mm->page_table_lock;
+ }
+ 
++static inline bool pgtable_pmd_page_ctor(struct page *page) { return true; }
++static inline void pgtable_pmd_page_dtor(struct page *page) {}
++
+ #define pmd_huge_pte(mm, pmd) ((mm)->pmd_huge_pte)
+ 
++#endif
++
+ static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
+ {
+ 	spinlock_t *ptl = pmd_lockptr(mm, pmd);
 diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index d9851eeb6e..84e0c56e1e 100644
+index 99f19e850d..498a75b96f 100644
 --- a/include/linux/mm_types.h
 +++ b/include/linux/mm_types.h
-@@ -23,7 +23,7 @@
- 
+@@ -24,6 +24,9 @@
  struct address_space;
  
--#define USE_SPLIT_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
-+#define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
+ #define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
++/* hugetlb hasn't converted to split locking yet */
++#define USE_SPLIT_PMD_PTLOCKS	(USE_SPLIT_PTE_PTLOCKS && \
++		IS_ENABLED(CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK))
  
  /*
   * Each physical page in the system has a struct page associated with
-@@ -141,7 +141,7 @@ struct page {
- 						 * indicates order in the buddy
- 						 * system if PG_buddy is set.
- 						 */
--#if USE_SPLIT_PTLOCKS
-+#if USE_SPLIT_PTE_PTLOCKS
- 		spinlock_t ptl;
+@@ -130,6 +133,9 @@ struct page {
+ 
+ 		struct list_head list;	/* slobs list of pages */
+ 		struct slab *slab_page; /* slab fields */
++#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && USE_SPLIT_PMD_PTLOCKS
++		pgtable_t pmd_huge_pte; /* protected by page->ptl */
++#endif
+ 	};
+ 
+ 	/* Remainder is not double word aligned */
+@@ -406,7 +412,7 @@ struct mm_struct {
+ #ifdef CONFIG_MMU_NOTIFIER
+ 	struct mmu_notifier_mm *mmu_notifier_mm;
  #endif
- 		struct kmem_cache *slab_cache;	/* SL[AU]B: Pointer to slab */
-@@ -309,14 +309,14 @@ enum {
- 	NR_MM_COUNTERS
- };
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+ 	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
+ #endif
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+diff --git a/kernel/fork.c b/kernel/fork.c
+index afe70530db..943051284f 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -560,7 +560,7 @@ static void check_mm(struct mm_struct *mm)
+ 					  "mm:%p idx:%d val:%ld\n", mm, i, x);
+ 	}
  
--#if USE_SPLIT_PTLOCKS && defined(CONFIG_MMU)
-+#if USE_SPLIT_PTE_PTLOCKS && defined(CONFIG_MMU)
- #define SPLIT_RSS_COUNTING
- /* per-thread cached information, */
- struct task_rss_stat {
- 	int events;	/* for synchronization threshold */
- 	int count[NR_MM_COUNTERS];
- };
--#endif /* USE_SPLIT_PTLOCKS */
-+#endif /* USE_SPLIT_PTE_PTLOCKS */
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+ 	VM_BUG_ON(mm->pmd_huge_pte);
+ #endif
+ }
+@@ -814,7 +814,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ 	memcpy(mm, oldmm, sizeof(*mm));
+ 	mm_init_cpumask(mm);
  
- struct mm_rss_stat {
- 	atomic_long_t count[NR_MM_COUNTERS];
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+ #ifdef CONFIG_NUMA_BALANCING
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 026771a9b0..89d56e31f9 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -214,6 +214,9 @@ config SPLIT_PTLOCK_CPUS
+ 	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
+ 	default "4"
+ 
++config ARCH_ENABLE_SPLIT_PMD_PTLOCK
++	boolean
++
+ #
+ # support for memory balloon compaction
+ config BALLOON_COMPACTION
 -- 
 1.8.4.rc3
 
