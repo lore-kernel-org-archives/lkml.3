@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3I0XOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 19:14:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46851 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab3I0XOq (ORCPT
+	id S1753891Ab3I0XQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 19:16:28 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:32983 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234Ab3I0XQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 19:14:46 -0400
-Date: Fri, 27 Sep 2013 16:14:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: "Jeff P. Zacher" <ad_sicks@yahoo.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Subject: Re: [stable] Re: Dependency bug in the uvcvideo Kconfig
-Message-ID: <20130927231445.GC7708@kroah.com>
-References: <1828294.VXnhqsmrEo@localhost>
- <CA+MoWDp0zFXaEhYbwsEV_uMg3H0Nabx9iu25ixyuJvgWGxi=Gg@mail.gmail.com>
- <523A2EB4.6070407@infradead.org>
- <1697645.iYIvpGsUS4@localhost>
- <523B5BD6.4000500@infradead.org>
- <523B8225.9040504@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523B8225.9040504@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Sep 2013 19:16:26 -0400
+Message-ID: <1380323662.14046.51.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v5 5/6] x86, acpi, crash, kdump: Do
+ reserve_crashkernel() after SRAT is parsed
+From: Toshi Kani <toshi.kani@hp.com>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Date: Fri, 27 Sep 2013 17:14:22 -0600
+In-Reply-To: <5241DB3A.6090002@gmail.com>
+References: <5241D897.1090905@gmail.com> <5241DB3A.6090002@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 19, 2013 at 04:00:53PM -0700, Randy Dunlap wrote:
-> On 09/19/13 13:17, Randy Dunlap wrote:
-> > On 09/18/13 20:44, Jeff P. Zacher wrote:
-> >>  
-> >>
-> >> You are correct that this problem shown in the forum was in 3.5.4. However, I am 
-> >> having wither the same or similar problem in 3.10.7.
-> >> Here is the broken config file, saved as .config-bad
-> >>
-> > 
-> > The failing kernel config file is attached.
+On Wed, 2013-09-25 at 02:34 +0800, Zhang Yanfei wrote:
+> From: Tang Chen <tangchen@cn.fujitsu.com>
 > 
-> For Linux 3.10.x:
+> Memory reserved for crashkernel could be large. So we should not allocate
+> this memory bottom up from the end of kernel image.
 > 
+> When SRAT is parsed, we will be able to know whihc memory is hotpluggable,
+> and we can avoid allocating this memory for the kernel. So reorder
+> reserve_crashkernel() after SRAT is parsed.
 > 
-> This is already fixed in mainline but patches need to be backported.
-> Specifically these 2 commits (in this order):
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  arch/x86/kernel/setup.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
 > 
-> 
-> commit a0f9354b1a319cb29c331bfd2e5a15d7f9b87fa4
-> Author: Randy Dunlap <rdunlap@infradead.org>
-> Date:   Wed May 8 17:28:13 2013 -0300
-> 
->     [media] media/usb: fix kconfig dependencies
-> 
-> and
-> 
-> commit 5077ac3b8108007f4a2b4589f2d373cf55453206
-> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Date:   Wed May 22 11:25:52 2013 -0300
-> 
->     Properly handle tristate dependencies on USB/PCI menus
-> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index f0de629..36cfce3 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1120,8 +1120,6 @@ void __init setup_arch(char **cmdline_p)
+>  	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
+>  #endif
+>  
+> -	reserve_crashkernel();
+> -
+>  	vsmp_init();
+>  
+>  	io_delay_init();
+> @@ -1136,6 +1134,12 @@ void __init setup_arch(char **cmdline_p)
+>  	initmem_init();
+>  	memblock_find_dma_reserve();
+>  
+> +	/*
+> +	 * Reserve memory for crash kernel after SRAT is parsed so that it
+> +	 * won't consume hotpluggable memory.
+> +	 */
+> +	reserve_crashkernel();
 
-Applied, thanks.
+Out of curiosity, is there any particular reason why it is moved after
+memblock_find_dma_reserve(), not initmem_init()?
 
-greg k-h
+Thanks,
+-Toshi
+
