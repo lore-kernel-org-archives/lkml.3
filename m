@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab3I0OZP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:25:15 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:34562 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3I0OZO (ORCPT
+	id S1753515Ab3I0O02 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:26:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54631 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3I0O0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:25:14 -0400
+	Fri, 27 Sep 2013 10:26:25 -0400
+Date: Fri, 27 Sep 2013 16:26:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Jason Low <jason.low2@hp.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
+Message-ID: <20130927142605.GC15690@laptop.programming.kicks-ass.net>
+References: <1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
+ <1380229794.2602.36.camel@j-VirtualBox>
+ <1380231702.3467.85.camel@schen9-DESK>
+ <1380235333.3229.39.camel@j-VirtualBox>
+ <1380236265.3467.103.camel@schen9-DESK>
+ <20130927060213.GA6673@gmail.com>
+ <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
+ <1380289495.17366.91.camel@joe-AO722>
+ <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+ <1380291257.17366.103.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <1380199684-20126-1-git-send-email-ldewangan@nvidia.com>
-References: <1380199684-20126-1-git-send-email-ldewangan@nvidia.com>
-Date: Fri, 27 Sep 2013 16:25:13 +0200
-Message-ID: <CACRpkdZ=KK6YY0_HFDyieg9_WiqabxrQb4gLYgmiOnKBDU6SKw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: palmas: do not abort pin configuration for BIAS_DEFAULT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sherman Yin <syin@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380291257.17366.103.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 2:48 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+On Fri, Sep 27, 2013 at 07:14:17AM -0700, Joe Perches wrote:
+> Peter Zijlstra prefers that comments be required near uses
+> of memory barriers.
+> 
+> Change the message level for memory barrier uses from a
+> --strict test only to a normal WARN so it's always emitted.
+> 
+> This might produce false positives around insertions of
+> memory barriers when a comment is outside the patch context
+> block.
 
-> Recent movement of all configurations of pin in the single call of
-> pin_config_set(), it is aborting configuration if BIAS_PULL_PIN_DEFAULT
-> is selected as return of configuration.
->
-> The original idea was to just avoid any update on register for pull up/down
-> configuration if this option is selected.
->
-> Fixing this by just bypassing any register update for BIAS_PULL_PIN_DEFAULT
-> and continuing the remaining configuration.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+One would argue that in that case they're too far away in any case :-)
 
-I've applied the patch as it just brings back the semantics before
-commit 03b054e9696c3cbd3d5905ec96da15acd0a2fe8d
-"pinctrl: Pass all configs to driver on pin_config_set()"
+> And checkpatch is still stupid, it only looks for existence
+> of any comment, not at the comment content.
 
-(Normally you should mention the above in your commit message
-with patches like these that are regressions.)
-But whatever.
+Could we try and alleviate this by giving a slightly more verbose
+warning?
 
-Please look into the related issue pointed out by Stephen as well.
+Maybe something like:
 
-Yours,
-Linus Walleij
+ memory barrier without comment; please refer to the pairing barrier and
+ describe the ordering requirements.
+
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Acked-by: Peter Zijlstra <peterz@infradead.org>
