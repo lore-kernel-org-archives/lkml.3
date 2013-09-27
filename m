@@ -1,84 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3I0Ihe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:37:34 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:54641 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3I0Ihb (ORCPT
+	id S1753332Ab3I0Ihs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:37:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65473 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab3I0Ihl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:37:31 -0400
-Date: Fri, 27 Sep 2013 10:37:30 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Oussama Ghorbel <oghorbell@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
-Message-ID: <20130927083730.GC28287@order.stressinduktion.org>
-Mail-Followup-To: Oussama Ghorbel <oghorbell@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1380207108-20030-1-git-send-email-oghorbell@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1380207108-20030-1-git-send-email-oghorbell@gmail.com>
+	Fri, 27 Sep 2013 04:37:41 -0400
+Date: Fri, 27 Sep 2013 10:37:37 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: Re: [PATCH v2 5/5] ARM: shmobile: lager: (DEVEL) add CPUFreq support
+In-Reply-To: <52447B9A.5090805@cogentembedded.com>
+Message-ID: <Pine.LNX.4.64.1309271033270.23205@axis700.grange>
+References: <1380216060-14506-1-git-send-email-g.liakhovetski@gmx.de>
+ <1380216060-14506-6-git-send-email-g.liakhovetski@gmx.de>
+ <52447B9A.5090805@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:/D8oPxJYFgrlrO0xt5+QJ3a3FQoBRwT2OPqHh7jvJfN
+ E4RG968rm4I+bQuRP/5NQG5PROMUpU2VzylaTggPglz4I2rXhm
+ GUvZ0mSXkrF96GxvH0Xans2W5/a4O+c2BvF8gVQHSuTk80Thma
+ JNFRYECK84nTOV7uBxVxqBh0MAG6EQs7BF9cvptej0Z6mIV9L4
+ 0TNS9GoZvV7ztPf5mgMZCoatF+rjgK6J/qmpyofDVSD1CqyvCs
+ ogKlw2YhdYO1f6aet2BN3QCd2gCKqgzI+/ModTss0jzaWa+XVT
+ 5VtAz09oIxKf1v+aBTJMj2Xx9rfZJ6E2w5JlXJMeR8egPChsGV
+ CSiGZWJgE8USDqaSFoElVoOMOe9RgkpvzuM4i2jNRljHxxFyN0
+ BYooSGXzib8Zg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 03:51:48PM +0100, Oussama Ghorbel wrote:
-> The (inner) MTU of a ipip6 (IPv4-in-IPv6) tunnel cannot be set below 1280, which is the minimum MTU in IPv6.
-> However, there should be no IPv6 on the tunnel interface at all, so the IPv6 rules should not apply.
-> More info at https://bugzilla.kernel.org/show_bug.cgi?id=15530
+Hi Sergei
+
+On Thu, 26 Sep 2013, Sergei Shtylyov wrote:
+
+> Hello.
 > 
-> This patch allows to check the minimum MTU for ipv6 tunnel according to these rules:
->  -In case the tunnel is configured with ipip6 mode the minimum MTU is 68.
->  -In case the tunnel is configured with ip6ip6 or any mode the minimum MTU is 1280.
+> On 09/26/2013 09:21 PM, Guennadi Liakhovetski wrote:
 > 
-> Signed-off-by: Oussama Ghorbel <oghorbell@gmail.com>
-> ---
->  net/ipv6/ip6_tunnel.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
+> > The Lager board uses a DA9210 voltage regulator to supply DVFS power to the
+> > CA15 cores on the r8a7790 SoC. This patch adds CPUFreq support for that
+> > board using the cpufreq-cpu0 driver.
 > 
-> diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-> index 1e55866..a66ead2 100644
-> --- a/net/ipv6/ip6_tunnel.c
-> +++ b/net/ipv6/ip6_tunnel.c
-> @@ -1423,8 +1423,14 @@ ip6_tnl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
->  static int
->  ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
->  {
-> -	if (new_mtu < IPV6_MIN_MTU) {
-> -		return -EINVAL;
-> +	struct ip6_tnl *t = netdev_priv(dev);
-> +
-> +	if (t->parms.proto == IPPROTO_IPIP) {
-> +		if (new_mtu < 68)
-> +			return -EINVAL;
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> > ---
+> 
+> > v2: added 'status = "okay";' to the i2c bus
+> 
+> >   arch/arm/boot/dts/r8a7790-lager-reference.dts  |   33
+> > ++++++++++++++++++++++++
+> >   arch/arm/mach-shmobile/board-lager-reference.c |    4 ++-
+> >   2 files changed, 36 insertions(+), 1 deletions(-)
+> 
+> > diff --git a/arch/arm/boot/dts/r8a7790-lager-reference.dts
+> > b/arch/arm/boot/dts/r8a7790-lager-reference.dts
+> > index c462ef1..1ce0a97 100644
+> > --- a/arch/arm/boot/dts/r8a7790-lager-reference.dts
+> > +++ b/arch/arm/boot/dts/r8a7790-lager-reference.dts
+> > @@ -43,3 +43,36 @@
+> >   		};
+> >   	};
+> >   };
+> > +
+> > +&i2c3 {
+> > +	status = "okay";
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <&i2c3_pins>;
+> > +
+> > +	vdd_dvfs: da9210@68 {
+> 
+>   ePAPR spec [1] says: "The name of a node should be somewhat generic,
+> reflecting the function of the device and not its precise programming model."
 
-Maybe you could have a look at ip_tunnel_change_mtu in ipv4/ip_tunnel.c,
-generalize this check as e.g. ip_tunnel_valid_mtu or something and use it
-here? Maybe an af-independent ip_tunnel_max_mtu()?
+Sure, but I think it is common in Linux .dts files for I2C devices to use 
+"<model>@<i2c addr>" as a name.
 
-> +	} else {
-> +		if (new_mtu < IPV6_MIN_MTU)
-> +			return -EINVAL;
+> So I suggest "regulator" instead of "da9210".
+> 
+> > +		compatible = "diasemi,da9210";
+> > +		reg = <0x68>;
+> > +
+> > +		regulator-min-microvolt = <900000>;
+> > +		regulator-max-microvolt = <1000000>;
+> > +		regulator-boot-on;
+> > +		regulator-always-on;
+> > +	};
+> > +};
+> [...]
+> > diff --git a/arch/arm/mach-shmobile/board-lager-reference.c
+> > b/arch/arm/mach-shmobile/board-lager-reference.c
+> > index 1a1a4a8..2bc8bae 100644
+> > --- a/arch/arm/mach-shmobile/board-lager-reference.c
+> > +++ b/arch/arm/mach-shmobile/board-lager-reference.c
+> [...]
+> > @@ -29,7 +30,8 @@ static void __init lager_add_standard_devices(void)
+> >   	r8a7790_clock_init();
+> > 
+> >   	r8a7790_add_dt_devices();
+> > -        of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> > +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> 
+>    Hm, "drove-by" cleanup?
 
-This check could also be used here, then.
+This should be avoided in general, but this kind of stuff really doesn't 
+deserve neither a separate patch nor a mention. Don't waste your precious 
+brain cycles.
 
->  	}
->  	dev->mtu = new_mtu;
->  	return 0;
+> > +	platform_device_register_simple("cpufreq-cpu0", -1, NULL, 0);
+> >   }
+> > 
+> >   static const char *lager_boards_compat_dt[] __initdata = {
+> 
+>    Shouldn't the patch be split into .dts and .c parts, I wonder?
 
-Thanks,
+Simon didn't complain, but perhaps it should, yes. I think I'll resubmit 
+this as 2 patches with no changes.
 
-  Hannes
+Thanks
+Guennadi
 
+> [1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+> 
+> WBR, Sergei
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
