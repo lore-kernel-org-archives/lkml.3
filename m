@@ -1,172 +1,623 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab3I0AZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 20:25:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36198 "EHLO
+	id S1752440Ab3I0AZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 20:25:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab3I0AZN (ORCPT
+	with ESMTP id S1751367Ab3I0AZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 20:25:13 -0400
-Date: Thu, 26 Sep 2013 17:25:11 -0700
+	Thu, 26 Sep 2013 20:25:25 -0400
+Date: Thu, 26 Sep 2013 17:25:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.97
-Message-ID: <20130927002511.GA8283@kroah.com>
+Subject: Re: Linux 3.0.97
+Message-ID: <20130927002524.GB8283@kroah.com>
+References: <20130927002511.GA8283@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130927002511.GA8283@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.0.97 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                    |    2 +-
- arch/arm/mach-versatile/pci.c               |    6 +++---
- arch/powerpc/kernel/align.c                 |   10 ++++++++++
- crypto/api.c                                |    7 ++++++-
- drivers/hid/hid-core.c                      |   19 ++++++++++++++-----
- drivers/hid/hid-ntrig.c                     |    3 ++-
- drivers/hid/hid-pl.c                        |   10 ++++++++--
- drivers/net/wireless/ath/ath9k/ar9003_phy.c |    4 ++++
- drivers/net/wireless/ath/ath9k/xmit.c       |    1 +
- drivers/scsi/sd.c                           |   11 +++--------
- drivers/staging/comedi/drivers/dt282x.c     |    3 ++-
- drivers/usb/class/cdc-wdm.c                 |   13 +++++++++----
- drivers/usb/core/config.c                   |    3 ++-
- drivers/usb/host/xhci.c                     |   22 ++++++++++++++++++++++
- drivers/usb/serial/mos7720.c                |    6 +++---
- drivers/xen/grant-table.c                   |   13 +++++++++++--
- fs/cifs/connect.c                           |    2 ++
- fs/fuse/dir.c                               |    4 ++++
- fs/fuse/file.c                              |    3 ++-
- fs/isofs/inode.c                            |   16 +++++-----------
- fs/ocfs2/extent_map.c                       |    1 -
- include/linux/hid.h                         |    4 +++-
- include/linux/rculist.h                     |    5 +++--
- mm/huge_memory.c                            |    2 ++
- mm/memcontrol.c                             |    8 +++++++-
- sound/pci/hda/hda_intel.c                   |    1 +
- sound/soc/codecs/wm8960.c                   |    6 +++---
- 27 files changed, 133 insertions(+), 52 deletions(-)
-
-Alan Stern (1):
-      SCSI: sd: Fix potential out-of-bounds access
-
-Anand Avati (1):
-      fuse: invalidate inode attributes on xattr modification
-
-Anton Blanchard (1):
-      powerpc: Handle unaligned ldbrx/stdbrx
-
-Dan Carpenter (2):
-      staging: comedi: dt282x: dt282x_ai_insn_read() always fails
-      USB: mos7720: use GFP_ATOMIC under spinlock
-
-Felix Fietkau (2):
-      ath9k: always clear ps filter bit on new assoc
-      ath9k: avoid accessing MRC registers on single-chain devices
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.97
-
-Greg Thelen (1):
-      memcg: fix multiple large threshold notifications
-
-Hans de Goede (1):
-      usb: config->desc.bLength may not exceed amount of data returned by the device
-
-Herbert Xu (1):
-      crypto: api - Fix race condition in larval lookup
-
-Jan Kara (1):
-      isofs: Refuse RW mount of the filesystem instead of making it RO
-
-Jeff Layton (1):
-      cifs: ensure that srv_mutex is held when dealing with ssocket pointer
-
-Jie Liu (1):
-      ocfs2: fix the end cluster offset of FIEMAP
-
-Johan Hovold (1):
-      USB: mos7720: fix big-endian control requests
-
-Kees Cook (4):
-      HID: pantherlord: validate output report details
-      HID: validate HID report id size
-      HID: ntrig: validate feature report details
-      HID: check for NULL field when setting values
-
-Libin (1):
-      mm/huge_memory.c: fix potential NULL pointer dereference
-
-Maxim Patlasov (1):
-      fuse: postpone end_page_writeback() in fuse_writepage_locked()
-
-Mike Dyer (1):
-      ASoC: wm8960: Fix PLL register writes
-
-Oliver Neukum (1):
-      USB: cdc-wdm: fix race between interrupt handler and tasklet
-
-Peter Maydell (1):
-      ARM: PCI: versatile: Fix SMAP register offsets
-
-Roger Pau Monne (1):
-      xen-gnt: prevent adding duplicate gnt callbacks
-
-Shawn Nematbakhsh (1):
-      usb: xhci: Disable runtime PM suspend for quirky controllers
-
-Takashi Iwai (1):
-      ALSA: hda - Add Toshiba Satellite C870 to MSI blacklist
-
-Tejun Heo (1):
-      rculist: list_first_or_null_rcu() should use list_entry_rcu()
-
-
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRNBnAAoJEDjbvchgkmk+My8QAMWnfW+j/sa3tzc6vG5qyAgb
-4r+Fd/Cz0bPd6yCJ0d/NLKVHRxxxV5e3qQFKOvKlil2ZTRw34NLimCjGBielHZCQ
-9pX/13K3JLMo7blFWe3GeyOAxfUCElGPfRi/G0+mC5DW4E83dM2yRnKOq+BfIguq
-5TWqjbIKiK3t+YyKjLtd0AIJLhXqgtBsLbBUIXdlvq7kBeBkNhQXv7JTX93CBLPE
-Lyns+rEEtUDn2H1U2Aw12XNVYQR+bYRAsjQfh2Tt5dHtVTa4GpHAZ/SvPn1Y2P5B
-zcxQ+0u8LQJaAMtEBhHBxQ+cTfapFuATXyp1YEoXgg2sF6LFUBZmeFZ8ckeRrf2N
-ewPzTxQ0OUFp1bSp4DZWfvSRi4szWY8kev7qcizEcwLUml6Yd8VeCb83Hp4tOxgb
-HYx0ZamFlgDcmOdAqlmGuQf8QKn5jYjiB0TwSHlg91i7gq08RGZht65HKX6VgRnr
-PfI028U336LciAQHJMtAazX0QDz18ndJVuZR8+s/9yQ3/3kfHLVwYbjfCarew2dl
-J9nMLsFsvkQht+cpkf0I7mhltdI/FGJDzVH6iKibNzUvEozdKAu8cjC0UW8y8IoT
-FVdcYB697rwmguXhmCwSl0WoSOYwkJxVlyizzTPf2YRHWCda7IkXYirHifF/K7sT
-tj96Vfgj4xQdTzvU/muN
-=v4Ym
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
+diff --git a/Makefile b/Makefile
+index e2a73ebd..53c9a5dc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 96
++SUBLEVEL = 97
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/arch/arm/mach-versatile/pci.c b/arch/arm/mach-versatile/pci.c
+index 13c7e5f9..3f47259b 100644
+--- a/arch/arm/mach-versatile/pci.c
++++ b/arch/arm/mach-versatile/pci.c
+@@ -43,9 +43,9 @@
+ #define PCI_IMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x0)
+ #define PCI_IMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x4)
+ #define PCI_IMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x8)
+-#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x10)
+-#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
+-#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
++#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
++#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
++#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x1c)
+ #define PCI_SELFID		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0xc)
+ 
+ #define DEVICE_ID_OFFSET		0x00
+diff --git a/arch/powerpc/kernel/align.c b/arch/powerpc/kernel/align.c
+index 8184ee97..3fcbae0f 100644
+--- a/arch/powerpc/kernel/align.c
++++ b/arch/powerpc/kernel/align.c
+@@ -764,6 +764,16 @@ int fix_alignment(struct pt_regs *regs)
+ 	nb = aligninfo[instr].len;
+ 	flags = aligninfo[instr].flags;
+ 
++	/* ldbrx/stdbrx overlap lfs/stfs in the DSISR unfortunately */
++	if (IS_XFORM(instruction) && ((instruction >> 1) & 0x3ff) == 532) {
++		nb = 8;
++		flags = LD+SW;
++	} else if (IS_XFORM(instruction) &&
++		   ((instruction >> 1) & 0x3ff) == 660) {
++		nb = 8;
++		flags = ST+SW;
++	}
++
+ 	/* Byteswap little endian loads and stores */
+ 	swiz = 0;
+ 	if (regs->msr & MSR_LE) {
+diff --git a/crypto/api.c b/crypto/api.c
+index 033a7147..4f98dd5b 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -40,6 +40,8 @@ static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
+ 	return alg;
+ }
+ 
++static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg);
++
+ struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
+ {
+ 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
+@@ -150,8 +152,11 @@ static struct crypto_alg *crypto_larval_add(const char *name, u32 type,
+ 	}
+ 	up_write(&crypto_alg_sem);
+ 
+-	if (alg != &larval->alg)
++	if (alg != &larval->alg) {
+ 		kfree(larval);
++		if (crypto_is_larval(alg))
++			alg = crypto_larval_wait(alg);
++	}
+ 
+ 	return alg;
+ }
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 53576e7c..a9c2b689 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -58,6 +58,8 @@ struct hid_report *hid_register_report(struct hid_device *device, unsigned type,
+ 	struct hid_report_enum *report_enum = device->report_enum + type;
+ 	struct hid_report *report;
+ 
++	if (id >= HID_MAX_IDS)
++		return NULL;
+ 	if (report_enum->report_id_hash[id])
+ 		return report_enum->report_id_hash[id];
+ 
+@@ -379,9 +381,11 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+ 
+ 	case HID_GLOBAL_ITEM_TAG_REPORT_ID:
+ 		parser->global.report_id = item_udata(item);
+-		if (parser->global.report_id == 0) {
+-			dbg_hid("report_id 0 is invalid\n");
+-			return -1;
++		if (parser->global.report_id == 0 ||
++		    parser->global.report_id >= HID_MAX_IDS) {
++			hid_err(parser->device, "report_id %u is invalid\n",
++				parser->global.report_id);
++ 			return -1;
+ 		}
+ 		return 0;
+ 
+@@ -551,7 +555,7 @@ static void hid_device_release(struct device *dev)
+ 	for (i = 0; i < HID_REPORT_TYPES; i++) {
+ 		struct hid_report_enum *report_enum = device->report_enum + i;
+ 
+-		for (j = 0; j < 256; j++) {
++		for (j = 0; j < HID_MAX_IDS; j++) {
+ 			struct hid_report *report = report_enum->report_id_hash[j];
+ 			if (report)
+ 				hid_free_report(report);
+@@ -989,7 +993,12 @@ EXPORT_SYMBOL_GPL(hid_output_report);
+ 
+ int hid_set_field(struct hid_field *field, unsigned offset, __s32 value)
+ {
+-	unsigned size = field->report_size;
++	unsigned size;
++
++	if (!field)
++		return -1;
++
++	size = field->report_size;
+ 
+ 	hid_dump_input(field->report->device, field->usage + offset, value);
+ 
+diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+index 9fae2ebd..48cba857 100644
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct hid_device *hdev)
+ 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
+ 				    report_id_hash[0x0d];
+ 
+-	if (!report)
++	if (!report || report->maxfield < 1 ||
++	    report->field[0]->report_count < 1)
+ 		return -EINVAL;
+ 
+ 	usbhid_submit_report(hdev, report, USB_DIR_IN);
+diff --git a/drivers/hid/hid-pl.c b/drivers/hid/hid-pl.c
+index 06e5300d..fa742323 100644
+--- a/drivers/hid/hid-pl.c
++++ b/drivers/hid/hid-pl.c
+@@ -128,8 +128,14 @@ static int plff_init(struct hid_device *hid)
+ 			strong = &report->field[0]->value[2];
+ 			weak = &report->field[0]->value[3];
+ 			debug("detected single-field device");
+-		} else if (report->maxfield >= 4 && report->field[0]->maxusage == 1 &&
+-				report->field[0]->usage[0].hid == (HID_UP_LED | 0x43)) {
++		} else if (report->field[0]->maxusage == 1 &&
++			   report->field[0]->usage[0].hid ==
++				(HID_UP_LED | 0x43) &&
++			   report->maxfield >= 4 &&
++			   report->field[0]->report_count >= 1 &&
++			   report->field[1]->report_count >= 1 &&
++			   report->field[2]->report_count >= 1 &&
++			   report->field[3]->report_count >= 1) {
+ 			report->field[0]->value[0] = 0x00;
+ 			report->field[1]->value[0] = 0x00;
+ 			strong = &report->field[2]->value[0];
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+index 892c48b1..b8a26d20 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -1005,6 +1005,10 @@ static bool ar9003_hw_ani_control(struct ath_hw *ah,
+ 		 * is_on == 0 means MRC CCK is OFF (more noise imm)
+ 		 */
+ 		bool is_on = param ? 1 : 0;
++
++		if (ah->caps.rx_chainmask == 1)
++			break;
++
+ 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
+ 			      AR_PHY_MRC_CCK_ENABLE, is_on);
+ 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index 6f6f1002..e1f19719 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2433,6 +2433,7 @@ void ath_tx_node_init(struct ath_softc *sc, struct ath_node *an)
+ 	for (acno = 0, ac = &an->ac[acno];
+ 	     acno < WME_NUM_AC; acno++, ac++) {
+ 		ac->sched    = false;
++		ac->clear_ps_filter = true;
+ 		ac->txq = sc->tx.txq_map[acno];
+ 		INIT_LIST_HEAD(&ac->tid_q);
+ 	}
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 3d15a37c..cc3943a0 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2135,14 +2135,9 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 			}
+ 		}
+ 
+-		if (modepage == 0x3F) {
+-			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
+-				  "present\n");
+-			goto defaults;
+-		} else if ((buffer[offset] & 0x3f) != modepage) {
+-			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+-			goto defaults;
+-		}
++		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
++		goto defaults;
++
+ 	Page_found:
+ 		if (modepage == 8) {
+ 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
+diff --git a/drivers/staging/comedi/drivers/dt282x.c b/drivers/staging/comedi/drivers/dt282x.c
+index 8cea9dca..00a285c5 100644
+--- a/drivers/staging/comedi/drivers/dt282x.c
++++ b/drivers/staging/comedi/drivers/dt282x.c
+@@ -406,8 +406,9 @@ struct dt282x_private {
+ 			}					\
+ 			udelay(5);				\
+ 		}						\
+-		if (_i)						\
++		if (_i) {					\
+ 			b					\
++		}						\
+ 	} while (0)
+ 
+ static int dt282x_attach(struct comedi_device *dev,
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index c84b4553..0b85e2c7 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -171,6 +171,7 @@ skip_error:
+ static void wdm_int_callback(struct urb *urb)
+ {
+ 	int rv = 0;
++	int responding;
+ 	int status = urb->status;
+ 	struct wdm_device *desc;
+ 	struct usb_ctrlrequest *req;
+@@ -244,8 +245,8 @@ static void wdm_int_callback(struct urb *urb)
+ 	desc->response->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_READ, &desc->flags);
+-	set_bit(WDM_RESPONDING, &desc->flags);
+-	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
++	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
++	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
+ 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
+ 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
+ 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
+@@ -635,16 +636,20 @@ static void wdm_rxwork(struct work_struct *work)
+ {
+ 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
+ 	unsigned long flags;
+-	int rv;
++	int rv = 0;
++	int responding;
+ 
+ 	spin_lock_irqsave(&desc->iuspin, flags);
+ 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+ 	} else {
++		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+-		rv = usb_submit_urb(desc->response, GFP_KERNEL);
++		if (!responding)
++			rv = usb_submit_urb(desc->response, GFP_KERNEL);
+ 		if (rv < 0 && rv != -EPERM) {
+ 			spin_lock_irqsave(&desc->iuspin, flags);
++			clear_bit(WDM_RESPONDING, &desc->flags);
+ 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
+ 				schedule_work(&desc->rxwork);
+ 			spin_unlock_irqrestore(&desc->iuspin, flags);
+diff --git a/drivers/usb/core/config.c b/drivers/usb/core/config.c
+index 26678cad..c29f5214 100644
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -424,7 +424,8 @@ static int usb_parse_configuration(struct usb_device *dev, int cfgidx,
+ 
+ 	memcpy(&config->desc, buffer, USB_DT_CONFIG_SIZE);
+ 	if (config->desc.bDescriptorType != USB_DT_CONFIG ||
+-	    config->desc.bLength < USB_DT_CONFIG_SIZE) {
++	    config->desc.bLength < USB_DT_CONFIG_SIZE ||
++	    config->desc.bLength > size) {
+ 		dev_err(ddev, "invalid descriptor for config index %d: "
+ 		    "type = 0x%X, length = %d\n", cfgidx,
+ 		    config->desc.bDescriptorType, config->desc.bLength);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 7f07eb8d..c95252d1 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2713,10 +2713,21 @@ void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 	struct xhci_virt_device *virt_dev;
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	u32 state;
+ 	int i, ret;
+ 
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * We called pm_runtime_get_noresume when the device was attached.
++	 * Decrement the counter here to allow controller to runtime suspend
++	 * if no devices remain.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_put_noidle(dev);
++#endif
++
+ 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
+ 	/* If the host is halted due to driver unload, we still need to free the
+ 	 * device.
+@@ -2783,6 +2794,7 @@ static int xhci_reserve_host_control_ep_resources(struct xhci_hcd *xhci)
+ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
+@@ -2835,6 +2847,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 		goto disable_slot;
+ 	}
+ 	udev->slot_id = xhci->slot_id;
++
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * If resetting upon resume, we can't put the controller into runtime
++	 * suspend if there is a device attached.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_get_noresume(dev);
++#endif
++
+ 	/* Is this a LS or FS device under a HS hub? */
+ 	/* Hub or peripherial? */
+ 	return 1;
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index 267dff94..7ee78bd6 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -383,7 +383,7 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 		kfree(urbtrack);
+ 		return -ENOMEM;
+ 	}
+-	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
++	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_ATOMIC);
+ 	if (!urbtrack->setup) {
+ 		usb_free_urb(urbtrack->urb);
+ 		kfree(urbtrack);
+@@ -391,8 +391,8 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 	}
+ 	urbtrack->setup->bRequestType = (__u8)0x40;
+ 	urbtrack->setup->bRequest = (__u8)0x0e;
+-	urbtrack->setup->wValue = get_reg_value(reg, dummy);
+-	urbtrack->setup->wIndex = get_reg_index(reg);
++	urbtrack->setup->wValue = cpu_to_le16(get_reg_value(reg, dummy));
++	urbtrack->setup->wIndex = cpu_to_le16(get_reg_index(reg));
+ 	urbtrack->setup->wLength = 0;
+ 	usb_fill_control_urb(urbtrack->urb, usbdev,
+ 			     usb_sndctrlpipe(usbdev, 0),
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index fd725cde..949af52a 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -355,9 +355,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
+ 				  void (*fn)(void *), void *arg, u16 count)
+ {
+ 	unsigned long flags;
++	struct gnttab_free_callback *cb;
++
+ 	spin_lock_irqsave(&gnttab_list_lock, flags);
+-	if (callback->next)
+-		goto out;
++
++	/* Check if the callback is already on the list */
++	cb = gnttab_free_callback_list;
++	while (cb) {
++		if (cb == callback)
++			goto out;
++		cb = cb->next;
++	}
++
+ 	callback->fn = fn;
+ 	callback->arg = arg;
+ 	callback->count = count;
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index b7758094..9e6ee471 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -158,6 +158,7 @@ cifs_reconnect(struct TCP_Server_Info *server)
+ 		try_to_freeze();
+ 
+ 		/* we should try only the port we connected to before */
++		mutex_lock(&server->srv_mutex);
+ 		rc = generic_ip_connect(server);
+ 		if (rc) {
+ 			cFYI(1, "reconnect error %d", rc);
+@@ -169,6 +170,7 @@ cifs_reconnect(struct TCP_Server_Info *server)
+ 				server->tcpStatus = CifsNeedNegotiate;
+ 			spin_unlock(&GlobalMid_Lock);
+ 		}
++		mutex_unlock(&server->srv_mutex);
+ 	} while (server->tcpStatus == CifsNeedReconnect);
+ 
+ 	return rc;
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index c04a025c..607a9736 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1439,6 +1439,8 @@ static int fuse_setxattr(struct dentry *entry, const char *name,
+ 		fc->no_setxattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
+ 
+@@ -1568,6 +1570,8 @@ static int fuse_removexattr(struct dentry *entry, const char *name)
+ 		fc->no_removexattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
+ 
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 79fca8df..2e1c10fe 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1298,7 +1298,6 @@ static int fuse_writepage_locked(struct page *page)
+ 
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
+ 
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1306,6 +1305,8 @@ static int fuse_writepage_locked(struct page *page)
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
+ 
++	end_page_writeback(page);
++
+ 	return 0;
+ 
+ err_free:
+diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
+index b3cc8586..26f63644 100644
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -119,8 +119,8 @@ static void destroy_inodecache(void)
+ 
+ static int isofs_remount(struct super_block *sb, int *flags, char *data)
+ {
+-	/* we probably want a lot more here */
+-	*flags |= MS_RDONLY;
++	if (!(*flags & MS_RDONLY))
++		return -EROFS;
+ 	return 0;
+ }
+ 
+@@ -769,15 +769,6 @@ root_found:
+ 	 */
+ 	s->s_maxbytes = 0x80000000000LL;
+ 
+-	/*
+-	 * The CDROM is read-only, has no nodes (devices) on it, and since
+-	 * all of the files appear to be owned by root, we really do not want
+-	 * to allow suid.  (suid or devices will not show up unless we have
+-	 * Rock Ridge extensions)
+-	 */
+-
+-	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
+-
+ 	/* Set this for reference. Its not currently used except on write
+ 	   which we don't have .. */
+ 
+@@ -1528,6 +1519,9 @@ struct inode *isofs_iget(struct super_block *sb,
+ static struct dentry *isofs_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
++	/* We don't support read-write mounts */
++	if (!(flags & MS_RDONLY))
++		return ERR_PTR(-EACCES);
+ 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
+ }
+ 
+diff --git a/fs/ocfs2/extent_map.c b/fs/ocfs2/extent_map.c
+index 59412840..774a032a 100644
+--- a/fs/ocfs2/extent_map.c
++++ b/fs/ocfs2/extent_map.c
+@@ -782,7 +782,6 @@ int ocfs2_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 	cpos = map_start >> osb->s_clustersize_bits;
+ 	mapping_end = ocfs2_clusters_for_bytes(inode->i_sb,
+ 					       map_start + map_len);
+-	mapping_end -= cpos;
+ 	is_last = 0;
+ 	while (cpos < mapping_end && !is_last) {
+ 		u32 fe_flags;
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 42f7e2fb..af30c641 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -414,10 +414,12 @@ struct hid_report {
+ 	struct hid_device *device;			/* associated device */
+ };
+ 
++#define HID_MAX_IDS 256
++
+ struct hid_report_enum {
+ 	unsigned numbered;
+ 	struct list_head report_list;
+-	struct hid_report *report_id_hash[256];
++	struct hid_report *report_id_hash[HID_MAX_IDS];
+ };
+ 
+ #define HID_REPORT_TYPES 3
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index c30ffd87..52d280ba 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -254,8 +254,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
+  */
+ #define list_first_or_null_rcu(ptr, type, member) \
+ 	({struct list_head *__ptr = (ptr); \
+-	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
+-	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
++	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
++	  likely(__ptr != __next) ? \
++		list_entry_rcu(__next, type, member) : NULL; \
+ 	})
+ 
+ /**
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 983d2e11..78f71869 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1838,6 +1838,8 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 		goto out;
+ 
+ 	vma = find_vma(mm, address);
++	if (!vma)
++		goto out;
+ 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+ 	hend = vma->vm_end & HPAGE_PMD_MASK;
+ 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 57cdf5ad..d7b51d5b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4433,7 +4433,13 @@ static int compare_thresholds(const void *a, const void *b)
+ 	const struct mem_cgroup_threshold *_a = a;
+ 	const struct mem_cgroup_threshold *_b = b;
+ 
+-	return _a->threshold - _b->threshold;
++	if (_a->threshold > _b->threshold)
++		return 1;
++
++	if (_a->threshold < _b->threshold)
++		return -1;
++
++	return 0;
+ }
+ 
+ static int mem_cgroup_oom_notify_cb(struct mem_cgroup *mem)
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index c5c97880..a9537d42 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2461,6 +2461,7 @@ static struct snd_pci_quirk msi_black_list[] __devinitdata = {
+ 	SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x822d, "ASUS", 0), /* Athlon64 X2 + nvidia MCP55 */
++	SND_PCI_QUIRK(0x1179, 0xfb44, "Toshiba Satellite C870", 0), /* AMD Hudson */
+ 	SND_PCI_QUIRK(0x1849, 0x0888, "ASRock", 0), /* Athlon64 X2 + nvidia */
+ 	SND_PCI_QUIRK(0xa0a0, 0x0575, "Aopen MZ915-M", 0), /* ICH6 */
+ 	{}
+diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
+index 4393394b..ca1a90b8 100644
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -801,9 +801,9 @@ static int wm8960_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
+ 	if (pll_div.k) {
+ 		reg |= 0x20;
+ 
+-		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
+-		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
+-		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
++		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
++		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
++		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
+ 	}
+ 	snd_soc_write(codec, WM8960_PLL1, reg);
+ 
