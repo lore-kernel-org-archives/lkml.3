@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab3I0SD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:03:29 -0400
-Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:38129 "EHLO
-	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754378Ab3I0SD2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:03:28 -0400
+	id S1754426Ab3I0SFX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:05:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41514 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753374Ab3I0SFU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 14:05:20 -0400
+X-Sasl-enc: fC6qRiXozxRRYyf31zYMSp+HVeYfmtNcwQaUpXWKsda6 1380305119
+Date: Fri, 27 Sep 2013 15:05:16 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Yves-Alexis Perez <corsac@debian.org>
+Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH v3 4/4] thinkpad-acpi: fix handle locate for video and
+ query of _BCL
+Message-ID: <20130927180516.GC4140@khazad-dum.debian.net>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
+ <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
+ <20130927152035.GB4140@khazad-dum.debian.net>
+ <1380295986.16310.19.camel@scapa>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: applesmc oops in 3.10/3.11
-From: Chris Murphy <chris@colorremedies.com>
-In-Reply-To: <20130927171256.GA6391@roeck-us.net>
-Date: Fri, 27 Sep 2013 11:41:42 -0600
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Henrik Rydberg <rydberg@euromail.se>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        bugzilla@colorremedies.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com>
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net>
-To: Guenter Roeck <linux@roeck-us.net>
-X-Mailer: Apple Mail (2.1510)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - colorremedies.com
-X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Disposition: inline
+In-Reply-To: <1380295986.16310.19.camel@scapa>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 27 Sep 2013, Yves-Alexis Perez wrote:
+> On ven., 2013-09-27 at 12:20 -0300, Henrique de Moraes Holschuh wrote:
+> > Some testing on a *60 (T60,X60...) would also be best, I cannot test
+> > this on
+> > my T43.
+> > 
+> > Anyway, the code itself looks fine, so:
+> 
+> I can test on T61, would that help?
 
-On Sep 27, 2013, at 11:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+I think so.
 
-> On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
->> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->>>>>> This suggests that initialization may be attempted more than once. The key cache
->>>>>> is allocated only once, but the number of keys is read for each attempt.
->>>>>> 
->>>>>> No idea if that can happen, but if the number of keys can increase after
->>>>>> the first initialization attempt you would have an explanation for the crash.
->>>>> 
->>>>> Good idea, and easy enough to test with the patch below.
->>>>> 
->>>> Should we apply this patch even though it may not solve the specific problem ?
->>> 
->>> Yes, why not - it certainly won't hurt. I am running it right now, so
->>> it is at least run-tested.
->>> 
->>>> Again, not sure if the key count can change, but the current code is at the very
->>>> least inconsistent, as it keeps reading the key count without updating or
->>>> verifying the cache size.
->>> 
->>> Yes - I agree that the error state is far-fetched, but it is hard to
->>> see any other logical explanation. There is of course always the
->>> possibility that the problem is somewhere else completely.
->>> 
->>> Proper patch attached.
->>> 
->>> Thanks,
->>> Henrik
->>> 
->>> ---
->>> 
->>> From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
->>> From: Henrik Rydberg <rydberg@euromail.se>
->>> Date: Thu, 26 Sep 2013 08:33:16 +0200
->>> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
->>> 
->>> After reports from Chris and Josh Boyer of a rare crash in applesmc,
->>> Guenter pointed at the initialization problem fixed below. The patch
->>> has not been verified to fix the crash, but should be applied
->>> regardless.
->>> 
->>> Reported-by: <jwboyer@fedoraproject.org>
->>> Suggested-by: Guenter Roeck <linux@roeck-us.net>
->>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->>> ---
->>> drivers/hwmon/applesmc.c | 11 ++++++++++-
->>> 1 file changed, 10 insertions(+), 1 deletion(-)
->> 
->> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
->> 
-> I sent a pull request to Linus, so you should be able to pull it from
-> the upstream kernel shortly. Would be great to get feedback if the patch
-> solves the problem (or doesn't).
-
-I'll start running it when it appears in koji. It's very transient, maybe one oops per week with lots of (other) testing. I'm not even sure if it happens on warm or cold boots or both.
-
-Chris
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
