@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab3I0TVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 15:21:41 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:13458 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab3I0TVh (ORCPT
+	id S1754275Ab3I0TWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 15:22:45 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44904 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab3I0TWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 15:21:37 -0400
-X-AuditID: cbfec37d-b7f0e6d00000657c-56-5245dac06f85
-Message-id: <5245DABD.6090006@samsung.com>
-Date: Fri, 27 Sep 2013 13:21:33 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Teck Choon Giam <giamteckchoon@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [ 00/28] 3.0.97-stable review
-References: <20130925000648.404447782@linuxfoundation.org>
- <52439A60.3080501@samsung.com> <20130926024517.GA24271@kroah.com>
- <CAEwRVpPoowYnTGJoeQ9Adh3Z_QjFbUYpKMARPARgwGjNVc1X2g@mail.gmail.com>
-In-reply-to: <CAEwRVpPoowYnTGJoeQ9Adh3Z_QjFbUYpKMARPARgwGjNVc1X2g@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9hP90Dt1yDDFZ9ELCYs34Nm8XX6TfY
-	LZoXr2ezuLxrDpD708FiwcZHjBaP+t6yO7B77Jx1l93jxIzfLB77565h9/i8SS6AJYrLJiU1
-	J7MstUjfLoErY82166wFP/grHu+bwtrAeJSni5GTQ0LARGLN0mZmCFtM4sK99WxdjFwcQgLL
-	GCVmLz/MDuH0Mkl8ePqTFcLZyChxctlqFpAWXgEtie7b78HaWQRUJdYe6WUCsdkE1CU+v97B
-	DmILCchJNC1ZDVYjKhAhsXLJA1aIXkGJH5Pvgc0REdCVWL9jHtg2ZoEJTBJX7z4AaxAGWvD4
-	XxMLxOajjBLPHl4B6+AUCJZ4ufs62CRmAWuJlZO2MULY8hKb17xlhtisLPHn8imgiziAnlOU
-	2L7aagKjyCwku2ch6Z6FpHsBI/MqRrHS4uSC4qT01AoTveLE3OLSvHS95PzcTYyQCKrdwXj/
-	q80hRgEORiUe3hkHXIOEWBPLiitzDzFKcDArifAKLwAK8aYkVlalFuXHF5XmpBYfYmTi4JRq
-	YJyQdG1didjz0PC1lquKLP0Pfbr5Mr+q53gJ96TD5x09Hv72+in2tiXvqdYt574pCx9zWgkd
-	aMkXfOp8+IZo8J3eRzktE2YqVx8t/7q/5vGSSyleTs3qYi3njqa453Hve/fhaIhD0BcnC9cA
-	X/mwp/ts/Orn7y3bOrFyQeNFqdCVa0OO9e5XeKHEUpyRaKjFXFScCAC498xjfgIAAA==
+	Fri, 27 Sep 2013 15:22:43 -0400
+Date: Fri, 27 Sep 2013 20:22:33 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@kernel.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20130927192233.GN19304@sirena.org.uk>
+References: <1380292469-17347-1-git-send-email-lars@metafoo.de>
+ <20130927183456.GM19304@sirena.org.uk>
+ <5245D2A0.4090909@metafoo.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OE5XN2KVoD5QaTkR"
+Content-Disposition: inline
+In-Reply-To: <5245D2A0.4090909@metafoo.de>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] spi: Add a spi_w8r16be() helper
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 12:52 PM, Teck Choon Giam wrote:
-> On Thu, Sep 26, 2013 at 10:45 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Wed, Sep 25, 2013 at 08:22:24PM -0600, Shuah Khan wrote:
->>> On 09/24/2013 06:07 PM, Greg Kroah-Hartman wrote:
->>>> This is the start of the stable review cycle for the 3.0.97 release.
->>>> There are 28 patches in this series, all will be posted as a response
->>>> to this one.  If anyone has any issues with these being applied, please
->>>> let me know.
->>>>
->>>> Responses should be made by Fri Sep 27 00:05:34 UTC 2013.
->>>> Anything received after that time might be too late.
->>>>
->>>> The whole patch series can be found in one patch at:
->>>>      kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.97-rc1.gz
->>>> and the diffstat can be found below.
->>>>
->>>> thanks,
->>>>
->>>> greg k-h
->>>>
->>>
->>> 3.0.97-rc1 applied with the following warning from line 103 to 3.0.96
->>>
->>> patch-3.0.97-rc1:103: space before tab in indent.
->>>                           return -1;
->>> warning: 1 line adds whitespace errors.
->>
->> Any hint as to what file that was for?
->
-> git am ../patches/v3.0.97/0019-HID-validate-HID-report-id-size.patch ...
-> Applying: HID: validate HID report id size
-> /home/choon/build/choon-GT-I9100-HK-JB-kernel-u2/.git/rebase-apply/patch:30:
-> space before tab in indent.
->               return -1;
-> warning: 1 line adds whitespace errors.
->
-> So it is 0019-HID-validate-HID-report-id-size.patch
->
-> I got it from doing the following:
->
-> git format-patch -o ../patches/v3.0.97 v3.0.96..v3.0.97
->
-> Thanks.
->
-> Kindest regards,
-> Giam Teck Choon
->
 
-Thanks for the information. Yes that is the right patch.
+--OE5XN2KVoD5QaTkR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.
+On Fri, Sep 27, 2013 at 08:46:56PM +0200, Lars-Peter Clausen wrote:
 
-+                       return -1;
+> According to the documentation of spi_w8r16() it is a feature.
 
-There is a whitespace at the beginning.
+> 	* The number is returned in wire-order, which is at least sometimes
+>  	* big-endian.
 
--- Shuah
+Indeed.  I don't think that's terribly well thought through though,
+especially not now we have annotations for endianness (as you noticed!).
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+> There seem to be at least two users though which assume that the result is
+> in native endianness drivers/hwmon/ads7871.c and drivers/mfd/stmpe-spi.c
+
+Yeah, I saw.  The ads7871 is just going to break when run on the
+opposite endianness to the one it was (hopefully) tested on since it
+doesn't make any effort I saw to cope with endianness.  Looking at the
+history it's not terribly obvious which that was but it'd be surprising
+to see a little endian register...
+
+STMPE is doing a byte swap so it's another user for your function -
+it's for ARM systems so it'll be assuming that little endian is the
+native format.
+
+--OE5XN2KVoD5QaTkR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSRdr1AAoJELSic+t+oim9PG8P/0UKnEJ+rkGxtGoV5ZnwJF2p
+peYcJ8hOsEcuo+ZY4U7anWZ4vN3igH5XCCapKK5D5Aw4hf6PwZEqdeYo43ZYlwkD
+Q+65VDp1A8QyAJgQPnyBINZDwYZV4YEMkOSX5mbqrcOU1slIM3l5L2BJ0rF9jKvT
+NXUX7dzv1i+CVK6LkpVwTgboE+li8vtIqb7HdU5aQUDgJWKHGv/oNLW5ooNi+1I3
+t99iH/zUCjqLoM9P0T6RBisL6VOqMDM/OK6cqkcIsm83eeC0YGqcDlYc/RIi4GAT
+eaTVc5IRdPOLarL7YOFNId5p4+4q5Qoommyb51UKXsOmJIhM2dKUdo2OIwmRF7B5
+LeqzeuXktCtRUJQ5Qtx6u/FRBMI/Hs2Zt2G+97dPa5RLvBWqnc/sQ7+kowUWjiQt
+1aCQ+y9pUbQQlmlLtpflidR9yvK9UacxCaqpEJl8gErl3FrcdInvx5waX9gBYdvC
+isBVVQjJKOYLNzyO1DvxLEQDgZXDtfgGQvgwvoCnykqrtw/xkgEt4eMqtolhyerB
+fkdpVcK60dqHW3D/VKeXhyr+AhY/1KeSHHtMMnqqsUp0I0oDDyqCKy5RnjYf4qpN
+al2eToBPtXe8iJtRiod7nVhLBJTa44BhGk5UZWy6QIJT0imthvd+SLAScUVR3lDf
+Gg3Wc6jxbVlGAr+ygdUM
+=cA06
+-----END PGP SIGNATURE-----
+
+--OE5XN2KVoD5QaTkR--
