@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab3I0XdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 19:33:12 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61091 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab3I0XdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 19:33:09 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <524615B1.6000106@roeck-us.net>
-Date: Fri, 27 Sep 2013 16:33:05 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Chris Murphy <chris@colorremedies.com>
-CC: Josh Boyer <jwboyer@fedoraproject.org>,
-        Henrik Rydberg <rydberg@euromail.se>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        bugzilla@colorremedies.com
-Subject: Re: applesmc oops in 3.10/3.11
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
-In-Reply-To: <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753911Ab3I0Xjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 19:39:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39152 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753151Ab3I0Xjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 19:39:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,996,1371106800"; 
+   d="scan'208";a="408323441"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: jolsa@redhat.com, eranian@google.com, linux-kernel@vger.kernel.org,
+        namhyung.kim@lge.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Fix sorting for 64bit entries
+Date: Fri, 27 Sep 2013 16:39:24 -0700
+Message-Id: <1380325164-4478-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 11:03 AM, Chris Murphy wrote:
->
-> On Sep 27, 2013, at 11:59 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->
->> On Fri, Sep 27, 2013 at 11:41:42AM -0600, Chris Murphy wrote:
->>>
->>> On Sep 27, 2013, at 11:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>
->>>> On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
->>>>> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->>>>>>>>> This suggests that initialization may be attempted more than once. The key cache
->>>>>>>>> is allocated only once, but the number of keys is read for each attempt.
->>>>>>>>>
->>>>>>>>> No idea if that can happen, but if the number of keys can increase after
->>>>>>>>> the first initialization attempt you would have an explanation for the crash.
->>>>>>>>
->>>>>>>> Good idea, and easy enough to test with the patch below.
->>>>>>>>
->>>>>>> Should we apply this patch even though it may not solve the specific problem ?
->>>>>>
->>>>>> Yes, why not - it certainly won't hurt. I am running it right now, so
->>>>>> it is at least run-tested.
->>>>>>
->>>>>>> Again, not sure if the key count can change, but the current code is at the very
->>>>>>> least inconsistent, as it keeps reading the key count without updating or
->>>>>>> verifying the cache size.
->>>>>>
->>>>>> Yes - I agree that the error state is far-fetched, but it is hard to
->>>>>> see any other logical explanation. There is of course always the
->>>>>> possibility that the problem is somewhere else completely.
->>>>>>
->>>>>> Proper patch attached.
->>>>>>
->>>>>> Thanks,
->>>>>> Henrik
->>>>>>
->>>>>> ---
->>>>>>
->>>>>>  From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
->>>>>> From: Henrik Rydberg <rydberg@euromail.se>
->>>>>> Date: Thu, 26 Sep 2013 08:33:16 +0200
->>>>>> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
->>>>>>
->>>>>> After reports from Chris and Josh Boyer of a rare crash in applesmc,
->>>>>> Guenter pointed at the initialization problem fixed below. The patch
->>>>>> has not been verified to fix the crash, but should be applied
->>>>>> regardless.
->>>>>>
->>>>>> Reported-by: <jwboyer@fedoraproject.org>
->>>>>> Suggested-by: Guenter Roeck <linux@roeck-us.net>
->>>>>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->>>>>> ---
->>>>>> drivers/hwmon/applesmc.c | 11 ++++++++++-
->>>>>> 1 file changed, 10 insertions(+), 1 deletion(-)
->>>>>
->>>>> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
->>>>>
->>>> I sent a pull request to Linus, so you should be able to pull it from
->>>> the upstream kernel shortly. Would be great to get feedback if the patch
->>>> solves the problem (or doesn't).
->>>
->>> I'll start running it when it appears in koji. It's very transient, maybe one oops per week with lots of (other) testing. I'm not even sure if it happens on warm or cold boots or both.
->>>
->> When you do, can you possibly trigger an event based on the warning added
->> with the patch ? This might help us to identify if the problem fixed
->> with the patch actually happens.
->
-> I don't understand the question. I'm uncertain how to trigger, and also what event.
->
+From: Andi Kleen <ak@linux.intel.com>
 
-The patch includes a new warning message.
+Some of the node comparisons in hist.c dropped the upper
+32bit by using an int variable to store the compare
+result. This broke various 64bit fields, causing
+incorrect collapsing (found for the TSX transaction field)
 
-	pr_warn("key count changed from %d to %d\n",
-                         s->key_count, count);
+Just use int64_t always.
 
-It would be great if there would be a means to detect if this message is seen
-in a kernel log, because it would show that the potential crash condition
-fixed with the patch was actually encountered. This would help us to determine
-if we actually fixed the problem or not.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/hist.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Of course, we'll know if is wasn't fixed if the system still crashes.
-
-Thanks,
-Guenter
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 4714a72..4832b59 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -350,7 +350,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *he;
+-	int cmp;
++	int64_t cmp;
+ 
+ 	p = &hists->entries_in->rb_node;
+ 
+@@ -887,7 +887,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *he;
+-	int cmp;
++	int64_t cmp;
+ 
+ 	if (sort__need_collapse)
+ 		root = &hists->entries_collapsed;
+-- 
+1.8.3.1
 
