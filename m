@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3I0VFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 17:05:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40252 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab3I0VFU (ORCPT
+	id S1753859Ab3I0VJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 17:09:19 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:47546 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab3I0VJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 17:05:20 -0400
-Date: Fri, 27 Sep 2013 22:05:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Crash of 3.12-rc2 BUG: unable to handle kernel NULL pointer
-	dereference
-Message-ID: <20130927210505.GM12758@n2100.arm.linux.org.uk>
-References: <524572BF.5060407@redhat.com> <5245845F.5090100@redhat.com> <CAErSpo74E-EKJN16A44UEGraZ9NE09a5q2_zQrkMuOANtQx0rQ@mail.gmail.com>
+	Fri, 27 Sep 2013 17:09:16 -0400
+Message-ID: <5245F3F9.5040004@gmail.com>
+Date: Fri, 27 Sep 2013 23:09:13 +0200
+From: Vojtech Bocek <vbocek@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo74E-EKJN16A44UEGraZ9NE09a5q2_zQrkMuOANtQx0rQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: About atags_proc buffer size
+References: <5245E9C9.9030509@gmail.com> <20130927204743.GK12758@n2100.arm.linux.org.uk>
+In-Reply-To: <20130927204743.GK12758@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 10:04:44AM -0600, Bjorn Helgaas wrote:
-> [+cc Thomas, Russell]
+It only needs to survive until init_atags_procfs is called, because it is
+copied to another buffer for procfs entry. Can I be sure it survives until
+that? My guess is that it is likely to survive, but not certain.
 
-Someone is doing something quite bad in the kernel, and as yet I've not
-figured out a way to track it down.
+I suppose it is possible to somehow protect that bit of ram until it is
+read by init_atags_procfs, but I wonder if you even want to do that in
+mainline - if majority of devices doesn't use such big tag lists, then
+it is probably that device's vendor problem. I've met this problem on two
+devices so far though, both of them Android phones, one is the HTC One
+(that is MSM APQ8064 SoC) and I unfortunately can't remember the first
+one - I discarded it as usual Android kernel's mess.
 
-The issue is this: someone is kfree'ing a kobject before its release
-function has been called, and the memory is being re-used.  The problem
-is that when the last reference has been dropped with the debug enabled,
-the kobject is linked into the timer lists for the delayed work.  When
-the timer lists get run, they're found to be corrupted.
+On 27.9.2013 22:47, Russell King - ARM Linux wrote:
 
-The obvious solution to this is to move the delayed work out of the
-kobject into a separately allocated structure.  That would work if
-x86 didn't register kobjects very early in boot, before the memory
-allocators were up and running.
+> On Fri, Sep 27, 2013 at 10:25:45PM +0200, Vojtech Bocek wrote:
+>> I want to ask something about atags_proc.c implementation. Currently,
+>> it uses a buffer to temporarily store atags. The buffer size is set to
+>> 1.5kb for some reason, but as far as I know, atag list's size is not
+>> limited in any way. I've got a device (HTC One) which uses about 12kb
+>> of tags, that means it panics during boot if CONFIG_ATAGS_PROC is
+>> enabled, because the buffer contains only part of the tag list without
+>> an end tag.
+> 
+> The tags are supposed to be a short-lived structure which gets used to
+> pass barest minimum of details to the kernel, and the data stored in
+> them almost certainly gets overwritten before the kernels memory
+> allocators are up and running.
+> 
+> So, we need to statically allocate some space to save these things -
+> it can't be done dynamically.
+> 
+> The problem is this: for the vast majority of platforms, they pass no
+> more than 1.5kB (lower case b is *bits* not *bytes*) to the kernel in
+> their tagged list.  Having a static allocation of 12k would be wasteful
+> for the majority of users.
+> 
+>> I don't know much about the way ARM boot process works, but I tried to
+>> store just the pointer to atag list, and it works fine (quick patch
+>> attached). Do atags get erased later in boot process on some platforms,
+>> is that the reason why buffer had to be used?
+> 
+> This may appear to work, but check it after you've been running for
+> some time and have exercised the memory systems.  You'll probably find
+> that your tags have vanished!
 
-Frankly, I've no idea how to solve this.  So I regard x86 as just being
-difficult and broken.  :)
 
-If anyone has any ideas, then I'm all ears.
-http://www.annhuey.com/ed-pix/fa_i-pix/I%27m-All-Ears.jpg
