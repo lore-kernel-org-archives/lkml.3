@@ -1,88 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3I0QMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:12:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53890 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab3I0QMR (ORCPT
+	id S1754066Ab3I0QLz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:11:55 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:32635 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab3I0QKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:12:17 -0400
-Message-ID: <5245AE5B.3010706@wwwdotorg.org>
-Date: Fri, 27 Sep 2013 10:12:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 27 Sep 2013 12:10:55 -0400
+X-IronPort-AV: E=Sophos;i="4.90,994,1371081600"; 
+   d="scan'208";a="55582485"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v6 10/19] xen: introduce xen_alloc/free_coherent_pages
+Date: Fri, 27 Sep 2013 17:09:58 +0100
+Message-ID: <1380298207-29151-10-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>,
-        Olof Johansson <olof@lixom.net>, frowand.list@gmail.com,
-        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: Re: [dtc PATCH V2] Warn on node name unit-address presence/absence
- mismatch
-References: <1379613263-32080-1-git-send-email-swarren@wwwdotorg.org> <3D2FE31C-A6BB-4F70-9B3B-C55012CB56B3@codeaurora.org> <5244BF7A.4000100@wwwdotorg.org> <1380245438.28561.86.camel@pasglop> <23CCE8D1-AEB2-42C8-B8C6-0B782117C4C2@codeaurora.org>
-In-Reply-To: <23CCE8D1-AEB2-42C8-B8C6-0B782117C4C2@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 09:39 AM, Kumar Gala wrote:
-> 
-> On Sep 26, 2013, at 8:30 PM, Benjamin Herrenschmidt wrote:
-> 
->> On Thu, 2013-09-26 at 17:12 -0600, Stephen Warren wrote:
->>> Well, ePAPR seems pretty specific that unit address and reg are
->>> related,
->>> but says nothing about ranges in the section on node naming, nor about
->>> node naming in the section about ranges.
->>>
->>> I'd claim that the existing PPC trees are nonconforming, and should be
->>> fixed too:-)
->>
->> This is tricky, we should probably fix ePAPR here.
-> 
-> I'll poke Stuart to see what's going w/updating ePAPR.
-> 
->> If you have a "soc" bus covering a given range of addresses which it
->> forwards to its children devices but doesn't have per-se its own
->> registers in that area, then it wouldn't have a "reg" property. I would
->> thus argue that in the absence of a "reg" property, if a "ranges" one is
->> present, the "parent address" entry in there is an acceptable substitute
->> for the "reg" property as far as unit addresses are concerned.
-> 
-> Either we update the section in general about 'ranges' or at least update the simple-bus binding to state that rules about the node name.
+xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
+and devices. On native x86 and ARMv8 is sufficient to call
+__get_free_pages in order to get a coherent buffer, while on ARM we need
+to call the native dma_ops->alloc implementation.
 
-I think you'd need to update section 2.2.1.1 which specifies the node
-name rather than any other section.
+When arm64 stops using the swiotlb by default and starts having multiple
+dma_ops implementations, we'll use __get_dma_ops there too.
 
-The wording in 2.2.1.1 certainly states that buses can impose specific
-rules on the value/format of the unit address in the node name, but I'm
-not convinced it allows buses to override the rules that control the
-presence/absence of the unit address.
+Introduce xen_alloc_coherent_pages to abstract the arch specific buffer
+allocation.
 
-In other words, I would simply replace:
+Similarly introduce xen_free_coherent_pages to free a coherent buffer:
+on x86 and ARM64 is simply a call to free_pages while on ARM is
+arm_dma_ops.free.
 
-The unit-address must match the first address specified in the reg
-property of the node
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-with:
 
-The unit-address must match the first address specified in the reg
-property of the node. If the node has no reg property, the unit-address
-must match the first address specified in the ranges property of the node.
+Changes in v6:
+- call __get_dma_ops to get the native dma_ops pointer on arm.
+---
+ arch/arm/include/asm/xen/page-coherent.h   |   22 ++++++++++++++++++++++
+ arch/arm64/include/asm/xen/page-coherent.h |   24 ++++++++++++++++++++++++
+ arch/ia64/include/asm/xen/page-coherent.h  |   24 ++++++++++++++++++++++++
+ arch/x86/include/asm/xen/page-coherent.h   |   24 ++++++++++++++++++++++++
+ 4 files changed, 94 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/include/asm/xen/page-coherent.h
+ create mode 100644 arch/arm64/include/asm/xen/page-coherent.h
+ create mode 100644 arch/ia64/include/asm/xen/page-coherent.h
+ create mode 100644 arch/x86/include/asm/xen/page-coherent.h
 
-and:
+diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
+new file mode 100644
+index 0000000..92b7a8a
+--- /dev/null
++++ b/arch/arm/include/asm/xen/page-coherent.h
+@@ -0,0 +1,22 @@
++#ifndef _ASM_ARM_XEN_PAGE_COHERENT_H
++#define _ASM_ARM_XEN_PAGE_COHERENT_H
++
++#include <asm/page.h>
++#include <linux/dma-attrs.h>
++#include <linux/dma-mapping.h>
++
++static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
++		dma_addr_t *dma_handle, gfp_t flags,
++		struct dma_attrs *attrs)
++{
++	return __get_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
++}
++
++static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
++		void *cpu_addr, dma_addr_t dma_handle,
++		struct dma_attrs *attrs)
++{
++	__get_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
++}
++
++#endif /* _ASM_ARM_XEN_PAGE_COHERENT_H */
+diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
+new file mode 100644
+index 0000000..0d6ad25
+--- /dev/null
++++ b/arch/arm64/include/asm/xen/page-coherent.h
+@@ -0,0 +1,24 @@
++#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
++#define _ASM_ARM64_XEN_PAGE_COHERENT_H
++
++#include <asm/page.h>
++#include <linux/dma-attrs.h>
++#include <linux/dma-mapping.h>
++
++static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
++		dma_addr_t *dma_handle, gfp_t flags,
++		struct dma_attrs *attrs)
++{
++	void *vstart = (void*)__get_free_pages(flags, get_order(size));
++	*dma_handle = virt_to_phys(vstart);
++	return vstart;
++}
++
++static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
++		void *cpu_addr, dma_addr_t dma_handle,
++		struct dma_attrs *attrs)
++{
++	free_pages((unsigned long) cpu_addr, get_order(size));
++}
++
++#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
+diff --git a/arch/ia64/include/asm/xen/page-coherent.h b/arch/ia64/include/asm/xen/page-coherent.h
+new file mode 100644
+index 0000000..37b929c
+--- /dev/null
++++ b/arch/ia64/include/asm/xen/page-coherent.h
+@@ -0,0 +1,24 @@
++#ifndef _ASM_IA64_XEN_PAGE_COHERENT_H
++#define _ASM_IA64_XEN_PAGE_COHERENT_H
++
++#include <asm/page.h>
++#include <linux/dma-attrs.h>
++#include <linux/dma-mapping.h>
++
++static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
++		dma_addr_t *dma_handle, gfp_t flags,
++		struct dma_attrs *attrs)
++{
++	void *vstart = (void*)__get_free_pages(flags, get_order(size));
++	*dma_handle = virt_to_phys(vstart);
++	return vstart;
++}
++
++static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
++		void *cpu_addr, dma_addr_t dma_handle,
++		struct dma_attrs *attrs)
++{
++	free_pages((unsigned long) cpu_addr, get_order(size));
++}
++
++#endif /* _ASM_IA64_XEN_PAGE_COHERENT_H */
+diff --git a/arch/x86/include/asm/xen/page-coherent.h b/arch/x86/include/asm/xen/page-coherent.h
+new file mode 100644
+index 0000000..31de2e0
+--- /dev/null
++++ b/arch/x86/include/asm/xen/page-coherent.h
+@@ -0,0 +1,24 @@
++#ifndef _ASM_X86_XEN_PAGE_COHERENT_H
++#define _ASM_X86_XEN_PAGE_COHERENT_H
++
++#include <asm/page.h>
++#include <linux/dma-attrs.h>
++#include <linux/dma-mapping.h>
++
++static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
++		dma_addr_t *dma_handle, gfp_t flags,
++		struct dma_attrs *attrs)
++{
++	void *vstart = (void*)__get_free_pages(flags, get_order(size));
++	*dma_handle = virt_to_phys(vstart);
++	return vstart;
++}
++
++static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
++		void *cpu_addr, dma_addr_t dma_handle,
++		struct dma_attrs *attrs)
++{
++	free_pages((unsigned long) cpu_addr, get_order(size));
++}
++
++#endif /* _ASM_X86_XEN_PAGE_COHERENT_H */
+-- 
+1.7.2.5
 
-If the node has no reg property,
-
-with:
-
-If the node has no reg property or ranges property,
