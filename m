@@ -1,144 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab3I0AJe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 20:09:34 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:55595 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab3I0AJd (ORCPT
+	id S1751251Ab3I0APV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 20:15:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37789 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab3I0APT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 20:09:33 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Simon Horman <horms@verge.net.au>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: Re: [PATCH v2 1/5] pinctrl: sh-pfc: r8a7790: add pin definitions for the I2C3 interface
-Date: Fri, 27 Sep 2013 02:09:38 +0200
-Message-ID: <9143344.9DYEcn8tXu@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1380216060-14506-2-git-send-email-g.liakhovetski@gmx.de>
-References: <1380216060-14506-1-git-send-email-g.liakhovetski@gmx.de> <1380216060-14506-2-git-send-email-g.liakhovetski@gmx.de>
+	Thu, 26 Sep 2013 20:15:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel@lists.freedesktop.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
+Date: Fri, 27 Sep 2013 02:26:35 +0200
+Message-ID: <3910636.aGHp6YakQl@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CADDKRnA7Eqox6s6t315c=OaEpAgRcX62_4rF8XuXaNRAipOqcQ@mail.gmail.com>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com> <87eh8clvun.fsf@intel.com> <CADDKRnA7Eqox6s6t315c=OaEpAgRcX62_4rF8XuXaNRAipOqcQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+On Thursday, September 26, 2013 09:49:03 AM Jörg Otte wrote:
+> 2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
+> > On Wed, 25 Sep 2013, Jörg Otte <jrg.otte@gmail.com> wrote:
+> >> 2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
+> >>> On Wed, 25 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
+> >>>> On Wed, Sep 25, 2013 at 10:29:37AM +0200, Jörg Otte wrote:
+> >>>>> Backlight can't be modified with this patch set - neither with
+> >>>>> function keys nor with the gui. It is a step backward to v3.11-rc1
+> >>>
+> >>> So both hotkeys and GUI work in v3.11-rc1? And v3.12-rc2?
+> >>
+> >> In  v3.11-rc1 it didn't work.
+> >> Since a later rc (I don't remember exactly which) it did work.
+> >> In v3.12-rc1/2 it does work.
+> >> In v3.12-rc2 + Aaron's patch set it again doesn't work.
+> >>
+> >>>
+> >>>> Thanks for the test.
+> >>>>
+> >>>> Please check /sys/class/backlight, is there only one link file
+> >>>> intel_backlight?
+> >>>
+> >>> Indeed, are there others? fujitsu-laptop perhaps? If yes, try
+> >>> CONFIG_FUJITSU_LAPTOP=n or an appropriate module blacklist.
+> >>>
+> >>> Just checking, you do have CONFIG_BACKLIGHT_CLASS_DEVICE=y?
+> >>
+> >> There is only one intel_backlight link.
+> >> Yes, I have CONFIG_BACKLIGHT_CLASS_DEVICE=y
+> >>
+> >>> Embarrassingly there was a bug in i915 fixed just recently where the
+> >>> backlight device wasn't registered for
+> >>> CONFIG_BACKLIGHT_CLASS_DEVICE=m...
+> >>>
+> >>>> If so, please cd inside and try modify the brightness file using echo
+> >>>> with some values in the range of 0 - max_brightness, does the
+> >>>> backlight level change when you echo a new value? I guess it doesn't,
+> >>>> or you wouldn't notice problem. If indeed so, perhaps file a bug at
+> >>>> http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose Jani
+> >>>> and Daniel can help fix your problem.
+> >>>
+> >>> Yup, please check the above, and report back.
+> >>
+> >> - echo 0..max_brightness > brightness does not work.
+> >
+> > Thanks for the info.
+> >
+> > How about v3.12-rc2 without Aaron's patches? Does intel_backlight also
+> > not work there? How about the acpi_video0 (which I presume is present)
+> > sysfs interface?
+> >
+> 
+> Without Aaron's patches intel_backlight also does not work.
+> But acpi_video0 does (and takes precedence I think).
 
-Thank you for the patch.
+So can you please open a bug entry at bugzilla.kernel.org against i915?
 
-On Thursday 26 September 2013 19:20:56 Guennadi Liakhovetski wrote:
-> There are four I2C interfaces on r8a7790, each of them can be connected to
-> one of the two respective I2C controllers, e.g. interface #0 can be
-> configured to work with I2C0 or with IIC0. Additionally some of those
-> interfaces can also use one of several pin sets. Interface #3 is special,
-> because it can be used in automatic mode for DVFS. It only has one set
-> of pins available and those pins cannot be used for anything else, they
-> also lack the GPIO function.
-> 
-> This patch uses the sh-pfc ability to configure pins, not associated with
-> GPIOs and adds support for I2C3 to the r8a7790 PFC set up.
-> 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+The fact that ACPI video works for you doesn't mean that intel_backlight
+shouldn't, I suppose?
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-I've taken the patch in my tree and sent an update to my previous pull request 
-for the pinctrl tree.
-
-> ---
-> 
-> v2: s/16/31/ in pin number calculation, thanks to Laurent for pointing out.
-> 
->  drivers/pinctrl/sh-pfc/pfc-r8a7790.c |   28 ++++++++++++++++++++++++++++
->  1 files changed, 28 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c index 5c2657b..72786fc 100644
-> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> @@ -781,6 +781,8 @@ enum {
->  	ADICS_SAMP_MARK, DU2_CDE_MARK, QPOLB_MARK, SCIFA2_RXD_B_MARK,
->  	USB1_PWEN_MARK, AUDIO_CLKOUT_D_MARK, USB1_OVC_MARK,
->  	TCLK1_B_MARK,
-> +
-> +	I2C3_SCL_MARK, I2C3_SDA_MARK,
->  	PINMUX_MARK_END,
->  };
-> 
-> @@ -1719,10 +1721,22 @@ static const u16 pinmux_data[] = {
->  	PINMUX_IPSR_DATA(IP16_6, AUDIO_CLKOUT_D),
->  	PINMUX_IPSR_DATA(IP16_7, USB1_OVC),
->  	PINMUX_IPSR_MODSEL_DATA(IP16_7, TCLK1_B, SEL_TMU1_1),
-> +
-> +	PINMUX_DATA(I2C3_SCL_MARK, FN_SEL_IICDVFS_1),
-> +	PINMUX_DATA(I2C3_SDA_MARK, FN_SEL_IICDVFS_1),
->  };
-> 
-> +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
-> +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
-> +#define PIN_NUMBER(r, c) (((r) - 'A') * 31 + (c) + 200)
-> +#define PIN_A_NUMBER(r, c) PIN_NUMBER(ROW_GROUP_A(r), c)
-> +
->  static struct sh_pfc_pin pinmux_pins[] = {
->  	PINMUX_GPIO_GP_ALL(),
-> +
-> +	/* Pins not associated with a GPIO port */
-> +	SH_PFC_PIN_NAMED(ROW_GROUP_A('J'), 15, AJ15),
-> +	SH_PFC_PIN_NAMED(ROW_GROUP_A('H'), 15, AH15),
->  };
-> 
->  /* - DU RGB
-> ----------------------------------------------------------------- */ @@
-> -2048,6 +2062,14 @@ static const unsigned int i2c2_e_pins[] = { static
-> const unsigned int i2c2_e_mux[] = {
->  	I2C2_SCL_E_MARK, I2C2_SDA_E_MARK,
->  };
-> +/* - I2C3
-> ------------------------------------------------------------------- */
-> +static const unsigned int i2c3_pins[] = {
-> +	/* SCL, SDA */
-> +	PIN_A_NUMBER('J', 15), PIN_A_NUMBER('H', 15),
-> +};
-> +static const unsigned int i2c3_mux[] = {
-> +	I2C3_SCL_MARK, I2C3_SDA_MARK,
-> +};
->  /* - INTC
-> ------------------------------------------------------------------- */
-> static const unsigned int intc_irq0_pins[] = {
->  	/* IRQ */
-> @@ -3113,6 +3135,7 @@ static const struct sh_pfc_pin_group pinmux_groups[] =
-> { SH_PFC_PIN_GROUP(i2c2_c),
->  	SH_PFC_PIN_GROUP(i2c2_d),
->  	SH_PFC_PIN_GROUP(i2c2_e),
-> +	SH_PFC_PIN_GROUP(i2c3),
->  	SH_PFC_PIN_GROUP(intc_irq0),
->  	SH_PFC_PIN_GROUP(intc_irq1),
->  	SH_PFC_PIN_GROUP(intc_irq2),
-> @@ -3323,6 +3346,10 @@ static const char * const i2c2_groups[] = {
->  	"i2c2_e",
->  };
-> 
-> +static const char * const i2c3_groups[] = {
-> +	"i2c3",
-> +};
-> +
->  static const char * const intc_groups[] = {
->  	"intc_irq0",
->  	"intc_irq1",
-> @@ -3551,6 +3578,7 @@ static const struct sh_pfc_function pinmux_functions[]
-> = { SH_PFC_FUNCTION(hscif1),
->  	SH_PFC_FUNCTION(i2c1),
->  	SH_PFC_FUNCTION(i2c2),
-> +	SH_PFC_FUNCTION(i2c3),
->  	SH_PFC_FUNCTION(intc),
->  	SH_PFC_FUNCTION(mmc0),
->  	SH_PFC_FUNCTION(mmc1),
--- 
-Regards,
-
-Laurent Pinchart
+Rafael
 
