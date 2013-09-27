@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab3I0Ngq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:36:46 -0400
-Received: from smtp.newsguy.com ([74.209.136.69]:54906 "EHLO smtp.newsguy.com"
+	id S1754479Ab3I0NhF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:37:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55824 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022Ab3I0NgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:36:11 -0400
-Message-ID: <524589A3.50700@newsguy.com>
-Date: Fri, 27 Sep 2013 06:35:31 -0700
-From: Mike Dunn <mikedunn@newsguy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Tomi Valkeinen <tomi.valkeinen@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
-        Marek Vasut <marex@denx.de>
-Subject: Re: [PATCH] pwm-backlight: add support for device tree gpio control
-References: <1378236372-15711-1-git-send-email-mikedunn@newsguy.com> <20130910172130.GC22111@ulmo> <523056A6.5060000@newsguy.com> <524408BE.40402@ti.com> <20130926120248.GB1680@ulmo> <524427E5.50403@ti.com> <20130926125020.GA2141@ulmo>
-In-Reply-To: <20130926125020.GA2141@ulmo>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753845Ab3I0N2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:31 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 41/63] sched: numa: fix placement of workloads spread across multiple nodes
+Date: Fri, 27 Sep 2013 14:27:26 +0100
+Message-Id: <1380288468-5551-42-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
+References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 05:50 AM, Thierry Reding wrote:
-> On Thu, Sep 26, 2013 at 03:26:13PM +0300, Tomi Valkeinen wrote:
->> On 26/09/13 15:02, Thierry Reding wrote:
->>> On Thu, Sep 26, 2013 at 01:13:18PM +0300, Tomi Valkeinen wrote:
->>>> On 11/09/13 14:40, Mike Dunn wrote:
->>>>> On 09/10/2013 10:21 AM, Thierry Reding wrote:
->>>>
->>>>>> Do you have a real setup that actually needs multiple GPIOs? Usually
->>>>>> such a setup requires some kind of timing or other additional constraint
->>>>>> which can't be represented by this simple binding.
->>>>>>
->>>>>> Looking at the Palm Treo code it seems like the reason why multiple
->>>>>> GPIOs are needed is because one is to enable the backlight, while the
->>>>>> other is in fact used to enable the LCD panel. 
->>>>>
->>>>>
->>>>> There are actually four GPIOs involved!  (There is an embarrasingly horrible
->>>>> hack in arch/arm/mach-pxa/palmtreo.c that handles the others.)  One is almost
->>>>> certainly simply backlight power.  The other three are probably LCD related.
->>>>
->>>> When you say "power", do you mean the gpio enables a regulator to feed
->>>> power to the backlight? If so, wouldn't that be a regulator, not gpio,
->>>> from the bl driver's point of view?
->>>>
->>>> Generally speaking, this same problem appears in many places, but for
->>>> some reason especially in display. I'm a bit hesitant in adding "free
->>>> form" gpio/regulator support for drivers, as, as Thierry pointed out,
->>>> there are often timing requirements, or sometimes the gpios are
->>>> inverted, or sometimes the gpio is, in fact, a reset gpio, where you'll
->>>> assert the gpio for a short moment only.
->>>
->>> I sent out another series a few days ago that somewhat obsoletes this
->>> patch. What it does is basically add a single enable GPIO that can be
->>> used to turn the backlight on and off. In a separate patch, support is
->>> added for a power regulator. The combination of both should be able to
->>> cover the majority of use-cases.
->>
->> But Mike's case required 4 GPIOs? Or can that be reduced to one gpio and
->> one regulator?
-> 
-> Well, at least for the backlight it only seemed to involve a single
-> GPIO. The other three were probably related to LCD and therefore not
-> really suitable for a backlight driver. Traditionally it has been that
-> the backlight driver handled these things as well (via the callbacks
-> installed by board setup code). While really they should be handled by a
-> separate driver (for the LCD).
+From: Rik van Riel <riel@redhat.com>
 
+The load balancer will spread workloads across multiple NUMA nodes,
+in order to balance the load on the system. This means that sometimes
+a task's preferred node has available capacity, but moving the task
+there will not succeed, because that would create too large an imbalance.
 
-Yes, this is currently my best guess.  This is reverse-engineered and
-unfortunately I'm not yet able to accurately describe my particular use-case.
-Probably as wacky as anything you can imagine, Thierry :)
+In that case, other NUMA nodes need to be considered.
 
-The gpio and regulator patches will probably suffice.  Thierry, can you please
-point me to those patches?  I don't see them in your gitorious tree.  If they
-were posted to linux-pwm, I missed them; sorry.
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ kernel/sched/fair.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-Thanks,
-Mike
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 99b6711..8ebed0a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1104,13 +1104,12 @@ static int task_numa_migrate(struct task_struct *p)
+ 	imp = task_faults(env.p, env.dst_nid) - faults;
+ 	update_numa_stats(&env.dst_stats, env.dst_nid);
+ 
+-	/*
+-	 * If the preferred nid has capacity then use it. Otherwise find an
+-	 * alternative node with relatively better statistics.
+-	 */
+-	if (env.dst_stats.has_capacity) {
++	/* If the preferred nid has capacity, try to use it. */
++	if (env.dst_stats.has_capacity)
+ 		task_numa_find_cpu(&env, imp);
+-	} else {
++
++	/* No space available on the preferred nid. Look elsewhere. */
++	if (env.best_cpu == -1) {
+ 		for_each_online_node(nid) {
+ 			if (nid == env.src_nid || nid == p->numa_preferred_nid)
+ 				continue;
+-- 
+1.8.1.4
 
