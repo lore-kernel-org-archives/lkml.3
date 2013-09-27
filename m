@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3I0WiX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 18:38:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49039 "EHLO gate.crashing.org"
+	id S1754837Ab3I0Wje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 18:39:34 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2674 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419Ab3I0WiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 18:38:21 -0400
-Message-ID: <1380321480.27811.53.camel@pasglop>
-Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Sat, 28 Sep 2013 08:38:00 +1000
-In-Reply-To: <CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
-References: <1380270519.27811.10.camel@pasglop>
-	 <CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
-	 <CA+55aFyDfMdAeaniQwkoeW6F-xd3JxrzGYwtFb6N9+NA6aRCMg@mail.gmail.com>
-	 <1380318405.27811.37.camel@pasglop>
-	 <CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1753419Ab3I0Wjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 18:39:31 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Wendy Ng" <wendy.ng@broadcom.com>
+To: "Rob Herring" <rob.herring@calxeda.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>
+cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Christian Daudt" <bcm@fixthebug.org>,
+        "Markus Mayer" <mmayer@broadcom.com>,
+        "Wendy Ng" <wendy.ng@broadcom.com>
+Subject: [PATCH v2 0/3] thermal: bcm281xx: Add thermal driver
+Date: Fri, 27 Sep 2013 15:37:31 -0700
+Message-ID: <1380321454-16216-1-git-send-email-wendy.ng@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+X-WSS-ID: 7E58D9052L889333570-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-27 at 14:54 -0700, Yinghai Lu wrote:
-> On Fri, Sep 27, 2013 at 2:46 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> 
-> > Wouldn't it be better to simply have pci_enable_device() always set bus
-> > master on a bridge? I don't see any case where it makes sense to have
-> > an enabled bridge without the master bit set on it...
-> 
-> Do you mean attached?
+This patch series adds the support of the thermal driver for Broadcom
+bcm281xx family of SoCs.
 
-So this patch works and fixes the problem. I think it makes the whole
-thing more robust and should be applied.
+The change for this version of the patch is to work with the
+ARCH_BCM->ARCH_BCM_MOBILE renaming series as shown in the link below:
+http://www.spinics.net/lists/arm-kernel/msg274963.html
 
-I still don't know why the bridge doesn't get enabled properly without
-it yes, tracking it down (the machine in question takes a LONG time to
-reboot :-)
+Wendy Ng (3):
+  thermal: bcm281xx: Add thermal driver
+  ARM: bcm281xx: Turn on Thermal and HWMON drivers.
+  ARM: bcm281xx: Add thermal driver to device tree.
 
-Cheers,
-Ben.
+ .../bindings/thermal/bcm-kona-thermal.txt          |   18 +++
+ arch/arm/boot/dts/bcm11351-brt.dts                 |    4 +-
+ arch/arm/boot/dts/bcm11351.dtsi                    |    6 +
+ arch/arm/boot/dts/bcm28155-ap.dts                  |    4 +
+ arch/arm/configs/bcm_defconfig                     |    3 +-
+ drivers/thermal/Kconfig                            |   10 ++
+ drivers/thermal/Makefile                           |    1 +
+ drivers/thermal/bcm_thermal.c                      |  170 ++++++++++++++++++++
+ 8 files changed, 214 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
+ create mode 100644 drivers/thermal/bcm_thermal.c
+
+-- 
+1.7.9.5
 
 
