@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3I0UQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 16:16:22 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:57908 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab3I0UQU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 16:16:20 -0400
+	id S1754182Ab3I0URI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 16:17:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40132 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904Ab3I0URG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 16:17:06 -0400
+Message-ID: <5245E7B1.2000408@zytor.com>
+Date: Fri, 27 Sep 2013 15:16:49 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1380310733.3467.118.camel@schen9-DESK>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-	<1380147049.3467.67.camel@schen9-DESK>
-	<20130927152953.GA4464@linux.vnet.ibm.com>
-	<1380310733.3467.118.camel@schen9-DESK>
-Date: Fri, 27 Sep 2013 13:16:16 -0700
-X-Google-Sender-Auth: XwuijNV90NKB3-X_OL6kp2JxvjU
-Message-ID: <CAGQ1y=7bvd00iU_0byqmVAe5NoEJ=SwkVbdbcj8+O6=Bh27jzQ@mail.gmail.com>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Jason Low <jason.low2@hp.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Jones <davej@redhat.com>, x86@kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Fix apparent cut-n-paste mistake in Dell reboot workaround.
+References: <20130925001344.GA13554@redhat.com>
+In-Reply-To: <20130925001344.GA13554@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 12:38 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+On 09/24/2013 07:13 PM, Dave Jones wrote:
+> This seems to have been copied from the Optiplex 990 entry above, but somoene
+> forgot to change the ident text.
+> 
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+> 
+> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+> index f6835d8..ea2aaca 100644
+> --- a/arch/x86/kernel/reboot.c
+> +++ b/arch/x86/kernel/reboot.c
+> @@ -360,7 +360,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+>  	},
+>  	{	/* Handle problems with rebooting on the Precision M6600. */
+>  		.callback = set_pci_reboot,
+> -		.ident = "Dell OptiPlex 990",
+> +		.ident = "Dell Precision M6600",
+>  		.matches = {
+>  			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+>  			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+> 
 
-> BTW, is the above memory barrier necessary?  It seems like the xchg
-> instruction already provided a memory barrier.
->
-> Now if we made the changes that Jason suggested:
->
->
->         /* Init node */
-> -       node->locked = 0;
->         node->next   = NULL;
->
->         prev = xchg(lock, node);
->         if (likely(prev == NULL)) {
->                 /* Lock acquired */
-> -               node->locked = 1;
->                 return;
->         }
-> +       node->locked = 0;
->         ACCESS_ONCE(prev->next) = node;
->         smp_wmb();
->
-> We are probably still okay as other cpus do not read the value of
-> node->locked, which is a local variable.
+It really is starting to feel like *ALL* Dell machines need reboot=pci?
 
-Similarly, I was wondering if we should also move smp_wmb() so that it
-is before the ACCESS_ONCE(prev->next) = node and after the
-node->locked = 0. Would we want to guarantee that the node->locked
-gets set before it is added to the linked list where a previous thread
-calling mcs_spin_unlock() would potentially modify node->locked?
+	-hpa
+
