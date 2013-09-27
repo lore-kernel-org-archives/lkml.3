@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3I0PyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:54:07 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51664 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab3I0PyF (ORCPT
+	id S1753298Ab3I0P6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:58:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:36936 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab3I0P6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:54:05 -0400
-Subject: [PATCH] ext4: avoid exposure of stale data in ext4_punch_hole() -v2
-To: tytso@mit.edu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org, jack@suse.cz,
-        linux-kernel@vger.kernel.org
-Date: Fri, 27 Sep 2013 19:54:03 +0400
-Message-ID: <20130927155329.3272.64086.stgit@dhcp-10-30-17-2.sw.ru>
-In-Reply-To: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
-References: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
-User-Agent: StGit/0.16
+	Fri, 27 Sep 2013 11:58:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5245896A.70705@redhat.com>
+References: <5245896A.70705@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 27 Sep 2013 09:58:28 -0600
+Message-ID: <CAErSpo6L-Ud08=JPM7d=RYuPO=UFvq_9hZGbne0iQnCHiFbuHQ@mail.gmail.com>
+Subject: Re: kobject_add_internal failed for msi_irqs with -EEXIST
+To: Zdenek Kabelac <zkabelac@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux.nics@intel.com,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Veaceslav Falico <vfalico@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While handling punch-hole fallocate, it's useless to truncate page cache
-before removing the range from extent tree (or block map in indirect case)
-because page cache can be re-populated (by read-ahead or read(2) or mmap-ed
-read) immediately after truncating page cache, but before updating extent
-tree (or block map). In that case the user will see stale data even after
-fallocate is completed.
+[+cc Veaceslav, linux-pci]
 
-Changed in v2 (Thanks to Jan Kara):
- - Until the problem of data corruption resulting from pages backed by
-   already freed blocks is fully resolved, the simple thing we can do now
-   is to add another truncation of pagecache after punch hole is done.
+On Fri, Sep 27, 2013 at 7:34 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
+> Hi
+>
+> With recent build of 3.12-rc2 I'm getting this warning report from kernel:
+> (hw Lenovo T61, C2D, 4GB Ram)
+> (repost since linux-kernel@ rejected my gmail email....)
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
----
- fs/ext4/inode.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+This looks related to the MSI/kobject issues Veaceslav is working on.
+See http://lkml.kernel.org/r/1379382464-7920-2-git-send-email-vfalico@redhat.com
+and related messages.
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 0d424d7..2984ddf 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3621,6 +3621,12 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
- 	up_write(&EXT4_I(inode)->i_data_sem);
- 	if (IS_SYNC(inode))
- 		ext4_handle_sync(handle);
-+
-+	/* Now release the pages again to reduce race window */
-+	if (last_block_offset > first_block_offset)
-+		truncate_pagecache_range(inode, first_block_offset,
-+					 last_block_offset);
-+
- 	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
- 	ext4_mark_inode_dirty(handle, inode);
- out_stop:
+We don't have a resolution yet.  If you have
+CONFIG_DEBUG_KOBJECT_RELEASE=y, you could try turning that off.  I
+don't know if it would help, and it would only be a temporary
+workaround anyway.
 
+Bjorn
