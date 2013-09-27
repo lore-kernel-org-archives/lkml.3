@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab3I0Nh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:37:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55806 "EHLO mx2.suse.de"
+	id S1753824Ab3I0NiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:38:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55792 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab3I0N23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:29 -0400
+	id S1753661Ab3I0N21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:27 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 39/63] sched: numa: Use a system-wide search to find swap/migration candidates
-Date: Fri, 27 Sep 2013 14:27:24 +0100
-Message-Id: <1380288468-5551-40-git-send-email-mgorman@suse.de>
+Subject: [PATCH 37/63] stop_machine: Introduce stop_two_cpus()
+Date: Fri, 27 Sep 2013 14:27:22 +0100
+Message-Id: <1380288468-5551-38-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,408 +22,368 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a system-wide search for swap/migration candidates
-based on total NUMA hinting faults. It has a balance limit, however it
-doesn't properly consider total node balance.
+From: Peter Zijlstra <peterz@infradead.org>
 
-In the old scheme a task selected a preferred node based on the highest
-number of private faults recorded on the node. In this scheme, the preferred
-node is based on the total number of faults. If the preferred node for a
-task changes then task_numa_migrate will search the whole system looking
-for tasks to swap with that would improve both the overall compute
-balance and minimise the expected number of remote NUMA hinting faults.
+Introduce stop_two_cpus() in order to allow controlled swapping of two
+tasks. It repurposes the stop_machine() state machine but only stops
+the two cpus which we can do with on-stack structures and avoid
+machine wide synchronization issues.
 
-Not there is no guarantee that the node the source task is placed
-on by task_numa_migrate() has any relationship to the newly selected
-task->numa_preferred_nid due to compute overloading.
+The ordering of CPUs is important to avoid deadlocks. If unordered then
+two cpus calling stop_two_cpus on each other simultaneously would attempt
+to queue in the opposite order on each CPU causing an AB-BA style deadlock.
+By always having the lowest number CPU doing the queueing of works, we can
+guarantee that works are always queued in the same order, and deadlocks
+are avoided.
 
-[riel@redhat.com: Do not swap with tasks that cannot run on source cpu]
+[riel@redhat.com: Deadlock avoidance]
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/core.c  |   4 +
- kernel/sched/fair.c  | 253 ++++++++++++++++++++++++++++++++++++---------------
- kernel/sched/sched.h |  13 +++
- 3 files changed, 199 insertions(+), 71 deletions(-)
+ include/linux/stop_machine.h |   1 +
+ kernel/stop_machine.c        | 272 +++++++++++++++++++++++++++----------------
+ 2 files changed, 175 insertions(+), 98 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 67f2b7b..f7a44dd 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5248,6 +5248,7 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
-  */
- DEFINE_PER_CPU(struct sched_domain *, sd_llc);
- DEFINE_PER_CPU(int, sd_llc_id);
-+DEFINE_PER_CPU(struct sched_domain *, sd_numa);
+diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
+index 3b5e910..d2abbdb 100644
+--- a/include/linux/stop_machine.h
++++ b/include/linux/stop_machine.h
+@@ -28,6 +28,7 @@ struct cpu_stop_work {
+ };
  
- static void update_top_cache_domain(int cpu)
- {
-@@ -5260,6 +5261,9 @@ static void update_top_cache_domain(int cpu)
- 
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_id, cpu) = id;
-+
-+	sd = lowest_flag_domain(cpu, SD_NUMA);
-+	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
+ int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg);
++int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg);
+ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
+ 			 struct cpu_stop_work *work_buf);
+ int stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg);
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index c09f295..32a6c44 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -115,6 +115,166 @@ int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg)
+ 	return done.executed ? done.ret : -ENOENT;
  }
  
- /*
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9b59f5d..b0e25f9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -816,6 +816,8 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
-  * Scheduling class queueing methods:
-  */
- 
-+static unsigned long task_h_load(struct task_struct *p);
++/* This controls the threads on each CPU. */
++enum multi_stop_state {
++	/* Dummy starting state for thread. */
++	MULTI_STOP_NONE,
++	/* Awaiting everyone to be scheduled. */
++	MULTI_STOP_PREPARE,
++	/* Disable interrupts. */
++	MULTI_STOP_DISABLE_IRQ,
++	/* Run the function */
++	MULTI_STOP_RUN,
++	/* Exit */
++	MULTI_STOP_EXIT,
++};
 +
- #ifdef CONFIG_NUMA_BALANCING
- /*
-  * Approximate time to scan a full NUMA task in ms. The task scan period is
-@@ -906,12 +908,40 @@ static unsigned long target_load(int cpu, int type);
- static unsigned long power_of(int cpu);
- static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
- 
-+/* Cached statistics for all CPUs within a node */
- struct numa_stats {
-+	unsigned long nr_running;
- 	unsigned long load;
--	s64 eff_load;
--	unsigned long faults;
++struct multi_stop_data {
++	int			(*fn)(void *);
++	void			*data;
++	/* Like num_online_cpus(), but hotplug cpu uses us, so we need this. */
++	unsigned int		num_threads;
++	const struct cpumask	*active_cpus;
 +
-+	/* Total compute capacity of CPUs on a node */
-+	unsigned long power;
++	enum multi_stop_state	state;
++	atomic_t		thread_ack;
++};
 +
-+	/* Approximate capacity in terms of runnable tasks on a node */
-+	unsigned long capacity;
-+	int has_capacity;
- };
- 
-+/*
-+ * XXX borrowed from update_sg_lb_stats
-+ */
-+static void update_numa_stats(struct numa_stats *ns, int nid)
++static void set_state(struct multi_stop_data *msdata,
++		      enum multi_stop_state newstate)
 +{
-+	int cpu;
-+
-+	memset(ns, 0, sizeof(*ns));
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		struct rq *rq = cpu_rq(cpu);
-+
-+		ns->nr_running += rq->nr_running;
-+		ns->load += weighted_cpuload(cpu);
-+		ns->power += power_of(cpu);
-+	}
-+
-+	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->power;
-+	ns->capacity = DIV_ROUND_CLOSEST(ns->power, SCHED_POWER_SCALE);
-+	ns->has_capacity = (ns->nr_running < ns->capacity);
++	/* Reset ack counter. */
++	atomic_set(&msdata->thread_ack, msdata->num_threads);
++	smp_wmb();
++	msdata->state = newstate;
 +}
 +
- struct task_numa_env {
- 	struct task_struct *p;
- 
-@@ -920,95 +950,178 @@ struct task_numa_env {
- 
- 	struct numa_stats src_stats, dst_stats;
- 
--	unsigned long best_load;
-+	int imbalance_pct, idx;
-+
-+	struct task_struct *best_task;
-+	long best_imp;
- 	int best_cpu;
- };
- 
-+static void task_numa_assign(struct task_numa_env *env,
-+			     struct task_struct *p, long imp)
++/* Last one to ack a state moves to the next state. */
++static void ack_state(struct multi_stop_data *msdata)
 +{
-+	if (env->best_task)
-+		put_task_struct(env->best_task);
-+	if (p)
-+		get_task_struct(p);
-+
-+	env->best_task = p;
-+	env->best_imp = imp;
-+	env->best_cpu = env->dst_cpu;
++	if (atomic_dec_and_test(&msdata->thread_ack))
++		set_state(msdata, msdata->state + 1);
 +}
 +
-+/*
-+ * This checks if the overall compute and NUMA accesses of the system would
-+ * be improved if the source tasks was migrated to the target dst_cpu taking
-+ * into account that it might be best if task running on the dst_cpu should
-+ * be exchanged with the source task
-+ */
-+static void task_numa_compare(struct task_numa_env *env, long imp)
++/* This is the cpu_stop function which stops the CPU. */
++static int multi_cpu_stop(void *data)
 +{
-+	struct rq *src_rq = cpu_rq(env->src_cpu);
-+	struct rq *dst_rq = cpu_rq(env->dst_cpu);
-+	struct task_struct *cur;
-+	long dst_load, src_load;
-+	long load;
-+
-+	rcu_read_lock();
-+	cur = ACCESS_ONCE(dst_rq->curr);
-+	if (cur->pid == 0) /* idle */
-+		cur = NULL;
++	struct multi_stop_data *msdata = data;
++	enum multi_stop_state curstate = MULTI_STOP_NONE;
++	int cpu = smp_processor_id(), err = 0;
++	unsigned long flags;
++	bool is_active;
 +
 +	/*
-+	 * "imp" is the fault differential for the source task between the
-+	 * source and destination node. Calculate the total differential for
-+	 * the source task and potential destination task. The more negative
-+	 * the value is, the more rmeote accesses that would be expected to
-+	 * be incurred if the tasks were swapped.
++	 * When called from stop_machine_from_inactive_cpu(), irq might
++	 * already be disabled.  Save the state and restore it on exit.
 +	 */
-+	if (cur) {
-+		/* Skip this swap candidate if cannot move to the source cpu */
-+		if (!cpumask_test_cpu(env->src_cpu, tsk_cpus_allowed(cur)))
-+			goto unlock;
++	local_save_flags(flags);
 +
-+		imp += task_faults(cur, env->src_nid) -
-+		       task_faults(cur, env->dst_nid);
-+	}
++	if (!msdata->active_cpus)
++		is_active = cpu == cpumask_first(cpu_online_mask);
++	else
++		is_active = cpumask_test_cpu(cpu, msdata->active_cpus);
 +
-+	if (imp < env->best_imp)
-+		goto unlock;
++	/* Simple state machine */
++	do {
++		/* Chill out and ensure we re-read multi_stop_state. */
++		cpu_relax();
++		if (msdata->state != curstate) {
++			curstate = msdata->state;
++			switch (curstate) {
++			case MULTI_STOP_DISABLE_IRQ:
++				local_irq_disable();
++				hard_irq_disable();
++				break;
++			case MULTI_STOP_RUN:
++				if (is_active)
++					err = msdata->fn(msdata->data);
++				break;
++			default:
++				break;
++			}
++			ack_state(msdata);
++		}
++	} while (curstate != MULTI_STOP_EXIT);
 +
-+	if (!cur) {
-+		/* Is there capacity at our destination? */
-+		if (env->src_stats.has_capacity &&
-+		    !env->dst_stats.has_capacity)
-+			goto unlock;
-+
-+		goto balance;
-+	}
-+
-+	/* Balance doesn't matter much if we're running a task per cpu */
-+	if (src_rq->nr_running == 1 && dst_rq->nr_running == 1)
-+		goto assign;
-+
-+	/*
-+	 * In the overloaded case, try and keep the load balanced.
-+	 */
-+balance:
-+	dst_load = env->dst_stats.load;
-+	src_load = env->src_stats.load;
-+
-+	/* XXX missing power terms */
-+	load = task_h_load(env->p);
-+	dst_load += load;
-+	src_load -= load;
-+
-+	if (cur) {
-+		load = task_h_load(cur);
-+		dst_load -= load;
-+		src_load += load;
-+	}
-+
-+	/* make src_load the smaller */
-+	if (dst_load < src_load)
-+		swap(dst_load, src_load);
-+
-+	if (src_load * env->imbalance_pct < dst_load * 100)
-+		goto unlock;
-+
-+assign:
-+	task_numa_assign(env, cur, imp);
-+unlock:
-+	rcu_read_unlock();
++	local_irq_restore(flags);
++	return err;
 +}
 +
- static int task_numa_migrate(struct task_struct *p)
- {
--	int node_cpu = cpumask_first(cpumask_of_node(p->numa_preferred_nid));
- 	struct task_numa_env env = {
- 		.p = p,
++struct irq_cpu_stop_queue_work_info {
++	int cpu1;
++	int cpu2;
++	struct cpu_stop_work *work1;
++	struct cpu_stop_work *work2;
++};
 +
- 		.src_cpu = task_cpu(p),
- 		.src_nid = cpu_to_node(task_cpu(p)),
--		.dst_cpu = node_cpu,
--		.dst_nid = p->numa_preferred_nid,
--		.best_load = ULONG_MAX,
--		.best_cpu = task_cpu(p),
++/*
++ * This function is always run with irqs and preemption disabled.
++ * This guarantees that both work1 and work2 get queued, before
++ * our local migrate thread gets the chance to preempt us.
++ */
++static void irq_cpu_stop_queue_work(void *arg)
++{
++	struct irq_cpu_stop_queue_work_info *info = arg;
++	cpu_stop_queue_work(info->cpu1, info->work1);
++	cpu_stop_queue_work(info->cpu2, info->work2);
++}
 +
-+		.imbalance_pct = 112,
++/**
++ * stop_two_cpus - stops two cpus
++ * @cpu1: the cpu to stop
++ * @cpu2: the other cpu to stop
++ * @fn: function to execute
++ * @arg: argument to @fn
++ *
++ * Stops both the current and specified CPU and runs @fn on one of them.
++ *
++ * returns when both are completed.
++ */
++int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
++{
++	int call_cpu;
++	struct cpu_stop_done done;
++	struct cpu_stop_work work1, work2;
++	struct irq_cpu_stop_queue_work_info call_args;
++	struct multi_stop_data msdata = {
++		.fn = fn,
++		.data = arg,
++		.num_threads = 2,
++		.active_cpus = cpumask_of(cpu1),
++	};
 +
-+		.best_task = NULL,
-+		.best_imp = 0,
-+		.best_cpu = -1
- 	};
- 	struct sched_domain *sd;
--	int cpu;
--	struct task_group *tg = task_group(p);
--	unsigned long weight;
--	bool balanced;
--	int imbalance_pct, idx = -1;
-+	unsigned long faults;
-+	int nid, cpu, ret;
++	work1 = work2 = (struct cpu_stop_work){
++		.fn = multi_cpu_stop,
++		.arg = &msdata,
++		.done = &done
++	};
++
++	call_args = (struct irq_cpu_stop_queue_work_info){
++		.cpu1 = cpu1,
++		.cpu2 = cpu2,
++		.work1 = &work1,
++		.work2 = &work2,
++	};
++
++	cpu_stop_init_done(&done, 2);
++	set_state(&msdata, MULTI_STOP_PREPARE);
++
++	/*
++	 * Queuing needs to be done by the lowest numbered CPU, to ensure
++	 * that works are always queued in the same order on every CPU.
++	 * This prevents deadlocks.
++	 */
++	call_cpu = min(cpu1, cpu2);
++
++	smp_call_function_single(call_cpu, &irq_cpu_stop_queue_work,
++				 &call_args, 0);
++
++	wait_for_completion(&done.completion);
++	return done.executed ? done.ret : -ENOENT;
++}
++
+ /**
+  * stop_one_cpu_nowait - stop a cpu but don't wait for completion
+  * @cpu: cpu to stop
+@@ -359,98 +519,14 @@ early_initcall(cpu_stop_init);
  
- 	/*
--	 * Find the lowest common scheduling domain covering the nodes of both
--	 * the CPU the task is currently running on and the target NUMA node.
-+	 * Pick the lowest SD_NUMA domain, as that would have the smallest
-+	 * imbalance and would be the first to start moving tasks about.
-+	 *
-+	 * And we want to avoid any moving of tasks about, as that would create
-+	 * random movement of tasks -- counter the numa conditions we're trying
-+	 * to satisfy here.
- 	 */
- 	rcu_read_lock();
--	for_each_domain(env.src_cpu, sd) {
--		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
--			/*
--			 * busy_idx is used for the load decision as it is the
--			 * same index used by the regular load balancer for an
--			 * active cpu.
--			 */
--			idx = sd->busy_idx;
--			imbalance_pct = sd->imbalance_pct;
--			break;
--		}
--	}
-+	sd = rcu_dereference(per_cpu(sd_numa, env.src_cpu));
-+	env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
- 	rcu_read_unlock();
+ #ifdef CONFIG_STOP_MACHINE
  
--	if (WARN_ON_ONCE(idx == -1))
--		return 0;
-+	faults = task_faults(p, env.src_nid);
-+	update_numa_stats(&env.src_stats, env.src_nid);
- 
+-/* This controls the threads on each CPU. */
+-enum stopmachine_state {
+-	/* Dummy starting state for thread. */
+-	STOPMACHINE_NONE,
+-	/* Awaiting everyone to be scheduled. */
+-	STOPMACHINE_PREPARE,
+-	/* Disable interrupts. */
+-	STOPMACHINE_DISABLE_IRQ,
+-	/* Run the function */
+-	STOPMACHINE_RUN,
+-	/* Exit */
+-	STOPMACHINE_EXIT,
+-};
+-
+-struct stop_machine_data {
+-	int			(*fn)(void *);
+-	void			*data;
+-	/* Like num_online_cpus(), but hotplug cpu uses us, so we need this. */
+-	unsigned int		num_threads;
+-	const struct cpumask	*active_cpus;
+-
+-	enum stopmachine_state	state;
+-	atomic_t		thread_ack;
+-};
+-
+-static void set_state(struct stop_machine_data *smdata,
+-		      enum stopmachine_state newstate)
+-{
+-	/* Reset ack counter. */
+-	atomic_set(&smdata->thread_ack, smdata->num_threads);
+-	smp_wmb();
+-	smdata->state = newstate;
+-}
+-
+-/* Last one to ack a state moves to the next state. */
+-static void ack_state(struct stop_machine_data *smdata)
+-{
+-	if (atomic_dec_and_test(&smdata->thread_ack))
+-		set_state(smdata, smdata->state + 1);
+-}
+-
+-/* This is the cpu_stop function which stops the CPU. */
+-static int stop_machine_cpu_stop(void *data)
+-{
+-	struct stop_machine_data *smdata = data;
+-	enum stopmachine_state curstate = STOPMACHINE_NONE;
+-	int cpu = smp_processor_id(), err = 0;
+-	unsigned long flags;
+-	bool is_active;
+-
 -	/*
--	 * XXX the below is mostly nicked from wake_affine(); we should
--	 * see about sharing a bit if at all possible; also it might want
--	 * some per entity weight love.
+-	 * When called from stop_machine_from_inactive_cpu(), irq might
+-	 * already be disabled.  Save the state and restore it on exit.
 -	 */
--	weight = p->se.load.weight;
--	env.src_stats.load = source_load(env.src_cpu, idx);
--	env.src_stats.eff_load = 100 + (imbalance_pct - 100) / 2;
--	env.src_stats.eff_load *= power_of(env.src_cpu);
--	env.src_stats.eff_load *= env.src_stats.load + effective_load(tg, env.src_cpu, -weight, -weight);
+-	local_save_flags(flags);
 -
--	for_each_cpu(cpu, cpumask_of_node(env.dst_nid)) {
--		env.dst_cpu = cpu;
--		env.dst_stats.load = target_load(cpu, idx);
+-	if (!smdata->active_cpus)
+-		is_active = cpu == cpumask_first(cpu_online_mask);
+-	else
+-		is_active = cpumask_test_cpu(cpu, smdata->active_cpus);
 -
--		/* If the CPU is idle, use it */
--		if (!env.dst_stats.load) {
--			env.best_cpu = cpu;
--			goto migrate;
+-	/* Simple state machine */
+-	do {
+-		/* Chill out and ensure we re-read stopmachine_state. */
+-		cpu_relax();
+-		if (smdata->state != curstate) {
+-			curstate = smdata->state;
+-			switch (curstate) {
+-			case STOPMACHINE_DISABLE_IRQ:
+-				local_irq_disable();
+-				hard_irq_disable();
+-				break;
+-			case STOPMACHINE_RUN:
+-				if (is_active)
+-					err = smdata->fn(smdata->data);
+-				break;
+-			default:
+-				break;
+-			}
+-			ack_state(smdata);
 -		}
-+	/* Find an alternative node with relatively better statistics */
-+	for_each_online_node(nid) {
-+		long imp;
+-	} while (curstate != STOPMACHINE_EXIT);
+-
+-	local_irq_restore(flags);
+-	return err;
+-}
+-
+ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+ {
+-	struct stop_machine_data smdata = { .fn = fn, .data = data,
+-					    .num_threads = num_online_cpus(),
+-					    .active_cpus = cpus };
++	struct multi_stop_data msdata = {
++		.fn = fn,
++		.data = data,
++		.num_threads = num_online_cpus(),
++		.active_cpus = cpus,
++	};
  
--		/* Otherwise check the target CPU load */
--		env.dst_stats.eff_load = 100;
--		env.dst_stats.eff_load *= power_of(cpu);
--		env.dst_stats.eff_load *= env.dst_stats.load + effective_load(tg, cpu, weight, weight);
-+		if (nid == env.src_nid)
-+			continue;
+ 	if (!stop_machine_initialized) {
+ 		/*
+@@ -461,7 +537,7 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+ 		unsigned long flags;
+ 		int ret;
  
--		/*
--		 * Destination is considered balanced if the destination CPU is
--		 * less loaded than the source CPU. Unfortunately there is a
--		 * risk that a task running on a lightly loaded CPU will not
--		 * migrate to its preferred node due to load imbalances.
--		 */
--		balanced = (env.dst_stats.eff_load <= env.src_stats.eff_load);
--		if (!balanced)
-+		/* Only consider nodes that recorded more faults */
-+		imp = task_faults(p, nid) - faults;
-+		if (imp < 0)
- 			continue;
+-		WARN_ON_ONCE(smdata.num_threads != 1);
++		WARN_ON_ONCE(msdata.num_threads != 1);
  
--		if (env.dst_stats.eff_load < env.best_load) {
--			env.best_load = env.dst_stats.eff_load;
--			env.best_cpu = cpu;
-+		env.dst_nid = nid;
-+		update_numa_stats(&env.dst_stats, env.dst_nid);
-+		for_each_cpu(cpu, cpumask_of_node(nid)) {
-+			/* Skip this CPU if the source task cannot migrate */
-+			if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
-+				continue;
-+
-+			env.dst_cpu = cpu;
-+			task_numa_compare(&env, imp);
- 		}
+ 		local_irq_save(flags);
+ 		hard_irq_disable();
+@@ -472,8 +548,8 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
  	}
  
--migrate:
--	return migrate_task_to(p, env.best_cpu);
-+	/* No better CPU than the current one was found. */
-+	if (env.best_cpu == -1)
-+		return -EAGAIN;
-+
-+	if (env.best_task == NULL) {
-+		int ret = migrate_task_to(p, env.best_cpu);
-+		return ret;
-+	}
-+
-+	ret = migrate_swap(p, env.best_task);
-+	put_task_struct(env.best_task);
-+	return ret;
+ 	/* Set the initial state and stop all online cpus. */
+-	set_state(&smdata, STOPMACHINE_PREPARE);
+-	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
++	set_state(&msdata, MULTI_STOP_PREPARE);
++	return stop_cpus(cpu_online_mask, multi_cpu_stop, &msdata);
  }
  
- /* Attempt to migrate a task to a CPU on the preferred node. */
-@@ -1050,7 +1163,7 @@ static void task_numa_placement(struct task_struct *p)
+ int stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+@@ -513,25 +589,25 @@ EXPORT_SYMBOL_GPL(stop_machine);
+ int stop_machine_from_inactive_cpu(int (*fn)(void *), void *data,
+ 				  const struct cpumask *cpus)
+ {
+-	struct stop_machine_data smdata = { .fn = fn, .data = data,
++	struct multi_stop_data msdata = { .fn = fn, .data = data,
+ 					    .active_cpus = cpus };
+ 	struct cpu_stop_done done;
+ 	int ret;
  
- 	/* Find the node with the highest number of faults */
- 	for_each_online_node(nid) {
--		unsigned long faults;
-+		unsigned long faults = 0;
- 		int priv, i;
+ 	/* Local CPU must be inactive and CPU hotplug in progress. */
+ 	BUG_ON(cpu_active(raw_smp_processor_id()));
+-	smdata.num_threads = num_active_cpus() + 1;	/* +1 for local */
++	msdata.num_threads = num_active_cpus() + 1;	/* +1 for local */
  
- 		for (priv = 0; priv < 2; priv++) {
-@@ -1060,10 +1173,10 @@ static void task_numa_placement(struct task_struct *p)
- 			p->numa_faults[i] >>= 1;
- 			p->numa_faults[i] += p->numa_faults_buffer[i];
- 			p->numa_faults_buffer[i] = 0;
-+
-+			faults += p->numa_faults[i];
- 		}
+ 	/* No proper task established and can't sleep - busy wait for lock. */
+ 	while (!mutex_trylock(&stop_cpus_mutex))
+ 		cpu_relax();
  
--		/* Find maximum private faults */
--		faults = p->numa_faults[task_faults_idx(nid, 1)];
- 		if (faults > max_faults) {
- 			max_faults = faults;
- 			max_nid = nid;
-@@ -4409,8 +4522,6 @@ static int move_one_task(struct lb_env *env)
- 	return 0;
- }
+ 	/* Schedule work on other CPUs and execute directly for local CPU */
+-	set_state(&smdata, STOPMACHINE_PREPARE);
++	set_state(&msdata, MULTI_STOP_PREPARE);
+ 	cpu_stop_init_done(&done, num_active_cpus());
+-	queue_stop_cpus_work(cpu_active_mask, stop_machine_cpu_stop, &smdata,
++	queue_stop_cpus_work(cpu_active_mask, multi_cpu_stop, &msdata,
+ 			     &done);
+-	ret = stop_machine_cpu_stop(&smdata);
++	ret = multi_cpu_stop(&msdata);
  
--static unsigned long task_h_load(struct task_struct *p);
--
- static const unsigned int sched_nr_migrate_break = 32;
- 
- /*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 99b1ecd..82ff03a 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -608,8 +608,21 @@ static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
- 	return hsd;
- }
- 
-+static inline struct sched_domain *lowest_flag_domain(int cpu, int flag)
-+{
-+	struct sched_domain *sd;
-+
-+	for_each_domain(cpu, sd) {
-+		if (sd->flags & flag)
-+			break;
-+	}
-+
-+	return sd;
-+}
-+
- DECLARE_PER_CPU(struct sched_domain *, sd_llc);
- DECLARE_PER_CPU(int, sd_llc_id);
-+DECLARE_PER_CPU(struct sched_domain *, sd_numa);
- 
- struct sched_group_power {
- 	atomic_t ref;
+ 	/* Busy wait for completion. */
+ 	while (!completion_done(&done.completion))
 -- 
 1.8.1.4
 
