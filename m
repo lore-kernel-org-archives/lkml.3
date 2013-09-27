@@ -1,88 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab3I0RNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 13:13:06 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:56910 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab3I0RNC (ORCPT
+	id S1754040Ab3I0RO3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 13:14:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56061 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab3I0ROX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 13:13:02 -0400
-Date: Fri, 27 Sep 2013 10:12:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        bugzilla@colorremedies.com
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20130927171256.GA6391@roeck-us.net>
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com>
- <20130925195628.GA1532@roeck-us.net>
- <20130925214807.GA3234@polaris.bitmath.org>
- <20130925220838.GB4184@roeck-us.net>
- <20130926063453.GA526@polaris.bitmath.org>
- <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Sep 2013 13:14:23 -0400
+Subject: Re: [PATCHv2 1/9] hwspinlock/core: add common dt bindings and OF helpers
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <5245B6F9.7030505@ti.com>
+Date: Fri, 27 Sep 2013 12:14:19 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <3C582FCF-7A24-48AC-B98B-AF1D18C1E22B@codeaurora.org>
+References: <cover.1379445653.git.s-anna@ti.com> <4df03ac30dcc79132e3acc2e586d0ca99b431258.1379445653.git.s-anna@ti.com> <14DB8294-1148-446A-A6D3-34E66BA8732C@codeaurora.org> <5245B6F9.7030505@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
-> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> >> > > This suggests that initialization may be attempted more than once. The key cache
-> >> > > is allocated only once, but the number of keys is read for each attempt.
-> >> > >
-> >> > > No idea if that can happen, but if the number of keys can increase after
-> >> > > the first initialization attempt you would have an explanation for the crash.
-> >> >
-> >> > Good idea, and easy enough to test with the patch below.
-> >> >
-> >> Should we apply this patch even though it may not solve the specific problem ?
-> >
-> > Yes, why not - it certainly won't hurt. I am running it right now, so
-> > it is at least run-tested.
-> >
-> >> Again, not sure if the key count can change, but the current code is at the very
-> >> least inconsistent, as it keeps reading the key count without updating or
-> >> verifying the cache size.
-> >
-> > Yes - I agree that the error state is far-fetched, but it is hard to
-> > see any other logical explanation. There is of course always the
-> > possibility that the problem is somewhere else completely.
-> >
-> > Proper patch attached.
-> >
-> > Thanks,
-> > Henrik
-> >
-> > ---
-> >
-> > From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
-> > From: Henrik Rydberg <rydberg@euromail.se>
-> > Date: Thu, 26 Sep 2013 08:33:16 +0200
-> > Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
-> >
-> > After reports from Chris and Josh Boyer of a rare crash in applesmc,
-> > Guenter pointed at the initialization problem fixed below. The patch
-> > has not been verified to fix the crash, but should be applied
-> > regardless.
-> >
-> > Reported-by: <jwboyer@fedoraproject.org>
-> > Suggested-by: Guenter Roeck <linux@roeck-us.net>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> >  drivers/hwmon/applesmc.c | 11 ++++++++++-
-> >  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
-> 
-I sent a pull request to Linus, so you should be able to pull it from
-the upstream kernel shortly. Would be great to get feedback if the patch
-solves the problem (or doesn't).
 
-Thanks,
-Guenter
+On Sep 27, 2013, at 11:48 AM, Suman Anna wrote:
+
+> Kumar,
+> 
+> On 09/27/2013 11:04 AM, Kumar Gala wrote:
+>> 
+>> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
+>> 
+>>> All the platform-specific hwlock driver implementations need the
+>>> number of locks and the associated base id for registering the
+>>> locks present within a hwspinlock device with the driver core.
+>>> These two variables are represented by 'hwlock-num-locks' and
+>>> 'hwlock-base-id' properties. The documentation and OF helpers to
+>>> retrieve these common properties have been added to the driver core.
+>>> 
+>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>> ---
+>>> .../devicetree/bindings/hwlock/hwlock.txt          | 26 +++++++++
+>>> drivers/hwspinlock/hwspinlock_core.c               | 61 +++++++++++++++++++++-
+>>> include/linux/hwspinlock.h                         | 11 ++--
+>>> 3 files changed, 93 insertions(+), 5 deletions(-)
+>>> create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>> 
+>>> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>> new file mode 100644
+>>> index 0000000..789930e
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>> @@ -0,0 +1,26 @@
+>>> +Generic hwlock bindings
+>>> +=======================
+>>> +
+>>> +Generic bindings that are common to all the hwlock platform specific driver
+>>> +implementations, the retrieved values are used for registering the device
+>>> +specific parameters with the hwspinlock core.
+>>> +
+>>> +The validity and need of these common properties may vary from one driver
+>>> +implementation to another. Look through the individual hwlock driver
+>>> +binding documentations for identifying which are mandatory and which are
+>>> +optional for that specific driver.
+>>> +
+>>> +Common properties:
+>>> +- hwlock-base-id:	Base Id for the locks for a particular hwlock device.
+>>> +			This property is used for representing a set of locks
+>>> +			present in a hwlock device with a unique base id in
+>>> +			the driver core. This property is mandatory ONLY if a
+>>> +			SoC has several hwlock devices.
+>>> +
+>>> +			See documentation on struct hwspinlock_pdata in
+>>> +			linux/hwspinlock.h for more details.
+>>> +
+>>> +- hwlock-num-locks:	Number of locks present in a hwlock device. This
+>>> +			property is needed on hwlock devices, where the number
+>>> +			of supported locks within a hwlock device cannot be
+>>> +			read from a register.
+
+Was meaning to say this before, another reason for hwlock-num-locks is to limit the # of locks available to the processors running linux vs what other processors in the SoC might be using.
+
+
+>>> diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+>>> index 461a0d7..aec32e7 100644
+>>> --- a/drivers/hwspinlock/hwspinlock_core.c
+>>> +++ b/drivers/hwspinlock/hwspinlock_core.c
+>>> @@ -1,7 +1,7 @@
+>>> /*
+>>> * Hardware spinlock framework
+>>> *
+>>> - * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
+>>> + * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+>>> *
+>>> * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+>>> *
+>>> @@ -27,6 +27,7 @@
+>>> #include <linux/hwspinlock.h>
+>>> #include <linux/pm_runtime.h>
+>>> #include <linux/mutex.h>
+>>> +#include <linux/of.h>
+>>> 
+>>> #include "hwspinlock_internal.h"
+>>> 
+>>> @@ -308,6 +309,64 @@ out:
+>>> }
+>>> 
+>>> /**
+>>> + * of_hwspin_lock_get_base_id() - OF helper to retrieve base id
+>>> + * @dn: device node pointer
+>>> + *
+>>> + * This is an OF helper function that can be called by the underlying
+>>> + * platform-specific implementations, to retrieve the base id for the
+>>> + * set of locks present within a hwspinlock device instance.
+>>> + *
+>>> + * Returns the base id value on success, -ENODEV on generic failure or
+>>> + * an appropriate error code as returned by the OF layer
+>>> + */
+>>> +int of_hwspin_lock_get_base_id(struct device_node *dn)
+>>> +{
+>>> +	unsigned int val;
+>>> +	int ret = -ENODEV;
+>>> +
+>>> +#ifdef CONFIG_OF
+>>> +	if (!dn)
+>>> +		return -ENODEV;
+>> 
+>> Checking !dn is done in of_property_read_u32, so you don't need to duplicate
+> 
+> I have added this specifically since my intention is to differentiate
+> the validity of the node vs the presence of the property within a node.
+> This property may be optional for some platforms and a must for some
+> others, and differentiating would allow the individual driver
+> implementations to make the distinction.
+
+Maybe add a comment for both cases.
+
+> 
+>> 
+>>> +
+>>> +	ret = of_property_read_u32(dn, "hwlock-base-id", &val);
+>>> +	if (!ret)
+>>> +		ret = val;
+>>> +#endif
+>>> +
+>>> +	return ret;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(of_hwspin_lock_get_base_id);
+>>> +
+>>> +/**
+>>> + * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
+>>> + * @dn: device node pointer
+>>> + *
+>>> + * This is an OF helper function that can be called by the underlying
+>>> + * platform-specific implementations, to retrieve the number of locks
+>>> + * present within a hwspinlock device instance.
+>>> + *
+>>> + * Returns a positive number of locks on success, -ENODEV on generic
+>>> + * failure or an appropriate error code as returned by the OF layer
+>>> + */
+>>> +int of_hwspin_lock_get_num_locks(struct device_node *dn)
+>>> +{
+>>> +	unsigned int val;
+>>> +	int ret = -ENODEV;
+>>> +
+>>> +#ifdef CONFIG_OF
+>>> +	if (!dn)
+>>> +		return -ENODEV;
+>> 
+>> Checking !dn is done in of_property_read_u32, so you don't need to duplicate
+> 
+> Same comment as above.
+> 
+> regards
+> Suman
+> 
+>> 
+>>> +
+>>> +	ret = of_property_read_u32(dn, "hwlock-num-locks", &val);
+>>> +	if (!ret)
+>>> +		ret = val ? val : -ENODEV;
+>>> +#endif
+>>> +
+>>> +	return ret;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_locks);
+>>> +
+>>> +/**
+>>> * hwspin_lock_register() - register a new hw spinlock device
+>>> * @bank: the hwspinlock device, which usually provides numerous hw locks
+>>> * @dev: the backing device
+>>> diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
+>>> index 3343298..1f6a5b8 100644
+>>> --- a/include/linux/hwspinlock.h
+>>> +++ b/include/linux/hwspinlock.h
+>>> @@ -1,7 +1,7 @@
+>>> /*
+>>> * Hardware spinlock public header
+>>> *
+>>> - * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
+>>> + * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+>>> *
+>>> * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+>>> *
+>>> @@ -26,6 +26,7 @@
+>>> #define HWLOCK_IRQ	0x02	/* Disable interrupts, don't save state */
+>>> 
+>>> struct device;
+>>> +struct device_node;
+>>> struct hwspinlock;
+>>> struct hwspinlock_device;
+>>> struct hwspinlock_ops;
+>>> @@ -60,6 +61,8 @@ struct hwspinlock_pdata {
+>>> 
+>>> #if defined(CONFIG_HWSPINLOCK) || defined(CONFIG_HWSPINLOCK_MODULE)
+>>> 
+>>> +int of_hwspin_lock_get_base_id(struct device_node *dn);
+>>> +int of_hwspin_lock_get_num_locks(struct device_node *dn);
+>>> int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+>>> 		const struct hwspinlock_ops *ops, int base_id, int num_locks);
+>>> int hwspin_lock_unregister(struct hwspinlock_device *bank);
+>>> @@ -80,9 +83,9 @@ void __hwspin_unlock(struct hwspinlock *, int, unsigned long *);
+>>> * code path get compiled away. This way, if CONFIG_HWSPINLOCK is not
+>>> * required on a given setup, users will still work.
+>>> *
+>>> - * The only exception is hwspin_lock_register/hwspin_lock_unregister, with which
+>>> - * we _do_ want users to fail (no point in registering hwspinlock instances if
+>>> - * the framework is not available).
+>>> + * The only exception is hwspin_lock_register/hwspin_lock_unregister and
+>>> + * associated OF helpers, with which we _do_ want users to fail (no point
+>>> + * in registering hwspinlock instances if the framework is not available).
+>>> *
+>>> * Note: ERR_PTR(-ENODEV) will still be considered a success for NULL-checking
+>>> * users. Others, which care, can still check this with IS_ERR.
+>>> -- 
+>>> 1.8.3.3
+>>> 
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
