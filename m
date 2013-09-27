@@ -1,105 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab3I0APV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 20:15:21 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37789 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab3I0APT convert rfc822-to-8bit (ORCPT
+	id S1751184Ab3I0AZO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 20:25:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36198 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3I0AZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Sep 2013 20:15:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: Re: [PATCH v3 0/4] Fix Win8 backlight issue
-Date: Fri, 27 Sep 2013 02:26:35 +0200
-Message-ID: <3910636.aGHp6YakQl@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CADDKRnA7Eqox6s6t315c=OaEpAgRcX62_4rF8XuXaNRAipOqcQ@mail.gmail.com>
-References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com> <87eh8clvun.fsf@intel.com> <CADDKRnA7Eqox6s6t315c=OaEpAgRcX62_4rF8XuXaNRAipOqcQ@mail.gmail.com>
+	Thu, 26 Sep 2013 20:25:13 -0400
+Date: Thu, 26 Sep 2013 17:25:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.97
+Message-ID: <20130927002511.GA8283@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 26, 2013 09:49:03 AM Jörg Otte wrote:
-> 2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
-> > On Wed, 25 Sep 2013, Jörg Otte <jrg.otte@gmail.com> wrote:
-> >> 2013/9/25 Jani Nikula <jani.nikula@linux.intel.com>:
-> >>> On Wed, 25 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
-> >>>> On Wed, Sep 25, 2013 at 10:29:37AM +0200, Jörg Otte wrote:
-> >>>>> Backlight can't be modified with this patch set - neither with
-> >>>>> function keys nor with the gui. It is a step backward to v3.11-rc1
-> >>>
-> >>> So both hotkeys and GUI work in v3.11-rc1? And v3.12-rc2?
-> >>
-> >> In  v3.11-rc1 it didn't work.
-> >> Since a later rc (I don't remember exactly which) it did work.
-> >> In v3.12-rc1/2 it does work.
-> >> In v3.12-rc2 + Aaron's patch set it again doesn't work.
-> >>
-> >>>
-> >>>> Thanks for the test.
-> >>>>
-> >>>> Please check /sys/class/backlight, is there only one link file
-> >>>> intel_backlight?
-> >>>
-> >>> Indeed, are there others? fujitsu-laptop perhaps? If yes, try
-> >>> CONFIG_FUJITSU_LAPTOP=n or an appropriate module blacklist.
-> >>>
-> >>> Just checking, you do have CONFIG_BACKLIGHT_CLASS_DEVICE=y?
-> >>
-> >> There is only one intel_backlight link.
-> >> Yes, I have CONFIG_BACKLIGHT_CLASS_DEVICE=y
-> >>
-> >>> Embarrassingly there was a bug in i915 fixed just recently where the
-> >>> backlight device wasn't registered for
-> >>> CONFIG_BACKLIGHT_CLASS_DEVICE=m...
-> >>>
-> >>>> If so, please cd inside and try modify the brightness file using echo
-> >>>> with some values in the range of 0 - max_brightness, does the
-> >>>> backlight level change when you echo a new value? I guess it doesn't,
-> >>>> or you wouldn't notice problem. If indeed so, perhaps file a bug at
-> >>>> http://bugzilla.kernel.org, Drivers/Video(DRI-Intel)? I suppose Jani
-> >>>> and Daniel can help fix your problem.
-> >>>
-> >>> Yup, please check the above, and report back.
-> >>
-> >> - echo 0..max_brightness > brightness does not work.
-> >
-> > Thanks for the info.
-> >
-> > How about v3.12-rc2 without Aaron's patches? Does intel_backlight also
-> > not work there? How about the acpi_video0 (which I presume is present)
-> > sysfs interface?
-> >
-> 
-> Without Aaron's patches intel_backlight also does not work.
-> But acpi_video0 does (and takes precedence I think).
 
-So can you please open a bug entry at bugzilla.kernel.org against i915?
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The fact that ACPI video works for you doesn't mean that intel_backlight
-shouldn't, I suppose?
+I'm announcing the release of the 3.0.97 kernel.
 
-Rafael
+All users of the 3.0 kernel series must upgrade.
 
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                    |    2 +-
+ arch/arm/mach-versatile/pci.c               |    6 +++---
+ arch/powerpc/kernel/align.c                 |   10 ++++++++++
+ crypto/api.c                                |    7 ++++++-
+ drivers/hid/hid-core.c                      |   19 ++++++++++++++-----
+ drivers/hid/hid-ntrig.c                     |    3 ++-
+ drivers/hid/hid-pl.c                        |   10 ++++++++--
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c |    4 ++++
+ drivers/net/wireless/ath/ath9k/xmit.c       |    1 +
+ drivers/scsi/sd.c                           |   11 +++--------
+ drivers/staging/comedi/drivers/dt282x.c     |    3 ++-
+ drivers/usb/class/cdc-wdm.c                 |   13 +++++++++----
+ drivers/usb/core/config.c                   |    3 ++-
+ drivers/usb/host/xhci.c                     |   22 ++++++++++++++++++++++
+ drivers/usb/serial/mos7720.c                |    6 +++---
+ drivers/xen/grant-table.c                   |   13 +++++++++++--
+ fs/cifs/connect.c                           |    2 ++
+ fs/fuse/dir.c                               |    4 ++++
+ fs/fuse/file.c                              |    3 ++-
+ fs/isofs/inode.c                            |   16 +++++-----------
+ fs/ocfs2/extent_map.c                       |    1 -
+ include/linux/hid.h                         |    4 +++-
+ include/linux/rculist.h                     |    5 +++--
+ mm/huge_memory.c                            |    2 ++
+ mm/memcontrol.c                             |    8 +++++++-
+ sound/pci/hda/hda_intel.c                   |    1 +
+ sound/soc/codecs/wm8960.c                   |    6 +++---
+ 27 files changed, 133 insertions(+), 52 deletions(-)
+
+Alan Stern (1):
+      SCSI: sd: Fix potential out-of-bounds access
+
+Anand Avati (1):
+      fuse: invalidate inode attributes on xattr modification
+
+Anton Blanchard (1):
+      powerpc: Handle unaligned ldbrx/stdbrx
+
+Dan Carpenter (2):
+      staging: comedi: dt282x: dt282x_ai_insn_read() always fails
+      USB: mos7720: use GFP_ATOMIC under spinlock
+
+Felix Fietkau (2):
+      ath9k: always clear ps filter bit on new assoc
+      ath9k: avoid accessing MRC registers on single-chain devices
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.97
+
+Greg Thelen (1):
+      memcg: fix multiple large threshold notifications
+
+Hans de Goede (1):
+      usb: config->desc.bLength may not exceed amount of data returned by the device
+
+Herbert Xu (1):
+      crypto: api - Fix race condition in larval lookup
+
+Jan Kara (1):
+      isofs: Refuse RW mount of the filesystem instead of making it RO
+
+Jeff Layton (1):
+      cifs: ensure that srv_mutex is held when dealing with ssocket pointer
+
+Jie Liu (1):
+      ocfs2: fix the end cluster offset of FIEMAP
+
+Johan Hovold (1):
+      USB: mos7720: fix big-endian control requests
+
+Kees Cook (4):
+      HID: pantherlord: validate output report details
+      HID: validate HID report id size
+      HID: ntrig: validate feature report details
+      HID: check for NULL field when setting values
+
+Libin (1):
+      mm/huge_memory.c: fix potential NULL pointer dereference
+
+Maxim Patlasov (1):
+      fuse: postpone end_page_writeback() in fuse_writepage_locked()
+
+Mike Dyer (1):
+      ASoC: wm8960: Fix PLL register writes
+
+Oliver Neukum (1):
+      USB: cdc-wdm: fix race between interrupt handler and tasklet
+
+Peter Maydell (1):
+      ARM: PCI: versatile: Fix SMAP register offsets
+
+Roger Pau Monne (1):
+      xen-gnt: prevent adding duplicate gnt callbacks
+
+Shawn Nematbakhsh (1):
+      usb: xhci: Disable runtime PM suspend for quirky controllers
+
+Takashi Iwai (1):
+      ALSA: hda - Add Toshiba Satellite C870 to MSI blacklist
+
+Tejun Heo (1):
+      rculist: list_first_or_null_rcu() should use list_entry_rcu()
+
+
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSRNBnAAoJEDjbvchgkmk+My8QAMWnfW+j/sa3tzc6vG5qyAgb
+4r+Fd/Cz0bPd6yCJ0d/NLKVHRxxxV5e3qQFKOvKlil2ZTRw34NLimCjGBielHZCQ
+9pX/13K3JLMo7blFWe3GeyOAxfUCElGPfRi/G0+mC5DW4E83dM2yRnKOq+BfIguq
+5TWqjbIKiK3t+YyKjLtd0AIJLhXqgtBsLbBUIXdlvq7kBeBkNhQXv7JTX93CBLPE
+Lyns+rEEtUDn2H1U2Aw12XNVYQR+bYRAsjQfh2Tt5dHtVTa4GpHAZ/SvPn1Y2P5B
+zcxQ+0u8LQJaAMtEBhHBxQ+cTfapFuATXyp1YEoXgg2sF6LFUBZmeFZ8ckeRrf2N
+ewPzTxQ0OUFp1bSp4DZWfvSRi4szWY8kev7qcizEcwLUml6Yd8VeCb83Hp4tOxgb
+HYx0ZamFlgDcmOdAqlmGuQf8QKn5jYjiB0TwSHlg91i7gq08RGZht65HKX6VgRnr
+PfI028U336LciAQHJMtAazX0QDz18ndJVuZR8+s/9yQ3/3kfHLVwYbjfCarew2dl
+J9nMLsFsvkQht+cpkf0I7mhltdI/FGJDzVH6iKibNzUvEozdKAu8cjC0UW8y8IoT
+FVdcYB697rwmguXhmCwSl0WoSOYwkJxVlyizzTPf2YRHWCda7IkXYirHifF/K7sT
+tj96Vfgj4xQdTzvU/muN
+=v4Ym
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
