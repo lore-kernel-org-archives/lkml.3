@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3I0SDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:03:15 -0400
-Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:37687 "EHLO
+	id S1754401Ab3I0SD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:03:29 -0400
+Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:38129 "EHLO
 	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753399Ab3I0SDN convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1754378Ab3I0SD2 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:03:13 -0400
-X-Greylist: delayed 1284 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Sep 2013 14:03:12 EDT
+	Fri, 27 Sep 2013 14:03:28 -0400
 Content-Type: text/plain; charset=us-ascii
 Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
 Subject: Re: applesmc oops in 3.10/3.11
 From: Chris Murphy <chris@colorremedies.com>
-In-Reply-To: <20130927175926.GA6267@roeck-us.net>
-Date: Fri, 27 Sep 2013 12:03:07 -0600
+In-Reply-To: <20130927171256.GA6391@roeck-us.net>
+Date: Fri, 27 Sep 2013 11:41:42 -0600
 Cc: Josh Boyer <jwboyer@fedoraproject.org>,
         Henrik Rydberg <rydberg@euromail.se>, khali@linux-fr.org,
         lm-sensors@lm-sensors.org,
         "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
         bugzilla@colorremedies.com
 Content-Transfer-Encoding: 8BIT
-Message-Id: <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
-References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net>
+Message-Id: <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com>
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net>
 To: Guenter Roeck <linux@roeck-us.net>
 X-Mailer: Apple Mail (2.1510)
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
@@ -38,71 +37,61 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Sep 27, 2013, at 11:59 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+On Sep 27, 2013, at 11:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-> On Fri, Sep 27, 2013 at 11:41:42AM -0600, Chris Murphy wrote:
+> On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
+>> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>>>>>> This suggests that initialization may be attempted more than once. The key cache
+>>>>>> is allocated only once, but the number of keys is read for each attempt.
+>>>>>> 
+>>>>>> No idea if that can happen, but if the number of keys can increase after
+>>>>>> the first initialization attempt you would have an explanation for the crash.
+>>>>> 
+>>>>> Good idea, and easy enough to test with the patch below.
+>>>>> 
+>>>> Should we apply this patch even though it may not solve the specific problem ?
+>>> 
+>>> Yes, why not - it certainly won't hurt. I am running it right now, so
+>>> it is at least run-tested.
+>>> 
+>>>> Again, not sure if the key count can change, but the current code is at the very
+>>>> least inconsistent, as it keeps reading the key count without updating or
+>>>> verifying the cache size.
+>>> 
+>>> Yes - I agree that the error state is far-fetched, but it is hard to
+>>> see any other logical explanation. There is of course always the
+>>> possibility that the problem is somewhere else completely.
+>>> 
+>>> Proper patch attached.
+>>> 
+>>> Thanks,
+>>> Henrik
+>>> 
+>>> ---
+>>> 
+>>> From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
+>>> From: Henrik Rydberg <rydberg@euromail.se>
+>>> Date: Thu, 26 Sep 2013 08:33:16 +0200
+>>> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
+>>> 
+>>> After reports from Chris and Josh Boyer of a rare crash in applesmc,
+>>> Guenter pointed at the initialization problem fixed below. The patch
+>>> has not been verified to fix the crash, but should be applied
+>>> regardless.
+>>> 
+>>> Reported-by: <jwboyer@fedoraproject.org>
+>>> Suggested-by: Guenter Roeck <linux@roeck-us.net>
+>>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>>> ---
+>>> drivers/hwmon/applesmc.c | 11 ++++++++++-
+>>> 1 file changed, 10 insertions(+), 1 deletion(-)
 >> 
->> On Sep 27, 2013, at 11:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
 >> 
->>> On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
->>>> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->>>>>>>> This suggests that initialization may be attempted more than once. The key cache
->>>>>>>> is allocated only once, but the number of keys is read for each attempt.
->>>>>>>> 
->>>>>>>> No idea if that can happen, but if the number of keys can increase after
->>>>>>>> the first initialization attempt you would have an explanation for the crash.
->>>>>>> 
->>>>>>> Good idea, and easy enough to test with the patch below.
->>>>>>> 
->>>>>> Should we apply this patch even though it may not solve the specific problem ?
->>>>> 
->>>>> Yes, why not - it certainly won't hurt. I am running it right now, so
->>>>> it is at least run-tested.
->>>>> 
->>>>>> Again, not sure if the key count can change, but the current code is at the very
->>>>>> least inconsistent, as it keeps reading the key count without updating or
->>>>>> verifying the cache size.
->>>>> 
->>>>> Yes - I agree that the error state is far-fetched, but it is hard to
->>>>> see any other logical explanation. There is of course always the
->>>>> possibility that the problem is somewhere else completely.
->>>>> 
->>>>> Proper patch attached.
->>>>> 
->>>>> Thanks,
->>>>> Henrik
->>>>> 
->>>>> ---
->>>>> 
->>>>> From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
->>>>> From: Henrik Rydberg <rydberg@euromail.se>
->>>>> Date: Thu, 26 Sep 2013 08:33:16 +0200
->>>>> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
->>>>> 
->>>>> After reports from Chris and Josh Boyer of a rare crash in applesmc,
->>>>> Guenter pointed at the initialization problem fixed below. The patch
->>>>> has not been verified to fix the crash, but should be applied
->>>>> regardless.
->>>>> 
->>>>> Reported-by: <jwboyer@fedoraproject.org>
->>>>> Suggested-by: Guenter Roeck <linux@roeck-us.net>
->>>>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->>>>> ---
->>>>> drivers/hwmon/applesmc.c | 11 ++++++++++-
->>>>> 1 file changed, 10 insertions(+), 1 deletion(-)
->>>> 
->>>> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
->>>> 
->>> I sent a pull request to Linus, so you should be able to pull it from
->>> the upstream kernel shortly. Would be great to get feedback if the patch
->>> solves the problem (or doesn't).
->> 
->> I'll start running it when it appears in koji. It's very transient, maybe one oops per week with lots of (other) testing. I'm not even sure if it happens on warm or cold boots or both.
->> 
-> When you do, can you possibly trigger an event based on the warning added
-> with the patch ? This might help us to identify if the problem fixed
-> with the patch actually happens.
+> I sent a pull request to Linus, so you should be able to pull it from
+> the upstream kernel shortly. Would be great to get feedback if the patch
+> solves the problem (or doesn't).
 
-I don't understand the question. I'm uncertain how to trigger, and also what event.
+I'll start running it when it appears in koji. It's very transient, maybe one oops per week with lots of (other) testing. I'm not even sure if it happens on warm or cold boots or both.
 
 Chris
