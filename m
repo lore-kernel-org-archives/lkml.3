@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab3I0Kb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 06:31:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:11608 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab3I0Kb1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 06:31:27 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-62-52455e7d6ac8
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, andrzej.p@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH] USB: gadget: s3c-hsotg: fix maxpacket size
-Date: Fri, 27 Sep 2013 12:31:09 +0200
-Message-id: <1380277869-17855-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFJMWRmVeSWpSXmKPExsVy+t9jQd26ONcggxfWFrNetrNYbJyxntXi
-	4P16i+bF69ksLu+aw2axaFkrs8XaI3fZLR4c3snuwOGxf+4ado++LasYPY7f2M7k8XmTXABL
-	FJdNSmpOZllqkb5dAlfGtDmf2AvOs1d87ZnG3MC4ka2LkZNDQsBEYm3LWXYIW0ziwr31QHEu
-	DiGB6YwST2feZYZw2pkkGts6wKrYBHQktnyfwAhiiwgISKx/cYkdpIhZ4AKjxPsF68CKhAWs
-	JXZuPsgKYrMIqEosuP+JBcTmFXCV6Jh9E8jmAFqnIDFnks0ERu4FjAyrGEVTC5ILipPSc430
-	ihNzi0vz0vWS83M3MYJD5Jn0DsZVDRaHGAU4GJV4eDOyXIKEWBPLiitzDzFKcDArifAu8HQN
-	EuJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cAYYhZ/V1lW
-	L9G693zpRsfdm+YxMKo5q6x6Inkp7uI0pmNnJL6XV19Z9fDG48L9v532TFOtv+vG6+EmwaOb
-	58l5ffFs1uXdurw/GtZU9V9Z0RK6229hhNhH9gdLgqx3pOwpVixzLttlv7SL7X2j4lNFBqt5
-	MV6vPBr+/Ve5k6jz5a3MvVkbVI2UWIozEg21mIuKEwFnoc6ADQIAAA==
+	id S1751118Ab3I0KiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 06:38:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37552 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871Ab3I0KiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 06:38:06 -0400
+Date: Fri, 27 Sep 2013 12:38:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
+        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/smpboot: Fix announce_cpu() to printk() the
+ last "OK" properly
+Message-ID: <20130927103802.GA4422@pd.tnic>
+References: <1378378676-18276-1-git-send-email-huawei.libin@huawei.com>
+ <tip-52239484bf8aec031afa84ae08aa88224d819b93@git.kernel.org>
+ <20130925100722.GB3433@nazgul.tnic>
+ <20130925182936.GD16693@gmail.com>
+ <20130926231545.GD10123@pd.tnic>
+ <20130927065115.GA6852@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130927065115.GA6852@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes ep maxpacket value from 512 to 1024, becouse it's needed
-to handle interupt and isochronous endpoints in high-speed mode. This change
-doesn't affect on driver functioning, becouse fifo size (3072) is still enough
-for the maximum transaction payload (3*1024 for high-speed high-bandwidtch
-endpoints).
+On Fri, Sep 27, 2013 at 08:51:15AM +0200, Ingo Molnar wrote:
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/gadget/s3c-hsotg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+<snip stuff to do>
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 8a9e2c6..0d1dcbd 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -3146,7 +3146,7 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
- 
- 	hs_ep->parent = hsotg;
- 	hs_ep->ep.name = hs_ep->name;
--	hs_ep->ep.maxpacket = epnum ? 512 : EP0_MPS_LIMIT;
-+	hs_ep->ep.maxpacket = epnum ? 1024 : EP0_MPS_LIMIT;
- 	hs_ep->ep.ops = &s3c_hsotg_ep_ops;
- 
- 	/*
+> (and I hope you learned the lesson about sending improvement patches
+> against long-bitrotten code, as the new x86 CPU bootup printout format
+> code maintainer!)
+
+Oh shit, what did I get into!? I only wanted to do a quick fix and get
+back to the real, manly bugs!
+
+:-) :-) :-)
+
+Ok, I'll do all that you suggested and send you the results.
+
+Btw, qemu is so cool in generating the craziest topologies and much
+easier than me actually going and looking for such a real big system:
+
+kvm -smp 64 \
+-numa node,nodeid=0,cpus=0-7 \
+-numa node,nodeid=1,cpus=8-15 \
+-numa node,nodeid=2,cpus=16-23 \
+-numa node,nodeid=3,cpus=24-31 \
+-numa node,nodeid=4,cpus=32-39 \
+-numa node,nodeid=5,cpus=40-47 \
+-numa node,nodeid=6,cpus=48-55 \
+-numa node,nodeid=7,cpus=56-63 ...
+
+Thanks.
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
