@@ -1,125 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab3I0Qfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 12:35:53 -0400
+	id S1754149Ab3I0QgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 12:36:00 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:46208 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab3I0Qft (ORCPT
+	with ESMTP id S1753500Ab3I0Qfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 12:35:49 -0400
+	Fri, 27 Sep 2013 12:35:55 -0400
 X-IronPort-AV: E=Sophos;i="4.90,994,1371081600"; 
-   d="scan'208";a="55590938"
+   d="scan'208";a="55590962"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v6 16/19] arm,arm64: do not always merge biovec if we are running on Xen
-Date: Fri, 27 Sep 2013 17:10:04 +0100
-Message-ID: <1380298207-29151-16-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v6 15/19] swiotlb-xen: call dma_capable only if dev->dma_mask is allocated
+Date: Fri, 27 Sep 2013 17:10:03 +0100
+Message-ID: <1380298207-29151-15-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to what it is done on X86: biovecs are prevented from merging
-otherwise every dma requests would be forced to bounce on the swiotlb buffer.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/include/asm/io.h   |    8 ++++++++
- arch/arm64/include/asm/io.h |    9 +++++++++
- drivers/xen/biomerge.c      |    4 +++-
- 3 files changed, 20 insertions(+), 1 deletions(-)
+ drivers/xen/swiotlb-xen.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index d070741..c45effc 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -24,9 +24,11 @@
- #ifdef __KERNEL__
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 790c2eb..3011736 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -512,7 +512,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 * buffering it.
+ 	 */
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
+-	    dma_capable(dev, dev_addr, size) &&
++	    dev->dma_mask && dma_capable(dev, dev_addr, size) &&
+ 	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
+ 		return dev_addr;
  
- #include <linux/types.h>
-+#include <linux/blk_types.h>
- #include <asm/byteorder.h>
- #include <asm/memory.h>
- #include <asm-generic/pci_iomap.h>
-+#include <xen/xen.h>
+@@ -532,7 +532,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	/*
+ 	 * Ensure that the address returned is DMA'ble
+ 	 */
+-	if (!dma_capable(dev, dev_addr, size)) {
++	if (dev->dma_mask && !dma_capable(dev, dev_addr, size)) {
+ 		swiotlb_tbl_unmap_single(dev, map, size, dir);
+ 		dev_addr = 0;
+ 	}
+@@ -660,7 +660,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
  
- /*
-  * ISA I/O bus memory addresses are 1:1 with the physical address.
-@@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- #define BIOVEC_MERGEABLE(vec1, vec2)	\
- 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
- 
-+extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-+				      const struct bio_vec *vec2);
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-+
- #ifdef CONFIG_MMU
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
- extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-index 1d12f89..c163287b 100644
---- a/arch/arm64/include/asm/io.h
-+++ b/arch/arm64/include/asm/io.h
-@@ -22,11 +22,14 @@
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
-+#include <linux/blk_types.h>
- 
- #include <asm/byteorder.h>
- #include <asm/barrier.h>
- #include <asm/pgtable.h>
- 
-+#include <xen/xen.h>
-+
- /*
-  * Generic IO read/write.  These perform native-endian accesses.
-  */
-@@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
-  */
- #define xlate_dev_kmem_ptr(p)	p
- 
-+extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-+				      const struct bio_vec *vec2);
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-+
- #endif	/* __KERNEL__ */
- #endif	/* __ASM_IO_H */
-diff --git a/drivers/xen/biomerge.c b/drivers/xen/biomerge.c
-index 0edb91c..f323a2d 100644
---- a/drivers/xen/biomerge.c
-+++ b/drivers/xen/biomerge.c
-@@ -2,6 +2,7 @@
- #include <linux/io.h>
- #include <linux/export.h>
- #include <xen/page.h>
-+#include <xen/features.h>
- 
- bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
- 			       const struct bio_vec *vec2)
-@@ -9,7 +10,8 @@ bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
- 	unsigned long mfn1 = pfn_to_mfn(page_to_pfn(vec1->bv_page));
- 	unsigned long mfn2 = pfn_to_mfn(page_to_pfn(vec2->bv_page));
- 
--	return __BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
-+	return !xen_feature(XENFEAT_auto_translated_physmap) &&
-+		__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
- 		((mfn1 == mfn2) || ((mfn1+1) == mfn2));
- }
- EXPORT_SYMBOL(xen_biovec_phys_mergeable);
+ 		if (swiotlb_force ||
+ 		    xen_feature(XENFEAT_auto_translated_physmap) ||
+-		    !dma_capable(hwdev, dev_addr, sg->length) ||
++		    (hwdev->dma_mask && !dma_capable(hwdev, dev_addr, sg->length)) ||
+ 		    range_straddles_page_boundary(paddr, sg->length)) {
+ 			/*
+ 			 * Pass the dma_addr of the first slab in the iotlb buffer as
 -- 
 1.7.2.5
 
