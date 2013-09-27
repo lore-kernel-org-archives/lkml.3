@@ -1,87 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab3I0HgL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 03:36:11 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33958 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3I0HgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 03:36:09 -0400
-Message-ID: <52453545.3090504@collabora.co.uk>
-Date: Fri, 27 Sep 2013 09:35:33 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	id S1752844Ab3I0HiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 03:38:12 -0400
+Received: from tundra.namei.org ([65.99.196.166]:40983 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab3I0HiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 03:38:09 -0400
+Date: Fri, 27 Sep 2013 17:40:13 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: simo@redhat.com, zohar@linux.vnet.ibm.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings patches
+In-Reply-To: <2825.1380144092@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.02.1309271740020.30431@tundra.namei.org>
+References: <2825.1380144092@warthog.procyon.org.uk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de,
-        aaro.koskinen@iki.fi, Paul Walmsley <paul@pwsan.com>, joelf@ti.com
-Subject: Re: [RFC v2] gpio/omap: auto-setup a GPIO when used as an IRQ
-References: <1380009480-4975-1-git-send-email-javier.martinez@collabora.co.uk> <5244C0C4.2030004@wwwdotorg.org>
-In-Reply-To: <5244C0C4.2030004@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 25 Sep 2013, David Howells wrote:
 
-On 09/27/2013 01:18 AM, Stephen Warren wrote:
-> On 09/24/2013 01:58 AM, Javier Martinez Canillas wrote:
->> The OMAP GPIO controller HW requires a pin to be configured in GPIO
->> input mode in order to operate as an interrupt input. Since drivers
->> should not be aware of whether an interrupt pin is also a GPIO or not,
->> the HW should be fully configured/enabled as an IRQ if a driver solely
->> uses IRQ APIs such as request_irq(), and never calls any GPIO-related
->> APIs. As such, add the missing HW setup to the OMAP GPIO controller's
->> irq_chip driver.
->> 
->> Since this bypasses the GPIO subsystem we have to ensure that another
->> caller won't be able to request the same GPIO pin that is used as an
->> IRQ and set its direction as output. Requesting the GPIO and setting
->> its direction as input is allowed though.
 > 
-> FWIW, the concept of this patch,
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+> Hi James,
 > 
-> I didn't review the code; just skimmed it to see where the new
-> functionality was implemented.
+> Could you pull these patches into the security tree?  They're based on your
+> next branch.
 > 
 
-Thanks Stephen,
+Thanks, pulled.
 
-I split the changes as suggested by Tony and posted as a patch-set and not an
-RFC anymore:
 
-[PATCH 1/2] gpio/omap: maintain GPIO and IRQ usage separately [1]
-[PATCH 2/2] gpio/omap: auto-setup a GPIO when used as an IRQ [2]
+> The patches can be viewed as a number of sets:
+> 
+>  (1) KEYS: Skip key state checks when checking for possession
+> 
+>      This is a fix for determining the possessed status of keys that have been
+>      invalidated or revoked or that have expired.  If nothing else, can you
+>      please pick this and pass it upstream.
+> 
+>  (2) KEYS: Expand the capacity of a keyring
+>      Add a generic associative array implementation
+>      KEYS: Drop the permissions argument from __keyring_search_one()
+>      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+>      KEYS: Search for auth-key by name rather than target key ID
+>      KEYS: Introduce a search context structure
+>      KEYS: Consolidate the concept of an 'index key' for key access
+>      KEYS: key_is_dead() should take a const key pointer argument
+>      KEYS: Use bool in make_key_ref() and is_key_possessed()
+> 
+>      Patches to to expand the capacity of a keyring by using an associative
+>      array rather than a flat list and patches to do some preparatory cleanups
+>      for those.
+> 
+>  (3) KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+>      KEYS: Implement a big key type that can save to tmpfs
+> 
+>      Patches to add better support for libkrb5 to save its tokens in a kernel
+>      keyring rather than in files.  It already has this ability to some
+>      extent, but that has two problems: your tokens get deleted when you log
+>      out (so your cron jobs can't use them) and the capacity of a user type
+>      key is not sufficient for some of the huge Kerberos tickets one can get.
+>      These patches address that.
+> 
+>  (4) KEYS: Rename public key parameter name arrays
+>      KEYS: Move the algorithm pointer array from x509 to public_key.c
+>      KEYS: Store public key algo ID in public_key struct
+>      KEYS: Split public_key_verify_signature() and make available
+>      KEYS: Store public key algo ID in public_key_signature struct
+>      X.509: struct x509_certificate needs struct tm declaring
+>      X.509: Embed public_key_signature struct and create filler function
+>      X.509: Check the algorithm IDs obtained from parsing an X.509 certificate
+>      X.509: Handle certificates that lack an authorityKeyIdentifier field
+>      X.509: Remove certificate date checks
+> 
+>      Patches to improve the asymmetric key type in various ways, including an
+>      important bugfix to prevent an unset system clock from preventing modules
+>      from being loaded.
+> 
+>  (5) KEYS: Load *.x509 files into kernel keyring
+>      KEYS: Have make canonicalise the paths of the X.509 certs better to deduplicate
+>      KEYS: Separate the kernel signature checking keyring from module signing
+>      KEYS: Add a 'trusted' flag and a 'trusted only' flag
+>      KEYS: Set the asymmetric-key type default search method
+>      KEYS: Make the system 'trusted' keyring viewable by userspace
+>      KEYS: verify a certificate is signed by a 'trusted' key
+>      KEYS: initialize root uid and session keyrings early
+> 
+>      Patches to provide better support for loading a generic system keyring of
+>      crypto keys which may then be used for other things besides module
+>      signing (such as kexec).
+> 
+> There are additional patches from others also.
+> 
+> David
+> ---
+> The following changes since commit 5a5f2acfd04269e2e0958067216b68ff461c285c:
+> 
+>   selinux: add Paul Moore as a SELinux maintainer (2013-09-24 11:50:46 +1000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git keys-devel
+> 
+> for you to fetch changes up to eb8948a03704f3dbbfc7e83090e20e93c6c476d2:
+> 
+>   X.509: remove possible code fragility: enumeration values not handled (2013-09-25 17:17:01 +0100)
+> 
+> ----------------------------------------------------------------
+> (from the branch description for keys-devel local branch)
+> 
+> clone of "master"
+> ----------------------------------------------------------------
+> Antonio Alecrim Jr (1):
+>       X.509: remove possible code fragility: enumeration values not handled
+> 
+> David Howells (27):
+>       KEYS: Skip key state checks when checking for possession
+>       KEYS: Use bool in make_key_ref() and is_key_possessed()
+>       KEYS: key_is_dead() should take a const key pointer argument
+>       KEYS: Consolidate the concept of an 'index key' for key access
+>       KEYS: Introduce a search context structure
+>       KEYS: Search for auth-key by name rather than target key ID
+>       KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+>       KEYS: Drop the permissions argument from __keyring_search_one()
+>       Add a generic associative array implementation.
+>       KEYS: Expand the capacity of a keyring
+>       KEYS: Implement a big key type that can save to tmpfs
+>       KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+>       KEYS: Rename public key parameter name arrays
+>       KEYS: Move the algorithm pointer array from x509 to public_key.c
+>       KEYS: Store public key algo ID in public_key struct
+>       KEYS: Split public_key_verify_signature() and make available
+>       KEYS: Store public key algo ID in public_key_signature struct
+>       X.509: struct x509_certificate needs struct tm declaring
+>       X.509: Embed public_key_signature struct and create filler function
+>       X.509: Check the algorithm IDs obtained from parsing an X.509 certificate
+>       X.509: Handle certificates that lack an authorityKeyIdentifier field
+>       X.509: Remove certificate date checks
+>       KEYS: Load *.x509 files into kernel keyring
+>       KEYS: Have make canonicalise the paths of the X.509 certs better to deduplicate
+>       KEYS: Separate the kernel signature checking keyring from module signing
+>       KEYS: Add a 'trusted' flag and a 'trusted only' flag
+>       KEYS: Set the asymmetric-key type default search method
+> 
+> Konstantin Khlebnikov (2):
+>       MPILIB: add module description and license
+>       X.509: add module description and license
+> 
+> Mimi Zohar (3):
+>       KEYS: Make the system 'trusted' keyring viewable by userspace
+>       KEYS: verify a certificate is signed by a 'trusted' key
+>       KEYS: initialize root uid and session keyrings early
+> 
+>  Documentation/assoc_array.txt             |  574 ++++++++++
+>  Documentation/security/keys.txt           |   20 +-
+>  crypto/asymmetric_keys/Kconfig            |    2 +-
+>  crypto/asymmetric_keys/asymmetric_type.c  |    1 +
+>  crypto/asymmetric_keys/public_key.c       |   60 +-
+>  crypto/asymmetric_keys/public_key.h       |    6 +
+>  crypto/asymmetric_keys/x509_cert_parser.c |   35 +-
+>  crypto/asymmetric_keys/x509_parser.h      |   18 +-
+>  crypto/asymmetric_keys/x509_public_key.c  |  232 ++--
+>  include/crypto/public_key.h               |    9 +-
+>  include/keys/big_key-type.h               |   25 +
+>  include/keys/keyring-type.h               |   17 +-
+>  include/keys/system_keyring.h             |   23 +
+>  include/linux/assoc_array.h               |   92 ++
+>  include/linux/assoc_array_priv.h          |  182 +++
+>  include/linux/key-type.h                  |    6 +
+>  include/linux/key.h                       |   52 +-
+>  include/linux/user_namespace.h            |    6 +
+>  include/uapi/linux/keyctl.h               |    1 +
+>  init/Kconfig                              |   13 +
+>  kernel/Makefile                           |   50 +-
+>  kernel/modsign_certificate.S              |   12 -
+>  kernel/modsign_pubkey.c                   |  104 --
+>  kernel/module-internal.h                  |    2 -
+>  kernel/module_signing.c                   |    7 +-
+>  kernel/system_certificates.S              |   12 +
+>  kernel/system_keyring.c                   |  105 ++
+>  kernel/user.c                             |    4 +
+>  kernel/user_namespace.c                   |    6 +
+>  lib/Kconfig                               |   14 +
+>  lib/Makefile                              |    1 +
+>  lib/assoc_array.c                         | 1746 +++++++++++++++++++++++++++++
+>  lib/mpi/mpiutil.c                         |    3 +
+>  scripts/asn1_compiler.c                   |    2 +
+>  security/keys/Kconfig                     |   29 +
+>  security/keys/Makefile                    |    2 +
+>  security/keys/big_key.c                   |  204 ++++
+>  security/keys/compat.c                    |    3 +
+>  security/keys/gc.c                        |   33 +-
+>  security/keys/internal.h                  |   74 +-
+>  security/keys/key.c                       |   99 +-
+>  security/keys/keyctl.c                    |    3 +
+>  security/keys/keyring.c                   | 1485 ++++++++++++------------
+>  security/keys/persistent.c                |  169 +++
+>  security/keys/proc.c                      |   17 +-
+>  security/keys/process_keys.c              |  141 +--
+>  security/keys/request_key.c               |   56 +-
+>  security/keys/request_key_auth.c          |   31 +-
+>  security/keys/sysctl.c                    |   11 +
+>  security/keys/user_defined.c              |   18 +-
+>  50 files changed, 4593 insertions(+), 1224 deletions(-)
+>  create mode 100644 Documentation/assoc_array.txt
+>  create mode 100644 include/keys/big_key-type.h
+>  create mode 100644 include/keys/system_keyring.h
+>  create mode 100644 include/linux/assoc_array.h
+>  create mode 100644 include/linux/assoc_array_priv.h
+>  delete mode 100644 kernel/modsign_certificate.S
+>  delete mode 100644 kernel/modsign_pubkey.c
+>  create mode 100644 kernel/system_certificates.S
+>  create mode 100644 kernel/system_keyring.c
+>  create mode 100644 lib/assoc_array.c
+>  create mode 100644 security/keys/big_key.c
+>  create mode 100644 security/keys/persistent.c
+> 
 
-Linus,
-
-Could you please add Stephen Acked-by when taking the patches and also George
-Cherian Tested-by that sent for this RFC. George it would be great if you can
-also comment on which OMAP platform you had tested.
-
-I cc'ed Aaro Koskinen and Paul Walmsley now which seems to have OMAP1 platforms
-to test. Could you please test [1] and [2] on a OMAP1 board? These patches
-solves a long standing issue we have on OMAP2+ when booting with DT and it would
-be great if you can check that it does not cause regressions on OMAP1 based boards.
-
-Thanks a lot and best regards,
-Javier
-
-[1]: https://patchwork.kernel.org/patch/2937351/
-[2]: https://patchwork.kernel.org/patch/2937371/
+-- 
+James Morris
+<jmorris@namei.org>
