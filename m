@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3I0IMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:12:14 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:55983 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab3I0IME (ORCPT
+	id S1753421Ab3I0IMq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:12:46 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64633 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab3I0IMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:12:04 -0400
-Date: Fri, 27 Sep 2013 09:11:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/2] max77693: added device tree support
-Message-ID: <20130927081155.GA9048@lee--X1>
-References: <20130927071744.GA5100@lee--X1>
- <1380266866-32103-1-git-send-email-a.hajda@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1380266866-32103-1-git-send-email-a.hajda@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Sep 2013 04:12:42 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Jiang Liu <liuj97@gmail.com>
+Subject: [RFT PATCH v1 7/7] arm64: disable lazy load if FPSIMD registers are frequently used
+Date: Fri, 27 Sep 2013 16:04:47 +0800
+Message-Id: <1380269087-8520-8-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
+References: <1380269087-8520-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep 2013, Andrzej Hajda wrote:
+From: Jiang Liu <jiang.liu@huawei.com>
 
-> This patch adds only of_match_table.
-> There are no device specific properties.
-> 
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> Hi,
-> 
-> Spaces added.
-> 
-> Regards
-> Andrzej
-> ---
->  drivers/mfd/max77693.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+Disable lazy load if FPSIMD registers are frequently used by the thread,
+so we can reduce overhead of lazy FPSIMD restore for FPU extensive
+applications. The thresholds are randomly chosen without thorough
+benchmarks, we may need to tune it for really systems.
 
-Applied, thanks.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+---
+ arch/arm64/include/asm/fpsimd.h | 1 +
+ arch/arm64/kernel/fpsimd.c      | 9 +++++++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm64/include/asm/fpsimd.h b/arch/arm64/include/asm/fpsimd.h
+index 3490935..de6e877 100644
+--- a/arch/arm64/include/asm/fpsimd.h
++++ b/arch/arm64/include/asm/fpsimd.h
+@@ -37,6 +37,7 @@ struct fpsimd_state {
+ 			u32 fpcr;
+ 			bool on_hw;	/* soft state: whether loaded onto hw */
+ 			int last_cpu;
++			int fpu_counter;
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+index a81af5f..03e96b8 100644
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -107,7 +107,7 @@ static void fpsimd_load_state_lazy(struct fpsimd_state *state,
+ 	    __this_cpu_read(fpsimd_owner) == state)
+ 		return;
+ 
+-	if (static_key_false(&fpsimd_lazy_mode)) {
++	if (state->fpu_counter < 5 && static_key_false(&fpsimd_lazy_mode)) {
+ 		fpsimd_clear_on_hw(state);
+ 		fpsimd_enable_trap();
+ 	} else if (tsk_used_math(tsk)) {
+@@ -124,8 +124,11 @@ static void fpsimd_save_state_lazy(struct fpsimd_state *state)
+ 		return;
+ 
+ 	if (static_key_false(&fpsimd_lazy_mode)) {
+-		if (!fpsimd_is_on_hw(state))
++		if (!fpsimd_is_on_hw(state)) {
++			state->fpu_counter = clamp(state->fpu_counter - 1,
++						   0, 10);
+ 			return;
++		}
+ 	}
+ 
+ 	fpsimd_save_state(state);
+@@ -144,6 +147,7 @@ void do_fpsimd_acc(unsigned int esr, struct pt_regs *regs)
+ 	fpsimd_load_state(state);
+ 	if (static_key_false(&fpsimd_lazy_mode)) {
+ 		fpsimd_set_on_hw(state);
++		state->fpu_counter++;
+ 		if (!used_math())
+ 			set_used_math();
+ 	} else {
+@@ -213,6 +217,7 @@ void fpsimd_dup_state(struct fpsimd_state *src, struct fpsimd_state *dst)
+ 		preempt_disable();
+ 		if (fpsimd_is_on_hw(src))
+ 			fpsimd_save_state(dst);
++		dst->fpu_counter = 0;
+ 		fpsimd_clear_on_hw(dst);
+ 		preempt_enable();
+ 	} else if (used_math()) {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1.2
+
