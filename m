@@ -1,200 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab3I0Ulh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 16:41:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34263 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab3I0Ulf (ORCPT
+	id S1754632Ab3I0Um7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 16:42:59 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59869 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab3I0Um4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 16:41:35 -0400
-Date: Fri, 27 Sep 2013 22:41:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130927204116.GJ15690@laptop.programming.kicks-ass.net>
-References: <20130924202423.GW12926@twins.programming.kicks-ass.net>
- <20130925155515.GA17447@redhat.com>
- <20130925174307.GA3220@laptop.programming.kicks-ass.net>
- <20130925175055.GA25914@redhat.com>
- <20130925184015.GC3657@laptop.programming.kicks-ass.net>
- <20130925212200.GA7959@linux.vnet.ibm.com>
- <20130926111042.GS3081@twins.programming.kicks-ass.net>
- <20130926165840.GA863@redhat.com>
- <20130926175016.GI3657@laptop.programming.kicks-ass.net>
- <20130927181532.GA8401@redhat.com>
+	Fri, 27 Sep 2013 16:42:56 -0400
+Date: Fri, 27 Sep 2013 13:42:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jean Delvare <khali@linux-fr.org>,
+        Jonathan Cameron <jic23@kernel.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Subject: Re: [PATCH 1/3] spi: Add a spi_w8r16be() helper
+Message-ID: <20130927204251.GA30199@roeck-us.net>
+References: <1380292469-17347-1-git-send-email-lars@metafoo.de>
+ <20130927183456.GM19304@sirena.org.uk>
+ <5245D2A0.4090909@metafoo.de>
+ <20130927192233.GN19304@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130927181532.GA8401@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130927192233.GN19304@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 08:15:32PM +0200, Oleg Nesterov wrote:
-> On 09/26, Peter Zijlstra wrote:
-> >
-> > But if the readers does see BLOCK it will not be an active reader no
-> > more; and thus the writer doesn't need to observe and wait for it.
+On Fri, Sep 27, 2013 at 08:22:33PM +0100, Mark Brown wrote:
+> On Fri, Sep 27, 2013 at 08:46:56PM +0200, Lars-Peter Clausen wrote:
 > 
-> I meant they both can block, but please ignore. Today I simply can't
-> understand what I was thinking about yesterday.
-
-I think we all know that state all too well ;-)
-
-> I tried hard to find any hole in this version but failed, I believe it
-> is correct.
-
-Yay!
-
-> But, could you help me to understand some details?
-
-I'll try, but I'm not too bright atm myself :-)
-
-> > +void __get_online_cpus(void)
-> > +{
-> > +again:
-> > +	/* See __srcu_read_lock() */
-> > +	__this_cpu_inc(__cpuhp_refcount);
-> > +	smp_mb(); /* A matches B, E */
-> > +	__this_cpu_inc(cpuhp_seq);
-> > +
-> > +	if (unlikely(__cpuhp_state == readers_block)) {
+> > According to the documentation of spi_w8r16() it is a feature.
 > 
-> Note that there is no barrier() after inc(seq) and __cpuhp_state
-> check, this inc() can be "postponed" till ...
+> > 	* The number is returned in wire-order, which is at least sometimes
+> >  	* big-endian.
 > 
-> > +void __put_online_cpus(void)
-> >  {
-> > +	/* See __srcu_read_unlock() */
-> > +	smp_mb(); /* C matches D */
+> Indeed.  I don't think that's terribly well thought through though,
+> especially not now we have annotations for endianness (as you noticed!).
 > 
-> ... this mb() in __put_online_cpus().
+> > There seem to be at least two users though which assume that the result is
+> > in native endianness drivers/hwmon/ads7871.c and drivers/mfd/stmpe-spi.c
 > 
-> And this is fine! The qustion is, perhaps it would be more "natural"
-> and understandable to shift this_cpu_inc(cpuhp_seq) into
-> __put_online_cpus().
-
-Possibly; I never got further than that the required order is:
-
-  ref++
-  MB
-  seq++
-  MB
-  ref--
-
-It doesn't matter if the seq++ is in the lock or unlock primitive. I
-never considered one place more natural than the other.
-
-> We need to ensure 2 things:
+> Yeah, I saw.  The ads7871 is just going to break when run on the
+> opposite endianness to the one it was (hopefully) tested on since it
+> doesn't make any effort I saw to cope with endianness.  Looking at the
+> history it's not terribly obvious which that was but it'd be surprising
+> to see a little endian register...
 > 
-> 1. The reader should notic state = BLOCK or the writer should see
->    inc(__cpuhp_refcount). This is guaranteed by 2 mb's in
->    __get_online_cpus() and in cpu_hotplug_begin().
-> 
->    We do not care if the writer misses some inc(__cpuhp_refcount)
->    in per_cpu_sum(__cpuhp_refcount), that reader(s) should notice
->    state = readers_block (and inc(cpuhp_seq) can't help anyway).
+It might make sense to convert the ads7871 driver to an iio driver;
+it doesn't look like the chip is commonly used for hardware monitoring.
 
-Agreed.
+At least if someone finds the time to do it ;).
 
-> 2. If the writer sees the result of this_cpu_dec(__cpuhp_refcount)
->    from __put_online_cpus() (note that the writer can miss the
->    corresponding inc() if it was done on another CPU, so this dec()
->    can lead to sum() == 0), it should also notice the change in cpuhp_seq.
-> 
->    Fortunately, this can only happen if the reader migrates, in
->    this case schedule() provides a barrier, the writer can't miss
->    the change in cpuhp_seq.
-
-Again, agreed; this is also the message of the second comment in
-cpuhp_readers_active_check() by Paul.
-
-> IOW. Unless I missed something, cpuhp_seq is actually needed to
-> serialize __put_online_cpus()->this_cpu_dec(__cpuhp_refcount) and
-> and /* D matches C */ in cpuhp_readers_active_check(), and this
-> is not immediately clear if you look at __get_online_cpus().
-> 
-> I do not suggest to change this code, but please tell me if my
-> understanding is not correct.
-
-I think you're entirely right.
-
-> > +static bool cpuhp_readers_active_check(void)
-> >  {
-> > +	unsigned int seq = per_cpu_sum(cpuhp_seq);
-> > +
-> > +	smp_mb(); /* B matches A */
-> > +
-> > +	/*
-> > +	 * In other words, if we see __get_online_cpus() cpuhp_seq increment,
-> > +	 * we are guaranteed to also see its __cpuhp_refcount increment.
-> > +	 */
-> >  
-> > +	if (per_cpu_sum(__cpuhp_refcount) != 0)
-> > +		return false;
-> >  
-> > +	smp_mb(); /* D matches C */
-> 
-> It seems that both barries could be smp_rmb() ? I am not sure the comments
-> from srcu_readers_active_idx_check() can explain mb(), note that
-> __srcu_read_lock() always succeeds unlike get_cpus_online().
-
-I see what you mean; cpuhp_readers_active_check() is all purely reads;
-there are no writes to order.
-
-Paul; is there any argument for the MB here as opposed to RMB; and if
-not should we change both these and SRCU?
-
-> >  void cpu_hotplug_done(void)
-> >  {
-> > +	/* Signal the writer is done, no fast path yet. */
-> > +	__cpuhp_state = readers_slow;
-> > +	wake_up_all(&cpuhp_readers);
-> > +
-> > +	/*
-> > +	 * The wait_event()/wake_up_all() prevents the race where the readers
-> > +	 * are delayed between fetching __cpuhp_state and blocking.
-> > +	 */
-> > +
-> > +	/* See percpu_up_write(); readers will no longer attempt to block. */
-> > +	synchronize_sched();
-> > +
-> > +	/* Let 'em rip */
-> > +	__cpuhp_state = readers_fast;
-> > +	current->cpuhp_ref--;
-> > +
-> > +	/*
-> > +	 * Wait for any pending readers to be running. This ensures readers
-> > +	 * after writer and avoids writers starving readers.
-> > +	 */
-> > +	wait_event(cpuhp_writer, !atomic_read(&cpuhp_waitcount));
-> >  }
-> 
-> OK, to some degree I can understand "avoids writers starving readers"
-> part (although the next writer should do synchronize_sched() first),
-> but could you explain "ensures readers after writer" ?
-
-Suppose reader A sees state == BLOCK and goes to sleep; our writer B
-does cpu_hotplug_done() and wakes all pending readers. If for some
-reason A doesn't schedule to inc ref until B again executes
-cpu_hotplug_begin() and state is once again BLOCK, A will not have made
-any progress.
-
-The waitcount increment before __put_online_cpus() ensures
-cpu_hotplug_done() sees the !0 waitcount and waits until out reader runs
-far enough to at least pass the dec_and_test().
-
-And once past the dec_and_test() preemption is disabled and the
-sched_sync() in a new cpu_hotplug_begin() will suffice to guarantee
-we'll have acquired a reference and are an active reader.
-
-
+Guenter
