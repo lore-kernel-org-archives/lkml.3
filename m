@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384Ab3I0Fkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 01:40:39 -0400
-Received: from nm36.bullet.mail.bf1.yahoo.com ([72.30.239.5]:20113 "EHLO
-	nm36.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750789Ab3I0Fkh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 01:40:37 -0400
-X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Sep 2013 01:40:37 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 710036.85438.bm@omp1054.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=rocketmail.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=VCVsZKrnx77+VTuON8roXa6IG3roGKHIYs0HMEsNf6XS4tefvakMV+XuwzNXioThBRbEhPl3jhTcEO6IC3uTFPngU0EdnOJeMgnbe7riYU4htV7cML/znvirKt9CWWyCfy2iLIRbQSOMQdRw6s3ttR8IMbL67eXIcBSowqP+iig=;
-X-YMail-OSG: 0KTN6EQVM1kiaBj6K4y3gipDOo1GJsQD2jkfqyTJXF4qlEu
- PXv5CV6_8gjgSkja88N9z
-X-Rocket-MIMEInfo: 002.001,DQpEZWFyIEZyaWVuZCwNCkdyZWV0aW5ncyB0byB5b3UgYW5kIHlvdXIgZmFtaWx5Lg0KTXkgbmFtZSBpcyBNciBNaWNoZWFsIEFtYmFsaSwgdGhlIGN1cnJlbnQgQ2hpZWYgQXVkaXRvciBvZiBhIGZvcm1pZGFibGUgYmFuayBoZXJlIGluIE91YWdhZG91Z291LCBCdXJraW5hIEZhc28sIFdlc3QgQWZyaWNhLiBJIGhhdmUgYSB0cmFuc2FjdGlvbiB3b3J0aCBvZiAxMi41IE1pbGxpb24gVS5TIGRvbGxhcnMgZm9yIHRyYW5zZmVycmluZyBpbnRvIHlvdXIgY2FyZSBmb3Igb3VyIG11dHVhbCBiZW5lZml0cywgc28BMAEBAQE-
-X-RocketYMMF: gabrielcompaore@rocketmail.com
-X-Mailer: YahooMailClassic/336 YahooMailWebService/0.8.160.587
-Message-ID: <1380260088.3000.YahooMailBasic@web140406.mail.bf1.yahoo.com>
-Date: Thu, 26 Sep 2013 22:34:48 -0700 (PDT)
-From: mrmicheal@voila.fr
-Reply-To: mrmicheal@voila.fr
-Subject: FROM Mr Micheal Ambali
-To: undisclosed recipients:;
+	id S1751753Ab3I0Fll (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 01:41:41 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751050Ab3I0Flj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 01:41:39 -0400
+Message-ID: <52451A8D.4080509@nod.at>
+Date: Fri, 27 Sep 2013 07:41:33 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Michal Marek <mmarek@suse.cz>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 1/2] arch/um: make it work with defconfig and x86_64
+References: <1380255287-5818-1-git-send-email-artagnon@gmail.com> <1380255287-5818-2-git-send-email-artagnon@gmail.com>
+In-Reply-To: <1380255287-5818-2-git-send-email-artagnon@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 27.09.2013 06:14, schrieb Ramkumar Ramachandra:
+> arch/um/defconfig only lists one default configuration, and that applies
+> only to the i386 architecture.  Replace it with two minimal
+> configuration files generated using `make savedefconfig`:
+> 
+>   i386_defconfig and x86_64_defconfig
+> 
+> The build scripts now require two updates:
+> 
+> 1. um's Kconfig (arch/x86/um/Kconfig) should specify an ARCH_DEFCONFIG
+>    section explicitly pointing to these scripts if the required
+>    variables are set.  Take care to remove the DEFCONFIG_LIST section
+>    defined in the included file arch/um/Kconfig.common.
+> 
+> 2. um's Makefile (arch/um/Makefile) should set KBUILD_DEFCONFIG properly
+>    for the top-level Makefile to pick up.  Copy the logic in
+>    arch/x86/Makefile to properly pick the defconfig file depending on
+>    the actual architecture; except we're working with $SUBARCH here,
+>    instead of $ARCH.
+> 
+> Now, you can do:
+> 
+>   $ ARCH=um make defconfig
+>   $ ARCH=um make
+> 
+> and successfully build User-Mode Linux on an x86_64 box in default
+> configuration.
 
-Dear Friend,
-Greetings to you and your family.
-My name is Mr Micheal Ambali, the current Chief Auditor of a formidable bank here in Ouagadougou, Burkina Faso, West Africa. I have a transaction worth of 12.5 Million U.S dollars for transferring into your care for our mutual benefits, so  i need your assistance with 100% cooperation to realise this task. 
+I don't much like the commit message, but I will amend it myself.
+I.e. defconfig worked always on x86_64, you have to specify SUBARCH=x86_64.
+Your patch adds the handy feature that make defconfig will use the host arch
+automatically.
 
-Further details about the fund, its source and the administrative procedure to transfer this fund into your receiving bank account shall be made known to you immediately as I have your positive response.
- 
-Thanks and Regards,
- 
-FROM Mr Micheal Ambali.
+Patch queued for 3.13-rc1.
 
+Thanks,
+//richard
