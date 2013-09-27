@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab3I0NSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:18:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26519 "EHLO mga14.intel.com"
+	id S1753515Ab3I0NSv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:18:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3272 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab3I0NQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:16:50 -0400
+	id S1752072Ab3I0NQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:16:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,992,1371106800"; 
-   d="scan'208";a="300125601"
+   d="scan'208";a="366437285"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -30,9 +30,9 @@ Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 07/10] mm, hugetlb: convert hugetlbfs to use split pmd lock
-Date: Fri, 27 Sep 2013 16:16:24 +0300
-Message-Id: <1380287787-30252-8-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 02/10] mm: convert mm->nr_ptes to atomic_t
+Date: Fri, 27 Sep 2013 16:16:19 +0300
+Message-Id: <1380287787-30252-3-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -40,566 +40,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugetlb supports multiple page sizes. We use split lock only for PMD
-level, but not for PUD.
+With split page table lock for PMD level we can't hold
+mm->page_table_lock while updating nr_ptes.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Let's convert it to atomic_t to avoid races.
+
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Tested-by: Alex Thorlton <athorlton@sgi.com>
 ---
- fs/proc/meminfo.c       |   2 +-
- include/linux/hugetlb.h |  25 +++++++++++
- include/linux/swapops.h |   7 ++--
- mm/hugetlb.c            | 108 +++++++++++++++++++++++++++++-------------------
- mm/mempolicy.c          |   5 ++-
- mm/migrate.c            |   7 ++--
- mm/rmap.c               |   2 +-
- 7 files changed, 103 insertions(+), 53 deletions(-)
+ fs/proc/task_mmu.c       |  3 ++-
+ include/linux/mm_types.h |  2 +-
+ kernel/fork.c            |  2 +-
+ mm/huge_memory.c         | 10 +++++-----
+ mm/memory.c              |  4 ++--
+ mm/mmap.c                |  3 ++-
+ mm/oom_kill.c            |  6 +++---
+ 7 files changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 59d85d6088..6d061f5359 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -1,8 +1,8 @@
- #include <linux/fs.h>
--#include <linux/hugetlb.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
-+#include <linux/hugetlb.h>
- #include <linux/mman.h>
- #include <linux/mmzone.h>
- #include <linux/proc_fs.h>
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 0393270466..2132532b02 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -392,6 +392,15 @@ static inline int hugepage_migration_support(struct hstate *h)
- 	return pmd_huge_support() && (huge_page_shift(h) == PMD_SHIFT);
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 7366e9d63c..c52c597fbf 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -62,7 +62,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 		total_rss << (PAGE_SHIFT-10),
+ 		data << (PAGE_SHIFT-10),
+ 		mm->stack_vm << (PAGE_SHIFT-10), text, lib,
+-		(PTRS_PER_PTE*sizeof(pte_t)*mm->nr_ptes) >> 10,
++		(unsigned long) (PTRS_PER_PTE * sizeof(pte_t) *
++				atomic_read(&mm->nr_ptes)) >> 10,
+ 		swap << (PAGE_SHIFT-10));
  }
  
-+static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-+               struct mm_struct *mm, pte_t *pte)
-+{
-+       if (huge_page_size(h) == PMD_SIZE)
-+               return pmd_lockptr(mm, (pmd_t *) pte);
-+       VM_BUG_ON(huge_page_size(h) == PAGE_SIZE);
-+       return &mm->page_table_lock;
-+}
-+
- #else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -401,6 +410,7 @@ struct hstate {};
- #define hstate_sizelog(s) NULL
- #define hstate_vma(v) NULL
- #define hstate_inode(i) NULL
-+#define page_hstate(page) NULL
- #define huge_page_size(h) PAGE_SIZE
- #define huge_page_mask(h) PAGE_MASK
- #define vma_kernel_pagesize(v) PAGE_SIZE
-@@ -421,6 +431,21 @@ static inline pgoff_t basepage_index(struct page *page)
- #define dissolve_free_huge_pages(s, e)	do {} while (0)
- #define pmd_huge_support()	0
- #define hugepage_migration_support(h)	0
-+
-+static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-+               struct mm_struct *mm, pte_t *pte)
-+{
-+       return &mm->page_table_lock;
-+}
- #endif	/* CONFIG_HUGETLB_PAGE */
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 84e0c56e1e..99f19e850d 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -339,6 +339,7 @@ struct mm_struct {
+ 	pgd_t * pgd;
+ 	atomic_t mm_users;			/* How many users with user space? */
+ 	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
++	atomic_t nr_ptes;			/* Page table pages */
+ 	int map_count;				/* number of VMAs */
  
-+static inline spinlock_t *huge_pte_lock(struct hstate *h,
-+               struct mm_struct *mm, pte_t *pte)
-+{
-+       spinlock_t *ptl;
-+       ptl = huge_pte_lockptr(h, mm, pte);
-+       spin_lock(ptl);
-+       return ptl;
-+}
-+
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/include/linux/swapops.h b/include/linux/swapops.h
-index 8d4fa82bfb..c0f75261a7 100644
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -139,7 +139,8 @@ static inline void make_migration_entry_read(swp_entry_t *entry)
- 
- extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					unsigned long address);
--extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
-+extern void migration_entry_wait_huge(struct vm_area_struct *vma,
-+		struct mm_struct *mm, pte_t *pte);
- #else
- 
- #define make_migration_entry(page, write) swp_entry(0, 0)
-@@ -151,8 +152,8 @@ static inline int is_migration_entry(swp_entry_t swp)
- static inline void make_migration_entry_read(swp_entry_t *entryp) { }
- static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 					 unsigned long address) { }
--static inline void migration_entry_wait_huge(struct mm_struct *mm,
--					pte_t *pte) { }
-+static inline void migration_entry_wait_huge(struct vm_area_struct *vma,
-+		struct mm_struct *mm, pte_t *pte) { }
- static inline int is_write_migration_entry(swp_entry_t entry)
- {
- 	return 0;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index b49579c7f2..1c13a6f8d8 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2361,6 +2361,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 	cow = (vma->vm_flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
- 
- 	for (addr = vma->vm_start; addr < vma->vm_end; addr += sz) {
-+		spinlock_t *src_ptl, *dst_ptl;
- 		src_pte = huge_pte_offset(src, addr);
- 		if (!src_pte)
- 			continue;
-@@ -2372,8 +2373,9 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 		if (dst_pte == src_pte)
- 			continue;
- 
--		spin_lock(&dst->page_table_lock);
--		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
-+		dst_ptl = huge_pte_lock(h, dst, dst_pte);
-+		src_ptl = huge_pte_lockptr(h, src, src_pte);
-+		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
- 		if (!huge_pte_none(huge_ptep_get(src_pte))) {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
-@@ -2383,8 +2385,8 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 			page_dup_rmap(ptepage);
- 			set_huge_pte_at(dst, addr, dst_pte, entry);
- 		}
--		spin_unlock(&src->page_table_lock);
--		spin_unlock(&dst->page_table_lock);
-+		spin_unlock(src_ptl);
-+		spin_unlock(dst_ptl);
- 	}
- 	return 0;
- 
-@@ -2427,6 +2429,7 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 	unsigned long address;
- 	pte_t *ptep;
- 	pte_t pte;
-+	spinlock_t *ptl;
- 	struct page *page;
- 	struct hstate *h = hstate_vma(vma);
- 	unsigned long sz = huge_page_size(h);
-@@ -2440,25 +2443,25 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 	tlb_start_vma(tlb, vma);
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
- again:
--	spin_lock(&mm->page_table_lock);
- 	for (address = start; address < end; address += sz) {
- 		ptep = huge_pte_offset(mm, address);
- 		if (!ptep)
- 			continue;
- 
-+		ptl = huge_pte_lock(h, mm, ptep);
- 		if (huge_pmd_unshare(mm, &address, ptep))
--			continue;
-+			goto unlock;
- 
- 		pte = huge_ptep_get(ptep);
- 		if (huge_pte_none(pte))
--			continue;
-+			goto unlock;
- 
- 		/*
- 		 * HWPoisoned hugepage is already unmapped and dropped reference
- 		 */
- 		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
- 			huge_pte_clear(mm, address, ptep);
--			continue;
-+			goto unlock;
- 		}
- 
- 		page = pte_page(pte);
-@@ -2469,7 +2472,7 @@ again:
- 		 */
- 		if (ref_page) {
- 			if (page != ref_page)
--				continue;
-+				goto unlock;
- 
- 			/*
- 			 * Mark the VMA as having unmapped its page so that
-@@ -2486,13 +2489,18 @@ again:
- 
- 		page_remove_rmap(page);
- 		force_flush = !__tlb_remove_page(tlb, page);
--		if (force_flush)
-+		if (force_flush) {
-+			spin_unlock(ptl);
- 			break;
-+		}
- 		/* Bail out after unmapping reference page if supplied */
--		if (ref_page)
-+		if (ref_page) {
-+			spin_unlock(ptl);
- 			break;
-+		}
-+unlock:
-+		spin_unlock(ptl);
- 	}
--	spin_unlock(&mm->page_table_lock);
- 	/*
- 	 * mmu_gather ran out of room to batch pages, we break out of
- 	 * the PTE lock to avoid doing the potential expensive TLB invalidate
-@@ -2598,7 +2606,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
-  */
- static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pte_t pte,
--			struct page *pagecache_page)
-+			struct page *pagecache_page, spinlock_t *ptl)
- {
- 	struct hstate *h = hstate_vma(vma);
- 	struct page *old_page, *new_page;
-@@ -2632,8 +2640,8 @@ retry_avoidcopy:
- 
- 	page_cache_get(old_page);
- 
--	/* Drop page_table_lock as buddy allocator may be called */
--	spin_unlock(&mm->page_table_lock);
-+	/* Drop page table lock as buddy allocator may be called */
-+	spin_unlock(ptl);
- 	new_page = alloc_huge_page(vma, address, outside_reserve);
- 
- 	if (IS_ERR(new_page)) {
-@@ -2651,12 +2659,12 @@ retry_avoidcopy:
- 			BUG_ON(huge_pte_none(pte));
- 			if (unmap_ref_private(mm, vma, old_page, address)) {
- 				BUG_ON(huge_pte_none(pte));
--				spin_lock(&mm->page_table_lock);
-+				spin_lock(ptl);
- 				ptep = huge_pte_offset(mm, address & huge_page_mask(h));
- 				if (likely(pte_same(huge_ptep_get(ptep), pte)))
- 					goto retry_avoidcopy;
- 				/*
--				 * race occurs while re-acquiring page_table_lock, and
-+				 * race occurs while re-acquiring page table lock, and
- 				 * our job is done.
- 				 */
- 				return 0;
-@@ -2665,7 +2673,7 @@ retry_avoidcopy:
- 		}
- 
- 		/* Caller expects lock to be held */
--		spin_lock(&mm->page_table_lock);
-+		spin_lock(ptl);
- 		if (err == -ENOMEM)
- 			return VM_FAULT_OOM;
- 		else
-@@ -2680,7 +2688,7 @@ retry_avoidcopy:
- 		page_cache_release(new_page);
- 		page_cache_release(old_page);
- 		/* Caller expects lock to be held */
--		spin_lock(&mm->page_table_lock);
-+		spin_lock(ptl);
- 		return VM_FAULT_OOM;
+ 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
+@@ -360,7 +361,6 @@ struct mm_struct {
+ 	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
+ 	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
+ 	unsigned long def_flags;
+-	unsigned long nr_ptes;		/* Page table pages */
+ 	unsigned long start_code, end_code, start_data, end_data;
+ 	unsigned long start_brk, brk, start_stack;
+ 	unsigned long arg_start, arg_end, env_start, env_end;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 086fe73ad6..afe70530db 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -532,7 +532,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	mm->flags = (current->mm) ?
+ 		(current->mm->flags & MMF_INIT_MASK) : default_dump_filter;
+ 	mm->core_state = NULL;
+-	mm->nr_ptes = 0;
++	atomic_set(&mm->nr_ptes, 0);
+ 	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+ 	spin_lock_init(&mm->page_table_lock);
+ 	mm_init_aio(mm);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7489884682..bbd41a2f49 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -737,7 +737,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		pgtable_trans_huge_deposit(mm, pmd, pgtable);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
+-		mm->nr_ptes++;
++		atomic_inc(&mm->nr_ptes);
+ 		spin_unlock(&mm->page_table_lock);
  	}
  
-@@ -2692,10 +2700,10 @@ retry_avoidcopy:
- 	mmun_end = mmun_start + huge_page_size(h);
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
- 	/*
--	 * Retake the page_table_lock to check for racing updates
-+	 * Retake the page table lock to check for racing updates
- 	 * before the page tables are altered
+@@ -778,7 +778,7 @@ static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+ 	entry = pmd_mkhuge(entry);
+ 	pgtable_trans_huge_deposit(mm, pmd, pgtable);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+-	mm->nr_ptes++;
++	atomic_inc(&mm->nr_ptes);
+ 	return true;
+ }
+ 
+@@ -903,7 +903,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	pmd = pmd_mkold(pmd_wrprotect(pmd));
+ 	pgtable_trans_huge_deposit(dst_mm, dst_pmd, pgtable);
+ 	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
+-	dst_mm->nr_ptes++;
++	atomic_inc(&dst_mm->nr_ptes);
+ 
+ 	ret = 0;
+ out_unlock:
+@@ -1358,7 +1358,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+ 		pgtable = pgtable_trans_huge_withdraw(tlb->mm, pmd);
+ 		if (is_huge_zero_pmd(orig_pmd)) {
+-			tlb->mm->nr_ptes--;
++			atomic_dec(&tlb->mm->nr_ptes);
+ 			spin_unlock(&tlb->mm->page_table_lock);
+ 			put_huge_zero_page();
+ 		} else {
+@@ -1367,7 +1367,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			VM_BUG_ON(page_mapcount(page) < 0);
+ 			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+ 			VM_BUG_ON(!PageHead(page));
+-			tlb->mm->nr_ptes--;
++			atomic_dec(&tlb->mm->nr_ptes);
+ 			spin_unlock(&tlb->mm->page_table_lock);
+ 			tlb_remove_page(tlb, page);
+ 		}
+diff --git a/mm/memory.c b/mm/memory.c
+index ca00039471..1046396adf 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -382,7 +382,7 @@ static void free_pte_range(struct mmu_gather *tlb, pmd_t *pmd,
+ 	pgtable_t token = pmd_pgtable(*pmd);
+ 	pmd_clear(pmd);
+ 	pte_free_tlb(tlb, token, addr);
+-	tlb->mm->nr_ptes--;
++	atomic_dec(&tlb->mm->nr_ptes);
+ }
+ 
+ static inline void free_pmd_range(struct mmu_gather *tlb, pud_t *pud,
+@@ -575,7 +575,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	spin_lock(&mm->page_table_lock);
+ 	wait_split_huge_page = 0;
+ 	if (likely(pmd_none(*pmd))) {	/* Has another populated it ? */
+-		mm->nr_ptes++;
++		atomic_inc(&mm->nr_ptes);
+ 		pmd_populate(mm, pmd, new);
+ 		new = NULL;
+ 	} else if (unlikely(pmd_trans_splitting(*pmd)))
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 9d548512ff..1d0efbc974 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2726,7 +2726,8 @@ void exit_mmap(struct mm_struct *mm)
+ 	}
+ 	vm_unacct_memory(nr_accounted);
+ 
+-	WARN_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
++	WARN_ON(atomic_read(&mm->nr_ptes) >
++			(FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
+ }
+ 
+ /* Insert vm structure into process list sorted by address
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 314e9d2743..7ab394e811 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -161,7 +161,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	 * The baseline for the badness score is the proportion of RAM that each
+ 	 * task's rss, pagetable and swap space use.
  	 */
--	spin_lock(&mm->page_table_lock);
-+	spin_lock(ptl);
- 	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
- 	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
- 		ClearPagePrivate(new_page);
-@@ -2709,13 +2717,13 @@ retry_avoidcopy:
- 		/* Make the old page be freed below */
- 		new_page = old_page;
- 	}
--	spin_unlock(&mm->page_table_lock);
-+	spin_unlock(ptl);
- 	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
- 	page_cache_release(new_page);
- 	page_cache_release(old_page);
+-	points = get_mm_rss(p->mm) + p->mm->nr_ptes +
++	points = get_mm_rss(p->mm) + atomic_read(&p->mm->nr_ptes) +
+ 		 get_mm_counter(p->mm, MM_SWAPENTS);
+ 	task_unlock(p);
  
- 	/* Caller expects lock to be held */
--	spin_lock(&mm->page_table_lock);
-+	spin_lock(ptl);
- 	return 0;
- }
- 
-@@ -2763,6 +2771,7 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct page *page;
- 	struct address_space *mapping;
- 	pte_t new_pte;
-+	spinlock_t *ptl;
- 
- 	/*
- 	 * Currently, we are forced to kill the process in the event the
-@@ -2849,7 +2858,8 @@ retry:
- 			goto backout_unlocked;
- 		}
- 
--	spin_lock(&mm->page_table_lock);
-+	ptl = huge_pte_lockptr(h, mm, ptep);
-+	spin_lock(ptl);
- 	size = i_size_read(mapping->host) >> huge_page_shift(h);
- 	if (idx >= size)
- 		goto backout;
-@@ -2870,16 +2880,16 @@ retry:
- 
- 	if ((flags & FAULT_FLAG_WRITE) && !(vma->vm_flags & VM_SHARED)) {
- 		/* Optimization, do the COW without a second fault */
--		ret = hugetlb_cow(mm, vma, address, ptep, new_pte, page);
-+		ret = hugetlb_cow(mm, vma, address, ptep, new_pte, page, ptl);
- 	}
- 
--	spin_unlock(&mm->page_table_lock);
-+	spin_unlock(ptl);
- 	unlock_page(page);
- out:
- 	return ret;
- 
- backout:
--	spin_unlock(&mm->page_table_lock);
-+	spin_unlock(ptl);
- backout_unlocked:
- 	unlock_page(page);
- 	put_page(page);
-@@ -2891,6 +2901,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	pte_t *ptep;
- 	pte_t entry;
-+	spinlock_t *ptl;
- 	int ret;
- 	struct page *page = NULL;
- 	struct page *pagecache_page = NULL;
-@@ -2903,7 +2914,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (ptep) {
- 		entry = huge_ptep_get(ptep);
- 		if (unlikely(is_hugetlb_entry_migration(entry))) {
--			migration_entry_wait_huge(mm, ptep);
-+			migration_entry_wait_huge(vma, mm, ptep);
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
-@@ -2959,17 +2970,18 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (page != pagecache_page)
- 		lock_page(page);
- 
--	spin_lock(&mm->page_table_lock);
-+	ptl = huge_pte_lockptr(h, mm, ptep);
-+	spin_lock(ptl);
- 	/* Check for a racing update before calling hugetlb_cow */
- 	if (unlikely(!pte_same(entry, huge_ptep_get(ptep))))
--		goto out_page_table_lock;
-+		goto out_ptl;
- 
- 
- 	if (flags & FAULT_FLAG_WRITE) {
- 		if (!huge_pte_write(entry)) {
- 			ret = hugetlb_cow(mm, vma, address, ptep, entry,
--							pagecache_page);
--			goto out_page_table_lock;
-+					pagecache_page, ptl);
-+			goto out_ptl;
- 		}
- 		entry = huge_pte_mkdirty(entry);
- 	}
-@@ -2978,8 +2990,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 						flags & FAULT_FLAG_WRITE))
- 		update_mmu_cache(vma, address, ptep);
- 
--out_page_table_lock:
--	spin_unlock(&mm->page_table_lock);
-+out_ptl:
-+	spin_unlock(ptl);
- 
- 	if (pagecache_page) {
- 		unlock_page(pagecache_page);
-@@ -3005,9 +3017,9 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	unsigned long remainder = *nr_pages;
- 	struct hstate *h = hstate_vma(vma);
- 
--	spin_lock(&mm->page_table_lock);
- 	while (vaddr < vma->vm_end && remainder) {
- 		pte_t *pte;
-+		spinlock_t *ptl = NULL;
- 		int absent;
- 		struct page *page;
- 
-@@ -3015,8 +3027,12 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		 * Some archs (sparc64, sh*) have multiple pte_ts to
- 		 * each hugepage.  We have to make sure we get the
- 		 * first, for the page indexing below to work.
-+		 *
-+		 * Note that page table lock is not held when pte is null.
- 		 */
- 		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
-+		if (pte)
-+			ptl = huge_pte_lock(h, mm, pte);
- 		absent = !pte || huge_pte_none(huge_ptep_get(pte));
- 
- 		/*
-@@ -3028,6 +3044,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		 */
- 		if (absent && (flags & FOLL_DUMP) &&
- 		    !hugetlbfs_pagecache_present(h, vma, vaddr)) {
-+			if (pte)
-+				spin_unlock(ptl);
- 			remainder = 0;
- 			break;
- 		}
-@@ -3047,10 +3065,10 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		      !huge_pte_write(huge_ptep_get(pte)))) {
- 			int ret;
- 
--			spin_unlock(&mm->page_table_lock);
-+			if (pte)
-+				spin_unlock(ptl);
- 			ret = hugetlb_fault(mm, vma, vaddr,
- 				(flags & FOLL_WRITE) ? FAULT_FLAG_WRITE : 0);
--			spin_lock(&mm->page_table_lock);
- 			if (!(ret & VM_FAULT_ERROR))
- 				continue;
- 
-@@ -3081,8 +3099,8 @@ same_page:
- 			 */
- 			goto same_page;
- 		}
-+		spin_unlock(ptl);
- 	}
--	spin_unlock(&mm->page_table_lock);
- 	*nr_pages = remainder;
- 	*position = vaddr;
- 
-@@ -3103,13 +3121,15 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 	flush_cache_range(vma, address, end);
- 
- 	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
--	spin_lock(&mm->page_table_lock);
- 	for (; address < end; address += huge_page_size(h)) {
-+		spinlock_t *ptl;
- 		ptep = huge_pte_offset(mm, address);
- 		if (!ptep)
- 			continue;
-+		ptl = huge_pte_lock(h, mm, ptep);
- 		if (huge_pmd_unshare(mm, &address, ptep)) {
- 			pages++;
-+			spin_unlock(ptl);
+@@ -364,10 +364,10 @@ static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemas
  			continue;
  		}
- 		if (!huge_pte_none(huge_ptep_get(ptep))) {
-@@ -3119,8 +3139,8 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 			set_huge_pte_at(mm, address, ptep, pte);
- 			pages++;
- 		}
-+		spin_unlock(ptl);
- 	}
--	spin_unlock(&mm->page_table_lock);
- 	/*
- 	 * Must flush TLB before releasing i_mmap_mutex: x86's huge_pmd_unshare
- 	 * may have cleared our pud entry and done put_page on the page table:
-@@ -3283,6 +3303,7 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 	unsigned long saddr;
- 	pte_t *spte = NULL;
- 	pte_t *pte;
-+	spinlock_t *ptl;
  
- 	if (!vma_shareable(vma, addr))
- 		return (pte_t *)pmd_alloc(mm, pud, addr);
-@@ -3305,13 +3326,14 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 	if (!spte)
- 		goto out;
- 
--	spin_lock(&mm->page_table_lock);
-+	ptl = huge_pte_lockptr(hstate_vma(vma), mm, spte);
-+	spin_lock(ptl);
- 	if (pud_none(*pud))
- 		pud_populate(mm, pud,
- 				(pmd_t *)((unsigned long)spte & PAGE_MASK));
- 	else
- 		put_page(virt_to_page(spte));
--	spin_unlock(&mm->page_table_lock);
-+	spin_unlock(ptl);
- out:
- 	pte = (pte_t *)pmd_alloc(mm, pud, addr);
- 	mutex_unlock(&mapping->i_mmap_mutex);
-@@ -3325,7 +3347,7 @@ out:
-  * indicated by page_count > 1, unmap is achieved by clearing pud and
-  * decrementing the ref count. If count == 1, the pte page is not shared.
-  *
-- * called with vma->vm_mm->page_table_lock held.
-+ * called with page table lock held.
-  *
-  * returns: 1 successfully unmapped a shared pte page
-  *	    0 the underlying pte page is not shared, or it is the last user
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 04729647f3..930a3e64bd 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -525,8 +525,9 @@ static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
- #ifdef CONFIG_HUGETLB_PAGE
- 	int nid;
- 	struct page *page;
-+	spinlock_t *ptl;
- 
--	spin_lock(&vma->vm_mm->page_table_lock);
-+	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
- 	page = pte_page(huge_ptep_get((pte_t *)pmd));
- 	nid = page_to_nid(page);
- 	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-@@ -536,7 +537,7 @@ static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
- 	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
- 		isolate_huge_page(page, private);
- unlock:
--	spin_unlock(&vma->vm_mm->page_table_lock);
-+	spin_unlock(ptl);
- #else
- 	BUG();
- #endif
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 9c8d5f59d3..0ac0668a08 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -130,7 +130,7 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
- 		ptep = huge_pte_offset(mm, addr);
- 		if (!ptep)
- 			goto out;
--		ptl = &mm->page_table_lock;
-+		ptl = huge_pte_lockptr(hstate_vma(vma), mm, ptep);
- 	} else {
- 		pmd = mm_find_pmd(mm, addr);
- 		if (!pmd)
-@@ -247,9 +247,10 @@ void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 	__migration_entry_wait(mm, ptep, ptl);
- }
- 
--void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
-+void migration_entry_wait_huge(struct vm_area_struct *vma,
-+		struct mm_struct *mm, pte_t *pte)
- {
--	spinlock_t *ptl = &(mm)->page_table_lock;
-+	spinlock_t *ptl = huge_pte_lockptr(hstate_vma(vma), mm, pte);
- 	__migration_entry_wait(mm, pte, ptl);
- }
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index b59d741dcf..55c8b8dc9f 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -601,7 +601,7 @@ pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
- 
- 	if (unlikely(PageHuge(page))) {
- 		pte = huge_pte_offset(mm, address);
--		ptl = &mm->page_table_lock;
-+		ptl = huge_pte_lockptr(page_hstate(page), mm, pte);
- 		goto check;
- 	}
- 
+-		pr_info("[%5d] %5d %5d %8lu %8lu %7lu %8lu         %5hd %s\n",
++		pr_info("[%5d] %5d %5d %8lu %8lu %7d %8lu         %5hd %s\n",
+ 			task->pid, from_kuid(&init_user_ns, task_uid(task)),
+ 			task->tgid, task->mm->total_vm, get_mm_rss(task->mm),
+-			task->mm->nr_ptes,
++			atomic_read(&task->mm->nr_ptes),
+ 			get_mm_counter(task->mm, MM_SWAPENTS),
+ 			task->signal->oom_score_adj, task->comm);
+ 		task_unlock(task);
 -- 
 1.8.4.rc3
 
