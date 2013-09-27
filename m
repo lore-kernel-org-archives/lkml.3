@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3I0Sfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:35:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35188 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab3I0Sff (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:35:35 -0400
-Date: Fri, 27 Sep 2013 19:34:56 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Jonathan Cameron <jic23@kernel.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Message-ID: <20130927183456.GM19304@sirena.org.uk>
-References: <1380292469-17347-1-git-send-email-lars@metafoo.de>
+	id S1754441Ab3I0SjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:39:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753917Ab3I0SjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 14:39:21 -0400
+Date: Fri, 27 Sep 2013 14:38:52 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
+Message-ID: <20130927183851.GA16605@redhat.com>
+References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+ <20130808150954.GA30092@infradead.org>
+ <20130808211529.GB15409@kmo-pixel>
+ <20130924110012.GA7160@infradead.org>
+ <20130924132014.GA16165@redhat.com>
+ <20130924191954.GB2636@kmo-pixel>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7trrzIZ+323l9a6P"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380292469-17347-1-git-send-email-lars@metafoo.de>
-X-Cookie: Don't read everything you believe.
+In-Reply-To: <20130924191954.GB2636@kmo-pixel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] spi: Add a spi_w8r16be() helper
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 24 2013 at  3:19pm -0400,
+Kent Overstreet <kmo@daterainc.com> wrote:
 
---7trrzIZ+323l9a6P
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Tue, Sep 24, 2013 at 09:20:14AM -0400, Mike Snitzer wrote:
+> > On Tue, Sep 24 2013 at  7:00am -0400,
+> > Christoph Hellwig <hch@infradead.org> wrote:
+> > 
+> > > Just curious, what's the state of the remaining immutable bio work?
+> > 
+> > Hey Christoph,
+> > 
+> > Have you been over the patchset?  Looks sane to you?
+> > 
+> > Given how disruptive this patchset is to the block layer I'm wondering
+> > how painful this change will be in combination with Jens' blk-mq
+> > changes.  I'd prefer to see blk-mq before immutable biovecs; but I have
+> > my own selfish reasons for that.
+> > 
+> > I'm also concerned about DM regressions given that a lot of DM code to
+> > handle splitting a bio that spans target boundaries is ripped out, see:
+> > https://patchwork.kernel.org/patch/2840657/
+> 
+> Oh good, you had seen that :)
+> 
+> Are you worried about performance regressions or actual bugs?
 
-On Fri, Sep 27, 2013 at 04:34:27PM +0200, Lars-Peter Clausen wrote:
-> This patch adds a new spi_w8r16be() helper, which is similar to spi_w8r16()
-> except that it converts the read data word from big endian to native endianness
-> before returning it. The reason for introducing this new helper is that for SPI
+Actual bugs.
+ 
+> I _have_ explicitly tested that code path, but I don't know what corner
+> cases I may have missed so it definitely needs your eyeballs and testing
+> too.
+>
+> As for performance - this'll be more efficient than what the dm code was
+> doing before. Especially when the multipage bvec patches go in.
 
-This actually feels like a bug in spi_w8r16() - I'd expect it to be
-returning native endian in the first place since in SPI a word is by
-default big endian so I'd expect this to have more of a register I/O
-model.  It certainly seems to match what almost all of the users are
-doing.
+Sure, I can appreciate that.
+ 
+> > But that is just handwaving/FUD at this point cause I haven't put the
+> > time to looking at this patchset close enough to feel comfortable.  I
+> > can make reviewing this patchset a priority this week though.
+> > 
+> > Kent, have you rebased this patchset at all?  Do you have a git tree I
+> > can clone to save the pain of pulling these patches out my my mbox,
+> > etc.
+> 
+> Yeah: git://evilpiepirate.org/~kent/linux-bcache.git for-jens
 
-That said I'm not sure this is worth fixing in which case the new API
-makes sense.  Or converting the users to regmap I guess.
-
---7trrzIZ+323l9a6P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSRc/NAAoJELSic+t+oim93NQP/RHbzfrfaSV7HU3/tidrmOtB
-Aowo5KNj7szZ3GO8WUQlAhQnsavAvlkjSUIAaiCuqxecFYCKWX+b87dkB+1B9kT3
-u5G6lpW14OzIhLlq6nYvL8TymhgYpkcjQ3eGQvweUuQpEv62Bi/9Ji5+hyxRJ5UR
-Vto1QZmvN7HOKNm5DWSsAw7j/rZYtxn9V325OZEshCEhpoUwhKyAidEN8ggYxNTq
-AnYK1fDB4GLeTS8v5syeNpYgpxyz2ZNQzwOiUebvMVLsR+mFf52Xb8dsWx9dDAGG
-sYjrpSuldnlCcyFuIPJyJNuCNDYXDR8S0UV1XHhyA4Eq6gB96HSU3wZxtAhfLq9S
-mMkj9wusXR2SzLgok3KYGjAHbqrRUhXmaWt4NuPRri8ShBhN7FlYAnpvDjAmXE0s
-ugKN0zn1whWb+5DwO3aFIeOcXWN/6WCLSPpFsQHe7Vn4qnttcLCUaKpnbnBB6ITI
-sOA6wzFG2BaUI5A8XVwVWSyfi16nHhLQbdoyLqJiVimS9j37qhJ6lxEnKhB/+smS
-y7ZXedqm47Gebh+y24+y9Ml6rhf6zn0xghz3agN7oERXvPMdDBd4jtUy0586X2EG
-AeuaZsHXozm+aytVk5KMh61VX6Kn9CAv5M/eZJbpKZRJSe5zxIYI2H89hz7c7Cct
-ecejrKWQgqCik84K+4pv
-=bQi1
------END PGP SIGNATURE-----
-
---7trrzIZ+323l9a6P--
+Looking now, will build and kickoff some regression tests before I then
+jump into reviewing the code.
