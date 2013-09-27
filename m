@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab3I0HKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 03:10:44 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59402 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab3I0HKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 03:10:42 -0400
-Date: Fri, 27 Sep 2013 17:10:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Sudeep Dutt <sudeep.dutt@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>
-Subject: linux-next: build failure after merge of the char-misc tree
-Message-Id: <20130927171029.609cf783d3f9645ebe7117c0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Sep_2013_17_10_29_+1000_aFGmXdV+AYEzeWiF"
+	id S1751832Ab3I0HP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 03:15:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52452 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176Ab3I0HPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 03:15:55 -0400
+Message-ID: <524530A4.9060300@ti.com>
+Date: Fri, 27 Sep 2013 10:15:48 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: John Tapsell <johnflux@gmail.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Dave Airlie <airlied@redhat.com>, <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbcon: fix deadlock in fbcon_generic_blank()
+References: <CAHQ6N+q13YeM60S_QfRF8Bh+Vc_7yHhCMSABQ=GOtOe5V0EXow@mail.gmail.com>
+In-Reply-To: <CAHQ6N+q13YeM60S_QfRF8Bh+Vc_7yHhCMSABQ=GOtOe5V0EXow@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="gnvICsxd21nxsqbVavbNslHgRFpjfUIUI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Sep_2013_17_10_29_+1000_aFGmXdV+AYEzeWiF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--gnvICsxd21nxsqbVavbNslHgRFpjfUIUI
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Hi,
 
-After merging the char-misc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+On 18/09/13 01:29, John Tapsell wrote:
+> Do not lock fb_info when calling sending the FB_EVENT_CONBLANK
+> event.
+>=20
+> In fbmem.c, the semantics are that we acquire the lock_fb_info first,
+> and then console_lock.  However when fbcon.c fbcon_generic_blank() is
+> called, the console lock could already be held.  Locking fb_info can
+> thus cause a deadlock.
 
-drivers/misc/mic/host/mic_main.c: In function 'mic_probe':
-drivers/misc/mic/host/mic_main.c:320:3: error: too many arguments to functi=
-on 'sysfs_get_dirent'
-   NULL, "state");
-   ^
-In file included from include/linux/kobject.h:21:0,
-                 from include/linux/module.h:16,
-                 from drivers/misc/mic/host/mic_main.c:26:
-include/linux/sysfs.h:465:1: note: declared here
- sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
- ^
+So has this happened for you? Or is it just theoretical?
 
-Caused by commit 3a6a9201897c ("Intel MIC Host Driver, card OS state
-management") interacting with commit 388975cccaaf ("sysfs: clean up
-sysfs_get_dirent()") from the driver-core tree.
+> fbmem.c sends the FB_EVENT_BLANK without locking lock_fb_info first, so=
 
-I added this merge fix patch:
+> this change introduces similar behaviour.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 27 Sep 2013 17:07:12 +1000
-Subject: [PATCH] Intel MIC Host Driver: fix for sysfs_get_dirent API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/misc/mic/host/mic_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_m=
-ain.c
-index a8965d4..28c8490 100644
---- a/drivers/misc/mic/host/mic_main.c
-+++ b/drivers/misc/mic/host/mic_main.c
-@@ -316,8 +316,7 @@ static int mic_probe(struct pci_dev *pdev,
- 			"device_create_with_groups failed rc %d\n", rc);
- 		goto smpt_uninit;
- 	}
--	mdev->state_sysfs =3D sysfs_get_dirent(mdev->sdev->kobj.sd,
--		NULL, "state");
-+	mdev->state_sysfs =3D sysfs_get_dirent(mdev->sdev->kobj.sd, "state");
- 	if (!mdev->state_sysfs) {
- 		rc =3D -ENODEV;
- 		dev_err(&pdev->dev, "sysfs_get_dirent failed rc %d\n", rc);
---=20
-1.8.4.rc3
+I don't think this is true. FB_EVENT_BLANK is sent in fb_blank(). That
+one is called when FBIOBLANK ioctl is called, and it does lock_fb_info().=
 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'm not familiar with the console code, but removing a lock makes me
+feel rather uneasy... But looking at the code, I can also see that
+console_lock could already be held, so something here definitely looks
+broken.
 
---Signature=_Fri__27_Sep_2013_17_10_29_+1000_aFGmXdV+AYEzeWiF
-Content-Type: application/pgp-signature
+The only place using FB_EVENT_CONBLANK seems to be backlight, and if I'm
+not mistaken, it has its own lock, and doesn't depend on the fb_info
+being locked.
+
+ Tomi
+
+
+
+--gnvICsxd21nxsqbVavbNslHgRFpjfUIUI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBCAAGBQJSRS9qAAoJEMDTa8Ir7ZwVwrIP/0lJQVy8Neql76KIJ1ctTdWV
-e5HtVbp2fwrvj23nOfTVOsuqNbyalPiTKF9BmPX0GK7e87Lf4z61EhLmg2oCGjjQ
-xSepSEXsJbEM+gP208pobGgx6W4RobIkanHQ1xa/dk420T4mqLSCFW552iBdDKRi
-c+Bpfe5F2mRjUwrvd+CSu+tU9UdZ3aJAkccPz+osQAZAc/5iwsy/5CA0fuDZ6yOP
-3x7BuVAEESwEVgkWcqcZXGI68qwFgfxKM2ngW5uyeIcSy8FTdDrEdKMBk/iwNQ5l
-G41DK8SjLteLaqf7WNFaV8zINu2hvGKhdG2+P+2QEB/4OVm5LVY+bh3gjkodGvxi
-GKZUXqij6vyN007SwiViAaXKjH9sNtHubd7qZVYf4Kqd05keoJtwUTFB3oBatQZ5
-408HLoIvJZ+MqRo7yOJawcP+tW+CK/juSfP4tqpC7iKTs7mn+jSHW6dWpbvFsXNA
-ewZzy69fElDHvXN8QPPJ71vmtQ97pyhe/eSYcd0VQcprZzX3HRtaHcoeTNgTQZva
-IW9JjeFpyO08nnYuUiDrk4JSxaF9FaxzIonWHn8S00+EmaVaZ7pa1UXDlWJZ4Hlk
-c1dPGECruaQhtoq8wfbz5gcnqKd8II9cUjFr0nVzQO1e73Nr01xmkXdBwhxAHJzI
-RQu3Td45Mg31KKSZiLMo
-=HrbI
+iQIcBAEBAgAGBQJSRTCkAAoJEPo9qoy8lh71PLsP/jDZyST05C3eKDZusDHUpV5b
+Q3KapU0A26GqSf6jiGZzCMz2sHVCdfaZFlB+02IS01bmY4Kx2AuFdfAZwgOEb73W
+x9RACkqpD9C39Weal0fLhtbpvUcsFxzwGJUYXwOL/ZGkwGW4n7t8QBwVCcANn5o2
+xGyrLZeC8H7uiC5EcTfkej0cOHsdkTTLB2ON7tu/+VWZzs5x7ZYo5uYTjO2VC3x2
+85zYcV+jV/SaAx74SRuiukcnH3DGgFP5/0ZvWbCyOdjI7XQKjwNMbMoD8zPCAQ57
+vRBcfoiztcxuzuu9llOHFSvsilKEFcYVhQpuGhwUaf03MmZFfw8VoG+VckqiUApV
+p31UdORFPEbCn0TIJ6SQct8cn4Br69vZkHHZ7IFs+O5YrIF0CKil4NdwDef1hg6/
+F4GsnS0iVv1MRFRXJCA/zRKr4XuE2yy/N1EW/hKguoXTwLbhKxH460ditDgI/0mu
+hi/QSVw8Ud/jbpUEzZ0Euqs2zXjpZ/IdfGzvLKLa7h4vXW+xzMTGnSQcAcuajewG
+gFQD5ks2d3Rp0hLxxqTJQE5zkcoVrHoBRUtyuzuHQ5QRDP5jS3+R/vR8KgiLfgT3
+vZsLHlqsDKV+K1AneK2zmqofxR9/zec9nZsEdFZDcZ/yAVm5AGs7YEHNkTp7N6VW
+V5xBboDoDdrxJAAPt/Dr
+=+yfv
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__27_Sep_2013_17_10_29_+1000_aFGmXdV+AYEzeWiF--
+--gnvICsxd21nxsqbVavbNslHgRFpjfUIUI--
