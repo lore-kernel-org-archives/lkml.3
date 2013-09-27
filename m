@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3I0Nav (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:30:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55985 "EHLO mx2.suse.de"
+	id S1753951Ab3I0N2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:28:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55776 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972Ab3I0N2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:50 -0400
+	id S1753783Ab3I0N2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:25 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 62/63] sched: numa: use unsigned longs for numa group fault stats
-Date: Fri, 27 Sep 2013 14:27:47 +0100
-Message-Id: <1380288468-5551-63-git-send-email-mgorman@suse.de>
+Subject: [PATCH 35/63] sched: numa: Do not trap hinting faults for shared libraries
+Date: Fri, 27 Sep 2013 14:27:20 +0100
+Message-Id: <1380288468-5551-36-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,131 +22,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Peter says "If you're going to hold locks you can also do away with all
-that atomic_long_*() nonsense". Lock aquisition moved slightly to protect
-the updates.
+NUMA hinting faults will not migrate a shared executable page mapped by
+multiple processes on the grounds that the data is probably in the CPU
+cache already and the page may just bounce between tasks running on multipl
+nodes. Even if the migration is avoided, there is still the overhead of
+trapping the fault, updating the statistics, making scheduler placement
+decisions based on the information etc. If we are never going to migrate
+the page, it is overhead for no gain and worse a process may be placed on
+a sub-optimal node for shared executable pages. This patch avoids trapping
+faults for shared libraries entirely.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 49 ++++++++++++++++++++-----------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
+ kernel/sched/fair.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c00611c..fced601 100644
+index 1a17e5e..cd90e44 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -916,8 +916,8 @@ struct numa_group {
- 	struct list_head task_list;
+@@ -1231,6 +1231,16 @@ void task_numa_work(struct callback_head *work)
+ 		if (!vma_migratable(vma) || !vma_policy_mof(p, vma))
+ 			continue;
  
- 	struct rcu_head rcu;
--	atomic_long_t total_faults;
--	atomic_long_t faults[0];
-+	unsigned long total_faults;
-+	unsigned long faults[0];
- };
- 
- pid_t task_numa_group_id(struct task_struct *p)
-@@ -944,8 +944,7 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
- 	if (!p->numa_group)
- 		return 0;
- 
--	return atomic_long_read(&p->numa_group->faults[2*nid]) +
--	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
-+	return p->numa_group->faults[2*nid] + p->numa_group->faults[2*nid+1];
- }
- 
- /*
-@@ -971,17 +970,10 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
- 
- static inline unsigned long group_weight(struct task_struct *p, int nid)
- {
--	unsigned long total_faults;
--
--	if (!p->numa_group)
--		return 0;
--
--	total_faults = atomic_long_read(&p->numa_group->total_faults);
--
--	if (!total_faults)
-+	if (!p->numa_group || !p->numa_group->total_faults)
- 		return 0;
- 
--	return 1000 * group_faults(p, nid) / total_faults;
-+	return 1000 * group_faults(p, nid) / p->numa_group->total_faults;
- }
- 
- static unsigned long weighted_cpuload(const int cpu);
-@@ -1397,9 +1389,9 @@ static void task_numa_placement(struct task_struct *p)
- 			p->total_numa_faults += diff;
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
--				atomic_long_add(diff, &p->numa_group->faults[i]);
--				atomic_long_add(diff, &p->numa_group->total_faults);
--				group_faults += atomic_long_read(&p->numa_group->faults[i]);
-+				p->numa_group->faults[i] += diff;
-+				p->numa_group->total_faults += diff;
-+				group_faults += p->numa_group->faults[i];
- 			}
- 		}
- 
-@@ -1475,7 +1467,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 
- 	if (unlikely(!p->numa_group)) {
- 		unsigned int size = sizeof(struct numa_group) +
--				    2*nr_node_ids*sizeof(atomic_long_t);
-+				    2*nr_node_ids*sizeof(unsigned long);
- 
- 		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
- 		if (!grp)
-@@ -1487,9 +1479,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 		grp->gid = p->pid;
- 
- 		for (i = 0; i < 2*nr_node_ids; i++)
--			atomic_long_set(&grp->faults[i], p->numa_faults[i]);
-+			grp->faults[i] = p->numa_faults[i];
- 
--		atomic_long_set(&grp->total_faults, p->total_numa_faults);
-+		grp->total_faults = p->total_numa_faults;
- 
- 		list_add(&p->numa_entry, &grp->task_list);
- 		grp->nr_tasks++;
-@@ -1543,14 +1535,14 @@ unlock:
- 	if (!join)
- 		return;
- 
-+	double_lock(&my_grp->lock, &grp->lock);
++		/*
++		 * Shared library pages mapped by multiple processes are not
++		 * migrated as it is expected they are cache replicated. Avoid
++		 * hinting faults in read-only file-backed mappings or the vdso
++		 * as migrating the pages will be of marginal benefit.
++		 */
++		if (!vma->vm_mm ||
++		    (vma->vm_file && (vma->vm_flags & (VM_READ|VM_WRITE)) == (VM_READ)))
++			continue;
 +
- 	for (i = 0; i < 2*nr_node_ids; i++) {
--		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
--		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
-+		my_grp->faults[i] -= p->numa_faults[i];
-+		grp->faults[i] += p->numa_faults[i];
- 	}
--	atomic_long_sub(p->total_numa_faults, &my_grp->total_faults);
--	atomic_long_add(p->total_numa_faults, &grp->total_faults);
--
--	double_lock(&my_grp->lock, &grp->lock);
-+	my_grp->total_faults -= p->total_numa_faults;
-+	grp->total_faults += p->total_numa_faults;
- 
- 	list_move(&p->numa_entry, &grp->task_list);
- 	my_grp->nr_tasks--;
-@@ -1571,12 +1563,11 @@ void task_numa_free(struct task_struct *p)
- 	void *numa_faults = p->numa_faults;
- 
- 	if (grp) {
-+		spin_lock(&grp->lock);
- 		for (i = 0; i < 2*nr_node_ids; i++)
--			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
--
--		atomic_long_sub(p->total_numa_faults, &grp->total_faults);
-+			grp->faults[i] -= p->numa_faults[i];
-+		grp->total_faults -= p->total_numa_faults;
- 
--		spin_lock(&grp->lock);
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
- 		spin_unlock(&grp->lock);
+ 		do {
+ 			start = max(start, vma->vm_start);
+ 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
 -- 
 1.8.1.4
 
