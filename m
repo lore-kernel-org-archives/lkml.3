@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab3I0Fuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 01:50:51 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:57767 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab3I0Fut (ORCPT
+	id S1752458Ab3I0Fv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 01:51:57 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:53576 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab3I0Fvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 01:50:49 -0400
-Message-ID: <52451CB4.20004@colorfullife.com>
-Date: Fri, 27 Sep 2013 07:50:44 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Fri, 27 Sep 2013 01:51:55 -0400
+Date: Fri, 27 Sep 2013 07:51:51 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, msharbiani@twitter.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/reboot] x86/reboot: Remove the duplicate C6100 entry in
+ the reboot quirks list
+Message-ID: <20130927055151.GD6597@gmail.com>
+References: <1380216643-4683-1-git-send-email-masoud.sharbiani@gmail.com>
+ <tip-b5eafc6f07c95e9f3dd047e72737449cb03c9956@git.kernel.org>
+ <1380229154.2170.13.camel@buesod1.americas.hpqcorp.net>
+ <5244A0E2.3080902@zytor.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Davidlohr Bueso <davidlohr@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        sedat.dilek@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] ipc,msg: prevent race with rmid in msgsnd,msgrcv
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com> <1379300677-24188-5-git-send-email-davidlohr@hp.com>
-In-Reply-To: <1379300677-24188-5-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5244A0E2.3080902@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
 
-Could you include the patch in -mm and push it towards Linus?
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-On 09/16/2013 05:04 AM, Davidlohr Bueso wrote:
-> This fixes a race in both msgrcv() and msgsnd() between finding the msg and
-> actually dealing with the queue, as another thread can delete shmid
-> underneath us if we are preempted before acquiring the kern_ipc_perm.lock.
->
-> Manfred illustrates this nicely:
->
-> Assume a preemptible kernel that is preempted just after
->> msq = msq_obtain_object_check(ns, msqid)
-> in do_msgrcv().
-> The only lock that is held is rcu_read_lock().
->
-> Now the other thread processes IPC_RMID.
-> When the first task is resumed, then it will happily wait for messages on a
-> deleted queue.
->
-> Fix this by checking for if the queue has been deleted after taking the lock.
->
-> Reported-by: Manfred Spraul <manfred@colorfullife.com>
-> Cc: stable@vger.kernel.org # for 3.11
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+> On 09/26/2013 01:59 PM, Davidlohr Bueso wrote:
+> >> -	},
+> >> -	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
+> >> -		.callback = set_pci_reboot,
+> >> -		.ident = "Dell PowerEdge C6100",
+> >> -		.matches = {
+> >>  			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+> >>  			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+> >>  		},
+> > 
+> > Hmm, I think we should be keeping the 'Dell Inc.' part instead of just
+> > 'Dell' - at least the rest of the entries use the same string:
+> > 
+> 
+> The point is that some of the machines just has "Dell" in their vendor
+> string.
 
+Yes, so if then the argument could be made that all the other entries 
+should probably be changed to 'Dell' as well.
+
+This is yet another reminder that DMI matches are such a fragile method 
+...
+
+Thanks,
+
+	Ingo
