@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab3I0Rya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 13:54:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab3I0Ry0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 13:54:26 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: Trond.Myklebust@netapp.com, steved@redhat.com
-cc: dhowells@redhat.com, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
-        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] NFS/FS-Cache: Fix crash from accidentally starting caching whilst writing
-Date: Fri, 27 Sep 2013 18:54:22 +0100
-Message-ID: <32376.1380304462@warthog.procyon.org.uk>
+	id S1754346Ab3I0RzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 13:55:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51313 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753558Ab3I0RzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 13:55:22 -0400
+Date: Fri, 27 Sep 2013 19:55:18 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/5] Allwinner SoCs High Speed Timer support
+Message-ID: <20130927195518.4b0895b6@skate>
+In-Reply-To: <20130927170505.GX2954@lukather>
+References: <1380117790-19390-1-git-send-email-maxime.ripard@free-electrons.com>
+	<87zjr04vnh.fsf@linaro.org>
+	<CAOesGMhTZS1MdHW9cL4s_X8jUXHS3VkNZupCfX4ZGroL6k4gEw@mail.gmail.com>
+	<20130925195012.GI2954@lukather>
+	<20130926163942.675266e5@skate>
+	<20130927170505.GX2954@lukather>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Maxime Ripard,
 
-Hi Trond,
+On Fri, 27 Sep 2013 20:05:05 +0300, Maxime Ripard wrote:
 
-Can you pull these commits to fix an issue with NFS whereby caching can be
-enabled on a file that is open for writing by subsequently opening it for
-reading.  This can be made to crash by opening it for writing again if you're
-quick enough.
+> > A small update to Documentation/arm/sunxi/README would be nice :)
+> 
+> Yep, right. Even though, for most of these SoCs (F20, A10s, A31*,
+> A2*), I don't think we have publicly available datasheet to point to
+> there.
 
-The gist of the patchset is that the cookie should be acquired at inode
-creation only and subsequently enabled and disabled as appropriate (which
-dispenses with the backing objects when they're not needed).
+The Marvell file mentions Armada 370 and XP even though no public
+datasheets are available. I think you should mention those SOCs, and
+indicate that no datasheet is publicly available for the moment.
 
-The extra synchronisation that NFS does can then be dispensed with as it is
-thenceforth managed by FS-Cache.
+Best regards,
 
-Could you send these on to Linus?
-
-This likely will need fixing also in CIFS and 9P also once the FS-Cache
-changes are upstream.  AFS and Ceph are probably safe.
-
-Thanks,
-David
----
-The following changes since commit 2457aaf73a97a97c8596ed3903bd09601976f3bc:
-
-  Merge tag 'pm+acpi-3.12-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm (2013-09-20 15:17:14 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git fscache
-
-for you to fetch changes up to f1fe29b4a02d0805aa7d0ff6b73410a9f9316d69:
-
-  NFS: Use i_writecount to control whether to get an fscache cookie in nfs_open() (2013-09-27 18:40:25 +0100)
-
-----------------------------------------------------------------
-(from the branch description for fscache local branch)
-
-clone of "master"
-----------------------------------------------------------------
-David Howells (3):
-      FS-Cache: Add use/unuse/wake cookie wrappers
-      FS-Cache: Provide the ability to enable/disable cookies
-      NFS: Use i_writecount to control whether to get an fscache cookie in nfs_open()
-
- Documentation/filesystems/caching/netfs-api.txt |  73 +++++++--
- fs/9p/cache.c                                   |   6 +-
- fs/afs/cell.c                                   |   2 +-
- fs/afs/inode.c                                  |   2 +-
- fs/afs/vlocation.c                              |   3 +-
- fs/afs/volume.c                                 |   2 +-
- fs/cachefiles/interface.c                       |   2 +-
- fs/ceph/cache.c                                 |   4 +-
- fs/cifs/fscache.c                               |   8 +-
- fs/fscache/cookie.c                             | 193 ++++++++++++++++------
- fs/fscache/fsdef.c                              |   1 +
- fs/fscache/netfs.c                              |   1 +
- fs/fscache/object.c                             |   7 +-
- fs/fscache/page.c                               |  59 +++++--
- fs/nfs/dir.c                                    |   2 +-
- fs/nfs/fscache.c                                | 202 +++++++-----------------
- fs/nfs/fscache.h                                |  18 +--
- fs/nfs/inode.c                                  |   6 +-
- fs/nfs/nfs4file.c                               |   2 +-
- include/linux/fs.h                              |   5 +
- include/linux/fscache-cache.h                   |  50 +++---
- include/linux/fscache.h                         | 113 +++++++++++--
- include/linux/nfs_fs.h                          |   8 +-
- 23 files changed, 464 insertions(+), 305 deletions(-)
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
