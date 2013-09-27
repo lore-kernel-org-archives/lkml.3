@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab3I0Ndw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 09:33:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55894 "EHLO mx2.suse.de"
+	id S1753896Ab3I0N2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 09:28:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55764 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab3I0N2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 09:28:40 -0400
+	id S1753765Ab3I0N2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 09:28:23 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 50/63] sched: numa: call task_numa_free from do_execve
-Date: Fri, 27 Sep 2013 14:27:35 +0100
-Message-Id: <1380288468-5551-51-git-send-email-mgorman@suse.de>
+Subject: [PATCH 33/63] sched: Retry migration of tasks to CPU on a preferred node
+Date: Fri, 27 Sep 2013 14:27:18 +0100
+Message-Id: <1380288468-5551-34-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380288468-5551-1-git-send-email-mgorman@suse.de>
 References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
@@ -22,108 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+When a preferred node is selected for a tasks there is an attempt to migrate
+the task to a CPU there. This may fail in which case the task will only
+migrate if the active load balancer takes action. This may never happen if
+the conditions are not right. This patch will check at NUMA hinting fault
+time if another attempt should be made to migrate the task. It will only
+make an attempt once every five seconds.
 
-It is possible for a task in a numa group to call exec, and
-have the new (unrelated) executable inherit the numa group
-association from its former self.
-
-This has the potential to break numa grouping, and is trivial
-to fix.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- fs/exec.c             | 1 +
- include/linux/sched.h | 4 ++++
- kernel/sched/fair.c   | 9 ++++++++-
- kernel/sched/sched.h  | 5 -----
- 4 files changed, 13 insertions(+), 6 deletions(-)
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 30 +++++++++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index fd774c7..e73ce23 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1549,6 +1549,7 @@ static int do_execve_common(const char *filename,
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
- 	acct_update_integrals(current);
-+	task_numa_free(current);
- 	free_bprm(bprm);
- 	if (displaced)
- 		put_files_struct(displaced);
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 46fb36a..31d1740 100644
+index 6eb8fa6..3418b0b 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1442,6 +1442,7 @@ struct task_struct {
- extern void task_numa_fault(int last_node, int node, int pages, int flags);
- extern pid_t task_numa_group_id(struct task_struct *p);
- extern void set_numabalancing_state(bool enabled);
-+extern void task_numa_free(struct task_struct *p);
- #else
- static inline void task_numa_fault(int last_node, int node, int pages,
- 				   int flags)
-@@ -1454,6 +1455,9 @@ static inline pid_t task_numa_group_id(struct task_struct *p)
- static inline void set_numabalancing_state(bool enabled)
- {
- }
-+static inline void task_numa_free(struct task_struct *p)
-+{
-+}
- #endif
+@@ -1333,6 +1333,7 @@ struct task_struct {
+ 	int numa_migrate_seq;
+ 	unsigned int numa_scan_period;
+ 	unsigned int numa_scan_period_max;
++	unsigned long numa_migrate_retry;
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
  
- static inline struct pid *task_pid(struct task_struct *task)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 801fc74..5237feb 100644
+index b130014..00ccc68 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1418,6 +1418,7 @@ void task_numa_free(struct task_struct *p)
- {
- 	struct numa_group *grp = p->numa_group;
- 	int i;
-+	void *numa_faults = p->numa_faults;
- 
- 	if (grp) {
- 		for (i = 0; i < 2*nr_node_ids; i++)
-@@ -1433,7 +1434,9 @@ void task_numa_free(struct task_struct *p)
- 		put_numa_group(grp);
- 	}
- 
--	kfree(p->numa_faults);
-+	p->numa_faults = NULL;
-+	p->numa_faults_buffer = NULL;
-+	kfree(numa_faults);
+@@ -1011,6 +1011,23 @@ migrate:
+ 	return migrate_task_to(p, env.best_cpu);
  }
  
- /*
-@@ -1452,6 +1455,10 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	if (!p->mm)
- 		return;
- 
-+	/* Do not worry about placement if exiting */
-+	if (p->state == TASK_DEAD)
++/* Attempt to migrate a task to a CPU on the preferred node. */
++static void numa_migrate_preferred(struct task_struct *p)
++{
++	/* Success if task is already running on preferred CPU */
++	p->numa_migrate_retry = 0;
++	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
 +		return;
 +
- 	/* Allocate buffer to track faults on a per-node basis */
- 	if (unlikely(!p->numa_faults)) {
- 		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index e0875dc..657472d 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -557,11 +557,6 @@ static inline u64 rq_clock_task(struct rq *rq)
- #ifdef CONFIG_NUMA_BALANCING
- extern int migrate_task_to(struct task_struct *p, int cpu);
- extern int migrate_swap(struct task_struct *, struct task_struct *);
--extern void task_numa_free(struct task_struct *p);
--#else /* CONFIG_NUMA_BALANCING */
--static inline void task_numa_free(struct task_struct *p)
--{
--}
- #endif /* CONFIG_NUMA_BALANCING */
++	/* This task has no NUMA fault statistics yet */
++	if (unlikely(p->numa_preferred_nid == -1))
++		return;
++
++	/* Otherwise, try migrate to a CPU on the preferred node */
++	if (task_numa_migrate(p) != 0)
++		p->numa_migrate_retry = jiffies + HZ*5;
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = -1;
+@@ -1045,17 +1062,12 @@ static void task_numa_placement(struct task_struct *p)
+ 		}
+ 	}
  
- #ifdef CONFIG_SMP
+-	/*
+-	 * Record the preferred node as the node with the most faults,
+-	 * requeue the task to be running on the idlest CPU on the
+-	 * preferred node and reset the scanning rate to recheck
+-	 * the working set placement.
+-	 */
++	/* Preferred node as the node with the most faults */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 		/* Update the preferred nid and migrate task if possible */
+ 		p->numa_preferred_nid = max_nid;
+ 		p->numa_migrate_seq = 1;
+-		task_numa_migrate(p);
++		numa_migrate_preferred(p);
+ 	}
+ }
+ 
+@@ -1111,6 +1123,10 @@ void task_numa_fault(int last_nidpid, int node, int pages, bool migrated)
+ 
+ 	task_numa_placement(p);
+ 
++	/* Retry task to preferred node migration if it previously failed */
++	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
++		numa_migrate_preferred(p);
++
+ 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
+ }
+ 
 -- 
 1.8.1.4
 
