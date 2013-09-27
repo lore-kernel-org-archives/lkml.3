@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3I0T7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 15:59:54 -0400
-Received: from smtp-out-101.synserver.de ([212.40.185.101]:1078 "EHLO
-	smtp-out-096.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753641Ab3I0T7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 15:59:52 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 28715
-Message-ID: <5245E420.2030207@metafoo.de>
-Date: Fri, 27 Sep 2013 22:01:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	id S1753430Ab3I0UGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 16:06:00 -0400
+Received: from fieldses.org ([174.143.236.118]:58761 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329Ab3I0UF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 16:05:56 -0400
+Date: Fri, 27 Sep 2013 16:05:50 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Zach Brown <zab@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20130927200550.GA22640@fieldses.org>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+ <CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+ <20130925183828.GA30372@lenny.home.zabbo.net>
+ <CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+ <20130925190620.GB30372@lenny.home.zabbo.net>
+ <20130925195526.GA18971@fieldses.org>
+ <20130925210742.GG30372@lenny.home.zabbo.net>
+ <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+ <20130926185508.GO30372@lenny.home.zabbo.net>
+ <5244A68F.906@redhat.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Jonathan Cameron <jic23@kernel.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-spi@vger.kernel.org, viresh.linux@gmail.com
-Subject: Re: [PATCH 1/3] spi: Add a spi_w8r16be() helper
-References: <1380292469-17347-1-git-send-email-lars@metafoo.de> <20130927183456.GM19304@sirena.org.uk> <5245D2A0.4090909@metafoo.de> <20130927192233.GN19304@sirena.org.uk>
-In-Reply-To: <20130927192233.GN19304@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5244A68F.906@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 09:22 PM, Mark Brown wrote:
-> On Fri, Sep 27, 2013 at 08:46:56PM +0200, Lars-Peter Clausen wrote:
-> 
->> According to the documentation of spi_w8r16() it is a feature.
-> 
->> 	* The number is returned in wire-order, which is at least sometimes
->>  	* big-endian.
-> 
-> Indeed.  I don't think that's terribly well thought through though,
-> especially not now we have annotations for endianness (as you noticed!).
+On Thu, Sep 26, 2013 at 05:26:39PM -0400, Ric Wheeler wrote:
+> On 09/26/2013 02:55 PM, Zach Brown wrote:
+> >On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
+> >>On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com> wrote:
+> >>>>A client-side copy will be slower, but I guess it does have the
+> >>>>advantage that the application can track progress to some degree, and
+> >>>>abort it fairly quickly without leaving the file in a totally undefined
+> >>>>state--and both might be useful if the copy's not a simple constant-time
+> >>>>operation.
+> >>>I suppose, but can't the app achieve a nice middle ground by copying the
+> >>>file in smaller syscalls?  Avoid bulk data motion back to the client,
+> >>>but still get notification every, I dunno, few hundred meg?
+> >>Yes.  And if "cp"  could just be switched from a read+write syscall
+> >>pair to a single splice syscall using the same buffer size.  And then
+> >>the user would only notice that things got faster in case of server
+> >>side copy.  No problems with long blocking times (at least not much
+> >>worse than it was).
+> >Hmm, yes, that would be a nice outcome.
+> >
+> >>However "cp" doesn't do reflinking by default, it has a switch for
+> >>that.  If we just want "cp" and the like to use splice without fearing
+> >>side effects then by default we should try to be as close to
+> >>read+write behavior as possible.  No?
+> >I guess?  I don't find requiring --reflink hugely compelling.  But there
+> >it is.
+> >
+> >>That's what I'm really
+> >>worrying about when you want to wire up splice to reflink by default.
+> >>I do think there should be a flag for that.  And if on the block level
+> >>some magic happens, so be it.  It's not the fs deverloper's worry any
+> >>more ;)
+> >Sure.  So we'd have:
+> >
+> >- no flag default that forbids knowingly copying with shared references
+> >   so that it will be used by default by people who feel strongly about
+> >   their assumptions about independent write durability.
+> >
+> >- a flag that allows shared references for people who would otherwise
+> >   use the file system shared reference ioctls (ocfs2 reflink, btrfs
+> >   clone) but would like it to also do server-side read/write copies
+> >   over nfs without additional intervention.
+> >
+> >- a flag that requires shared references for callers who don't want
+> >   giant copies to take forever if they aren't instant.  (The qemu guys
+> >   asked for this at Plumbers.)
 
-I wouldn't mind updating spi_w8r16() to do the conversion to big-endian.
-Especially considering that a driver using the function will probably always
-need to do a endian conversion anyway to work correctly on both
-endiannesses. We can add a LE variant if we should ever need it.
+Why not implement only the last flag only as  the first step?  It seems
+like the simplest one.  So I think that would mean:
 
-> 
->> There seem to be at least two users though which assume that the result is
->> in native endianness drivers/hwmon/ads7871.c and drivers/mfd/stmpe-spi.c
-> 
-> Yeah, I saw.  The ads7871 is just going to break when run on the
-> opposite endianness to the one it was (hopefully) tested on since it
-> doesn't make any effort I saw to cope with endianness.  Looking at the
-> history it's not terribly obvious which that was but it'd be surprising
-> to see a little endian register...
-> 
-> STMPE is doing a byte swap so it's another user for your function -
-> it's for ARM systems so it'll be assuming that little endian is the
-> native format.
+	- no worrying about cancelling, etc.
+	- apps should be told to pass the entire range at once (normally
+	  the whole file).
+	- The NFS server probably shouldn't do the internal copy loop by
+	  default.
 
-The STMPE driver might be a candidate for regmap. Considering that the
-driver was tested on a LE system it looks as if the driver first writes a 8
-bit word for the address then reads a 16 bit word and ignores the upper bits
-(of the BE word) and returns the lower 8 bits as the result. But the way I
-understand the datasheet the 8-bit data word would follow right after the
-8-bit address has been written, so I'm not sure what's going on there.
-Viresh maybe you can shed some light on this. Btw. the register write
-function of the STMPE driver also seems to be not endian safe.
+We can't prevent some storage system from implementing a high-latency
+copy operation, but we can refuse to provide them any help (providing no
+progress reports or easy way to cancel) and then they can deal with the
+complaints from their users.
 
-- Lars
+Also, I don't get the first option above at all.  The argument is that
+it's safer to have more copies?  How much safety does another copy on
+the same disk really give you?  Do systems that do dedup provide
+interfaces to turn it off per-file?
 
+> This last flag should not prevent a remote target device (NFS or
+> SCSI array) copy from working though since they often do reflink
+> like operations inside of the remote target device....
+
+In fact maybe that's the only case to care about on the first pass.
+
+But I understand that Zach's tired of the woodshedding and I could live
+with the above I guess....
+
+--b.
