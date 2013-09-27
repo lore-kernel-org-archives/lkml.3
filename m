@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3I0Tex (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 15:34:53 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:58400 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab3I0Tev (ORCPT
+	id S1754420Ab3I0Tfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 15:35:51 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:52361 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab3I0Tft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 15:34:51 -0400
+	Fri, 27 Sep 2013 15:35:49 -0400
 MIME-Version: 1.0
 In-Reply-To: <u4d2odca38.fsf@md.dent.med.uni-muenchen.de>
 References: <52326166.4060003@zytor.com> <u4d2odca38.fsf@md.dent.med.uni-muenchen.de>
 From: Dmitry Vyukov <dvyukov@google.com>
-Date: Fri, 27 Sep 2013 12:34:30 -0700
-Message-ID: <CACT4Y+aDUqZa8+oiJwKDTL=j-tfT+xn7+2FgC-CGtzLJwwj78g@mail.gmail.com>
+Date: Fri, 27 Sep 2013 12:35:27 -0700
+Message-ID: <CACT4Y+aV3dvcDJGH3+2EGDYzdFrWAMWNNLYWgyhgg4dFGhV4_w@mail.gmail.com>
 Subject: Re: [PATCH] Out-of-bounds access in get_wchan (arch/x86/kernel/process_64.c)
 To: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kees@outflux.net
+Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kees <kees@outflux.net>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
