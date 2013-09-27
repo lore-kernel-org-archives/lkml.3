@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3I0Odl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:33:41 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:44297 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab3I0Odh (ORCPT
+	id S1753817Ab3I0OdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:33:09 -0400
+Received: from smtp-out-079.synserver.de ([212.40.185.79]:1071 "EHLO
+	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab3I0OdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:33:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
-References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Fri, 27 Sep 2013 15:33:16 +0100
-X-Google-Sender-Auth: Y8kRbLUyVbnm4ckVLAYOt2Qq8oA
-Message-ID: <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
-Subject: Re: [QUERY] Building and testing Aarch64
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 27 Sep 2013 10:33:04 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 25502
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@kernel.org>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-spi@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 2/3] hwmon: (adt7310) Use spi_w8r16be() instead spi_w8r16()
+Date: Fri, 27 Sep 2013 16:34:28 +0200
+Message-Id: <1380292469-17347-2-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1380292469-17347-1-git-send-email-lars@metafoo.de>
+References: <1380292469-17347-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Using spi_w8r16be() instead of spi_w8r16() in this driver makes a code a bit
+shorter and cleaner.
 
-On 27 September 2013 09:58, Ramkumar Ramachandra <artagnon@gmail.com> wrote:
-> I'm interested in cross-compiling for ARM v8, and fixing some early
-> papercuts to begin with; my host machine is a normal x86_64 box.
-> Although I managed to use Linaro's toolchain [1] to build an Aarch64
-> kernel, and found a suitable rootfs [2] to use it with, I am not able
-> to find an ARM64 machine emulator. qemu-system-arm seems to emulate
-> only a 32-bit ARM machine, and is hence unsuitable for the task. How
-> is everyone else working on the /arch/arm64 tree?
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/hwmon/adt7310.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-Linaro has a page with links for running Linux on ARMv8
-
-http://www.linaro.org/engineering/engineering-projects/armv8
-
-ARM provides an emulator, ARMv8 Foundation Model (free as in free beer
-but you need to register to be able to download, just like the
-architecture documentation):
-
-http://www.arm.com/products/tools/models/fast-models/foundation-model.php
-
-I think the direct download link is at the bottom of the page:
-
-https://silver.arm.com/browse/FM00A
-
+diff --git a/drivers/hwmon/adt7310.c b/drivers/hwmon/adt7310.c
+index da5f078..5994cf6 100644
+--- a/drivers/hwmon/adt7310.c
++++ b/drivers/hwmon/adt7310.c
+@@ -42,13 +42,8 @@ static const u8 adt7310_reg_table[] = {
+ static int adt7310_spi_read_word(struct device *dev, u8 reg)
+ {
+ 	struct spi_device *spi = to_spi_device(dev);
+-	int ret;
+ 
+-	ret = spi_w8r16(spi, AD7310_COMMAND(reg) | ADT7310_CMD_READ);
+-	if (ret < 0)
+-		return ret;
+-
+-	return be16_to_cpu((__force __be16)ret);
++	return spi_w8r16be(spi, AD7310_COMMAND(reg) | ADT7310_CMD_READ);
+ }
+ 
+ static int adt7310_spi_write_word(struct device *dev, u8 reg, u16 data)
 -- 
-Catalin
+1.8.0
+
