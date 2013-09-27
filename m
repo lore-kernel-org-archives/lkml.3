@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab3I0Sf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 14:35:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45018 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203Ab3I0Sf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 14:35:26 -0400
-Date: Fri, 27 Sep 2013 14:35:07 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Akira Hayakawa <ruby.wktk@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, cesarb@cesarb.net,
-        joe@perches.com, akpm@linux-foundation.org, agk@redhat.com,
-        m.chehab@samsung.com, ejt@redhat.com, dan.carpenter@oracle.com
-Subject: Re: Reworking dm-writeboost [was: Re: staging: Add dm-writeboost]
-Message-ID: <20130927183507.GA16553@redhat.com>
-References: <5223208D.4000008@gmail.com>
- <20130916215357.GA5015@redhat.com>
- <52384E66.6050101@gmail.com>
- <20130917205936.GB12001@redhat.com>
- <523E3522.2060607@gmail.com>
- <524183A2.9050301@gmail.com>
- <20130925173757.GA24076@redhat.com>
- <5243922B.6070705@gmail.com>
+	id S1754531Ab3I0Sfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 14:35:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35188 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab3I0Sff (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 14:35:35 -0400
+Date: Fri, 27 Sep 2013 19:34:56 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@kernel.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20130927183456.GM19304@sirena.org.uk>
+References: <1380292469-17347-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7trrzIZ+323l9a6P"
 Content-Disposition: inline
-In-Reply-To: <5243922B.6070705@gmail.com>
+In-Reply-To: <1380292469-17347-1-git-send-email-lars@metafoo.de>
+X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] spi: Add a spi_w8r16be() helper
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25 2013 at  9:47pm -0400,
-Akira Hayakawa <ruby.wktk@gmail.com> wrote:
 
-> Hi, Mike
-> 
-> The monolithic source code (3.2k)
-> is nicely splitted into almost 20 *.c files
-> according to the functionality and
-> data strucutures in OOP style.
-> 
-> The aim of this posting
-> is to share how the splitting looks like.
-> 
-> I believe that
-> at least reading the *.h files
-> can convince you the splitting is clear.
-> 
-> The code is now tainted with
-> almost 20 version switch macros
-> and WB* debug macros
-> but I will clean them up
-> for sending patch.
-> 
-> Again,
-> the latest code can be cloned by
-> git clone https://github.com/akiradeveloper/dm-writeboost.git
-> 
-> I will make few updates to the source codes on this weekend
-> so please track it to follow the latest version.
-> Below is only the snapshot.
-> 
-> Akira
-> 
-> ---------- Summary ----------
-> 33 Makefile
-> 10 bigarray.h
-> 19 cache-alloc.h
-> 10 defer-barrier.h
-> 8 dirty-sync.h
-> 8 flush-daemon.h
-> 10 format-cache.h
-> 24 handle-io.h
-> 16 hashtable.h
-> 18 migrate-daemon.h
-> 7 migrate-modulator.h
-> 12 queue-flush-job.h
-> 8 rambuf.h
-> 13 recover.h
-> 18 segment.h
-> 8 superblock-recorder.h
-> 9 target.h
-> 30 util.h
-> 384 writeboost.h
-> 99 bigarray.c
-> 192 cache-alloc.c
-> 36 defer-barrier.c
-> 33 dirty-sync.c
-> 85 flush-daemon.c
-> 234 format-cache.c
-> 553 handle-io.c
-> 109 hashtable.c
-> 345 migrate-daemon.c
-> 41 migrate-modulator.c
-> 169 queue-flush-job.c
-> 52 rambuf.c
-> 308 recover.c
-> 118 segment.c
-> 61 superblock-recorder.c
-> 376 target.c
-> 126 util.c
+--7trrzIZ+323l9a6P
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Unfortunately I think you went too far with all these different small
-files, I was hoping to see 2 or 3 .c files and a couple .h files.
+On Fri, Sep 27, 2013 at 04:34:27PM +0200, Lars-Peter Clausen wrote:
+> This patch adds a new spi_w8r16be() helper, which is similar to spi_w8r16()
+> except that it converts the read data word from big endian to native endianness
+> before returning it. The reason for introducing this new helper is that for SPI
 
-Maybe fold all the daemon code into a 1 .c and 1 .h ?
+This actually feels like a bug in spi_w8r16() - I'd expect it to be
+returning native endian in the first place since in SPI a word is by
+default big endian so I'd expect this to have more of a register I/O
+model.  It certainly seems to match what almost all of the users are
+doing.
 
-The core of the writeboost target in dm-writeboost-target.c ?
+That said I'm not sure this is worth fixing in which case the new API
+makes sense.  Or converting the users to regmap I guess.
 
-And fold all the other data structures into a 1 .c and 1 .h ?
+--7trrzIZ+323l9a6P
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-When folding these files together feel free to use dividers in the code
-like dm-thin.c and dm-cache-target.c do, e.g.:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-/*-----------------------------------------------------------------*/
+iQIcBAEBAgAGBQJSRc/NAAoJELSic+t+oim93NQP/RHbzfrfaSV7HU3/tidrmOtB
+Aowo5KNj7szZ3GO8WUQlAhQnsavAvlkjSUIAaiCuqxecFYCKWX+b87dkB+1B9kT3
+u5G6lpW14OzIhLlq6nYvL8TymhgYpkcjQ3eGQvweUuQpEv62Bi/9Ji5+hyxRJ5UR
+Vto1QZmvN7HOKNm5DWSsAw7j/rZYtxn9V325OZEshCEhpoUwhKyAidEN8ggYxNTq
+AnYK1fDB4GLeTS8v5syeNpYgpxyz2ZNQzwOiUebvMVLsR+mFf52Xb8dsWx9dDAGG
+sYjrpSuldnlCcyFuIPJyJNuCNDYXDR8S0UV1XHhyA4Eq6gB96HSU3wZxtAhfLq9S
+mMkj9wusXR2SzLgok3KYGjAHbqrRUhXmaWt4NuPRri8ShBhN7FlYAnpvDjAmXE0s
+ugKN0zn1whWb+5DwO3aFIeOcXWN/6WCLSPpFsQHe7Vn4qnttcLCUaKpnbnBB6ITI
+sOA6wzFG2BaUI5A8XVwVWSyfi16nHhLQbdoyLqJiVimS9j37qhJ6lxEnKhB/+smS
+y7ZXedqm47Gebh+y24+y9Ml6rhf6zn0xghz3agN7oERXvPMdDBd4jtUy0586X2EG
+AeuaZsHXozm+aytVk5KMh61VX6Kn9CAv5M/eZJbpKZRJSe5zxIYI2H89hz7c7Cct
+ecejrKWQgqCik84K+4pv
+=bQi1
+-----END PGP SIGNATURE-----
 
-Mike
+--7trrzIZ+323l9a6P--
