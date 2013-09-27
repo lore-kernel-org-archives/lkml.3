@@ -1,95 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3I0XTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 19:19:49 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42879 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab3I0XTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 19:19:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: [GIT PULL] ACPI and power management fixes for v3.12-rc3
-Date: Sat, 28 Sep 2013 01:31:08 +0200
-Message-ID: <1720906.nJEUKiKuDL@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+	id S1754101Ab3I0XdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 19:33:12 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61091 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696Ab3I0XdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 19:33:09 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <524615B1.6000106@roeck-us.net>
+Date: Fri, 27 Sep 2013 16:33:05 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Chris Murphy <chris@colorremedies.com>
+CC: Josh Boyer <jwboyer@fedoraproject.org>,
+        Henrik Rydberg <rydberg@euromail.se>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        bugzilla@colorremedies.com
+Subject: Re: applesmc oops in 3.10/3.11
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
+In-Reply-To: <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 09/27/2013 11:03 AM, Chris Murphy wrote:
+>
+> On Sep 27, 2013, at 11:59 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>
+>> On Fri, Sep 27, 2013 at 11:41:42AM -0600, Chris Murphy wrote:
+>>>
+>>> On Sep 27, 2013, at 11:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>
+>>>> On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
+>>>>> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>>>>>>>>> This suggests that initialization may be attempted more than once. The key cache
+>>>>>>>>> is allocated only once, but the number of keys is read for each attempt.
+>>>>>>>>>
+>>>>>>>>> No idea if that can happen, but if the number of keys can increase after
+>>>>>>>>> the first initialization attempt you would have an explanation for the crash.
+>>>>>>>>
+>>>>>>>> Good idea, and easy enough to test with the patch below.
+>>>>>>>>
+>>>>>>> Should we apply this patch even though it may not solve the specific problem ?
+>>>>>>
+>>>>>> Yes, why not - it certainly won't hurt. I am running it right now, so
+>>>>>> it is at least run-tested.
+>>>>>>
+>>>>>>> Again, not sure if the key count can change, but the current code is at the very
+>>>>>>> least inconsistent, as it keeps reading the key count without updating or
+>>>>>>> verifying the cache size.
+>>>>>>
+>>>>>> Yes - I agree that the error state is far-fetched, but it is hard to
+>>>>>> see any other logical explanation. There is of course always the
+>>>>>> possibility that the problem is somewhere else completely.
+>>>>>>
+>>>>>> Proper patch attached.
+>>>>>>
+>>>>>> Thanks,
+>>>>>> Henrik
+>>>>>>
+>>>>>> ---
+>>>>>>
+>>>>>>  From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
+>>>>>> From: Henrik Rydberg <rydberg@euromail.se>
+>>>>>> Date: Thu, 26 Sep 2013 08:33:16 +0200
+>>>>>> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
+>>>>>>
+>>>>>> After reports from Chris and Josh Boyer of a rare crash in applesmc,
+>>>>>> Guenter pointed at the initialization problem fixed below. The patch
+>>>>>> has not been verified to fix the crash, but should be applied
+>>>>>> regardless.
+>>>>>>
+>>>>>> Reported-by: <jwboyer@fedoraproject.org>
+>>>>>> Suggested-by: Guenter Roeck <linux@roeck-us.net>
+>>>>>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>>>>>> ---
+>>>>>> drivers/hwmon/applesmc.c | 11 ++++++++++-
+>>>>>> 1 file changed, 10 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
+>>>>>
+>>>> I sent a pull request to Linus, so you should be able to pull it from
+>>>> the upstream kernel shortly. Would be great to get feedback if the patch
+>>>> solves the problem (or doesn't).
+>>>
+>>> I'll start running it when it appears in koji. It's very transient, maybe one oops per week with lots of (other) testing. I'm not even sure if it happens on warm or cold boots or both.
+>>>
+>> When you do, can you possibly trigger an event based on the warning added
+>> with the patch ? This might help us to identify if the problem fixed
+>> with the patch actually happens.
+>
+> I don't understand the question. I'm uncertain how to trigger, and also what event.
+>
 
-Please pull from the git repository at
+The patch includes a new warning message.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.12-rc3
+	pr_warn("key count changed from %d to %d\n",
+                         s->key_count, count);
 
-to receive ACPI and power management fixes for v3.12-rc3 with
-top-most commit dcc7bc3f3d91bbd5c15409a92317c2c24449a285
+It would be great if there would be a means to detect if this message is seen
+in a kernel log, because it would show that the potential crash condition
+fixed with the patch was actually encountered. This would help us to determine
+if we actually fixed the problem or not.
 
-  Merge branch 'pm-cpufreq-fixes'
+Of course, we'll know if is wasn't fixed if the system still crashes.
 
-on top of commit 4a10c2ac2f368583138b774ca41fac4207911983
-
-  Linux 3.12-rc2
-
-These fix one recent cpufreq regression, a few older bugs that may
-harm users and a kerneldoc typo.
-
-Specifics:
-
- 1) After recent locking changes in the cpufreq core it is possible
-    to trigger BUG_ON(!policy) in lock_policy_rwsem_read() if
-    cpufreq_get() is called before registering a cpufreq driver.
-    Fix from Viresh Kumar.
-
- 2) If intel_pstate has been loaded already, it doesn't make sense
-    to do anything in acpi_cpufreq_init() and moreover doing something
-    in there in that case may be harmful, so make that function return
-    immediately if another cpufreq driver is already present.  From
-    Yinghai Lu.
-
- 3) The ACPI IPMI driver sometimes attempts to acquire a mutex from
-    interrupt context, which can be avoided by replacing that mutex
-    with a spinlock.  From Lv Zheng.
-
- 4) A NULL pointer may be dereferenced by the exynos5440 cpufreq
-    driver if a memory allocation made by it fails.  Fix from
-    Sachin Kamat.
-
- 5) Hanjun Guo's commit fixes a typo in the kerneldoc comment
-    documenting acpi_bus_unregister_driver().
-
-Thanks!
-
-
----------------
-
-Hanjun Guo (1):
-      ACPI / scan: fix typo in comments of acpi_bus_unregister_driver()
-
-Lv Zheng (1):
-      ACPI / IPMI: Fix atomic context requirement of ipmi_msg_handler()
-
-Sachin Kamat (1):
-      cpufreq: exynos5440: Fix potential NULL pointer dereference
-
-Viresh Kumar (1):
-      cpufreq: check cpufreq driver is valid and cpufreq isn't disabled in cpufreq_get()
-
-Yinghai Lu (1):
-      acpi-cpufreq: skip loading acpi_cpufreq after intel_pstate
-
----------------
-
- drivers/acpi/acpi_ipmi.c             |   24 ++++++++++++++----------
- drivers/acpi/scan.c                  |    2 +-
- drivers/cpufreq/acpi-cpufreq.c       |    4 ++++
- drivers/cpufreq/cpufreq.c            |    3 +++
- drivers/cpufreq/exynos5440-cpufreq.c |    2 +-
- 5 files changed, 23 insertions(+), 12 deletions(-)
+Thanks,
+Guenter
 
