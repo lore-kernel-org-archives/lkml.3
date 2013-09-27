@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab3I0DRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Sep 2013 23:17:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36924 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab3I0DQz (ORCPT
+	id S1753330Ab3I0DRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Sep 2013 23:17:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33639 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab3I0DQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Sep 2013 23:16:55 -0400
-Date: Thu, 26 Sep 2013 20:16:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [PATCH CHAR-MISC-NEXT 2/4] Intel MIC Driver Header File Cleanups.
-Message-ID: <20130927031654.GB13086@kroah.com>
-References: <cover.1380241770.git.sudeep.dutt@intel.com>
- <1db9ec1d28297b01c01f0f4089cb5ce559906ac8.1380241770.git.sudeep.dutt@intel.com>
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>
+CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCHv4 11/18] arm: dts: add omap4430 thermal data
+Date: Thu, 26 Sep 2013 23:13:18 -0400
+Message-ID: <1380251605-3804-12-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
+References: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1db9ec1d28297b01c01f0f4089cb5ce559906ac8.1380241770.git.sudeep.dutt@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 06:10:01PM -0700, Sudeep Dutt wrote:
-> Dont use same name for header files in different folders.
-> 
-> These changes were suggested by Greg Kroah-Hartman during the
-> code review @ https://lkml.org/lkml/2013/9/6/18
-> 
-> Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-> Signed-off-by: Dasaratharaman Chandramouli <dasaratharaman.chandramouli@intel.com>
-> Signed-off-by: Nikhil Rao <nikhil.rao@intel.com>
-> Signed-off-by: Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>
-> Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
-> ---
->  drivers/misc/mic/card/mic_debugfs.c  |  2 +-
->  drivers/misc/mic/card/mic_device.c   |  2 +-
->  drivers/misc/mic/card/mic_virtio.c   |  2 +-
->  drivers/misc/mic/card/mic_x100.c     |  2 +-
->  drivers/misc/mic/common/mic_dev.h    | 51 ++++++++++++++++++++++++++++++++++++
->  drivers/misc/mic/common/mic_device.h | 51 ------------------------------------
->  drivers/misc/mic/host/mic_boot.c     |  2 +-
->  drivers/misc/mic/host/mic_debugfs.c  |  2 +-
->  drivers/misc/mic/host/mic_fops.c     |  2 +-
->  drivers/misc/mic/host/mic_intr.c     |  2 +-
->  drivers/misc/mic/host/mic_main.c     |  2 +-
->  drivers/misc/mic/host/mic_smpt.c     |  2 +-
->  drivers/misc/mic/host/mic_sysfs.c    |  2 +-
->  drivers/misc/mic/host/mic_virtio.c   |  2 +-
->  drivers/misc/mic/host/mic_x100.c     |  2 +-
->  15 files changed, 64 insertions(+), 64 deletions(-)
->  create mode 100644 drivers/misc/mic/common/mic_dev.h
->  delete mode 100644 drivers/misc/mic/common/mic_device.h
+This patch changes the dtsi entry on omap4430 to contain
+the thermal data. This data will enable the passive
+cooling with CPUfreq cooling device at 100C and the
+system will do a thermal shutdown at 125C.
 
-git should have shown this file being renamed, not added/removed.
-Please use the -M option to it when generating patches so it will do the
-right thing here.
+Cc: "Benoît Cousson" <bcousson@baylibre.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-omap@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ arch/arm/boot/dts/omap443x.dtsi | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-thanks,
+diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
+index bcf455e..e9c97d6 100644
+--- a/arch/arm/boot/dts/omap443x.dtsi
++++ b/arch/arm/boot/dts/omap443x.dtsi
+@@ -12,7 +12,7 @@
+ 
+ / {
+ 	cpus {
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			/* OMAP443x variants OPP50-OPPNT */
+ 			operating-points = <
+ 				/* kHz    uV */
+@@ -25,9 +25,15 @@
+ 		};
+ 	};
+ 
+-	bandgap {
++	thermal-zones{
++		#include "omap4-cpu-thermal.dtsi"
++	};
++
++	bandgap: bandgap {
+ 		reg = <0x4a002260 0x4
+ 		       0x4a00232C 0x4>;
+ 		compatible = "ti,omap4430-bandgap";
++
++		#thermal-sensor-cells = <0>;
+ 	};
+ };
+-- 
+1.8.2.1.342.gfa7285d
 
-greg k-h
