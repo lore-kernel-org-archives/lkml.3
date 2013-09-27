@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab3I0FpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 01:45:09 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:59022 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3I0FpG (ORCPT
+	id S1752005Ab3I0FpE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 01:45:04 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:61453 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab3I0FpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 01:45:06 -0400
-Message-ID: <52451B5D.4080908@colorfullife.com>
-Date: Fri, 27 Sep 2013 07:45:01 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Fri, 27 Sep 2013 01:45:00 -0400
+Date: Fri, 27 Sep 2013 07:44:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mirko Lindner <mlindner@marvell.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Roger Luethi <rl@hellgate.ch>, Patrick McHardy <kaber@trash.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
+        Jesse Gross <jesse@nicira.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH 1/4] [RFC] net: Explicitly initialize u64_stats_sync
+ structures for lockdep
+Message-ID: <20130927054455.GA6597@gmail.com>
+References: <1380220464-28840-1-git-send-email-john.stultz@linaro.org>
+ <1380220464-28840-2-git-send-email-john.stultz@linaro.org>
+ <1380223585.3165.205.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        sedat.dilek@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] ipc,shm: prevent race with rmid in shmat(2)
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com> <1379300677-24188-3-git-send-email-davidlohr@hp.com>
-In-Reply-To: <1379300677-24188-3-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380223585.3165.205.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
 
-On 09/16/2013 05:04 AM, Davidlohr Bueso wrote:
-> This fixes a race in shmat() between finding the msq and
-> actually attaching the segment, as another thread can delete shmid
-> underneath us if we are preempted before acquiring the kern_ipc_perm.lock.
-According the the man page, Linux supports attaching to deleted shm 
-segments:
+* Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-http://linux.die.net/man/2/shmat
->
-> On Linux, it is possible to attach a shared memory segment even if it 
-> is already marked to be deleted. However, POSIX.1-2001 does not 
-> specify this behavior and many other implementations do not support it.
->
-Does your patch change that?
-Unfortunately, I have neither any experience with ipc/shm nor any test 
-cases.
+> On Thu, 2013-09-26 at 11:34 -0700, John Stultz wrote:
+> > In order to enable lockdep on seqcount/seqlock structures, we
+> > must explicitly initialize any locks.
+> > 
+> 
+> > diff --git a/include/linux/u64_stats_sync.h b/include/linux/u64_stats_sync.h
+> > index 8da8c4e..c450e11 100644
+> > --- a/include/linux/u64_stats_sync.h
+> > +++ b/include/linux/u64_stats_sync.h
+> > @@ -67,6 +67,13 @@ struct u64_stats_sync {
+> >  #endif
+> >  };
+> >  
+> > +
+> > +#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+> > +#define u64_stats_init(syncp)	seqcount_init(syncp.seq)
+> > +#else
+> > +#define u64_stats_init(syncp)
+> > +#endif
+> > +
+> 
+> I would prefer a function.
 
-And:
-As far as I can see it's not a problem if we are attaching to a deleted 
-segment: shm_close cleans up everything.
+C cannot pass along symbolic names, unfortunately, so we are stuck with 
+1970's tech and the C preprocessor.
 
---
-     Manfred
+There's a way to make such macros look a tiny bit more structured and thus 
+be more palatable:
+
+#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+# define u64_stats_init(syncp) seqcount_init(syncp.seq)
+#else
+# define u64_stats_init(syncp)
+#endif
+
+Note, the 'else' branch should probably be:
+
+# define u64_stats_init(syncp) do { } while (0)
+
+Thanks,
+
+	Ingo
