@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab3I0Tjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 15:39:33 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:33640 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab3I0Tjb (ORCPT
+	id S1754700Ab3I0Tlg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 15:41:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60530 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731Ab3I0Tle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 15:39:31 -0400
-Message-ID: <1380310766.2222.10.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Date: Fri, 27 Sep 2013 12:39:26 -0700
-In-Reply-To: <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
-	 <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Sep 2013 15:41:34 -0400
+Date: Fri, 27 Sep 2013 21:41:32 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Rob Landley <rob@landley.net>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+Message-ID: <20130927194132.GA31663@amd.pavel.ucw.cz>
+References: <alpine.LFD.2.03.1309251147320.312@syhkavp.arg>
+ <1380235709.1974.93@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380235709.1974.93@driftwood>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-27 at 12:28 -0700, Linus Torvalds wrote:
-> On Fri, Sep 27, 2013 at 12:00 PM, Waiman Long <Waiman.Long@hp.com> wrote:
+Hi!
+
+On Thu 2013-09-26 17:48:29, Rob Landley wrote:
+> On 09/25/2013 11:13:17 AM, Nicolas Pitre wrote:
+> >On Wed, 25 Sep 2013, Rob Landley wrote:
 > >
-> > On a large NUMA machine, it is entirely possible that a fairly large
-> > number of threads are queuing up in the ticket spinlock queue to do
-> > the wakeup operation. In fact, only one will be needed.  This patch
-> > tries to reduce spinlock contention by doing just that.
+> >> On 09/24/2013 09:07:57 PM, Nicolas Pitre wrote:
+> >> > I'd strongly suggest you make your binutils compatible with newer
+> >> > instruction syntax instead of making the kernel more complex.
+> >>
+> >> Meaning I play whack-a-mole as this becomes permission to depend
+> >on endless
+> >> new gnuisms just because they're there and nobody else is
+> >regression testing
+> >> against them, not because they actually add anything.
 > >
-> > A new wakeup field is added to the rwsem structure. This field is
-> > set on entry to rwsem_wake() and __rwsem_do_wake() to mark that a
-> > thread is pending to do the wakeup call. It is cleared on exit from
-> > those functions.
+> >Gnuism?
+> >
+> >Let me quote the ARM ARchitecture Reference Manual, version 7
+> >revision C,
+> >section A8.8.44 (sorry for the whitespace dammage):
 > 
-> Ok, this is *much* simpler than adding the new MCS spinlock, so I'm
-> wondering what the performance difference between the two are.
+> Globally changing the binutils requirement for all architectures, as
+> the doc patch at the start of this thread proposed doing, would mean
+> gnuisms in common code (ext2 and such) wouldn't get caught, giving
+> llvm and pcc and such a moving target when trying to build the
+> kernel with non-gnu toolchains. That's what I meant by gnuisms
+> breeding.
 
-Both approaches should be complementary. The idea of optimistic spinning
-in rwsems is to avoid putting putting the writer on the wait queue -
-reducing contention and giving a greater chance for the rwsem
-to get acquired. Waiman's approach is once the blocking actually occurs,
-and at this point I'm not sure how this will affect writer stealing
-logic.
+Well. I did the docs patch, but my preferred solution would actually
+be to get the patches reverted so that it still works with old
+binutils.
 
-Thanks,
-Davidlohr
+(So far, I updated one machine with new cross environment, two more to
+go.)
 
-
-
+Anyway, it should be solved _somehow_.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
