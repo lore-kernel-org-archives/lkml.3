@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab3I0LCq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 07:02:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35254 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab3I0LCo (ORCPT
+	id S1751508Ab3I0LNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 07:13:07 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:33352 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab3I0LND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 07:02:44 -0400
-Date: Fri, 27 Sep 2013 04:02:04 -0700
-From: tip-bot for Suravee Suthikulpanit <tipbot@zytor.com>
-Message-ID: <tip-accd1e823ed1d5980106dd522a4c535084400830@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bp@alien8.de, suravee.suthikulpanit@amd.com, jacob.w.shin@gmail.com,
-        herrmann.der.user@googlemail.com, tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bp@alien8.de, suravee.suthikulpanit@amd.com, jacob.w.shin@gmail.com,
-        herrmann.der.user@googlemail.com, tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1285806432-1995-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1285806432-1995-1-git-send-email-suravee.suthikulpanit@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/microcode/AMD:
-  Fix patch level reporting for family 15h
-Git-Commit-ID: accd1e823ed1d5980106dd522a4c535084400830
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 27 Sep 2013 07:13:03 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <52456595.6080202@nod.at>
+References: <1380141125-11063-1-git-send-email-richard@nod.at>
+ <5243E033.7010403@gmail.com> <5243E130.3040200@nod.at> <CACQ1gAgqfHXwLjxhy9RrzFWe93Vmnc0chOg6uRKyqb6sVVQKxw@mail.gmail.com>
+ <CACQ1gAjrSZv61sow6Ows50fu+ptjr3swqXDQT7NYGWqEx-w2Lg@mail.gmail.com> <52456595.6080202@nod.at>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 27 Sep 2013 13:12:36 +0200
+Message-ID: <CACQ1gAj2NFQRhBP3Po4H9SZJgsSDrG97Qk68kiw3aKjQMnFg-Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] UBI: Fix error path in scan_pool()
+To: Richard Weinberger <richard@nod.at>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 27 Sep 2013 04:02:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  accd1e823ed1d5980106dd522a4c535084400830
-Gitweb:     http://git.kernel.org/tip/accd1e823ed1d5980106dd522a4c535084400830
-Author:     Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-AuthorDate: Wed, 29 Sep 2010 19:27:12 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 27 Sep 2013 09:29:27 +0200
+2013/9/27 Richard Weinberger <richard@nod.at>:
+> Am 26.09.2013 11:25, schrieb Richard Genoud:
+>> I added some traces and I found that : (dumping ec_header after
+>> "ubi_io_read_ec_hdr(ubi, pnum, ech, 0); " in ubi_scan_fastmap())
+>> [    0.812500] UBI: default fastmap pool size: 95
+>> [    0.820312] UBI: default fastmap WL pool size: 25
+>> [    0.828125] UBI: attaching mtd2 to ubi0
+>> [    0.851562] ubi_scan_fastmap:
+>> [    0.859375] Erase counter header dump:
+>> [    0.859375]  magic          0x55424923
+>> [    0.867187]  version        1
+>> [    0.867187]  ec             1
+>> [    0.867187]  vid_hdr_offset 2048
+>> [    0.875000]  data_offset    4096
+>> [    0.875000]  image_seq      891983656 <- image seq is good.
+>> [    0.875000]  hdr_crc        0x13cc9a78
+>> [    0.882812] erase counter header hexdump:
+>> [    0.882812] 00000000: 55 42 49 23 01 00 00 00 00 00 00 00 00 00 00
+>> 01 00 00 08 00 00 00 10 00 35 2a 97
+>> 28 00 00 00 00  UBI#....................5*.(....
+>> [    0.890625] 00000020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 13 cc 9a 78  ...............................x
+>> [    0.960937] UBI error: scan_pool: bad image seq: 0x0, expected: 0x352a9728
+>
+> BTW: Do you really print the same PEB as scan_pool() complains about?
+No, those debug traces were dumb, sorry...
+I understand fastmap code better now :)
+> Do you know how many PEBs for one fastmap are needed on your target?
 
-x86/microcode/AMD: Fix patch level reporting for family 15h
+Actually, I just found the problem.
+U-boot has an old UBI implementation that was not aware of image_seq.
+So when I write the ubifs volume, some PEB got erased by UBI(in uboot)
+and written with a image_seq==0.
+and fastmap doesn't pay attention to this use case.
 
-On AMD family 14h, applying microcode patch on the a core (core0)
-would also affect the other core (core1) in the same compute
-unit. The driver would skip applying the patch on core1, but it
-still need to update kernel structures to reflect the proper
-patch level.
+I'll have to test a patch I made and I'll send it in a while.
 
-The current logic is not updating the struct
-ucode_cpu_info.cpu_sig.rev of the skipped core. This causes the
-/sys/devices/system/cpu/cpu1/microcode/version to report
-incorrect patch level as shown below:
 
-  $ grep . cpu?/microcode/version
-  cpu0/microcode/version:0x600063d
-  cpu1/microcode/version:0x6000626
-  cpu2/microcode/version:0x600063d
-  cpu3/microcode/version:0x6000626
-  cpu4/microcode/version:0x600063d
-
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: <bp@alien8.de>
-Cc: <jacob.w.shin@gmail.com>
-Cc: <herrmann.der.user@googlemail.com>
-Link: http://lkml.kernel.org/r/1285806432-1995-1-git-send-email-suravee.suthikulpanit@amd.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/microcode_amd.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 7123b5d..af99f71 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -216,6 +216,7 @@ int apply_microcode_amd(int cpu)
- 	/* need to apply patch? */
- 	if (rev >= mc_amd->hdr.patch_id) {
- 		c->microcode = rev;
-+		uci->cpu_sig.rev = rev;
- 		return 0;
- 	}
- 
+Richard.
