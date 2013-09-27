@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab3I0PUY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 11:20:24 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:51614 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab3I0PUW (ORCPT
+	id S1753765Ab3I0PUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 11:20:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57353 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753729Ab3I0PUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 11:20:22 -0400
-Message-ID: <5245A22F.7020305@gmail.com>
-Date: Fri, 27 Sep 2013 23:20:15 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 27 Sep 2013 11:20:41 -0400
+X-Sasl-enc: BlWRTnj6PNSe+gTchkOQvlDqq8nkzGCTDRXoiLY8ln99 1380295238
+Date: Fri, 27 Sep 2013 12:20:35 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH v3 4/4] thinkpad-acpi: fix handle locate for video and
+ query of _BCL
+Message-ID: <20130927152035.GB4140@khazad-dum.debian.net>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com>
+ <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT PATCH v1 0/7] enable FPSIMD lazy save and restore for arm64
-References: <1380269087-8520-1-git-send-email-liuj97@gmail.com> <20130927105045.GA11063@MacBook-Pro.local> <20130927112332.GD9520@mudshark.cambridge.arm.com>
-In-Reply-To: <20130927112332.GD9520@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380016052-15315-5-git-send-email-aaron.lu@intel.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 07:23 PM, Will Deacon wrote:
-> On Fri, Sep 27, 2013 at 11:50:46AM +0100, Catalin Marinas wrote:
->> On Fri, Sep 27, 2013 at 09:04:40AM +0100, Jiang Liu wrote:
->>> From: Jiang Liu <jiang.liu@huawei.com>
->>>
->>> This patchset enables FPSIMD lazy save and restore for ARM64, you could
->>> apply it against v3.12-rc2.
->>>
->>> We have done basic functional tests on ARM fast model, but still lack
->>> of detail performance benchmark on real hardware platforms. We would
->>> appreciate if you could help to test it on really hardware platforms!
->>
->> That's my issue as well, I would like to see some benchmarks before
->> merging such patches.
+On Tue, 24 Sep 2013, Aaron Lu wrote:
+> The tpacpi_acpi_handle_locate function makes use of acpi_get_devices to
+> locate handle for ACPI video by HID, the problem is, ACPI video node
+> doesn't really have HID defined(i.e. no _HID control method is defined
+> for video device), so.. that function would fail. This can be solved by
+> enhancing the callback function for acpi_get_devices, where we can use
+> acpi_device_hid function to check if the ACPI node corresponds to a
+> video controller.
 > 
-> Furthermore, with GCC's register allocator starting to use vector registers to
-> optimise *integer* code instead of spilling to the stack, it's going to become
-> more and more common to tasks to have live FP state at context switch. Lazy
-> switching might simply introduce overhead in the form of additional trapping.
+> In addition to that, the _BCL control method only exists under a video
+> output device node, not a video controller device node. So to evaluate
+> _BCL, we need the handle of a video output device node, which is child
+> of the located video controller node from tpacpi_acpi_handle_locate.
 > 
-> Will
+> The two fix are necessary for some Thinkpad models to emit notification
+> on backlight hotkey press as a result of evaluation of _BCL.
 > 
-Hi Will,
-	The patchset actually includes three optimizations.
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 
-The first one uses PF_USED_MATH to track whether the thread has
-accessed FPSIMD registers since it has been created. If the thread
-hasn't accessed FPSIMD registers since it's birth, we don't need to
-save and restore FPSIMD context on thread context switching.
+Some testing on a *60 (T60,X60...) would also be best, I cannot test this on
+my T43.
 
-The second one uses a percpu variable to track the owner of the
-FPSIMD hardware. When switching a thread, if it's the owner of
-the FPSIMD hardware, we don't need to load FPSIMD registers again.
-This is useful when context switching between user thread and
-kernel(idle) threads.
+Anyway, the code itself looks fine, so:
 
-The third one disable access to FPSIMD registers when switching a
-thread. When the thread tries to access FPSIMD registers the first
-time since it has been switched in, an exception is raised and then
-we will load FPSIMD context onto hardware.
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-The overhead (penalty) of the first and second optimizations is
-relatively small, so we could always enable them. The overhead
-of the third one is relatively high and the optimization effect
-depends on many factors, such as workload, glibc etc. So we
-provide a kernel boot option "eagerfpu" to enable/disable the
-third optimization.
-
-So what's your thought about the first and second optimizations?
-Should we always enable them? I do need to do some benchmark for
-this, but still lack of hardware.
-
-Thanks!
-Gerry
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
