@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab3I0ObI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 10:31:08 -0400
-Received: from smtp1-1.goneo.de ([212.90.139.81]:40790 "EHLO smtp1-1.goneo.de"
+	id S1753598Ab3I0Oci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 10:32:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31599 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753166Ab3I0ObF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 10:31:05 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1.097
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de
-Subject: Re: [PATCH 1/2] gpio/omap: maintain GPIO and IRQ usage separately
-Date: Fri, 27 Sep 2013 16:31 +0200
-Message-ID: <1651688.AIWaNrhZnY@lem-wkst-02>
-User-Agent: KMail/4.10.5 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753248Ab3I0Ocf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 10:32:35 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 2/3] perf tools: Adding missing ifdef for cmd_trace call
+Date: Fri, 27 Sep 2013 16:32:11 +0200
+Message-Id: <1380292332-6518-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1380292332-6518-1-git-send-email-jolsa@redhat.com>
+References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+ <1380292332-6518-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 September 2013 02:36:52, Javier Martinez Canillas wrote:
-> The GPIO OMAP controller pins can be used as IRQ and GPIO
-> independently so is necessary to keep track GPIO pins and
-> IRQ lines usage separately to make sure that the bank will
-> always be enabled while being used.
-> 
-> Also move gpio_is_input() definition in preparation for the
-> next patch that setups the controller's irq_chip driver when
-> a caller requests an interrupt line.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+We're missing ifdef LIBAUDIT_SUPPORT condition check
+for calling cmd_trace, otherwise the NO_LIBAUDIT=1
+build fails.
 
-For both patches:
+Introduced by commit:
+  perf trace: Add 'trace' alias to 'perf trace'
 
-Tested-by: Lars Poeschel <poeschel@lemonage.de>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/perf.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-on an am3359 (which is DT booting).
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 48d3be6..d8460fe 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -482,12 +482,14 @@ int main(int argc, const char **argv)
+ 		goto out;
+ 	}
+ 
++#ifdef LIBAUDIT_SUPPORT
+ 	if (!prefixcmp(cmd, "trace")) {
+ 		set_buildid_dir();
+ 		setup_path();
+ 		argv[0] = "trace";
+ 		return cmd_trace(argc, argv, NULL);
+ 	}
++#endif
+ 
+ 	/* Look for flags.. */
+ 	argv++;
+-- 
+1.7.11.7
+
