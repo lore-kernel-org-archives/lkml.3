@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab3I0Kpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 06:45:54 -0400
-Received: from mail-oa0-f65.google.com ([209.85.219.65]:37572 "EHLO
-	mail-oa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab3I0Kpt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 06:45:49 -0400
+	id S1751341Ab3I0KvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 06:51:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48947 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966Ab3I0KvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 06:51:02 -0400
+Date: Fri, 27 Sep 2013 12:50:57 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        devel@linuxdriverproject.org
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
+ memdup
+In-Reply-To: <52432152.3030100@canonical.com>
+Message-ID: <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
+References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
+ <52432152.3030100@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20130927083730.GC28287@order.stressinduktion.org>
-References: <1380207108-20030-1-git-send-email-oghorbell@gmail.com>
-	<20130927083730.GC28287@order.stressinduktion.org>
-Date: Fri, 27 Sep 2013 11:45:48 +0100
-Message-ID: <CA+ev270=P9txSvo7AZN0YcsopwhCYtJCgcZCPsdofEJ+BX+EUQ@mail.gmail.com>
-Subject: Re: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
-From: Oussama Ghorbel <oghorbell@gmail.com>
-To: Oussama Ghorbel <oghorbell@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ip6_tunnel.c module would be then dependent on ip_tunnel.c and may
-be it would not be good thing?
-As I have check in v3.10 there is no call from ip6_tunnel to ip_tunnel...
+On Wed, 25 Sep 2013, Joseph Salisbury wrote:
 
-For information, there is no check for the maximum MTU for ipv4 in the
-patch as this is not done for ipv6.
+> After further testing reverting the following commit does in fact
+> resolve the bug:
+> 
+> commit b1a1442a23776756b254b69786848a94d92445ba
+> Author: Jiri Kosina <jkosina@suse.cz>
+> Date: Mon Jun 3 11:27:48 2013 +0200
+> 
+>     HID: core: fix reporting of raw events
+> 
+> Reverting this commit in v3.12-rc2 prevents the system from locking up, 
+> which happens when connecting a bluetooth trackpad.
+> 
+> Jiri, do you think we should revert this patch, or is there some further 
+> debugging/data collecting you would like to do?
 
-Regards,
-Oussama
+Hi Joseph,
 
-On Fri, Sep 27, 2013 at 9:37 AM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> On Thu, Sep 26, 2013 at 03:51:48PM +0100, Oussama Ghorbel wrote:
->> The (inner) MTU of a ipip6 (IPv4-in-IPv6) tunnel cannot be set below 1280, which is the minimum MTU in IPv6.
->> However, there should be no IPv6 on the tunnel interface at all, so the IPv6 rules should not apply.
->> More info at https://bugzilla.kernel.org/show_bug.cgi?id=15530
->>
->> This patch allows to check the minimum MTU for ipv6 tunnel according to these rules:
->>  -In case the tunnel is configured with ipip6 mode the minimum MTU is 68.
->>  -In case the tunnel is configured with ip6ip6 or any mode the minimum MTU is 1280.
->>
->> Signed-off-by: Oussama Ghorbel <oghorbell@gmail.com>
->> ---
->>  net/ipv6/ip6_tunnel.c |   10 ++++++++--
->>  1 file changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
->> index 1e55866..a66ead2 100644
->> --- a/net/ipv6/ip6_tunnel.c
->> +++ b/net/ipv6/ip6_tunnel.c
->> @@ -1423,8 +1423,14 @@ ip6_tnl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
->>  static int
->>  ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
->>  {
->> -     if (new_mtu < IPV6_MIN_MTU) {
->> -             return -EINVAL;
->> +     struct ip6_tnl *t = netdev_priv(dev);
->> +
->> +     if (t->parms.proto == IPPROTO_IPIP) {
->> +             if (new_mtu < 68)
->> +                     return -EINVAL;
->
-> Maybe you could have a look at ip_tunnel_change_mtu in ipv4/ip_tunnel.c,
-> generalize this check as e.g. ip_tunnel_valid_mtu or something and use it
-> here? Maybe an af-independent ip_tunnel_max_mtu()?
->
->> +     } else {
->> +             if (new_mtu < IPV6_MIN_MTU)
->> +                     return -EINVAL;
->
-> This check could also be used here, then.
->
->>       }
->>       dev->mtu = new_mtu;
->>       return 0;
->
-> Thanks,
->
->   Hannes
->
+in this mail:
+
+	Message-ID: <5241992E.3090805@canonical.com>
+	Date: Tue, 24 Sep 2013 09:52:46 -0400
+
+you said that reverting this commit doesn't prevent the lockups, so I am 
+rather confused ... ?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
