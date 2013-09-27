@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3I0IwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 04:52:12 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38922 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3I0IwK (ORCPT
+	id S1753002Ab3I0Izu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 04:55:50 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:60843 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab3I0Izs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 04:52:10 -0400
-Date: Fri, 27 Sep 2013 10:52:03 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] ARC: Use clockevents_config_and_register over
- clockevents_register_device
-Message-ID: <20130927085203.GM16106@pengutronix.de>
-References: <1380056737-3471-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <C2D7FE5348E1B147BCA15975FBA2307514E943@IN01WEMBXA.internal.synopsys.com>
- <20130927081738.GL16106@pengutronix.de>
- <C2D7FE5348E1B147BCA15975FBA2307514EB8B@IN01WEMBXA.internal.synopsys.com>
+	Fri, 27 Sep 2013 04:55:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307514EB8B@IN01WEMBXA.internal.synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LFD.2.03.1309261136010.312@syhkavp.arg>
+References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
+	<1380207292-16968-10-git-send-email-ulf.hansson@linaro.org>
+	<alpine.LFD.2.03.1309261136010.312@syhkavp.arg>
+Date: Fri, 27 Sep 2013 10:55:47 +0200
+Message-ID: <CAPDyKFobK48HLh=u+RLoGLH2+tsK-FKCKFMUh0Y4oFLbXBAqRw@mail.gmail.com>
+Subject: Re: [PATCH 09/27] mmc: mvsdio: Remove redundant suspend and resume callbacks
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 26 September 2013 17:40, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Thu, 26 Sep 2013, Ulf Hansson wrote:
+>
+>> Suspend and resume of cards are handled by the protocol layer and
+>> consequently the mmc_suspend|resume_host APIs are marked as deprecated.
+>
+> Having the protocol layer take care of card suspend is perfectly sound.
+>
+> However, what about host controllers?  Shouldn't they suspend themselves
+> as well?  There is certainly potential for power saving by gating clocks
+> to the host IP block or the like.
+>
 
-On Fri, Sep 27, 2013 at 08:26:58AM +0000, Vineet Gupta wrote:
-> On 09/27/2013 01:47 PM, Uwe Kleine-König wrote:
-> > On Thu, Sep 26, 2013 at 12:01:49PM +0000, Vineet Gupta wrote:
-> >> On 09/25/2013 02:35 AM, Uwe Kleine-König wrote:
-> >>> clockevents_config_and_register is more clever and correct than doing it
-> >>> by hand; so use it.
-> >>>
-> >>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> >> Acked-by: Vineet Gupta <vgupta@synopsys.com>
-> > Thanks for the ack, but I expected that it will be you who takes that
-> > patch. Am I wrong? Who will take it instead?
-> 
-> Well that really depends - if there's a series of such fixes, people generally
-> route it thru mm or some such.
-I still have a few such fixes in the queue, but as they are all
-independant of each other I think it would be best if you took it.
+Hi Nicolas,
 
-Thanks
-Uwe
+You are right, host drivers shall be responsible to handle power
+saving operations, like clocks, power domains, pinctrls, etc. In many
+cases I think using only runtime PM should satisfy a host driver's
+need to perform the proper power saving.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+For mvsdio, there were no host power save operations done in the
+suspend/resume callbacks, which is why I removed the callbacks
+entirely.
+
+Kind regards
+Ulf Hansson
+
+>
+> Nicolas
