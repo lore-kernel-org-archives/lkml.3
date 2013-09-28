@@ -1,160 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab3I1Vja (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 17:39:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754733Ab3I1Vj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 17:39:28 -0400
-Date: Sat, 28 Sep 2013 23:37:27 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: linux-pci@vger.kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] msi: free msi_desc entry only after we've released
- the kobject
-Message-ID: <20130928213727.GC32063@redhat.com>
-References: <1380189591-1368-1-git-send-email-vfalico@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1380189591-1368-1-git-send-email-vfalico@redhat.com>
+	id S1755163Ab3I1Vtu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 17:49:50 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:49167 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab3I1Vts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 17:49:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: [PATCHSET] sysfs: use seq_file and unify regular and bin file handling
+Date: Sat, 28 Sep 2013 17:49:30 -0400
+Message-Id: <1380404984-31858-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 11:59:51AM +0200, Veaceslav Falico wrote:
->Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
->however kobject_put() doesn't guarantee us that it was the last reference
->and that the kobj isn't used currently by someone else, so after we
->kfree(entry) with the struct kobject - other users will begin using the
->freed memory, instead of the actual kobject.
+Hello,
 
-Hi Bjorn,
+Currently, sysfs's file handling is a bit weird.
 
-I've seen that you've dropped this bugfix (and the 3 cleanup patches) with
-"Changes Requested", however I don't recall any request to change this.
+* Regular and bin file paths are similar but implemented completely
+  separately duplicating some hairy logics.
 
-I'm really sorry for bugging - but I need this fix to get included for my
-testing to work :(.
+* Read path implements custom buffering which is essentially
+  degenerate seq_file.
 
-This fix fixes the critical bug when we free the entry with the kobject
-.../msi_irqs/IRQ_NR still being used, however the issue with msi_irqs kset
-itself still exists, and really is a different issue - and I'm trying to
-find a fix for it.
+In addition, sysfs core implementation is planned to be separated out
+so that it can be shared by other subsystems and the current file
+handling is too restrictive and quirky to spread further to other
+parts of the kernel.  It'd be a lot more desirable to have read path
+completely handled by seq_file which is a lot more versatile and would
+also increase overall behavior consistency.
 
-Thank you, and sorry for the mess and the noise.
+This patchset updates file handling such that read is handled by
+seq_file and then merges bin file handling into regular file path.
+While some changes introduces behavior changes in extreme corner
+cases, they are highly unlikely to be noticeable (please refer to the
+description of each patch for details) and generally bring sysfs's
+behavior closer to those of procfs or any pseudo filesystem which
+makes use of seq_file.
 
->
->Fix this by using the kobject->release callback, which is called last when
->the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
->which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
->kobj itself after ->release() was called, so we're safe).
->
->In case we've failed to create the sysfs directories - just kfree()
->it - cause we don't have the kobjects attached.
->
->Also, remove the same functionality from populate_msi_sysfs(), cause on
->failure we anyway call free_msi_irqs(), which will take care of all the
->kobjects properly.
->
->And add the forgotten pci_dev_put(pdev) in case of failure to register the
->kobject in populate_msi_sysfs().
->
->CC: Bjorn Helgaas <bhelgaas@google.com>
->CC: Neil Horman <nhorman@tuxdriver.com>
->CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->CC: linux-pci@vger.kernel.org
->CC: linux-kernel@vger.kernel.org
->Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
->---
->
->Notes:
->    v1  -> v2:
->    Make it as a standalone patch, which is a bugfix, and add the forgotten
->    pci_dev_put() so that it won't break bisecting. The pci_dev_put() will
->    go away anyway in the following patchset, which cleans removes
->    kobject_del and useless pci_dev_get/put().  Rebased on linux-pci/next.
->
-> drivers/pci/msi.c | 31 ++++++++++++-------------------
-> 1 file changed, 12 insertions(+), 19 deletions(-)
->
->diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->index d5f90d6..5d70f49 100644
->--- a/drivers/pci/msi.c
->+++ b/drivers/pci/msi.c
->@@ -374,19 +374,22 @@ static void free_msi_irqs(struct pci_dev *dev)
-> 				iounmap(entry->mask_base);
-> 		}
->
->+		list_del(&entry->list);
->+
-> 		/*
-> 		 * Its possible that we get into this path
-> 		 * When populate_msi_sysfs fails, which means the entries
-> 		 * were not registered with sysfs.  In that case don't
->-		 * unregister them.
->+		 * unregister them, and just free. Otherwise the
->+		 * kobject->release will take care of freeing the entry via
->+		 * msi_kobj_release().
-> 		 */
-> 		if (entry->kobj.parent) {
-> 			kobject_del(&entry->kobj);
-> 			kobject_put(&entry->kobj);
->+		} else {
->+			kfree(entry);
-> 		}
->-
->-		list_del(&entry->list);
->-		kfree(entry);
-> 	}
-> }
->
->@@ -509,6 +512,7 @@ static void msi_kobj_release(struct kobject *kobj)
-> 	struct msi_desc *entry = to_msi_desc(kobj);
->
-> 	pci_dev_put(entry->dev);
->+	kfree(entry);
-> }
->
-> static struct kobj_type msi_irq_ktype = {
->@@ -522,7 +526,6 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
-> 	struct msi_desc *entry;
-> 	struct kobject *kobj;
-> 	int ret;
->-	int count = 0;
->
-> 	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
-> 	if (!pdev->msi_kset)
->@@ -534,23 +537,13 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
-> 		pci_dev_get(pdev);
-> 		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
-> 				     "%u", entry->irq);
->-		if (ret)
->-			goto out_unroll;
->-
->-		count++;
->+		if (ret) {
->+			pci_dev_put(pdev);
->+			return ret;
->+		}
-> 	}
->
-> 	return 0;
->-
->-out_unroll:
->-	list_for_each_entry(entry, &pdev->msi_list, list) {
->-		if (!count)
->-			break;
->-		kobject_del(&entry->kobj);
->-		kobject_put(&entry->kobj);
->-		count--;
->-	}
->-	return ret;
-> }
->
-> /**
->-- 
->1.8.4
->
+After the conversion, LOC is reduced by ~110 lines and read path is
+fully handled by seq_file, which allows defining a new seq_file based
+core interface which will enable sharing sysfs from other subsystems.
+
+This patchset contains the following patches.
+
+ 0001-sysfs-remove-unused-sysfs_buffer-pos.patch
+ 0002-sysfs-remove-sysfs_buffer-needs_read_fill.patch
+ 0003-sysfs-remove-sysfs_buffer-ops.patch
+ 0004-sysfs-add-sysfs_open_file_mutex.patch
+ 0005-sysfs-rename-sysfs_buffer-to-sysfs_open_file.patch
+ 0006-sysfs-add-sysfs_open_file-sd-and-file.patch
+ 0007-sysfs-use-transient-write-buffer.patch
+ 0008-sysfs-use-seq_file-when-reading-regular-files.patch
+ 0009-sysfs-prepare-llseek-path-for-unified-regular-bin-fi.patch
+ 0010-sysfs-prepare-path-write-for-unified-regular-bin-fil.patch
+ 0011-sysfs-prepare-read-path-for-unified-regular-bin-file.patch
+ 0012-sysfs-copy-bin-mmap-support-from-fs-sysfs-bin.c-to-f.patch
+ 0013-sysfs-prepare-open-path-for-unified-regular-bin-file.patch
+ 0014-sysfs-merge-regular-and-bin-file-handling.patch
+
+0001-0006 are misc preps.
+
+0007 makes write path use transient buffer instead of the one
+persistent during open.
+
+0008 makes read path use seq_file.
+
+0009-0014 merge bin file handling into regular file support.
+
+The patches are on top of
+
+  linus#master c2d95729e3 ("Merge branch 'akpm' (patches from Andrew Morton)")
++ [1] [PATCHSET] sysfs: disentangle kobject namespace handling from sysfs
++ [2] [PATCHSET] sysfs: implement sysfs_remove()
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-sysfs-seq_file
+
+diffstat follows, thanks.
+
+ fs/sysfs/Makefile     |    3 
+ fs/sysfs/bin.c        |  502 -------------------------------
+ fs/sysfs/dir.c        |    2 
+ fs/sysfs/file.c       |  805 ++++++++++++++++++++++++++++++++++++--------------
+ fs/sysfs/inode.c      |    2 
+ fs/sysfs/sysfs.h      |    6 
+ include/linux/sysfs.h |    7 
+ 7 files changed, 606 insertions(+), 721 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1560372
+[2] http://thread.gmane.org/gmane.linux.kernel/1564002
