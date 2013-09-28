@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab3I1SWY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 14:22:24 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:60155 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3I1SWR (ORCPT
+	id S1755013Ab3I1SW2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 14:22:28 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:54024 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754831Ab3I1SWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 14:22:17 -0400
+	Sat, 28 Sep 2013 14:22:16 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -24,9 +24,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 5/5] ARM: s3c64xx: Kill CONFIG_PLAT_S3C64XX
-Date: Sat, 28 Sep 2013 20:21:37 +0200
-Message-Id: <1380392497-27406-5-git-send-email-tomasz.figa@gmail.com>
+Subject: [PATCH 4/5] ASoC: samsung: Use CONFIG_ARCH_S3C64XX to check for S3C64xx support
+Date: Sat, 28 Sep 2013 20:21:36 +0200
+Message-Id: <1380392497-27406-4-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380392497-27406-1-git-send-email-tomasz.figa@gmail.com>
 References: <1380392497-27406-1-git-send-email-tomasz.figa@gmail.com>
@@ -34,59 +34,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_PLAT_S3C64XX has been kept in place way too long since it was
-marked as temporary in commit
-
-110d85a ARM: S3C64XX: Eliminate plat-s3c64xx
-
-After fixing all users of it in previous patches, this patch finally
-kills this temporary Kconfig entry.
+Since CONFIG_PLAT_S3C64XX is going to be removed, this patch modifies
+the s3c-i2s-v2 driver to use the proper way of checking for S3C64xx
+support - CONFIG_ARCH_S3C64XX.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- arch/arm/Kconfig              |  2 ++
- arch/arm/mach-s3c64xx/Kconfig | 11 -----------
- 2 files changed, 2 insertions(+), 11 deletions(-)
+ sound/soc/samsung/s3c-i2s-v2.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index dc51f8a..40d5178 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -738,10 +738,12 @@ config ARCH_S3C64XX
- 	select NEED_MACH_GPIO_H
- 	select NO_IOPORT
- 	select PLAT_SAMSUNG
-+	select PM_GENERIC_DOMAINS
- 	select S3C_DEV_NAND
- 	select S3C_GPIO_TRACK
- 	select SAMSUNG_ATAGS
- 	select SAMSUNG_GPIOLIB_4BIT
-+	select SAMSUNG_WAKEMASK
- 	select SAMSUNG_WDT_RESET
- 	select USB_ARCH_HAS_OHCI
- 	help
-diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-index 0e23910..2cb8dc5 100644
---- a/arch/arm/mach-s3c64xx/Kconfig
-+++ b/arch/arm/mach-s3c64xx/Kconfig
-@@ -5,17 +5,6 @@
+diff --git a/sound/soc/samsung/s3c-i2s-v2.c b/sound/soc/samsung/s3c-i2s-v2.c
+index e5e81b1..fefc561 100644
+--- a/sound/soc/samsung/s3c-i2s-v2.c
++++ b/sound/soc/samsung/s3c-i2s-v2.c
+@@ -31,11 +31,7 @@
+ #undef S3C_IIS_V2_SUPPORTED
  
- if ARCH_S3C64XX
- 
--# temporary until we can eliminate all drivers using it.
--config PLAT_S3C64XX
--	bool
--	depends on ARCH_S3C64XX
--	default y
--	select PM_GENERIC_DOMAINS
--	select SAMSUNG_WAKEMASK
--	help
--	  Base platform code for any Samsung S3C64XX device
+ #if defined(CONFIG_CPU_S3C2412) || defined(CONFIG_CPU_S3C2413) \
+-	|| defined(CONFIG_CPU_S5PV210)
+-#define S3C_IIS_V2_SUPPORTED
+-#endif
 -
--
- # Configuration options for the S3C6410 CPU
+-#ifdef CONFIG_PLAT_S3C64XX
++	|| defined(CONFIG_ARCH_S3C64XX) || defined(CONFIG_CPU_S5PV210)
+ #define S3C_IIS_V2_SUPPORTED
+ #endif
  
- config CPU_S3C6400
 -- 
 1.8.3.2
 
