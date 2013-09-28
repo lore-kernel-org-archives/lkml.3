@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab3I1ArA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 20:47:00 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:19526 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab3I1Aq6 (ORCPT
+	id S1754341Ab3I1BCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 21:02:50 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36838 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab3I1BCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 20:46:58 -0400
-Message-ID: <524626F1.6010104@hp.com>
-Date: Fri, 27 Sep 2013 20:46:41 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com> <5245DD4E.60009@hurleysoftware.com>
-In-Reply-To: <5245DD4E.60009@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Sep 2013 21:02:47 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rui Wang <ruiv.wang@gmail.com>, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v5 0/4] iMC SMBUS and DIMM bus probing
+Date: Fri, 27 Sep 2013 18:02:39 -0700
+Message-Id: <cover.1380315959.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 03:32 PM, Peter Hurley wrote:
-> On 09/27/2013 03:00 PM, Waiman Long wrote:
->> With the 3.12-rc2 kernel, there is sizable spinlock contention on
->> the rwsem wakeup code path when running AIM7's high_systime workload
->> on a 8-socket 80-core DL980 (HT off) as reported by perf:
->>
->>    7.64%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
->>               |--41.77%-- rwsem_wake
->>    1.61%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irq
->>               |--92.37%-- rwsem_down_write_failed
->>
->> That was 4.7% of recorded CPU cycles.
->>
->> On a large NUMA machine, it is entirely possible that a fairly large
->> number of threads are queuing up in the ticket spinlock queue to do
->> the wakeup operation. In fact, only one will be needed.  This patch
->> tries to reduce spinlock contention by doing just that.
->>
->> A new wakeup field is added to the rwsem structure. This field is
->> set on entry to rwsem_wake() and __rwsem_do_wake() to mark that a
->> thread is pending to do the wakeup call. It is cleared on exit from
->> those functions.
->>
->> By checking if the wakeup flag is set, a thread can exit rwsem_wake()
->> immediately if another thread is pending to do the wakeup instead of
->> waiting to get the spinlock and find out that nothing need to be done.
->
-> This will leave readers stranded if a former writer is in __rwsem_do_wake
-> to wake up the readers and another writer steals the lock, but before
-> the former writer exits without having woken up the readers, the locking
-> stealing writer drops the lock and sees the wakeup flag is set, so
-> doesn't bother to wake the readers.
->
-> Regards,
-> Peter Hurley
->
+Intel LGA2011 machines have dedicated SMBUS controllers for DIMM
+sockets.  Because they're dedicated, they can be safely and accurately
+probed, since all devices on them are known to be attached to DIMMs.
+The devices found are:
+ - SPD EEPROMs
+ - TSODs (Temperature Sensor on DIMMs)
+ - Other interesting things, with drivers hopefully to follow...
 
-Yes, you are right. That can be a problem. Thank for pointing this out. 
-The workloads that I used doesn't seem to exercise the readers. I will 
-modify the patch to add code handle this failure case by resetting the 
-wakeup flag, pushing it out and then retrying one more time to get the 
-read lock. I  think that should address the problem.
+This patch series adds a simple generic layer for probing for DIMMs over
+SMBUS and an i2c bus driver for the iMC controller found on Intel
+LGA2011 chips.
 
-Regards,
-Longman
+It now uses only modern infrastructure -- new-style I2C probing and the
+at24 (instead of eeprom) driver.
+
+I've tested this on a Core i7 Extreme and on a Xeon E5 server.
+
+Patches 1-3 are useful even without patch 4.  I'm still hoping for feedback
+on patch 4.
+
+Changes from v4:
+ - Added the sb_edac changes -- i2c_imc and sb_edac can now coexist
+ - Added some paranoid race detection.
+ - The driver now confirms its ability to claim software control of the SMBUS
+   master.  This prevents unpleasant problems on systems that enable CLTT
+   (closed loop thermal throttling).
+ - Reordered the patches so that the DIMM bus code is last.
+
+Changes from v3:
+ - Dropped redundant "tsod" driver
+ - Dropped eeprom modalias
+ - Switched to probing for the "eeprom" and "jc42"
+
+Andy Lutomirski (4):
+  Move Intel SNB device ids from sb_edac to pci_ids.h
+  sb_edac: Claim a different PCI device
+  i2c_imc: New driver for Intel's iMC, found on LGA2011 chips
+  i2c, i2c_imc: Add DIMM bus code
+
+ drivers/edac/sb_edac.c        |  32 +--
+ drivers/i2c/busses/Kconfig    |  19 ++
+ drivers/i2c/busses/Makefile   |   5 +
+ drivers/i2c/busses/dimm-bus.c |  97 ++++++++
+ drivers/i2c/busses/i2c-imc.c  | 562 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/i2c/dimm-bus.h  |  24 ++
+ include/linux/pci_ids.h       |  15 ++
+ 7 files changed, 723 insertions(+), 31 deletions(-)
+ create mode 100644 drivers/i2c/busses/dimm-bus.c
+ create mode 100644 drivers/i2c/busses/i2c-imc.c
+ create mode 100644 include/linux/i2c/dimm-bus.h
+
+-- 
+1.8.3.1
+
