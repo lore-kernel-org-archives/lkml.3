@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab3I1ATu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 20:19:50 -0400
-Received: from wolff.to ([98.103.208.27]:43077 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753522Ab3I1ATr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 20:19:47 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Sep 2013 20:19:47 EDT
-Date: Fri, 27 Sep 2013 19:09:51 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jean Delvare <khali@linux-fr.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] kernel: replace strict_strto*() with kstrto*()
-Message-ID: <20130928000951.GA7019@wolff.to>
-References: <000401ce86b7$0463f580$0d2be080$@samsung.com>
- <CAErSpo51GFB+yCuaHrwBqWjHxd0GboHgvWGov5pj4V6aGPfQHg@mail.gmail.com>
- <20130927195353.3643398a@endymion.delvare>
- <20130927131820.7fc04051.akpm@linux-foundation.org>
+	id S1754820Ab3I1AWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 20:22:48 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42948 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab3I1AWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 20:22:44 -0400
+Date: Fri, 27 Sep 2013 19:22:38 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+Subject: [PATCH 0/1] rsxx: driver bug fix
+Message-ID: <20130928002238.GA13456@oc6784271780.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130927131820.7fc04051.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092800-3532-0000-0000-000001C1641B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 13:18:20 -0700,
-   Andrew Morton <akpm@linux-foundation.org> wrote:
->On Fri, 27 Sep 2013 19:53:53 +0200 Jean Delvare <khali@linux-fr.org> wrote:
->
->> Andrew,
->>
->> On Fri, 27 Sep 2013 09:50:39 -0600, Bjorn Helgaas wrote:
->> > There's some indication that this change might have broken handling of
->> > signed types.  See
->> > https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-September/111758.html
->> > and https://bugzilla.kernel.org/show_bug.cgi?id=61811.
->>
->> It seems this is hurting more users than I would have expected, and
->> people are spending significant amounts of time to figure out what the
->> root cause to their problem is. May I suggest that my fix should find
->> its way to Linus' tree rather sooner than later?
->>
->
->Done.  I had to send that one by hand as I'm not at my desk...
+The incoming patch is for the rsxx driver (drivers/block/rsxx)
 
-I just did a successful test of the patch from the mailing list. So it at 
-least solved the problem in my case.
+This patch fixes a kernel panic injected by patch id
+8d26750143341831bc312f61c5ed141eeb75b8d0 where discards
+are getting mapped through the pci_map_page function call.
+
+This patch relies on git commit 8d26750143341831bc312f61c5ed141eeb75b8d0.
+
+Regards,
+- Philip Kelleher
+	
+
