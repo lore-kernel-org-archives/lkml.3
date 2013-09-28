@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab3I1K6U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 06:58:20 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:32927 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab3I1K6R (ORCPT
+	id S1753789Ab3I1K6p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 06:58:45 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:37333 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab3I1K6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 06:58:17 -0400
+	Sat, 28 Sep 2013 06:58:19 -0400
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Tony Luck <tony.luck@intel.com>, Waiman Long <waiman.long@hp.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
         Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH v2 0/3] changes to enable lockless lockref on s390
-Date: Sat, 28 Sep 2013 12:58:08 +0200
-Message-Id: <1380365891-34457-1-git-send-email-heiko.carstens@de.ibm.com>
+Subject: [PATCH v2 3/3] s390: enable ARCH_USE_CMPXCHG_LOCKREF
+Date: Sat, 28 Sep 2013 12:58:11 +0200
+Message-Id: <1380365891-34457-4-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1380365891-34457-1-git-send-email-heiko.carstens@de.ibm.com>
+References: <1380365891-34457-1-git-send-email-heiko.carstens@de.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092810-3548-0000-0000-000006AECA65
+x-cbid: 13092810-2966-0000-0000-000008E4442F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Enable ARCH_USE_CMPXCHG_LOCKREF since it shows performance improvements
+with Linus' simple stat() test case of up to 50% on a 30 cpu system.
 
-I just updated the patch set to include your suggested changes.
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ arch/s390/Kconfig                | 1 +
+ arch/s390/include/asm/spinlock.h | 5 +++++
+ 2 files changed, 6 insertions(+)
 
-You can also pull the three patches from
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git lockref
-
-Original part of description that still matters:
-
-enabling the new lockless lockref variant on s390 would have been trivial
-until Tony Luck added a cpu_relax() call into the CMPXCHG_LOOP(), with
-d472d9d9 "lockref: Relax in cmpxchg loop".
-
-As already mentioned cpu_relax() is very expensive on s390 since it yields()
-the current virtual cpu. So we are talking of several thousand cycles.
-Considering this enabling the lockless lockref variant would contradict the
-intention of the new semantics. And also some quick measurements show
-performance regressions of 50% and more.
-
-Simply removing the cpu_relax() call again seems also not very desireable
-since Waiman Long reported that for some workloads the call improved
-performance by 5%.
-
-Heiko Carstens (3):
-  mutex: replace CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX with simple ifdef
-  lockref: use arch_mutex_cpu_relax() in CMPXCHG_LOOP()
-  s390: enable ARCH_USE_CMPXCHG_LOCKREF
-
- arch/Kconfig                      |  3 ---
- arch/s390/Kconfig                 |  2 +-
- arch/s390/include/asm/mutex.h     |  2 --
- arch/s390/include/asm/processor.h |  2 ++
- arch/s390/include/asm/spinlock.h  |  5 +++++
- include/linux/mutex.h             |  6 +++---
- lib/lockref.c                     | 10 +++++++++-
- 7 files changed, 20 insertions(+), 10 deletions(-)
-
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index d3fa840..7143793 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -93,6 +93,7 @@ config S390
+ 	select ARCH_INLINE_WRITE_UNLOCK_IRQ
+ 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
++	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select CLONE_BACKWARDS2
+diff --git a/arch/s390/include/asm/spinlock.h b/arch/s390/include/asm/spinlock.h
+index 701fe8c..83e5d216 100644
+--- a/arch/s390/include/asm/spinlock.h
++++ b/arch/s390/include/asm/spinlock.h
+@@ -44,6 +44,11 @@ extern void arch_spin_lock_wait_flags(arch_spinlock_t *, unsigned long flags);
+ extern int arch_spin_trylock_retry(arch_spinlock_t *);
+ extern void arch_spin_relax(arch_spinlock_t *lock);
+ 
++static inline int arch_spin_value_unlocked(arch_spinlock_t lock)
++{
++	return lock.owner_cpu == 0;
++}
++
+ static inline void arch_spin_lock(arch_spinlock_t *lp)
+ {
+ 	int old;
 -- 
 1.8.3.4
 
