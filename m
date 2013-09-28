@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab3I1No5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 09:44:57 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45284 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab3I1Nox (ORCPT
+	id S1754170Ab3I1NsP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 09:48:15 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:44485 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab3I1NsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 09:44:53 -0400
-Date: Sat, 28 Sep 2013 15:44:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
-        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        guohanjun@huawei.com, paul.gortmaker@windriver.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: Cleanup boot CPUs table
-Message-ID: <20130928134449.GB26931@gmail.com>
-References: <tip-52239484bf8aec031afa84ae08aa88224d819b93@git.kernel.org>
- <20130925100722.GB3433@nazgul.tnic>
- <20130925182936.GD16693@gmail.com>
- <20130926231545.GD10123@pd.tnic>
- <20130927065115.GA6852@gmail.com>
- <20130927103802.GA4422@pd.tnic>
- <20130927143249.GD4422@pd.tnic>
- <20130927143554.GF4422@pd.tnic>
- <20130928082542.GA18198@gmail.com>
- <20130928102305.GA5956@pd.tnic>
+	Sat, 28 Sep 2013 09:48:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130928102305.GA5956@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130925184435.GH2954@lukather>
+References: <1379852488-32147-1-git-send-email-cinifr@gmail.com>
+	<1379852488-32147-2-git-send-email-cinifr@gmail.com>
+	<20130923181707.GR2779@lukather>
+	<CAK3cCBwLrnV7L9WzJ+1P_62PEjEEtgzVjFH8m6SZzWG1O+2vEw@mail.gmail.com>
+	<20130925184435.GH2954@lukather>
+Date: Sat, 28 Sep 2013 21:48:11 +0800
+Message-ID: <CAK3cCBwOpkk5ObeEm+by=RS6jSptPdGZM+fvpgGZpX9TPij5gg@mail.gmail.com>
+Subject: Re: [PATCH V3: Add Smp support for Allwinner A20. 1/3] Add smp
+ support for Allwinner A20(sunxi 7i).
+From: cinifr <cinifr@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: coosty@163.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi  Maxime,
+    I have test it, but I found it does not work. If using
+smp_prepare_cpus, the kernenl cannot find the secondary cpus because
+that smp_prepare_cpus semms not be excuted before kernel is booting
+secondary cpus. So I have to use early_initcall.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Fan.
 
-> On Sat, Sep 28, 2013 at 10:25:42AM +0200, Ingo Molnar wrote:
-> > Could we, with another add-on patch, further compress the first half
-> > of the output as well?
-> >
-> > Advanced output like this would be really cool:
-> 
-> Sure.
-> 
-> > > [    0.074509] x86: Booting node #0, CPUs:       #1  #2  #3  #4  #5  #6  #7
-> > > [    0.644008] x86: Booting node #1, CPUs:   #8  #9 #10 #11 #12 #13 #14 #15
-> > > [    1.245006] x86: Booting node #2, CPUs:  #16 #17 #18 #19 #20 #21 #22 #23
-> > > [    1.864005] x86: Booting node #3, CPUs:  #24 #25 #26 #27 #28 #29 #30 #31
-> > > [    2.489005] x86: Booting node #4, CPUs:  #32 #33 #34 #35 #36 #37 #38 #39
-> > > [    3.093005] x86: Booting node #5, CPUs:  #40 #41 #42 #43 #44 #45 #46 #47
-> > > [    3.698005] x86: Booting node #6, CPUs:  #48 #49 #50 #51 #52 #53 #54 #55
-> > > [    4.304005] x86: Booting node #7, CPUs:  #56 #57 #58 #59 #60 #61 #62 #63
-> > > [    4.961413] x86: Booted up 8 nodes, 64 CPUs
-> 
-> Boot(ing|ed) kinda wastes unnecessary space too, how about we go a step
-> further:
-> 
-> [    0.074509] x86: Booting SMP configuration:
-> [    0.644008] .... node #0, CPUs:       #1  #2  #3  #4  #5  #6  #7
-> [    1.245006] .... node #1, CPUs:   #8  #9 #10 #11 #12 #13 #14 #15
-> [    1.864005] .... node #2, CPUs:  #16 #17 #18 #19 #20 #21 #22 #23
-> [    2.489005] .... node #3, CPUs:  #24 #25 #26 #27 #28 #29 #30 #31
-> [    3.093005] .... node #4, CPUs:  #32 #33 #34 #35 #36 #37 #38 #39
-> [    3.698005] .... node #5, CPUs:  #40 #41 #42 #43 #44 #45 #46 #47
-> [    4.304005] .... node #6, CPUs:  #48 #49 #50 #51 #52 #53 #54 #55
-> [    4.961413] .... node #7, CPUs:  #56 #57 #58 #59 #60 #61 #62 #63
-> [    5.245021] x86: Booted up 8 nodes, 64 CPUs
+On 26 September 2013 02:44, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> Hi Fan,
 >
-> 
-> [    0.074509] x86: Booting SMP configuration:
-> [    0.072367] .... node #0, CPUs:     #1 #2 #3 #4 #5 #6 #7
-> [    0.686329] x86: Booted up 1 node, 8 CPUs
-
-Nice!
-
-> Btw, the "x86" prefix would mean we want to either change pr_fmt() of
-> arch/x86/kernel/smpboot.c (which I rather not) or not use pr_info (which
-> I'd prefer).
-
-Not using pr_info() for such specially formatted output is fine I think.
-
-Thanks,
-
-	Ingo
+> On Wed, Sep 25, 2013 at 12:22:44AM +0800, cinifr wrote:
+>> > You still haven't said why you don't want to use smp_init_cpus there.
+>> I find that of_funcation liking of_find_matching_node and of_iomap can
+>> not run well in smp_init_cpus. It cause kernel crash. So I have to use
+>> early_initcall.
+>
+> Ah, right.
+>
+> Then, can't we use smp_prepare_cpus for this? it looks to be late enough
+> so that we can use ioremap there.
+>
+> I don't want it to be an initcall. The code will be different on the
+> A31, and we don't want it to be run on all the other machines whenever
+> we boot a multiplatform kernel anyway.
+>
+> Maxime
+>
+> --
+> Maxime Ripard, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
