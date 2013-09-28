@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab3I1R4o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 13:56:44 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:45731 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3I1R4l (ORCPT
+	id S1754704Ab3I1R6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 13:58:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48000 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab3I1R6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 13:56:41 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH] USB: OHCI: Check the overrides pointer for NULL in ohci_init_driver()
-Date: Sat, 28 Sep 2013 19:56:29 +0200
-Message-Id: <1380390989-4740-1-git-send-email-tomasz.figa@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 28 Sep 2013 13:58:11 -0400
+Date: Sat, 28 Sep 2013 10:57:48 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-8a3da6c7d0031fcb6a0d17f9c7a68b0e01f52855@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86:
+  Fix PMU detection printout when no PMU is detected
+Git-Commit-ID: 8a3da6c7d0031fcb6a0d17f9c7a68b0e01f52855
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 28 Sep 2013 10:57:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A series of commit starting at
+Commit-ID:  8a3da6c7d0031fcb6a0d17f9c7a68b0e01f52855
+Gitweb:     http://git.kernel.org/tip/8a3da6c7d0031fcb6a0d17f9c7a68b0e01f52855
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Sat, 28 Sep 2013 15:48:48 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 28 Sep 2013 15:48:48 +0200
 
-50a97e059b USB: OHCI: make ohci-exynos a separate driver
+perf/x86: Fix PMU detection printout when no PMU is detected
 
-and ending at
+Ran into this cryptic PMU bootup log recently:
 
-b8ad5c3706 USB: OHCI: make ohci-pxa27x a separate driver
+[    0.124047] Performance Events:
+[    0.125000] smpboot: ...
 
-introduced the concept of separate OHCI drivers for particular
-controllers. Respective drivers need to call ohci_init_driver() to
-initialize hc_driver struct with generic data and to certain extent
-with platform specific overrides through ohci_driver_overrides struct
-passed as second argument to this function. However the code does not
-check if the ohci_driver_overrides struct pointer is non-NULL, which
-leads for a NULL pointer dereference for drivers that do not need any
-overrides.
+Turns out we print this if no PMU is detected. Fall back to
+the right condition so that the following is printed:
 
-This patch fixes the problem by dereferencing the passed pointer to
-ohci_driver_overrides struct only if it is non-NULL.
+[    0.122381] Performance Events: no PMU driver, software events only.
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/n/tip-u2fwaUffakjp0qkpRfqljgsn@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/usb/host/ohci-hcd.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 21d937a..8ada13f 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1161,10 +1161,12 @@ void ohci_init_driver(struct hc_driver *drv,
- 	/* Copy the generic table to drv and then apply the overrides */
- 	*drv = ohci_hc_driver;
- 
--	drv->product_desc = over->product_desc;
--	drv->hcd_priv_size += over->extra_priv_size;
--	if (over->reset)
--		drv->reset = over->reset;
-+	if (over) {
-+		drv->product_desc = over->product_desc;
-+		drv->hcd_priv_size += over->extra_priv_size;
-+		if (over->reset)
-+			drv->reset = over->reset;
-+	}
- }
- EXPORT_SYMBOL_GPL(ohci_init_driver);
- 
--- 
-1.8.3.2
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index a9c606b..897783b 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1506,7 +1506,7 @@ static int __init init_hw_perf_events(void)
+ 		err = amd_pmu_init();
+ 		break;
+ 	default:
+-		return 0;
++		err = -ENOTSUPP;
+ 	}
+ 	if (err != 0) {
+ 		pr_cont("no PMU driver, software events only.\n");
