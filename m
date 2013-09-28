@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab3I1Xha (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 19:37:30 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:34241 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab3I1XhL (ORCPT
+	id S1755528Ab3I1Xhw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 19:37:52 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:60987 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437Ab3I1XhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 19:37:11 -0400
+	Sat, 28 Sep 2013 19:37:05 -0400
 From: "Geyslan G. Bem" <geyslan@gmail.com>
 To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
 Cc: v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH v3 2/2] ia32_aout: x86_64: Add safe check in a.out loaders, printks, conding style fixes
-Date: Sat, 28 Sep 2013 20:32:24 -0300
-Message-Id: <1380411144-9236-12-git-send-email-geyslan@gmail.com>
+Subject: [PATCH 1/1] fs/binfmt_elf.c: fill_note_info: Reduce scope of a variable
+Date: Sat, 28 Sep 2013 20:32:22 -0300
+Message-Id: <1380411144-9236-10-git-send-email-geyslan@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
 References: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
@@ -21,147 +21,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ia32_aout had no safe checks concerning the mmap and f_op in this module.
-It's not necessary to verify f_op in the load_aout_library, since the
-prior kernel_read/vfs_read function already does.
-Made coding style fixes and printks replacements.
+The *t variable in the fill_note_info function is only used if
+siginfo->si_signo isn't 0. Moving "t" pointer to that inner scope.
 
-Tested using qemu, a handcrafted a.out binary and an a.out linked with a
-cross-compiled ld.
+Tested.
 
 Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- arch/x86/ia32/ia32_aout.c | 63 +++++++++++++++++++++++------------------------
- 1 file changed, 31 insertions(+), 32 deletions(-)
+ fs/binfmt_elf.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
-index bae3aba..87d5114 100644
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -24,9 +24,9 @@
- #include <linux/binfmts.h>
- #include <linux/personality.h>
- #include <linux/init.h>
--#include <linux/jiffies.h>
-+#include <linux/ratelimit.h>
-+#include <linux/uaccess.h>
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 100edcc..d0ac15b 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1848,12 +1848,11 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 			  struct elf_note_info *info,
+ 			  siginfo_t *siginfo, struct pt_regs *regs)
+ {
+-	struct list_head *t;
+-
+ 	if (!elf_note_info_init(info))
+ 		return 0;
  
--#include <asm/uaccess.h>
- #include <asm/pgalloc.h>
- #include <asm/cacheflush.h>
- #include <asm/user32.h>
-@@ -224,9 +224,9 @@ static u32 __user *create_aout_tables(char __user *p, struct linux_binprm *bprm)
- 	int argc = bprm->argc, envc = bprm->envc;
- 
- 	sp = (u32 __user *) ((-(unsigned long)sizeof(u32)) & (unsigned long) p);
--	sp -= envc+1;
-+	sp -= envc + 1;
- 	envp = sp;
--	sp -= argc+1;
-+	sp -= argc + 1;
- 	argv = sp;
- 	put_user((unsigned long) envp, --sp);
- 	put_user((unsigned long) argv, --sp);
-@@ -271,10 +271,17 @@ static int load_aout_binary(struct linux_binprm *bprm)
- 	     N_MAGIC(ex) != QMAGIC && N_MAGIC(ex) != NMAGIC) ||
- 	    N_TRSIZE(ex) || N_DRSIZE(ex) ||
- 	    i_size_read(file_inode(bprm->file)) <
--	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		return -ENOEXEC;
- 	}
- 
-+	/*
-+	 * Requires a mmap handler. This prevents people from using a.out
-+	 * as part of an exploit attack against /proc-related vulnerabilities.
-+	 */
-+	if (!bprm->file->f_op || !bprm->file->f_op->mmap)
-+		return -ENOEXEC;
-+
- 	fd_offset = N_TXTOFF(ex);
- 
- 	/* Check initial limits. This avoids letting people circumvent
-@@ -322,7 +329,7 @@ static int load_aout_binary(struct linux_binprm *bprm)
- 		unsigned long text_addr, map_size;
- 
- 		text_addr = N_TXTADDR(ex);
--		map_size = ex.a_text+ex.a_data;
-+		map_size = ex.a_text + ex.a_data;
- 
- 		error = vm_brk(text_addr & PAGE_MASK, map_size);
- 
-@@ -339,28 +346,19 @@ static int load_aout_binary(struct linux_binprm *bprm)
- 		}
- 	} else {
- #ifdef WARN_OLD
--		static unsigned long error_time, error_time2;
- 		if ((ex.a_text & 0xfff || ex.a_data & 0xfff) &&
--		    (N_MAGIC(ex) != NMAGIC) &&
--				time_after(jiffies, error_time2 + 5*HZ)) {
--			printk(KERN_NOTICE "executable not page aligned\n");
--			error_time2 = jiffies;
--		}
-+		    (N_MAGIC(ex) != NMAGIC))
-+			pr_notice_ratelimited("executable not page aligned\n");
- 
--		if ((fd_offset & ~PAGE_MASK) != 0 &&
--			    time_after(jiffies, error_time + 5*HZ)) {
--			printk(KERN_WARNING
--			       "fd_offset is not page aligned. Please convert "
--			       "program: %s\n",
--			       bprm->file->f_path.dentry->d_name.name);
--			error_time = jiffies;
--		}
-+		if ((fd_offset & ~PAGE_MASK) != 0)
-+			pr_warn_ratelimited("fd_offset is not page aligned. Please convert program: %s\n",
-+					    bprm->file->f_path.dentry->d_name.name);
- #endif
- 
--		if (!bprm->file->f_op->mmap || (fd_offset & ~PAGE_MASK) != 0) {
--			vm_brk(N_TXTADDR(ex), ex.a_text+ex.a_data);
-+		if ((fd_offset & ~PAGE_MASK) != 0) {
-+			vm_brk(N_TXTADDR(ex), ex.a_text + ex.a_data);
- 			read_code(bprm->file, N_TXTADDR(ex), fd_offset,
--					ex.a_text+ex.a_data);
-+					ex.a_text + ex.a_data);
- 			goto beyond_if;
- 		}
- 
-@@ -424,10 +422,17 @@ static int load_aout_library(struct file *file)
- 	if ((N_MAGIC(ex) != ZMAGIC && N_MAGIC(ex) != QMAGIC) || N_TRSIZE(ex) ||
- 	    N_DRSIZE(ex) || ((ex.a_entry & 0xfff) && N_MAGIC(ex) == ZMAGIC) ||
- 	    i_size_read(file_inode(file)) <
--	    ex.a_text+ex.a_data+N_SYMSIZE(ex)+N_TXTOFF(ex)) {
-+	    ex.a_text + ex.a_data + N_SYMSIZE(ex) + N_TXTOFF(ex)) {
- 		goto out;
- 	}
- 
-+	/*
-+	 * Requires a mmap handler. This prevents people from using a.out
-+	 * as part of an exploit attack against /proc-related vulnerabilities.
-+	 */
-+	if (!file->f_op->mmap)
-+		goto out;
-+
- 	if (N_FLAGS(ex))
- 		goto out;
- 
-@@ -438,14 +443,8 @@ static int load_aout_library(struct file *file)
- 
- 	if ((N_TXTOFF(ex) & ~PAGE_MASK) != 0) {
- #ifdef WARN_OLD
--		static unsigned long error_time;
--		if (time_after(jiffies, error_time + 5*HZ)) {
--			printk(KERN_WARNING
--			       "N_TXTOFF is not page aligned. Please convert "
--			       "library: %s\n",
--			       file->f_path.dentry->d_name.name);
--			error_time = jiffies;
--		}
-+		pr_warn_ratelimited("N_TXTOFF is not page aligned. Please convert library: %s\n",
-+				    file->f_path.dentry->d_name.name);
- #endif
- 		vm_brk(start_addr, ex.a_text + ex.a_data + ex.a_bss);
+ 	if (siginfo->si_signo) {
++		struct list_head *t;
+ 		struct core_thread *ct;
+ 		struct elf_thread_status *ets;
  
 -- 
 1.8.4
