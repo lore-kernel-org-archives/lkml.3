@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3I1ANY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 20:13:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36947 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3I1ANV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 20:13:21 -0400
-Message-ID: <52461F0B.5070303@infradead.org>
-Date: Fri, 27 Sep 2013 17:12:59 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754710Ab3I1AON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 20:14:13 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55919 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754204Ab3I1AOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 20:14:10 -0400
+Date: Fri, 27 Sep 2013 20:13:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCHv4 02/10] mm: convert mm->nr_ptes to atomic_t
+Message-ID: <20130928001314.GQ856@cmpxchg.org>
+References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1380287787-30252-3-git-send-email-kirill.shutemov@linux.intel.com>
+ <5245EEAD.7010901@linux.vnet.ibm.com>
+ <20130927222451.3406EE0090@blue.fi.intel.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Drake <dsd@laptop.org>, Jens Frederich <jfrederich@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: [PATCH] staging/olpc: fix dependencies to fix build errors
-References: <20130926231608.CBF2D5A424C@corp2gmr1-2.hot.corp.google.com>
-In-Reply-To: <20130926231608.CBF2D5A424C@corp2gmr1-2.hot.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130927222451.3406EE0090@blue.fi.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Sat, Sep 28, 2013 at 01:24:51AM +0300, Kirill A. Shutemov wrote:
+> Cody P Schafer wrote:
+> > On 09/27/2013 06:16 AM, Kirill A. Shutemov wrote:
+> > > With split page table lock for PMD level we can't hold
+> > > mm->page_table_lock while updating nr_ptes.
+> > >
+> > > Let's convert it to atomic_t to avoid races.
+> > >
+> > 
+> > > ---
+> > 
+> > > diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> > > index 84e0c56e1e..99f19e850d 100644
+> > > --- a/include/linux/mm_types.h
+> > > +++ b/include/linux/mm_types.h
+> > > @@ -339,6 +339,7 @@ struct mm_struct {
+> > >   	pgd_t * pgd;
+> > >   	atomic_t mm_users;			/* How many users with user space? */
+> > >   	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
+> > > +	atomic_t nr_ptes;			/* Page table pages */
+> > >   	int map_count;				/* number of VMAs */
+> > >
+> > >   	spinlock_t page_table_lock;		/* Protects page tables and some counters */
+> > > @@ -360,7 +361,6 @@ struct mm_struct {
+> > >   	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
+> > >   	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
+> > >   	unsigned long def_flags;
+> > > -	unsigned long nr_ptes;		/* Page table pages */
+> > >   	unsigned long start_code, end_code, start_data, end_data;
+> > >   	unsigned long start_brk, brk, start_stack;
+> > >   	unsigned long arg_start, arg_end, env_start, env_end;
+> > 
+> > Will 32bits always be enough here? Should atomic_long_t be used instead?
+> 
+> Good question!
+> 
+> On x86_64 we need one table to cover 2M (512 entries by 4k, 21 bits) of
+> virtual address space. Total size of virtual memory which can be covered
+> by 31-bit (32 - sign) nr_ptes is 52 bits (31 + 21).
+> 
+> Currently, on x86_64 with 4-level page tables we can use at most 48 bit of
+> virtual address space (only half of it available for userspace), so we
+> pretty safe here.
+> 
+> Although, it can be a potential problem, if (when) x86_64 will implement
+> 5-level page tables -- 57-bits of virtual address space.
+> 
+> Any thoughts?
 
-Fix build errors when GPIO_CS5535=m and FB_OLPC_DCON=y
-by preventing that kconfig combination.
-
-These build errors are caused by having a kconfig bool symbol
-(FB_OLPC_DCON_1) that depend on a tristate symbol (GPIO_CS5535),
-but when the tristate symbol is =m, the bool symbol is =y.
-
-drivers/built-in.o: In function `dcon_read_status_xo_1':
-olpc_dcon_xo_1.c:(.text+0x359531): undefined reference to `cs5535_gpio_set'
-drivers/built-in.o: In function `dcon_wiggle_xo_1':
-olpc_dcon_xo_1.c:(.text+0x35959f): undefined reference to `cs5535_gpio_set'
-olpc_dcon_xo_1.c:(.text+0x359610): undefined reference to `cs5535_gpio_clear'
-drivers/built-in.o:olpc_dcon_xo_1.c:(.text+0x3596a1): more undefined references to `cs5535_gpio_clear' follow
-drivers/built-in.o: In function `dcon_wiggle_xo_1':
-olpc_dcon_xo_1.c:(.text+0x359708): undefined reference to `cs5535_gpio_set'
-drivers/built-in.o: In function `dcon_init_xo_1':
-olpc_dcon_xo_1.c:(.text+0x35989b): undefined reference to `cs5535_gpio_clear'
-olpc_dcon_xo_1.c:(.text+0x3598b5): undefined reference to `cs5535_gpio_isset'
-olpc_dcon_xo_1.c:(.text+0x359963): undefined reference to `cs5535_gpio_setup_event'
-olpc_dcon_xo_1.c:(.text+0x359980): undefined reference to `cs5535_gpio_set_irq'
-olpc_dcon_xo_1.c:(.text+0x359a36): undefined reference to `cs5535_gpio_set'
-
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	Daniel Drake <dsd@laptop.org>
-Cc:	Jens Frederich <jfrederich@gmail.com>
----
-This build problem has been around for a long time and is not
-specific to mmotm.
-
- drivers/staging/olpc_dcon/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- mmotm-2013-0926-1615.orig/drivers/staging/olpc_dcon/Kconfig
-+++ mmotm-2013-0926-1615/drivers/staging/olpc_dcon/Kconfig
-@@ -1,6 +1,7 @@
- config FB_OLPC_DCON
- 	tristate "One Laptop Per Child Display CONtroller support"
- 	depends on OLPC && FB
-+	depends on (GPIO_CS5535 || GPIO_CS5535=n)
- 	select I2C
- 	select BACKLIGHT_CLASS_DEVICE
- 	---help---
+I'd just go with atomic_long_t to avoid having to worry about this in
+the first place.  It's been ulong forever and I'm not aware of struct
+mm_struct size being an urgent issue.  Cutting this type in half and
+adding overflow checks adds more problems than it solves.
