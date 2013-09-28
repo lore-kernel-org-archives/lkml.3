@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3I1QXm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 12:23:42 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:43594 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab3I1QXJ (ORCPT
+	id S1754904Ab3I1QXt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 12:23:49 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:54231 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab3I1QXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 12:23:09 -0400
+	Sat, 28 Sep 2013 12:23:13 -0400
 From: Roy Franz <roy.franz@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
         linux@arm.linux.org.uk
 Cc: leif.lindholm@linaro.org, grant.likely@linaro.org, dave.martin@arm.com,
         msalter@redhat.com, Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 3/6] Add strstr to compressed string.c for ARM.
-Date: Sat, 28 Sep 2013 09:23:20 -0700
-Message-Id: <1380385403-31904-4-git-send-email-roy.franz@linaro.org>
+Subject: [PATCH 6/6] Add config EFI_STUB for ARM to Kconfig
+Date: Sat, 28 Sep 2013 09:23:23 -0700
+Message-Id: <1380385403-31904-7-git-send-email-roy.franz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
 References: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
@@ -23,48 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The shared efi-stub-helper.c functions require a strstr
-implementation.
-Implementation copied from arch/x86/boot/string.c
-
 Signed-off-by: Roy Franz <roy.franz@linaro.org>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
 ---
- arch/arm/boot/compressed/string.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/arm/Kconfig |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/arm/boot/compressed/string.c b/arch/arm/boot/compressed/string.c
-index 36e53ef..5397792 100644
---- a/arch/arm/boot/compressed/string.c
-+++ b/arch/arm/boot/compressed/string.c
-@@ -111,6 +111,27 @@ char *strchr(const char *s, int c)
- 	return (char *)s;
- }
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 43594d5..9c84429 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1805,6 +1805,17 @@ config UACCESS_WITH_MEMCPY
+ 	  However, if the CPU data cache is using a write-allocate mode,
+ 	  this option is unlikely to provide any performance gain.
  
-+/**
-+ * strstr - Find the first substring in a %NUL terminated string
-+ * @s1: The string to be searched
-+ * @s2: The string to search for
-+ */
-+char *strstr(const char *s1, const char *s2)
-+{
-+	size_t l1, l2;
++config EFI_STUB
++	bool "EFI stub support"
++	depends on EFI && !CPU_BIG_ENDIAN
++	---help---
++	  This kernel feature allows a zImage to be loaded directly
++	  by EFI firmware without the use of a bootloader.  A PE/COFF
++	  header is added to the zImage in a way that makes the binary
++	  both a Linux zImage and an PE/COFF executable that can be
++	  executed directly by EFI firmware.
++	  See Documentation/efi-stub.txt for more information.
 +
-+	l2 = strlen(s2);
-+	if (!l2)
-+		return (char *)s1;
-+	l1 = strlen(s1);
-+	while (l1 >= l2) {
-+		l1--;
-+		if (!memcmp(s1, s2, l2))
-+			return (char *)s1;
-+		s1++;
-+	}
-+	return NULL;
-+}
- #undef memset
- 
- void *memset(void *s, int c, size_t count)
+ config SECCOMP
+ 	bool
+ 	prompt "Enable seccomp to safely compute untrusted bytecode"
 -- 
 1.7.10.4
 
