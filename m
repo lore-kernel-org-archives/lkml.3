@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab3I1JK1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 05:10:27 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:52017 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3I1JKY (ORCPT
+	id S1754568Ab3I1Jj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 05:39:57 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26105 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab3I1Jjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 05:10:24 -0400
-X-Auth-Info: N6cqqZWrfWjhiR8VgYxfwR3HBBRg7VeQx5aSrAW/sgs=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [QUERY] Building and testing Aarch64
-References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
-	<CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
-	<CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
-	<20130927150156.GE26069@arm.com>
-	<CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
-	<m2wqm1s6f5.fsf@linux-m68k.org>
-	<CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
-X-Yow: Is this BOISE??
-Date: Sat, 28 Sep 2013 11:10:09 +0200
-In-Reply-To: <CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
-	(Ramkumar Ramachandra's message of "Sat, 28 Sep 2013 14:06:00 +0530")
-Message-ID: <m2siwps45q.fsf@linux-m68k.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Sat, 28 Sep 2013 05:39:54 -0400
+Date: Sat, 28 Sep 2013 12:39:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Petr Vandrovec <petr@vandrovec.name>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] ncpfs: add a sanity check in ncp_is_nfs_extras()
+Message-ID: <20130928093943.GD26611@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramkumar Ramachandra <artagnon@gmail.com> writes:
+The "volnum" can come from the server and my static checker complains
+that we can't trust it.  In theory, it could lead to an info leak but
+in real life, it is unlikely.
 
-> Is there a bug in the Kconfig dependency tree? Sounds like VIRTIO_MMIO
-> requires some vga (?) drivers to be compiled in as well.
+One way this comes from the server is ncp_obtain_info() initializes
+target by calling:
 
-I don't have any VGA option enabled.  You should use a serial console
-with CONFIG_SERIAL_AMBA_PL011_CONSOLE.
+	ncp_extract_file_info(ncp_reply_data(server, 0), target);
 
-Andreas.
+It then passes target to ncp_obtain_nfs_info() and from there to
+ncp_is_nfs_extras().
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/fs/ncpfs/ncplib_kernel.h b/fs/ncpfs/ncplib_kernel.h
+index 32c0658..ae08b9f 100644
+--- a/fs/ncpfs/ncplib_kernel.h
++++ b/fs/ncpfs/ncplib_kernel.h
+@@ -119,6 +119,7 @@ int ncp_create_new(struct inode *dir, struct dentry *dentry,
+ static inline int ncp_is_nfs_extras(struct ncp_server* server, unsigned int volnum) {
+ #ifdef CONFIG_NCPFS_NFS_NS
+ 	return (server->m.flags & NCP_MOUNT_NFS_EXTRAS) &&
++	       (volnum < ARRAY_SIZE(server->name_space)) &&
+ 	       (server->name_space[volnum] == NW_NS_NFS);
+ #else
+ 	return 0;
