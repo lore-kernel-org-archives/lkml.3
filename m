@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab3I1MPL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 08:15:11 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:39779 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab3I1MPG (ORCPT
+	id S1754965Ab3I1MPb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 08:15:31 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47465 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab3I1MPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 08:15:06 -0400
+	Sat, 28 Sep 2013 08:15:09 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org
-Subject: [PATCH 4/5] mfd: ti_am335x_tscadc: Remove redundant of_match_ptr
-Date: Sat, 28 Sep 2013 17:44:48 +0530
-Message-Id: <1380370489-5488-4-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 5/5] mfd: omap-usb: Remove redundant of_match_ptr
+Date: Sat, 28 Sep 2013 17:44:49 +0530
+Message-Id: <1380370489-5488-5-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380370489-5488-1-git-send-email-sachin.kamat@linaro.org>
 References: <1380370489-5488-1-git-send-email-sachin.kamat@linaro.org>
@@ -25,22 +25,36 @@ Hence of_match_ptr() is not needed.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/mfd/ti_am335x_tscadc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/omap-usb-host.c |    2 +-
+ drivers/mfd/omap-usb-tll.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index a3685d6..e5a40e8 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -328,7 +328,7 @@ static struct platform_driver ti_tscadc_driver = {
- 		.name   = "ti_am3359-tscadc",
- 		.owner	= THIS_MODULE,
- 		.pm	= TSCADC_PM_OPS,
--		.of_match_table = of_match_ptr(ti_tscadc_dt_ids),
-+		.of_match_table = ti_tscadc_dt_ids,
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 29ee54d..1b65ffe 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -893,7 +893,7 @@ static struct platform_driver usbhs_omap_driver = {
+ 		.name		= (char *)usbhs_driver_name,
+ 		.owner		= THIS_MODULE,
+ 		.pm		= &usbhsomap_dev_pm_ops,
+-		.of_match_table = of_match_ptr(usbhs_omap_dt_ids),
++		.of_match_table = usbhs_omap_dt_ids,
  	},
- 	.probe	= ti_tscadc_probe,
- 	.remove	= ti_tscadc_remove,
+ 	.remove		= usbhs_omap_remove,
+ };
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index e59ac4c..b8f6401 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -320,7 +320,7 @@ static struct platform_driver usbtll_omap_driver = {
+ 	.driver = {
+ 		.name		= (char *)usbtll_driver_name,
+ 		.owner		= THIS_MODULE,
+-		.of_match_table = of_match_ptr(usbtll_omap_dt_ids),
++		.of_match_table = usbtll_omap_dt_ids,
+ 	},
+ 	.probe		= usbtll_omap_probe,
+ 	.remove		= usbtll_omap_remove,
 -- 
 1.7.9.5
 
