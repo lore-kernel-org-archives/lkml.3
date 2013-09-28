@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab3I1W4X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 18:56:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46108 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab3I1W4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 18:56:21 -0400
-Date: Sat, 28 Sep 2013 23:56:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Message-ID: <20130928225614.GR19304@sirena.org.uk>
-References: <1380392497-27406-1-git-send-email-tomasz.figa@gmail.com>
- <1380392497-27406-4-git-send-email-tomasz.figa@gmail.com>
+	id S1755257Ab3I1XOZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 19:14:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50105 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755184Ab3I1XOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 19:14:23 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130928200838.GK5956@pd.tnic>
+References: <20130928174749.GE5956@pd.tnic> <20130928175444.GA4402@gmail.com> <20130928180459.GF5956@pd.tnic> <20130928181236.GA4999@gmail.com> <20130928191500.GG5956@pd.tnic> <20130928192545.GB8228@gmail.com> <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com> <20130928194927.GI5956@pd.tnic> <20130928195448.GJ5956@pd.tnic> <20130928195833.GB32081@gmail.com> <20130928200838.GK5956@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0OOz7ZB592LYQf07"
-Content-Disposition: inline
-In-Reply-To: <1380392497-27406-4-git-send-email-tomasz.figa@gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/5] ASoC: samsung: Use CONFIG_ARCH_S3C64XX to check for
- S3C64xx support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 28 Sep 2013 16:13:29 -0700
+To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
+        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Message-ID: <6c689698-aaa0-48cc-8e6e-93d9059c0c34@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For negative numbers presumably we need to d++ for the minus sign, no?
 
---0OOz7ZB592LYQf07
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Borislav Petkov <bp@alien8.de> wrote:
+>On Sat, Sep 28, 2013 at 09:58:33PM +0200, Ingo Molnar wrote:
+>> 
+>> * Borislav Petkov <bp@alien8.de> wrote:
+>> 
+>> > On Sat, Sep 28, 2013 at 09:49:27PM +0200, Borislav Petkov wrote:
+>> > > And yes, that one works too.
+>> > 
+>> > Btw, just to be thorough, we could handle negative numbers too:
+>> > 
+>> > int num_digits(int val)
+>> > {
+>> >         int m = 10;
+>> >         int d = 1;
+>> > 
+>> >         if (val < 0)
+>> >                 val = -val;
+>> > 
+>> >         while (val >= m) {
+>> >                 m *= 10;
+>> >                 d++;
+>> >         }
+>> > 
+>> >         return d;
+>> > }
+>> 
+>> I like the cell phone version better!
+>
+>This *is* the cell phone version + negative numbers handling.
 
-On Sat, Sep 28, 2013 at 08:21:36PM +0200, Tomasz Figa wrote:
-> Since CONFIG_PLAT_S3C64XX is going to be removed, this patch modifies
-> the s3c-i2s-v2 driver to use the proper way of checking for S3C64xx
-> support - CONFIG_ARCH_S3C64XX.
-
-Acked-by: Mark Brown <broonie@linaro.org>
-
---0OOz7ZB592LYQf07
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSR16KAAoJELSic+t+oim9+dMP/RJpgnBErQM5bz0RQBrAAzRi
-6nDP5Ppp/GrQIUzrdj8PS7mLjC5ip+AFQ4kmGLi0X7CKEm2a7q/j+b4O+U4gNOum
-XGyYjCwg0UoEQu4oALt72uPVppO3sNrCqMsdOMexyzdIKP9WzFnlLJDzL8X1qcCu
-qaRZzMORrb76GZeGVQcxJIDLX+R9xu1XvPWbTXg9JEhcLqZuYIWGRBrx99t+alEF
-vZm0Qu6ydduHmgVmBWjuaA3qDwrDEbRwZiuVlK7TwLLjYL6+dCp6xWmhBZUWsni/
-WAVyciNE+GNrswdz+I75qlGGcDj75W0OomqWMkZcUDSz2T1jm+yoEBi+Mrharotj
-BhWj4B+vKUlG5cPvZsBnXbhCd/pl3sIUNa8aL8uNda0BsR/3HewGkKwLvizy0qPP
-pfkmf4y1bS2s89hQfbYx5Dm00alVjQxTs4LCKF/WOAC6YxRxHvoaub4ENG/NDomk
-Zkn0sKFAqoVeSD0IeJc79gE18HIf+FjUG4NmzL1JxOSprC4yxnfVxvYzEQjD4plb
-opNs7Riht8qg9LKr0l8Y+sulaHFMVEfgH/wNg7XhyuhIWxwCyzNh2Msm6DmooR25
-4hPNimcXl09SPeM2PN20E6QxBLlYXOWxkUwOu/1VeM8m/gUdy83TOvaVF3cRcdJN
-yuGGJMF/+J3iIe6B23zy
-=mlUA
------END PGP SIGNATURE-----
-
---0OOz7ZB592LYQf07--
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
