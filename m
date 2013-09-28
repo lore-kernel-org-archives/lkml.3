@@ -1,35 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3I1Ku7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 06:50:59 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:39859 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab3I1Ku4 (ORCPT
+	id S1753430Ab3I1K6U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 06:58:20 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:32927 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3I1K6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 06:50:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <87zjqxkz70.fsf@igel.home>
-References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
- <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
- <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
- <20130927150156.GE26069@arm.com> <CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
- <m2wqm1s6f5.fsf@linux-m68k.org> <CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
- <m2siwps45q.fsf@linux-m68k.org> <CALkWK0=ii-usQ17qpwDMwCbJAPhDTghz6j8J7JEeZ5Uwnn-awQ@mail.gmail.com>
- <87zjqxkz70.fsf@igel.home>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Sat, 28 Sep 2013 16:20:15 +0530
-Message-ID: <CALkWK0=ckOXhGO+NMdho5CBEKtK=mcVHCrMOaeZ97PLqSqu1cw@mail.gmail.com>
-Subject: Re: [QUERY] Building and testing Aarch64
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Sep 2013 06:58:17 -0400
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Waiman Long <waiman.long@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH v2 0/3] changes to enable lockless lockref on s390
+Date: Sat, 28 Sep 2013 12:58:08 +0200
+Message-Id: <1380365891-34457-1-git-send-email-heiko.carstens@de.ibm.com>
+X-Mailer: git-send-email 1.8.3.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092810-3548-0000-0000-000006AECA65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Schwab wrote:
-> You need all the other relevant virtio options built-in, too, like
-> VIRTIO_BLK.
+Hi Linus,
 
-Thanks! VIRTIO_BLK was the missing feature. I'll submit patches shortly.
+I just updated the patch set to include your suggested changes.
+
+You can also pull the three patches from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git lockref
+
+Original part of description that still matters:
+
+enabling the new lockless lockref variant on s390 would have been trivial
+until Tony Luck added a cpu_relax() call into the CMPXCHG_LOOP(), with
+d472d9d9 "lockref: Relax in cmpxchg loop".
+
+As already mentioned cpu_relax() is very expensive on s390 since it yields()
+the current virtual cpu. So we are talking of several thousand cycles.
+Considering this enabling the lockless lockref variant would contradict the
+intention of the new semantics. And also some quick measurements show
+performance regressions of 50% and more.
+
+Simply removing the cpu_relax() call again seems also not very desireable
+since Waiman Long reported that for some workloads the call improved
+performance by 5%.
+
+Heiko Carstens (3):
+  mutex: replace CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX with simple ifdef
+  lockref: use arch_mutex_cpu_relax() in CMPXCHG_LOOP()
+  s390: enable ARCH_USE_CMPXCHG_LOCKREF
+
+ arch/Kconfig                      |  3 ---
+ arch/s390/Kconfig                 |  2 +-
+ arch/s390/include/asm/mutex.h     |  2 --
+ arch/s390/include/asm/processor.h |  2 ++
+ arch/s390/include/asm/spinlock.h  |  5 +++++
+ include/linux/mutex.h             |  6 +++---
+ lib/lockref.c                     | 10 +++++++++-
+ 7 files changed, 20 insertions(+), 10 deletions(-)
+
+-- 
+1.8.3.4
+
