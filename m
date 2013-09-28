@@ -1,69 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab3I1UdX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 16:33:23 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:53439 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755112Ab3I1UdU (ORCPT
+	id S1755158Ab3I1Uju (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 16:39:50 -0400
+Received: from static.kpn.net ([62.41.165.81]:54963 "EHLO mail.blokletters.nl"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754873Ab3I1Ujs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 16:33:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgEFABK/CFEY1KI3/2dsb2JhbABEFr54F3OCHgEBBTgeBhIKARALCw0JFg8JAwIBAgEPAhYeBg0BBQICh3oBAw4BDK8ih1MKGScNWYh8jBKEeAOLDYkqgVaBHIRShUuFEoMT
-X-IPAS-Result: AgEFABK/CFEY1KI3/2dsb2JhbABEFr54F3OCHgEBBTgeBhIKARALCw0JFg8JAwIBAgEPAhYeBg0BBQICh3oBAw4BDK8ih1MKGScNWYh8jBKEeAOLDYkqgVaBHIRShUuFEoMT
-X-IronPort-AV: E=Sophos;i="4.84,565,1355115600"; 
-   d="scan'208";a="29326840"
-Message-ID: <52473D1C.5010003@gmail.com>
-Date: Sat, 28 Sep 2013 16:33:32 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0 SeaMonkey/2.21
+	Sat, 28 Sep 2013 16:39:48 -0400
+X-Greylist: delayed 1713 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Sep 2013 16:39:48 EDT
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12 regression: i915 warnings
-References: <52442A3C.3010407@gmail.com>	<CAKMK7uFvP7zisHL4UFjRqBX8mxS4DtosF2AFnwZDSdMgnDf4Lw@mail.gmail.com>	<5245C004.7070907@gmail.com> <CAKMK7uFZ35gruMYHB+LXEDVoAof7n-1oYGxWkky_tLe3ELLxWQ@mail.gmail.com>
-In-Reply-To: <CAKMK7uFZ35gruMYHB+LXEDVoAof7n-1oYGxWkky_tLe3ELLxWQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Guten Tag  
+To: Recipients <zhijun@gmx.de>
+From: "Mr. Sun Zhijun" <zhijun@gmx.de>
+Date: Sat, 28 Sep 2013 22:10:30 +0200
+Reply-To: sun_zhijun@yahoo.com.hk
+Message-Id: <20130928201043.15F5CF13D5@mail.blokletters.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Vetter wrote:
-> On Fri, Sep 27, 2013 at 7:27 PM, Woody Suwalski <terraluna977@gmail.com> wrote:
->> Daniel Vetter wrote:
->>> On Thu, Sep 26, 2013 at 2:36 PM, Woody Suwalski <terraluna977@gmail.com>
->>> wrote:
->>>> Daniel, I have noticed these warnings on 3.12-rc1, did not go away on
->>>> 3.12-rc2.
->>>> I see it only on EeePC with i915,not on ThinkPad with Radeon.
->>>> It is a 32-bit kernel with overlayfs and TuxOnIce patches, so not
->>>> perfectly
->>>> clean, however same config and patches on 3.11 do not show these issues.
->>>> No,sorry, did not have time to investigate further or bisect.If you have
->>>> a
->>>> quick test in mind - I will try ;-)
->>>
->>> a) Please always cc: relevant mailing lists, not just your maintainer.
->>> b) Please retest with latest drm-intel-fixes from
->>> http://cgit.freedesktop.org/~danvet/drm-intel/
->>> c) If that doesn't help please boot with drm.debug=0xe, reproduce the
->>> issue once and attach the complete dmesg. Please make sure that it
->>> contains everything from boot-up to the WARN.
->>>
->>> Thanks, Daniel
->> For now I can do the last - a complete dmesg with drm.debug attached...
->> I have hoped that you were to reply "Yawn, an old issue..." 8-)
-> Here we go: Mode flag mismatch in the tv encoder, should be fixed with
->
-> http://cgit.freedesktop.org/~danvet/drm-intel/commit/?id=1062b81598bc00e2f6620e6f3788f8f8df2f01e7
->
-> Pull request is already out and patch is cc: stable, so should show up
-> in a kernel near you soon.
-> -Daniel
-Warnings are gone with this patch (and other 4 patches  since 3.2.12-rc2 
-from drm tree).
+Guten Tag,
 
-Thanks, Woody
+Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: sun_zhijun@yahoo.com.hk
 
+1. Vollständiger Name
+2.Private Telefonnummer
+3.Current Wohnadresse
 
+Mit freundlichen Grüßen,
+Mr.SUN Zhijun
