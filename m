@@ -1,71 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab3I1Tdk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 15:33:40 -0400
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:52531 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab3I1Tdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 15:33:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130928192123.GA8228@gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
-	<20130928074144.GA17773@gmail.com>
-	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
-	<20130928192123.GA8228@gmail.com>
-Date: Sat, 28 Sep 2013 12:33:36 -0700
-X-Google-Sender-Auth: zNzeNe836bDFImxtWTusDL8Edns
-Message-ID: <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-From: Linus Torvalds <torvalds@linux-foundation.org>
+	id S1754827Ab3I1Tgg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 15:36:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39668 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753534Ab3I1Tgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 15:36:35 -0400
+Date: Sat, 28 Sep 2013 21:36:27 +0200
+From: Borislav Petkov <bp@alien8.de>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
+        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: [PATCH -v1.3] x86, boot: Further compress CPUs bootup message
+Message-ID: <20130928193627.GH5956@pd.tnic>
+References: <20130927143554.GF4422@pd.tnic>
+ <20130928082542.GA18198@gmail.com>
+ <20130928102305.GA5956@pd.tnic>
+ <20130928134449.GB26931@gmail.com>
+ <20130928174749.GE5956@pd.tnic>
+ <20130928175444.GA4402@gmail.com>
+ <20130928180459.GF5956@pd.tnic>
+ <20130928181236.GA4999@gmail.com>
+ <20130928191500.GG5956@pd.tnic>
+ <20130928192545.GB8228@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130928192545.GB8228@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 12:21 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> If we do that then I suspect the next step will be queued rwlocks :-/ The
-> current rwlock_t implementation is rather primitive by modern standards.
-> (We'd probably have killed rwlock_t long ago if not for the
-> tasklist_lock.)
+From: Borislav Petkov <bp@suse.de>
 
-Yeah, I'm not happy about or rwlocks. That's one lock that currently
-is so broken that I think we could easily argue for making that one
-queued.
+Turn it into (for example):
 
-Waiman had a qrwlock series that looked reasonable, and I think his
-later versions were drop-in replacements (ie they automatically just
-did the RightThing(tm) wrt interrupts taking a recursive read lock - I
-objected to the first versions that required that to be stated
-explicitly).
+[    0.073380] x86: Booting SMP configuration:
+[    0.074005] .... node   #0, CPUs:          #1   #2   #3   #4   #5   #6   #7
+[    0.603005] .... node   #1, CPUs:     #8   #9  #10  #11  #12  #13  #14  #15
+[    1.200005] .... node   #2, CPUs:    #16  #17  #18  #19  #20  #21  #22  #23
+[    1.796005] .... node   #3, CPUs:    #24  #25  #26  #27  #28  #29  #30  #31
+[    2.393005] .... node   #4, CPUs:    #32  #33  #34  #35  #36  #37  #38  #39
+[    2.996005] .... node   #5, CPUs:    #40  #41  #42  #43  #44  #45  #46  #47
+[    3.600005] .... node   #6, CPUs:    #48  #49  #50  #51  #52  #53  #54  #55
+[    4.202005] .... node   #7, CPUs:    #56  #57  #58  #59  #60  #61  #62  #63
+[    4.811005] .... node   #8, CPUs:    #64  #65  #66  #67  #68  #69  #70  #71
+[    5.421006] .... node   #9, CPUs:    #72  #73  #74  #75  #76  #77  #78  #79
+[    6.032005] .... node  #10, CPUs:    #80  #81  #82  #83  #84  #85  #86  #87
+[    6.648006] .... node  #11, CPUs:    #88  #89  #90  #91  #92  #93  #94  #95
+[    7.262005] .... node  #12, CPUs:    #96  #97  #98  #99 #100 #101 #102 #103
+[    7.865005] .... node  #13, CPUs:   #104 #105 #106 #107 #108 #109 #110 #111
+[    8.466005] .... node  #14, CPUs:   #112 #113 #114 #115 #116 #117 #118 #119
+[    9.073006] .... node  #15, CPUs:   #120 #121 #122 #123 #124 #125 #126 #127
+[    9.679901] x86: Booted up 16 nodes, 128 CPUs
 
-I think Waiman's patches (even the later ones) made the queued rwlocks
-be a side-by-side implementation with the old rwlocks, and I think
-that was just being unnecessarily careful. It might be useful for
-testing to have a config option to switch between the two, but we
-might as well go all the way.
+and drop useless elements.
 
-The old rwlock's really have been a disappointment - they are slower
-than spinlocks, and seldom/never end up scaling any better.  Their
-main advantage was literally the irq behavior - allowing readers to
-happen without the expense of worrying about irq's.
+While at it, change num_digits() to handle arg of 0 correctly, as Ingo
+suggested.
 
-              Linus
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/smpboot.c | 24 +++++++++++++++++++-----
+ arch/x86/lib/misc.c       |  4 ++--
+ kernel/smp.c              |  7 ++++++-
+ 3 files changed, 27 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index d41f3ba26ced..2a165580fa16 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -647,22 +647,38 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 	return (send_status | accept_status);
+ }
+ 
++void smp_announce(void)
++{
++	int num_nodes = num_online_nodes();
++
++	printk(KERN_INFO "x86: Booted up %d node%s, %d CPUs\n",
++	       num_nodes, (num_nodes > 1 ? "s" : ""), num_online_cpus());
++}
++
+ /* reduce the number of lines printed when booting a large cpu count system */
+ static void announce_cpu(int cpu, int apicid)
+ {
+ 	static int current_node = -1;
+ 	int node = early_cpu_to_node(cpu);
+-	static int width;
++	static int width, node_width;
+ 
+ 	if (!width)
+ 		width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
+ 
++	if (!node_width)
++		node_width = num_digits(num_possible_nodes()) + 1; /* + '#' */
++
++	if (cpu == 1)
++		printk(KERN_INFO "x86: Booting SMP configuration:\n");
++
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		if (node != current_node) {
+ 			if (current_node > (-1))
+-				pr_cont(" OK\n");
++				pr_cont("\n");
+ 			current_node = node;
+-			pr_info("Booting Node %3d, Processors:", node);
++
++			printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
++			       node_width - num_digits(node), " ", node);
+ 		}
+ 
+ 		/* Add padding for the BSP */
+@@ -671,8 +687,6 @@ static void announce_cpu(int cpu, int apicid)
+ 
+ 		pr_cont("%*s#%d", width - num_digits(cpu), " ", cpu);
+ 
+-		if (cpu == num_present_cpus() - 1)
+-			pr_cont(" OK\n");
+ 	} else
+ 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
+ 			node, cpu, apicid);
+diff --git a/arch/x86/lib/misc.c b/arch/x86/lib/misc.c
+index bc35cde9769f..903dfdc4dfd4 100644
+--- a/arch/x86/lib/misc.c
++++ b/arch/x86/lib/misc.c
+@@ -2,10 +2,10 @@ int num_digits(int val)
+ {
+ 	int digits = 0;
+ 
+-	while (val) {
++	do {
+ 		val /= 10;
+ 		digits++;
+-	}
++	} while (val);
+ 
+ 	return digits;
+ }
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 0564571dcdf7..f5768b0c816a 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -524,6 +524,11 @@ void __init setup_nr_cpu_ids(void)
+ 	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
+ }
+ 
++void __weak smp_announce(void)
++{
++	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
++}
++
+ /* Called by boot processor to activate the rest. */
+ void __init smp_init(void)
+ {
+@@ -540,7 +545,7 @@ void __init smp_init(void)
+ 	}
+ 
+ 	/* Any cleanup work */
+-	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
++	smp_announce();
+ 	smp_cpus_done(setup_max_cpus);
+ }
+ 
+-- 
+1.8.4
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
