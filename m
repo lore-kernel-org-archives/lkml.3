@@ -1,109 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab3I1EeK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 00:34:10 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:44298 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3I1EeI (ORCPT
+	id S1751401Ab3I1Epn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 00:45:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48368 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3I1Epk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 00:34:08 -0400
+	Sat, 28 Sep 2013 00:45:40 -0400
+Date: Fri, 27 Sep 2013 21:46:51 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] driver-core: remove struct bus_type.bus_attrs
+Message-ID: <20130928044651.GA25063@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130928021947.GF9093@linux.vnet.ibm.com>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-	<1380147049.3467.67.camel@schen9-DESK>
-	<20130927152953.GA4464@linux.vnet.ibm.com>
-	<1380310733.3467.118.camel@schen9-DESK>
-	<20130927203858.GB9093@linux.vnet.ibm.com>
-	<1380322005.3467.186.camel@schen9-DESK>
-	<20130927230137.GE9093@linux.vnet.ibm.com>
-	<CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>
-	<20130928021947.GF9093@linux.vnet.ibm.com>
-Date: Fri, 27 Sep 2013 21:34:06 -0700
-X-Google-Sender-Auth: NJyBNKeRNIBpQ85kaK9o3rAscyc
-Message-ID: <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Jason Low <jason.low2@hp.com>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Jason Low <jason.low2@hp.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 7:19 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Sep 27, 2013 at 04:54:06PM -0700, Jason Low wrote:
->> On Fri, Sep 27, 2013 at 4:01 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > Yep.  The previous lock holder's smp_wmb() won't keep either the compiler
->> > or the CPU from reordering things for the new lock holder.  They could for
->> > example reorder the critical section to precede the node->locked check,
->> > which would be very bad.
->>
->> Paul, Tim, Longman,
->>
->> How would you like the proposed changes below?
->
-> Could you point me at what this applies to?  I can find flaws looking
-> at random pieces, given a little luck, but at some point I need to look
-> at the whole thing.  ;-)
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Sure. Here is a link to the patch we are trying to modify:
-https://lkml.org/lkml/2013/9/25/532
+Now that all in-kernel users of bus_type.bus_attrs have been converted
+to use bus_groups instead, the bus_attrs field, and logic surrounding
+it, can be removed.
 
-Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
-functions would look like after applying the proposed changes.
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-static noinline
-void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
-{
-        struct mcs_spin_node *prev;
+---
+ drivers/base/bus.c     |   42 ------------------------------------------
+ include/linux/device.h |    2 --
+ 2 files changed, 44 deletions(-)
 
-        /* Init node */
-        node->locked = 0;
-        node->next   = NULL;
-
-        prev = xchg(lock, node);
-        if (likely(prev == NULL)) {
-                /* Lock acquired. No need to set node->locked since it
-won't be used */
-                return;
-        }
-        ACCESS_ONCE(prev->next) = node;
-        /* Wait until the lock holder passes the lock down */
-        while (!ACCESS_ONCE(node->locked))
-                arch_mutex_cpu_relax();
-        smp_mb();
-}
-
-static void mcs_spin_unlock(struct mcs_spin_node **lock, struct
-mcs_spin_node *node)
-{
-        struct mcs_spin_node *next = ACCESS_ONCE(node->next);
-
-        if (likely(!next)) {
-                /*
-                 * Release the lock by setting it to NULL
-                 */
-                if (cmpxchg(lock, node, NULL) == node)
-                        return;
-                /* Wait until the next pointer is set */
-                while (!(next = ACCESS_ONCE(node->next)))
-                        arch_mutex_cpu_relax();
-        }
-        smp_wmb();
-        ACCESS_ONCE(next->locked) = 1;
-}
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -846,42 +846,6 @@ struct bus_type *find_bus(char *name)
+ }
+ #endif  /*  0  */
+ 
+-
+-/**
+- * bus_add_attrs - Add default attributes for this bus.
+- * @bus: Bus that has just been registered.
+- */
+-
+-static int bus_add_attrs(struct bus_type *bus)
+-{
+-	int error = 0;
+-	int i;
+-
+-	if (bus->bus_attrs) {
+-		for (i = 0; bus->bus_attrs[i].attr.name; i++) {
+-			error = bus_create_file(bus, &bus->bus_attrs[i]);
+-			if (error)
+-				goto err;
+-		}
+-	}
+-done:
+-	return error;
+-err:
+-	while (--i >= 0)
+-		bus_remove_file(bus, &bus->bus_attrs[i]);
+-	goto done;
+-}
+-
+-static void bus_remove_attrs(struct bus_type *bus)
+-{
+-	int i;
+-
+-	if (bus->bus_attrs) {
+-		for (i = 0; bus->bus_attrs[i].attr.name; i++)
+-			bus_remove_file(bus, &bus->bus_attrs[i]);
+-	}
+-}
+-
+ static int bus_add_groups(struct bus_type *bus,
+ 			  const struct attribute_group **groups)
+ {
+@@ -983,9 +947,6 @@ int bus_register(struct bus_type *bus)
+ 	if (retval)
+ 		goto bus_probe_files_fail;
+ 
+-	retval = bus_add_attrs(bus);
+-	if (retval)
+-		goto bus_attrs_fail;
+ 	retval = bus_add_groups(bus, bus->bus_groups);
+ 	if (retval)
+ 		goto bus_groups_fail;
+@@ -994,8 +955,6 @@ int bus_register(struct bus_type *bus)
+ 	return 0;
+ 
+ bus_groups_fail:
+-	bus_remove_attrs(bus);
+-bus_attrs_fail:
+ 	remove_probe_files(bus);
+ bus_probe_files_fail:
+ 	kset_unregister(bus->p->drivers_kset);
+@@ -1024,7 +983,6 @@ void bus_unregister(struct bus_type *bus
+ 	pr_debug("bus: '%s': unregistering\n", bus->name);
+ 	if (bus->dev_root)
+ 		device_unregister(bus->dev_root);
+-	bus_remove_attrs(bus);
+ 	bus_remove_groups(bus, bus->bus_groups);
+ 	remove_probe_files(bus);
+ 	kset_unregister(bus->p->drivers_kset);
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -63,7 +63,6 @@ extern void bus_remove_file(struct bus_t
+  * @name:	The name of the bus.
+  * @dev_name:	Used for subsystems to enumerate devices like ("foo%u", dev->id).
+  * @dev_root:	Default device to use as the parent.
+- * @bus_attrs:	Default attributes of the bus.
+  * @dev_attrs:	Default attributes of the devices on the bus.
+  * @drv_attrs:	Default attributes of the device drivers on the bus.
+  * @bus_groups:	Default attributes of the bus.
+@@ -106,7 +105,6 @@ struct bus_type {
+ 	const char		*name;
+ 	const char		*dev_name;
+ 	struct device		*dev_root;
+-	struct bus_attribute	*bus_attrs;	/* use bus_groups instead */
+ 	struct device_attribute	*dev_attrs;	/* use dev_groups instead */
+ 	struct driver_attribute	*drv_attrs;	/* use drv_groups instead */
+ 	const struct attribute_group **bus_groups;
