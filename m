@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3I1Vu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 17:50:27 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:38944 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab3I1Vtx (ORCPT
+	id S1755318Ab3I1Vue (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 17:50:34 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:52924 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab3I1Vtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 17:49:53 -0400
+	Sat, 28 Sep 2013 17:49:55 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/14] sysfs: add sysfs_open_file_mutex
-Date: Sat, 28 Sep 2013 17:49:34 -0400
-Message-Id: <1380404984-31858-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/14] sysfs: add sysfs_open_file->sd and ->file
+Date: Sat, 28 Sep 2013 17:49:36 -0400
+Message-Id: <1380404984-31858-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380404984-31858-1-git-send-email-tj@kernel.org>
 References: <1380404984-31858-1-git-send-email-tj@kernel.org>
@@ -21,79 +21,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a separate mutex to protect sysfs_open_dirent->buffers list.  This
-will allow performing sleepable operations while traversing
-sysfs_buffers, which will be renamed to sysfs_open_file.
+sysfs will be converted to use seq_file for read path, which will make
+it difficult to pass around multiple pointers directly.  This patch
+adds sysfs_open_file->sd and ->file so that we can reach all the
+necessary data structures from sysfs_open_file.
 
-Note that currently sysfs_open_dirent->buffers list isn't being used
-for anything and this patch doesn't make any functional difference.
-It will be used to merge regular and bin file supports.
+flush_write_buffer() is updated to drop @dentry which was used to
+discover the sysfs_dirent as it's now available through
+sysfs_open_file->sd.
+
+This patch doesn't cause any behavior difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c | 18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ fs/sysfs/file.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 7dfcc33..499cff8 100644
+index 4b55bcf..af6e909 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -25,15 +25,17 @@
- #include "sysfs.h"
+@@ -45,6 +45,8 @@ struct sysfs_open_dirent {
+ };
  
- /*
-- * There's one sysfs_buffer for each open file and one
-- * sysfs_open_dirent for each sysfs_dirent with one or more open
-- * files.
-+ * There's one sysfs_buffer for each open file and one sysfs_open_dirent
-+ * for each sysfs_dirent with one or more open files.
+ struct sysfs_open_file {
++	struct sysfs_dirent	*sd;
++	struct file		*file;
+ 	size_t			count;
+ 	char			*page;
+ 	struct mutex		mutex;
+@@ -192,7 +194,6 @@ static int fill_write_buffer(struct sysfs_open_file *of,
+ 
+ /**
+  *	flush_write_buffer - push buffer to kobject.
+- *	@dentry:	dentry to the attribute
+  *	@of:		open file
+  *	@count:		number of bytes
   *
-- * filp->private_data points to sysfs_buffer and
-- * sysfs_dirent->s_attr.open points to sysfs_open_dirent.  s_attr.open
-- * is protected by sysfs_open_dirent_lock.
-+ * sysfs_dirent->s_attr.open points to sysfs_open_dirent.  s_attr.open is
-+ * protected by sysfs_open_dirent_lock.
-+ *
-+ * filp->private_data points to sysfs_buffer which is chained at
-+ * sysfs_open_dirent->buffers, which is protected by sysfs_open_file_mutex.
+@@ -200,22 +201,20 @@ static int fill_write_buffer(struct sysfs_open_file *of,
+  *	dealing with, then call the store() method for the attribute,
+  *	passing the buffer that we acquired in fill_write_buffer().
   */
- static DEFINE_SPINLOCK(sysfs_open_dirent_lock);
-+static DEFINE_MUTEX(sysfs_open_file_mutex);
+-static int flush_write_buffer(struct dentry *dentry,
+-			      struct sysfs_open_file *of, size_t count)
++static int flush_write_buffer(struct sysfs_open_file *of, size_t count)
+ {
+-	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
+-	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
++	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
+ 	const struct sysfs_ops *ops;
+ 	int rc;
  
- struct sysfs_open_dirent {
- 	atomic_t		refcnt;
-@@ -272,6 +274,7 @@ static int sysfs_get_open_dirent(struct sysfs_dirent *sd,
- 	struct sysfs_open_dirent *od, *new_od = NULL;
+-	/* need attr_sd for attr and ops, its parent for kobj */
+-	if (!sysfs_get_active(attr_sd))
++	/* need @of->sd for attr and ops, its parent for kobj */
++	if (!sysfs_get_active(of->sd))
+ 		return -ENODEV;
  
-  retry:
-+	mutex_lock(&sysfs_open_file_mutex);
- 	spin_lock_irq(&sysfs_open_dirent_lock);
+-	ops = sysfs_file_ops(attr_sd);
+-	rc = ops->store(kobj, attr_sd->s_attr.attr, of->page, count);
++	ops = sysfs_file_ops(of->sd);
++	rc = ops->store(kobj, of->sd->s_attr.attr, of->page, count);
  
- 	if (!sd->s_attr.open && new_od) {
-@@ -286,6 +289,7 @@ static int sysfs_get_open_dirent(struct sysfs_dirent *sd,
- 	}
+-	sysfs_put_active(attr_sd);
++	sysfs_put_active(of->sd);
  
- 	spin_unlock_irq(&sysfs_open_dirent_lock);
-+	mutex_unlock(&sysfs_open_file_mutex);
- 
- 	if (od) {
- 		kfree(new_od);
-@@ -321,6 +325,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
- 	struct sysfs_open_dirent *od = sd->s_attr.open;
- 	unsigned long flags;
- 
-+	mutex_lock(&sysfs_open_file_mutex);
- 	spin_lock_irqsave(&sysfs_open_dirent_lock, flags);
- 
- 	list_del(&buffer->list);
-@@ -330,6 +335,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
- 		od = NULL;
- 
- 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
-+	mutex_unlock(&sysfs_open_file_mutex);
- 
- 	kfree(od);
+ 	return rc;
  }
+@@ -245,7 +244,7 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *buf,
+ 	mutex_lock(&of->mutex);
+ 	len = fill_write_buffer(of, buf, count);
+ 	if (len > 0)
+-		len = flush_write_buffer(file->f_path.dentry, of, len);
++		len = flush_write_buffer(of, len);
+ 	if (len > 0)
+ 		*ppos += len;
+ 	mutex_unlock(&of->mutex);
+@@ -385,6 +384,8 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 		goto err_out;
+ 
+ 	mutex_init(&of->mutex);
++	of->sd = attr_sd;
++	of->file = file;
+ 	file->private_data = of;
+ 
+ 	/* make sure we have open dirent struct */
 -- 
 1.8.3.1
 
