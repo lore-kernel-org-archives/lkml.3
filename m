@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab3I1Rn2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 13:43:28 -0400
-Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:56721 "EHLO
-	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754473Ab3I1RnY (ORCPT
+	id S1755269Ab3I1RqL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 13:46:11 -0400
+Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:52829 "EHLO
+	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754864Ab3I1Rn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 13:43:24 -0400
+	Sat, 28 Sep 2013 13:43:27 -0400
 X-RRZE-Submit-IP: 212.255.254.196
 From: Dominik Paulus <dominik.paulus@fau.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, tobias.polzer@fau.de,
         Dominik Paulus <dominik.paulus@fau.de>,
         Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
-Subject: [PATCHv3  02/16] staging: usbip: Add kernel support for client ACLs
-Date: Sat, 28 Sep 2013 19:42:39 +0200
-Message-Id: <1380390173-3746-2-git-send-email-dominik.paulus@fau.de>
+Subject: [PATCHv3  04/16] staging: usbip: Add ACL support to usbip bind
+Date: Sat, 28 Sep 2013 19:42:41 +0200
+Message-Id: <1380390173-3746-4-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1380390173-3746-1-git-send-email-dominik.paulus@fau.de>
 References: <20130925233638.GA21396@kroah.com>
@@ -28,150 +28,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the possibility to stored ACLs for allowed clients for
-each stub device in sysfs. It adds a new sysfs entry called "usbip_acl"
-for each stub device, containing a list of CIDR masks of allowed
-clients. This file will be used by usbip and usbipd to store the ACL.
+Add the command line argument -a (--allow) to usbip bind to specify
+networks allowed to attach to the device and code to store the ACLs in
+sysfs.
 
 Signed-off-by: Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/stub.h     |  5 +++
- drivers/staging/usbip/stub_dev.c | 68 +++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 72 insertions(+), 1 deletion(-)
+ drivers/staging/usbip/userspace/doc/usbip.8      |  8 ++-
+ drivers/staging/usbip/userspace/src/usbip_bind.c | 74 ++++++++++++++++++++----
+ 2 files changed, 69 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
-index a73e437..cfe75d1 100644
---- a/drivers/staging/usbip/stub.h
-+++ b/drivers/staging/usbip/stub.h
-@@ -60,6 +60,11 @@ struct stub_device {
- 	struct list_head unlink_free;
+diff --git a/drivers/staging/usbip/userspace/doc/usbip.8 b/drivers/staging/usbip/userspace/doc/usbip.8
+index 847aa40..c7ba36f 100644
+--- a/drivers/staging/usbip/userspace/doc/usbip.8
++++ b/drivers/staging/usbip/userspace/doc/usbip.8
+@@ -60,9 +60,15 @@ Detach an imported USB device.
+ .PP
  
- 	wait_queue_head_t tx_waitq;
-+
-+	/* list of allowed IP addrs */
-+	char *acls;
-+	/* for locking list operations */
-+	spinlock_t ip_lock;
- };
+ .HP
+-\fBbind\fR \-\-busid=<\fIbusid\fR>
++\fBbind\fR \-\-busid=<\fIbusid\fR> [\-\-allow=<\fICIDR mask\fR>...]
+ .IP
+ Make a device exportable.
++.br
++\-\-allow accepts CIDR masks like 127.0.0.0/8 or fd00::/64
++.br
++Only hosts in (at least) one of the allowed ranges are accepted. If
++\-\-allow is omitted, 0.0.0.0/0 and ::/0 are added to the list. The list can
++be read/written from corresponding \fBusbip_acl\fR file in sysfs after bind.
+ .PP
  
- /* private data into urb->priv */
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 76a1ff0..3939b60 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -142,6 +142,62 @@ err:
- }
- static DEVICE_ATTR(usbip_sockfd, S_IWUSR, NULL, store_sockfd);
+ .HP
+diff --git a/drivers/staging/usbip/userspace/src/usbip_bind.c b/drivers/staging/usbip/userspace/src/usbip_bind.c
+index 9ecaf6e..d2739fc 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_bind.c
++++ b/drivers/staging/usbip/userspace/src/usbip_bind.c
+@@ -37,8 +37,9 @@ enum unbind_status {
  
-+/*
-+ * This function replaces the current ACL list
-+ */
-+static ssize_t store_acl(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct stub_device *sdev = dev_get_drvdata(dev);
-+	int retval = 0;
-+
-+	if (!sdev)
-+		return -ENODEV;
-+
-+	if (count >= PAGE_SIZE)
-+		/* Prevent storing oversized ACLs in kernel memory */
-+		return -EINVAL;
-+
-+	/* Store ACL */
-+	spin_lock_irq(&sdev->ip_lock);
-+	kfree(sdev->acls);
-+	sdev->acls = kstrdup(buf, GFP_KERNEL);
-+	if (IS_ERR(sdev->acls)) {
-+		retval = PTR_ERR(sdev->acls);
-+		sdev->acls = NULL;
-+	} else {
-+		retval = strlen(sdev->acls);
-+	}
-+	spin_unlock_irq(&sdev->ip_lock);
-+
-+	return retval;
-+}
-+
-+/*
-+ * This functions prints all allowed IP addrs for this dev
-+ */
-+static ssize_t show_acl(struct device *dev, struct device_attribute *attr,
-+		       char *buf)
-+{
-+	struct stub_device *sdev = dev_get_drvdata(dev);
-+	int retval = 0;
-+
-+	if (!sdev)
-+		return -ENODEV;
-+
-+	spin_lock_irq(&sdev->ip_lock);
-+	if (sdev->acls == NULL) {
-+		retval = 0;
-+	} else {
-+		strcpy(buf, sdev->acls);
-+		retval = strlen(buf);
-+	}
-+	spin_unlock_irq(&sdev->ip_lock);
-+
-+	return retval;
-+}
-+static DEVICE_ATTR(usbip_acl, S_IWUSR | S_IRUGO, show_acl, store_acl);
-+
- static int stub_add_files(struct device *dev)
+ static const char usbip_bind_usage_string[] =
+ 	"usbip bind <args>\n"
+-	"    -b, --busid=<busid>    Bind " USBIP_HOST_DRV_NAME ".ko to device "
+-	"on <busid>\n";
++	"    -b, --busid=<busid>        Bind " USBIP_HOST_DRV_NAME ".ko to "
++	"device on <busid>\n"
++	"    -a, --allow=<CIDR mask>    Restrict device access to <CIDR mask>\n";
+ 
+ void usbip_bind_usage(void)
  {
- 	int err = 0;
-@@ -157,9 +213,13 @@ static int stub_add_files(struct device *dev)
- 	err = device_create_file(dev, &dev_attr_usbip_debug);
- 	if (err)
- 		goto err_debug;
-+	err = device_create_file(dev, &dev_attr_usbip_acl);
-+	if (err)
-+		goto err_ip;
- 
- 	return 0;
--
-+err_ip:
-+	device_remove_file(dev, &dev_attr_usbip_debug);
- err_debug:
- 	device_remove_file(dev, &dev_attr_usbip_sockfd);
- err_sockfd:
-@@ -173,6 +233,7 @@ static void stub_remove_files(struct device *dev)
- 	device_remove_file(dev, &dev_attr_usbip_status);
- 	device_remove_file(dev, &dev_attr_usbip_sockfd);
- 	device_remove_file(dev, &dev_attr_usbip_debug);
-+	device_remove_file(dev, &dev_attr_usbip_acl);
+@@ -46,17 +47,19 @@ void usbip_bind_usage(void)
  }
  
- static void stub_shutdown_connection(struct usbip_device *ud)
-@@ -306,12 +367,14 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
- 	sdev->ud.status		= SDEV_ST_AVAILABLE;
- 	spin_lock_init(&sdev->ud.lock);
- 	sdev->ud.tcp_socket	= NULL;
-+	sdev->acls = NULL;
+ /* call at unbound state */
+-static int bind_usbip(char *busid)
++static int bind_usbip(char *busid, char *allow)
+ {
+ 	char bus_type[] = "usb";
+ 	char attr_name[] = "bind";
+ 	char sysfs_mntpath[SYSFS_PATH_MAX];
+ 	char bind_attr_path[SYSFS_PATH_MAX];
+ 	char intf_busid[SYSFS_BUS_ID_SIZE];
++	char ip_attr_path[SYSFS_PATH_MAX];
+ 	struct sysfs_device *busid_dev;
+ 	struct sysfs_attribute *bind_attr;
+ 	struct sysfs_attribute *bConfValue;
+ 	struct sysfs_attribute *bNumIntfs;
++	struct sysfs_attribute *usbip_ip;
+ 	int i, failed = 0;
+ 	int rc, ret = -1;
  
- 	INIT_LIST_HEAD(&sdev->priv_init);
- 	INIT_LIST_HEAD(&sdev->priv_tx);
- 	INIT_LIST_HEAD(&sdev->priv_free);
- 	INIT_LIST_HEAD(&sdev->unlink_free);
- 	INIT_LIST_HEAD(&sdev->unlink_tx);
-+	spin_lock_init(&sdev->ip_lock);
- 	spin_lock_init(&sdev->priv_lock);
- 
- 	init_waitqueue_head(&sdev->tx_waitq);
-@@ -511,6 +574,9 @@ static void stub_disconnect(struct usb_interface *interface)
- 	usb_put_dev(sdev->udev);
- 	usb_put_intf(interface);
- 
-+	/* free ACL list */
-+	kfree(sdev->acls);
+@@ -101,8 +104,32 @@ static int bind_usbip(char *busid)
+ 			dbg("bind driver at %s failed", intf_busid);
+ 			failed = 1;
+ 		}
 +
- 	/* free sdev */
- 	busid_priv->sdev = NULL;
- 	stub_device_free(sdev);
++	}
++
++	/*
++	 * store allowed IP ranges
++	 * specified by `usbip bind -b <busid> --allow <CIDR mask>`
++	 */
++	snprintf(ip_attr_path, sizeof(ip_attr_path),
++			"%s/%s/%s/%s/%s/%s:%.1s.%d/%s",
++			sysfs_mntpath, SYSFS_BUS_NAME, bus_type,
++			SYSFS_DRIVERS_NAME, USBIP_HOST_DRV_NAME, busid,
++			bConfValue->value, 0, "usbip_acl");
++
++	usbip_ip = sysfs_open_attribute(ip_attr_path);
++	if (!usbip_ip) {
++		err("sysfs_open_attribute failed: path=%s",
++				ip_attr_path);
++		goto err_close_busid_dev;
+ 	}
+ 
++	rc = sysfs_write_attribute(usbip_ip, allow, strlen(allow));
++	if (rc)
++		err("sysfs_write_attribute failed");
++
++	sysfs_close_attribute(usbip_ip);
++
+ 	if (!failed)
+ 		ret = 0;
+ 
+@@ -213,7 +240,7 @@ out:
+ 	return status;
+ }
+ 
+-static int bind_device(char *busid)
++static int bind_device(char *busid, char *allow)
+ {
+ 	int rc;
+ 
+@@ -233,7 +260,7 @@ static int bind_device(char *busid)
+ 		return -1;
+ 	}
+ 
+-	rc = bind_usbip(busid);
++	rc = bind_usbip(busid, allow);
+ 	if (rc < 0) {
+ 		err("could not bind device to %s", USBIP_HOST_DRV_NAME);
+ 		modify_match_busid(busid, 0);
+@@ -249,29 +276,52 @@ int usbip_bind(int argc, char *argv[])
+ {
+ 	static const struct option opts[] = {
+ 		{ "busid", required_argument, NULL, 'b' },
++		{ "allow", required_argument, NULL, 'a' },
+ 		{ NULL,    0,                 NULL,  0  }
+ 	};
+ 
+-	int opt;
+-	int ret = -1;
++	int opt, rc;
++	char allow[4096];
++	char *device = NULL;
++	struct subnet subnet;
++
++	allow[0] = 0;
+ 
+ 	for (;;) {
+-		opt = getopt_long(argc, argv, "b:", opts, NULL);
++		opt = getopt_long(argc, argv, "a:b:", opts, NULL);
+ 
+ 		if (opt == -1)
+ 			break;
+ 
+ 		switch (opt) {
++		case 'a':
++			rc = parse_cidr(optarg, &subnet);
++			if (rc < 0) {
++				err("Invalid subnet specified: %s", optarg);
++				goto err_out;
++			}
++
++			if (strlen(allow) < sizeof(allow) - strlen(optarg) - 2)
++				sprintf(allow + strlen(allow), "%s\n", optarg);
++			else
++				err("ACL length too long.");
++			break;
+ 		case 'b':
+-			ret = bind_device(optarg);
+-			goto out;
++			device = optarg;
++			break;
+ 		default:
+ 			goto err_out;
+ 		}
+ 	}
+ 
++	/* By default, allow access from all IPs */
++	if (!allow[0])
++		strcpy(allow, "::/0\n0.0.0.0/0\n");
++
++	if (device)
++		return bind_device(device, allow);
++
+ err_out:
+ 	usbip_bind_usage();
+-out:
+-	return ret;
++	return -1;
+ }
 -- 
 1.8.4
 
