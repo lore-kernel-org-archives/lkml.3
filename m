@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab3I1Ign (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 04:36:43 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:37006 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab3I1Igl (ORCPT
+	id S1754993Ab3I1Ij7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 04:39:59 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:51517 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab3I1Ij4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 04:36:41 -0400
+	Sat, 28 Sep 2013 04:39:56 -0400
+Date: Sat, 28 Sep 2013 10:39:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu ops
+Message-ID: <20130928083952.GB26167@gmail.com>
+References: <20130924154159.855373283@linux.com>
+ <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com>
+ <20130924171029.GB10261@gmail.com>
+ <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
+ <20130925181146.GA16693@gmail.com>
+ <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com>
 MIME-Version: 1.0
-In-Reply-To: <m2wqm1s6f5.fsf@linux-m68k.org>
-References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
- <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
- <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
- <20130927150156.GE26069@arm.com> <CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
- <m2wqm1s6f5.fsf@linux-m68k.org>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Sat, 28 Sep 2013 14:06:00 +0530
-Message-ID: <CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
-Subject: Re: [QUERY] Building and testing Aarch64
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Schwab wrote:
->> I'm not exactly sure what went wrong: I made sure to compile my kernel
->> with virtio support.
->
-> Make sure you have CONFIG_VIRTIO_MMIO enabled.
 
-Now, I get the following build error:
+* Christoph Lameter <cl@linux.com> wrote:
 
-  LD      init/built-in.o
-drivers/built-in.o: In function `vgacon_init':
-:(.text+0xbc4): undefined reference to `screen_info'
-:(.text+0xbc8): undefined reference to `screen_info'
-drivers/built-in.o: In function `vgacon_startup':
-:(.text+0xc1c): undefined reference to `screen_info'
-:(.text+0xc28): undefined reference to `screen_info'
-:(.text+0xc74): undefined reference to `screen_info'
-drivers/built-in.o::(.text+0xf9c): more undefined references to
-`screen_info' follow
-make: *** [vmlinux] Error 1
+> On Wed, 25 Sep 2013, Ingo Molnar wrote:
+> 
+> > >
+> > > I think this is necessary since it seems that the discussions on how 
+> > > to do the raw_cpu conversions may take some time. If we enable it by 
+> > > default then there will be numerous new log messages. That way a 
+> > > developer can enable it for working on this.
+> >
+> > Note that for these patches to be eligible for upstream merge any 
+> > extra warnings that trigger must be fixed, regardless of the default 
+> > setting.
+> 
+> That is exactly what this patch does. There will only be warning if the 
+> user enabled them.
 
-Is there a bug in the Kconfig dependency tree? Sounds like VIRTIO_MMIO
-requires some vga (?) drivers to be compiled in as well.
+You didn't understand me apparently: all warnings that trigger with the 
+debug CONFIG option enabled must be fixed before this can be sent 
+upstream.
+
+Thanks,
+
+	Ingo
