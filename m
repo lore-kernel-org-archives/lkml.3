@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3I1PxO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 11:53:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54967 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754149Ab3I1PxK (ORCPT
+	id S1754561Ab3I1QXL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 12:23:11 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:41445 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346Ab3I1QXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 11:53:10 -0400
-Date: Sat, 28 Sep 2013 16:53:08 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: devicetree@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mfd: arizona: Update device tree regulator bindings
-Message-ID: <20130928155308.GV3635@opensource.wolfsonmicro.com>
-References: <1380131272-16982-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20130925183201.GT3226@sirena.org.uk> <20130926152941.GQ3635@opensource.wolfsonmicro.com> <20130926175843.GS19304@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926175843.GS19304@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Sat, 28 Sep 2013 12:23:07 -0400
+From: Roy Franz <roy.franz@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux@arm.linux.org.uk
+Cc: leif.lindholm@linaro.org, grant.likely@linaro.org, dave.martin@arm.com,
+        msalter@redhat.com, Roy Franz <roy.franz@linaro.org>
+Subject: [PATCH V4 0/6] ADD ARM EFI stub
+Date: Sat, 28 Sep 2013 09:23:17 -0700
+Message-Id: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 06:58:43PM +0100, Mark Brown wrote:
-> I don't see why this would only be an issue for ASoC - it happens to
-> have more helpers for this right now than anything else but I'd hope
-> that at some point in the future we can get some of the common patterns
-> for holding regulators into the device framework.  You also have the
-> potential for this to do the wrong thing if it doesn't happen to be
-> talking to an MFD which is doing this since it just unconditionally
-> looks at the parent.
-> 
-> I would suggest that rather than unconditionally doing this on lookup
-> it'd be easier to do it the other way round and explicitly add mappings
-> from the parent to the child when registering the device.  That doesn't
-> have the potential to explode and get the wrong thing like this does.
 
-Been a bit delayed on this as I have been investigating the
-situation a little further. Is it just moving the supplies of the
-parent node we object to? Or do we want to keep everything tidied
-onto the one device tree node? The reason I ask is because
-looking at this further we run into other problems, the MFD
-framework is clearly intended to have a sub-node for each device.
+This patch series adds EFI stub support for the ARM architecture.  The 
+stub for ARM is implemented in a similar manner to x86 in that it is a 
+shim layer between EFI and the normal zImage/bzImage boot process, and 
+that an image with the stub configured is bootable as both a zImage and 
+EFI application.  
 
-For example, the GPIO driver has a similar issue if anything else
-wishes to use an Arizona devices GPIO, because the GPIO driver
-is on a different device to the MFD so again it can't locate it.
-I haven't checked yet but I am guessing there will be similar
-issues with the interrupts.
 
-Thanks,
-Charles
+Changes since v3:
+* Common and x86 EFI stub changes have been broken out and submitted separately.
+  This patch series depends on the "[PATCH V5 00/18] ARM EFI stub common code"
+  series as merged by Matt Fleming. (Patch 10 of that series omitted)
+* Re-added -fno-stack-protector.  Needed for compilation with 
+  CONFIG_CC_STACKPROTECTOR option.  Cannot easily add support for stack 
+  protection since there are no functions in stub that never return, which 
+  is a requirement for use.  (x86 stub also disables stack protector.)
+  Note that even in the absense of -fno-stack-protector, stack protection
+  was never present in the decompressor, as the required functions are not
+  implemented.
+* Fixed long summaries in commit messages.
+* Further cleanups of assembly in head.S
+
+
+Changes since v2:
+* Now depends on "arm: Add [U]EFI runtime services support" patches by leif.lindholm@linaro.org.
+  The EFI memory map is the only memory map passed to the kernel, so EFI support
+  is now required.
+* remove "-fno-stack-protector" from decompressor Makefile.  The current code doesn't
+  trigger the stack protection, so the decompressor now compiles with it still
+  on.  Note that there has never been any stack protection in the decompressor
+  since the stack usage doesn't trigger the heuristic in GCC, so right now
+  the "-fno-stack-protector" is a noop.
+* Changed EFI command line handling to not have a fixed limit.
+* Change FDT memory allocation to retry with a larger allocation if
+  first educated guess is inadequate.
+* Correctly set 'SizeOfCode' in PE/COFF header.
+* Reviewed ".setup" section that is in x86 PE/COFF header.  This is used for x86
+  to account for code that is not in the .text section.  We don't need this
+  for ARM, as all of our code is in the .text section, or in the PE/COFF header
+  itself.
+* Moved EFI_STUB_ERROR #define to header file to share between stub C and ASM.
+* Variety of cleanups and fixes in head.S.
+* Changed update_fdt_and_exit_boot() to just update the device tree, and
+  renamed appropriately.  Memory allocations moved out of this function as
+  well, which enables the retries if the initial FDT size is too small.
+  Note that in order to do the retried allocations, the original FDT and 
+  command line memory regions are left allocated.  This is OK since the kernel
+  has the memory map and will free these allocations along with the initrd
+  and new fdt allocations.
+* Added prefix to all prints, reduced number of prints, and reviewed all
+  messages.
+* Change mixed usage of dtb/fdt to all be fdt or "device tree" in efi-stub.c
+* remove unnecessary zimage_size variable from relocate_kernel()
+* correct return types on EFI functions - should be efi_status_t, not int.
+
+
+
+Changes since V1:
+* Updated head.S based on feedback from Dave Martin.  ARM/THUMB
+  switches now much cleaner.
+
+Roy Franz (6):
+  efi-stub.txt updates for ARM
+  Add shared update_fdt() function for ARM/ARM64
+  Add strstr to compressed string.c for ARM.
+  Add EFI stub for ARM
+  Disable stack protection for decompressor/stub
+  Add config EFI_STUB for ARM to Kconfig
+
+ Documentation/efi-stub.txt             |   27 ++-
+ arch/arm/Kconfig                       |   11 ++
+ arch/arm/boot/compressed/Makefile      |   17 +-
+ arch/arm/boot/compressed/efi-header.S  |  111 ++++++++++++
+ arch/arm/boot/compressed/efi-stub.c    |  288 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/compressed/efi-stub.h    |    5 +
+ arch/arm/boot/compressed/head.S        |   83 ++++++++-
+ arch/arm/boot/compressed/string.c      |   21 +++
+ drivers/firmware/efi/efi-stub-helper.c |   86 ++++++++++
+ 9 files changed, 633 insertions(+), 16 deletions(-)
+ create mode 100644 arch/arm/boot/compressed/efi-header.S
+ create mode 100644 arch/arm/boot/compressed/efi-stub.c
+ create mode 100644 arch/arm/boot/compressed/efi-stub.h
+
+-- 
+1.7.10.4
+
