@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab3I1A1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 20:27:07 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34367 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab3I1A1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 20:27:04 -0400
-Date: Fri, 27 Sep 2013 19:26:58 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-Subject: [PATCH 1/1] rsxx: Kernel Panic caused by mapping Discards.
-Message-ID: <20130928002658.GB13456@oc6784271780.ibm.com>
+	id S1754685Ab3I1Age (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 20:36:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47398 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab3I1Agc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 20:36:32 -0400
+Date: Fri, 27 Sep 2013 17:37:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: swarren@wwwdotorg.org, bcousson@baylibre.com, tony@atomide.com,
+        balbi@ti.com, s.nawrocki@samsung.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, linux@arm.linux.org.uk,
+        jkosina@suse.cz, m.chehab@samsung.com, cesarb@cesarb.net,
+        joe@perches.com, davem@davemloft.net, davidb@codeaurora.org,
+        sameo@linux.intel.com, peter.ujfalusi@ti.com, t-kristo@ti.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        akpm@linux-foundation.org, balajitk@ti.com, george.cherian@ti.com,
+        nsekhar@ti.com, rogerq@ti.com
+Subject: Re: [PATCH v12 0/7] PHY framework
+Message-ID: <20130928003742.GA3659@kroah.com>
+References: <1380263012-9687-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13092800-0320-0000-0000-00000128ACEA
+In-Reply-To: <1380263012-9687-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Fri, Sep 27, 2013 at 11:53:24AM +0530, Kishon Vijay Abraham I wrote:
+> Added a generic PHY framework that provides a set of APIs for the PHY drivers
+> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
+> the PHY with or without using phandle.
+> 
+> This framework will be of use only to devices that uses external PHY (PHY
+> functionality is not embedded within the controller).
+> 
+> The intention of creating this framework is to bring the phy drivers spread
+> all over the Linux kernel to drivers/phy to increase code re-use and to
+> increase code maintainability.
+> 
+> Comments to make PHY as bus wasn't done because PHY devices can be part of
+> other bus and making a same device attached to multiple bus leads to bad
+> design.
+> 
+> If the PHY driver has to send notification on connect/disconnect, the PHY
+> driver should make use of the extcon framework. Using this susbsystem
+> to use extcon framwork will have to be analysed.
+> 
+> You can find this patch series @
+> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
+> 
+> I'll create a new branch *next* once this patch series is finalized. All the
+> PHY driver development that depends on PHY framework can be based on this
+> branch.
+> 
+> Did USB enumeration testing in panda and beagle after applying [1] (needed for
+> non-dt)
 
-This fixes a kernel panic injected by commit id
-8d26750143341831bc312f61c5ed141eeb75b8d0 where discards
-are getting mapped through the pci_map_page function call.
+All now applied to my usb-next branch.  Thanks for redoing this many
+times and sticking with it.
 
-The driver will now start verifying that a dma is not a
-discard before issuing a the pci_map_page function call.
-
-Also, we are updating the driver version.
-
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
-
-diff -uprN -X linux-2.6.32-420.el6-vanilla/Documentation/dontdiff linux-2.6.32-420.el6-vanilla/drivers/block/rsxx/dma.c linux-2.6.32-420.el6/drivers/block/rsxx/dma.c
---- linux-2.6.32-420.el6-vanilla/drivers/block/rsxx/dma.c	2013-09-23 09:15:30.000000000 -0500
-+++ linux-2.6.32-420.el6/drivers/block/rsxx/dma.c	2013-09-26 15:12:16.471465749 -0500
-@@ -434,26 +434,29 @@ static void rsxx_issue_dmas(struct rsxx_
- 			continue;
- 		}
- 
--		if (dma->cmd == HW_CMD_BLK_WRITE)
--			dir = PCI_DMA_TODEVICE;
--		else
--			dir = PCI_DMA_FROMDEVICE;
-+		if (dma->cmd != HW_CMD_BLK_DISCARD) {
-+			if (dma->cmd == HW_CMD_BLK_WRITE)
-+				dir = PCI_DMA_TODEVICE;
-+			else
-+				dir = PCI_DMA_FROMDEVICE;
- 
--		/*
--		 * The function pci_map_page is placed here because we can
--		 * only, by design, issue up to 255 commands to the hardware
--		 * at one time per DMA channel. So the maximum amount of mapped
--		 * memory would be 255 * 4 channels * 4096 Bytes which is less
--		 * than 2GB, the limit of a x8 Non-HWWD PCIe slot. This way the
--		 * pci_map_page function should never fail because of a
--		 * lack of mappable memory.
--		 */
--		dma->dma_addr = pci_map_page(ctrl->card->dev, dma->page,
--				     dma->pg_off, dma->sub_page.cnt << 9, dir);
--		if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
--			push_tracker(ctrl->trackers, tag);
--			rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
--			continue;
-+			/*
-+			 * The function pci_map_page is placed here because we
-+			 * can only, by design, issue up to 255 commands to the
-+			 * hardware at one time per DMA channel. So the maximum
-+			 * amount of mapped memory would be 255 * 4 channels *
-+			 * 4096 Bytes which is less than 2GB, the limit of a x8
-+			 * Non-HWWD PCIe slot. This way the pci_map_page
-+			 * function should never fail because of a lack of
-+			 * mappable memory.
-+			 */
-+			dma->dma_addr = pci_map_page(ctrl->card->dev, dma->page,
-+					dma->pg_off, dma->sub_page.cnt << 9, dir);
-+			if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
-+				push_tracker(ctrl->trackers, tag);
-+				rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
-+				continue;
-+			}
- 		}
- 
- 		set_tracker_dma(ctrl->trackers, tag, dma);
-diff -uprN -X linux-2.6.32-420.el6-vanilla/Documentation/dontdiff linux-2.6.32-420.el6-vanilla/drivers/block/rsxx/rsxx_priv.h linux-2.6.32-420.el6/drivers/block/rsxx/rsxx_priv.h
---- linux-2.6.32-420.el6-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-09-23 09:15:30.000000000 -0500
-+++ linux-2.6.32-420.el6/drivers/block/rsxx/rsxx_priv.h	2013-09-26 15:24:14.185459296 -0500
-@@ -52,7 +52,7 @@ struct proc_cmd;
- #define RS70_PCI_REV_SUPPORTED	4
- 
- #define DRIVER_NAME "rsxx"
--#define DRIVER_VERSION "4.0"
-+#define DRIVER_VERSION "4.0.1.2498"
- 
- /* Block size is 4096 */
- #define RSXX_HW_BLK_SHIFT		12
-
+greg k-h
