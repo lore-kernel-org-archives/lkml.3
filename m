@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3I1PXi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 11:23:38 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:40675 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab3I1PXg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 11:23:36 -0400
-Message-ID: <5246F47A.8030200@cogentembedded.com>
-Date: Sat, 28 Sep 2013 19:23:38 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Xiangliang Yu <yxlraid@gmail.com>
-CC: tj@kernel.org, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] AHCI: disabled FBS prior to issuing software reset
-References: <1380366816-16221-1-git-send-email-yxlraid@gmail.com>
-In-Reply-To: <1380366816-16221-1-git-send-email-yxlraid@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754193Ab3I1PdT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 11:33:19 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:43747 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753789Ab3I1PdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 11:33:17 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS fixes for 3.12-rc3
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130928153316.09D864266DC@whiskey.americas.sgi.com>
+Date: Sat, 28 Sep 2013 10:33:16 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Linus,
 
-On 28-09-2013 15:13, Xiangliang Yu wrote:
+	Please pull these bugfixes for xfs.  There is a fix for an
+	assert caused by a spurious directory block collapse, a fix for
+	recovery of a block over stale metadata from a previous mkfs, a
+	cleanup for the eofblocks ioctl, and fixes for locking issues in
+	xfs_inode_free and log item removal from the active item list.
 
-> If device is attached to port multiplier, the detection process
-> look like this:
-> 	ahci_hardreset(link, class, deadline)
-> 	if (class == ATA_DEV_PMP) {
-> 		sata_pmp_attach(dev)    /* will enable FBS */
-> 		sata_pmp_init_links(ap, nr_ports);
-> 		ata_for_each_link(link, ap, EDGE) {
-> 			sata_std_hardreset(link, class, deadline);
-> 			if (link_is_online)
-> 				ahci_softreset(link, class, deadline);
-> 		}
-> 	}
-> But, according to chapter 9.3.9 in AHCI spec: Prior to issuing software reset,
-> software shall clear PxCMD.ST to '0' and then clear PxFBS.EN to '0'.
+Thanks,
+       Ben
 
-> Signed-off-by: Xiangliang Yu <yxlraid@gmail.com>
-> ---
->   drivers/ata/libahci.c |   10 ++++++++++
->   1 files changed, 10 insertions(+), 0 deletions(-)
+The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
 
-> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> index acfd0f7..8d024a4 100644
-> --- a/drivers/ata/libahci.c
-> +++ b/drivers/ata/libahci.c
-> @@ -1267,9 +1267,11 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
->   {
->   	struct ata_port *ap = link->ap;
->   	struct ahci_host_priv *hpriv = ap->host->private_data;
-> +	struct ahci_port_priv *pp = ap->private_data;
->   	const char *reason = NULL;
->   	unsigned long now, msecs;
->   	struct ata_taskfile tf;
-> +	bool flag = FALSE;
+  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
 
-    Why not lowercase 'false'? And this is not a good name for a variable (too 
-generic), it should better be called 'fbs' or something...
+are available in the git repository at:
 
-> @@ -1279,6 +1281,11 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
->   	if (rc && rc != -EOPNOTSUPP)
->   		ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
->
-> +	if (!ata_is_host_link(link) && pp->fbs_enabled) {
-> +		ahci_disable_fbs(ap);
-> +		flag = TRUE;
+  git://oss.sgi.com/xfs/xfs tags/xfs-for-linus-v3.12-rc3
 
-    Why not lowercase 'true'?
+for you to fetch changes up to 997def25e4b9cee3b01609e18a52f926bca8bd2b:
 
-WBR, Sergei
+  xfs: fix node forward in xfs_node_toosmall (2013-09-26 10:38:17 -0500)
 
+----------------------------------------------------------------
+xfs: bugfixes for 3.12-rc3
+
+- fix for directory node collapse regression
+- fix for recovery over stale on disk structures
+- fix for eofblocks ioctl
+- fix asserts in xfs_inode_free
+- lock the ail before removing an item from it
+
+----------------------------------------------------------------
+Dave Chinner (4):
+      xfs: lock the AIL before removing the buffer item
+      xfs: asserting lock not held during freeing not valid
+      xfs: fix XFS_IOC_FREE_EOFBLOCKS definition
+      xfs: log recovery lsn ordering needs uuid check
+
+Mark Tinguely (1):
+      xfs: fix node forward in xfs_node_toosmall
+
+ fs/xfs/xfs_buf_item.c    |  1 +
+ fs/xfs/xfs_da_btree.c    |  5 ++--
+ fs/xfs/xfs_fs.h          |  2 +-
+ fs/xfs/xfs_icache.c      |  9 +++---
+ fs/xfs/xfs_log_recover.c | 73 ++++++++++++++++++++++++++++++++++++++----------
+ 5 files changed, 68 insertions(+), 22 deletions(-)
