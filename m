@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3I1UOg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 16:14:36 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53017 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab3I1UOe (ORCPT
+	id S1755115Ab3I1U1f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 16:27:35 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50504 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab3I1U1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 16:14:34 -0400
+	Sat, 28 Sep 2013 16:27:32 -0400
+Date: Sat, 28 Sep 2013 21:27:29 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [rfc][possible solution] RCU vfsmounts
+Message-ID: <20130928202728.GK13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1380337550.27811.71.camel@pasglop>
-References: <1380270519.27811.10.camel@pasglop>
-	<CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
-	<CA+55aFyDfMdAeaniQwkoeW6F-xd3JxrzGYwtFb6N9+NA6aRCMg@mail.gmail.com>
-	<1380318405.27811.37.camel@pasglop>
-	<CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
-	<1380321480.27811.53.camel@pasglop>
-	<CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
-	<1380323960.27811.67.camel@pasglop>
-	<CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-	<1380337550.27811.71.camel@pasglop>
-Date: Sat, 28 Sep 2013 13:14:33 -0700
-X-Google-Sender-Auth: 5lfB7zZr5MsGXuODEjGIhmFOzbA
-Message-ID: <CAE9FiQUnwmANf5x8rw5=QViyVPdi0FLMpSGGnO9u-Twp_YXMpg@mail.gmail.com>
-Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-From: Yinghai Lu <yinghai@kernel.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 8:05 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Fri, 2013-09-27 at 16:44 -0700, Yinghai Lu wrote:
->
-> In the meantime, can you properly submit the other one with the warning
-> to Linus ? It will make things more robust overall...
+	FWIW, I think I have a kinda-sorta solution for that and I'd like
+to hear your comments on that.  I want to replace vfsmount_lock with seqlock
+and store additional seq number in nameidata, set to vfsmount_seq in the
+beginning and rechecked in unlazy_walk/complete_walk.
 
-https://patchwork.kernel.org/patch/2959121/
+	The obvious variant would be to have unlazy_walk/complete_walk to
+grab refcount, check vfsmount_seq and mntput on mismatch.  The trouble
+with that is race with what would've been the final mntput() done by
+umount(2); complete_walk() would drop that temporary reference and
+fail, all right, but... we would get a umount(2) returning without having
+actually shut the filesystem down.  Said shutdown would happen in whoever
+had been doing pathname resolution that stepped into the race.
+
+	I _think_ I have a workable variant:
+	* new vfsmount flag (MNT_SYNC_UMOUNT or something like that) and
+ability to tell umount_tree() to set that on all victims; done on
+non-lazy umount and on expiry.  Never cleared once set, and set only
+when propagate_mount_busy() has been called and returned true.
+Set before bumping vfsmount_seq.
+	* rcu_barrier() added in namespace_unlock(), between
+dropping namespace_sem and doing mntput() on the victims.
+	* unlazy_walk() and complete_walk() use the common helper along
+the lines of
+
+legitimize_mnt(struct vfsmount *mnt, unsigned seq)
+{
+	if (read_seqcount_retry(&vfsmount_seq, seq)) {
+		rcu_read_unlock();
+		return false;
+	}
+	mntget(mnt);
+	if (!read_seqcount_retry(&vfsmount_seq, seq)) {
+		rcu_read_unlock();
+		return true;
+	}
+	if (mnt->mnt_flags & MNT_SYNC_UMOUNT) {
+		/* it couldn't have gotten through rcu_barrier() yet */
+		mnt_add_count(real_mount(mnt), -1);
+		rcu_read_unlock();
+		return false;
+	}
+	rcu_read_unlock();
+	mntput(mnt);
+	return false;
+}
+
+Freeing vfsmounts would be done with rcu delay, vfsmount hash lookups,
+d_path(), etc. do the obvious things as we do with rename_lock for dentry
+side of things - that stuff is all obvious.  Not ending up with final
+mntput() stolen from something that really expects it to be final is the
+hard part and it looks like the above would be a solution.
+
+Comments?  AFAICS, that would've killed *all* vfsmount-related locked stores
+in RCU-mode pathwalks...
