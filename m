@@ -1,361 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab3I1TwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 15:52:15 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:64211 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3I1TwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 15:52:11 -0400
-Date: Sat, 28 Sep 2013 21:52:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
-Message-ID: <20130928195207.GA31245@gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <20130928193739.GA8642@gmail.com>
- <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
+	id S1755123Ab3I1Ty4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 15:54:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50795 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248Ab3I1Tyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 15:54:53 -0400
+Date: Sat, 28 Sep 2013 21:54:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        huawei.libin@huawei.com, wangyijing@huawei.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
+Message-ID: <20130928195448.GJ5956@pd.tnic>
+References: <20130928102305.GA5956@pd.tnic>
+ <20130928134449.GB26931@gmail.com>
+ <20130928174749.GE5956@pd.tnic>
+ <20130928175444.GA4402@gmail.com>
+ <20130928180459.GF5956@pd.tnic>
+ <20130928181236.GA4999@gmail.com>
+ <20130928191500.GG5956@pd.tnic>
+ <20130928192545.GB8228@gmail.com>
+ <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com>
+ <20130928194927.GI5956@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
+In-Reply-To: <20130928194927.GI5956@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 28, 2013 at 09:49:27PM +0200, Borislav Petkov wrote:
+> And yes, that one works too.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Btw, just to be thorough, we could handle negative numbers too:
 
-> On Sat, Sep 28, 2013 at 12:37 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > -               down_write_nest_lock(&anon_vma->root->rwsem, &mm->mmap_sem);
-> > +               down_write_nest_lock(&anon_vma->root->rwlock, &mm->mmap_sem);
-> 
-> That's just completely bogus, and cannot work.
-> 
-> Maybe just a "write_lock(&anon_vma->root->rwlock)" (which is just
-> anon_vma_unlock_write(anon_vma)). But I think we might have a lockdep
-> issue. I'm not quite sure what's up with the nesting there.
-> 
-> > -       if (rwsem_is_locked(&anon_vma->root->rwsem)) {
-> > +       if (write_can_lock(&anon_vma->root->rwlock)) {
-> >                 anon_vma_lock_write(anon_vma);
-> >                 anon_vma_unlock_write(anon_vma);
-> >         }
-> 
-> That's the wrong way around. It should be
-> 
->         if (!write_can_lock(&anon_vma->root->rwlock)) {
-> 
-> so some more testing definitely needed.
+int num_digits(int val)
+{
+        int m = 10;
+        int d = 1;
 
-Yeah, that silly API asymmetry has bitten me before as well :-/
+        if (val < 0)
+                val = -val;
 
-The attached version booted up fine under 16-way KVM:
+        while (val >= m) {
+                m *= 10;
+                d++;
+        }
 
- sh-4.2# uptime
-  19:50:08 up 0 min,  0 users,  load average: 0.00, 0.00, 0.00
+        return d;
+}
 
-That's all the testing it will get this evening though. Patch should be 
-good enough for Tim to try?
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
-
-	Ingo
-
-====================>
-Subject: anon_vmas: Convert the rwsem to an rwlock_t
-From: Ingo Molnar <mingo@kernel.org>
-Date: Sat, 28 Sep 2013 21:37:39 +0200
-
-Here's a an almost totally untested patch to convert the anon vma lock to 
-an rwlock_t.
-
-I think its lack of modern queueing will hurt on big systems big time - it 
-might even regress. But ... it's hard to tell such things in advance.
-
-[ That might as well be for the better as it will eventually be fixed,
-  which in turn will improve tasklist_lock workloads ;-) ]
-
+Sent from a fat crate under my desk. Formatting is fine.
 --
- include/linux/mmu_notifier.h |    2 +-
- include/linux/rmap.h         |   19 +++++++++----------
- mm/huge_memory.c             |    4 ++--
- mm/mmap.c                    |   10 +++++-----
- mm/rmap.c                    |   24 ++++++++++++------------
- 5 files changed, 29 insertions(+), 30 deletions(-)
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Index: tip/include/linux/mmu_notifier.h
-===================================================================
---- tip.orig/include/linux/mmu_notifier.h
-+++ tip/include/linux/mmu_notifier.h
-@@ -151,7 +151,7 @@ struct mmu_notifier_ops {
-  * Therefore notifier chains can only be traversed when either
-  *
-  * 1. mmap_sem is held.
-- * 2. One of the reverse map locks is held (i_mmap_mutex or anon_vma->rwsem).
-+ * 2. One of the reverse map locks is held (i_mmap_mutex or anon_vma->rwlock).
-  * 3. No other concurrent thread can access the list (release)
-  */
- struct mmu_notifier {
-Index: tip/include/linux/rmap.h
-===================================================================
---- tip.orig/include/linux/rmap.h
-+++ tip/include/linux/rmap.h
-@@ -7,7 +7,7 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
--#include <linux/rwsem.h>
-+#include <linux/rwlock.h>
- #include <linux/memcontrol.h>
- 
- /*
-@@ -26,7 +26,7 @@
-  */
- struct anon_vma {
- 	struct anon_vma *root;		/* Root of this anon_vma tree */
--	struct rw_semaphore rwsem;	/* W: modification, R: walking the list */
-+	rwlock_t rwlock;		/* W: modification, R: walking the list */
- 	/*
- 	 * The refcount is taken on an anon_vma when there is no
- 	 * guarantee that the vma of page tables will exist for
-@@ -64,7 +64,7 @@ struct anon_vma_chain {
- 	struct vm_area_struct *vma;
- 	struct anon_vma *anon_vma;
- 	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
--	struct rb_node rb;			/* locked by anon_vma->rwsem */
-+	struct rb_node rb;			/* locked by anon_vma->rwlock */
- 	unsigned long rb_subtree_last;
- #ifdef CONFIG_DEBUG_VM_RB
- 	unsigned long cached_vma_start, cached_vma_last;
-@@ -108,37 +108,36 @@ static inline void vma_lock_anon_vma(str
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
--		down_write(&anon_vma->root->rwsem);
-+		write_lock(&anon_vma->root->rwlock);
- }
- 
- static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
--		up_write(&anon_vma->root->rwsem);
-+		write_unlock(&anon_vma->root->rwlock);
- }
- 
- static inline void anon_vma_lock_write(struct anon_vma *anon_vma)
- {
--	down_write(&anon_vma->root->rwsem);
-+	write_lock(&anon_vma->root->rwlock);
- }
- 
- static inline void anon_vma_unlock_write(struct anon_vma *anon_vma)
- {
--	up_write(&anon_vma->root->rwsem);
-+	write_unlock(&anon_vma->root->rwlock);
- }
- 
- static inline void anon_vma_lock_read(struct anon_vma *anon_vma)
- {
--	down_read(&anon_vma->root->rwsem);
-+	read_unlock(&anon_vma->root->rwlock);
- }
- 
- static inline void anon_vma_unlock_read(struct anon_vma *anon_vma)
- {
--	up_read(&anon_vma->root->rwsem);
-+	read_unlock(&anon_vma->root->rwlock);
- }
- 
--
- /*
-  * anon_vma helper functions.
-  */
-Index: tip/mm/huge_memory.c
-===================================================================
---- tip.orig/mm/huge_memory.c
-+++ tip/mm/huge_memory.c
-@@ -1542,7 +1542,7 @@ static int __split_huge_page_splitting(s
- 		 * We can't temporarily set the pmd to null in order
- 		 * to split it, the pmd must remain marked huge at all
- 		 * times or the VM won't take the pmd_trans_huge paths
--		 * and it won't wait on the anon_vma->root->rwsem to
-+		 * and it won't wait on the anon_vma->root->rwlock to
- 		 * serialize against split_huge_page*.
- 		 */
- 		pmdp_splitting_flush(vma, address, pmd);
-@@ -1747,7 +1747,7 @@ static int __split_huge_page_map(struct
- 	return ret;
- }
- 
--/* must be called with anon_vma->root->rwsem held */
-+/* must be called with anon_vma->root->rwlock held */
- static void __split_huge_page(struct page *page,
- 			      struct anon_vma *anon_vma,
- 			      struct list_head *list)
-Index: tip/mm/mmap.c
-===================================================================
---- tip.orig/mm/mmap.c
-+++ tip/mm/mmap.c
-@@ -2955,15 +2955,15 @@ static void vm_lock_anon_vma(struct mm_s
- 		 * The LSB of head.next can't change from under us
- 		 * because we hold the mm_all_locks_mutex.
- 		 */
--		down_write_nest_lock(&anon_vma->root->rwsem, &mm->mmap_sem);
-+		write_lock(&anon_vma->root->rwlock);
- 		/*
- 		 * We can safely modify head.next after taking the
--		 * anon_vma->root->rwsem. If some other vma in this mm shares
-+		 * anon_vma->root->rwlock. If some other vma in this mm shares
- 		 * the same anon_vma we won't take it again.
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us thanks to the
--		 * anon_vma->root->rwsem.
-+		 * anon_vma->root->rwlock.
- 		 */
- 		if (__test_and_set_bit(0, (unsigned long *)
- 				       &anon_vma->root->rb_root.rb_node))
-@@ -3012,7 +3012,7 @@ static void vm_lock_mapping(struct mm_st
-  * vma in this mm is backed by the same anon_vma or address_space.
-  *
-  * We can take all the locks in random order because the VM code
-- * taking i_mmap_mutex or anon_vma->rwsem outside the mmap_sem never
-+ * taking i_mmap_mutex or anon_vma->rwslockoutside the mmap_sem never
-  * takes more than one of them in a row. Secondly we're protected
-  * against a concurrent mm_take_all_locks() by the mm_all_locks_mutex.
-  *
-@@ -3065,7 +3065,7 @@ static void vm_unlock_anon_vma(struct an
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us until we release the
--		 * anon_vma->root->rwsem.
-+		 * anon_vma->root->rwlock.
- 		 */
- 		if (!__test_and_clear_bit(0, (unsigned long *)
- 					  &anon_vma->root->rb_root.rb_node))
-Index: tip/mm/rmap.c
-===================================================================
---- tip.orig/mm/rmap.c
-+++ tip/mm/rmap.c
-@@ -24,7 +24,7 @@
-  *   mm->mmap_sem
-  *     page->flags PG_locked (lock_page)
-  *       mapping->i_mmap_mutex
-- *         anon_vma->rwsem
-+ *         anon_vma->rwlock
-  *           mm->page_table_lock or pte_lock
-  *             zone->lru_lock (in mark_page_accessed, isolate_lru_page)
-  *             swap_lock (in swap_duplicate, swap_info_get)
-@@ -37,7 +37,7 @@
-  *                           in arch-dependent flush_dcache_mmap_lock,
-  *                           within bdi.wb->list_lock in __sync_single_inode)
-  *
-- * anon_vma->rwsem,mapping->i_mutex      (memory_failure, collect_procs_anon)
-+ * anon_vma->rwlock,mapping->i_mutex      (memory_failure, collect_procs_anon)
-  *   ->tasklist_lock
-  *     pte map lock
-  */
-@@ -98,12 +98,12 @@ static inline void anon_vma_free(struct
- 	 * page_lock_anon_vma_read()	VS	put_anon_vma()
- 	 *   down_read_trylock()		  atomic_dec_and_test()
- 	 *   LOCK				  MB
--	 *   atomic_read()			  rwsem_is_locked()
-+	 *   atomic_read()			  rwlock_is_locked()
- 	 *
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
--	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
-+	if (!write_can_lock(&anon_vma->root->rwlock)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
- 	}
-@@ -219,9 +219,9 @@ static inline struct anon_vma *lock_anon
- 	struct anon_vma *new_root = anon_vma->root;
- 	if (new_root != root) {
- 		if (WARN_ON_ONCE(root))
--			up_write(&root->rwsem);
-+			write_unlock(&root->rwlock);
- 		root = new_root;
--		down_write(&root->rwsem);
-+		write_lock(&root->rwlock);
- 	}
- 	return root;
- }
-@@ -229,7 +229,7 @@ static inline struct anon_vma *lock_anon
- static inline void unlock_anon_vma_root(struct anon_vma *root)
- {
- 	if (root)
--		up_write(&root->rwsem);
-+		write_unlock(&root->rwlock);
- }
- 
- /*
-@@ -349,7 +349,7 @@ void unlink_anon_vmas(struct vm_area_str
- 	/*
- 	 * Iterate the list once more, it now only contains empty and unlinked
- 	 * anon_vmas, destroy them. Could not do before due to __put_anon_vma()
--	 * needing to write-acquire the anon_vma->root->rwsem.
-+	 * needing to write-acquire the anon_vma->root->rwlock.
- 	 */
- 	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
- 		struct anon_vma *anon_vma = avc->anon_vma;
-@@ -365,7 +365,7 @@ static void anon_vma_ctor(void *data)
- {
- 	struct anon_vma *anon_vma = data;
- 
--	init_rwsem(&anon_vma->rwsem);
-+	rwlock_init(&anon_vma->rwlock);
- 	atomic_set(&anon_vma->refcount, 0);
- 	anon_vma->rb_root = RB_ROOT;
- }
-@@ -457,14 +457,14 @@ struct anon_vma *page_lock_anon_vma_read
- 
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
- 	root_anon_vma = ACCESS_ONCE(anon_vma->root);
--	if (down_read_trylock(&root_anon_vma->rwsem)) {
-+	if (read_trylock(&root_anon_vma->rwlock)) {
- 		/*
- 		 * If the page is still mapped, then this anon_vma is still
- 		 * its anon_vma, and holding the mutex ensures that it will
- 		 * not go away, see anon_vma_free().
- 		 */
- 		if (!page_mapped(page)) {
--			up_read(&root_anon_vma->rwsem);
-+			read_unlock(&root_anon_vma->rwlock);
- 			anon_vma = NULL;
- 		}
- 		goto out;
-@@ -1293,7 +1293,7 @@ out_mlock:
- 	/*
- 	 * We need mmap_sem locking, Otherwise VM_LOCKED check makes
- 	 * unstable result and race. Plus, We can't wait here because
--	 * we now hold anon_vma->rwsem or mapping->i_mmap_mutex.
-+	 * we now hold anon_vma->rwlock or mapping->i_mmap_mutex.
- 	 * if trylock failed, the page remain in evictable lru and later
- 	 * vmscan could retry to move the page to unevictable lru if the
- 	 * page is actually mlocked.
