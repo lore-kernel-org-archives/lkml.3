@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab3I1RqI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 13:46:08 -0400
-Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:39800 "EHLO
-	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754869Ab3I1Rn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 13:43:27 -0400
-X-RRZE-Submit-IP: 212.255.254.196
-From: Dominik Paulus <dominik.paulus@fau.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        Anthony Foiani <anthony.foiani@gmail.com>,
-        Masanari Iida <standby24x7@gmail.com>, linux-kernel@i4.cs.fau.de,
-        devel@driverdev.osuosl.org, tobias.polzer@fau.de,
-        Dominik Paulus <dominik.paulus@fau.de>
-Subject: [PATCHv3  09/16] staging: usbip: Separate protocol/program version
-Date: Sat, 28 Sep 2013 19:42:46 +0200
-Message-Id: <1380390173-3746-9-git-send-email-dominik.paulus@fau.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1380390173-3746-1-git-send-email-dominik.paulus@fau.de>
-References: <20130925233638.GA21396@kroah.com>
- <1380390173-3746-1-git-send-email-dominik.paulus@fau.de>
+	id S1755320Ab3I1RrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 13:47:09 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:58554 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754613Ab3I1RrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 13:47:07 -0400
+X-Greylist: delayed 157938 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Sep 2013 13:47:05 EDT
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH linux-next] skd: fix some VPRINTK() specifiers for size_t
+Date: Sat, 28 Sep 2013 19:37:58 +0200
+Message-Id: <1380389878-15497-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.8.4.rc3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all new program versions necessarily introduce
-non-backwards-compatible protocol changes. We thus move the definition
-of the protocol version from configure.ac to usbip_network.h, where it
-logically belongs to.
+Use %zu for VPRINTK() as size_t specifier in replacement of %u.
 
-Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
-Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
+This fixes 7 compilation warnings on x86_64 like the following:
+
+  drivers/block/skd_main.c:4628:42: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 6 has type ‘long unsigned int’ [-Wformat=]
+
+While at it, remove one cast to unsigned long for a size_t VPRINTK() argument
+and specify it as %zu, too.
+
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/staging/usbip/userspace/configure.ac        | 1 -
- drivers/staging/usbip/userspace/src/usbip_network.c | 6 +++---
- drivers/staging/usbip/userspace/src/usbip_network.h | 6 ++++++
- 3 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
-index 2208516..bc08b81 100644
---- a/drivers/staging/usbip/userspace/configure.ac
-+++ b/drivers/staging/usbip/userspace/configure.ac
-@@ -2,7 +2,6 @@ dnl Process this file with autoconf to produce a configure script.
+Hi,
+
+This can be seen on e.g. linux next-20130927.
+
+Best regards,
+
+V.
+
+ drivers/block/skd_main.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index 3110f68..ee7f7a8 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -4556,11 +4556,10 @@ static int skd_cons_skmsg(struct skd_device *skdev)
+ 	int rc = 0;
+ 	u32 i;
  
- AC_PREREQ(2.59)
- AC_INIT([usbip-utils], [1.1.1], [linux-usb@vger.kernel.org])
--AC_DEFINE([USBIP_VERSION], [0x00000111], [binary-coded decimal version number])
+-	VPRINTK(skdev, "skmsg_table kzalloc, struct %u, count %u total %lu\n",
++	VPRINTK(skdev, "skmsg_table kzalloc, struct %zu, count %u total %zu\n",
+ 		sizeof(struct skd_fitmsg_context),
+ 		skdev->num_fitmsg_context,
+-		(unsigned long) sizeof(struct skd_fitmsg_context) *
+-					skdev->num_fitmsg_context);
++		sizeof(struct skd_fitmsg_context) * skdev->num_fitmsg_context);
  
- CURRENT=0
- REVISION=1
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
-index e573cb2..a606e2b 100644
---- a/drivers/staging/usbip/userspace/src/usbip_network.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_network.c
-@@ -156,7 +156,7 @@ int usbip_net_send_op_common(int sockfd, uint32_t code, uint32_t status)
+ 	skdev->skmsg_table = kzalloc(sizeof(struct skd_fitmsg_context)
+ 				     *skdev->num_fitmsg_context, GFP_KERNEL);
+@@ -4611,7 +4610,7 @@ static int skd_cons_skreq(struct skd_device *skdev)
+ 	int rc = 0;
+ 	u32 i;
  
- 	memset(&op_common, 0, sizeof(op_common));
- 
--	op_common.version = USBIP_VERSION;
-+	op_common.version = PROTOCOL_VERSION;
- 	op_common.code    = code;
- 	op_common.status  = status;
- 
-@@ -186,9 +186,9 @@ int usbip_net_recv_op_common(int sockfd, uint16_t *code)
- 
- 	PACK_OP_COMMON(0, &op_common);
- 
--	if (op_common.version != USBIP_VERSION) {
-+	if (op_common.version != PROTOCOL_VERSION) {
- 		dbg("version mismatch: %d %d", op_common.version,
--		    USBIP_VERSION);
-+		    PROTOCOL_VERSION);
- 		return -ERR_MISMATCH;
+-	VPRINTK(skdev, "skreq_table kzalloc, struct %u, count %u total %u\n",
++	VPRINTK(skdev, "skreq_table kzalloc, struct %zu, count %u total %zu\n",
+ 		sizeof(struct skd_request_context),
+ 		skdev->num_req_context,
+ 		sizeof(struct skd_request_context) * skdev->num_req_context);
+@@ -4623,7 +4622,7 @@ static int skd_cons_skreq(struct skd_device *skdev)
+ 		goto err_out;
  	}
  
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
-index d3c1b71..6a41fd8 100644
---- a/drivers/staging/usbip/userspace/src/usbip_network.h
-+++ b/drivers/staging/usbip/userspace/src/usbip_network.h
-@@ -14,6 +14,12 @@
+-	VPRINTK(skdev, "alloc sg_table sg_per_req %u scatlist %u total %u\n",
++	VPRINTK(skdev, "alloc sg_table sg_per_req %u scatlist %zu total %zu\n",
+ 		skdev->sgs_per_request, sizeof(struct scatterlist),
+ 		skdev->sgs_per_request * sizeof(struct scatterlist));
  
- #include <stdint.h>
+@@ -4668,7 +4667,7 @@ static int skd_cons_skspcl(struct skd_device *skdev)
+ 	int rc = 0;
+ 	u32 i, nbytes;
  
-+/*
-+ * Protocol version. Incremented only on non-backwards-compatible
-+ * changes.
-+ */
-+#define PROTOCOL_VERSION 0x111
-+
- extern int usbip_port;
- extern char *usbip_port_string;
- extern char *usbip_srp_password;
+-	VPRINTK(skdev, "skspcl_table kzalloc, struct %u, count %u total %u\n",
++	VPRINTK(skdev, "skspcl_table kzalloc, struct %zu, count %u total %zu\n",
+ 		sizeof(struct skd_special_context),
+ 		skdev->n_special,
+ 		sizeof(struct skd_special_context) * skdev->n_special);
 -- 
-1.8.4
+1.8.4.rc3
 
