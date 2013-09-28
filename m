@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3I1DN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 23:13:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57327 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639Ab3I1DNx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 23:13:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1379010935-25943-2-git-send-email-koen@dominion.thruhere.net>
-References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
-	<1379010935-25943-2-git-send-email-koen@dominion.thruhere.net>
-Date: Fri, 27 Sep 2013 23:13:50 -0400
-Message-ID: <CA+T6QPk=Z+u2eo63-2T4dZcyaZ=yL=+rBck5r5y14MiQK_w00w@mail.gmail.com>
-Subject: Re: [PATCH v4 1/4] ARM: dts: am335x-bone: add CD for mmc1
-From: Jason Kridner <jkridner@beagleboard.org>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Alexander Holler <holler@ahsoftware.de>,
-        OMAP List <linux-omap@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754851Ab3I1DwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 23:52:16 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:40399 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754732Ab3I1DwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 23:52:15 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] carl9170: fix leaks at failure path in carl9170_usb_probe()
+Date: Fri, 27 Sep 2013 23:51:51 -0400
+Message-Id: <1380340311-4630-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 2:35 PM, Koen Kooi <koen@dominion.thruhere.net> wrote:
-> From: Alexander Holler <holler@ahsoftware.de>
->
-> This enables the use of MMC cards even when no card was inserted at boot.
->
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+carl9170_usb_probe() does not handle request_firmware_nowait() failure
+that leads to several leaks in this case.
+The patch adds all required deallocations.
 
-Acked-by: Jason Kridner <jdk@ti.com>
+Found by Linux Driver Verification project (linuxtesting.org).
 
-> ---
->  arch/arm/boot/dts/am335x-bone-common.dtsi | 14 ++++++++++++++
->  arch/arm/boot/dts/am335x-bone.dts         |  1 -
->  2 files changed, 14 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-> index 2f66ded..0d95d54 100644
-> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-> @@ -107,6 +107,12 @@
->                                 0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
->                         >;
->                 };
-> +
-> +               mmc1_pins: pinmux_mmc1_pins {
-> +                       pinctrl-single,pins = <
-> +                               0x160 (PIN_INPUT | MUX_MODE7) /* GPIO0_6 */
-> +                       >;
-> +               };
->         };
->
->         ocp {
-> @@ -260,3 +266,11 @@
->         pinctrl-0 = <&davinci_mdio_default>;
->         pinctrl-1 = <&davinci_mdio_sleep>;
->  };
-> +
-> +&mmc1 {
-> +       status = "okay";
-> +       pinctrl-names = "default";
-> +       pinctrl-0 = <&mmc1_pins>;
-> +       cd-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
-> +       cd-inverted;
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> index d5f43fe..0d63348 100644
-> --- a/arch/arm/boot/dts/am335x-bone.dts
-> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> @@ -17,6 +17,5 @@
->  };
->
->  &mmc1 {
-> -       status = "okay";
->         vmmc-supply = <&ldo3_reg>;
->  };
-> --
-> 1.8.2.1
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/wireless/ath/carl9170/usb.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/carl9170/usb.c b/drivers/net/wireless/ath/carl9170/usb.c
+index 307bc0d..3c76de1 100644
+--- a/drivers/net/wireless/ath/carl9170/usb.c
++++ b/drivers/net/wireless/ath/carl9170/usb.c
+@@ -1076,8 +1076,14 @@ static int carl9170_usb_probe(struct usb_interface *intf,
+ 
+ 	carl9170_set_state(ar, CARL9170_STOPPED);
+ 
+-	return request_firmware_nowait(THIS_MODULE, 1, CARL9170FW_NAME,
++	err = request_firmware_nowait(THIS_MODULE, 1, CARL9170FW_NAME,
+ 		&ar->udev->dev, GFP_KERNEL, ar, carl9170_usb_firmware_step2);
++	if (err) {
++		usb_put_dev(udev);
++		usb_put_dev(udev);
++		carl9170_free(ar);
++	}
++	return err;
+ }
+ 
+ static void carl9170_usb_disconnect(struct usb_interface *intf)
+-- 
+1.8.1.2
+
