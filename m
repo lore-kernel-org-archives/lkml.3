@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3I1Ij7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 04:39:59 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:51517 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab3I1Ij4 (ORCPT
+	id S1754919Ab3I1Inc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 04:43:32 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42867 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab3I1Ina (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 04:39:56 -0400
-Date: Sat, 28 Sep 2013 10:39:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20130928083952.GB26167@gmail.com>
-References: <20130924154159.855373283@linux.com>
- <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com>
- <20130924171029.GB10261@gmail.com>
- <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
- <20130925181146.GA16693@gmail.com>
- <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com>
+	Sat, 28 Sep 2013 04:43:30 -0400
+Date: Sat, 28 Sep 2013 10:43:28 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Rob Landley <rob@landley.net>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+Message-ID: <20130928084328.GA5649@amd.pavel.ucw.cz>
+References: <alpine.LFD.2.03.1309251147320.312@syhkavp.arg>
+ <1380235709.1974.93@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380235709.1974.93@driftwood>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-* Christoph Lameter <cl@linux.com> wrote:
-
-> On Wed, 25 Sep 2013, Ingo Molnar wrote:
+> >Given you're not upgrading your binutils anymore that means
+> >you'll have to apply that patch only once instead of having to
+> >apply it
+> >to every kernel upgrade.
 > 
-> > >
-> > > I think this is necessary since it seems that the discussions on how 
-> > > to do the raw_cpu conversions may take some time. If we enable it by 
-> > > default then there will be numerous new log messages. That way a 
-> > > developer can enable it for working on this.
-> >
-> > Note that for these patches to be eligible for upstream merge any 
-> > extra warnings that trigger must be fixed, regardless of the default 
-> > setting.
+> Indeed. Patching my own toolchain isn't really a problem. My
+> objection was to the Documentation patch telling the world at large
+> that for all targets, older binutils aren't supported even on x86.
+> That was worth pushing back against.
 > 
-> That is exactly what this patch does. There will only be warning if the 
-> user enabled them.
+> I don't indend to use old gcc/binutils versions forever, I just want
+> to be able to use them until I can replace them with llvm or
+> similar.
 
-You didn't understand me apparently: all warnings that trigger with the 
-debug CONFIG option enabled must be fixed before this can be sent 
-upstream.
-
-Thanks,
-
-	Ingo
+So, what is the proposal? Just ignore the problem and make people
+wonder why their arm kernels are not compiling?
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
