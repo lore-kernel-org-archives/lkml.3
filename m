@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3I1Jk1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 05:40:27 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:48891 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab3I1JkY (ORCPT
+	id S1754893Ab3I1Jkc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 05:40:32 -0400
+Received: from fed1rmfepi204.cox.net ([68.230.241.149]:33738 "EHLO
+	fed1rmfepi204.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab3I1Jk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 05:40:24 -0400
+	Sat, 28 Sep 2013 05:40:28 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Sep 2013 05:40:28 EDT
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A010204.524620B6.0163,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=2.0 cv=KYMMR3kD c=1 sm=1
+ a=NIeFEaw0Z7SJtMyvaJPikA==:17 a=Dyoqhi_TatcA:10 a=uSoUd6Iv8LQA:10
+ a=G8Uczd0VNMoA:10 a=q-265TRH6woA:10 a=Cfj4BQAnxiAA:10 a=kviXuzpPAAAA:8
+ a=pIi8AmG9AAAA:8 a=UIBXk5eQgn8A:10 a=q5HG6qR-gLdz3HzBwzoA:9 a=Ft8UYL4EG9YA:10
+ a=Erke-Q4N3CIA:10 a=X1DhzZyS6PMA:10 a=NIeFEaw0Z7SJtMyvaJPikA==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN)
+ smtp.auth=ngnggjgmgbgngjnggkg8@cox.net
+Reply-To: <latidesk@mail2judge.com>
+From: "JMW SOLICITORS LLP" <court@cox.net>
+Subject: Inheritance of 3.8million pounds
+Date: Sat, 28 Sep 2013 10:33:44 +0100
 MIME-Version: 1.0
-In-Reply-To: <m2siwps45q.fsf@linux-m68k.org>
-References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
- <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
- <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
- <20130927150156.GE26069@arm.com> <CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
- <m2wqm1s6f5.fsf@linux-m68k.org> <CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
- <m2siwps45q.fsf@linux-m68k.org>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Sat, 28 Sep 2013 15:09:42 +0530
-Message-ID: <CALkWK0=ii-usQ17qpwDMwCbJAPhDTghz6j8J7JEeZ5Uwnn-awQ@mail.gmail.com>
-Subject: Re: [QUERY] Building and testing Aarch64
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130927-2, 09/27/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20130928093347.JCEW3842.fed1rmfepo202.cox.net@fed1rmimpo110>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Schwab wrote:
-> Ramkumar Ramachandra <artagnon@gmail.com> writes:
->> Is there a bug in the Kconfig dependency tree? Sounds like VIRTIO_MMIO
->> requires some vga (?) drivers to be compiled in as well.
-
-I hit this bug when I do `make menuconfig` directly (which
-configuration does it start out with?). When I `make defconfig`
-(picking up arch/arm64/configs/defconfig), and then enable VIRTIO_MMIO
-in the menuconfig, it builds fine.
-
-> I don't have any VGA option enabled.  You should use a serial console
-> with CONFIG_SERIAL_AMBA_PL011_CONSOLE.
-
-arch/arm64/configs/defconfig:676 already builds this feature in.
-
-Unfortunately, even with VIRTIO_MMIO built in, I get the same error:
-
-  VFS: Cannot open root device "vda" or unknown-block(0,0): error -6
-  Please append a correct "root=" boot option; here are the available
-partitions:
-  Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-
-Any hints on how to proceed from here? What is your kernel
-configuration (are you using arch/arm64/configs/defconfig)? Is
-root=/dev/vda part of your kernel arguments?
-
-How is this supposed to work? When I pass the rootfs-file as the
---block-device, it's supposed to see the file as the block device
-/dev/vda (what determines this?), mount it, and finally get devtmpfs
-to populate the /dev, right? The transcript from the working
-linux-system.axf (with raring-rootfs) looks like:
-
-[    4.977788]  vda: unknown partition table
-[    4.997392] mtdoops: mtd device (mtddev=name/number) must be supplied
-[    5.001787] smc91x: not found (-19).
-[    5.011141] mousedev: PS/2 mouse device common for all mice
-[    5.020830] device-mapper: ioctl: 4.23.1-ioctl (2012-12-18)
-initialised: dm-devel@redhat.com
-[    5.027396] TCP: cubic registered
-[    5.027456] Initializing XFRM netlink socket
-[    5.027885] NET: Registered protocol family 17
-[    5.028207] NET: Registered protocol family 15
-[    5.047665] EXT3-fs (vda): error: couldn't mount because of
-unsupported optional features (240)
-[    5.050214] EXT2-fs (vda): error: couldn't mount because of
-unsupported optional features (244)
-[    5.095085] EXT4-fs (vda): recovery complete
-[    5.096307] EXT4-fs (vda): mounted filesystem with ordered data
-mode. Opts: (null)
-[    5.096723] VFS: Mounted root (ext4 filesystem) on device 254:0.
-[    5.098965] devtmpfs: mounted
-
-What am I missing?
+Private Message.
+You are entitiled to late Mr James Campbells inheritance, contact me immediately.
+Barr Colin Lee.
