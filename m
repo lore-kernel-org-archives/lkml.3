@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3I1U2p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 16:28:45 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58373 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3I1U2L (ORCPT
+	id S1755201Ab3I1UdX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 16:33:23 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:53439 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755112Ab3I1UdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 16:28:11 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/3] perf stat: Add units to nanosec-based counters
-Date: Sat, 28 Sep 2013 14:28:00 -0600
-Message-Id: <1380400080-9211-4-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1380400080-9211-1-git-send-email-dsahern@gmail.com>
-References: <1380400080-9211-1-git-send-email-dsahern@gmail.com>
+	Sat, 28 Sep 2013 16:33:20 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgEFABK/CFEY1KI3/2dsb2JhbABEFr54F3OCHgEBBTgeBhIKARALCw0JFg8JAwIBAgEPAhYeBg0BBQICh3oBAw4BDK8ih1MKGScNWYh8jBKEeAOLDYkqgVaBHIRShUuFEoMT
+X-IPAS-Result: AgEFABK/CFEY1KI3/2dsb2JhbABEFr54F3OCHgEBBTgeBhIKARALCw0JFg8JAwIBAgEPAhYeBg0BBQICh3oBAw4BDK8ih1MKGScNWYh8jBKEeAOLDYkqgVaBHIRShUuFEoMT
+X-IronPort-AV: E=Sophos;i="4.84,565,1355115600"; 
+   d="scan'208";a="29326840"
+Message-ID: <52473D1C.5010003@gmail.com>
+Date: Sat, 28 Sep 2013 16:33:32 -0400
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0 SeaMonkey/2.21
+MIME-Version: 1.0
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12 regression: i915 warnings
+References: <52442A3C.3010407@gmail.com>	<CAKMK7uFvP7zisHL4UFjRqBX8mxS4DtosF2AFnwZDSdMgnDf4Lw@mail.gmail.com>	<5245C004.7070907@gmail.com> <CAKMK7uFZ35gruMYHB+LXEDVoAof7n-1oYGxWkky_tLe3ELLxWQ@mail.gmail.com>
+In-Reply-To: <CAKMK7uFZ35gruMYHB+LXEDVoAof7n-1oYGxWkky_tLe3ELLxWQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo pointed out that the task-clock counter should have the units explicitly
-stated since it is not a counter.
+Daniel Vetter wrote:
+> On Fri, Sep 27, 2013 at 7:27 PM, Woody Suwalski <terraluna977@gmail.com> wrote:
+>> Daniel Vetter wrote:
+>>> On Thu, Sep 26, 2013 at 2:36 PM, Woody Suwalski <terraluna977@gmail.com>
+>>> wrote:
+>>>> Daniel, I have noticed these warnings on 3.12-rc1, did not go away on
+>>>> 3.12-rc2.
+>>>> I see it only on EeePC with i915,not on ThinkPad with Radeon.
+>>>> It is a 32-bit kernel with overlayfs and TuxOnIce patches, so not
+>>>> perfectly
+>>>> clean, however same config and patches on 3.11 do not show these issues.
+>>>> No,sorry, did not have time to investigate further or bisect.If you have
+>>>> a
+>>>> quick test in mind - I will try ;-)
+>>>
+>>> a) Please always cc: relevant mailing lists, not just your maintainer.
+>>> b) Please retest with latest drm-intel-fixes from
+>>> http://cgit.freedesktop.org/~danvet/drm-intel/
+>>> c) If that doesn't help please boot with drm.debug=0xe, reproduce the
+>>> issue once and attach the complete dmesg. Please make sure that it
+>>> contains everything from boot-up to the WARN.
+>>>
+>>> Thanks, Daniel
+>> For now I can do the last - a complete dmesg with drm.debug attached...
+>> I have hoped that you were to reply "Yawn, an old issue..." 8-)
+> Here we go: Mode flag mismatch in the tv encoder, should be fixed with
+>
+> http://cgit.freedesktop.org/~danvet/drm-intel/commit/?id=1062b81598bc00e2f6620e6f3788f8f8df2f01e7
+>
+> Pull request is already out and patch is cc: stable, so should show up
+> in a kernel near you soon.
+> -Daniel
+Warnings are gone with this patch (and other 4 patches  since 3.2.12-rc2 
+from drm tree).
 
-Before:
+Thanks, Woody
 
-perf stat -a -- sleep 1
-
- Performance counter stats for 'sleep 1':
-
-      16186.874834 task-clock          #   16.154 CPUs utilized
-...
-
-After:
-
-perf stat -a -- sleep 1
-
- Performance counter stats for 'system wide':
-
-      16146.402138 task-clock (msec)   #   16.125 CPUs utilized
-...
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-stat.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 60239fe..746a6db 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -628,10 +628,13 @@ static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double msecs = avg / 1e6;
- 	const char *fmt = csv_output ? "%.6f%s%s" : "%18.6f%s%-25s";
-+	char name[25];
- 
- 	aggr_printout(evsel, cpu, nr);
- 
--	fprintf(output, fmt, msecs, csv_sep, perf_evsel__name(evsel));
-+	scnprintf(name, sizeof(name), "%s%s",
-+		  perf_evsel__name(evsel), csv_output ? "" : " (msec)");
-+	fprintf(output, fmt, msecs, csv_sep, name);
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
--- 
-1.7.10.1
 
