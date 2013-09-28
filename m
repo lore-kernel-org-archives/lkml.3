@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3I1Lt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 07:49:58 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:34506 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3I1Ltz (ORCPT
+	id S1753656Ab3I1MJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 08:09:09 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33303 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab3I1MJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 07:49:55 -0400
-Date: Sat, 28 Sep 2013 07:49:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Xiangliang Yu <yxlraid@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] AHCI: disabled FBS prior to issuing software reset
-Message-ID: <20130928114950.GA2620@htj.dyndns.org>
-References: <1380366816-16221-1-git-send-email-yxlraid@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380366816-16221-1-git-send-email-yxlraid@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 28 Sep 2013 08:09:07 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, sachin.kamat@linaro.org
+Subject: [PATCH 01/11] pinctrl: at91: Remove redundant of_match_ptr
+Date: Sat, 28 Sep 2013 17:38:48 +0530
+Message-Id: <1380370138-3513-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The data structure of_match_ptr() protects is always compiled in.
+Hence of_match_ptr() is not needed.
 
-On Sat, Sep 28, 2013 at 07:13:36PM +0800, Xiangliang Yu wrote:
-> If device is attached to port multiplier, the detection process
-> look like this:
-> 	ahci_hardreset(link, class, deadline)
-> 	if (class == ATA_DEV_PMP) {
-> 		sata_pmp_attach(dev)    /* will enable FBS */
-> 		sata_pmp_init_links(ap, nr_ports);
-> 		ata_for_each_link(link, ap, EDGE) {
-> 			sata_std_hardreset(link, class, deadline);
-> 			if (link_is_online)
-> 				ahci_softreset(link, class, deadline);
-> 		}
-> 	}
-> But, according to chapter 9.3.9 in AHCI spec: Prior to issuing software reset,
-> software shall clear PxCMD.ST to '0' and then clear PxFBS.EN to '0'.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/pinctrl/pinctrl-at91.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-How was this tested?  Do you observe any behavior difference?  At this
-point, we are not using SRST on PMP ports anyway, so I can't see how
-this would make any difference.
-
-Thanks.
-
+diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+index f350fd2..2673ce3 100644
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -1671,7 +1671,7 @@ static struct platform_driver at91_gpio_driver = {
+ 	.driver = {
+ 		.name = "gpio-at91",
+ 		.owner = THIS_MODULE,
+-		.of_match_table = of_match_ptr(at91_gpio_of_match),
++		.of_match_table = at91_gpio_of_match,
+ 	},
+ 	.probe = at91_gpio_probe,
+ };
+@@ -1680,7 +1680,7 @@ static struct platform_driver at91_pinctrl_driver = {
+ 	.driver = {
+ 		.name = "pinctrl-at91",
+ 		.owner = THIS_MODULE,
+-		.of_match_table = of_match_ptr(at91_pinctrl_of_match),
++		.of_match_table = at91_pinctrl_of_match,
+ 	},
+ 	.probe = at91_pinctrl_probe,
+ 	.remove = at91_pinctrl_remove,
 -- 
-tejun
+1.7.9.5
+
