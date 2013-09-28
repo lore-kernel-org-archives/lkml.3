@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab3I1SPZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 14:15:25 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:49098 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3I1SPW (ORCPT
+	id S1754601Ab3I1SSV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 14:18:21 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:46865 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab3I1SST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 14:15:22 -0400
-From: elad.wexler@gmail.com
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Elad Wexler <elad.wexler@gmail.com>
-Subject: [PATCH] misc: cs5535-mfgpt: Replace 'module_init' with 'module_platform_driver'
-Date: Sat, 28 Sep 2013 21:14:42 +0300
-Message-Id: <1380392082-23572-1-git-send-email-elad.wexler@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 28 Sep 2013 14:18:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com>
+References: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com>
+Date: Sat, 28 Sep 2013 20:18:18 +0200
+Message-ID: <CAF1_xX0suiHSgqWRBrA66qc1A_32Xq08hOikM2VSwQOEgRH-RA@mail.gmail.com>
+Subject: Fwd: [v3.12-rc1] [regression] PM / hibernate: Create memory bitmaps
+ after freezing user space
+From: Ronald <ronald645@gmail.com>
+To: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Elad Wexler <elad.wexler@gmail.com>
+[ resend, forgot to disable HTML (sorry!) ]
 
-Driver doesn't do anything special in 'module_init'.
+Dear kernel developers,
 
-'module_platform_init' makes the code more readable.
+Commit 8fd37a4c9 (PM / hibernate: Create memory bitmaps after freezing
+user space) causes resume to fail.
 
-Signed-off-by: Elad Wexler <elad.wexler@gmail.com>
----
- drivers/misc/cs5535-mfgpt.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+Only, when using the s2disk utility (through pm-hibernate).
 
-diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
-index effd8c6..abf1a3c 100644
---- a/drivers/misc/cs5535-mfgpt.c
-+++ b/drivers/misc/cs5535-mfgpt.c
-@@ -370,13 +370,7 @@ static struct platform_driver cs5535_mfgpt_driver = {
- 	.probe = cs5535_mfgpt_probe,
- };
- 
--
--static int __init cs5535_mfgpt_init(void)
--{
--	return platform_driver_register(&cs5535_mfgpt_driver);
--}
--
--module_init(cs5535_mfgpt_init);
-+module_platform_driver(cs5535_mfgpt_driver);
- 
- MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
- MODULE_DESCRIPTION("CS5535/CS5536 MFGPT timer driver");
--- 
-1.7.9.5
+Not when I do:
 
+echo -n "disk" > /sys/power/state
+
+Reverting the commit did not work.
+
+I am using a encrypted LUKS partition with a temporary key that is
+functioning as the swap device used for the suspend image.
+
+Awaiting further orders....
+
+                                        Ronald
