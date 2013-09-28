@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab3I1DGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 23:06:25 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60640 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab3I1DGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 23:06:18 -0400
-Message-ID: <1380337550.27811.71.camel@pasglop>
-Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Sat, 28 Sep 2013 13:05:50 +1000
-In-Reply-To: <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-References: <1380270519.27811.10.camel@pasglop>
-	 <CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
-	 <CA+55aFyDfMdAeaniQwkoeW6F-xd3JxrzGYwtFb6N9+NA6aRCMg@mail.gmail.com>
-	 <1380318405.27811.37.camel@pasglop>
-	 <CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
-	 <1380321480.27811.53.camel@pasglop>
-	 <CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
-	 <1380323960.27811.67.camel@pasglop>
-	 <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754843Ab3I1DN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 23:13:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57327 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab3I1DNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 23:13:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1379010935-25943-2-git-send-email-koen@dominion.thruhere.net>
+References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+	<1379010935-25943-2-git-send-email-koen@dominion.thruhere.net>
+Date: Fri, 27 Sep 2013 23:13:50 -0400
+Message-ID: <CA+T6QPk=Z+u2eo63-2T4dZcyaZ=yL=+rBck5r5y14MiQK_w00w@mail.gmail.com>
+Subject: Re: [PATCH v4 1/4] ARM: dts: am335x-bone: add CD for mmc1
+From: Jason Kridner <jkridner@beagleboard.org>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Alexander Holler <holler@ahsoftware.de>,
+        OMAP List <linux-omap@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-27 at 16:44 -0700, Yinghai Lu wrote:
+On Thu, Sep 12, 2013 at 2:35 PM, Koen Kooi <koen@dominion.thruhere.net> wrote:
+> From: Alexander Holler <holler@ahsoftware.de>
+>
+> This enables the use of MMC cards even when no card was inserted at boot.
+>
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
 
-> > Thus the port driver bails out before calling pci_set_master(). The fix
-> > is to call pci_set_master() unconditionally. However that lead me to
-> > find to a few interesting oddities in that port driver code:
-> 
-> can we revert that partially change ? aka we should check get_port....
-> at first...
-> 
-> like attached.
+Acked-by: Jason Kridner <jdk@ti.com>
 
-In the meantime, can you properly submit the other one with the warning
-to Linus ? It will make things more robust overall...
-
-Also, please read my other comments. I think we are treading on very
-fragile ground with that whole business of potentially disabling bridges
-in the pcieport driver ...
-
-Cheers,
-Ben.
-
-
+> ---
+>  arch/arm/boot/dts/am335x-bone-common.dtsi | 14 ++++++++++++++
+>  arch/arm/boot/dts/am335x-bone.dts         |  1 -
+>  2 files changed, 14 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> index 2f66ded..0d95d54 100644
+> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> @@ -107,6 +107,12 @@
+>                                 0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+>                         >;
+>                 };
+> +
+> +               mmc1_pins: pinmux_mmc1_pins {
+> +                       pinctrl-single,pins = <
+> +                               0x160 (PIN_INPUT | MUX_MODE7) /* GPIO0_6 */
+> +                       >;
+> +               };
+>         };
+>
+>         ocp {
+> @@ -260,3 +266,11 @@
+>         pinctrl-0 = <&davinci_mdio_default>;
+>         pinctrl-1 = <&davinci_mdio_sleep>;
+>  };
+> +
+> +&mmc1 {
+> +       status = "okay";
+> +       pinctrl-names = "default";
+> +       pinctrl-0 = <&mmc1_pins>;
+> +       cd-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+> +       cd-inverted;
+> +};
+> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
+> index d5f43fe..0d63348 100644
+> --- a/arch/arm/boot/dts/am335x-bone.dts
+> +++ b/arch/arm/boot/dts/am335x-bone.dts
+> @@ -17,6 +17,5 @@
+>  };
+>
+>  &mmc1 {
+> -       status = "okay";
+>         vmmc-supply = <&ldo3_reg>;
+>  };
+> --
+> 1.8.2.1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
