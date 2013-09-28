@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3I1QXd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 12:23:33 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:39985 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361Ab3I1QXH (ORCPT
+	id S1754959Ab3I1QZq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 12:25:46 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:31679 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419Ab3I1QZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 12:23:07 -0400
-From: Roy Franz <roy.franz@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
-        linux@arm.linux.org.uk
-Cc: leif.lindholm@linaro.org, grant.likely@linaro.org, dave.martin@arm.com,
-        msalter@redhat.com, Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 1/6] efi-stub.txt updates for ARM
-Date: Sat, 28 Sep 2013 09:23:18 -0700
-Message-Id: <1380385403-31904-2-git-send-email-roy.franz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
-References: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
+	Sat, 28 Sep 2013 12:25:44 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-f9-52470306a981
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+To: kgene.kim@samsung.com
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        devicetree@vger.kernel.org, m.szyprowski@samsung.com,
+        t.figa@samsung.com, b.zolnierkie@samsung.com, k.debski@samsung.com,
+        s.nawrocki@samsung.com,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Subject: [PATCH 0/3] Samsung: DT: Add Device tree for S5PC110/S5PV210 Boards
+Date: Sat, 28 Sep 2013 18:25:27 +0200
+Message-id: <1380385530-28522-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQV12Zvcgg9U3OC02zljPajH/yDlW
+	i3OvVjJa/Hh9gc2id8FVNotNj6+xWlzeNYfNYsb5fUwWty/zWpxec4rZYu2Ru+wWS69fZLKY
+	MH0ti8XhFQeYLA6/aWe1eHWwjcVi/YzXLA6CHmvmrWH0aGnuYfNY8PkKu8fK5V/YPDYvqfc4
+	+G4Pk0ffllWMHp83yXlsnBsawBnFZZOSmpNZllqkb5fAlfH/yg2mgtf8FVfOPGNtYPzH08XI
+	ySEhYCLx98hJFghbTOLCvfVsXYxcHEIC0xklNve2sUI47UwSjV/eMoNUsQmYS0x8tgmsQ0RA
+	UqKp4Q8zSBGzwGlmiafrz4AlhAV8JJZ/+gRmswioStz8cJMNxOYV8JO42PkKap2CxM/LJ9gm
+	MHIvYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcrs+kdjCubLA4xCjAwajEw3tghmuQ
+	EGtiWXFl7iFGCQ5mJRFe/xluQUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGan
+	phakFsFkmTg4pRoYt64Qs2HVsJ679GnMEyev5yLPbxj/j7Necq/c5oCLZtuOaXMPL3cOW6XR
+	ZV0mv+iIBNN2Lhnhhs07hb+tSK1t/JD5QU72a7nQQkY/uzXxnSYZ0xqDipaJ3eU8uq/kkk52
+	WVUxh3ODvmz8lS0f5zj+uTHpXmPYuZnsRx+3WVrz+d94JLj75t7zSizFGYmGWsxFxYkA9cwo
+	31MCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update efi-stub.txt documentation to be more general
-and not x86 specific.  Add ARM only "dtb=" command
-line option description.
+This patch series add initial device tree support for mach s5pv210. It provides 
+dts for all old board files and add support for new board: 
+Tiny210 from FriendlyARM
+This patch series was tested on goni, aquila and tiny210.
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
----
- Documentation/efi-stub.txt |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+Missing features:
+ - i2s
+ - audio
+ - cpufreq
+ - camera noon010pc30
+ - lcd support(still waiting for Common Display Framework) 
+ - touchscreen atmel_mxt_ts
+Need to be tested:
+ - i2c require touchscreen
+ - fimd require lcd
+ - fimc require camera
+ - mfc require CMA
+ - spi 
 
-diff --git a/Documentation/efi-stub.txt b/Documentation/efi-stub.txt
-index 44e6bb6..19e897c 100644
---- a/Documentation/efi-stub.txt
-+++ b/Documentation/efi-stub.txt
-@@ -1,13 +1,16 @@
- 			  The EFI Boot Stub
- 		     ---------------------------
- 
--On the x86 platform, a bzImage can masquerade as a PE/COFF image,
--thereby convincing EFI firmware loaders to load it as an EFI
--executable. The code that modifies the bzImage header, along with the
--EFI-specific entry point that the firmware loader jumps to are
--collectively known as the "EFI boot stub", and live in
-+On the x86 and ARM platforms, a kernel zImage/bzImage can masquerade
-+as a PE/COFF image, thereby convincing EFI firmware loaders to load
-+it as an EFI executable. The code that modifies the bzImage header,
-+along with the EFI-specific entry point that the firmware loader
-+jumps to are collectively known as the "EFI boot stub", and live in
- arch/x86/boot/header.S and arch/x86/boot/compressed/eboot.c,
--respectively.
-+respectively.  For ARM the EFI stub is implemented in
-+arch/arm/boot/compressed/efi-header.S and
-+arch/arm/boot/compressed/efi-stub.c.  EFI stub code that is shared
-+between architectures is in drivers/firmware/efi/efi-stub-helper.c.
- 
- By using the EFI boot stub it's possible to boot a Linux kernel
- without the use of a conventional EFI boot loader, such as grub or
-@@ -23,7 +26,9 @@ The bzImage located in arch/x86/boot/bzImage must be copied to the EFI
- System Partiion (ESP) and renamed with the extension ".efi". Without
- the extension the EFI firmware loader will refuse to execute it. It's
- not possible to execute bzImage.efi from the usual Linux file systems
--because EFI firmware doesn't have support for them.
-+because EFI firmware doesn't have support for them.  For ARM the
-+arch/arm/boot/zImage should be copied to the system partition, and it
-+may not need to be renamed.
- 
- 
- **** Passing kernel parameters from the EFI shell
-@@ -63,3 +68,11 @@ Notice how bzImage.efi can be specified with a relative path. That's
- because the image we're executing is interpreted by the EFI shell,
- which understands relative paths, whereas the rest of the command line
- is passed to bzImage.efi.
-+
-+
-+**** The "dtb=" option
-+
-+For the ARM architecture, we also need to be able to provide a device
-+tree to the kernel.  This is done with the "dtb=" command line option,
-+and is process in the same manner as the "initrd=" option that is described
-+above.
+Mateusz Krawczuk (3):
+  ARM: s5pv210: Add board file for boot using Device Tree
+  ARM: Samsung: DT: Add Device tree for s5pv210
+  ARM: Samsung: DT: Add Device tree for S5PC110/S5PV210 Boards
+
+ arch/arm/boot/dts/Makefile              |   6 +
+ arch/arm/boot/dts/s5pv210-aquila.dts    | 407 ++++++++++++++++
+ arch/arm/boot/dts/s5pv210-goni.dts      | 486 +++++++++++++++++++
+ arch/arm/boot/dts/s5pv210-pinctrl.dtsi  | 820 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/s5pv210-smdkc110.dts  | 165 +++++++
+ arch/arm/boot/dts/s5pv210-smdkv210.dts  | 273 +++++++++++
+ arch/arm/boot/dts/s5pv210-tiny210.dts   | 262 ++++++++++
+ arch/arm/boot/dts/s5pv210-torbreck.dts  | 157 ++++++
+ arch/arm/boot/dts/s5pv210.dtsi          | 498 +++++++++++++++++++
+ arch/arm/mach-s5pv210/Kconfig           |  14 +
+ arch/arm/mach-s5pv210/Makefile          |   2 +-
+ arch/arm/mach-s5pv210/mach-s5pv210-dt.c |  92 ++++
+ 12 files changed, 3181 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/s5pv210-aquila.dts
+ create mode 100644 arch/arm/boot/dts/s5pv210-goni.dts
+ create mode 100644 arch/arm/boot/dts/s5pv210-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/s5pv210-smdkc110.dts
+ create mode 100644 arch/arm/boot/dts/s5pv210-smdkv210.dts
+ create mode 100644 arch/arm/boot/dts/s5pv210-tiny210.dts
+ create mode 100644 arch/arm/boot/dts/s5pv210-torbreck.dts
+ create mode 100644 arch/arm/boot/dts/s5pv210.dtsi
+ create mode 100644 arch/arm/mach-s5pv210/mach-s5pv210-dt.c
+
 -- 
-1.7.10.4
+1.8.1.2
 
