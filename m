@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab3I1Hou (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 03:44:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55200 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3I1Hos (ORCPT
+	id S1752374Ab3I1Hyn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 03:54:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39697 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab3I1Hyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 03:44:48 -0400
-Message-ID: <524688CB.9000400@vlnb.net>
-Date: Sat, 28 Sep 2013 00:44:11 -0700
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+	Sat, 28 Sep 2013 03:54:41 -0400
+Date: Sat, 28 Sep 2013 09:54:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH] checkpatch: Make the memory barrier test noisier
+Message-ID: <20130928075409.GK15690@laptop.programming.kicks-ass.net>
+References: <1380236265.3467.103.camel@schen9-DESK>
+ <20130927060213.GA6673@gmail.com>
+ <20130927112323.GJ3657@laptop.programming.kicks-ass.net>
+ <1380289495.17366.91.camel@joe-AO722>
+ <20130927134802.GA15690@laptop.programming.kicks-ass.net>
+ <1380291257.17366.103.camel@joe-AO722>
+ <20130927142605.GC15690@laptop.programming.kicks-ass.net>
+ <1380292495.17366.106.camel@joe-AO722>
+ <20130927145007.GD15690@laptop.programming.kicks-ass.net>
+ <1380325227.1631.2.camel@linux-fkkt.site>
 MIME-Version: 1.0
-To: "Zuckerman, Boris" <borisz@hp.com>
-CC: Matthew Wilcox <willy@linux.intel.com>,
-        "rob.gittins@linux.intel.com" <rob.gittins@linux.intel.com>,
-        "linux-pmfs@lists.infradead.org" <linux-pmfs@lists.infradead.org>,
-        "linux-fsdevel@veger.org" <linux-fsdevel@veger.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
-References: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com> <522AB5AD.6070206@vlnb.net> <1379976688.5886.12.camel@Virt-Centos-6.lm.intel.com> <5243DB2A.7090609@vlnb.net> <4C30833E5CDF444D84D942543DF65BDA58066A30@G9W0739.americas.hpqcorp.net> <20130926175624.GA7422@linux.intel.com> <4C30833E5CDF444D84D942543DF65BDA580690B7@G9W0739.americas.hpqcorp.net>
-In-Reply-To: <4C30833E5CDF444D84D942543DF65BDA580690B7@G9W0739.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:DXIOW1MX9CU/ywi4AQcT99pzEm3cqD2q1suN2kQ+oLM
- QfNaSDMjQ1MaDgHXsqweyzh+Tl69wel1E5ed1JuYYgJ+PymikG
- U+3npNpGLiatualWWhHLsOhI7B6GBVYtEMjxo2r8nUOvfiWKfF
- oUxxbMQa0IxLOojhmvuEF6gFBGg6bhAezAAWcw11tGixeljTW1
- 0bO/Lsau/ytUXtywRibxDl4Wrsoo40f6NzYx4Fd0tCu/qUEEGK
- mPFZ5IaLW8deumHt62pqVGQp4tpTWro7zfo3diEFhjLtU5hnDH
- CVlCIXzxuDosm8SeQNbSyrY4DV9aqJj9QMhWErikQtmmDvTfA=
- =
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380325227.1631.2.camel@linux-fkkt.site>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Zuckerman, Boris, on 09/26/2013 12:36 PM wrote:
-> I assume that we may have both: CPUs that may have ability to support multiple transactions, CPUs that support only one, CPUs that support none (as today), as well as different devices - transaction capable and not.
-> So, it seems there is a room for compilers to do their work and for class drivers to do their, right?
-
-Yes, correct.
-
-Conceptually NVDIMMs are not block devices. They may be used as block devices, but may
-not be as well. So, nailing them into the block abstraction by big hammer is simply a
-bad design.
-
-Vlad
-
-> boris
+On Sat, Sep 28, 2013 at 01:40:27AM +0200, Oliver Neukum wrote:
+> On Fri, 2013-09-27 at 16:50 +0200, Peter Zijlstra wrote:
+> > On Fri, Sep 27, 2013 at 07:34:55AM -0700, Joe Perches wrote:
+> > > That would make it seem as if all barriers are SMP no?
+> > 
+> > I would think any memory barrier is ordering against someone else; if
+> > not smp then a device/hardware -- like for instance the hardware page
+> > table walker.
+> > 
+> > Barriers are fundamentally about order; and order only makes sense if
+> > there's more than 1 party to the game.
 > 
->> -----Original Message-----
->> From: Matthew Wilcox [mailto:willy@linux.intel.com]
->> Sent: Thursday, September 26, 2013 1:56 PM
->> To: Zuckerman, Boris
->> Cc: Vladislav Bolkhovitin; rob.gittins@linux.intel.com; linux-pmfs@lists.infradead.org;
->> linux-fsdevel@veger.org; linux-kernel@vger.kernel.org
->> Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
->>
->> On Thu, Sep 26, 2013 at 02:56:17PM +0000, Zuckerman, Boris wrote:
->>> To work with persistent memory as efficiently as we can work with RAM we need a
->> bit more than "commit". It's reasonable to expect that we get some additional
->> support from CPUs that goes beyond mfence and mflush. That may include discovery,
->> transactional support, etc. Encapsulating that in a special class sooner than later
->> seams a right thing to do...
->>
->> If it's something CPU-specific, then we wouldn't handle it as part of the "class", we'd
->> handle it as an architecture abstraction.  It's only operations which are device-specific
->> which would need to be exposed through an operations vector.  For example, suppose
->> you buy one device from IBM and another device from HP, and plug them both into
->> your SPARC system.  The code you compile needs to run on SPARC, doing whatever
->> CPU operations are supported, but if HP and IBM have different ways of handling a
->> "commit" operation, we need that operation to be part of an operations vector.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> But not necessarily more than 1 kind of parties. It is perfectly
+> possible to have a barrier against other threads running the same
+> function.
+
+Then that makes a good comment ;-)
