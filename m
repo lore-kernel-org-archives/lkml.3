@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab3I1JDX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 05:03:23 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:49117 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3I1JDT (ORCPT
+	id S1754089Ab3I1JK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 05:10:27 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:52017 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3I1JKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 05:03:19 -0400
+	Sat, 28 Sep 2013 05:10:24 -0400
+X-Auth-Info: N6cqqZWrfWjhiR8VgYxfwR3HBBRg7VeQx5aSrAW/sgs=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] Building and testing Aarch64
+References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
+	<CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
+	<CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
+	<20130927150156.GE26069@arm.com>
+	<CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
+	<m2wqm1s6f5.fsf@linux-m68k.org>
+	<CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
+X-Yow: Is this BOISE??
+Date: Sat, 28 Sep 2013 11:10:09 +0200
+In-Reply-To: <CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
+	(Ramkumar Ramachandra's message of "Sat, 28 Sep 2013 14:06:00 +0530")
+Message-ID: <m2siwps45q.fsf@linux-m68k.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXN3CgOt6Lk1S-xYjeeACOZtuxuYu2RqSGMoTvp9qz8Cg@mail.gmail.com>
-References: <20130924214800.GV25647@n2100.arm.linux.org.uk>
-	<1380071607.1974.78@driftwood>
-	<CAMuHMdXN3CgOt6Lk1S-xYjeeACOZtuxuYu2RqSGMoTvp9qz8Cg@mail.gmail.com>
-Date: Sat, 28 Sep 2013 11:03:17 +0200
-Message-ID: <CAFLxGvyYQ6ng-yeBZe4TOTtTyk1d4v3RNEhdU29tEnm9vTLhBQ@mail.gmail.com>
-Subject: Re: new binutils needed for arm in 3.12-rc1
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Rob Landley <rob@landley.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Andrew Morton <akpm@osdl.org>,
-        Trivial patch monkey <trivial@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 9:18 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Rob,
->
-> On Wed, Sep 25, 2013 at 3:13 AM, Rob Landley <rob@landley.net> wrote:
->> Some of us can't ship GPLv3 binaries and are looking forward to the day LLVM
->> or some such provides a complete solution.
->
-> Sorry, I didn't have a coffee yet, but which subtility am I missing
-> that prohibits
-> you from shipping GPLv3 binaries?
+Ramkumar Ramachandra <artagnon@gmail.com> writes:
 
-/me had coffee but still doesn't get why you can't ship GPLv3 binaries.
-Rob, can you please enlighten us?
+> Is there a bug in the Kconfig dependency tree? Sounds like VIRTIO_MMIO
+> requires some vga (?) drivers to be compiled in as well.
+
+I don't have any VGA option enabled.  You should use a serial console
+with CONFIG_SERIAL_AMBA_PL011_CONSOLE.
+
+Andreas.
 
 -- 
-Thanks,
-//richard
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
