@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3I1Jj5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 05:39:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26105 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab3I1Jjy (ORCPT
+	id S1754866Ab3I1Jk1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 05:40:27 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:48891 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab3I1JkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 05:39:54 -0400
-Date: Sat, 28 Sep 2013 12:39:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Petr Vandrovec <petr@vandrovec.name>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] ncpfs: add a sanity check in ncp_is_nfs_extras()
-Message-ID: <20130928093943.GD26611@elgon.mountain>
+	Sat, 28 Sep 2013 05:40:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <m2siwps45q.fsf@linux-m68k.org>
+References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
+ <CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
+ <CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
+ <20130927150156.GE26069@arm.com> <CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
+ <m2wqm1s6f5.fsf@linux-m68k.org> <CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
+ <m2siwps45q.fsf@linux-m68k.org>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Sat, 28 Sep 2013 15:09:42 +0530
+Message-ID: <CALkWK0=ii-usQ17qpwDMwCbJAPhDTghz6j8J7JEeZ5Uwnn-awQ@mail.gmail.com>
+Subject: Re: [QUERY] Building and testing Aarch64
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "volnum" can come from the server and my static checker complains
-that we can't trust it.  In theory, it could lead to an info leak but
-in real life, it is unlikely.
+Andreas Schwab wrote:
+> Ramkumar Ramachandra <artagnon@gmail.com> writes:
+>> Is there a bug in the Kconfig dependency tree? Sounds like VIRTIO_MMIO
+>> requires some vga (?) drivers to be compiled in as well.
 
-One way this comes from the server is ncp_obtain_info() initializes
-target by calling:
+I hit this bug when I do `make menuconfig` directly (which
+configuration does it start out with?). When I `make defconfig`
+(picking up arch/arm64/configs/defconfig), and then enable VIRTIO_MMIO
+in the menuconfig, it builds fine.
 
-	ncp_extract_file_info(ncp_reply_data(server, 0), target);
+> I don't have any VGA option enabled.  You should use a serial console
+> with CONFIG_SERIAL_AMBA_PL011_CONSOLE.
 
-It then passes target to ncp_obtain_nfs_info() and from there to
-ncp_is_nfs_extras().
+arch/arm64/configs/defconfig:676 already builds this feature in.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Unfortunately, even with VIRTIO_MMIO built in, I get the same error:
 
-diff --git a/fs/ncpfs/ncplib_kernel.h b/fs/ncpfs/ncplib_kernel.h
-index 32c0658..ae08b9f 100644
---- a/fs/ncpfs/ncplib_kernel.h
-+++ b/fs/ncpfs/ncplib_kernel.h
-@@ -119,6 +119,7 @@ int ncp_create_new(struct inode *dir, struct dentry *dentry,
- static inline int ncp_is_nfs_extras(struct ncp_server* server, unsigned int volnum) {
- #ifdef CONFIG_NCPFS_NFS_NS
- 	return (server->m.flags & NCP_MOUNT_NFS_EXTRAS) &&
-+	       (volnum < ARRAY_SIZE(server->name_space)) &&
- 	       (server->name_space[volnum] == NW_NS_NFS);
- #else
- 	return 0;
+  VFS: Cannot open root device "vda" or unknown-block(0,0): error -6
+  Please append a correct "root=" boot option; here are the available
+partitions:
+  Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+
+Any hints on how to proceed from here? What is your kernel
+configuration (are you using arch/arm64/configs/defconfig)? Is
+root=/dev/vda part of your kernel arguments?
+
+How is this supposed to work? When I pass the rootfs-file as the
+--block-device, it's supposed to see the file as the block device
+/dev/vda (what determines this?), mount it, and finally get devtmpfs
+to populate the /dev, right? The transcript from the working
+linux-system.axf (with raring-rootfs) looks like:
+
+[    4.977788]  vda: unknown partition table
+[    4.997392] mtdoops: mtd device (mtddev=name/number) must be supplied
+[    5.001787] smc91x: not found (-19).
+[    5.011141] mousedev: PS/2 mouse device common for all mice
+[    5.020830] device-mapper: ioctl: 4.23.1-ioctl (2012-12-18)
+initialised: dm-devel@redhat.com
+[    5.027396] TCP: cubic registered
+[    5.027456] Initializing XFRM netlink socket
+[    5.027885] NET: Registered protocol family 17
+[    5.028207] NET: Registered protocol family 15
+[    5.047665] EXT3-fs (vda): error: couldn't mount because of
+unsupported optional features (240)
+[    5.050214] EXT2-fs (vda): error: couldn't mount because of
+unsupported optional features (244)
+[    5.095085] EXT4-fs (vda): recovery complete
+[    5.096307] EXT4-fs (vda): mounted filesystem with ordered data
+mode. Opts: (null)
+[    5.096723] VFS: Mounted root (ext4 filesystem) on device 254:0.
+[    5.098965] devtmpfs: mounted
+
+What am I missing?
