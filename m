@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab3I1IwL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 04:52:11 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:63232 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3I1IwH (ORCPT
+	id S1753701Ab3I1JDX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 05:03:23 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:49117 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3I1JDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 04:52:07 -0400
-Date: Sat, 28 Sep 2013 10:52:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [pchecks v1 4/4] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20130928085203.GD26167@gmail.com>
-References: <20130923191256.584672290@linux.com>
- <000001414c47a1da-a60858ec-6fe0-4560-a859-8274151411bf-000000@email.amazonses.com>
- <20130924080347.GH28538@gmail.com>
- <00000141505b72a3-6935722e-fdfb-4c46-b52c-bc40609144ac-000000@email.amazonses.com>
- <20130924151847.GB8494@gmail.com>
- <00000141509c4346-586ca654-989b-4a6a-ae30-592d2f8f11a8-000000@email.amazonses.com>
- <20130924172600.GD10261@gmail.com>
- <000001415604292f-63d4c50d-23e2-43ea-af60-f0e385c71661-000000@email.amazonses.com>
- <20130925182654.GB16693@gmail.com>
- <000001415fd9d3d8-7800dc31-9e8f-4981-963c-7d9851dafe75-000000@email.amazonses.com>
+	Sat, 28 Sep 2013 05:03:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001415fd9d3d8-7800dc31-9e8f-4981-963c-7d9851dafe75-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdXN3CgOt6Lk1S-xYjeeACOZtuxuYu2RqSGMoTvp9qz8Cg@mail.gmail.com>
+References: <20130924214800.GV25647@n2100.arm.linux.org.uk>
+	<1380071607.1974.78@driftwood>
+	<CAMuHMdXN3CgOt6Lk1S-xYjeeACOZtuxuYu2RqSGMoTvp9qz8Cg@mail.gmail.com>
+Date: Sat, 28 Sep 2013 11:03:17 +0200
+Message-ID: <CAFLxGvyYQ6ng-yeBZe4TOTtTyk1d4v3RNEhdU29tEnm9vTLhBQ@mail.gmail.com>
+Subject: Re: new binutils needed for arm in 3.12-rc1
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rob Landley <rob@landley.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Andrew Morton <akpm@osdl.org>,
+        Trivial patch monkey <trivial@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 26, 2013 at 9:18 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Rob,
+>
+> On Wed, Sep 25, 2013 at 3:13 AM, Rob Landley <rob@landley.net> wrote:
+>> Some of us can't ship GPLv3 binaries and are looking forward to the day LLVM
+>> or some such provides a complete solution.
+>
+> Sorry, I didn't have a coffee yet, but which subtility am I missing
+> that prohibits
+> you from shipping GPLv3 binaries?
 
-* Christoph Lameter <cl@linux.com> wrote:
+/me had coffee but still doesn't get why you can't ship GPLv3 binaries.
+Rob, can you please enlighten us?
 
-> On Wed, 25 Sep 2013, Ingo Molnar wrote:
-> 
-> > > And then instead of thanks I get insults sprinkled with some paranoia.
-> >
-> > Pointing out your lack of cooperation (such as repeatedly ignoring 
-> > maintainer feedback) is not an "insult" - it's my duty as a maintainer 
-> > to protect other submitters who do their homework and it's also my 
-> > duty as a maintainer to keep crappy patches from entering the kernel. 
-> > Resisting low-quality patches like yours and pointing out patch 
-> > submission errors and inefficiencies is my job.
-> 
-> Thats paranoia. [...]
-
-Pointing out your track record is not paranoia nor an insult - it's merely 
-embarrassing to you. And it's not just me: I heard similar complaints 
-about you from other maintainers as well and I had to use a heavy NAK here 
-to make you cooperate and listen already...
-
-> [...] No lack of cooperation. Feedback to patches during development is 
-> normal until they reach proper maturity for merging. Thats why these 
-> things are usually versioned.
-
-What I'm complaining about is you _ignoring_ feedback - such as when you 
-ignored PeterZ's feedback.
-
-This is kernel development 101: every new version of a series must address 
-_all_ previously given feedback - or if does not do so it should very 
-prominently explain why it has not done so.
-
-If you "don't have time" to do it properly then you need to wait more 
-between posting new versions of a series, to not make other people waste 
-time reviewing the series and discovering that the review they gave 
-against a prior series got ignored by you...
-
+-- 
 Thanks,
-
-	Ingo
+//richard
