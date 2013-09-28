@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab3I1Ryx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 13:54:53 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:55597 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab3I1Rys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 13:54:48 -0400
-Date: Sat, 28 Sep 2013 19:54:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
-        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        guohanjun@huawei.com, paul.gortmaker@windriver.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] x86, boot: Further compress CPUs bootup message
-Message-ID: <20130928175444.GA4402@gmail.com>
-References: <20130925182936.GD16693@gmail.com>
- <20130926231545.GD10123@pd.tnic>
- <20130927065115.GA6852@gmail.com>
- <20130927103802.GA4422@pd.tnic>
- <20130927143249.GD4422@pd.tnic>
- <20130927143554.GF4422@pd.tnic>
- <20130928082542.GA18198@gmail.com>
- <20130928102305.GA5956@pd.tnic>
- <20130928134449.GB26931@gmail.com>
- <20130928174749.GE5956@pd.tnic>
+	id S1753194Ab3I1Rz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 13:55:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab3I1Rz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 13:55:57 -0400
+From: Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH] cris/PCI: Remove pci_mem_start
+To: starvik@axis.com, jesper.nilsson@axis.com, bhelgaas@google.com
+Cc: linux-cris-kernel@axis.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 28 Sep 2013 11:55:49 -0600
+Message-ID: <20130928175548.8612.84198.stgit@amt.stowe>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130928174749.GE5956@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove unused 'pci_mem_start' variable.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+CC: Mikael Starvik <starvik@axis.com>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+---
 
-> +void smp_announce(void)
-> +{
-> +	int num_nodes = num_online_nodes();
-> +
-> +	printk(KERN_INFO "x86: Booted up %d node%s, %ld CPUs\n",
-> +	       num_nodes, (num_nodes > 1 ? "s" : ""), (long)num_online_cpus());
-> +}
+ arch/cris/include/asm/pci.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-That (long) cast looks weird - num_online_cpus() is 'unsigned int' so 
-changing the format to %d should do the trick, right?
+diff --git a/arch/cris/include/asm/pci.h b/arch/cris/include/asm/pci.h
+index 146da90..f666734 100644
+--- a/arch/cris/include/asm/pci.h
++++ b/arch/cris/include/asm/pci.h
+@@ -11,7 +11,6 @@
+ 
+ #define pcibios_assign_all_busses(void) 1
+ 
+-extern unsigned long pci_mem_start;
+ #define PCIBIOS_MIN_IO		0x1000
+ #define PCIBIOS_MIN_MEM		0x10000000
+ 
 
-> +void __weak smp_announce(void)
-> +{
-> +	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
-> +}
-
-Ditto.
-
-Thanks,
-
-	Ingo
