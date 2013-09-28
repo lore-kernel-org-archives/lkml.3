@@ -1,102 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab3I1N4M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 09:56:12 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:62412 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab3I1Nzb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 09:55:31 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: richard.genoud@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 4/7] UBI: fastmap: fix backward compatibility with image_seq
-Date: Sat, 28 Sep 2013 15:55:13 +0200
-Message-Id: <1380376516-30144-5-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380376516-30144-1-git-send-email-richard@nod.at>
-References: <1380376516-30144-1-git-send-email-richard@nod.at>
+	id S1753880Ab3I1ONP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 10:13:15 -0400
+Received: from mout.gmx.net ([212.227.17.22]:62372 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410Ab3I1ONN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 10:13:13 -0400
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Date: Sat, 28 Sep 2013 16:13:10 +0200
+From: "Tibor Billes" <tbilles@gmx.com>
+Message-ID: <20130928141310.302530@gmx.com>
+MIME-Version: 1.0
+Subject: Re: Unusually high system CPU usage with recent kernels
+To: paulmck@linux.vnet.ibm.com
+X-Flags: 0001
+X-Mailer: GMX.com Web Mailer
+x-registered: 0
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: oYY0ckkXeSEqJL5QQHchJSl+IGRvb8AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
+Hi Paul,
 
-Some old UBI implementations (e.g. U-Boot) have not implemented the image
-sequence feature.
-So, when erase blocks are written, the image sequence in the ec header
-is lost (set to zero).
-UBI scan_all() takes this case into account (commits
-32bc4820287a1a03982979515949e8ea56eac641 and
-2eadaad67b2b6bd132eda105128d2d466298b8e3)
+I was just wondering if you received my last mail, because I haven't heard from
+you for a while now.
 
-But fastmap scan functions (ubi_scan_fastmap() and scan_pool()) didn't.
+Tibor
 
-This patch fixes the issue.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/fastmap.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 9b42add..05067f5 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -407,6 +407,7 @@ static int scan_pool(struct ubi_device *ubi, struct ubi_attach_info *ai,
- 	 */
- 	for (i = 0; i < pool_size; i++) {
- 		int scrub = 0;
-+		int image_seq;
- 
- 		pnum = be32_to_cpu(pebs[i]);
- 
-@@ -425,7 +426,13 @@ static int scan_pool(struct ubi_device *ubi, struct ubi_attach_info *ai,
- 		} else if (ret == UBI_IO_BITFLIPS)
- 			scrub = 1;
- 
--		if (be32_to_cpu(ech->image_seq) != ubi->image_seq) {
-+		/*
-+		 * Older UBI implementations have image_seq set to zero, so
-+		 * we shouldn't fail if image_seq == 0.
-+		 */
-+		image_seq = be32_to_cpu(ech->image_seq);
-+
-+		if (image_seq && (image_seq != ubi->image_seq)) {
- 			ubi_err("bad image seq: 0x%x, expected: 0x%x",
- 				be32_to_cpu(ech->image_seq), ubi->image_seq);
- 			ret = UBI_BAD_FASTMAP;
-@@ -923,6 +930,8 @@ int ubi_scan_fastmap(struct ubi_device *ubi, struct ubi_attach_info *ai,
- 	}
- 
- 	for (i = 0; i < used_blocks; i++) {
-+		int image_seq;
-+
- 		pnum = be32_to_cpu(fmsb->block_loc[i]);
- 
- 		if (ubi_io_is_bad(ubi, pnum)) {
-@@ -940,10 +949,17 @@ int ubi_scan_fastmap(struct ubi_device *ubi, struct ubi_attach_info *ai,
- 		} else if (ret == UBI_IO_BITFLIPS)
- 			fm->to_be_tortured[i] = 1;
- 
-+		image_seq = be32_to_cpu(ech->image_seq);
- 		if (!ubi->image_seq)
--			ubi->image_seq = be32_to_cpu(ech->image_seq);
-+			ubi->image_seq = image_seq;
- 
--		if (be32_to_cpu(ech->image_seq) != ubi->image_seq) {
-+		/*
-+		 * Older UBI implementations have image_seq set to zero, so
-+		 * we shouldn't fail if image_seq == 0.
-+		 */
-+		if (image_seq && (image_seq != ubi->image_seq)) {
-+			ubi_err("wrong image seq:%d instead of %d",
-+				be32_to_cpu(ech->image_seq), ubi->image_seq);
- 			ret = UBI_BAD_FASTMAP;
- 			goto free_hdr;
- 		}
--- 
-1.8.3.1
+> ----- Original Message -----
+> From: Tibor Billes
+> Sent: 09/14/13 03:59 PM
+> To: paulmck@linux.vnet.ibm.com
+> Subject: Re: Unusually high system CPU usage with recent kernels
+> 
+> > From: Paul E. McKenney Sent: 09/13/13 02:19 AM
+> > On Wed, Sep 11, 2013 at 08:46:04AM +0200, Tibor Billes wrote:
+> > > > From: Paul E. McKenney Sent: 09/09/13 10:44 PM
+> > > > On Mon, Sep 09, 2013 at 09:47:37PM +0200, Tibor Billes wrote:
+> > > > > > From: Paul E. McKenney Sent: 09/08/13 08:43 PM
+> > > > > > On Sun, Sep 08, 2013 at 07:22:45PM +0200, Tibor Billes wrote:
+> > > > > > > Good news Paul, the above patch did solve this issue :) I see no extra
+> > > > > > > context switches, no extra CPU usage and no extra compile time.
+> > > > > > 
+> > > > > > Woo-hoo!!! ;-)
+> > > > > > 
+> > > > > > May I add your Tested-by to the fix?
+> > > > > 
+> > > > > Yes, please :)
+> > > > 
+> > > > Done! ;-)
+> > > > 
+> > > > > > > Any idea why couldn't you reproduce this? Why did it only hit my system?
+> > > > > > 
+> > > > > > Timing, maybe? Another question is "Why didn't lots of people complain
+> > > > > > about this?" It would be good to find out because it is quite possible
+> > > > > > that there is some other bug that this patch is masking -- or even just
+> > > > > > making less probable.
+> > > > > 
+> > > > > Good point!
+> > > > > 
+> > > > > > If you are interested, please build one of the old kernels but with
+> > > > > > CONFIG_RCU_TRACE=y. Then run something like the following as root
+> > > > > > concurrently with your workload:
+> > > > > > 
+> > > > > > sleep 10
+> > > > > > echo 1 > /sys/kernel/debug/tracing/events/rcu/enable
+> > > > > > sleep 0.01
+> > > > > > echo 0 > /sys/kernel/debug/tracing/events/rcu/enable
+> > > > > > cat /sys/kernel/debug/tracing/trace > /tmp/trace
+> > > > > > 
+> > > > > > Send me the /tmp/trace file, which will probably be a few megabytes in
+> > > > > > size, so please compress it before sending. ;-) A good compression
+> > > > > > tool should be able to shrink it by a factor of 20 or thereabouts.
+> > > > > 
+> > > > > Ok, I did that. Twice! The first is with commit
+> > > > > 910ee45db2f4837c8440e770474758493ab94bf7, which was the first bad commit
+> > > > > according to the bisection I did initially. Second with the current
+> > > > > mainline 3.11. I have little idea of what the fields and lines mean in
+> > > > > the RCU trace files, so I'm not going to guess if they are essentially
+> > > > > the same or not, but it may provide more information to you. Both files
+> > > > > were created by using a shell script containing the commands you
+> > > > > suggested.
+> > > > 
+> > > > So traces both correspond to bad cases, correct? They are both quite
+> > > > impressive -- looks like you have quite the interrupt rate going on there!
+> > > > Almost looks like interrupts are somehow getting enabled on the path
+> > > > to/from idle.
+> > > > 
+> > > > Could you please also send along a trace with the fix applied?
+> > > 
+> > > Sure. The attached tar file contains traces of good kernels. The first is with
+> > > version 3.9.7 (no patch applied) which was the last stable kernel I tried and
+> > > didn't have this issue. The second is version 3.11 with your fix applied.
+> > > Judging by the size of the traces, 3.11.0+ is still doing more work than
+> > > 3.9.7.
+> > 
+> > Indeed, though quite a bit less than the problematic traces.
+> > 
+> > Did you have all three patches applied to 3.11.0, or just the last one?
+> > If the latter, could you please try it with all three?
+> 
+> Only the last one was applied to 3.11.0. The attachement now contains the
+> RCU trace with all thee applied. It seems to be smaller in size, but still
+> not close to 3.9.7.
+> 
+> > > > > I'm not sure about LKML policies about attaching not-so-small files to
+> > > > > emails, so I've dropped LKML from the CC list. Please CC the mailing
+> > > > > list in your reply.
+> > > > 
+> > > > Done!
+> > > > 
+> > > > Another approach is to post the traces on the web and send the URL to
+> > > > LKML. But whatever works for you is fine by me.
+> > > 
+> > > Sending directly to you won again :) Could you please CC the list in your
+> > > reply?
+> > 
+> > Done! ;-)
+> 
+> Could you please CC the list in your reply again? :)
+> 
+> Tibor
 
