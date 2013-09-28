@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3I1Vui (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 17:50:38 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:50204 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188Ab3I1Vt5 (ORCPT
+	id S1755233Ab3I1VuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 17:50:20 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:50549 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab3I1Vtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 17:49:57 -0400
+	Sat, 28 Sep 2013 17:49:50 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/14] sysfs: use transient write buffer
-Date: Sat, 28 Sep 2013 17:49:37 -0400
-Message-Id: <1380404984-31858-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/14] sysfs: remove sysfs_buffer->needs_read_fill
+Date: Sat, 28 Sep 2013 17:49:32 -0400
+Message-Id: <1380404984-31858-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380404984-31858-1-git-send-email-tj@kernel.org>
 References: <1380404984-31858-1-git-send-email-tj@kernel.org>
@@ -21,173 +21,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There isn't much to be gained by keeping around kernel buffer while a
-file is open especially as the read path planned to be converted to
-use seq_file and won't use the buffer.  This patch makes
-sysfs_write_file() use per-write transient buffer instead of
-sysfs_open_file->page.
+->needs_read_fill is used to implement the following behaviors.
 
-This simplifies the write path, enables removing sysfs_open_file->page
-once read path is updated and will help merging bin file write path
-which already requires the use of a transient buffer due to a locking
-order issue.
+1. Ensure buffer filling on the first read.
+2. Force buffer filling after a write.
+3. Force buffer filling after a successful poll.
 
-As the function comments of flush_write_buffer() and
-sysfs_write_buffer() are being updated anyway, reformat them so that
-they're more conventional.
+However, #2 and #3 don't really work as sysfs doesn't reset file
+position.  While the read buffer would be refilled, the next read
+would continue from the position after the last read or write,
+requiring an explicit seek to the start for it to be useful, which
+makes ->needs_read_fill superflous as read buffer is always refilled
+if f_pos == 0.
+
+Update sysfs_read_file() to test buffer->page for #1 instead and
+remove ->needs_read_fill.  While this changes behavior in extreme
+corner cases - e.g. re-reading a sysfs file after seeking to non-zero
+position after a write or poll, it's highly unlikely to lead to actual
+breakage.  This change is to prepare for using seq_file in the read
+path.
+
+While at it, reformat a comment in fill_write_buffer().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Kay Sievers <kay@vrfy.org>
 ---
- fs/sysfs/file.c | 114 ++++++++++++++++++++++++++------------------------------
- 1 file changed, 52 insertions(+), 62 deletions(-)
+ fs/sysfs/file.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index af6e909..642dbcc 100644
+index 81e3f72..e2fafc0 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -162,92 +162,82 @@ out:
+@@ -47,7 +47,6 @@ struct sysfs_buffer {
+ 	char			*page;
+ 	const struct sysfs_ops	*ops;
+ 	struct mutex		mutex;
+-	int			needs_read_fill;
+ 	int			event;
+ 	struct list_head	list;
+ };
+@@ -95,12 +94,10 @@ static int fill_read_buffer(struct dentry *dentry, struct sysfs_buffer *buffer)
+ 		/* Try to struggle along */
+ 		count = PAGE_SIZE - 1;
+ 	}
+-	if (count >= 0) {
+-		buffer->needs_read_fill = 0;
++	if (count >= 0)
+ 		buffer->count = count;
+-	} else {
++	else
+ 		ret = count;
+-	}
+ 	return ret;
  }
  
- /**
-- *	fill_write_buffer - copy buffer from userspace.
-- *	@of:		open file struct.
-- *	@buf:		data from user.
-- *	@count:		number of bytes in @userbuf.
-+ * flush_write_buffer - push buffer to kobject
-+ * @of: open file
-+ * @buf: data buffer for file
-+ * @count: number of bytes
-  *
-- *	Allocate @of->page if it hasn't been already, then copy the
-- *	user-supplied buffer into it.
-+ * Get the correct pointers for the kobject and the attribute we're dealing
-+ * with, then call the store() method for it with @buf.
-  */
--static int fill_write_buffer(struct sysfs_open_file *of,
--			     const char __user *buf, size_t count)
--{
--	int error;
--
--	if (!of->page)
--		of->page = (char *)get_zeroed_page(GFP_KERNEL);
--	if (!of->page)
--		return -ENOMEM;
--
--	if (count >= PAGE_SIZE)
--		count = PAGE_SIZE - 1;
--	error = copy_from_user(of->page, buf, count);
--
--	/*
--	 * If buf is assumed to contain a string, terminate it by \0, so
--	 * e.g. sscanf() can scan the string easily.
--	 */
--	of->page[count] = 0;
--	return error ? -EFAULT : count;
--}
--
--/**
-- *	flush_write_buffer - push buffer to kobject.
-- *	@of:		open file
-- *	@count:		number of bytes
-- *
-- *	Get the correct pointers for the kobject and the attribute we're
-- *	dealing with, then call the store() method for the attribute,
-- *	passing the buffer that we acquired in fill_write_buffer().
-- */
--static int flush_write_buffer(struct sysfs_open_file *of, size_t count)
-+static int flush_write_buffer(struct sysfs_open_file *of, char *buf,
-+			      size_t count)
- {
- 	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
- 	const struct sysfs_ops *ops;
--	int rc;
-+	int rc = 0;
+@@ -130,7 +127,11 @@ sysfs_read_file(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	ssize_t retval = 0;
  
--	/* need @of->sd for attr and ops, its parent for kobj */
--	if (!sysfs_get_active(of->sd))
+ 	mutex_lock(&buffer->mutex);
+-	if (buffer->needs_read_fill || *ppos == 0) {
 +	/*
-+	 * Need @of->sd for attr and ops, its parent for kobj.  @of->mutex
-+	 * nests outside active ref and is just to ensure that the ops
-+	 * aren't called concurrently for the same open file.
++	 * Fill on zero offset and the first read so that silly things like
++	 * "dd bs=1 skip=N" can work on sysfs files.
 +	 */
-+	mutex_lock(&of->mutex);
-+	if (!sysfs_get_active(of->sd)) {
-+		mutex_unlock(&of->mutex);
- 		return -ENODEV;
-+	}
- 
- 	ops = sysfs_file_ops(of->sd);
--	rc = ops->store(kobj, of->sd->s_attr.attr, of->page, count);
-+	rc = ops->store(kobj, of->sd->s_attr.attr, buf, count);
- 
- 	sysfs_put_active(of->sd);
-+	mutex_unlock(&of->mutex);
- 
- 	return rc;
++	if (*ppos == 0 || !buffer->page) {
+ 		retval = fill_read_buffer(file->f_path.dentry, buffer);
+ 		if (retval)
+ 			goto out;
+@@ -166,14 +167,15 @@ static int fill_write_buffer(struct sysfs_buffer *buffer,
+ 	if (count >= PAGE_SIZE)
+ 		count = PAGE_SIZE - 1;
+ 	error = copy_from_user(buffer->page, buf, count);
+-	buffer->needs_read_fill = 1;
+-	/* if buf is assumed to contain a string, terminate it by \0,
+-	   so e.g. sscanf() can scan the string easily */
++
++	/*
++	 * If buf is assumed to contain a string, terminate it by \0, so
++	 * e.g. sscanf() can scan the string easily.
++	 */
+ 	buffer->page[count] = 0;
+ 	return error ? -EFAULT : count;
  }
  
+-
  /**
-- *	sysfs_write_file - write an attribute.
-- *	@file:	file pointer
-- *	@buf:	data to write
-- *	@count:	number of bytes
-- *	@ppos:	starting offset
-+ * sysfs_write_file - write an attribute
-+ * @file: file pointer
-+ * @user_buf: data to write
-+ * @count: number of bytes
-+ * @ppos: starting offset
-  *
-- *	Similar to sysfs_read_file(), though working in the opposite direction.
-- *	We allocate and fill the data from the user in fill_write_buffer(),
-- *	then push it to the kobject in flush_write_buffer().
-- *	There is no easy way for us to know if userspace is only doing a partial
-- *	write, so we don't support them. We expect the entire buffer to come
-- *	on the first write.
-- *	Hint: if you're writing a value, first read the file, modify only the
-- *	the value you're changing, then write entire buffer back.
-+ * Copy data in from userland and pass it to the matching
-+ * sysfs_ops->store() by invoking flush_write_buffer().
-+ *
-+ * There is no easy way for us to know if userspace is only doing a partial
-+ * write, so we don't support them. We expect the entire buffer to come on
-+ * the first write.  Hint: if you're writing a value, first read the file,
-+ * modify only the the value you're changing, then write entire buffer
-+ * back.
-  */
--static ssize_t sysfs_write_file(struct file *file, const char __user *buf,
-+static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
- 				size_t count, loff_t *ppos)
- {
- 	struct sysfs_open_file *of = file->private_data;
--	ssize_t len;
-+	ssize_t len = min(count, PAGE_SIZE - 1);
-+	char *buf;
+  *	flush_write_buffer - push buffer to kobject.
+  *	@dentry:	dentry to the attribute
+@@ -368,7 +370,6 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 		goto err_out;
  
--	mutex_lock(&of->mutex);
--	len = fill_write_buffer(of, buf, count);
--	if (len > 0)
--		len = flush_write_buffer(of, len);
-+	if (!len)
-+		return 0;
-+
-+	buf = kmalloc(len + 1, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	if (copy_from_user(buf, user_buf, len)) {
-+		len = -EFAULT;
-+		goto out_free;
-+	}
-+	buf[len] = '\0';	/* guarantee string termination */
-+
-+	len = flush_write_buffer(of, buf, len);
- 	if (len > 0)
- 		*ppos += len;
--	mutex_unlock(&of->mutex);
-+out_free:
-+	kfree(buf);
- 	return len;
+ 	mutex_init(&buffer->mutex);
+-	buffer->needs_read_fill = 1;
+ 	buffer->ops = ops;
+ 	file->private_data = buffer;
+ 
+@@ -435,7 +436,6 @@ static unsigned int sysfs_poll(struct file *filp, poll_table *wait)
+ 	return DEFAULT_POLLMASK;
+ 
+  trigger:
+-	buffer->needs_read_fill = 1;
+ 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
  }
  
 -- 
