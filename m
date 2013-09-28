@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab3I1Age (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 20:36:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47398 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab3I1Agc (ORCPT
+	id S1754263Ab3I1ArA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 20:47:00 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:19526 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab3I1Aq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 20:36:32 -0400
-Date: Fri, 27 Sep 2013 17:37:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: swarren@wwwdotorg.org, bcousson@baylibre.com, tony@atomide.com,
-        balbi@ti.com, s.nawrocki@samsung.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, rob@landley.net, linux@arm.linux.org.uk,
-        jkosina@suse.cz, m.chehab@samsung.com, cesarb@cesarb.net,
-        joe@perches.com, davem@davemloft.net, davidb@codeaurora.org,
-        sameo@linux.intel.com, peter.ujfalusi@ti.com, t-kristo@ti.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        akpm@linux-foundation.org, balajitk@ti.com, george.cherian@ti.com,
-        nsekhar@ti.com, rogerq@ti.com
-Subject: Re: [PATCH v12 0/7] PHY framework
-Message-ID: <20130928003742.GA3659@kroah.com>
-References: <1380263012-9687-1-git-send-email-kishon@ti.com>
+	Fri, 27 Sep 2013 20:46:58 -0400
+Message-ID: <524626F1.6010104@hp.com>
+Date: Fri, 27 Sep 2013 20:46:41 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380263012-9687-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com> <5245DD4E.60009@hurleysoftware.com>
+In-Reply-To: <5245DD4E.60009@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 11:53:24AM +0530, Kishon Vijay Abraham I wrote:
-> Added a generic PHY framework that provides a set of APIs for the PHY drivers
-> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-> the PHY with or without using phandle.
-> 
-> This framework will be of use only to devices that uses external PHY (PHY
-> functionality is not embedded within the controller).
-> 
-> The intention of creating this framework is to bring the phy drivers spread
-> all over the Linux kernel to drivers/phy to increase code re-use and to
-> increase code maintainability.
-> 
-> Comments to make PHY as bus wasn't done because PHY devices can be part of
-> other bus and making a same device attached to multiple bus leads to bad
-> design.
-> 
-> If the PHY driver has to send notification on connect/disconnect, the PHY
-> driver should make use of the extcon framework. Using this susbsystem
-> to use extcon framwork will have to be analysed.
-> 
-> You can find this patch series @
-> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
-> 
-> I'll create a new branch *next* once this patch series is finalized. All the
-> PHY driver development that depends on PHY framework can be based on this
-> branch.
-> 
-> Did USB enumeration testing in panda and beagle after applying [1] (needed for
-> non-dt)
+On 09/27/2013 03:32 PM, Peter Hurley wrote:
+> On 09/27/2013 03:00 PM, Waiman Long wrote:
+>> With the 3.12-rc2 kernel, there is sizable spinlock contention on
+>> the rwsem wakeup code path when running AIM7's high_systime workload
+>> on a 8-socket 80-core DL980 (HT off) as reported by perf:
+>>
+>>    7.64%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+>>               |--41.77%-- rwsem_wake
+>>    1.61%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irq
+>>               |--92.37%-- rwsem_down_write_failed
+>>
+>> That was 4.7% of recorded CPU cycles.
+>>
+>> On a large NUMA machine, it is entirely possible that a fairly large
+>> number of threads are queuing up in the ticket spinlock queue to do
+>> the wakeup operation. In fact, only one will be needed.  This patch
+>> tries to reduce spinlock contention by doing just that.
+>>
+>> A new wakeup field is added to the rwsem structure. This field is
+>> set on entry to rwsem_wake() and __rwsem_do_wake() to mark that a
+>> thread is pending to do the wakeup call. It is cleared on exit from
+>> those functions.
+>>
+>> By checking if the wakeup flag is set, a thread can exit rwsem_wake()
+>> immediately if another thread is pending to do the wakeup instead of
+>> waiting to get the spinlock and find out that nothing need to be done.
+>
+> This will leave readers stranded if a former writer is in __rwsem_do_wake
+> to wake up the readers and another writer steals the lock, but before
+> the former writer exits without having woken up the readers, the locking
+> stealing writer drops the lock and sees the wakeup flag is set, so
+> doesn't bother to wake the readers.
+>
+> Regards,
+> Peter Hurley
+>
 
-All now applied to my usb-next branch.  Thanks for redoing this many
-times and sticking with it.
+Yes, you are right. That can be a problem. Thank for pointing this out. 
+The workloads that I used doesn't seem to exercise the readers. I will 
+modify the patch to add code handle this failure case by resetting the 
+wakeup flag, pushing it out and then retrying one more time to get the 
+read lock. I  think that should address the problem.
 
-greg k-h
+Regards,
+Longman
