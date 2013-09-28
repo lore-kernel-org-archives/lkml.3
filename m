@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab3I1RhY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 13:37:24 -0400
-Received: from smtp1.uu.se ([130.238.7.54]:53478 "EHLO smtp1.uu.se"
+	id S1754783Ab3I1Rle (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 13:41:34 -0400
+Received: from d-paulus.de ([37.221.197.252]:34309 "EHLO d-paulus.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754496Ab3I1RhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 13:37:22 -0400
+	id S1754473Ab3I1Rlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 13:41:32 -0400
+Date: Sat, 28 Sep 2013 19:41:30 +0200
+From: Dominik Paulus <dominik@d-paulus.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dominik Paulus <dominik.paulus@fau.de>, linux-kernel@vger.kernel.org,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        Masanari Iida <standby24x7@gmail.com>, linux-kernel@i4.cs.fau.de,
+        devel@driverdev.osuosl.org, tobias.polzer@fau.de
+Subject: Re: [PATCHv2 0/11] staging: usbip: Userland crypto and ACLs
+Message-ID: <20130928174130.GA3325@d-paulus.de>
+References: <1379066161-8278-1-git-send-email-dominik.paulus@fau.de>
+ <20130925233638.GA21396@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <21063.5036.298114.685836@pilspetsen.it.uu.se>
-Date: Sat, 28 Sep 2013 19:36:44 +0200
-From: Mikael Pettersson <mikpelinux@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mikael Pettersson <mikpelinux@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Fix pty master read() after slave closes
-In-Reply-To: <5245C12E.6070608@hurleysoftware.com>
-References: <524493E6.60300@hurleysoftware.com>
-	<1380302825-12539-1-git-send-email-peter@hurleysoftware.com>
-	<5245C12E.6070608@hurleysoftware.com>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Disposition: inline
+In-Reply-To: <20130925233638.GA21396@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley writes:
- > On 09/27/2013 01:27 PM, Peter Hurley wrote:
- > > Commit f95499c3030fe1bfad57745f2db1959c5b43dca8,
- > >    n_tty: Don't wait for buffer work in read() loop
- > > creates a race window which can cause a pty master read()
- > > to miss the last pty slave write(s) and return -EIO instead,
- > > thus signalling the pty slave is closed. This can happen when
- > > the pty slave is written and immediately closed but before the
- > > tty buffer i/o loop receives the new input; the pty master
- > > read() is scheduled, sees its read buffer is empty and the
- > > pty slave has been closed, and exits.
- > >
- > > Because tty_flush_to_ldisc() has significant performance impact
- > > for parallel i/o, rather than revert the commit, special case this
- > > condition (ie., when the read buffer is empty and the 'other' pty
- > > has been closed) and, only then, wait for buffer work to complete
- > > before re-testing if the read buffer is still empty.
- > >
- > > As before, subsequent pty master reads return any available data
- > > until no more data is available, and then returns -EIO to
- > > indicate the pty slave has closed.
- > >
- > > Reported-by: Mikael Pettersson <mikpelinux@gmail.com>
- > > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
- > 
- > I tested this patch with the gcc ada ACATS testsuite and got this
- > summary so all seems ok with this patch.
- > 
- > 		=== acats Summary ===
- > # of expected passes		805
- > # of unexpected failures	0
- > 
- > ...
- > 
- > 		=== acats Summary ===
- > # of expected passes		772
- > # of unexpected failures	0
- > 
- > ...
- > 
- > 		=== acats Summary ===
- > # of expected passes		743
- > # of unexpected failures	0
- > 
- > Mikael,
- > 
- > I'd appreciate if you could re-test with this patch and
- > confirm the issue is fixed.
+On Wed, Sep 25, 2013 at 04:36:38PM -0700, Greg Kroah-Hartman wrote:
+> Only the first patch could be applied. Can you refresh this series, and
+> your other one (fixing the issues pointed out there), and resend them
+> please?
 
-I did a big pile of gcc bootstrap + regression test runs today with
-this patch, and everything looks good.  Thus:
-
-Tested-by: Mikael Pettersson <mikpelinux@gmail.com>
+We've incorporated all of Dan's fixes and suggestions and rebased the
+whole series on staging-next.
+We left the protocol version at 0x111, since the code is backwards
+compatible with current linux-linus if encryption is disabled.
+After reading "NIST Special Publication 800-38D" Appendix C we got some
+doubts about the security of our usage of gcm with short (4 bytes) tags,
+so we incremented USBIP_AUTHSIZE to 16, just to be safe.
 
 Thanks,
-
-/Mikael
+Tobias and Dominik
