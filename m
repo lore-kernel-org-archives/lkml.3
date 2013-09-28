@@ -1,130 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3I1VuU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 17:50:20 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:50549 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab3I1Vtu (ORCPT
+	id S1755412Ab3I1WOL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 18:14:11 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:46689 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab3I1WOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 17:49:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/14] sysfs: remove sysfs_buffer->needs_read_fill
-Date: Sat, 28 Sep 2013 17:49:32 -0400
-Message-Id: <1380404984-31858-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380404984-31858-1-git-send-email-tj@kernel.org>
-References: <1380404984-31858-1-git-send-email-tj@kernel.org>
+	Sat, 28 Sep 2013 18:14:08 -0400
+Date: Sun, 29 Sep 2013 01:14:02 +0300
+From: Elad Wexler <elad.wexler@gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        elad.wexler@gmail.com
+Subject: Re: [PATCH] misc: cs5535-mfgpt: Replace 'module_init' with
+ 'module_platform_driver'
+Message-ID: <20130928221400.GA4630@gmail.com>
+References: <1380392082-23572-1-git-send-email-elad.wexler@gmail.com>
+ <CAFLxGvzWsr7RCtxOcZ2LO1dSmjt0Khr91JAcM_NykCYRtd2R8Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvzWsr7RCtxOcZ2LO1dSmjt0Khr91JAcM_NykCYRtd2R8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->needs_read_fill is used to implement the following behaviors.
+On Sat, Sep 28, 2013 at 08:54:55PM +0200, richard -rw- weinberger wrote:
+> On Sat, Sep 28, 2013 at 8:14 PM,  <elad.wexler@gmail.com> wrote:
+> > From: Elad Wexler <elad.wexler@gmail.com>
+> >
+> > Driver doesn't do anything special in 'module_init'.
+> >
+> > 'module_platform_init' makes the code more readable.
+> >
+> > Signed-off-by: Elad Wexler <elad.wexler@gmail.com>
+> 
+> NAK.
+> 
+> By moving to module_platform_init() you make this module unloadable.
+> Currently it is unloadable for good reasons.
+> The cs5535-mfgpt chip is nasty because it has no reliable reset function.
+> Therefore by unloading and loading the module again bad things can happen.
+> 
+I think this HW information should be well documented.
+Explaining the reason why it doesn't implemented the 'module_exit'
 
-1. Ensure buffer filling on the first read.
-2. Force buffer filling after a write.
-3. Force buffer filling after a successful poll.
-
-However, #2 and #3 don't really work as sysfs doesn't reset file
-position.  While the read buffer would be refilled, the next read
-would continue from the position after the last read or write,
-requiring an explicit seek to the start for it to be useful, which
-makes ->needs_read_fill superflous as read buffer is always refilled
-if f_pos == 0.
-
-Update sysfs_read_file() to test buffer->page for #1 instead and
-remove ->needs_read_fill.  While this changes behavior in extreme
-corner cases - e.g. re-reading a sysfs file after seeking to non-zero
-position after a write or poll, it's highly unlikely to lead to actual
-breakage.  This change is to prepare for using seq_file in the read
-path.
-
-While at it, reformat a comment in fill_write_buffer().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay@vrfy.org>
----
- fs/sysfs/file.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 81e3f72..e2fafc0 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -47,7 +47,6 @@ struct sysfs_buffer {
- 	char			*page;
- 	const struct sysfs_ops	*ops;
- 	struct mutex		mutex;
--	int			needs_read_fill;
- 	int			event;
- 	struct list_head	list;
- };
-@@ -95,12 +94,10 @@ static int fill_read_buffer(struct dentry *dentry, struct sysfs_buffer *buffer)
- 		/* Try to struggle along */
- 		count = PAGE_SIZE - 1;
- 	}
--	if (count >= 0) {
--		buffer->needs_read_fill = 0;
-+	if (count >= 0)
- 		buffer->count = count;
--	} else {
-+	else
- 		ret = count;
--	}
- 	return ret;
- }
- 
-@@ -130,7 +127,11 @@ sysfs_read_file(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 	ssize_t retval = 0;
- 
- 	mutex_lock(&buffer->mutex);
--	if (buffer->needs_read_fill || *ppos == 0) {
-+	/*
-+	 * Fill on zero offset and the first read so that silly things like
-+	 * "dd bs=1 skip=N" can work on sysfs files.
-+	 */
-+	if (*ppos == 0 || !buffer->page) {
- 		retval = fill_read_buffer(file->f_path.dentry, buffer);
- 		if (retval)
- 			goto out;
-@@ -166,14 +167,15 @@ static int fill_write_buffer(struct sysfs_buffer *buffer,
- 	if (count >= PAGE_SIZE)
- 		count = PAGE_SIZE - 1;
- 	error = copy_from_user(buffer->page, buf, count);
--	buffer->needs_read_fill = 1;
--	/* if buf is assumed to contain a string, terminate it by \0,
--	   so e.g. sscanf() can scan the string easily */
-+
-+	/*
-+	 * If buf is assumed to contain a string, terminate it by \0, so
-+	 * e.g. sscanf() can scan the string easily.
-+	 */
- 	buffer->page[count] = 0;
- 	return error ? -EFAULT : count;
- }
- 
--
- /**
-  *	flush_write_buffer - push buffer to kobject.
-  *	@dentry:	dentry to the attribute
-@@ -368,7 +370,6 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 		goto err_out;
- 
- 	mutex_init(&buffer->mutex);
--	buffer->needs_read_fill = 1;
- 	buffer->ops = ops;
- 	file->private_data = buffer;
- 
-@@ -435,7 +436,6 @@ static unsigned int sysfs_poll(struct file *filp, poll_table *wait)
- 	return DEFAULT_POLLMASK;
- 
-  trigger:
--	buffer->needs_read_fill = 1;
- 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
- }
- 
--- 
-1.8.3.1
-
+> -- 
+> Thanks,
+> //richard
