@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3I1Hlv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 03:41:51 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:65488 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3I1Hlt (ORCPT
+	id S1753054Ab3I1Hou (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 03:44:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55200 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3I1Hos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 03:41:49 -0400
-Date: Sat, 28 Sep 2013 09:41:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-Message-ID: <20130928074144.GA17773@gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+	Sat, 28 Sep 2013 03:44:48 -0400
+Message-ID: <524688CB.9000400@vlnb.net>
+Date: Sat, 28 Sep 2013 00:44:11 -0700
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Zuckerman, Boris" <borisz@hp.com>
+CC: Matthew Wilcox <willy@linux.intel.com>,
+        "rob.gittins@linux.intel.com" <rob.gittins@linux.intel.com>,
+        "linux-pmfs@lists.infradead.org" <linux-pmfs@lists.infradead.org>,
+        "linux-fsdevel@veger.org" <linux-fsdevel@veger.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
+References: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com> <522AB5AD.6070206@vlnb.net> <1379976688.5886.12.camel@Virt-Centos-6.lm.intel.com> <5243DB2A.7090609@vlnb.net> <4C30833E5CDF444D84D942543DF65BDA58066A30@G9W0739.americas.hpqcorp.net> <20130926175624.GA7422@linux.intel.com> <4C30833E5CDF444D84D942543DF65BDA580690B7@G9W0739.americas.hpqcorp.net>
+In-Reply-To: <4C30833E5CDF444D84D942543DF65BDA580690B7@G9W0739.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:DXIOW1MX9CU/ywi4AQcT99pzEm3cqD2q1suN2kQ+oLM
+ QfNaSDMjQ1MaDgHXsqweyzh+Tl69wel1E5ed1JuYYgJ+PymikG
+ U+3npNpGLiatualWWhHLsOhI7B6GBVYtEMjxo2r8nUOvfiWKfF
+ oUxxbMQa0IxLOojhmvuEF6gFBGg6bhAezAAWcw11tGixeljTW1
+ 0bO/Lsau/ytUXtywRibxDl4Wrsoo40f6NzYx4Fd0tCu/qUEEGK
+ mPFZ5IaLW8deumHt62pqVGQp4tpTWro7zfo3diEFhjLtU5hnDH
+ CVlCIXzxuDosm8SeQNbSyrY4DV9aqJj9QMhWErikQtmmDvTfA=
+ =
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Zuckerman, Boris, on 09/26/2013 12:36 PM wrote:
+> I assume that we may have both: CPUs that may have ability to support multiple transactions, CPUs that support only one, CPUs that support none (as today), as well as different devices - transaction capable and not.
+> So, it seems there is a room for compilers to do their work and for class drivers to do their, right?
 
-> On Fri, Sep 27, 2013 at 12:00 PM, Waiman Long <Waiman.Long@hp.com> wrote:
-> >
-> > On a large NUMA machine, it is entirely possible that a fairly large 
-> > number of threads are queuing up in the ticket spinlock queue to do 
-> > the wakeup operation. In fact, only one will be needed.  This patch 
-> > tries to reduce spinlock contention by doing just that.
-> >
-> > A new wakeup field is added to the rwsem structure. This field is set 
-> > on entry to rwsem_wake() and __rwsem_do_wake() to mark that a thread 
-> > is pending to do the wakeup call. It is cleared on exit from those 
-> > functions.
+Yes, correct.
+
+Conceptually NVDIMMs are not block devices. They may be used as block devices, but may
+not be as well. So, nailing them into the block abstraction by big hammer is simply a
+bad design.
+
+Vlad
+
+> boris
 > 
-> Ok, this is *much* simpler than adding the new MCS spinlock, so I'm 
-> wondering what the performance difference between the two are.
+>> -----Original Message-----
+>> From: Matthew Wilcox [mailto:willy@linux.intel.com]
+>> Sent: Thursday, September 26, 2013 1:56 PM
+>> To: Zuckerman, Boris
+>> Cc: Vladislav Bolkhovitin; rob.gittins@linux.intel.com; linux-pmfs@lists.infradead.org;
+>> linux-fsdevel@veger.org; linux-kernel@vger.kernel.org
+>> Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
+>>
+>> On Thu, Sep 26, 2013 at 02:56:17PM +0000, Zuckerman, Boris wrote:
+>>> To work with persistent memory as efficiently as we can work with RAM we need a
+>> bit more than "commit". It's reasonable to expect that we get some additional
+>> support from CPUs that goes beyond mfence and mflush. That may include discovery,
+>> transactional support, etc. Encapsulating that in a special class sooner than later
+>> seams a right thing to do...
+>>
+>> If it's something CPU-specific, then we wouldn't handle it as part of the "class", we'd
+>> handle it as an architecture abstraction.  It's only operations which are device-specific
+>> which would need to be exposed through an operations vector.  For example, suppose
+>> you buy one device from IBM and another device from HP, and plug them both into
+>> your SPARC system.  The code you compile needs to run on SPARC, doing whatever
+>> CPU operations are supported, but if HP and IBM have different ways of handling a
+>> "commit" operation, we need that operation to be part of an operations vector.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> I'm obviously always in favor of just removing lock contention over 
-> trying to improve the lock scalability, so I really like Waiman's 
-> approach over Tim's new MCS lock. Not because I dislike MCS locks in 
-> general (or you, Tim ;), it's really more fundamental: I just 
-> fundamentally believe more in trying to avoid lock contention than in 
-> trying to improve lock behavior when that contention happens.
-> 
-> As such, I love exactly these kinds of things that Wainman's patch does, 
-> and I'm heavily biased.
-
-Yeah, I fully agree. The reason I'm still very sympathetic to Tim's 
-efforts is that they address a regression caused by a mechanic 
-mutex->rwsem conversion:
-
-  5a505085f043 mm/rmap: Convert the struct anon_vma::mutex to an rwsem
-
-... and Tim's patches turn that regression into an actual speedup.
-
-The main regression component happens to be more prominent on larger 
-systems which inevitably have higher contention. That was a result of 
-mutexes having better contention behavior than rwsems - which was not a 
-property Tim picked arbitrarily.
-
-The other advantage would be that by factoring out the MCS code it gets 
-reviewed and seen more prominently - this resulted in a micro-optimization 
-already. So people working on mutex or rwsem scalability will have a 
-chance to help each other.
-
-A third advantage would be that arguably our rwsems degrade on really big 
-systems catastrophically. We had that with spinlocks and mutexes and it 
-got fixd. Since rwsems are a long-term concern for us I thought that 
-something like MCS queueing could be considered a fundamental 
-quality-of-implementation requirement as well.
-
-In any case I fully agree that we never want to overdo it, our priority of 
-optimization and our ranking will always be:
-
-	- lockless algorithms
-	- reduction of critical paths
-	...
-	- improved locking fast path
-	- improved locking slow path
-
-and people will see much better speedups if they concentrate on entries 
-higher on this list.
-
-It's a pretty rigid order as well: no slowpath improvement is allowed to 
-hurt any of the higher priority optimization concepts and people are 
-encouraged to always work on the higher order concepts before considering 
-the symptoms of contention.
-
-But as long as contention behavior improvements are cleanly done, don't 
-cause regressions, do not hinder primary scalability efforts and the 
-numbers are as impressive as Tim's, it looks like good stuff to me.
-
-I was thinking about putting them into the locking tree once the review 
-and testing process converges and wanted to send them to you in the v3.13 
-merge window.
-
-The only potential downside (modulo bugs) I can see from Tim's patches is 
-XFS's heavy dependence on fine behavioral details of rwsem. But if done 
-right then none of these scalability efforts should impact those details.
-
-Thanks,
-
-	Ingo
