@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab3I1Kdz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 06:33:55 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:56878 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3I1Kdv (ORCPT
+	id S1753261Ab3I1KjU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 06:39:20 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:57248 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3I1KjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 06:33:51 -0400
+	Sat, 28 Sep 2013 06:39:18 -0400
+X-Auth-Info: 175h+AvraF4W/sJZ36r5qgxoz2E1SUqj3Q65aBR2V3E=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] Building and testing Aarch64
+References: <CALkWK0mwRbBkM=qvQPoyR+kEs8HwLx9P7bWWQnst_Z1=DRFkRA@mail.gmail.com>
+	<CAHkRjk5_ep4poYY9gzcDgqaPuDtz2sgeZ0KPO6TqHttj-cS3xw@mail.gmail.com>
+	<CALkWK0=YdxF43RQ-Fddp4Rzmx3aU3QdOPrjR=X+s6Wt9_RAYUg@mail.gmail.com>
+	<20130927150156.GE26069@arm.com>
+	<CALkWK0mjmGmhYnxBdMzbCXJn5yQyK63Ptqr6wT1pBurZCNtmNA@mail.gmail.com>
+	<m2wqm1s6f5.fsf@linux-m68k.org>
+	<CALkWK0nzk6s-C97ze4Ev8gY6fwPbf-qRCfCDvDDE56HFxvzw0A@mail.gmail.com>
+	<m2siwps45q.fsf@linux-m68k.org>
+	<CALkWK0=ii-usQ17qpwDMwCbJAPhDTghz6j8J7JEeZ5Uwnn-awQ@mail.gmail.com>
+X-Yow: Barbie says, Take quaaludes in gin and go to a disco right away!
+ But Ken says, WOO-WOO!!  No credit at ``Mr. Liquor''!!
+Date: Sat, 28 Sep 2013 12:39:15 +0200
+In-Reply-To: <CALkWK0=ii-usQ17qpwDMwCbJAPhDTghz6j8J7JEeZ5Uwnn-awQ@mail.gmail.com>
+	(Ramkumar Ramachandra's message of "Sat, 28 Sep 2013 15:09:42 +0530")
+Message-ID: <87zjqxkz70.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbhywp7_wAhOSzdMe==YoCo0mAcy1mJrdW3bURKWLxQeQ@mail.gmail.com>
-References: <1380179668-32288-1-git-send-email-acourbot@nvidia.com> <CACRpkdbhywp7_wAhOSzdMe==YoCo0mAcy1mJrdW3bURKWLxQeQ@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sat, 28 Sep 2013 19:33:30 +0900
-Message-ID: <CAAVeFuLfUGsmOssWDtm8kf9av=3A_O9Fk8M8HGYF=xqtX8772Q@mail.gmail.com>
-Subject: Re: [PATCH 0/3] New descriptor-based GPIO interface
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 9:06 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Sep 26, 2013 at 9:14 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->
->> Here is a proper patch series for the descriptor-based GPIO interface to be
->> merged into -next. It is rebased on your for-next branch and only slightly
->> changed with respect to the RFC I posted earlier, only more thoroughly tested.
->> The documentation part is missing because I need some more time to rework it
->> (I'm on holidays this week but wanted to get the code into -next before 28th),
->> and anyway at this point I just want to make sure that the extra refactoring
->> does not break any existing code.
->>
->> My hope is to get this into -next before the 28th so this patchset can be
->> effectively tested, even if the new interfaces are not used yet. Since the old
->> integer-based interface now relies on top of gpiod_, this should provide good
->> coverage for both.
->
-> I've applied it now, but no idea whether it will hit the last -next tree in
-> time, hopefully at the very last second ...
+Ramkumar Ramachandra <artagnon@gmail.com> writes:
 
-Crap, looks like it did not make it. :( I hope we can still merge this for 3.13.
+> Unfortunately, even with VIRTIO_MMIO built in, I get the same error:
 
-Alex.
+You need all the other relevant virtio options built-in, too, like
+VIRTIO_BLK.
+
+> The transcript from the working linux-system.axf (with raring-rootfs)
+> looks like:
+
+>From there you can extract the config from /proc/config.gz.
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
