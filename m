@@ -1,128 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3I1ONP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 10:13:15 -0400
-Received: from mout.gmx.net ([212.227.17.22]:62372 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753410Ab3I1ONN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 10:13:13 -0400
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="utf-8"
-Date: Sat, 28 Sep 2013 16:13:10 +0200
-From: "Tibor Billes" <tbilles@gmx.com>
-Message-ID: <20130928141310.302530@gmx.com>
-MIME-Version: 1.0
-Subject: Re: Unusually high system CPU usage with recent kernels
-To: paulmck@linux.vnet.ibm.com
-X-Flags: 0001
-X-Mailer: GMX.com Web Mailer
-x-registered: 0
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: oYY0ckkXeSEqJL5QQHchJSl+IGRvb8AC
+	id S1753966Ab3I1O1o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 10:27:44 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39900 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3I1O1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 10:27:42 -0400
+Message-ID: <5246E747.6020103@gmail.com>
+Date: Sat, 28 Sep 2013 16:27:19 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: linux-arm-kernel@lists.infradead.org, Jason Cooper <jason@lakedaemon.net>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: Dove: Add the audio device to the Cubox DT
+References: <20130828113521.35c53365@armhf> <521DCD80.9010105@gmail.com> <20130831125128.0e3a23c7@armhf> <140d8d8a23f.2784.107cef0f820c2f5d7b7f41463071c310@gmail.com> <20130926101147.217015e1@armhf> <5243F0CE.9000301@gmail.com> <20130926132859.04ad4407@armhf>
+In-Reply-To: <20130926132859.04ad4407@armhf>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On 09/26/2013 01:28 PM, Jean-Francois Moine wrote:
+> On Thu, 26 Sep 2013 10:31:10 +0200
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+>> On 09/26/2013 10:11 AM, Jean-Francois Moine wrote:
+>>> In the Cubox, I changed the audio DT to:
+>>>
+>>> &i2s1 {
+>>> 	status = "okay";
+>>> 	clocks = <&gate_clk 13>, <&si5351 1>;
 
-I was just wondering if you received my last mail, because I haven't heard from
-you for a while now.
+Jean-Francois,
 
-Tibor
+I can confirm the following for CuBox:
 
+AU1_EXTCLK is connected to si5351 clkout 2. For the _current_
+(v3.12-rc1) dove-cubox.dts that means that you'll have to exchange
+the properties for &i2c0/si5351/clkout[12]. If you leave it the way
+it is, clkout2 is not allowed to change the pll inside si5351 and
+only try to get close to the requested clk rate by using output
+dividers. Would be great if you can provide a corresponding patch
+for v3.12 (no need to Cc stable).
 
-> ----- Original Message -----
-> From: Tibor Billes
-> Sent: 09/14/13 03:59 PM
-> To: paulmck@linux.vnet.ibm.com
-> Subject: Re: Unusually high system CPU usage with recent kernels
-> 
-> > From: Paul E. McKenney Sent: 09/13/13 02:19 AM
-> > On Wed, Sep 11, 2013 at 08:46:04AM +0200, Tibor Billes wrote:
-> > > > From: Paul E. McKenney Sent: 09/09/13 10:44 PM
-> > > > On Mon, Sep 09, 2013 at 09:47:37PM +0200, Tibor Billes wrote:
-> > > > > > From: Paul E. McKenney Sent: 09/08/13 08:43 PM
-> > > > > > On Sun, Sep 08, 2013 at 07:22:45PM +0200, Tibor Billes wrote:
-> > > > > > > Good news Paul, the above patch did solve this issue :) I see no extra
-> > > > > > > context switches, no extra CPU usage and no extra compile time.
-> > > > > > 
-> > > > > > Woo-hoo!!! ;-)
-> > > > > > 
-> > > > > > May I add your Tested-by to the fix?
-> > > > > 
-> > > > > Yes, please :)
-> > > > 
-> > > > Done! ;-)
-> > > > 
-> > > > > > > Any idea why couldn't you reproduce this? Why did it only hit my system?
-> > > > > > 
-> > > > > > Timing, maybe? Another question is "Why didn't lots of people complain
-> > > > > > about this?" It would be good to find out because it is quite possible
-> > > > > > that there is some other bug that this patch is masking -- or even just
-> > > > > > making less probable.
-> > > > > 
-> > > > > Good point!
-> > > > > 
-> > > > > > If you are interested, please build one of the old kernels but with
-> > > > > > CONFIG_RCU_TRACE=y. Then run something like the following as root
-> > > > > > concurrently with your workload:
-> > > > > > 
-> > > > > > sleep 10
-> > > > > > echo 1 > /sys/kernel/debug/tracing/events/rcu/enable
-> > > > > > sleep 0.01
-> > > > > > echo 0 > /sys/kernel/debug/tracing/events/rcu/enable
-> > > > > > cat /sys/kernel/debug/tracing/trace > /tmp/trace
-> > > > > > 
-> > > > > > Send me the /tmp/trace file, which will probably be a few megabytes in
-> > > > > > size, so please compress it before sending. ;-) A good compression
-> > > > > > tool should be able to shrink it by a factor of 20 or thereabouts.
-> > > > > 
-> > > > > Ok, I did that. Twice! The first is with commit
-> > > > > 910ee45db2f4837c8440e770474758493ab94bf7, which was the first bad commit
-> > > > > according to the bisection I did initially. Second with the current
-> > > > > mainline 3.11. I have little idea of what the fields and lines mean in
-> > > > > the RCU trace files, so I'm not going to guess if they are essentially
-> > > > > the same or not, but it may provide more information to you. Both files
-> > > > > were created by using a shell script containing the commands you
-> > > > > suggested.
-> > > > 
-> > > > So traces both correspond to bad cases, correct? They are both quite
-> > > > impressive -- looks like you have quite the interrupt rate going on there!
-> > > > Almost looks like interrupts are somehow getting enabled on the path
-> > > > to/from idle.
-> > > > 
-> > > > Could you please also send along a trace with the fix applied?
-> > > 
-> > > Sure. The attached tar file contains traces of good kernels. The first is with
-> > > version 3.9.7 (no patch applied) which was the last stable kernel I tried and
-> > > didn't have this issue. The second is version 3.11 with your fix applied.
-> > > Judging by the size of the traces, 3.11.0+ is still doing more work than
-> > > 3.9.7.
-> > 
-> > Indeed, though quite a bit less than the problematic traces.
-> > 
-> > Did you have all three patches applied to 3.11.0, or just the last one?
-> > If the latter, could you please try it with all three?
-> 
-> Only the last one was applied to 3.11.0. The attachement now contains the
-> RCU trace with all thee applied. It seems to be smaller in size, but still
-> not close to 3.9.7.
-> 
-> > > > > I'm not sure about LKML policies about attaching not-so-small files to
-> > > > > emails, so I've dropped LKML from the CC list. Please CC the mailing
-> > > > > list in your reply.
-> > > > 
-> > > > Done!
-> > > > 
-> > > > Another approach is to post the traces on the web and send the URL to
-> > > > LKML. But whatever works for you is fine by me.
-> > > 
-> > > Sending directly to you won again :) Could you please CC the list in your
-> > > reply?
-> > 
-> > Done! ;-)
-> 
-> Could you please CC the list in your reply again? :)
-> 
-> Tibor
+Also, as you seem to push kirkwood-i2s DT forward, please get back
+to clkout2 (<&si5351 2>) for the audio node as you did correctly in
+the first place.
+
+With above changes, SPDIF_EN, and forcing kirkwood-i2s to always use
+extclk, I can play SPDIF audio with 44k1 and 48k. Other rates could
+also work, but my audio equipment ignores anything else.
+
+>> What about trying to get 48kHz working first? Does it work with
+>> internal DCO and 48kHz? External audio clock should be 256*fs as stated
+>> in dove datasheet.
+>
+> I have no input with 48kHz.
+
+If you use e.g. 'mplayer -ao alsa -srate 48000 music.mp3' you can force
+output audio rate to 48k. I am sure other tools have similar options.
+
+>>> For more information, I use i2s input in the tda998x with audio rate
+>>> 96kHz on HDMI output. The sound is fine with the internal dco (tested
+>>> with 44.1kHz only).
+
+What I am wondering here is, why you want to use i2s at all? On CuBox,
+HDMI transmitter is connected to both i2s and spdif. IIRC, for the
+transmitter it makes no difference if you provide i2s or spdif audio,
+_but_ what you are loosing for sure is pass-through, i.e. sending
+compressed AC3 directly.
+
+Also, on consumer devices anything else than 44k1 and 48k audio is very
+uncommon. Don't expect it to work at all. If you want high quality
+audio, always use pass-through. If you are lucky, your audio equipment
+will also accept mp3 or at least mp2 over it when using HDMI.
+
+>> Sorry, I don't understand the above "information". How can you have a
+>> different input audio rate tested with 44k1 output rate?
+>
+> The internal dco permits only 44.1, 44 and 96 kHz, so, vlc translates
+> the input rates smaller than 44.1 kHz to 44.1 kHz.
+>
+>> Have you ever tested your audio equipment with something different than
+>> 48k and 44k1 SPDIF PCM? Are you actually sure it works at all, i.e. do
+>> you have different audio source with SPDIF >48kHz? Can you try optical
+>> SPDIF instead of HDMI?
+>>
+>> Just try to narrow it down, currently I cannot see why this behavior
+>> should be limited to either si5351 or dove audio alone.
+>
+> I have no optical S/PDIF.
+
+As stated above, if you use SPDIF in for HDMI audio, you get the same
+audio stream.
+
+> Well, I did more tests:
+>
+> - i2s or s/pdif input by the tda998x work fine with the internal dco
+
+Based on the patches you sent me, you do not enable SPDIF playback at
+all. Are you aware of that?
+
+> - the pinmux seems correct:
+>
+> device f10b4000.audio-controller
+> state default
+> type MUX_GROUP (2)
+> controlling device f10d0200.pin-ctrl
+> group mpp_audio1
+> function i2s1/spdifo
+>
+> device f10b4000.audio-controller
+> state default
+> type MUX_GROUP (2)
+> controlling device f10d0200.pin-ctrl
+> group mpp13
+> function audio1
+>
+> - I tried both <&si5351 1> and <&si5351 2>, and I get no sound with the
+>    external clock.
+
+As stated above, with <&si5351 2> I can playback both 44k1 and 48k over
+optical SPDIF. Haven't tested HDMI, but if that doesn't work, it's not
+related to extclk.
+
+Sebastian
+
+> - when running vlc with the external clock, the flux towards the
+>    kirkwood driver is blocked and there is no sound interrupt.
+>
+>   47:          0  main-interrupt-ctrl  21  kirkwood-i2s
+>
 
