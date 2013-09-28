@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750994Ab3I1EBs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 00:01:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48227 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3I1EBq (ORCPT
+	id S1751262Ab3I1ER5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 00:17:57 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:55462 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab3I1ERz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 00:01:46 -0400
-Date: Fri, 27 Sep 2013 21:02:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Fix "cannot create duplicate filename"
- problems
-Message-ID: <20130928040257.GA21630@kroah.com>
-References: <1380340666.2451.4.camel@neuromancer.tessier-ashpool>
+	Sat, 28 Sep 2013 00:17:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380340666.2451.4.camel@neuromancer.tessier-ashpool>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380340311-4630-1-git-send-email-khoroshilov@ispras.ru>
+References: <1380340311-4630-1-git-send-email-khoroshilov@ispras.ru>
+Date: Sat, 28 Sep 2013 01:17:54 -0300
+Message-ID: <CAOMZO5DE0OdXhWNEr2HAswvgryBqP8VNk3+vanwsi38L6pL9OA@mail.gmail.com>
+Subject: Re: [PATCH] carl9170: fix leaks at failure path in carl9170_usb_probe()
+From: Fabio Estevam <festevam@gmail.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ldv-project@linuxtesting.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 05:57:46AM +0200, Stefan Achatz wrote:
-> Fixing some wrong macro stringification/concatenation.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hid-roccat-kone.c     |    2 +-
->  drivers/hid/hid-roccat-koneplus.c |    4 ++--
->  drivers/hid/hid-roccat-kovaplus.c |    4 ++--
->  drivers/hid/hid-roccat-pyra.c     |    4 ++--
->  4 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-> index 602c188..6101816 100644
-> --- a/drivers/hid/hid-roccat-kone.c
-> +++ b/drivers/hid/hid-roccat-kone.c
-> @@ -382,7 +382,7 @@ static ssize_t kone_sysfs_write_profilex(struct file *fp,
->  }
->  #define PROFILE_ATTR(number)					\
->  static struct bin_attribute bin_attr_profile##number = {	\
-> -	.attr = { .name = "profile##number", .mode = 0660 },	\
-> +	.attr = { .name = "profile" #number, .mode = 0660 },	\
+On Sat, Sep 28, 2013 at 12:51 AM, Alexey Khoroshilov
+<khoroshilov@ispras.ru> wrote:
 
-Ugh, very sorry about that, I hate macros in C at times :)
+> -       return request_firmware_nowait(THIS_MODULE, 1, CARL9170FW_NAME,
+> +       err = request_firmware_nowait(THIS_MODULE, 1, CARL9170FW_NAME,
+>                 &ar->udev->dev, GFP_KERNEL, ar, carl9170_usb_firmware_step2);
+> +       if (err) {
+> +               usb_put_dev(udev);
+> +               usb_put_dev(udev);
 
-Jiri, can you take this through your tree, or I can if you want, it
-needs to go in for 3.12-final.
+You are doing the same free twice.
 
-If yours, feel free to add:
-
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Stefan, thanks for fixing my bugs, it's much appreciated.
-
-greg k-h
+I guess you meant to also free: usb_put_dev(ar->udev)
