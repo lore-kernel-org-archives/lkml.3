@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab3I1TnR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 15:43:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48655 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679Ab3I1TnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 15:43:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130928192545.GB8228@gmail.com>
-References: <20130927143249.GD4422@pd.tnic> <20130927143554.GF4422@pd.tnic> <20130928082542.GA18198@gmail.com> <20130928102305.GA5956@pd.tnic> <20130928134449.GB26931@gmail.com> <20130928174749.GE5956@pd.tnic> <20130928175444.GA4402@gmail.com> <20130928180459.GF5956@pd.tnic> <20130928181236.GA4999@gmail.com> <20130928191500.GG5956@pd.tnic> <20130928192545.GB8228@gmail.com>
+	id S1754879Ab3I1Tny (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 15:43:54 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:36790 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab3I1Tnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 15:43:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 28 Sep 2013 12:42:37 -0700
-To: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
-        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        guohanjun@huawei.com, paul.gortmaker@windriver.com,
-        linux-tip-commits@vger.kernel.org
-Message-ID: <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com>
+In-Reply-To: <20130928193739.GA8642@gmail.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+	<20130928074144.GA17773@gmail.com>
+	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+	<20130928192123.GA8228@gmail.com>
+	<20130928193739.GA8642@gmail.com>
+Date: Sat, 28 Sep 2013 12:43:51 -0700
+X-Google-Sender-Auth: vYBFGFLgCSVm-uNfAM35URziHd4
+Message-ID: <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
+Subject: Re: [PATCH] anon_vmas: Convert the rwsem to an rwlock_t
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How about:
+On Sat, Sep 28, 2013 at 12:37 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> -               down_write_nest_lock(&anon_vma->root->rwsem, &mm->mmap_sem);
+> +               down_write_nest_lock(&anon_vma->root->rwlock, &mm->mmap_sem);
 
-m = 10;
-d = 1;
+That's just completely bogus, and cannot work.
 
-while ( val >= m ) {
-        m *= 10;
-        d++;
-}
+Maybe just a "write_lock(&anon_vma->root->rwlock)" (which is just
+anon_vma_unlock_write(anon_vma)). But I think we might have a lockdep
+issue. I'm not quite sure what's up with the nesting there.
 
-... and not have a *divide* in there?
+> -       if (rwsem_is_locked(&anon_vma->root->rwsem)) {
+> +       if (write_can_lock(&anon_vma->root->rwlock)) {
+>                 anon_vma_lock_write(anon_vma);
+>                 anon_vma_unlock_write(anon_vma);
+>         }
 
-Man, entering code on a cell phone sucks...
-        
+That's the wrong way around. It should be
 
-Ingo Molnar <mingo@kernel.org> wrote:
->
->* Borislav Petkov <bp@alien8.de> wrote:
->
->> @@ -2,6 +2,10 @@ int num_digits(int val)
->>  {
->>  	int digits = 0;
->>  
->> +	/* Handle special case */
->> +	if (!val)
->> +		return 1;
->> +
->>  	while (val) {
->>  		val /= 10;
->>  		digits++;
->
->Hm. I suspect this could then be written as:
->
->int num_digits(int val)
->{
->	int digits = 0;
->
->	do {
->		val /= 10;
->		digits++;
->	} while (val);
->
->	return digits;
->}
->
->No ugly special case! :-)
->
->Thanks,
->
->	Ingo
+        if (!write_can_lock(&anon_vma->root->rwlock)) {
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+so some more testing definitely needed.
+
+          Linus
