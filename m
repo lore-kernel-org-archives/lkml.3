@@ -1,52 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab3I1Unx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 16:43:53 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:47110 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab3I1Unu (ORCPT
+	id S1755207Ab3I1Uqm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 16:46:42 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:37534 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab3I1Uqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 16:43:50 -0400
+	Sat, 28 Sep 2013 16:46:38 -0400
+Date: Sat, 28 Sep 2013 13:46:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20130928204630.GG9093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925174307.GA3220@laptop.programming.kicks-ass.net>
+ <20130925175055.GA25914@redhat.com>
+ <20130925184015.GC3657@laptop.programming.kicks-ass.net>
+ <20130925212200.GA7959@linux.vnet.ibm.com>
+ <20130926111042.GS3081@twins.programming.kicks-ass.net>
+ <20130926165840.GA863@redhat.com>
+ <20130926175016.GI3657@laptop.programming.kicks-ass.net>
+ <20130927181532.GA8401@redhat.com>
+ <20130927204116.GJ15690@laptop.programming.kicks-ass.net>
+ <20130928124859.GA13425@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130928202728.GK13318@ZenIV.linux.org.uk>
-References: <20130928202728.GK13318@ZenIV.linux.org.uk>
-Date: Sat, 28 Sep 2013 13:43:49 -0700
-X-Google-Sender-Auth: dAcsEJebaIrVhzb2cMs3E5ZMmT8
-Message-ID: <CA+55aFzrjiM6bgqNgdckJGAZks2fR8ZD+R_5AqxvrnS64DD3ow@mail.gmail.com>
-Subject: Re: [rfc][possible solution] RCU vfsmounts
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130928124859.GA13425@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13092820-0928-0000-0000-00000219890B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 1:27 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->         FWIW, I think I have a kinda-sorta solution for that and I'd like
-> to hear your comments on that.  I want to replace vfsmount_lock with seqlock
-> and store additional seq number in nameidata, set to vfsmount_seq in the
-> beginning and rechecked in unlazy_walk/complete_walk.
+On Sat, Sep 28, 2013 at 02:48:59PM +0200, Oleg Nesterov wrote:
+> On 09/27, Peter Zijlstra wrote:
+> >
+> > On Fri, Sep 27, 2013 at 08:15:32PM +0200, Oleg Nesterov wrote:
+> >
+> > > > +static bool cpuhp_readers_active_check(void)
+> > > >  {
+> > > > +	unsigned int seq = per_cpu_sum(cpuhp_seq);
+> > > > +
+> > > > +	smp_mb(); /* B matches A */
+> > > > +
+> > > > +	/*
+> > > > +	 * In other words, if we see __get_online_cpus() cpuhp_seq increment,
+> > > > +	 * we are guaranteed to also see its __cpuhp_refcount increment.
+> > > > +	 */
+> > > >
+> > > > +	if (per_cpu_sum(__cpuhp_refcount) != 0)
+> > > > +		return false;
+> > > >
+> > > > +	smp_mb(); /* D matches C */
+> > >
+> > > It seems that both barries could be smp_rmb() ? I am not sure the comments
+> > > from srcu_readers_active_idx_check() can explain mb(),
+> 
+> To avoid the confusion, I meant "those comments can't explain mb()s here,
+> in cpuhp_readers_active_check()".
+> 
+> > > note that
+> > > __srcu_read_lock() always succeeds unlike get_cpus_online().
+> 
+> And this cput_hotplug_ and synchronize_srcu() differ, see below.
+> 
+> > I see what you mean; cpuhp_readers_active_check() is all purely reads;
+> > there are no writes to order.
+> >
+> > Paul; is there any argument for the MB here as opposed to RMB;
+> 
+> Yes, Paul, please ;)
 
-Yes, that would be lovely.
+Sorry to be slow -- I will reply by end of Monday Pacific time at the
+latest.  I need to allow myself enough time so that it seems new...
 
->         The obvious variant would be to have unlazy_walk/complete_walk to
-> grab refcount, check vfsmount_seq and mntput on mismatch.  The trouble
-> with that is race with what would've been the final mntput() done by
-> umount(2); complete_walk() would drop that temporary reference and
-> fail, all right, but... we would get a umount(2) returning without having
-> actually shut the filesystem down.  Said shutdown would happen in whoever
-> had been doing pathname resolution that stepped into the race.
+Also I might try some mechanical proofs of parts of it.
 
-Sounds reasonable to to me.
+							Thanx, Paul
 
-Side note: I really wish there was some way to avoid having to
-finalize the vfsmount entirely for some common things. For example,
-"[l]stat[at]()" really doesn't need it for the common cases (network
-filesystems may need to revalidate), and is a very critical operation,
-and we *could* just look up the inode under RCU and never finalize the
-dentry _or_ the vfsmount. However, very annoyingly, the security layer
-wants the vfsmount, and we don't know if that is RCU-safe...
+> > and if
+> > not should we change both these and SRCU?
+> 
+> I guess that SRCU is more "complex" in this respect. IIUC,
+> cpuhp_readers_active_check() needs "more" barriers because if
+> synchronize_srcu() succeeds it needs to synchronize with the new readers
+> which call srcu_read_lock/unlock() "right now". Again, unlike cpu-hotplug
+> srcu never blocks the readers, srcu_read_*() always succeeds.
+> 
+> 
+> 
+> Hmm. I am wondering why __srcu_read_lock() needs ACCESS_ONCE() to increment
+> ->c and ->seq. A plain this_cpu_inc() should be fine?
+> 
+> And since it disables preemption, why it can't use __this_cpu_inc() to inc
+> ->c[idx]. OK, in general __this_cpu_inc() is not irq-safe (rmw) so we can't
+> do __this_cpu_inc(seq[idx]), c[idx] should be fine? If irq does srcu_read_lock()
+> it should also do _unlock.
+> 
+> But this is minor/offtopic.
+> 
+> > > >  void cpu_hotplug_done(void)
+> > > >  {
+> ...
+> > > > +	/*
+> > > > +	 * Wait for any pending readers to be running. This ensures readers
+> > > > +	 * after writer and avoids writers starving readers.
+> > > > +	 */
+> > > > +	wait_event(cpuhp_writer, !atomic_read(&cpuhp_waitcount));
+> > > >  }
+> > >
+> > > OK, to some degree I can understand "avoids writers starving readers"
+> > > part (although the next writer should do synchronize_sched() first),
+> > > but could you explain "ensures readers after writer" ?
+> >
+> > Suppose reader A sees state == BLOCK and goes to sleep; our writer B
+> > does cpu_hotplug_done() and wakes all pending readers. If for some
+> > reason A doesn't schedule to inc ref until B again executes
+> > cpu_hotplug_begin() and state is once again BLOCK, A will not have made
+> > any progress.
+> 
+> Yes, yes, thanks, this is clear. But this explains "writers starving readers".
+> And let me repeat, if B again executes cpu_hotplug_begin() it will do
+> another synchronize_sched() before it sets BLOCK, so I am not sure we
+> need this "in practice".
+> 
+> I was confused by "ensures readers after writer", I thought this means
+> we need the additional synchronization with the readers which are going
+> to increment cpuhp_waitcount, say, some sort of barries.
+> 
+> Please note that this wait_event() adds a problem... it doesn't allow
+> to "offload" the final synchronize_sched(). Suppose a 4k cpu machine
+> does disable_nonboot_cpus(), we do not want 2 * 4k * synchronize_sched's
+> in this case. We can solve this, but this wait_event() complicates
+> the problem.
+> 
+> Oleg.
+> 
 
-                Linus
