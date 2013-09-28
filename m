@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3I1UNY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 16:13:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18606 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3I1UNW (ORCPT
+	id S1755086Ab3I1UOg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 16:14:36 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53017 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab3I1UOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 16:13:22 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] PCI: Workaround missing pci_set_master in pci drivers
-Date: Sat, 28 Sep 2013 13:13:07 -0700
-Message-Id: <1380399187-4962-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
+	Sat, 28 Sep 2013 16:14:34 -0400
+MIME-Version: 1.0
 In-Reply-To: <1380337550.27811.71.camel@pasglop>
-References: <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+References: <1380270519.27811.10.camel@pasglop>
+	<CAE9FiQVkW7d7vFx_kPJG-FEvO71SZjZmpR+dnwVm61wkYK=0YA@mail.gmail.com>
+	<CA+55aFyDfMdAeaniQwkoeW6F-xd3JxrzGYwtFb6N9+NA6aRCMg@mail.gmail.com>
+	<1380318405.27811.37.camel@pasglop>
+	<CAE9FiQXXvkfTak6oEpUog_RYs_Gwpdji7N5UJ=R11Q61==N97A@mail.gmail.com>
+	<1380321480.27811.53.camel@pasglop>
+	<CAE9FiQWm7ALPO5k_2nV+fuZw4oNNiw+_PEx8EWkb52ymN+EYUg@mail.gmail.com>
+	<1380323960.27811.67.camel@pasglop>
+	<CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
+	<1380337550.27811.71.camel@pasglop>
+Date: Sat, 28 Sep 2013 13:14:33 -0700
+X-Google-Sender-Auth: 5lfB7zZr5MsGXuODEjGIhmFOzbA
+Message-ID: <CAE9FiQUnwmANf5x8rw5=QViyVPdi0FLMpSGGnO9u-Twp_YXMpg@mail.gmail.com>
+Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
+From: Yinghai Lu <yinghai@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BenH found:
-| 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-| PCI: Delay enabling bridges until they're needed
+On Fri, Sep 27, 2013 at 8:05 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Fri, 2013-09-27 at 16:44 -0700, Yinghai Lu wrote:
+>
+> In the meantime, can you properly submit the other one with the warning
+> to Linus ? It will make things more robust overall...
 
-break PCI on powerpc.  The reason is that the PCIe port driver will
-call pci_enable_device() on the bridge, so device enabled (but skip
-pci_set_master because pcie_port_auto and no acpi on powerpc ).
-
-Because of that, pci_enable_bridge() later on (called as a result of the
-child device driver doing pci_enable_device) will see the bridge as
-already enabled and will not call pci_set_master() on it.
-
-Fixed by add checking in pci_enable_bridge, and call pci_set_master
-if driver skip that.
-That will make the code more robot and wade off problem for missing
-pci_set_master in drivers.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- drivers/pci/pci.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/pci/pci.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.c
-+++ linux-2.6/drivers/pci/pci.c
-@@ -1156,8 +1156,14 @@ static void pci_enable_bridge(struct pci
- 
- 	pci_enable_bridge(dev->bus->self);
- 
--	if (pci_is_enabled(dev))
-+	if (pci_is_enabled(dev)) {
-+		if (!dev->is_busmaster) {
-+			dev_warn(&dev->dev, "driver skip pci_set_master, fix it!\n");
-+			pci_set_master(dev);
-+		}
- 		return;
-+	}
-+
- 	retval = pci_enable_device(dev);
- 	if (retval)
- 		dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n",
+https://patchwork.kernel.org/patch/2959121/
