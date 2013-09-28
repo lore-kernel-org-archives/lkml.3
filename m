@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab3I1TZw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 15:25:52 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:41319 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3I1TZs (ORCPT
+	id S1754694Ab3I1Tdk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 15:33:40 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:52531 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab3I1Tdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 15:25:48 -0400
-Date: Sat, 28 Sep 2013 21:25:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, huawei.libin@huawei.com,
-        wangyijing@huawei.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        guohanjun@huawei.com, paul.gortmaker@windriver.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
-Message-ID: <20130928192545.GB8228@gmail.com>
-References: <20130927143249.GD4422@pd.tnic>
- <20130927143554.GF4422@pd.tnic>
- <20130928082542.GA18198@gmail.com>
- <20130928102305.GA5956@pd.tnic>
- <20130928134449.GB26931@gmail.com>
- <20130928174749.GE5956@pd.tnic>
- <20130928175444.GA4402@gmail.com>
- <20130928180459.GF5956@pd.tnic>
- <20130928181236.GA4999@gmail.com>
- <20130928191500.GG5956@pd.tnic>
+	Sat, 28 Sep 2013 15:33:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130928191500.GG5956@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130928192123.GA8228@gmail.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+	<20130928074144.GA17773@gmail.com>
+	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+	<20130928192123.GA8228@gmail.com>
+Date: Sat, 28 Sep 2013 12:33:36 -0700
+X-Google-Sender-Auth: zNzeNe836bDFImxtWTusDL8Edns
+Message-ID: <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 28, 2013 at 12:21 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> If we do that then I suspect the next step will be queued rwlocks :-/ The
+> current rwlock_t implementation is rather primitive by modern standards.
+> (We'd probably have killed rwlock_t long ago if not for the
+> tasklist_lock.)
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Yeah, I'm not happy about or rwlocks. That's one lock that currently
+is so broken that I think we could easily argue for making that one
+queued.
 
-> @@ -2,6 +2,10 @@ int num_digits(int val)
->  {
->  	int digits = 0;
->  
-> +	/* Handle special case */
-> +	if (!val)
-> +		return 1;
-> +
->  	while (val) {
->  		val /= 10;
->  		digits++;
+Waiman had a qrwlock series that looked reasonable, and I think his
+later versions were drop-in replacements (ie they automatically just
+did the RightThing(tm) wrt interrupts taking a recursive read lock - I
+objected to the first versions that required that to be stated
+explicitly).
 
-Hm. I suspect this could then be written as:
+I think Waiman's patches (even the later ones) made the queued rwlocks
+be a side-by-side implementation with the old rwlocks, and I think
+that was just being unnecessarily careful. It might be useful for
+testing to have a config option to switch between the two, but we
+might as well go all the way.
 
-int num_digits(int val)
-{
-	int digits = 0;
+The old rwlock's really have been a disappointment - they are slower
+than spinlocks, and seldom/never end up scaling any better.  Their
+main advantage was literally the irq behavior - allowing readers to
+happen without the expense of worrying about irq's.
 
-	do {
-		val /= 10;
-		digits++;
-	} while (val);
-
-	return digits;
-}
-
-No ugly special case! :-)
-
-Thanks,
-
-	Ingo
+              Linus
