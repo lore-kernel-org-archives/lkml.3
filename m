@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3I1AON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Sep 2013 20:14:13 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:55919 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754204Ab3I1AOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Sep 2013 20:14:10 -0400
-Date: Fri, 27 Sep 2013 20:13:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCHv4 02/10] mm: convert mm->nr_ptes to atomic_t
-Message-ID: <20130928001314.GQ856@cmpxchg.org>
-References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1380287787-30252-3-git-send-email-kirill.shutemov@linux.intel.com>
- <5245EEAD.7010901@linux.vnet.ibm.com>
- <20130927222451.3406EE0090@blue.fi.intel.com>
+	id S1754537Ab3I1ATu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Sep 2013 20:19:50 -0400
+Received: from wolff.to ([98.103.208.27]:43077 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753522Ab3I1ATr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Sep 2013 20:19:47 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Sep 2013 20:19:47 EDT
+Date: Fri, 27 Sep 2013 19:09:51 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jean Delvare <khali@linux-fr.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] kernel: replace strict_strto*() with kstrto*()
+Message-ID: <20130928000951.GA7019@wolff.to>
+References: <000401ce86b7$0463f580$0d2be080$@samsung.com>
+ <CAErSpo51GFB+yCuaHrwBqWjHxd0GboHgvWGov5pj4V6aGPfQHg@mail.gmail.com>
+ <20130927195353.3643398a@endymion.delvare>
+ <20130927131820.7fc04051.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20130927222451.3406EE0090@blue.fi.intel.com>
+In-Reply-To: <20130927131820.7fc04051.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 01:24:51AM +0300, Kirill A. Shutemov wrote:
-> Cody P Schafer wrote:
-> > On 09/27/2013 06:16 AM, Kirill A. Shutemov wrote:
-> > > With split page table lock for PMD level we can't hold
-> > > mm->page_table_lock while updating nr_ptes.
-> > >
-> > > Let's convert it to atomic_t to avoid races.
-> > >
-> > 
-> > > ---
-> > 
-> > > diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> > > index 84e0c56e1e..99f19e850d 100644
-> > > --- a/include/linux/mm_types.h
-> > > +++ b/include/linux/mm_types.h
-> > > @@ -339,6 +339,7 @@ struct mm_struct {
-> > >   	pgd_t * pgd;
-> > >   	atomic_t mm_users;			/* How many users with user space? */
-> > >   	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
-> > > +	atomic_t nr_ptes;			/* Page table pages */
-> > >   	int map_count;				/* number of VMAs */
-> > >
-> > >   	spinlock_t page_table_lock;		/* Protects page tables and some counters */
-> > > @@ -360,7 +361,6 @@ struct mm_struct {
-> > >   	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
-> > >   	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
-> > >   	unsigned long def_flags;
-> > > -	unsigned long nr_ptes;		/* Page table pages */
-> > >   	unsigned long start_code, end_code, start_data, end_data;
-> > >   	unsigned long start_brk, brk, start_stack;
-> > >   	unsigned long arg_start, arg_end, env_start, env_end;
-> > 
-> > Will 32bits always be enough here? Should atomic_long_t be used instead?
-> 
-> Good question!
-> 
-> On x86_64 we need one table to cover 2M (512 entries by 4k, 21 bits) of
-> virtual address space. Total size of virtual memory which can be covered
-> by 31-bit (32 - sign) nr_ptes is 52 bits (31 + 21).
-> 
-> Currently, on x86_64 with 4-level page tables we can use at most 48 bit of
-> virtual address space (only half of it available for userspace), so we
-> pretty safe here.
-> 
-> Although, it can be a potential problem, if (when) x86_64 will implement
-> 5-level page tables -- 57-bits of virtual address space.
-> 
-> Any thoughts?
+On Fri, Sep 27, 2013 at 13:18:20 -0700,
+   Andrew Morton <akpm@linux-foundation.org> wrote:
+>On Fri, 27 Sep 2013 19:53:53 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+>
+>> Andrew,
+>>
+>> On Fri, 27 Sep 2013 09:50:39 -0600, Bjorn Helgaas wrote:
+>> > There's some indication that this change might have broken handling of
+>> > signed types.  See
+>> > https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-September/111758.html
+>> > and https://bugzilla.kernel.org/show_bug.cgi?id=61811.
+>>
+>> It seems this is hurting more users than I would have expected, and
+>> people are spending significant amounts of time to figure out what the
+>> root cause to their problem is. May I suggest that my fix should find
+>> its way to Linus' tree rather sooner than later?
+>>
+>
+>Done.  I had to send that one by hand as I'm not at my desk...
 
-I'd just go with atomic_long_t to avoid having to worry about this in
-the first place.  It's been ulong forever and I'm not aware of struct
-mm_struct size being an urgent issue.  Cutting this type in half and
-adding overflow checks adds more problems than it solves.
+I just did a successful test of the patch from the mailing list. So it at 
+least solved the problem in my case.
