@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3I1MPB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 08:15:01 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:64192 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab3I1MO6 (ORCPT
+	id S1754893Ab3I1MPF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 08:15:05 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:34997 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab3I1MPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 08:14:58 -0400
+	Sat, 28 Sep 2013 08:15:01 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org
-Subject: [PATCH 1/5] mfd: max8925: Remove redundant of_match_ptr
-Date: Sat, 28 Sep 2013 17:44:45 +0530
-Message-Id: <1380370489-5488-1-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 2/5] mfd: tps65217: Remove redundant of_match_ptr
+Date: Sat, 28 Sep 2013 17:44:46 +0530
+Message-Id: <1380370489-5488-2-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380370489-5488-1-git-send-email-sachin.kamat@linaro.org>
+References: <1380370489-5488-1-git-send-email-sachin.kamat@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,22 +25,22 @@ Hence of_match_ptr() is not needed.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/mfd/max8925-i2c.c |    2 +-
+ drivers/mfd/tps65217.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-index de7fb80..176aa26 100644
---- a/drivers/mfd/max8925-i2c.c
-+++ b/drivers/mfd/max8925-i2c.c
-@@ -238,7 +238,7 @@ static struct i2c_driver max8925_driver = {
- 		.name	= "max8925",
+diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+index b8f4864..b7be0b2 100644
+--- a/drivers/mfd/tps65217.c
++++ b/drivers/mfd/tps65217.c
+@@ -245,7 +245,7 @@ static struct i2c_driver tps65217_driver = {
+ 	.driver		= {
+ 		.name	= "tps65217",
  		.owner	= THIS_MODULE,
- 		.pm     = &max8925_pm_ops,
--		.of_match_table = of_match_ptr(max8925_dt_ids),
-+		.of_match_table = max8925_dt_ids,
+-		.of_match_table = of_match_ptr(tps65217_of_match),
++		.of_match_table = tps65217_of_match,
  	},
- 	.probe		= max8925_probe,
- 	.remove		= max8925_remove,
+ 	.id_table	= tps65217_id_table,
+ 	.probe		= tps65217_probe,
 -- 
 1.7.9.5
 
