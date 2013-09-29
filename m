@@ -1,94 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3I2RxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 13:53:03 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53041 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab3I2RxB (ORCPT
+	id S1754996Ab3I2RyG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 13:54:06 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:51914 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3I2RyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 13:53:01 -0400
-Date: Sun, 29 Sep 2013 18:52:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: devicetree@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130929175236.GV19304@sirena.org.uk>
-References: <1380131272-16982-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20130925183201.GT3226@sirena.org.uk>
- <20130926152941.GQ3635@opensource.wolfsonmicro.com>
- <20130926175843.GS19304@sirena.org.uk>
- <20130928155308.GV3635@opensource.wolfsonmicro.com>
- <20130928225535.GQ19304@sirena.org.uk>
- <20130929141137.GW3635@opensource.wolfsonmicro.com>
+	Sun, 29 Sep 2013 13:54:02 -0400
+Message-ID: <52486938.4090009@gmail.com>
+Date: Sun, 29 Sep 2013 13:54:00 -0400
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GZxc/eAcyN/xQwfo"
-Content-Disposition: inline
-In-Reply-To: <20130929141137.GW3635@opensource.wolfsonmicro.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH] mfd: arizona: Update device tree regulator bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Linux-Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux Torvalds <torvalds@osdl.org>, Alan Cox <alan@redhat.com>
+Subject: [PATCH 1/1] x86_64: add config options to optimize for newer AMD
+ processors
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Austin S. Hemmelgarn <ahferroin7@gmail.com>
 
---GZxc/eAcyN/xQwfo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch adds Kconfig options to allow optimization for AMD family
+10h, AMD Bulldozer, and AMD Piledriver derived CPU's in version
+3.12-rc2.  These provide noticeable improvements over the K8 config
+option, and allow the kernel to take full advantage of AMD specific
+instruction set extensions, such as ABM, LZCNT, and POPCNT.
 
-On Sun, Sep 29, 2013 at 03:11:37PM +0100, Charles Keepax wrote:
-
-> There is currently only one other MFD driver (tps65910) which defines
-> the GPIOs on the main MFD node as we do in the Arizona driver and it
-> uses the 'hack' that I suggested in my first email of copying the
-> of_node.
-
-> tps65910_gpio->gpio_chip.of_node = tps65910->dev->of_node;
-
-Look where it's copying it to - this isn't the hack you were suggesting
-before.  What you were suggesting before was setting the of_node of the
-child struct device which is a managed thing that the driver core knows
-about, the device is the owner of the of_node hanging off it.  You would
-end up with the same of_node referenced from two struct devices which
-isn't clever.  The above is putting a pointer into the gpio_chip which
-is just telling gpiolib that it should use this of_node when it needs
-one, gpiolib won't try and lifecycle manage the of_node.
-
-> Looking around there seem to be quite a few drivers that copy
-> of_node pointers like this are we sure this isn't an acceptable
-> solution? I mean the arizona driver we know the components will
-> always be loaded as part of the MFD and thus will be freed before
-> the parent node.
-
-It's fine to reference an of_node, that's obviously something that will
-need to happen at some point in order to do anything useful with the
-data.
-
---GZxc/eAcyN/xQwfo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSSGjgAAoJELSic+t+oim9G7kP/0ZCoPEmMoaY4xuq2bZgjcgQ
-aLtONvcQuXfS46ikgwIFQu2B1nbGQekkAwC2UfqunJNzKwz4zRbZyWdBVVGJLKiC
-lyspzFNhUj6gn2ANiO6IIqNcBIIGxqfkVvYtzIFq7ZqbQXDklsVkqm61lbqA5SJM
-fRzIo33Q3FBKIvfZ9zvMm2SJ8gFp2goZ75wA0PRkChBMNMXUwTg4TzAoT+h0Wm8V
-qwntO92nCuduaeeTFLmVI2LbQsi1BMgFZvGMCa/xmkdSuDN72viAc6HEEsj40JcH
-sIs7uWeuyDi7/NwHoT1LWzKM6vPETpAYLuseBaxyZSSR69NReGtw6QqemcJCqiNA
-utvB6aKCkpN2UIrBYDyyMtTTCySuh/3lmmFOQWz5gvGbYslkZoz9fdVuOqxg92Rl
-DC9msb569pMGxRXpZuGJBMl7M4iR49pC0hAvQ17SbETIu3b2mM/s++XDKbJo0j//
-U2bXDQ6lVoc0tybYLt8BmOftS/1JiSiffVuWAP73IwlBCyFg8T3VFoK4zk66yrfs
-s/PFfnmVL9HpQoPFtwFtGNLCF5Y7MDmS/kHzwDFe5Vs01WOnHrWfgeN9DPDA5PLT
-4V+qvlzb+xGmhZf/n81/RKW0C4WM7zaay5JI7B2Vgg7xm/4yDvA7l9lMpYYZJu4A
-ziLl8YoPQTkuQSmpNT+j
-=KkL6
------END PGP SIGNATURE-----
-
---GZxc/eAcyN/xQwfo--
+Signed-Off-By: Austin S. Hemmelgarn <ahferroin7@gmail.com>
+---
+diff -uprN linux/arch/x86/Kconfig.cpu linux-new/arch/x86/Kconfig.cpu
+--- linux/arch/x86/Kconfig.cpu  2013-09-23 18:41:09.000000000 -0400
++++ linux-new/arch/x86/Kconfig.cpu      2013-09-28 21:31:35.782173832 -0400
+@@ -155,9 +155,9 @@ config MK7
+          flags to GCC.
+ 
+ config MK8
+-       bool "Opteron/Athlon64/Hammer/K8"
++       bool "Old Opteron/Athlon64/Hammer/K8"
+        ---help---
+-         Select this for an AMD Opteron or Athlon64 Hammer-family processor.
++         Select this for an AMD old 64-bit Opteron or Athlon64 Hammer-family processor.
+          Enables use of some extended instructions, and passes appropriate
+          optimization flags to GCC.
+ 
+@@ -269,6 +269,57 @@ config MATOM
+          accordingly optimized code. Use a recent GCC with specific Atom
+          support in order to fully benefit from selecting this option.
+ 
++config MAMDFAM10
++       bool "AMD Family 10h (Athlon II, Phenom II, and Opteron)"
++       depends on X86_64
++       ---help---
++
++         Select this for AMD Family 10h processors.
++         This includes Athlon II, Phenom II, early third-generation
++         Opterons, and a number of other Socket AM2, AM2+, AM3, and
++         Socket F processors.  CPU's in this series show cpu family
++         16 in /proc/cpuinfo.  Note that a kernel compiled with this
++         option may not run correctly on non-AMD processors.
++
++config MBULLDOZER
++       bool "AMD Bulldozer (FX and Opteron)"
++       depends on X86_64
++       ---help---
++
++         Select this for AMD Buldozer microarchitecture processors.
++         This includes the following CPUs:
++           FX-41x0
++           FX-61x0
++           FX-6200
++           FX-81x0
++           Opteron 32xx
++           Opteron 42xx
++           Opteron 62xx
++
++         Note that a kernel compiled with this option may not run
++         correctly on non-Bulldozer derived processors, if it runs at all.
++
++config MPILEDRIVER
++       bool "AMD Piledriver (FX, APU, and Opteron)"
++       depends on X86_64
++       ---help---
++
++         Select this for AMD Piledriver microarchitecture processors.
++         This includes the Following CPUs:
++           'Trinity' APUs
++           'Richland' APUs
++           FX-43xx
++           FX-63xx
++           FX-83xx
++           FX-9370
++           FX-9590
++           Opteron 33xx
++           Opteron 43xx
++           Opteron 63xx
++
++         Note that a kernel compiled with this option may not run
++         correctly on non-Piledriver derived processors, if it runs at all.
++
+ config GENERIC_CPU
+        bool "Generic-x86-64"
+        depends on X86_64
+@@ -300,7 +351,7 @@ config X86_INTERNODE_CACHE_SHIFT
+ config X86_L1_CACHE_SHIFT
+        int
+        default "7" if MPENTIUM4 || MPSC
+-       default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
++       default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || MAMDFAM10 || MBULLDOZER || MPILEDRIVER || X86_GENERIC || GENERIC_CPU
+        default "4" if MELAN || M486 || MGEODEGX1
+        default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
+ 
+diff -uprN linux/arch/x86/Makefile linux-new/arch/x86/Makefile
+--- linux/arch/x86/Makefile     2013-09-23 18:41:09.000000000 -0400
++++ linux-new/arch/x86/Makefile 2013-09-28 21:20:41.869697978 -0400
+@@ -68,6 +68,12 @@ else
+                 $(call cc-option,-march=core2,$(call cc-option,-mtune=generic))
+        cflags-$(CONFIG_MATOM) += $(call cc-option,-march=atom) \
+                $(call cc-option,-mtune=atom,$(call cc-option,-mtune=generic))
++        cflags-$(CONFIG_AMDFAM10) += $(call cc-option,-march=amdfam10) \
++                $(call cc-option,-mtune=amdfam10,$(call cc-option,-mtune=generic))
++        cflags-$(CONFIG_MBULLCOZER) += $(call cc-option,-march=bdver1) \
++                $(call cc-option,-mtune=bdver1,$(call cc-option,-mtune=generic))
++        cflags-$(CONFIG_MPILEDRIVER) += $(call cc-option,-march=bdver2) \
++                $(call cc-option,-mtune=bdver2,$(call cc-option,-mtune=generic))
+         cflags-$(CONFIG_GENERIC_CPU) += $(call cc-option,-mtune=generic)
+         KBUILD_CFLAGS += $(cflags-y)
+ 
