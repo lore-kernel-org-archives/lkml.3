@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab3I2TpP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:45:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59531 "EHLO
+	id S1756578Ab3I2TpL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:45:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59540 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755845Ab3I2T2q (ORCPT
+	with ESMTP id S1755854Ab3I2T2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:46 -0400
+	Sun, 29 Sep 2013 15:28:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [ 16/71] HID: lenovo-tpkbd: fix leak if tpkbd_probe_tp fails
-Date: Sun, 29 Sep 2013 12:27:28 -0700
-Message-Id: <20130929192644.640537469@linuxfoundation.org>
+Subject: [ 18/71] HID: sony: validate HID output report details
+Date: Sun, 29 Sep 2013 12:27:30 -0700
+Message-Id: <20130929192644.773254410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,58 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 0ccdd9e7476680c16113131264ad6597bd10299d upstream.
+commit 9446edb9a1740989cf6c20daf7510fb9a23be14a upstream.
 
-If tpkbd_probe_tp() bails out, the probe() function return an error,
-but hid_hw_stop() is never called.
+This driver must validate the availability of the HID output report and
+its size before it can write LED states via buzz_set_leds(). This stops
+a heap overflow that is possible if a device provides a malicious HID
+output report:
 
-fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=1003998
+[  108.171280] usb 1-1: New USB device found, idVendor=054c, idProduct=0002
+...
+[  117.507877] BUG kmalloc-192 (Not tainted): Redzone overwritten
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+CVE-2013-2890
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lenovo-tpkbd.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/hid/hid-sony.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/hid/hid-lenovo-tpkbd.c
-+++ b/drivers/hid/hid-lenovo-tpkbd.c
-@@ -406,22 +406,27 @@ static int tpkbd_probe(struct hid_device
- 	ret = hid_parse(hdev);
- 	if (ret) {
- 		hid_err(hdev, "hid_parse failed\n");
--		goto err_free;
-+		goto err;
- 	}
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -537,6 +537,10 @@ static int buzz_init(struct hid_device *
+ 	drv_data = hid_get_drvdata(hdev);
+ 	BUG_ON(!(drv_data->quirks & BUZZ_CONTROLLER));
  
- 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
- 	if (ret) {
- 		hid_err(hdev, "hid_hw_start failed\n");
--		goto err_free;
-+		goto err;
- 	}
- 
- 	uhdev = (struct usbhid_device *) hdev->driver_data;
- 
--	if (uhdev->ifnum == 1)
--		return tpkbd_probe_tp(hdev);
-+	if (uhdev->ifnum == 1) {
-+		ret = tpkbd_probe_tp(hdev);
-+		if (ret)
-+			goto err_hid;
-+	}
- 
- 	return 0;
--err_free:
-+err_hid:
-+	hid_hw_stop(hdev);
-+err:
- 	return ret;
- }
- 
++	/* Validate expected report characteristics. */
++	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 0, 0, 7))
++		return -ENODEV;
++
+ 	buzz = kzalloc(sizeof(*buzz), GFP_KERNEL);
+ 	if (!buzz) {
+ 		hid_err(hdev, "Insufficient memory, cannot allocate driver data\n");
 
 
