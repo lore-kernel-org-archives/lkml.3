@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3I2RTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 13:19:15 -0400
-Received: from mail1.vodafone.ie ([213.233.128.43]:20003 "EHLO
-	mail1.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab3I2RTO (ORCPT
+	id S1754875Ab3I2RUE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 13:20:04 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:49934 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270Ab3I2RUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 13:19:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBANhgSFJtTFzt/2dsb2JhbAANTIM/wUiBNoMZAQEBBDIBRhALDQsJFg8JAwIBAgFFBg0BBQIBAbBUknePUQeEIgOeWY5E
-Message-ID: <52486109.8040806@draigBrady.com>
-Date: Sun, 29 Sep 2013 18:19:05 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 29 Sep 2013 13:20:01 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: Thomas Meyer <thomas@m3y3r.de>, Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Copy on write hard links?
-References: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de> <1380117572.1974.81@driftwood> <1380119333.7453.4.camel@localhost.localdomain> <CAFLxGvzSSTbrw1HvoOaQBcPZxRbQmpiwjfbGCQtpLN7M9S93Fg@mail.gmail.com> <5247B928.2070307@draigBrady.com> <CAFLxGvzCp1JDL5yfuk7oRBGqi+re=NZWr-mg6nahs9NjFyDYwA@mail.gmail.com>
-In-Reply-To: <CAFLxGvzCp1JDL5yfuk7oRBGqi+re=NZWr-mg6nahs9NjFyDYwA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130929060601.GL13318@ZenIV.linux.org.uk>
+References: <20130928202728.GK13318@ZenIV.linux.org.uk>
+	<CA+55aFzrjiM6bgqNgdckJGAZks2fR8ZD+R_5AqxvrnS64DD3ow@mail.gmail.com>
+	<20130929060601.GL13318@ZenIV.linux.org.uk>
+Date: Sun, 29 Sep 2013 10:19:59 -0700
+X-Google-Sender-Auth: LtqcXp42FBJ8pKUk3eKVVyI5-Q8
+Message-ID: <CA+55aFyGY7hZTDhWiyWBe+oSkxd2GzoYWGhvXtGTyZKL-3PZ1w@mail.gmail.com>
+Subject: Re: [rfc][possible solution] RCU vfsmounts
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2013 08:14 AM, Richard Weinberger wrote:
-> On Sun, Sep 29, 2013 at 7:22 AM, Pádraig Brady <P@draigbrady.com> wrote:
->> On 09/25/2013 03:37 PM, richard -rw- weinberger wrote:
->>> On Wed, Sep 25, 2013 at 4:28 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
->>>> Am Mittwoch, den 25.09.2013, 08:59 -0500 schrieb Rob Landley:
->>>>> On 09/24/2013 01:36:56 PM, Thomas Meyer wrote:
->>>>>> Hi,
->>>>>>
->>>>>> Is there such a thing?
->>>>>
->>>>> In the kernel's vfs layer?
->>>>
->>>> Yes, that would be a nice feature!
->>>
->>> You mean reflinks?
->>> Currently only OCFS2 and btrfs support them.
->>> Both using a fs specific ioctl().
->>> IIRC GNU cp uses the btrfs specific one if the --reflink parameter is used.
->>
->> coreutils is waiting for a reflink syscall to materialize
->> rather than adding new per filesystem support
->> http://lwn.net/Articles/335380/
-> 
-> Is this the correct link? It's a proposal for a reflink() syscall.
-> But corrently both OCFS2 and btrfs are using ioctl().
-> 
-> Digging into GNU coreutils shows that their cp's
-> clone_file() only supports the btrfs ioctl().
-> I don't know what the GNU folks big plan is, maybe you know more. :-)
+On Sat, Sep 28, 2013 at 11:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Sigh...  Looks like there's a lot of fun in shrink_dcache_for_umount() -
+> at the very least, it needs to bump ->d_seq on everything, because with
+> that change we *can* walk into a filesystem in the middle of that.
+> We obviously don't want to slap rcu_barrier() into the final mntput() -
 
-The current coreutils plan is to not to call any more file system specific ioctls,
-rather waiting until a more general syscall is available.
+I have to say, that when I was working with the dcache lockref code, I
+absolutely _detested_ the magical shrink_dcache_for_umount() code that
+violated all the locking rules.
 
-thanks,
-Pádraig.
+So I actually wouldn't mind at all if that was all forced to follow
+all the same rules that the live filesystem code is forced to follow.
+Yes, yes, it's going to slow things down, but it's not like umount()
+is _that_ performance critical. And I think the whole "let's ignore
+locking rules" actually comes from back when we had one global
+dcache_lock: we used to have batching in order to not hold the
+dcache_lock over long periods, and then it got converted to the
+per-dentry locking, and then that got removed entirely with the whole
+RCU lookup etc.
+
+So I would be *entirely* ok with having
+shrink_dcache_for_umount_subtree() take the d_lock on the dentry as it
+shrinks it etc etc.
+
+                     Linus
