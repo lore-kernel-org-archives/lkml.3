@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3I2Til (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:38:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59791 "EHLO
+	id S1756700Ab3I2TjO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:39:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754972Ab3I2T3c (ORCPT
+	with ESMTP id S1756055Ab3I2T3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:32 -0400
+	Sun, 29 Sep 2013 15:29:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 51/71] drm/radeon/r6xx: add a stubbed out set_uvd_clocks callback
-Date: Sun, 29 Sep 2013 12:28:03 -0700
-Message-Id: <20130929192646.959632126@linuxfoundation.org>
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 48/71] tg3: Dont turn off led on 5719 serdes port 0
+Date: Sun, 29 Sep 2013 12:28:00 -0700
+Message-Id: <20130929192646.761613734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,70 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 1b9ba70a49ba92e910d8e5df702edf8c1858cecf upstream.
+commit 989038e217e94161862a959e82f9a1ecf8dda152 upstream.
 
-Certain r6xx boards use the same power state for both UVD
-and other things.  Since we don't support UVD on r6xx boards
-at the moment, there was no callback installed for setting
-the UVD clocks, however, on systems that use the same power
-state, this leads to a NULL pointer dereference.  Fill
-in a stubbed out implementation for now to avoid the crash.
+Turning off led on port 0 of the 5719 serdes causes all other ports to
+lose power and stop functioning. Add tg3_phy_led_bug() function to check
+for this condition. We use a switch() in tg3_phy_led_bug() for
+consistency with the tg3_phy_power_bug() function.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=66963
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600.c        |    5 +++++
- drivers/gpu/drm/radeon/radeon_asic.c |    2 ++
- drivers/gpu/drm/radeon/radeon_asic.h |    1 +
- 3 files changed, 8 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -119,6 +119,11 @@ u32 r600_get_xclk(struct radeon_device *
- 	return rdev->clock.spll.reference_freq;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -3030,6 +3030,19 @@ static bool tg3_phy_power_bug(struct tg3
+ 	return false;
  }
  
-+int r600_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk)
++static bool tg3_phy_led_bug(struct tg3 *tp)
 +{
-+	return 0;
++	switch (tg3_asic_rev(tp)) {
++	case ASIC_REV_5719:
++		if ((tp->phy_flags & TG3_PHYFLG_MII_SERDES) &&
++		    !tp->pci_fn)
++			return true;
++		return false;
++	}
++
++	return false;
 +}
 +
- /* get temperature in millidegrees */
- int rv6xx_get_temp(struct radeon_device *rdev)
+ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
  {
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -1146,6 +1146,7 @@ static struct radeon_asic rv6xx_asic = {
- 		.set_pcie_lanes = &r600_set_pcie_lanes,
- 		.set_clock_gating = NULL,
- 		.get_temperature = &rv6xx_get_temp,
-+		.set_uvd_clocks = &r600_set_uvd_clocks,
- 	},
- 	.dpm = {
- 		.init = &rv6xx_dpm_init,
-@@ -1257,6 +1258,7 @@ static struct radeon_asic rs780_asic = {
- 		.set_pcie_lanes = NULL,
- 		.set_clock_gating = NULL,
- 		.get_temperature = &rv6xx_get_temp,
-+		.set_uvd_clocks = &r600_set_uvd_clocks,
- 	},
- 	.dpm = {
- 		.init = &rs780_dpm_init,
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -405,6 +405,7 @@ int r600_mc_wait_for_idle(struct radeon_
- u32 r600_get_xclk(struct radeon_device *rdev);
- uint64_t r600_get_gpu_clock_counter(struct radeon_device *rdev);
- int rv6xx_get_temp(struct radeon_device *rdev);
-+int r600_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk);
- int r600_dpm_pre_set_power_state(struct radeon_device *rdev);
- void r600_dpm_post_set_power_state(struct radeon_device *rdev);
- /* rv6xx dpm */
+ 	u32 val;
+@@ -3077,8 +3090,9 @@ static void tg3_power_down_phy(struct tg
+ 		}
+ 		return;
+ 	} else if (do_low_power) {
+-		tg3_writephy(tp, MII_TG3_EXT_CTRL,
+-			     MII_TG3_EXT_CTRL_FORCE_LED_OFF);
++		if (!tg3_phy_led_bug(tp))
++			tg3_writephy(tp, MII_TG3_EXT_CTRL,
++				     MII_TG3_EXT_CTRL_FORCE_LED_OFF);
+ 
+ 		val = MII_TG3_AUXCTL_PCTL_100TX_LPWR |
+ 		      MII_TG3_AUXCTL_PCTL_SPR_ISOLATE |
 
 
