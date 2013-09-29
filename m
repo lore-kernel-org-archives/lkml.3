@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab3I2Tff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:35:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59833 "EHLO
+	id S1756124Ab3I2T3l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59777 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756131Ab3I2T3n (ORCPT
+	with ESMTP id S1756045Ab3I2T33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:43 -0400
+	Sun, 29 Sep 2013 15:29:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 34/71] drm/radeon/dpm: add reclocking quirk for ASUS K70AF
-Date: Sun, 29 Sep 2013 12:27:46 -0700
-Message-Id: <20130929192645.834412379@linuxfoundation.org>
+Subject: [ 47/71] drm/radeon/dpm: make sure dc performance level limits are valid (BTC-SI) (v2)
+Date: Sun, 29 Sep 2013 12:27:59 -0700
+Message-Id: <20130929192646.695545512@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,38 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f75195cac32bfd2ef07764bd370d3b788bd8b003 upstream.
+commit 1ff60ddb84bb9ff6fa182710c4e08b66badf918c upstream.
 
-The LCD has a relatively short vblank time (216us), but
-the card is able to reclock memory fine in that time.
+Check to make sure the dc limits are valid before using them.
+Some systems may not have a dc limits table.  In that case just
+use the ac limits.  This fixes hangs on systems when the power
+state is changed when on battery (dc) due to invalid performance
+state parameters.
+
+Should fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=68708
+
+v2: fix up limits in dpm_init()
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reported-by: normalrawr@gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rv770_dpm.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/btc_dpm.c |    6 ++++++
+ drivers/gpu/drm/radeon/ni_dpm.c  |    6 ++++++
+ drivers/gpu/drm/radeon/si_dpm.c  |    6 ++++++
+ 3 files changed, 18 insertions(+)
 
---- a/drivers/gpu/drm/radeon/rv770_dpm.c
-+++ b/drivers/gpu/drm/radeon/rv770_dpm.c
-@@ -2517,8 +2517,16 @@ u32 rv770_dpm_get_mclk(struct radeon_dev
- bool rv770_dpm_vblank_too_short(struct radeon_device *rdev)
- {
- 	u32 vblank_time = r600_dpm_get_vblank_time(rdev);
-+	u32 switch_limit = 300;
- 
--	if (vblank_time < 300)
-+	/* quirks */
-+	/* ASUS K70AF */
-+	if ((rdev->pdev->device == 0x9553) &&
-+	    (rdev->pdev->subsystem_vendor == 0x1043) &&
-+	    (rdev->pdev->subsystem_device == 0x1c42))
-+		switch_limit = 200;
-+
-+	if (vblank_time < switch_limit)
- 		return true;
+--- a/drivers/gpu/drm/radeon/btc_dpm.c
++++ b/drivers/gpu/drm/radeon/btc_dpm.c
+@@ -2699,6 +2699,12 @@ int btc_dpm_init(struct radeon_device *r
  	else
- 		return false;
+ 		rdev->pm.dpm.dyn_state.sclk_mclk_delta = 10000;
+ 
++	/* make sure dc limits are valid */
++	if ((rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.sclk == 0) ||
++	    (rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.mclk == 0))
++		rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc =
++			rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac;
++
+ 	return 0;
+ }
+ 
+--- a/drivers/gpu/drm/radeon/ni_dpm.c
++++ b/drivers/gpu/drm/radeon/ni_dpm.c
+@@ -4270,6 +4270,12 @@ int ni_dpm_init(struct radeon_device *rd
+ 
+ 	ni_pi->use_power_boost_limit = true;
+ 
++	/* make sure dc limits are valid */
++	if ((rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.sclk == 0) ||
++	    (rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.mclk == 0))
++		rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc =
++			rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac;
++
+ 	return 0;
+ }
+ 
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -6401,6 +6401,12 @@ int si_dpm_init(struct radeon_device *rd
+ 
+ 	si_initialize_powertune_defaults(rdev);
+ 
++	/* make sure dc limits are valid */
++	if ((rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.sclk == 0) ||
++	    (rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.mclk == 0))
++		rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc =
++			rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac;
++
+ 	return 0;
+ }
+ 
 
 
