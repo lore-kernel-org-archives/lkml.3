@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab3I2UBO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:01:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59245 "EHLO
+	id S1757413Ab3I2UBf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:01:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab3I2T1g (ORCPT
+	with ESMTP id S1755915Ab3I2UBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 08/22] drm/ttm: fix the tt_populated check in ttm_tt_destroy()
-Date: Sun, 29 Sep 2013 12:26:54 -0700
-Message-Id: <20130929191159.456302102@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
-References: <20130929191158.889693326@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Sun, 29 Sep 2013 16:01:31 -0400
+Date: Sun, 29 Sep 2013 13:01:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] Driver core fixes for 3.12-rc3
+Message-ID: <20130929200132.GA31045@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
 
-------------------
+  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
 
-From: Ben Skeggs <bskeggs@redhat.com>
+are available in the git repository at:
 
-commit 182b17c8dc4e83aab000ce86587b6810e515da87 upstream.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.12-rc3
 
-After a vmalloc failure in ttm_dma_tt_alloc_page_directory(),
-ttm_dma_tt_init() will call ttm_tt_destroy() to cleanup, and end up
-inside the driver's unpopulate() hook when populate() has never yet
-been called.
+for you to fetch changes up to f123db8e9d6c84c863cb3c44d17e61995dc984fb:
 
-On nouveau, the first issue to be hit because of this is that
-dma_address[] may be a NULL pointer.  After working around this,
-ttm_pool_unpopulate() may potentially hit the same issue with
-the pages[] array.
+  driver core : Fix use after free of dev->parent in device_shutdown (2013-09-26 14:46:11 -0700)
 
-It seems to make more sense to avoid calling unpopulate on already
-unpopulated TTMs than to add checks to all the implementations.
+----------------------------------------------------------------
+Driver core / sysfs fixes for 3.12-rc3
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Here are 2 fixes for 3.12-rc3.  One fixes a sysfs problem with mounting caused
+by 3.12-rc1, and the other is a bug reported by the chromeos developers with
+the driver core.
+
+Both have been in linux-next for a bit.
+
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/gpu/drm/ttm/ttm_tt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+----------------------------------------------------------------
+Benson Leung (1):
+      driver core : Fix use after free of dev->parent in device_shutdown
 
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -170,7 +170,7 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
- 		ttm_tt_unbind(ttm);
- 	}
- 
--	if (likely(ttm->pages != NULL)) {
-+	if (ttm->state == tt_unbound) {
- 		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
- 	}
- 
+Eric W. Biederman (1):
+      sysfs: Allow mounting without CONFIG_NET
 
-
+ drivers/base/core.c | 14 +++++++-------
+ lib/kobject.c       |  5 +----
+ 2 files changed, 8 insertions(+), 11 deletions(-)
