@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab3I2UCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:02:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60112 "EHLO
+	id S1757450Ab3I2UCu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:02:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab3I2UC3 (ORCPT
+	with ESMTP id S1755376Ab3I2T1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 16:02:29 -0400
-Date: Sun, 29 Sep 2013 13:02:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/Serial fixess for 3.12-rc3
-Message-ID: <20130929200230.GA31185@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 29 Sep 2013 15:27:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Santos <daniel.santos@pobox.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 22/22] kernel-doc: bugfix - multi-line macros
+Date: Sun, 29 Sep 2013 12:27:08 -0700
+Message-Id: <20130929191200.404005751@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
+References: <20130929191158.889693326@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
+------------------
 
-are available in the git repository at:
+From: Daniel Santos <daniel.santos@pobox.com>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.12-rc3
+commit 654784284430bf2739985914b65e09c7c35a7273 upstream.
 
-for you to fetch changes up to 2332575ef10a1bcf5ca485a6bf043831be11c7a0:
+Prior to this patch the following code breaks:
 
-  tty: ar933x_uart: move devicetree binding documentation (2013-09-26 12:33:49 -0700)
+/**
+ * multiline_example - this breaks kernel-doc
+ */
+ #define multiline_example( \
+myparam)
 
-----------------------------------------------------------------
-TTY/Serial fixes for 3.12-rc3
+Producing this error:
 
-Here are some serial at tty driver fixes for 3.12-rc3
+Error(somefile.h:983): cannot understand prototype: 'multiline_example( \ '
 
-The serial driver fixes some kref leaks, documentation is moved to the proper
-places, and the tty and n_tty fixes resolve some reported regressions.  There
-is still one outstanding tty regression fix that isn't in here yet, as I want
-to test it out some more, it will be sent for 3.12-rc4 if it checks out.
+This patch fixes the issue by appending all lines ending in a blackslash
+(optionally followed by whitespace), removing the backslash and any
+whitespace after it prior to appending (just like the C pre-processor
+would).
 
+This fixes a break in kerel-doc introduced by the additions to rbtree.h.
+
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-----------------------------------------------------------------
-Gabor Juhos (1):
-      tty: ar933x_uart: move devicetree binding documentation
+---
+ scripts/kernel-doc |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Johan Hovold (4):
-      serial: tegra: fix tty-kref leak
-      serial: pch_uart: fix tty-kref leak in rx-error path
-      serial: pch_uart: fix tty-kref leak in dma-rx path
-      serial: pch_uart: remove unnecessary tty_port_tty_get
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -2045,6 +2045,9 @@ sub process_file($) {
+ 
+     $section_counter = 0;
+     while (<IN>) {
++	while (s/\\\s*$//) {
++	    $_ .= <IN>;
++	}
+ 	if ($state == 0) {
+ 	    if (/$doc_start/o) {
+ 		$state = 1;		# next line is always the function name
 
-Peter Hurley (2):
-      n_tty: Fix EOF push index when termios changes
-      tty: Fix SIGTTOU not sent with tcflush()
 
- .../bindings/{tty => }/serial/qca,ar9330-uart.txt           |  0
- drivers/tty/n_tty.c                                         |  3 +--
- drivers/tty/serial/pch_uart.c                               | 13 +++----------
- drivers/tty/serial/serial-tegra.c                           |  4 +++-
- drivers/tty/tty_ioctl.c                                     |  3 +++
- 5 files changed, 10 insertions(+), 13 deletions(-)
- rename Documentation/devicetree/bindings/{tty => }/serial/qca,ar9330-uart.txt (100%)
