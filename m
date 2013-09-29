@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3I2UHo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:07:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59144 "EHLO
+	id S1757551Ab3I2UII (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:08:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab3I2T1O (ORCPT
+	with ESMTP id S1755190Ab3I2T1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:14 -0400
+	Sun, 29 Sep 2013 15:27:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 12/17] perf: Clarify perf_cpu_context::active_pmu usage by renaming it to ::unique_pmu
-Date: Sun, 29 Sep 2013 12:26:51 -0700
-Message-Id: <20130929190757.981485725@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, Tejun Heo <tj@kernel.org>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [ 11/17] cgroup: fail if monitored file and event_control are in different cgroup
+Date: Sun, 29 Sep 2013 12:26:50 -0700
+Message-Id: <20130929190757.915037902@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -28,89 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 3f1f33206c16c7b3839d71372bc2ac3f305aa802 upstream.
+commit f169007b2773f285e098cb84c74aac0154d65ff7 upstream.
 
-Stephane thought the perf_cpu_context::active_pmu name confusing and
-suggested using 'unique_pmu' instead.
+If we pass fd of memory.usage_in_bytes of cgroup A to cgroup.event_control
+of cgroup B, then we won't get memory usage notification from A but B!
 
-This pointer is a pointer to a 'random' pmu sharing the cpuctx
-instance, therefore limiting a for_each_pmu loop to those where
-cpuctx->unique_pmu matches the pmu we get a loop over unique cpuctx
-instances.
+What's worse, if A and B are in different mount hierarchy, we'll end up
+accessing NULL pointer!
 
-Suggested-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-kxyjqpfj2fn9gt7kwu5ag9ks@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Disallow this kind of invalid usage.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/perf_event.h |    2 +-
- kernel/events/core.c       |   12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ kernel/cgroup.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -939,7 +939,7 @@ struct perf_cpu_context {
- 	int				exclusive;
- 	struct list_head		rotation_list;
- 	int				jiffies_interval;
--	struct pmu			*active_pmu;
-+	struct pmu			*unique_pmu;
- 	struct perf_cgroup		*cgrp;
- };
- 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4579,7 +4579,7 @@ static void perf_event_task_event(struct
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
--		if (cpuctx->active_pmu != pmu)
-+		if (cpuctx->unique_pmu != pmu)
- 			goto next;
- 		perf_event_task_ctx(&cpuctx->ctx, task_event);
- 
-@@ -4725,7 +4725,7 @@ static void perf_event_comm_event(struct
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
--		if (cpuctx->active_pmu != pmu)
-+		if (cpuctx->unique_pmu != pmu)
- 			goto next;
- 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
- 
-@@ -4921,7 +4921,7 @@ got_name:
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
--		if (cpuctx->active_pmu != pmu)
-+		if (cpuctx->unique_pmu != pmu)
- 			goto next;
- 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
- 					vma->vm_flags & VM_EXEC);
-@@ -5947,8 +5947,8 @@ static void update_pmu_context(struct pm
- 
- 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
- 
--		if (cpuctx->active_pmu == old_pmu)
--			cpuctx->active_pmu = pmu;
-+		if (cpuctx->unique_pmu == old_pmu)
-+			cpuctx->unique_pmu = pmu;
- 	}
- }
- 
-@@ -6080,7 +6080,7 @@ skip_type:
- 		cpuctx->ctx.pmu = pmu;
- 		cpuctx->jiffies_interval = 1;
- 		INIT_LIST_HEAD(&cpuctx->rotation_list);
--		cpuctx->active_pmu = pmu;
-+		cpuctx->unique_pmu = pmu;
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3498,6 +3498,7 @@ static int cgroup_write_event_control(st
+ 				      const char *buffer)
+ {
+ 	struct cgroup_event *event = NULL;
++	struct cgroup *cgrp_cfile;
+ 	unsigned int efd, cfd;
+ 	struct file *efile = NULL;
+ 	struct file *cfile = NULL;
+@@ -3552,6 +3553,16 @@ static int cgroup_write_event_control(st
+ 		goto fail;
  	}
  
- got_cpu_context:
++	/*
++	 * The file to be monitored must be in the same cgroup as
++	 * cgroup.event_control is.
++	 */
++	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
++	if (cgrp_cfile != cgrp) {
++		ret = -EINVAL;
++		goto fail;
++	}
++
+ 	if (!event->cft->register_event || !event->cft->unregister_event) {
+ 		ret = -EINVAL;
+ 		goto fail;
 
 
