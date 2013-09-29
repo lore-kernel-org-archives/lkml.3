@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab3I2T1O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59101 "EHLO
+	id S1757059Ab3I2UHo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:07:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab3I2T1E (ORCPT
+	with ESMTP id S1755200Ab3I2T1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:04 -0400
+	Sun, 29 Sep 2013 15:27:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 02/17] net: usb: cdc_ether: Use wwan interface for Telit modules
-Date: Sun, 29 Sep 2013 12:26:41 -0700
-Message-Id: <20130929190757.320945916@linuxfoundation.org>
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 12/17] perf: Clarify perf_cpu_context::active_pmu usage by renaming it to ::unique_pmu
+Date: Sun, 29 Sep 2013 12:26:51 -0700
+Message-Id: <20130929190757.981485725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -28,32 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 0092820407901a0b2c4e343e85f96bb7abfcded1 upstream.
+commit 3f1f33206c16c7b3839d71372bc2ac3f305aa802 upstream.
 
-Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-Acked-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Stephane thought the perf_cpu_context::active_pmu name confusing and
+suggested using 'unique_pmu' instead.
+
+This pointer is a pointer to a 'random' pmu sharing the cpuctx
+instance, therefore limiting a for_each_pmu loop to those where
+cpuctx->unique_pmu matches the pmu we get a loop over unique cpuctx
+instances.
+
+Suggested-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-kxyjqpfj2fn9gt7kwu5ag9ks@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/cdc_ether.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/perf_event.h |    2 +-
+ kernel/events/core.c       |   12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -615,6 +615,11 @@ static const struct usb_device_id	produc
- 	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
- 	.driver_info = (unsigned long)&wwan_info,
- }, {
-+	/* Telit modules */
-+	USB_VENDOR_AND_INTERFACE_INFO(0x1bc7, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = (kernel_ulong_t) &wwan_info,
-+}, {
- 	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ETHERNET,
- 			USB_CDC_PROTO_NONE),
- 	.driver_info = (unsigned long) &cdc_info,
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -939,7 +939,7 @@ struct perf_cpu_context {
+ 	int				exclusive;
+ 	struct list_head		rotation_list;
+ 	int				jiffies_interval;
+-	struct pmu			*active_pmu;
++	struct pmu			*unique_pmu;
+ 	struct perf_cgroup		*cgrp;
+ };
+ 
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4579,7 +4579,7 @@ static void perf_event_task_event(struct
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_task_ctx(&cpuctx->ctx, task_event);
+ 
+@@ -4725,7 +4725,7 @@ static void perf_event_comm_event(struct
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
+ 
+@@ -4921,7 +4921,7 @@ got_name:
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
+ 					vma->vm_flags & VM_EXEC);
+@@ -5947,8 +5947,8 @@ static void update_pmu_context(struct pm
+ 
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+ 
+-		if (cpuctx->active_pmu == old_pmu)
+-			cpuctx->active_pmu = pmu;
++		if (cpuctx->unique_pmu == old_pmu)
++			cpuctx->unique_pmu = pmu;
+ 	}
+ }
+ 
+@@ -6080,7 +6080,7 @@ skip_type:
+ 		cpuctx->ctx.pmu = pmu;
+ 		cpuctx->jiffies_interval = 1;
+ 		INIT_LIST_HEAD(&cpuctx->rotation_list);
+-		cpuctx->active_pmu = pmu;
++		cpuctx->unique_pmu = pmu;
+ 	}
+ 
+ got_cpu_context:
 
 
