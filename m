@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab3I2T6Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:58:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59301 "EHLO
+	id S1755486Ab3I2T1s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab3I2T1y (ORCPT
+	with ESMTP id S1755463Ab3I2T1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:54 -0400
+	Sun, 29 Sep 2013 15:27:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 13/49] HID: zeroplus: validate output report details
-Date: Sun, 29 Sep 2013 12:26:47 -0700
-Message-Id: <20130929191603.912340108@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 15/22] drm/radeon/atom: workaround vbios bug in transmitter table on rs880 (v2)
+Date: Sun, 29 Sep 2013 12:27:01 -0700
+Message-Id: <20130929191159.922833519@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
-References: <20130929191603.008825488@linuxfoundation.org>
+In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
+References: <20130929191158.889693326@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 78214e81a1bf43740ce89bb5efda78eac2f8ef83 upstream.
+commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
 
-The zeroplus HID driver was not checking the size of allocated values
-in fields it used. A HID device could send a malicious output report
-that would cause the driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+The OUTPUT_ENABLE action jumps past the point in the coder where
+the data_offset is set on certain rs780 cards.  This worked
+previously because the OUTPUT_ENABLE action is always called
+immediately after the ENABLE action so the data_offset remained
+set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
+(drm/radeon/atom: initialize more atom interpretor elements to 0),
+we explictly reset data_offset to 0 between atom calls which then
+caused this to fail.  The fix is to just skip calling the
+OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
+action does the same thing and more.  Ultimately, we could
+probably drop the OUTPUT_ENABLE action all together on DCE3
+asics.
 
-[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
-...
-[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
 
-CVE-2013-2889
+v2: only rs880 seems to be affected
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-zpff.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-zpff.c
-+++ b/drivers/hid/hid-zpff.c
-@@ -68,21 +68,13 @@ static int zpff_init(struct hid_device *
- 	struct hid_report *report;
- 	struct hid_input *hidinput = list_entry(hid->inputs.next,
- 						struct hid_input, list);
--	struct list_head *report_list =
--			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	int error;
-+	int i, error;
- 
--	if (list_empty(report_list)) {
--		hid_err(hid, "no output report found\n");
--		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 4) {
--		hid_err(hid, "not enough fields in report\n");
--		return -ENODEV;
-+	for (i = 0; i < 4; i++) {
-+		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
-+		if (!report)
-+			return -ENODEV;
- 	}
- 
- 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1425,8 +1425,12 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+-			/* some early dce3.2 boards have a bug in their transmitter control table */
+-			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
++			/* some dce3.x boards have a bug in their transmitter control table.
++			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
++			 * does the same thing and more.
++			 */
++			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
++			    (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
 
