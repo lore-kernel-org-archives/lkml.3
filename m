@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3I2Tmx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:42:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59703 "EHLO
+	id S1755931Ab3I2T3H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956Ab3I2T3O (ORCPT
+	with ESMTP id S1755857Ab3I2T3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:14 -0400
+	Sun, 29 Sep 2013 15:29:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Y.C. Chen" <yc_chen@aspeedtech.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 29/71] drm/ast: fix the ast open key function
-Date: Sun, 29 Sep 2013 12:27:41 -0700
-Message-Id: <20130929192645.503839039@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
+Subject: [ 21/71] usb: gadget: fix a bug and a WARN_ON in dummy-hcd
+Date: Sun, 29 Sep 2013 12:27:33 -0700
+Message-Id: <20130929192644.973119105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,31 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2e8378136f28bea960cec643d3fa5d843c9049ec upstream.
+commit 5f5610f69be3a925b1f79af27150bb7377bc9ad6 upstream.
 
-When porting from UMS I mistyped this from the wrong place, AST noticed
-and pointed it out, so we should fix it to be like the X.org driver.
+This patch fixes a NULL pointer dereference and a WARN_ON in
+dummy-hcd.  These things were the result of moving to the UDC core
+framework, and possibly of changes to that framework.
 
-Reported-by: Y.C. Chen <yc_chen@aspeedtech.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Now unloading a gadget driver causes the UDC to be stopped after the
+gadget driver is unbound, not before.  Therefore the "driver" argument
+to dummy_udc_stop() can be NULL, so we must not try to print the
+driver's name without checking first.
+
+Also, the UDC framework automatically unregisters the gadget when the
+UDC is deleted.  Therefore a sysfs attribute file attached to the
+gadget must be removed before the UDC is deleted, not after.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ast/ast_drv.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/dummy_hcd.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/ast/ast_drv.h
-+++ b/drivers/gpu/drm/ast/ast_drv.h
-@@ -177,7 +177,7 @@ uint8_t ast_get_index_reg_mask(struct as
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -923,8 +923,9 @@ static int dummy_udc_stop(struct usb_gad
+ 	struct dummy_hcd	*dum_hcd = gadget_to_dummy_hcd(g);
+ 	struct dummy		*dum = dum_hcd->dum;
  
- static inline void ast_open_key(struct ast_private *ast)
+-	dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
+-			driver->driver.name);
++	if (driver)
++		dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
++				driver->driver.name);
+ 
+ 	dum->driver = NULL;
+ 
+@@ -1000,8 +1001,8 @@ static int dummy_udc_remove(struct platf
  {
--	ast_set_index_reg_mask(ast, AST_IO_CRTC_PORT, 0xA1, 0xFF, 0x04);
-+	ast_set_index_reg(ast, AST_IO_CRTC_PORT, 0x80, 0xA8);
+ 	struct dummy	*dum = platform_get_drvdata(pdev);
+ 
+-	usb_del_gadget_udc(&dum->gadget);
+ 	device_remove_file(&dum->gadget.dev, &dev_attr_function);
++	usb_del_gadget_udc(&dum->gadget);
+ 	return 0;
  }
  
- #define AST_VIDMEM_SIZE_8M    0x00800000
 
 
