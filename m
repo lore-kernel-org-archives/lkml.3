@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab3I2UDc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:03:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59230 "EHLO
+	id S1756199Ab3I2UDa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:03:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3I2T1d (ORCPT
+	with ESMTP id S1755375Ab3I2T1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:33 -0400
+	Sun, 29 Sep 2013 15:27:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Vinson Lee <vlee@freedesktop.org>
-Subject: [ 20/22] perf tools: Handle JITed code in shared memory
-Date: Sun, 29 Sep 2013 12:27:06 -0700
-Message-Id: <20130929191200.270647524@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>
+Subject: [ 21/22] sfc: Fix efx_rx_buf_offset() for recycled pages
+Date: Sun, 29 Sep 2013 12:27:07 -0700
+Message-Id: <20130929191200.337384840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -28,33 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 89365e6c9ad4c0e090e4c6a4b67a3ce319381d89 upstream.
+This bug fix is only for stable branches older than 3.10.  The bug was
+fixed upstream by commit 2768935a4660 ('sfc: reuse pages to avoid DMA
+mapping/unmapping costs'), but that change is totally unsuitable for
+stable.
 
-Need to check for /dev/zero.
+Commit b590ace09d51 ('sfc: Fix efx_rx_buf_offset() in the presence of
+swiotlb') added an explicit page_offset member to struct
+efx_rx_buffer, which must be set consistently with the u.page and
+dma_addr fields.  However, it failed to add the necessary assignment
+in efx_resurrect_rx_buffer().  It also did not correct the calculation
+of efx_rx_buffer::dma_addr in efx_resurrect_rx_buffer(), which assumes
+that DMA-mapping a page will result in a page-aligned DMA address
+(exactly what swiotlb violates).
 
-Most likely more strings are missing too.
+Add the assignment of efx_rx_buffer::page_offset and change the
+calculation of dma_addr to make use of it.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1366848182-30449-1-git-send-email-andi@firstfloor.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Vinson Lee <vlee@freedesktop.org>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- tools/perf/util/map.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/sfc/rx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -16,6 +16,7 @@ const char *map_type__name[MAP__NR_TYPES
- static inline int is_anon_memory(const char *filename)
- {
- 	return !strcmp(filename, "//anon") ||
-+	       !strcmp(filename, "/dev/zero (deleted)") ||
- 	       !strcmp(filename, "/anon_hugepage (deleted)");
- }
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -311,8 +311,9 @@ static void efx_resurrect_rx_buffer(stru
  
+ 	index = rx_queue->added_count & rx_queue->ptr_mask;
+ 	new_buf = efx_rx_buffer(rx_queue, index);
+-	new_buf->dma_addr = rx_buf->dma_addr ^ (PAGE_SIZE >> 1);
+ 	new_buf->u.page = rx_buf->u.page;
++	new_buf->page_offset = rx_buf->page_offset ^ (PAGE_SIZE >> 1);
++	new_buf->dma_addr = state->dma_addr + new_buf->page_offset;
+ 	new_buf->len = rx_buf->len;
+ 	new_buf->flags = EFX_RX_BUF_PAGE;
+ 	++rx_queue->added_count;
 
 
