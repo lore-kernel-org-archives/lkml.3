@@ -1,142 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3I2PkB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 11:40:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38816 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab3I2Pji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 11:39:38 -0400
-From: John Johansen <john.johansen@canonical.com>
-To: jmorris@namei.org
-Cc: linux-kernel@vger.kernel.org, Tyler Hicks <tyhicks@canonical.com>
-Subject: [PATCH 1/2] apparmor: Use shash crypto API interface for profile hashes
-Date: Sun, 29 Sep 2013 08:39:21 -0700
-Message-Id: <1380469162-18604-2-git-send-email-john.johansen@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1380469162-18604-1-git-send-email-john.johansen@canonical.com>
-References: <1380469162-18604-1-git-send-email-john.johansen@canonical.com>
+	id S1754473Ab3I2Ppq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 11:45:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55502 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753234Ab3I2Ppn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 11:45:43 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130929091453.GA5426@pd.tnic>
+References: <20130928180459.GF5956@pd.tnic> <20130928181236.GA4999@gmail.com> <20130928191500.GG5956@pd.tnic> <20130928192545.GB8228@gmail.com> <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com> <20130928194927.GI5956@pd.tnic> <20130928195448.GJ5956@pd.tnic> <20130928195833.GB32081@gmail.com> <20130928200838.GK5956@pd.tnic> <6c689698-aaa0-48cc-8e6e-93d9059c0c34@email.android.com> <20130929091453.GA5426@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 29 Sep 2013 08:44:56 -0700
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        huawei.libin@huawei.com, wangyijing@huawei.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Message-ID: <a4c8ed48-24c3-437e-9f06-e42a8b7a80f4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tyler Hicks <tyhicks@canonical.com>
+If the goal is to feed this to the field width in printf, which I would think would be the dominant use, then you do have to account for the minus sign.
 
-Use the shash interface, rather than the hash interface, when hashing
-AppArmor profiles. The shash interface does not use scatterlists and it
-is a better fit for what AppArmor needs.
+Borislav Petkov <bp@alien8.de> wrote:
+>On Sat, Sep 28, 2013 at 04:13:29PM -0700, H. Peter Anvin wrote:
+>> For negative numbers presumably we need to d++ for the minus sign,
+>no?
+>
+>That's easy - the function is called num_digits, so we count only
+>digits.
+>
+>The real question is, is there a use case where we would need to count
+>the sign too or only the digits?
+>
+>And since I can't be clairvoyant, I'll leave it to future generations
+>to
+>decide what to do with the sign.
+>
+>:-)
 
-This fixes a kernel paging BUG when aa_calc_profile_hash() is passed a
-buffer from vmalloc(). The hash interface requires callers to handle
-vmalloc() buffers differently than what AppArmor was doing. Due to
-vmalloc() memory not being physically contiguous, each individual page
-behind the buffer must be assigned to a scatterlist with sg_set_page()
-and then the scatterlist passed to crypto_hash_update().
-
-The shash interface does not have that limitation and allows vmalloc()
-and kmalloc() buffers to be handled in the same manner.
-
-BugLink: https://launchpad.net/bugs/1216294/
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=62261
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Acked-by: Seth Arnold <seth.arnold@canonical.com>
-Signed-off-by: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/crypto.c | 34 ++++++++++++++++------------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
-
-diff --git a/security/apparmor/crypto.c b/security/apparmor/crypto.c
-index d6222ba..532471d 100644
---- a/security/apparmor/crypto.c
-+++ b/security/apparmor/crypto.c
-@@ -15,14 +15,14 @@
-  * it should be.
-  */
- 
--#include <linux/crypto.h>
-+#include <crypto/hash.h>
- 
- #include "include/apparmor.h"
- #include "include/crypto.h"
- 
- static unsigned int apparmor_hash_size;
- 
--static struct crypto_hash *apparmor_tfm;
-+static struct crypto_shash *apparmor_tfm;
- 
- unsigned int aa_hash_size(void)
- {
-@@ -32,35 +32,33 @@ unsigned int aa_hash_size(void)
- int aa_calc_profile_hash(struct aa_profile *profile, u32 version, void *start,
- 			 size_t len)
- {
--	struct scatterlist sg[2];
--	struct hash_desc desc = {
--		.tfm = apparmor_tfm,
--		.flags = 0
--	};
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(apparmor_tfm)];
-+	} desc;
- 	int error = -ENOMEM;
- 	u32 le32_version = cpu_to_le32(version);
- 
- 	if (!apparmor_tfm)
- 		return 0;
- 
--	sg_init_table(sg, 2);
--	sg_set_buf(&sg[0], &le32_version, 4);
--	sg_set_buf(&sg[1], (u8 *) start, len);
--
- 	profile->hash = kzalloc(apparmor_hash_size, GFP_KERNEL);
- 	if (!profile->hash)
- 		goto fail;
- 
--	error = crypto_hash_init(&desc);
-+	desc.shash.tfm = apparmor_tfm;
-+	desc.shash.flags = 0;
-+
-+	error = crypto_shash_init(&desc.shash);
- 	if (error)
- 		goto fail;
--	error = crypto_hash_update(&desc, &sg[0], 4);
-+	error = crypto_shash_update(&desc.shash, (u8 *) &le32_version, 4);
- 	if (error)
- 		goto fail;
--	error = crypto_hash_update(&desc, &sg[1], len);
-+	error = crypto_shash_update(&desc.shash, (u8 *) start, len);
- 	if (error)
- 		goto fail;
--	error = crypto_hash_final(&desc, profile->hash);
-+	error = crypto_shash_final(&desc.shash, profile->hash);
- 	if (error)
- 		goto fail;
- 
-@@ -75,19 +73,19 @@ fail:
- 
- static int __init init_profile_hash(void)
- {
--	struct crypto_hash *tfm;
-+	struct crypto_shash *tfm;
- 
- 	if (!apparmor_initialized)
- 		return 0;
- 
--	tfm = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
-+	tfm = crypto_alloc_shash("sha1", 0, CRYPTO_ALG_ASYNC);
- 	if (IS_ERR(tfm)) {
- 		int error = PTR_ERR(tfm);
- 		AA_ERROR("failed to setup profile sha1 hashing: %d\n", error);
- 		return error;
- 	}
- 	apparmor_tfm = tfm;
--	apparmor_hash_size = crypto_hash_digestsize(apparmor_tfm);
-+	apparmor_hash_size = crypto_shash_digestsize(apparmor_tfm);
- 
- 	aa_info_message("AppArmor sha1 policy hashing enabled");
- 
 -- 
-1.8.3.2
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
