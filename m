@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab3I2T7O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:59:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59278 "EHLO
+	id S1757336Ab3I2T7e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:59:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59267 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468Ab3I2T1q (ORCPT
+	with ESMTP id S1755450Ab3I2T1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:46 -0400
+	Sun, 29 Sep 2013 15:27:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 07/22] HID: logitech-dj: validate output report details
-Date: Sun, 29 Sep 2013 12:26:53 -0700
-Message-Id: <20130929191159.389112263@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 14/22] drm/radeon: fix handling of variable sized arrays for router objects
+Date: Sun, 29 Sep 2013 12:27:00 -0700
+Message-Id: <20130929191159.856457126@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -28,62 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 297502abb32e225fb23801fcdb0e4f6f8e17099a upstream.
+commit fb93df1c2d8b3b1fb16d6ee9e32554e0c038815d upstream.
 
-A HID device could send a malicious output report that would cause the
-logitech-dj HID driver to leak kernel memory contents to the device, or
-trigger a NULL dereference during initialization:
+The table has the following format:
 
-[  304.424553] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b
-...
-[  304.780467] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-[  304.781409] IP: [<ffffffff815d50aa>] logi_dj_recv_send_report.isra.11+0x1a/0x90
+typedef struct _ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT         //usSrcDstTableOffset pointing to this structure
+{
+  UCHAR               ucNumberOfSrc;
+  USHORT              usSrcObjectID[1];
+  UCHAR               ucNumberOfDst;
+  USHORT              usDstObjectID[1];
+}ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT;
 
-CVE-2013-2895
+usSrcObjectID[] and usDstObjectID[] are variably sized, so we
+can't access them directly.  Use pointers and update the offset
+appropriately when accessing the Dst members.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -454,7 +454,7 @@ static int logi_dj_recv_send_report(stru
- 	struct hid_report *report;
- 	struct hid_report_enum *output_report_enum;
- 	u8 *data = (u8 *)(&dj_report->device_index);
--	int i;
-+	unsigned int i;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -715,13 +715,16 @@ bool radeon_get_atom_connector_info_from
+ 								(ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT *)
+ 								(ctx->bios + data_offset +
+ 								 le16_to_cpu(router_obj->asObjects[k].usSrcDstTableOffset));
++							u8 *num_dst_objs = (u8 *)
++								((u8 *)router_src_dst_table + 1 +
++								 (router_src_dst_table->ucNumberOfSrc * 2));
++							u16 *dst_objs = (u16 *)(num_dst_objs + 1);
+ 							int enum_id;
  
- 	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
- 	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-@@ -464,7 +464,7 @@ static int logi_dj_recv_send_report(stru
- 		return -ENODEV;
- 	}
+ 							router.router_id = router_obj_id;
+-							for (enum_id = 0; enum_id < router_src_dst_table->ucNumberOfDst;
+-							     enum_id++) {
++							for (enum_id = 0; enum_id < (*num_dst_objs); enum_id++) {
+ 								if (le16_to_cpu(path->usConnObjectId) ==
+-								    le16_to_cpu(router_src_dst_table->usDstObjectID[enum_id]))
++								    le16_to_cpu(dst_objs[enum_id]))
+ 									break;
+ 							}
  
--	for (i = 0; i < report->field[0]->report_count; i++)
-+	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
- 		report->field[0]->value[i] = data[i];
- 
- 	usbhid_submit_report(hdev, report, USB_DIR_OUT);
-@@ -783,6 +783,12 @@ static int logi_dj_probe(struct hid_devi
- 		goto hid_parse_fail;
- 	}
- 
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, REPORT_ID_DJ_SHORT,
-+				 0, DJREPORT_SHORT_LENGTH - 1)) {
-+		retval = -ENODEV;
-+		goto hid_parse_fail;
-+	}
-+
- 	/* Starts the usb device and connects to upper interfaces hiddev and
- 	 * hidraw */
- 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 
 
