@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab3I2TdK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:33:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59875 "EHLO
+	id S1756548Ab3I2Tdh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:33:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59870 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083Ab3I2T3y (ORCPT
+	with ESMTP id S1756187Ab3I2T3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:54 -0400
+	Sun, 29 Sep 2013 15:29:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Solomon Peachy <pizza@shaftnet.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 70/71] cw1200: Dont perform SPI transfers in interrupt context
-Date: Sun, 29 Sep 2013 12:28:22 -0700
-Message-Id: <20130929192648.304161702@linuxfoundation.org>
+Subject: [ 69/71] cw1200: Prevent a lock-related hang in the cw1200_spi driver
+Date: Sun, 29 Sep 2013 12:28:21 -0700
+Message-Id: <20130929192648.238118126@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -29,134 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Solomon Peachy <pizza@shaftnet.org>
 
-commit aec8e88c947b7017e2b4bbcb68a4bfc4a1f8ad35 upstream.
+commit 85ba8f529c57ac6e2fca9be0d9e17920a1afb2e8 upstream.
 
-When we get an interrupt from the hardware, the first thing the driver does
-is tell the device to mask off the interrupt line.  Unfortunately this
-involves a SPI transaction in interrupt context.  Some (most?) SPI
-controllers perform the transfer asynchronously and try to sleep.
-This is bad, and triggers a BUG().
+The cw1200_spi driver tries to mirror the cw1200_sdio driver's lock
+API, which relies on sdio_claim_host/sdio_release_host to serialize
+hardware operations across multiple threads.
 
-So, work around this by using adding a hwbus hook for the cw1200 driver
-core to call.  The cw1200_spi driver translates this into
-irq_disable()/irq_enable() calls instead, which can safely be called in
-interrupt context.
+Unfortunately the implementation was flawed, as it lacked a way to wake
+up the lock requestor when there was contention, often resulting in a
+hang.
 
-Apparently the platforms I used to develop the cw1200_spi driver used
-synchronous spi_sync() implementations, which is why this didn't surface
-until now.
-
-Many thanks to Dave Sizeburns for the inital bug report and his services
-as a tester.
+This problem was uncovered while trying to fix the
+spi-transfers-in-interrupt-context BUG() corrected in the previous
+patch.  Many thanks to Dave Sizeburns for his assistance in fixing this.
 
 Signed-off-by: Solomon Peachy <pizza@shaftnet.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/cw1200/cw1200_spi.c |   19 ++++++++++++++++---
- drivers/net/wireless/cw1200/fwio.c       |    2 +-
- drivers/net/wireless/cw1200/hwbus.h      |    1 +
- drivers/net/wireless/cw1200/hwio.c       |   15 +++++++++++++++
- 4 files changed, 33 insertions(+), 4 deletions(-)
+ drivers/net/wireless/cw1200/cw1200_spi.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/drivers/net/wireless/cw1200/cw1200_spi.c
 +++ b/drivers/net/wireless/cw1200/cw1200_spi.c
-@@ -42,6 +42,7 @@ struct hwbus_priv {
+@@ -40,6 +40,7 @@ struct hwbus_priv {
+ 	struct cw1200_common	*core;
+ 	const struct cw1200_platform_data_spi *pdata;
  	spinlock_t		lock; /* Serialize all bus operations */
- 	wait_queue_head_t       wq;
++	wait_queue_head_t       wq;
  	int claimed;
-+	int irq_disabled;
  };
  
- #define SDIO_TO_SPI_ADDR(addr) ((addr & 0x1f)>>2)
-@@ -237,6 +238,8 @@ static irqreturn_t cw1200_spi_irq_handle
- 	struct hwbus_priv *self = dev_id;
- 
- 	if (self->core) {
-+		disable_irq_nosync(self->func->irq);
-+		self->irq_disabled = 1;
- 		cw1200_irq_handler(self->core);
- 		return IRQ_HANDLED;
- 	} else {
-@@ -270,13 +273,22 @@ exit:
- 
- static int cw1200_spi_irq_unsubscribe(struct hwbus_priv *self)
+@@ -197,8 +198,11 @@ static void cw1200_spi_lock(struct hwbus
  {
--	int ret = 0;
--
- 	pr_debug("SW IRQ unsubscribe\n");
- 	disable_irq_wake(self->func->irq);
- 	free_irq(self->func->irq, self);
+ 	unsigned long flags;
  
--	return ret;
-+	return 0;
-+}
++	DECLARE_WAITQUEUE(wait, current);
 +
-+static int cw1200_spi_irq_enable(struct hwbus_priv *self, int enable)
-+{
-+	/* Disables are handled by the interrupt handler */
-+	if (enable && self->irq_disabled) {
-+		enable_irq(self->func->irq);
-+		self->irq_disabled = 0;
-+	}
+ 	might_sleep();
+ 
++	add_wait_queue(&self->wq, &wait);
+ 	spin_lock_irqsave(&self->lock, flags);
+ 	while (1) {
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+@@ -211,6 +215,7 @@ static void cw1200_spi_lock(struct hwbus
+ 	set_current_state(TASK_RUNNING);
+ 	self->claimed = 1;
+ 	spin_unlock_irqrestore(&self->lock, flags);
++	remove_wait_queue(&self->wq, &wait);
+ 
+ 	return;
+ }
+@@ -222,6 +227,8 @@ static void cw1200_spi_unlock(struct hwb
+ 	spin_lock_irqsave(&self->lock, flags);
+ 	self->claimed = 0;
+ 	spin_unlock_irqrestore(&self->lock, flags);
++	wake_up(&self->wq);
 +
-+	return 0;
+ 	return;
  }
  
- static int cw1200_spi_off(const struct cw1200_platform_data_spi *pdata)
-@@ -356,6 +368,7 @@ static struct hwbus_ops cw1200_spi_hwbus
- 	.unlock			= cw1200_spi_unlock,
- 	.align_size		= cw1200_spi_align_size,
- 	.power_mgmt		= cw1200_spi_pm,
-+	.irq_enable             = cw1200_spi_irq_enable,
- };
+@@ -400,6 +407,8 @@ static int cw1200_spi_probe(struct spi_d
  
- /* Probe Function to be called by SPI stack when device is discovered */
---- a/drivers/net/wireless/cw1200/fwio.c
-+++ b/drivers/net/wireless/cw1200/fwio.c
-@@ -485,7 +485,7 @@ int cw1200_load_firmware(struct cw1200_c
+ 	spi_set_drvdata(func, self);
  
- 	/* Enable interrupt signalling */
- 	priv->hwbus_ops->lock(priv->hwbus_priv);
--	ret = __cw1200_irq_enable(priv, 1);
-+	ret = __cw1200_irq_enable(priv, 2);
- 	priv->hwbus_ops->unlock(priv->hwbus_priv);
- 	if (ret < 0)
- 		goto unsubscribe;
---- a/drivers/net/wireless/cw1200/hwbus.h
-+++ b/drivers/net/wireless/cw1200/hwbus.h
-@@ -28,6 +28,7 @@ struct hwbus_ops {
- 	void (*unlock)(struct hwbus_priv *self);
- 	size_t (*align_size)(struct hwbus_priv *self, size_t size);
- 	int (*power_mgmt)(struct hwbus_priv *self, bool suspend);
-+	int (*irq_enable)(struct hwbus_priv *self, int enable);
- };
- 
- #endif /* CW1200_HWBUS_H */
---- a/drivers/net/wireless/cw1200/hwio.c
-+++ b/drivers/net/wireless/cw1200/hwio.c
-@@ -273,6 +273,21 @@ int __cw1200_irq_enable(struct cw1200_co
- 	u16 val16;
- 	int ret;
- 
-+	/* We need to do this hack because the SPI layer can sleep on I/O
-+	   and the general path involves I/O to the device in interrupt
-+	   context.
++	init_waitqueue_head(&self->wq);
 +
-+	   However, the initial enable call needs to go to the hardware.
-+
-+	   We don't worry about shutdown because we do a full reset which
-+	   clears the interrupt enabled bits.
-+	*/
-+	if (priv->hwbus_ops->irq_enable) {
-+		ret = priv->hwbus_ops->irq_enable(priv->hwbus_priv, enable);
-+		if (ret || enable < 2)
-+			return ret;
-+	}
-+
- 	if (HIF_8601_SILICON == priv->hw_type) {
- 		ret = __cw1200_reg_read_32(priv, ST90TDS_CONFIG_REG_ID, &val32);
- 		if (ret < 0) {
+ 	status = cw1200_spi_irq_subscribe(self);
+ 
+ 	status = cw1200_core_probe(&cw1200_spi_hwbus_ops,
 
 
