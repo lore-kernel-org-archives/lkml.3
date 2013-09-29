@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3I2Txb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:53:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59381 "EHLO
+	id S1757251Ab3I2Txt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:53:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644Ab3I2T2M (ORCPT
+	with ESMTP id S1755637Ab3I2T2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:12 -0400
+	Sun, 29 Sep 2013 15:28:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>, Steve French <sfrench@samba.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 03/49] cifs: fix filp leak in cifs_atomic_open()
-Date: Sun, 29 Sep 2013 12:26:37 -0700
-Message-Id: <20130929191603.244325230@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>,
+        Daniel Tobias <dan.g.tob@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 30/49] drm/radeon: fix resume on some rs4xx boards (v2)
+Date: Sun, 29 Sep 2013 12:27:04 -0700
+Message-Id: <20130929191605.057366508@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -27,31 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit dfb1d61b0e9f9e2c542e9adc8d970689f4114ff6 upstream.
+commit acf88deb8ddbb73acd1c3fa32fde51af9153227f upstream.
 
-If an error occurs after having called finish_open() then fput() needs to
-be called on the already opened file.
+Setting MC_MISC_CNTL.GART_INDEX_REG_EN causes hangs on
+some boards on resume.  The systems seem to work fine
+without touching this bit so leave it as is.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Steve French <sfrench@samba.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+v2: read-modify-write the GART_INDEX_REG_EN bit.
+I suspect the problem is that we are losing the other
+settings in the register.
+
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=52952
+
+Reported-by: Ondrej Zary <linux@rainbow-software.org>
+Tested-by: Daniel Tobias <dan.g.tob@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/dir.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/rs400.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -491,6 +491,7 @@ cifs_atomic_open(struct inode *inode, st
- 		if (server->ops->close)
- 			server->ops->close(xid, tcon, &fid);
- 		cifs_del_pending_open(&open);
-+		fput(file);
- 		rc = -ENOMEM;
+--- a/drivers/gpu/drm/radeon/rs400.c
++++ b/drivers/gpu/drm/radeon/rs400.c
+@@ -174,10 +174,13 @@ int rs400_gart_enable(struct radeon_devi
+ 	/* FIXME: according to doc we should set HIDE_MMCFG_BAR=0,
+ 	 * AGPMODE30=0 & AGP30ENHANCED=0 in NB_CNTL */
+ 	if ((rdev->family == CHIP_RS690) || (rdev->family == CHIP_RS740)) {
+-		WREG32_MC(RS480_MC_MISC_CNTL,
+-			  (RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN));
++		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
++		tmp |= RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN;
++		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
+ 	} else {
+-		WREG32_MC(RS480_MC_MISC_CNTL, RS480_GART_INDEX_REG_EN);
++		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
++		tmp |= RS480_GART_INDEX_REG_EN;
++		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
  	}
- 
+ 	/* Enable gart */
+ 	WREG32_MC(RS480_AGP_ADDRESS_SPACE_SIZE, (RS480_GART_EN | size_reg));
 
 
