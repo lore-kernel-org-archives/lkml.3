@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3I2Tnp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:43:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59612 "EHLO
+	id S1756567Ab3I2Tnt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:43:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab3I2T3D (ORCPT
+	with ESMTP id S1755909Ab3I2T3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:03 -0400
+	Sun, 29 Sep 2013 15:29:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Stuart Abercrombie <sabercrombie@chromium.org>,
+        Aaron Lu <aaron.lu@intel.com>, Jani Nikula <jani.nikula@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 23/71] drm/i915: fix hpd work vs. flush_work in the pageflip code deadlock
-Date: Sun, 29 Sep 2013 12:27:35 -0700
-Message-Id: <20130929192645.106139871@linuxfoundation.org>
+Subject: [ 22/71] drm/i915: try not to lose backlight CBLV precision
+Date: Sun, 29 Sep 2013 12:27:34 -0700
+Message-Id: <20130929192645.039982757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,87 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 645416f5adc87c8fae44289cdba7562f3ade8f5c upstream.
+commit cac6a5ae0118832936eb162ec4cedb30f2422bcc upstream.
 
-Historically we've run our own driver hotplug handling in our own
-work-queue, which then launched the drm core hotplug handling in the
-system workqueue. This is important since we flush our own driver
-workqueue in the pageflip code while hodling modeset locks, and only
-the drm hotplug code grabbed these locks. But with
+ACPI has _BCM and _BQC methods to set and query the backlight
+brightness, respectively. The ACPI opregion has variables BCLP and CBLV
+to hold the requested and current backlight brightness, respectively.
 
-commit 69787f7da6b2adc4054357a661aaa1701a9ca76f
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Oct 23 18:23:34 2012 +0000
+The BCLP variable has range 0..255 while the others have range
+0..100. This means the _BCM method has to scale the brightness for BCLP,
+and the gfx driver has to scale the requested value back for CBLV. If
+the _BQC method uses the CBLV variable (apparently some implementations
+do, some don't) for current backlight level reporting, there's room for
+rounding errors.
 
-    drm: run the hpd irq event code directly
+Use DIV_ROUND_UP for scaling back to CBLV to get back to the same values
+that were passed to _BCM, presuming the _BCM simply uses bclp = (in *
+255) / 100 for scaling to BCLP.
 
-this was changed and now we could deadlock in our flip handler if
-there's a hotplug work blocking the progress of the crucial unpin
-works. So this broke the careful deadlock avoidance implemented in
-
-commit b4a98e57fc27854b5938fc8b08b68e5e68b91e1f
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Nov 1 09:26:26 2012 +0000
-
-    drm/i915: Flush outstanding unpin tasks before pageflipping
-
-Since the rule thus far has been that work items on our own workqueue
-may never grab modeset locks simply restore that rule again.
-
-v2: Add a comment to the declaration of dev_priv->wq to warn readers
-about the tricky implications of using it. Suggested by Chris Wilson.
-
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Stuart Abercrombie <sabercrombie@chromium.org>
-Reported-by: Stuart Abercrombie <sabercrombie@chromium.org>
-References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/26239
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Squash in a comment at the place where we schedule the work.
-Requested after-the-fact by Chris on irc since the hpd work isn't the
-only place we botch this.]
+Reference: https://gist.github.com/aaronlu/6314920
+Reported-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.h |    7 +++++++
- drivers/gpu/drm/i915/i915_irq.c |    9 +++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_opregion.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1091,6 +1091,13 @@ typedef struct drm_i915_private {
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -173,7 +173,7 @@ static u32 asle_set_backlight(struct drm
+ 		return ASLE_BACKLIGHT_FAILED;
  
- 	unsigned int fsb_freq, mem_freq, is_ddr3;
+ 	intel_panel_set_backlight(dev, bclp, 255);
+-	iowrite32((bclp*0x64)/0xff | ASLE_CBLV_VALID, &asle->cblv);
++	iowrite32(DIV_ROUND_UP(bclp * 100, 255) | ASLE_CBLV_VALID, &asle->cblv);
  
-+	/**
-+	 * wq - Driver workqueue for GEM.
-+	 *
-+	 * NOTE: Work items scheduled here are not allowed to grab any modeset
-+	 * locks, for otherwise the flushing done in the pageflip code will
-+	 * result in deadlocks.
-+	 */
- 	struct workqueue_struct *wq;
- 
- 	/* Display functions */
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -910,8 +910,13 @@ static inline void intel_hpd_irq_handler
- 		dev_priv->display.hpd_irq_setup(dev);
- 	spin_unlock(&dev_priv->irq_lock);
- 
--	queue_work(dev_priv->wq,
--		   &dev_priv->hotplug_work);
-+	/*
-+	 * Our hotplug handler can grab modeset locks (by calling down into the
-+	 * fb helpers). Hence it must not be run on our own dev-priv->wq work
-+	 * queue for otherwise the flush_work in the pageflip code will
-+	 * deadlock.
-+	 */
-+	schedule_work(&dev_priv->hotplug_work);
+ 	return 0;
  }
- 
- static void gmbus_irq_handler(struct drm_device *dev)
 
 
