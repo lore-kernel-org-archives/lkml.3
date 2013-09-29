@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3I2UDa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:03:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59234 "EHLO
+	id S1756875Ab3I2UEG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:04:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755375Ab3I2T1e (ORCPT
+	with ESMTP id S1755354Ab3I2T1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:34 -0400
+	Sun, 29 Sep 2013 15:27:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>
-Subject: [ 21/22] sfc: Fix efx_rx_buf_offset() for recycled pages
-Date: Sun, 29 Sep 2013 12:27:07 -0700
-Message-Id: <20130929191200.337384840@linuxfoundation.org>
+        Boyd Yang <boyd.yang@gmail.com>,
+        Lino Sanfilippo <LinoSanfilipp@gmx.de>, Eric Paris <eparis@redhat.com>,
+        =?UTF-8?q?Mihai=20Don=C8=9Bu?= <mihai.dontu@gmail.com>
+Subject: [ 19/22] fanotify: dont merge permission events
+Date: Sun, 29 Sep 2013 12:27:05 -0700
+Message-Id: <20130929191200.190889681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,44 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-This bug fix is only for stable branches older than 3.10.  The bug was
-fixed upstream by commit 2768935a4660 ('sfc: reuse pages to avoid DMA
-mapping/unmapping costs'), but that change is totally unsuitable for
-stable.
+commit 03a1cec1f17ac1a6041996b3e40f96b5a2f90e1b upstream.
 
-Commit b590ace09d51 ('sfc: Fix efx_rx_buf_offset() in the presence of
-swiotlb') added an explicit page_offset member to struct
-efx_rx_buffer, which must be set consistently with the u.page and
-dma_addr fields.  However, it failed to add the necessary assignment
-in efx_resurrect_rx_buffer().  It also did not correct the calculation
-of efx_rx_buffer::dma_addr in efx_resurrect_rx_buffer(), which assumes
-that DMA-mapping a page will result in a page-aligned DMA address
-(exactly what swiotlb violates).
+Boyd Yang reported a problem for the case that multiple threads of the same
+thread group are waiting for a reponse for a permission event.
+In this case it is possible that some of the threads are never woken up, even
+if the response for the event has been received
+(see http://marc.info/?l=linux-kernel&m=131822913806350&w=2).
 
-Add the assignment of efx_rx_buffer::page_offset and change the
-calculation of dma_addr to make use of it.
+The reason is that we are currently merging permission events if they belong to
+the same thread group. But we are not prepared to wake up more than one waiter
+for each event. We do
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Acked-by: David Miller <davem@davemloft.net>
+wait_event(group->fanotify_data.access_waitq, event->response ||
+			atomic_read(&group->fanotify_data.bypass_perm));
+and after that
+  event->response = 0;
+
+which is the reason that even if we woke up all waiters for the same event
+some of them may see event->response being already set 0 again, then go back to
+sleep and block forever.
+
+With this patch we avoid that more than one thread is waiting for a response
+by not merging permission events for the same thread group any more.
+
+Reported-by: Boyd Yang <boyd.yang@gmail.com>
+Signed-off-by: Lino Sanfilippo <LinoSanfilipp@gmx.de>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Cc: Mihai Donțu <mihai.dontu@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/sfc/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -311,8 +311,9 @@ static void efx_resurrect_rx_buffer(stru
- 
- 	index = rx_queue->added_count & rx_queue->ptr_mask;
- 	new_buf = efx_rx_buffer(rx_queue, index);
--	new_buf->dma_addr = rx_buf->dma_addr ^ (PAGE_SIZE >> 1);
- 	new_buf->u.page = rx_buf->u.page;
-+	new_buf->page_offset = rx_buf->page_offset ^ (PAGE_SIZE >> 1);
-+	new_buf->dma_addr = state->dma_addr + new_buf->page_offset;
- 	new_buf->len = rx_buf->len;
- 	new_buf->flags = EFX_RX_BUF_PAGE;
- 	++rx_queue->added_count;
+---
+ fs/notify/fanotify/fanotify.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -18,6 +18,12 @@ static bool should_merge(struct fsnotify
+ 	    old->tgid == new->tgid) {
+ 		switch (old->data_type) {
+ 		case (FSNOTIFY_EVENT_PATH):
++#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
++			/* dont merge two permission events */
++			if ((old->mask & FAN_ALL_PERM_EVENTS) &&
++			    (new->mask & FAN_ALL_PERM_EVENTS))
++				return false;
++#endif
+ 			if ((old->path.mnt == new->path.mnt) &&
+ 			    (old->path.dentry == new->path.dentry))
+ 				return true;
 
 
