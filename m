@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab3I2UAQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:00:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59258 "EHLO
+	id S1755418Ab3I2T1i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab3I2T1l (ORCPT
+	with ESMTP id S1755345Ab3I2T1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:41 -0400
+	Sun, 29 Sep 2013 15:27:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 12/22] drm/radeon: update line buffer allocation for dce6
-Date: Sun, 29 Sep 2013 12:26:58 -0700
-Message-Id: <20130929191159.723282332@linuxfoundation.org>
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 17/22] perf: Clarify perf_cpu_context::active_pmu usage by renaming it to ::unique_pmu
+Date: Sun, 29 Sep 2013 12:27:03 -0700
+Message-Id: <20130929191200.057362093@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -26,87 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 290d24576ccf1aa0373d2185cedfe262d0d4952a upstream.
+commit 3f1f33206c16c7b3839d71372bc2ac3f305aa802 upstream.
 
-We need to allocate line buffer to each display when
-setting up the watermarks.  Failure to do so can lead
-to a blank screen.  This fixes blank screen problems
-on dce6 asics.
+Stephane thought the perf_cpu_context::active_pmu name confusing and
+suggested using 'unique_pmu' instead.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=64850
+This pointer is a pointer to a 'random' pmu sharing the cpuctx
+instance, therefore limiting a for_each_pmu loop to those where
+cpuctx->unique_pmu matches the pmu we get a loop over unique cpuctx
+instances.
 
-Based on an initial fix from:
-Jay Cornwall <jay.cornwall@amd.com>
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Suggested-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-kxyjqpfj2fn9gt7kwu5ag9ks@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si.c  |   23 +++++++++++++++++++----
- drivers/gpu/drm/radeon/sid.h |    4 ++++
- 2 files changed, 23 insertions(+), 4 deletions(-)
+ include/linux/perf_event.h |    2 +-
+ kernel/events/core.c       |   12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -411,7 +411,8 @@ static u32 dce6_line_buffer_adjust(struc
- 				   struct drm_display_mode *mode,
- 				   struct drm_display_mode *other_mode)
- {
--	u32 tmp;
-+	u32 tmp, buffer_alloc, i;
-+	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
- 	/*
- 	 * Line Buffer Setup
- 	 * There are 3 line buffers, each one shared by 2 display controllers.
-@@ -426,16 +427,30 @@ static u32 dce6_line_buffer_adjust(struc
- 	 * non-linked crtcs for maximum line buffer allocation.
- 	 */
- 	if (radeon_crtc->base.enabled && mode) {
--		if (other_mode)
-+		if (other_mode) {
- 			tmp = 0; /* 1/2 */
--		else
-+			buffer_alloc = 1;
-+		} else {
- 			tmp = 2; /* whole */
--	} else
-+			buffer_alloc = 2;
-+		}
-+	} else {
- 		tmp = 0;
-+		buffer_alloc = 0;
-+	}
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1063,7 +1063,7 @@ struct perf_cpu_context {
+ 	int				exclusive;
+ 	struct list_head		rotation_list;
+ 	int				jiffies_interval;
+-	struct pmu			*active_pmu;
++	struct pmu			*unique_pmu;
+ 	struct perf_cgroup		*cgrp;
+ };
  
- 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset,
- 	       DC_LB_MEMORY_CONFIG(tmp));
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4332,7 +4332,7 @@ static void perf_event_task_event(struct
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_task_ctx(&cpuctx->ctx, task_event);
  
-+	WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
-+	       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
-+		    DMIF_BUFFERS_ALLOCATED_COMPLETED)
-+			break;
-+		udelay(1);
-+	}
-+
- 	if (radeon_crtc->base.enabled && mode) {
- 		switch (tmp) {
- 		case 0:
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -57,6 +57,10 @@
+@@ -4478,7 +4478,7 @@ static void perf_event_comm_event(struct
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
  
- #define DMIF_ADDR_CALC  				0xC00
+@@ -4674,7 +4674,7 @@ got_name:
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
+ 					vma->vm_flags & VM_EXEC);
+@@ -5750,8 +5750,8 @@ static void update_pmu_context(struct pm
  
-+#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
-+#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
-+#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
-+
- #define	SRBM_STATUS				        0xE50
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
  
- #define	CC_SYS_RB_BACKEND_DISABLE			0xe80
+-		if (cpuctx->active_pmu == old_pmu)
+-			cpuctx->active_pmu = pmu;
++		if (cpuctx->unique_pmu == old_pmu)
++			cpuctx->unique_pmu = pmu;
+ 	}
+ }
+ 
+@@ -5886,7 +5886,7 @@ skip_type:
+ 		cpuctx->ctx.pmu = pmu;
+ 		cpuctx->jiffies_interval = 1;
+ 		INIT_LIST_HEAD(&cpuctx->rotation_list);
+-		cpuctx->active_pmu = pmu;
++		cpuctx->unique_pmu = pmu;
+ 	}
+ 
+ got_cpu_context:
 
 
