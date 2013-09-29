@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab3I2Tzn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:55:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59340 "EHLO
+	id S932129Ab3I2Tzl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:55:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab3I2T2E (ORCPT
+	with ESMTP id S1755421Ab3I2T2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:04 -0400
+	Sun, 29 Sep 2013 15:28:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 23/49] drm/ttm: fix the tt_populated check in ttm_tt_destroy()
-Date: Sun, 29 Sep 2013 12:26:57 -0700
-Message-Id: <20130929191604.573764767@linuxfoundation.org>
+        Martin Peres <martin.peres@labri.fr>,
+        Emil Velikov <emil.l.velikov@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 24/49] drm/nv50/disp: prevent false output detection on the original nv50
+Date: Sun, 29 Sep 2013 12:26:58 -0700
+Message-Id: <20130929191604.654431734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -28,43 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Emil Velikov <emil.l.velikov@gmail.com>
 
-commit 182b17c8dc4e83aab000ce86587b6810e515da87 upstream.
+commit 5087f51da805f53cba7366f70d596e7bde2a5486 upstream.
 
-After a vmalloc failure in ttm_dma_tt_alloc_page_directory(),
-ttm_dma_tt_init() will call ttm_tt_destroy() to cleanup, and end up
-inside the driver's unpopulate() hook when populate() has never yet
-been called.
+Commit ea9197cc323839ef3d5280c0453b2c622caa6bc7 effectively enabled the
+use of an improved DAC detection code, but introduced a regression on
+the original nv50 chipset, causing a ghost monitor to be detected.
 
-On nouveau, the first issue to be hit because of this is that
-dma_address[] may be a NULL pointer.  After working around this,
-ttm_pool_unpopulate() may potentially hit the same issue with
-the pages[] array.
+v2 (Ben Skeggs): the offending line was likely a thinko, removed it for
+all chipsets (tested nv50 and nve6 to cover entire range) and added
+some additional debugging.
 
-It seems to make more sense to avoid calling unpopulate on already
-unpopulated TTMs than to add checks to all the implementations.
-
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=67382
+Tested-by: Martin Peres <martin.peres@labri.fr>
+Signed-off-by: Emil Velikov <emil.l.velikov@gmail.com>
 Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_tt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -170,7 +170,7 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
- 		ttm_tt_unbind(ttm);
- 	}
+--- a/drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c
++++ b/drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c
+@@ -49,18 +49,23 @@ int
+ nv50_dac_sense(struct nv50_disp_priv *priv, int or, u32 loadval)
+ {
+ 	const u32 doff = (or * 0x800);
+-	int load = -EINVAL;
++
+ 	nv_mask(priv, 0x61a004 + doff, 0x807f0000, 0x80150000);
+ 	nv_wait(priv, 0x61a004 + doff, 0x80000000, 0x00000000);
++
+ 	nv_wr32(priv, 0x61a00c + doff, 0x00100000 | loadval);
+ 	mdelay(9);
+ 	udelay(500);
+-	nv_wr32(priv, 0x61a00c + doff, 0x80000000);
+-	load = (nv_rd32(priv, 0x61a00c + doff) & 0x38000000) >> 27;
+-	nv_wr32(priv, 0x61a00c + doff, 0x00000000);
++	loadval = nv_mask(priv, 0x61a00c + doff, 0xffffffff, 0x00000000);
++
+ 	nv_mask(priv, 0x61a004 + doff, 0x807f0000, 0x80550000);
+ 	nv_wait(priv, 0x61a004 + doff, 0x80000000, 0x00000000);
+-	return load;
++
++	nv_debug(priv, "DAC%d sense: 0x%08x\n", or, loadval);
++	if (!(loadval & 0x80000000))
++		return -ETIMEDOUT;
++
++	return (loadval & 0x38000000) >> 27;
+ }
  
--	if (likely(ttm->pages != NULL)) {
-+	if (ttm->state == tt_unbound) {
- 		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
- 	}
- 
+ int
 
 
