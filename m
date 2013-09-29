@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab3I2TlE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:41:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59744 "EHLO
+	id S1755997Ab3I2T3U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59691 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab3I2T3V (ORCPT
+	with ESMTP id S1755933Ab3I2T3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:21 -0400
+	Sun, 29 Sep 2013 15:29:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Lin Ming <minggr@gmail.com>, John Stultz <john.stultz@linaro.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 08/71] timekeeping: Fix HRTICK related deadlock from ntp lock changes
-Date: Sun, 29 Sep 2013 12:27:20 -0700
-Message-Id: <20130929192644.109252439@linuxfoundation.org>
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 26/71] drm/i915: do not update cursor in crtc mode set
+Date: Sun, 29 Sep 2013 12:27:38 -0700
+Message-Id: <20130929192645.304715975@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,107 +33,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 7bd36014460f793c19e7d6c94dab67b0afcfcb7f upstream.
+commit cc173961a68034c1171a421f0dbed39edfb60880 upstream.
 
-Gerlando Falauto reported that when HRTICK is enabled, it is
-possible to trigger system deadlocks. These were hard to
-reproduce, as HRTICK has been broken in the past, but seemed
-to be connected to the timekeeping_seq lock.
+The cursor is disabled before crtc mode set in crtc disable (and we
+assert this is the case), and enabled afterwards in crtc enable. Do not
+update it in crtc mode set.
 
-Since seqlock/seqcount's aren't supported w/ lockdep, I added
-some extra spinlock based locking and triggered the following
-lockdep output:
+On HSW enabling a plane on a disabled pipe may hang the entire system.
+And there's no good reason for doing it ever, so just don't.
 
-[   15.849182] ntpd/4062 is trying to acquire lock:
-[   15.849765]  (&(&pool->lock)->rlock){..-...}, at: [<ffffffff810aa9b5>] __queue_work+0x145/0x480
-[   15.850051]
-[   15.850051] but task is already holding lock:
-[   15.850051]  (timekeeper_lock){-.-.-.}, at: [<ffffffff810df6df>] do_adjtimex+0x7f/0x100
+v2: Add note about HSW hangs - vsyrjala
 
-<snip>
-
-[   15.850051] Chain exists of: &(&pool->lock)->rlock --> &p->pi_lock --> timekeeper_lock
-[   15.850051]  Possible unsafe locking scenario:
-[   15.850051]
-[   15.850051]        CPU0                    CPU1
-[   15.850051]        ----                    ----
-[   15.850051]   lock(timekeeper_lock);
-[   15.850051]                                lock(&p->pi_lock);
-[   15.850051] lock(timekeeper_lock);
-[   15.850051] lock(&(&pool->lock)->rlock);
-[   15.850051]
-[   15.850051]  *** DEADLOCK ***
-
-The deadlock was introduced by 06c017fdd4dc48451a ("timekeeping:
-Hold timekeepering locks in do_adjtimex and hardpps") in 3.10
-
-This patch avoids this deadlock, by moving the call to
-schedule_delayed_work() outside of the timekeeper lock
-critical section.
-
-Reported-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-Tested-by: Lin Ming <minggr@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Link: http://lkml.kernel.org/r/1378943457-27314-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Suggested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/timex.h     |    1 +
- kernel/time/ntp.c         |    6 ++----
- kernel/time/timekeeping.c |    2 ++
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -141,6 +141,7 @@ extern int do_adjtimex(struct timex *);
- extern void hardpps(const struct timespec *, const struct timespec *);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4837,9 +4837,6 @@ static int i9xx_crtc_mode_set(struct drm
+ 		return -EINVAL;
+ 	}
  
- int read_current_timer(unsigned long *timer_val);
-+void ntp_notify_cmos_timer(void);
- 
- /* The clock frequency of the i8253/i8254 PIT */
- #define PIT_TICK_RATE 1193182ul
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -516,13 +516,13 @@ static void sync_cmos_clock(struct work_
- 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
- }
- 
--static void notify_cmos_timer(void)
-+void ntp_notify_cmos_timer(void)
- {
- 	schedule_delayed_work(&sync_cmos_work, 0);
- }
- 
- #else
--static inline void notify_cmos_timer(void) { }
-+void ntp_notify_cmos_timer(void) { }
- #endif
- 
- 
-@@ -687,8 +687,6 @@ int __do_adjtimex(struct timex *txc, str
- 	if (!(time_status & STA_NANO))
- 		txc->time.tv_usec /= NSEC_PER_USEC;
- 
--	notify_cmos_timer();
+-	/* Ensure that the cursor is valid for the new mode before changing... */
+-	intel_crtc_update_cursor(crtc, true);
 -
- 	return result;
- }
+ 	if (is_lvds && dev_priv->lvds_downclock_avail) {
+ 		/*
+ 		 * Ensure we match the reduced clock's P to the target clock.
+@@ -5688,9 +5685,6 @@ static int ironlake_crtc_mode_set(struct
+ 		intel_crtc->config.dpll.p2 = clock.p2;
+ 	}
  
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1703,6 +1703,8 @@ int do_adjtimex(struct timex *txc)
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+-	/* Ensure that the cursor is valid for the new mode before changing... */
+-	intel_crtc_update_cursor(crtc, true);
+-
+ 	/* CPU eDP is the only output that doesn't need a PCH PLL of its own. */
+ 	if (intel_crtc->config.has_pch_encoder) {
+ 		fp = i9xx_dpll_compute_fp(&intel_crtc->config.dpll);
+@@ -5897,9 +5891,6 @@ static int haswell_crtc_mode_set(struct
+ 	if (!intel_ddi_pll_mode_set(crtc))
+ 		return -EINVAL;
  
-+	ntp_notify_cmos_timer();
-+
- 	return ret;
- }
+-	/* Ensure that the cursor is valid for the new mode before changing... */
+-	intel_crtc_update_cursor(crtc, true);
+-
+ 	if (intel_crtc->config.has_dp_encoder)
+ 		intel_dp_set_m_n(intel_crtc);
  
 
 
