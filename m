@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab3I2Khx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 06:37:53 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:45102 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab3I2Khu (ORCPT
+	id S1753609Ab3I2LrG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 07:47:06 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:42394 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3I2LrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 06:37:50 -0400
-Date: Sun, 29 Sep 2013 11:37:46 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        tixxdz@gmail.com
-Subject: Re: [PATCH 06/12] procfs: make /proc/*/stack 0400
-Message-ID: <20130929103746.GB3459@dztty>
-References: <1380140085-29712-1-git-send-email-tixxdz@opendz.org>
- <1380140085-29712-7-git-send-email-tixxdz@opendz.org>
- <CAGXu5jJKH6WPSMnqALOEjqGb6ZoeyYzj5vemk=2z4KPZyg=ptw@mail.gmail.com>
+	Sun, 29 Sep 2013 07:47:04 -0400
+Date: Sun, 29 Sep 2013 13:47:00 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20130929114700.GB282@x4>
+References: <20130928180327.GA5000@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJKH6WPSMnqALOEjqGb6ZoeyYzj5vemk=2z4KPZyg=ptw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130928180327.GA5000@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 03:43:24PM -0500, Kees Cook wrote:
-> On Wed, Sep 25, 2013 at 3:14 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > The /proc/*/stack contains sensitive information and currently its mode
-> > is 0444. Change this to 0400 so the VFS will be able to block
-> > unprivileged processes to get file descriptors on arbitrary privileged
-> > /proc/*/stack files.
-> >
-> > The /proc/*/stack is a /procfs ONE file that shares the same ->open()
-> > file operation with other ONE files. Doing a ptrace_may_access() check
-> > during open() might break userspace from accessing other ONE files
-> > like /proc/*/stat and /proc/*/statm.
-> >
-> > Therfore make it 0400 for now, and improve its check during ->read()
-> > in the next following patch.
-> >
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> 
-> While the rest of the series is being discussed, I think it would be
-> nice to at least get this into the tree. Fixing this reduces which
-> processes are exposed to ASLR leaks. The rest of the series closes the
-> remaining holes.
-Kees I guess it's ok to add your Acked-by for this one, for v2
+On 2013.09.28 at 20:03 +0200, Ingo Molnar wrote:
+> Andi Kleen (1):
+>       perf symbols: Demangle cloned functions
+
+The commit above e95ab53645:
+
+ commit de95ab53645a2f0015e0f68ee723f18dce2b8b51
+ Author: Andi Kleen <ak@linux.intel.com>
+ Date:   Thu Sep 12 08:16:38 2013 -0700
+
+     perf symbols: Demangle cloned functions
+
+breaks "perf top" on my machine. I just see a gray screen with no text
+at all. Sometimes the following error messages are printed:
+ *** Error in `perf': invalid fastbin entry (free): 0x00000000029b18c0 ***
+ *** Error in `perf': malloc(): memory corruption (fast): 0x0000000000ee0b10 ***
+
+Reverting the commit "fixes" the issue.
 
 -- 
-Djalal Harouni
-http://opendz.org
+Markus
