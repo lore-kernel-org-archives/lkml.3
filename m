@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3I2Xlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 19:41:51 -0400
-Received: from science.horizon.com ([71.41.210.146]:29854 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751720Ab3I2Xlt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 19:41:49 -0400
-Date: 29 Sep 2013 19:41:46 -0400
-Message-ID: <20130929234146.31004.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, rmallon@gmail.com
-Subject: Re: [PATCH] printk: Check real user/group id for %pK
-Cc: akpm@linux-foundation.org, dan.j.rosenberg@gmail.com,
-        eldad@fogrefinery.com, jkosina@suse.cz, linux-kernel@vger.kernel.org
-In-Reply-To: <5248B724.8060408@gmail.com>
+	id S1753914Ab3I2Xw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 19:52:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753086Ab3I2Xwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 19:52:55 -0400
+Date: Sun, 29 Sep 2013 19:52:33 -0400
+From: Dave Jones <davej@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Zheng Liu <gnehzuil.liu@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [ 062/117] ext4: fix ext4_writepages() in presence of truncate
+Message-ID: <20130929235233.GA26301@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ben Hutchings <ben@decadent.org.uk>, Theodore Tso <tytso@mit.edu>,
+	Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <20130925001740.833541979@linuxfoundation.org>
+ <20130925001747.625543023@linuxfoundation.org>
+ <1380496031.14493.3.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380496031.14493.3.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Right, so the pppd application is actually doing the correct thing.
+On Mon, Sep 30, 2013 at 12:07:11AM +0100, Ben Hutchings wrote:
+ > On Tue, 2013-09-24 at 17:18 -0700, Greg Kroah-Hartman wrote:
+ > > 3.11-stable review patch.  If anyone has any objections, please let me know.
+ > > 
+ > > ------------------
+ > > 
+ > > From: Jan Kara <jack@suse.cz>
+ > > 
+ > > commit 5f1132b2ba8c873f25982cf45917e8455fb6c962 upstream.
+ > [...]
+ > 
+ > Is this needed for any older kernel versions?
 
-And a CAP_SYSLOG setuid binary that *doesn't* DTRT seems like a more
-immediate security hole than leaking kernel addresses.  After all
-kptr_restrict is optional precisely because the benefit is marginal.
+I can't speak authoriatively, but I only started triggering it with 3.11-rc.
 
-The interesting question is what credentials make sense for %pK outside
-of a seq_printf().  Does it even make sense in a generic printk?  In that
-case, it's the permission of the syslogd that matters rather than the
-process generating the message.
-
-> Will wait and see what others have to say.
-
-Me, too.  Dan in particular.
+	Dave
+ 
