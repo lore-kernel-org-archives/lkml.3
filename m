@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab3I2O0T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 10:26:19 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:40625 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab3I2O0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 10:26:17 -0400
-Date: Sun, 29 Sep 2013 16:26:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL] perf fix
-Message-ID: <20130929142613.GA9244@gmail.com>
-References: <20130928180327.GA5000@gmail.com>
- <20130929114700.GB282@x4>
+	id S1754100Ab3I2OoV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 10:44:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277Ab3I2OoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 10:44:18 -0400
+Date: Sun, 29 Sep 2013 17:44:09 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, aik@ozlabs.ru, benh@kernel.crashing.org,
+        bsd@redhat.com, linux-kernel@vger.kernel.org, mst@redhat.com
+Subject: Re: [RFC PATCH 3/3] kvm: Add VFIO device for handling IOMMU cache
+ coherency
+Message-ID: <20130929144409.GD2909@redhat.com>
+References: <20130912211401.8542.82932.stgit@bling.home>
+ <20130912212314.8542.9692.stgit@bling.home>
+ <20130929131627.GU17294@redhat.com>
+ <1380462748.2674.57.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130929114700.GB282@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380462748.2674.57.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-
-> On 2013.09.28 at 20:03 +0200, Ingo Molnar wrote:
-> > Andi Kleen (1):
-> >       perf symbols: Demangle cloned functions
+On Sun, Sep 29, 2013 at 07:52:28AM -0600, Alex Williamson wrote:
+> On Sun, 2013-09-29 at 16:16 +0300, Gleb Natapov wrote:
+> > On Thu, Sep 12, 2013 at 03:23:15PM -0600, Alex Williamson wrote:
+> > > So far we've succeeded at making KVM and VFIO mostly unaware of each
+> > > other, but there's any important point where that breaks down.  Intel
+> > > VT-d hardware may or may not support snoop control.  When snoop
+> > > control is available, intel-iommu promotes No-Snoop transactions on
+> > > PCIe to be cache coherent.  That allows KVM to handle things like the
+> > > x86 WBINVD opcode as a nop.  When the hardware does not support this,
+> > > KVM must implement a hardware visible WBINVD for the guest.
+> > > 
+> > > We could simply let userspace tell KVM how to handle WBINVD, but it's
+> > > privileged for a reason.  Allowing an arbitrary user to enable
+> > > physical WBINVD gives them a more access to the hardware.  Previously,
+> > > this has only been enabled for guests supporting legacy PCI device
+> > > assignment.  In such cases it's necessary for proper guest execution.
+> > > We therefore create a new KVM-VFIO virtual device.  The user can add
+> > > and remove VFIO groups to this device via file descriptors.  KVM
+> > > makes use of the VFIO external user interface to validate that the
+> > > user has access to physical hardware and gets the coherency state of
+> > > the IOMMU from VFIO.  This provides equivalent functionality to
+> > > legacy KVM assignment, while keeping (nearly) all the bits isolated.
+> > > 
+> > Looks good overall to me, one things though: to use legacy device
+> > assignment one needs root permission, so only root user can enable
+> > WBINVD emulation.
 > 
-> The commit above e95ab53645:
+> That's not entirely accurate, legacy device assignment can be used by a
+> non-root user, libvirt does this all the time.  The part that requires
+> root access is opening the pci-sysfs config file, the rest can be
+> managed via file permissions on the remaining sysfs files.
 > 
->  commit de95ab53645a2f0015e0f68ee723f18dce2b8b51
->  Author: Andi Kleen <ak@linux.intel.com>
->  Date:   Thu Sep 12 08:16:38 2013 -0700
+So how libvirt manages to do that as non-root user if pci-sysfs config
+file needs root permission. I didn't mean to say that legacy code
+checks for root explicitly, what I meant is that at some point root
+permission is needed.
+
+> >  Who does this permission checking here? Is only root
+> > allowed to create non coherent group with vfio?
 > 
->      perf symbols: Demangle cloned functions
-> 
-> breaks "perf top" on my machine. I just see a gray screen with no text
-> at all. Sometimes the following error messages are printed:
->  *** Error in `perf': invalid fastbin entry (free): 0x00000000029b18c0 ***
->  *** Error in `perf': malloc(): memory corruption (fast): 0x0000000000ee0b10 ***
-> 
-> Reverting the commit "fixes" the issue.
+> With vfio the user is granted permission by giving them access to the
+> vfio group file (/dev/vfio/$GROUP) and binding all the devices in the
+> group to vfio.  That enables the user to create a container (~iommu
+> domain) with the group attached to it.  Only then will the vfio external
+> user interface provide a reference to the group and enable this wbinvd
+> support.  So, wbinvd emulation should only be available to a user that
+> "own" a vfio group and has it configured for use with this interface.
+What is the default permission of /dev/vfio/$GROUP?
 
-Sorry about that.
-
-Looking at the commit it fails on several quality levels:
-
- - sloppy structure: the code is unreadable, it should have been a 
-                     separate helper function
-
- - sloppy flow:      why the heck does it do strchr() twice? Not to 
-                     mention the fragile way of how the new flow tries 
-                     to merge with the old instead of cleanly separating.
-
- - sloppy types:     it casts a const char * over into char *
-
- - sloppy style:     variable block not separated from statements, 
-                     meaningless temporary variable names, etc. etc.
-
- - and it's not even a regression fix to begin with!
-
-So the right resolution is a revert. Andi, please send a fixed patch with 
-all of these issues and the crash fixed.
-
-Linus,
-
-Please pull the latest perf-urgent-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-
-   HEAD: 14951f22f1cc8375ead345d2ca08455e91f2152b Revert "perf symbols: Demangle cloned functions"
-
-It fixes the 'perf top' regression Markus Trippelsdorf reported.
-
- Thanks,
-
-	Ingo
-
------------------->
-Ingo Molnar (1):
-      Revert "perf symbols: Demangle cloned functions"
-
-
- tools/perf/util/symbol-elf.c | 27 +--------------------------
- 1 file changed, 1 insertion(+), 26 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index d2a888e..a9c829b 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -928,33 +928,8 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		 * to it...
- 		 */
- 		if (symbol_conf.demangle) {
--			/*
--			 * The demangler doesn't deal with cloned functions.
--			 * XXXX.clone.NUM or similar
--			 * Strip the dot part and readd it later.
--			 */
--			char *p = (char *)elf_name, *dot;
--			dot = strchr(elf_name, '.');
--			if (dot) {
--				p = strdup(elf_name);
--				if (!p)
--					goto new_symbol;
--				dot = strchr(p, '.');
--				*dot = 0;
--			}
--
--			demangled = bfd_demangle(NULL, p,
-+			demangled = bfd_demangle(NULL, elf_name,
- 						 DMGL_PARAMS | DMGL_ANSI);
--			if (dot)
--				*dot = '.';
--			if (demangled && dot) {
--				demangled = realloc(demangled, strlen(demangled) + strlen(dot) + 1);
--				if (!demangled)
--					goto new_symbol;
--				strcpy(demangled + (dot - p), dot);
--			}
--			if (p != elf_name)
--				free(p);
- 			if (demangled != NULL)
- 				elf_name = demangled;
- 		}
+--
+			Gleb.
