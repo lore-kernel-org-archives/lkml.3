@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab3I2TxP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:53:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59387 "EHLO
+	id S1755642Ab3I2T2L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab3I2T2N (ORCPT
+	with ESMTP id S1755540Ab3I2T16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:13 -0400
+	Sun, 29 Sep 2013 15:27:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 04/49] bgmac: fix internal switch initialization
-Date: Sun, 29 Sep 2013 12:26:38 -0700
-Message-Id: <20130929191603.310906889@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 17/49] HID: logitech-dj: validate output report details
+Date: Sun, 29 Sep 2013 12:26:51 -0700
+Message-Id: <20130929191604.176441171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,47 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafał Miłecki <zajec5@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 6a391e7bf26c04a6df5f77290e1146941d210d49 upstream.
+commit 297502abb32e225fb23801fcdb0e4f6f8e17099a upstream.
 
-Some devices (BCM4749, BCM5357, BCM53572) have internal switch that
-requires initialization. We already have code for this, but because
-of the typo in code it was never working. This resulted in network not
-working for some routers and possibility of soft-bricking them.
+A HID device could send a malicious output report that would cause the
+logitech-dj HID driver to leak kernel memory contents to the device, or
+trigger a NULL dereference during initialization:
 
-Use correct bit for switch initialization and fix typo in the define.
+[  304.424553] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b
+...
+[  304.780467] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+[  304.781409] IP: [<ffffffff815d50aa>] logi_dj_recv_send_report.isra.11+0x1a/0x90
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+CVE-2013-2895
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/bgmac.c |    2 +-
- drivers/net/ethernet/broadcom/bgmac.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/hid-logitech-dj.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bgmac.c
-+++ b/drivers/net/ethernet/broadcom/bgmac.c
-@@ -908,7 +908,7 @@ static void bgmac_chip_reset(struct bgma
- 		struct bcma_drv_cc *cc = &bgmac->core->bus->drv_cc;
- 		u8 et_swtype = 0;
- 		u8 sw_type = BGMAC_CHIPCTL_1_SW_TYPE_EPHY |
--			     BGMAC_CHIPCTL_1_IF_TYPE_RMII;
-+			     BGMAC_CHIPCTL_1_IF_TYPE_MII;
- 		char buf[2];
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -421,7 +421,7 @@ static int logi_dj_recv_send_report(stru
+ 	struct hid_report *report;
+ 	struct hid_report_enum *output_report_enum;
+ 	u8 *data = (u8 *)(&dj_report->device_index);
+-	int i;
++	unsigned int i;
  
- 		if (bcm47xx_nvram_getenv("et_swtype", buf, 1) > 0) {
---- a/drivers/net/ethernet/broadcom/bgmac.h
-+++ b/drivers/net/ethernet/broadcom/bgmac.h
-@@ -333,7 +333,7 @@
+ 	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
+ 	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
+@@ -431,7 +431,7 @@ static int logi_dj_recv_send_report(stru
+ 		return -ENODEV;
+ 	}
  
- #define BGMAC_CHIPCTL_1_IF_TYPE_MASK		0x00000030
- #define BGMAC_CHIPCTL_1_IF_TYPE_RMII		0x00000000
--#define BGMAC_CHIPCTL_1_IF_TYPE_MI		0x00000010
-+#define BGMAC_CHIPCTL_1_IF_TYPE_MII		0x00000010
- #define BGMAC_CHIPCTL_1_IF_TYPE_RGMII		0x00000020
- #define BGMAC_CHIPCTL_1_SW_TYPE_MASK		0x000000C0
- #define BGMAC_CHIPCTL_1_SW_TYPE_EPHY		0x00000000
+-	for (i = 0; i < report->field[0]->report_count; i++)
++	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
+ 		report->field[0]->value[i] = data[i];
+ 
+ 	hid_hw_request(hdev, report, HID_REQ_SET_REPORT);
+@@ -738,6 +738,12 @@ static int logi_dj_probe(struct hid_devi
+ 		goto hid_parse_fail;
+ 	}
+ 
++	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, REPORT_ID_DJ_SHORT,
++				 0, DJREPORT_SHORT_LENGTH - 1)) {
++		retval = -ENODEV;
++		goto hid_parse_fail;
++	}
++
+ 	/* Starts the usb device and connects to upper interfaces hiddev and
+ 	 * hidraw */
+ 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 
 
