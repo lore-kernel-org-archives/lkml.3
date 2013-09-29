@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3I2Pp4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 11:45:56 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:58414 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500Ab3I2Pps (ORCPT
+	id S1754538Ab3I2PyU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 11:54:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50964 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753234Ab3I2PyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 11:45:48 -0400
-Date: Sun, 29 Sep 2013 17:45:46 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Oussama Ghorbel <oghorbell@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ou.ghorbel@gmail.com
-Subject: Re: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
-Message-ID: <20130929154546.GA10771@order.stressinduktion.org>
-Mail-Followup-To: Oussama Ghorbel <oghorbell@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, ou.ghorbel@gmail.com
-References: <1380207108-20030-1-git-send-email-oghorbell@gmail.com> <20130927083730.GC28287@order.stressinduktion.org> <CA+ev270=P9txSvo7AZN0YcsopwhCYtJCgcZCPsdofEJ+BX+EUQ@mail.gmail.com> <20130927105856.GF28287@order.stressinduktion.org> <CA+ev272+Gp6Kt7S8P-wXxPBh0D8Di9WVH9NDi41HpNakLKC4Dw@mail.gmail.com> <20130927170345.GC10343@order.stressinduktion.org> <CA+ev270d2Ztq9i34Lv9U15y1TbH7W-fioXFn-Q_sJd5F4biHuw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+ev270d2Ztq9i34Lv9U15y1TbH7W-fioXFn-Q_sJd5F4biHuw@mail.gmail.com>
+	Sun, 29 Sep 2013 11:54:17 -0400
+Message-ID: <52484D1A.20402@free-electrons.com>
+Date: Sun, 29 Sep 2013 17:54:02 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Bo Shen <voice.shen@atmel.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] PWM: atmel-pwm: use request/free instead of enable/disable
+References: <1380312628-6564-1-git-send-email-alexandre.belloni@free-electrons.com> <5247FCF5.9090501@atmel.com>
+In-Reply-To: <5247FCF5.9090501@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 29, 2013 at 10:40:11AM +0100, Oussama Ghorbel wrote:
-> On Fri, Sep 27, 2013 at 6:03 PM, Hannes Frederic Sowa
-> <hannes@stressinduktion.org> wrote:
-> > Ok, let's go with one function per protocol type. Seems easier.
-> >
-> > It seems to get more hairy, because it depends on the tunnel driver if the
-> > prepended ip header is accounted in hard_header_len. :/
-> >
-> > I don't know if it works out cleanly. Otherwise I would be ok if the checks
-> > just get repeated in ip6_tunnel and leave the rest as-is.
-> >
-> Yes, It will be the clean way to do it.
+On 29/09/2013 12:12, Bo Shen wrote:
+> Hi Alexandre,
+>
+> On 9/28/2013 04:10, Alexandre Belloni wrote:
+>> I found that disabling a pwm while it is at a low level will actually
+>> put it
+>> back at a high level. The main symptom is that leds-pwm is calling
+>> pwm_disable()
+>> after setting the duty cycle to 0. Hence, instead of getting a
+>> switched off LED,
+>> you get an LED lit up at full brightness.
+>>
+>> Solve that by using the request and free callbacks to enable and
+>> disable the
+>> pwm channels and the clock.
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>> ---
+>>
+>> This patch applies after:
+>>    [PATCH v4] PWM: atmel-pwm: add PWM controller driver
+>>
+>>   drivers/pwm/pwm-atmel.c | 14 +++++---------
+>>   1 file changed, 5 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+>> index 6af7a50..4526e71 100644
+>> --- a/drivers/pwm/pwm-atmel.c
+>> +++ b/drivers/pwm/pwm-atmel.c
+>> @@ -209,7 +209,7 @@ static int atmel_pwm_set_polarity(struct pwm_chip
+>> *chip, struct pwm_device *pwm,
+>>       return 0;
+>>   }
+>>
+>> -static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device
+>> *pwm)
+>> +static int atmel_pwm_request(struct pwm_chip *chip, struct
+>> pwm_device *pwm)
+>>   {
+>>       struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>>       int ret;
+>> @@ -225,23 +225,19 @@ static int atmel_pwm_enable(struct pwm_chip
+>> *chip, struct pwm_device *pwm)
+>>       return 0;
+>>   }
+>>
+>> -static void atmel_pwm_disable(struct pwm_chip *chip, struct
+>> pwm_device *pwm)
+>> +static void atmel_pwm_free(struct pwm_chip *chip, struct pwm_device
+>> *pwm)
+>>   {
+>>       struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> -    u32 val;
+>>
+>>       atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
+>> -
+>> -    val = atmel_pwm_readl(atmel_pwm, PWM_SR);
+>> -    if ((val & PWM_SR_ALL_CH_ON) == 0)
+>> -        clk_disable(atmel_pwm->clk);
+>> +    clk_disable(atmel_pwm->clk);
+>>   }
+>>
+>>   static const struct pwm_ops atmel_pwm_ops = {
+>>       .config = atmel_pwm_config,
+>>       .set_polarity = atmel_pwm_set_polarity,
+>> -    .enable = atmel_pwm_enable,
+>> -    .disable = atmel_pwm_disable,
+>> +    .request = atmel_pwm_request,
+>> +    .free = atmel_pwm_free,
+>
+> This will cause pwmadd_chip failure.
+>
+> Code from <drivers/pwm/core.c>, in function: pwmadd_chip()
+> ---8>---
+> if (!chip || !chip->dev || !chip->ops || !chip->ops->config ||
+>     !chip->ops->enable || !chip->ops->disable)
+>     return -EINVAL;
+> ---<8---
+>
 
-Fine. :)
+You are right, I tested with dummy pwm_enable/pwm_disable functions and
+removed them before sending the patch, thinking they weren't needed.
+I'll respin that patch.
 
-> >
-> > Linux currently cannot create "jumbograms" (only the receiving side
-> > is supported).
-> >
-> I understand, but what are the benefit from this limit or the harm
-> from not specifying it?
-> Please check this comment from eth.c
-> 
-> /**
->  * eth_change_mtu - set new MTU size
->  * @dev: network device
->  * @new_mtu: new Maximum Transfer Unit
->  *
->  * Allow changing MTU size. Needs to be overridden for devices
->  * supporting jumbo frames.
->  */
-> int eth_change_mtu(struct net_device *dev, int new_mtu)
+>>       .owner = THIS_MODULE,
+>>   };
+>>
+>
+> Best Regards,
+> Bo Shen
+>
 
-Hmm, I cannot judge without the full patch. Will it be applicable
-to all net_devices or just ethernet ones? The name could be a bit
-misleading. Remindes me a lot of dev_set_mtu based on the signature, btw.
 
-> So wouldn't be a good idea to let our function open for jumbo frames...?
-
-Hm, we can document the fact that the function would needed to be updated in
-that case. But we should not allow to set a mtu which would require jumbograms
-currently.
-
-Greetings,
-
-  Hannes
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
