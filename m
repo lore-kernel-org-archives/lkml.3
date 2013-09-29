@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab3I2Ivj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 04:51:39 -0400
-Received: from smtp-out-220.synserver.de ([212.40.185.220]:1440 "EHLO
-	smtp-out-220.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab3I2It3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 04:49:29 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1782
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Wolfram Sang <wsa@the-dreams.de>, David Airlie <airlied@linux.ie>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrzej Hajda <a.hajda@samsung.com>
-Subject: [PATCH 1/8] [media] s5c73m3: Don't use i2c_client->driver
-Date: Sun, 29 Sep 2013 10:50:59 +0200
-Message-Id: <1380444666-12019-2-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1380444666-12019-1-git-send-email-lars@metafoo.de>
-References: <1380444666-12019-1-git-send-email-lars@metafoo.de>
+	id S1754214Ab3I2JPD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 05:15:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49214 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753741Ab3I2JO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 05:14:59 -0400
+Date: Sun, 29 Sep 2013 11:14:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        huawei.libin@huawei.com, wangyijing@huawei.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
+Message-ID: <20130929091453.GA5426@pd.tnic>
+References: <20130928180459.GF5956@pd.tnic>
+ <20130928181236.GA4999@gmail.com>
+ <20130928191500.GG5956@pd.tnic>
+ <20130928192545.GB8228@gmail.com>
+ <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com>
+ <20130928194927.GI5956@pd.tnic>
+ <20130928195448.GJ5956@pd.tnic>
+ <20130928195833.GB32081@gmail.com>
+ <20130928200838.GK5956@pd.tnic>
+ <6c689698-aaa0-48cc-8e6e-93d9059c0c34@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <6c689698-aaa0-48cc-8e6e-93d9059c0c34@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'driver' field of the i2c_client struct is redundant and is going to be
-removed. The results of the expressions 'client->driver.driver->field' and
-'client->dev.driver->field' are identical, so replace all occurrences of the
-former with the later.
+On Sat, Sep 28, 2013 at 04:13:29PM -0700, H. Peter Anvin wrote:
+> For negative numbers presumably we need to d++ for the minus sign, no?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>
----
- drivers/media/i2c/s5c73m3/s5c73m3-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That's easy - the function is called num_digits, so we count only digits.
 
-diff --git a/drivers/media/i2c/s5c73m3/s5c73m3-core.c b/drivers/media/i2c/s5c73m3/s5c73m3-core.c
-index b76ec0e..1083890 100644
---- a/drivers/media/i2c/s5c73m3/s5c73m3-core.c
-+++ b/drivers/media/i2c/s5c73m3/s5c73m3-core.c
-@@ -1581,7 +1581,7 @@ static int s5c73m3_probe(struct i2c_client *client,
- 	oif_sd = &state->oif_sd;
- 
- 	v4l2_subdev_init(sd, &s5c73m3_subdev_ops);
--	sd->owner = client->driver->driver.owner;
-+	sd->owner = client->dev.driver->owner;
- 	v4l2_set_subdevdata(sd, state);
- 	strlcpy(sd->name, "S5C73M3", sizeof(sd->name));
- 
+The real question is, is there a use case where we would need to count
+the sign too or only the digits?
+
+And since I can't be clairvoyant, I'll leave it to future generations to
+decide what to do with the sign.
+
+:-)
+
 -- 
-1.8.0
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
