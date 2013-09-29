@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab3I2GPT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 02:15:19 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:46065 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab3I2GOu (ORCPT
+	id S1753939Ab3I2GPR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 02:15:17 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44532 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3I2GOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 02:14:50 -0400
+	Sun, 29 Sep 2013 02:14:48 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3/5] splice: Add sync parameter to wakeup_pipe_writers()
-Date: Sun, 29 Sep 2013 15:14:36 +0900
-Message-Id: <1380435278-10927-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/5] splice: Add sync parameter to wakeup_pipe_readers()
+Date: Sun, 29 Sep 2013 15:14:35 +0900
+Message-Id: <1380435278-10927-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1380435278-10927-1-git-send-email-namhyung@kernel.org>
 References: <1380435278-10927-1-git-send-email-namhyung@kernel.org>
@@ -22,24 +22,24 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 So that it can handle both of sync and normal wakeups in one place.
-Although it doesn't have any sync user, it'll be introduced soon.
+And convert a sync user to reuse it.
 
 Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- fs/splice.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ fs/splice.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/fs/splice.c b/fs/splice.c
-index 77251152e1b8..0325e8b0d816 100644
+index 320cc65585b2..77251152e1b8 100644
 --- a/fs/splice.c
 +++ b/fs/splice.c
-@@ -765,11 +765,15 @@ out:
- }
- EXPORT_SYMBOL(pipe_to_file);
+@@ -164,11 +164,15 @@ static const struct pipe_buf_operations user_page_pipe_buf_ops = {
+ 	.get = generic_pipe_buf_get,
+ };
  
--static void wakeup_pipe_writers(struct pipe_inode_info *pipe)
-+static void wakeup_pipe_writers(struct pipe_inode_info *pipe, bool sync)
+-static void wakeup_pipe_readers(struct pipe_inode_info *pipe)
++static void wakeup_pipe_readers(struct pipe_inode_info *pipe, bool sync)
  {
  	smp_mb();
 -	if (waitqueue_active(&pipe->wait))
@@ -50,33 +50,45 @@ index 77251152e1b8..0325e8b0d816 100644
 +		else
 +			wake_up_interruptible(&pipe->wait);
 +	}
- 	kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+ 	kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
  }
  
-@@ -868,7 +872,7 @@ int splice_from_pipe_next(struct pipe_inode_info *pipe, struct splice_desc *sd)
- 			return -ERESTARTSYS;
- 
- 		if (sd->need_wakeup) {
--			wakeup_pipe_writers(pipe);
-+			wakeup_pipe_writers(pipe, false);
- 			sd->need_wakeup = false;
+@@ -243,10 +247,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
  		}
  
-@@ -908,7 +912,7 @@ EXPORT_SYMBOL(splice_from_pipe_begin);
- void splice_from_pipe_end(struct pipe_inode_info *pipe, struct splice_desc *sd)
- {
- 	if (sd->need_wakeup)
--		wakeup_pipe_writers(pipe);
-+		wakeup_pipe_writers(pipe, false);
- }
- EXPORT_SYMBOL(splice_from_pipe_end);
+ 		if (do_wakeup) {
+-			smp_mb();
+-			if (waitqueue_active(&pipe->wait))
+-				wake_up_interruptible_sync(&pipe->wait);
+-			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
++			wakeup_pipe_readers(pipe, true);
+ 			do_wakeup = 0;
+ 		}
  
-@@ -1935,7 +1939,7 @@ retry:
- 		wakeup_pipe_readers(opipe, false);
+@@ -258,7 +259,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+ 	pipe_unlock(pipe);
+ 
+ 	if (do_wakeup)
+-		wakeup_pipe_readers(pipe);
++		wakeup_pipe_readers(pipe, false);
+ 
+ 	while (page_nr < spd_pages)
+ 		spd->spd_release(spd, page_nr++);
+@@ -1931,7 +1932,7 @@ retry:
+ 	 * If we put data in the output pipe, wakeup any potential readers.
+ 	 */
+ 	if (ret > 0)
+-		wakeup_pipe_readers(opipe);
++		wakeup_pipe_readers(opipe, false);
  
  	if (input_wakeup)
--		wakeup_pipe_writers(ipipe);
-+		wakeup_pipe_writers(ipipe, false);
+ 		wakeup_pipe_writers(ipipe);
+@@ -2012,7 +2013,7 @@ static int link_pipe(struct pipe_inode_info *ipipe,
+ 	 * If we put data in the output pipe, wakeup any potential readers.
+ 	 */
+ 	if (ret > 0)
+-		wakeup_pipe_readers(opipe);
++		wakeup_pipe_readers(opipe, false);
  
  	return ret;
  }
