@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab3I2T2f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59472 "EHLO
+	id S1755778Ab3I2T2c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab3I2T2a (ORCPT
+	with ESMTP id S1755695Ab3I2T22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:30 -0400
+	Sun, 29 Sep 2013 15:28:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 35/49] drm/radeon: avoid UVD corruptions on AGP cards
-Date: Sun, 29 Sep 2013 12:27:09 -0700
-Message-Id: <20130929191605.388853501@linuxfoundation.org>
+Subject: [ 33/49] drm/radeon/atom: workaround vbios bug in transmitter table on rs880 (v2)
+Date: Sun, 29 Sep 2013 12:27:07 -0700
+Message-Id: <20130929191605.256289782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <christian.koenig@amd.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4f66c59922cbcda14c9e103e6c7f4ee616360d43 upstream.
+commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
 
-Putting everything into VRAM seems to help.
+The OUTPUT_ENABLE action jumps past the point in the coder where
+the data_offset is set on certain rs780 cards.  This worked
+previously because the OUTPUT_ENABLE action is always called
+immediately after the ENABLE action so the data_offset remained
+set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
+(drm/radeon/atom: initialize more atom interpretor elements to 0),
+we explictly reset data_offset to 0 between atom calls which then
+caused this to fail.  The fix is to just skip calling the
+OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
+action does the same thing and more.  Ultimately, we could
+probably drop the OUTPUT_ENABLE action all together on DCE3
+asics.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
+fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
+
+v2: only rs880 seems to be affected
+
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -80,9 +80,11 @@ static int radeon_cs_parser_relocs(struc
- 		p->relocs[i].lobj.bo = p->relocs[i].robj;
- 		p->relocs[i].lobj.written = !!r->write_domain;
- 
--		/* the first reloc of an UVD job is the
--		   msg and that must be in VRAM */
--		if (p->ring == R600_RING_TYPE_UVD_INDEX && i == 0) {
-+		/* the first reloc of an UVD job is the msg and that must be in
-+		   VRAM, also but everything into VRAM on AGP cards to avoid
-+		   image corruptions */
-+		if (p->ring == R600_RING_TYPE_UVD_INDEX &&
-+		    (i == 0 || p->rdev->flags & RADEON_IS_AGP)) {
- 			/* TODO: is this still needed for NI+ ? */
- 			p->relocs[i].lobj.domain =
- 				RADEON_GEM_DOMAIN_VRAM;
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1636,8 +1636,12 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+-			/* some early dce3.2 boards have a bug in their transmitter control table */
+-			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
++			/* some dce3.x boards have a bug in their transmitter control table.
++			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
++			 * does the same thing and more.
++			 */
++			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
++			    (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
 
