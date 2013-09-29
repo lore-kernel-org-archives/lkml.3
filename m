@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab3I2Tuw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:50:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59446 "EHLO
+	id S932066Ab3I2TvN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:51:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59439 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718Ab3I2T2X (ORCPT
+	with ESMTP id S1755704Ab3I2T2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:23 -0400
+	Sun, 29 Sep 2013 15:28:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simo Sorce <simo@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 45/49] rpc: clean up decoding of gssproxy linux creds
-Date: Sun, 29 Sep 2013 12:27:19 -0700
-Message-Id: <20130929191606.060129331@linuxfoundation.org>
+        Anatol Pomozov <anatol.pomozov@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@gmail.com>
+Subject: [ 44/49] cfq: explicitly use 64bit divide operation for 64bit arguments
+Date: Sun, 29 Sep 2013 12:27:18 -0700
+Message-Id: <20130929191605.993599947@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -26,108 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit 778e512bb1d3315c6b55832248cd30c566c081d7 upstream.
+commit f3cff25f05f2ac29b2ee355e611b0657482f6f1d upstream.
 
-We can use the normal coding infrastructure here.
+'samples' is 64bit operant, but do_div() second parameter is 32.
+do_div silently truncates high 32 bits and calculated result
+is invalid.
 
-Two minor behavior changes:
+In case if low 32bit of 'samples' are zeros then do_div() produces
+kernel crash.
 
-	- we're assuming no wasted space at the end of the linux cred.
-	  That seems to match gss-proxy's behavior, and I can't see why
-	  it would need to do differently in the future.
-
-	- NGROUPS_MAX check added: note groups_alloc doesn't do this,
-	  this is the caller's responsibility.
-
-Tested-by: Simo Sorce <simo@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/gss_rpc_xdr.c |   32 +++++++++++++-------------------
- 1 file changed, 13 insertions(+), 19 deletions(-)
+ block/cfq-iosched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sunrpc/auth_gss/gss_rpc_xdr.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_xdr.c
-@@ -166,14 +166,14 @@ static int dummy_dec_opt_array(struct xd
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1803,7 +1803,7 @@ static u64 cfqg_prfill_avg_queue_size(st
+ 
+ 	if (samples) {
+ 		v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
+-		do_div(v, samples);
++		v = div64_u64(v, samples);
+ 	}
+ 	__blkg_prfill_u64(sf, pd, v);
  	return 0;
- }
- 
--static int get_s32(void **p, void *max, s32 *res)
-+static int get_s32(struct xdr_stream *xdr, s32 *res)
- {
--	void *base = *p;
--	void *next = (void *)((char *)base + sizeof(s32));
--	if (unlikely(next > max || next < base))
-+	__be32 *p;
-+
-+	p = xdr_inline_decode(xdr, 4);
-+	if (!p)
- 		return -EINVAL;
--	memcpy(res, base, sizeof(s32));
--	*p = next;
-+	memcpy(res, p, sizeof(s32));
- 	return 0;
- }
- 
-@@ -182,7 +182,6 @@ static int gssx_dec_linux_creds(struct x
- {
- 	u32 length;
- 	__be32 *p;
--	void *q, *end;
- 	s32 tmp;
- 	int N, i, err;
- 
-@@ -192,33 +191,28 @@ static int gssx_dec_linux_creds(struct x
- 
- 	length = be32_to_cpup(p);
- 
--	/* FIXME: we do not want to use the scratch buffer for this one
--	 * may need to use functions that allows us to access an io vector
--	 * directly */
--	p = xdr_inline_decode(xdr, length);
--	if (unlikely(p == NULL))
-+	if (length > (3 + NGROUPS_MAX) * sizeof(u32))
- 		return -ENOSPC;
- 
--	q = p;
--	end = q + length;
--
- 	/* uid */
--	err = get_s32(&q, end, &tmp);
-+	err = get_s32(xdr, &tmp);
- 	if (err)
- 		return err;
- 	creds->cr_uid = make_kuid(&init_user_ns, tmp);
- 
- 	/* gid */
--	err = get_s32(&q, end, &tmp);
-+	err = get_s32(xdr, &tmp);
- 	if (err)
- 		return err;
- 	creds->cr_gid = make_kgid(&init_user_ns, tmp);
- 
- 	/* number of additional gid's */
--	err = get_s32(&q, end, &tmp);
-+	err = get_s32(xdr, &tmp);
- 	if (err)
- 		return err;
- 	N = tmp;
-+	if ((3 + N) * sizeof(u32) != length)
-+		return -EINVAL;
- 	creds->cr_group_info = groups_alloc(N);
- 	if (creds->cr_group_info == NULL)
- 		return -ENOMEM;
-@@ -226,7 +220,7 @@ static int gssx_dec_linux_creds(struct x
- 	/* gid's */
- 	for (i = 0; i < N; i++) {
- 		kgid_t kgid;
--		err = get_s32(&q, end, &tmp);
-+		err = get_s32(xdr, &tmp);
- 		if (err)
- 			goto out_free_groups;
- 		err = -EINVAL;
 
 
