@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3I2T34 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59813 "EHLO
+	id S1756506Ab3I2Tca (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:32:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab3I2T3j (ORCPT
+	with ESMTP id S1755924Ab3I2T36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:39 -0400
+	Sun, 29 Sep 2013 15:29:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Vasiliy Glazov <vascom2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 58/71] skge: fix broken driver
-Date: Sun, 29 Sep 2013 12:28:10 -0700
-Message-Id: <20130929192647.501119952@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        FrankR Huang <FrankR.Huang@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 36/71] drm/radeon: enable UVD interrupts on CIK
+Date: Sun, 29 Sep 2013 12:27:48 -0700
+Message-Id: <20130929192645.966372393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,63 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Christian König <christian.koenig@amd.com>
 
-commit c194992cbe71c20bb3623a566af8d11b0bfaa721 upstream.
+commit 6a3808b8233eb91b57c230cf1161ac116a189ffd upstream.
 
-The patch 136d8f377e1575463b47840bc5f1b22d94bf8f63 broke the skge driver.
-Note this part of the patch:
-+               if (skge_rx_setup(skge, e, nskb, skge->rx_buf_size) < 0) {
-+                       dev_kfree_skb(nskb);
-+                       goto resubmit;
-+               }
-+
-                pci_unmap_single(skge->hw->pdev,
-                                 dma_unmap_addr(e, mapaddr),
-                                 dma_unmap_len(e, maplen),
-                                 PCI_DMA_FROMDEVICE);
-                skb = e->skb;
-                prefetch(skb->data);
--               skge_rx_setup(skge, e, nskb, skge->rx_buf_size);
+The same as on evergreen.
 
-The function skge_rx_setup modifies e->skb to point to the new skb. Thus,
-after this change, the new buffer, not the old, is returned to the
-networking stack.
-
-This bug is present in kernels 3.11, 3.11.1 and 3.12-rc1. The patch should
-be queued for 3.11-stable.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Reported-by: Vasiliy Glazov <vascom2@gmail.com>
-Tested-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Reported-by: FrankR Huang <FrankR.Huang@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/marvell/skge.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/cik.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/ethernet/marvell/skge.c
-+++ b/drivers/net/ethernet/marvell/skge.c
-@@ -3092,6 +3092,9 @@ static struct sk_buff *skge_rx_get(struc
- 		if (!nskb)
- 			goto resubmit;
- 
-+		skb = e->skb;
-+		prefetch(skb->data);
-+
- 		if (skge_rx_setup(skge, e, nskb, skge->rx_buf_size) < 0) {
- 			dev_kfree_skb(nskb);
- 			goto resubmit;
-@@ -3101,8 +3104,6 @@ static struct sk_buff *skge_rx_get(struc
- 				 dma_unmap_addr(e, mapaddr),
- 				 dma_unmap_len(e, maplen),
- 				 PCI_DMA_FROMDEVICE);
--		skb = e->skb;
--		prefetch(skb->data);
- 	}
- 
- 	skb_put(skb, len);
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -5763,6 +5763,10 @@ restart_ih:
+ 				break;
+ 			}
+ 			break;
++		case 124: /* UVD */
++			DRM_DEBUG("IH: UVD int: 0x%08x\n", src_data);
++			radeon_fence_process(rdev, R600_RING_TYPE_UVD_INDEX);
++			break;
+ 		case 146:
+ 		case 147:
+ 			addr = RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR);
 
 
