@@ -1,144 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3I2A25 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 20:28:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52065 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755214Ab3I2A24 (ORCPT
+	id S1755323Ab3I2AjD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 20:39:03 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:54194 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198Ab3I2AjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 20:28:56 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: Please revert 928bea964827d7824b548c1f8e06eccbbc4d0d7d
-Date: Sun, 29 Sep 2013 02:40:21 +0200
-Message-ID: <3570038.ZGVWFnHvMQ@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-References: <1380270519.27811.10.camel@pasglop> <1380323960.27811.67.camel@pasglop> <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 28 Sep 2013 20:39:00 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH 1/3] clk: Add error handling to clk_fetch_parent_index()
+Date: Sun, 29 Sep 2013 02:37:14 +0200
+Message-Id: <1380415036-15997-1-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 27, 2013 04:44:20 PM Yinghai Lu wrote:
-> [+ Rafael]
-> 
-> On Fri, Sep 27, 2013 at 4:19 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > On Fri, 2013-09-27 at 15:56 -0700, Yinghai Lu wrote:
-> >
-> >> ok, please if you are ok attached one instead. It will print some warning about
-> >> driver skipping pci_set_master, so we can catch more problem with drivers.
-> >
-> > Except that the message is pretty cryptic :-) Especially since the
-> > driver causing the message to be printed is not the one that did
-> > the mistake in the first place, it's the next one coming up that
-> > trips the warning.
-> >
-> > In any case, the root cause is indeed the PCIe port driver:
-> >
-> > We don't have ACPI, so pcie_port_platform_notify() isn't implemented,
-> > and pcie_ports_auto is true, so we end up with capabilities set to 0.
-> 
-> in
-> | commit fe31e69740eddc7316071ed5165fed6703c8cd12
-> | Author: Rafael J. Wysocki <rjw@sisk.pl>
-> | Date:   Sun Dec 19 15:57:16 2010 +0100
-> |
-> |    PCI/PCIe: Clear Root PME Status bits early during system resume
-> |
-> |    I noticed that PCI Express PMEs don't work on my Toshiba Portege R500
-> |    after the system has been woken up from a sleep state by a PME
-> |    (through Wake-on-LAN).  After some investigation it turned out that
-> |    the BIOS didn't clear the Root PME Status bit in the root port that
-> |    received the wakeup PME and since the Requester ID was also set in
-> |    the port's Root Status register, any subsequent PMEs didn't trigger
-> |    interrupts.
-> |
-> |    This problem can be avoided by clearing the Root PME Status bits in
-> |    all PCI Express root ports during early resume.  For this purpose,
-> |    add an early resume routine to the PCIe port driver and make this
-> |    driver be always registered, even if pci_ports_disable is set (in
-> |    which case the driver's only function is to provide the early
-> |    resume callback).
-> |
-> |
-> |@@ -349,15 +349,18 @@ int pcie_port_device_register(struct pci_dev *dev)
-> |        int status, capabilities, i, nr_service;
-> |        int irqs[PCIE_PORT_DEVICE_MAXSERVICES];
-> |
-> |-       /* Get and check PCI Express port services */
-> |-       capabilities = get_port_device_capability(dev);
-> |-       if (!capabilities)
-> |-               return -ENODEV;
-> |-
-> |        /* Enable PCI Express port device */
-> |        status = pci_enable_device(dev);
-> |        if (status)
-> |                return status;
-> |+
-> |+       /* Get and check PCI Express port services */
-> |+       capabilities = get_port_device_capability(dev);
-> |+       if (!capabilities) {
-> |+               pcie_no_aspm();
-> |+               return 0;
-> |+       }
-> |+
-> |        pci_set_master(dev);
-> |        /*
-> |         * Initialize service irqs. Don't use service devices that
-> 
-> >
-> > Thus the port driver bails out before calling pci_set_master(). The fix
-> > is to call pci_set_master() unconditionally. However that lead me to
-> > find to a few interesting oddities in that port driver code:
-> 
-> can we revert that partially change ? aka we should check get_port....
-> at first...
-> 
-> like attached.
+There are at least two different error cases that can happen in
+clk_fetch_parent_index() function:
+ - allocation failure,
+ - parent clock lookup failure,
+however it returns only an u8, which is supposed to contain parent clock
+index.
 
-It looks like we can do something like this (just pasting your patch):
+This patch modified the function to return full int instead allowing
+positive clock indices and negative error codes to be returned. All
+users of this function are adjusted as well to handle the return value
+correctly.
 
-diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-index 31063ac..1ee6f16 100644
---- a/drivers/pci/pcie/portdrv_core.c
-+++ b/drivers/pci/pcie/portdrv_core.c
-@@ -362,16 +362,16 @@ int pcie_port_device_register(struct pci_dev *dev)
- 	int status, capabilities, i, nr_service;
- 	int irqs[PCIE_PORT_DEVICE_MAXSERVICES];
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+ drivers/clk/clk.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index a004769..9e0a837 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1080,13 +1080,16 @@ unsigned long clk_get_rate(struct clk *clk)
+ }
+ EXPORT_SYMBOL_GPL(clk_get_rate);
  
--	/* Enable PCI Express port device */
--	status = pci_enable_device(dev);
--	if (status)
--		return status;
--
- 	/* Get and check PCI Express port services */
- 	capabilities = get_port_device_capability(dev);
- 	if (!capabilities)
- 		return 0;
+-static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
++static int clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+ {
+-	u8 i;
++	int i;
  
-+	/* Enable PCI Express port device */
-+	status = pci_enable_device(dev);
-+	if (status)
-+		return status;
-+
- 	pci_set_master(dev);
+-	if (!clk->parents)
++	if (!clk->parents) {
+ 		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
+ 								GFP_KERNEL);
++		if (!clk->parents)
++			return -ENOMEM;
++	}
+ 
  	/*
- 	 * Initialize service irqs. Don't use service devices that
-
-but I don't have that box with me to test whether or not it still works
-correctly after this change.  I'll be back home on the next Saturday if
-all goes well.
-
-Thanks,
-Rafael
+ 	 * find index of new parent clock using cached parent ptrs,
+@@ -1095,15 +1098,15 @@ static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+ 	 */
+ 	for (i = 0; i < clk->num_parents; i++) {
+ 		if (clk->parents && clk->parents[i] == parent)
+-			break;
++			return i;
+ 		else if (!strcmp(clk->parent_names[i], parent->name)) {
+ 			if (clk->parents)
+ 				clk->parents[i] = __clk_lookup(parent->name);
+-			break;
++			return i;
+ 		}
+ 	}
+ 
+-	return i;
++	return -EINVAL;
+ }
+ 
+ static void clk_reparent(struct clk *clk, struct clk *new_parent)
+@@ -1265,7 +1268,7 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
+ 	struct clk *old_parent, *parent;
+ 	unsigned long best_parent_rate = 0;
+ 	unsigned long new_rate;
+-	u8 p_index = 0;
++	int p_index = 0;
+ 
+ 	/* sanity */
+ 	if (IS_ERR_OR_NULL(clk))
+@@ -1306,7 +1309,7 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
+ 	/* try finding the new parent index */
+ 	if (parent) {
+ 		p_index = clk_fetch_parent_index(clk, parent);
+-		if (p_index == clk->num_parents) {
++		if (p_index < 0) {
+ 			pr_debug("%s: clk %s can not be parent of clk %s\n",
+ 				 __func__, parent->name, clk->name);
+ 			return NULL;
+@@ -1568,7 +1571,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ int clk_set_parent(struct clk *clk, struct clk *parent)
+ {
+ 	int ret = 0;
+-	u8 p_index = 0;
++	int p_index = 0;
+ 	unsigned long p_rate = 0;
+ 
+ 	if (!clk)
+@@ -1597,10 +1600,10 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+ 	if (parent) {
+ 		p_index = clk_fetch_parent_index(clk, parent);
+ 		p_rate = parent->rate;
+-		if (p_index == clk->num_parents) {
++		if (p_index < 0) {
+ 			pr_debug("%s: clk %s can not be parent of clk %s\n",
+ 					__func__, parent->name, clk->name);
+-			ret = -EINVAL;
++			ret = p_index;
+ 			goto out;
+ 		}
+ 	}
+-- 
+1.8.3.2
 
