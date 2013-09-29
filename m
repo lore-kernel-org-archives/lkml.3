@@ -1,80 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3I2KCv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 06:02:51 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:36708 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750889Ab3I2KCr (ORCPT
+	id S1751561Ab3I2KJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 06:09:06 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:45922 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab3I2KJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 06:02:47 -0400
-Message-ID: <5247FABD.9070405@atmel.com>
-Date: Sun, 29 Sep 2013 18:02:37 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 29 Sep 2013 06:09:02 -0400
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, <devicetree@vger.kernel.org>,
-        <linux-pwm@vger.kernel.org>, <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4] PWM: atmel-pwm: add PWM controller driver
-References: <1380079664-21959-1-git-send-email-voice.shen@atmel.com> <5245B7D7.2040405@free-electrons.com>
-In-Reply-To: <5245B7D7.2040405@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Date: Sun, 29 Sep 2013 15:39:01 +0530
+Message-ID: <CAPUj1OOQf347e1Ou1FKoivHAcMdrW9SjrrwBooGd0spyjepWtA@mail.gmail.com>
+Subject: AMP linux and GPU/HDMI controller sharing
+From: Mj Embd <mj.embd@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+Hi,
 
-On 9/28/2013 00:52, Alexandre Belloni wrote:
-[snip]
+I have got a client request to support on their board 2 instances of
+linux(Ubuntu) running as an AMP.
+The board has 2 ARM cores and a GPU. The LED monitor which connects to
+the board is using HDMI.
 
->> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	int ret;
->> +
->> +	ret = clk_enable(atmel_pwm->clk);
->> +	if (ret) {
->> +		pr_err("failed to enable pwm clock\n");
->> +		return ret;
->> +	}
->> +
->
-> This will increment clk->enable_count each time it is called.
+Two cores can communicate via a IPI handshake.
+So release and acquire of the GPU can be done cooperatively.
 
-Yes, that's true.
+My problem is that, I have done partitioning of other resources but
+not sure how to share the GPU. What I have to do is save the buffers
+associated with current GPU owner in memory and restore later. I dont
+know much about GPU programming and am looking for pointers /any help
+which is possible.
 
->> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
->> +
->> +	return 0;
->> +}
->> +
->> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	u32 val;
->> +
->> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
->> +
->> +	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
->> +	if ((val & PWM_SR_ALL_CH_ON) == 0)
->> +		clk_disable(atmel_pwm->clk);
->> +}
->
-> This will decrement clk->enable_count only once there are no pwm enabled
-> anymore.  So in you enable more than one channel, you will never disable
-> the clock. The simple fix is to always call clk_diasble, regardless of
-> the state of the other channels.
+Also the solution I have to create has to be GPU agnostic.
 
-Thank for point out this.
-
-I see you have sent out a patch to fix it (however the other contents of 
-your patch doesn't work). So, do you prefer I send out v5 patch to fix 
-this? or you fix your patch at same time fix this issue?
-
-Best Regards,
-Bo Shen
+Please help me out.
