@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab3I2TaH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:30:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59852 "EHLO
+	id S1754902Ab3I2TaM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:30:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab3I2T3q (ORCPT
+	with ESMTP id S1756045Ab3I2TaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:46 -0400
+	Sun, 29 Sep 2013 15:30:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@gmail.com>
-Subject: [ 64/71] cfq: explicitly use 64bit divide operation for 64bit arguments
-Date: Sun, 29 Sep 2013 12:28:16 -0700
-Message-Id: <20130929192647.906971859@linuxfoundation.org>
+        FrankR Huang <FrankR.Huang@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 39/71] drm/radeon: fix init ordering for r600+
+Date: Sun, 29 Sep 2013 12:27:51 -0700
+Message-Id: <20130929192646.164725446@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,37 +27,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f3cff25f05f2ac29b2ee355e611b0657482f6f1d upstream.
+commit e5903d399a7b0e5c14673c1206f4aeec2859c730 upstream.
 
-'samples' is 64bit operant, but do_div() second parameter is 32.
-do_div silently truncates high 32 bits and calculated result
-is invalid.
+The vram scratch buffer needs to be initialized
+before the mc is programmed otherwise we program
+0 as the GPU address of the default GPU fault
+page.  In most cases we put vram at zero anyway and
+reserve a page for the legacy vga buffer so in practice
+this shouldn't cause any problems, but better to make
+it correct.
 
-In case if low 32bit of 'samples' are zeros then do_div() produces
-kernel crash.
+Was changed in:
+6fab3febf6d949b0a12b1e4e73db38e4a177a79e
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+Reported-by: FrankR Huang <FrankR.Huang@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/cfq-iosched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/cik.c       |    9 +++++----
+ drivers/gpu/drm/radeon/evergreen.c |    9 +++++----
+ drivers/gpu/drm/radeon/ni.c        |    9 +++++----
+ drivers/gpu/drm/radeon/r600.c      |    9 +++++----
+ drivers/gpu/drm/radeon/rv770.c     |    9 +++++----
+ drivers/gpu/drm/radeon/si.c        |    9 +++++----
+ 6 files changed, 30 insertions(+), 24 deletions(-)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1803,7 +1803,7 @@ static u64 cfqg_prfill_avg_queue_size(st
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -6007,6 +6007,11 @@ static int cik_startup(struct radeon_dev
+ 	struct radeon_ring *ring;
+ 	int r;
  
- 	if (samples) {
- 		v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
--		do_div(v, samples);
-+		v = div64_u64(v, samples);
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	cik_mc_program(rdev);
+ 
+ 	if (rdev->flags & RADEON_IS_IGP) {
+@@ -6036,10 +6041,6 @@ static int cik_startup(struct radeon_dev
+ 		}
  	}
- 	__blkg_prfill_u64(sf, pd, v);
- 	return 0;
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	r = cik_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -5106,6 +5106,11 @@ static int evergreen_startup(struct rade
+ 	/* enable aspm */
+ 	evergreen_program_aspm(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	evergreen_mc_program(rdev);
+ 
+ 	if (ASIC_IS_DCE5(rdev)) {
+@@ -5131,10 +5136,6 @@ static int evergreen_startup(struct rade
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		evergreen_agp_enable(rdev);
+ 	} else {
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -2083,6 +2083,11 @@ static int cayman_startup(struct radeon_
+ 	/* enable aspm */
+ 	evergreen_program_aspm(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	evergreen_mc_program(rdev);
+ 
+ 	if (rdev->flags & RADEON_IS_IGP) {
+@@ -2109,10 +2114,6 @@ static int cayman_startup(struct radeon_
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	r = cayman_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -3334,6 +3334,11 @@ static int r600_startup(struct radeon_de
+ 	/* enable pcie gen2 link */
+ 	r600_pcie_gen2_enable(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	r600_mc_program(rdev);
+ 
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+@@ -3344,10 +3349,6 @@ static int r600_startup(struct radeon_de
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		r600_agp_enable(rdev);
+ 	} else {
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1829,6 +1829,11 @@ static int rv770_startup(struct radeon_d
+ 	/* enable pcie gen2 link */
+ 	rv770_pcie_gen2_enable(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	rv770_mc_program(rdev);
+ 
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+@@ -1839,10 +1844,6 @@ static int rv770_startup(struct radeon_d
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		rv770_agp_enable(rdev);
+ 	} else {
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -6422,6 +6422,11 @@ static int si_startup(struct radeon_devi
+ 	/* enable aspm */
+ 	si_program_aspm(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	si_mc_program(rdev);
+ 
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
+@@ -6439,10 +6444,6 @@ static int si_startup(struct radeon_devi
+ 		return r;
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	r = si_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
 
 
