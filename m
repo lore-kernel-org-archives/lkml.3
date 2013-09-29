@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab3I2T3l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59777 "EHLO
+	id S1756603Ab3I2TgC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:36:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59823 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045Ab3I2T33 (ORCPT
+	with ESMTP id S1756120Ab3I2T3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:29 -0400
+	Sun, 29 Sep 2013 15:29:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 47/71] drm/radeon/dpm: make sure dc performance level limits are valid (BTC-SI) (v2)
-Date: Sun, 29 Sep 2013 12:27:59 -0700
-Message-Id: <20130929192646.695545512@linuxfoundation.org>
+        Hui Wang <hui.wang@canonical.com>, Jan Kara <jack@suse.cz>
+Subject: [ 60/71] udf: Refuse RW mount of the filesystem instead of making it RO
+Date: Sun, 29 Sep 2013 12:28:12 -0700
+Message-Id: <20130929192647.634111397@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,74 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 1ff60ddb84bb9ff6fa182710c4e08b66badf918c upstream.
+commit e729eac6f65e11c5f03b09adcc84bd5bcb230467 upstream.
 
-Check to make sure the dc limits are valid before using them.
-Some systems may not have a dc limits table.  In that case just
-use the ac limits.  This fixes hangs on systems when the power
-state is changed when on battery (dc) due to invalid performance
-state parameters.
+Refuse RW mount of udf filesystem. So far we just silently changed it
+to RO mount but when the media is writeable, block layer won't notice
+this change and thus will think device is used RW and will block eject
+button of the drive. That is unexpected by users because for
+non-writeable media eject button works just fine.
 
-Should fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=68708
+Userspace mount(8) command handles this just fine and retries mounting
+with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
+tool mounting udf is likely confronted with the case of read-only
+media where block layer already refuses to mount the filesystem without
+MS_RDONLY set so our behavior shouldn't be anything new for it.
 
-v2: fix up limits in dpm_init()
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/btc_dpm.c |    6 ++++++
- drivers/gpu/drm/radeon/ni_dpm.c  |    6 ++++++
- drivers/gpu/drm/radeon/si_dpm.c  |    6 ++++++
- 3 files changed, 18 insertions(+)
+ fs/udf/super.c |   42 ++++++++++++++++++++++++------------------
+ 1 file changed, 24 insertions(+), 18 deletions(-)
 
---- a/drivers/gpu/drm/radeon/btc_dpm.c
-+++ b/drivers/gpu/drm/radeon/btc_dpm.c
-@@ -2699,6 +2699,12 @@ int btc_dpm_init(struct radeon_device *r
- 	else
- 		rdev->pm.dpm.dyn_state.sclk_mclk_delta = 10000;
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -630,6 +630,12 @@ static int udf_remount_fs(struct super_b
+ 	struct udf_sb_info *sbi = UDF_SB(sb);
+ 	int error = 0;
  
-+	/* make sure dc limits are valid */
-+	if ((rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.sclk == 0) ||
-+	    (rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.mclk == 0))
-+		rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc =
-+			rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac;
++	if (sbi->s_lvid_bh) {
++		int write_rev = le16_to_cpu(udf_sb_lvidiu(sbi)->minUDFWriteRev);
++		if (write_rev > UDF_MAX_WRITE_VERSION && !(*flags & MS_RDONLY))
++			return -EACCES;
++	}
 +
- 	return 0;
- }
+ 	uopt.flags = sbi->s_flags;
+ 	uopt.uid   = sbi->s_uid;
+ 	uopt.gid   = sbi->s_gid;
+@@ -649,12 +655,6 @@ static int udf_remount_fs(struct super_b
+ 	sbi->s_dmode = uopt.dmode;
+ 	write_unlock(&sbi->s_cred_lock);
  
---- a/drivers/gpu/drm/radeon/ni_dpm.c
-+++ b/drivers/gpu/drm/radeon/ni_dpm.c
-@@ -4270,6 +4270,12 @@ int ni_dpm_init(struct radeon_device *rd
+-	if (sbi->s_lvid_bh) {
+-		int write_rev = le16_to_cpu(udf_sb_lvidiu(sbi)->minUDFWriteRev);
+-		if (write_rev > UDF_MAX_WRITE_VERSION)
+-			*flags |= MS_RDONLY;
+-	}
+-
+ 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY))
+ 		goto out_unlock;
  
- 	ni_pi->use_power_boost_limit = true;
+@@ -1284,16 +1284,18 @@ static int udf_load_partdesc(struct supe
+ 			goto out_bh;
+ 		}
+ 	} else {
++		/*
++		 * If we have a partition with virtual map, we don't handle
++		 * writing to it (we overwrite blocks instead of relocating
++		 * them).
++		 */
++		if (!(sb->s_flags & MS_RDONLY)) {
++			ret = -EACCES;
++			goto out_bh;
++		}
+ 		ret = udf_load_vat(sb, i, type1_idx);
+ 		if (ret < 0)
+ 			goto out_bh;
+-		/*
+-		 * Mark filesystem read-only if we have a partition with
+-		 * virtual map since we don't handle writing to it (we
+-		 * overwrite blocks instead of relocating them).
+-		 */
+-		sb->s_flags |= MS_RDONLY;
+-		pr_notice("Filesystem marked read-only because writing to pseudooverwrite partition is not implemented\n");
+ 	}
+ 	ret = 0;
+ out_bh:
+@@ -2103,8 +2105,11 @@ static int udf_fill_super(struct super_b
+ 				UDF_MAX_READ_VERSION);
+ 			ret = -EINVAL;
+ 			goto error_out;
+-		} else if (minUDFWriteRev > UDF_MAX_WRITE_VERSION)
+-			sb->s_flags |= MS_RDONLY;
++		} else if (minUDFWriteRev > UDF_MAX_WRITE_VERSION &&
++			   !(sb->s_flags & MS_RDONLY)) {
++			ret = -EACCES;
++			goto error_out;
++		}
  
-+	/* make sure dc limits are valid */
-+	if ((rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.sclk == 0) ||
-+	    (rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.mclk == 0))
-+		rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc =
-+			rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac;
-+
- 	return 0;
- }
+ 		sbi->s_udfrev = minUDFWriteRev;
  
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -6401,6 +6401,12 @@ int si_dpm_init(struct radeon_device *rd
+@@ -2121,9 +2126,10 @@ static int udf_fill_super(struct super_b
+ 	}
  
- 	si_initialize_powertune_defaults(rdev);
+ 	if (sbi->s_partmaps[sbi->s_partition].s_partition_flags &
+-			UDF_PART_FLAG_READ_ONLY) {
+-		pr_notice("Partition marked readonly; forcing readonly mount\n");
+-		sb->s_flags |= MS_RDONLY;
++			UDF_PART_FLAG_READ_ONLY &&
++	    !(sb->s_flags & MS_RDONLY)) {
++		ret = -EACCES;
++		goto error_out;
+ 	}
  
-+	/* make sure dc limits are valid */
-+	if ((rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.sclk == 0) ||
-+	    (rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc.mclk == 0))
-+		rdev->pm.dpm.dyn_state.max_clock_voltage_on_dc =
-+			rdev->pm.dpm.dyn_state.max_clock_voltage_on_ac;
-+
- 	return 0;
- }
- 
+ 	if (udf_find_fileset(sb, &fileset, &rootdir)) {
 
 
