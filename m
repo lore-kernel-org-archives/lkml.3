@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab3I2UGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:06:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59163 "EHLO
+	id S1755233Ab3I2T1R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59102 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab3I2T1S (ORCPT
+	with ESMTP id S1755110Ab3I2T1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:18 -0400
+	Sun, 29 Sep 2013 15:27:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>
-Subject: [ 16/17] sfc: Fix efx_rx_buf_offset() for recycled pages
-Date: Sun, 29 Sep 2013 12:26:55 -0700
-Message-Id: <20130929190758.245268941@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 03/17] rt2800: fix wrong TX power compensation
+Date: Sun, 29 Sep 2013 12:26:42 -0700
+Message-Id: <20130929190757.387057411@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -27,44 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-This bug fix is only for stable branches older than 3.10.  The bug was
-fixed upstream by commit 2768935a4660 ('sfc: reuse pages to avoid DMA
-mapping/unmapping costs'), but that change is totally unsuitable for
-stable.
+commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
 
-Commit b590ace09d51 ('sfc: Fix efx_rx_buf_offset() in the presence of
-swiotlb') added an explicit page_offset member to struct
-efx_rx_buffer, which must be set consistently with the u.page and
-dma_addr fields.  However, it failed to add the necessary assignment
-in efx_resurrect_rx_buffer().  It also did not correct the calculation
-of efx_rx_buffer::dma_addr in efx_resurrect_rx_buffer(), which assumes
-that DMA-mapping a page will result in a page-aligned DMA address
-(exactly what swiotlb violates).
+We should not do temperature compensation on devices without
+EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
+Such devices can have totally bogus TSSI parameters on the EEPROM,
+but still threaded by us as valid and result doing wrong TX power
+calculations.
 
-Add the assignment of efx_rx_buffer::page_offset and change the
-calculation of dma_addr to make use of it.
+This fix inability to connect to AP on slightly longer distance on
+some Ralink chips/devices.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>
+Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/sfc/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/sfc/rx.c
-+++ b/drivers/net/sfc/rx.c
-@@ -311,8 +311,9 @@ static void efx_resurrect_rx_buffer(stru
+---
+ drivers/net/wireless/rt2x00/rt2800lib.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -1861,6 +1861,13 @@ static int rt2800_get_gain_calibration_d
+ 	int i;
  
- 	index = rx_queue->added_count & rx_queue->ptr_mask;
- 	new_buf = efx_rx_buffer(rx_queue, index);
--	new_buf->dma_addr = rx_buf->dma_addr ^ (PAGE_SIZE >> 1);
- 	new_buf->u.page = rx_buf->u.page;
-+	new_buf->page_offset = rx_buf->page_offset ^ (PAGE_SIZE >> 1);
-+	new_buf->dma_addr = state->dma_addr + new_buf->page_offset;
- 	new_buf->len = rx_buf->len;
- 	new_buf->is_page = true;
- 	++rx_queue->added_count;
+ 	/*
++	 * First check if temperature compensation is supported.
++	 */
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
++	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
++		return 0;
++
++	/*
+ 	 * Read TSSI boundaries for temperature compensation from
+ 	 * the EEPROM.
+ 	 *
 
 
