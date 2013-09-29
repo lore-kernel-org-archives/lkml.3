@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab3I2Gyc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 02:54:32 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:47439 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3I2Gya (ORCPT
+	id S1754285Ab3I2GzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 02:55:08 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:43159 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab3I2GzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 02:54:30 -0400
-Subject: Re: [BUG/RFC 3/3] perf tools: Add missing GTK2_SUPPORT ifdefs
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-In-Reply-To: <20130927185450.GB3943@infradead.org>
-References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
-	 <1380292332-6518-1-git-send-email-jolsa@redhat.com>
-	 <1380292332-6518-3-git-send-email-jolsa@redhat.com>
-	 <20130927185450.GB3943@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 29 Sep 2013 15:54:25 +0900
-Message-ID: <1380437665.1727.13.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Sun, 29 Sep 2013 02:55:03 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Chanho Min <chanho.min@lge.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, HyoJun Im <hyojun.im@lge.com>
+Subject: Re: [PATCH] [media] uvcvideo: fix data type for pan/tilt control
+Date: Sun, 29 Sep 2013 08:55:06 +0200
+Message-ID: <1512831.Q6pZeWPU68@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1380257860-14075-1-git-send-email-chanho.min@lge.com>
+References: <1380257860-14075-1-git-send-email-chanho.min@lge.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+Hi Chanho,
 
-2013-09-27 (금), 15:54 -0300, Arnaldo Carvalho de Melo:
-> Em Fri, Sep 27, 2013 at 04:32:12PM +0200, Jiri Olsa escreveu:
-> > When building minimal perf via:
-> >   NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1 NO_DEMANGLE=1
-> >   NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1 NO_LIBNUMA=1 NO_LIBAUDIT=1
-> >   NO_LIBBIONIC=1
-> > 
-> > We dont link -ldl and that's causing error for gtk2 related code,
-> > which is disabled on command line (NO_GTK2), but not in the code
-> > (GTK2_SUPPORT).
-> > 
-> > We probably need some global fix/change for this browser
-> > enabled/disable code.
-> 
-> But for now what you did is enough, since the only module that uses
-> the dl mechanism is the GTK+ one, so I'm applying it.
-> 
-> I should have detected this before pushing out perf/core with the
-> changes that introduced this problem, that is what:
-> 
->   make -C tools/perf -f tests/make
-> 
-> was made to catch, my bad, Namhyung, please use those tests next time
-> too :-)
+Thank you for the patch.
 
-I almost forgot about that, sorry.  Will do the tests next time.
+On Friday 27 September 2013 13:57:40 Chanho Min wrote:
+> The pan/tilt absolute control value is signed value. If minimum value
+> is minus, It will be changed to plus by clamp_t() as commit 64ae9958a62.
+> ([media] uvcvideo: Fix control value clamping for unsigned integer
+> controls).
+> 
+> It leads to wrong setting of the control values. For example,
+> when min and max are -36000 and 36000, the setting value between of this
+> range is always 36000. So, Its data type should be changed to signed.
+> 
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
 
-Thanks,
-Namhyung
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
+I've taken the patch in my tree and will send a pull request for the next 
+kernel version.
+
+> ---
+>  drivers/media/usb/uvc/uvc_ctrl.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/usb/uvc/uvc_ctrl.c
+> b/drivers/media/usb/uvc/uvc_ctrl.c index a2f4501..0eb82106 100644
+> --- a/drivers/media/usb/uvc/uvc_ctrl.c
+> +++ b/drivers/media/usb/uvc/uvc_ctrl.c
+> @@ -664,7 +664,7 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] =
+> { .size		= 32,
+>  		.offset		= 0,
+>  		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
+> -		.data_type	= UVC_CTRL_DATA_TYPE_UNSIGNED,
+> +		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
+>  	},
+>  	{
+>  		.id		= V4L2_CID_TILT_ABSOLUTE,
+> @@ -674,7 +674,7 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] =
+> { .size		= 32,
+>  		.offset		= 32,
+>  		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
+> -		.data_type	= UVC_CTRL_DATA_TYPE_UNSIGNED,
+> +		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
+>  	},
+>  	{
+>  		.id		= V4L2_CID_PRIVACY,
+-- 
+Regards,
+
+Laurent Pinchart
 
