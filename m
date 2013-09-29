@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab3I2T2U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59340 "EHLO
+	id S1757188Ab3I2Tvo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:51:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59416 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab3I2T2I (ORCPT
+	with ESMTP id S1755685Ab3I2T2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:08 -0400
+	Sun, 29 Sep 2013 15:28:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 28/49] drm/radeon: update line buffer allocation for dce4.1/5
-Date: Sun, 29 Sep 2013 12:27:02 -0700
-Message-Id: <20130929191604.922415508@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 09/49] HID: provide a helper for validating hid reports
+Date: Sun, 29 Sep 2013 12:26:43 -0700
+Message-Id: <20130929191603.645677721@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -26,88 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 0b31e02363b0db4e7931561bc6c141436e729d9f upstream.
+commit 331415ff16a12147d57d5c953f3a961b7ede348b upstream.
 
-We need to allocate line buffer to each display when
-setting up the watermarks.  Failure to do so can lead
-to a blank screen.  This fixes blank screen problems
-on dce4.1/5 asics.
+Many drivers need to validate the characteristics of their HID report
+during initialization to avoid misusing the reports. This adds a common
+helper to perform validation of the report exisitng, the field existing,
+and the expected number of values within the field.
 
-Based on an initial fix from:
-Jay Cornwall <jay.cornwall@amd.com>
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c  |   25 +++++++++++++++++++++----
- drivers/gpu/drm/radeon/evergreend.h |    4 ++++
- 2 files changed, 25 insertions(+), 4 deletions(-)
+ drivers/hid/hid-core.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hid.h    |    4 +++
+ 2 files changed, 62 insertions(+)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1718,7 +1718,8 @@ static u32 evergreen_line_buffer_adjust(
- 					struct drm_display_mode *mode,
- 					struct drm_display_mode *other_mode)
- {
--	u32 tmp;
-+	u32 tmp, buffer_alloc, i;
-+	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
- 	/*
- 	 * Line Buffer Setup
- 	 * There are 3 line buffers, each one shared by 2 display controllers.
-@@ -1741,18 +1742,34 @@ static u32 evergreen_line_buffer_adjust(
- 	 * non-linked crtcs for maximum line buffer allocation.
- 	 */
- 	if (radeon_crtc->base.enabled && mode) {
--		if (other_mode)
-+		if (other_mode) {
- 			tmp = 0; /* 1/2 */
--		else
-+			buffer_alloc = 1;
-+		} else {
- 			tmp = 2; /* whole */
--	} else
-+			buffer_alloc = 2;
-+		}
-+	} else {
- 		tmp = 0;
-+		buffer_alloc = 0;
-+	}
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -759,6 +759,64 @@ int hid_parse_report(struct hid_device *
+ }
+ EXPORT_SYMBOL_GPL(hid_parse_report);
  
- 	/* second controller of the pair uses second half of the lb */
- 	if (radeon_crtc->crtc_id % 2)
- 		tmp += 4;
- 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset, tmp);
- 
-+	if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
-+		WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
-+		       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
-+		for (i = 0; i < rdev->usec_timeout; i++) {
-+			if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
-+			    DMIF_BUFFERS_ALLOCATED_COMPLETED)
-+				break;
-+			udelay(1);
-+		}
++static const char * const hid_report_names[] = {
++	"HID_INPUT_REPORT",
++	"HID_OUTPUT_REPORT",
++	"HID_FEATURE_REPORT",
++};
++/**
++ * hid_validate_values - validate existing device report's value indexes
++ *
++ * @device: hid device
++ * @type: which report type to examine
++ * @id: which report ID to examine (0 for first)
++ * @field_index: which report field to examine
++ * @report_counts: expected number of values
++ *
++ * Validate the number of values in a given field of a given report, after
++ * parsing.
++ */
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts)
++{
++	struct hid_report *report;
++
++	if (type > HID_FEATURE_REPORT) {
++		hid_err(hid, "invalid HID report type %u\n", type);
++		return NULL;
 +	}
 +
- 	if (radeon_crtc->base.enabled && mode) {
- 		switch (tmp) {
- 		case 0:
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -810,6 +810,10 @@
- #       define LATENCY_LOW_WATERMARK(x)                   ((x) << 0)
- #       define LATENCY_HIGH_WATERMARK(x)                  ((x) << 16)
- 
-+#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
-+#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
-+#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
++	if (id >= HID_MAX_IDS) {
++		hid_err(hid, "invalid HID report id %u\n", id);
++		return NULL;
++	}
 +
- #define IH_RB_CNTL                                        0x3e00
- #       define IH_RB_ENABLE                               (1 << 0)
- #       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
++	/*
++	 * Explicitly not using hid_get_report() here since it depends on
++	 * ->numbered being checked, which may not always be the case when
++	 * drivers go to access report values.
++	 */
++	report = hid->report_enum[type].report_id_hash[id];
++	if (!report) {
++		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->maxfield <= field_index) {
++		hid_err(hid, "not enough fields in %s %u\n",
++			hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->field[field_index]->report_count < report_counts) {
++		hid_err(hid, "not enough values in %s %u field %u\n",
++			hid_report_names[type], id, field_index);
++		return NULL;
++	}
++	return report;
++}
++EXPORT_SYMBOL_GPL(hid_validate_values);
++
+ /**
+  * hid_open_report - open a driver-specific device report
+  *
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -749,6 +749,10 @@ void hid_output_report(struct hid_report
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts);
+ int hid_open_report(struct hid_device *device);
+ int hid_check_keys_pressed(struct hid_device *hid);
+ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
 
 
