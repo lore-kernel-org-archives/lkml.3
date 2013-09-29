@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3I2Tgo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:36:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59810 "EHLO
+	id S1756637Ab3I2Tgv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:36:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107Ab3I2T3i (ORCPT
+	with ESMTP id S1756105Ab3I2T3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:38 -0400
+	Sun, 29 Sep 2013 15:29:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 57/71] drm/radeon: avoid UVD corruptions on AGP cards
-Date: Sun, 29 Sep 2013 12:28:09 -0700
-Message-Id: <20130929192647.434876787@linuxfoundation.org>
+Subject: [ 56/71] drm/radeon: fix panel scaling with eDP and LVDS bridges
+Date: Sun, 29 Sep 2013 12:28:08 -0700
+Message-Id: <20130929192647.369006331@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <christian.koenig@amd.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4f66c59922cbcda14c9e103e6c7f4ee616360d43 upstream.
+commit 855f5f1d882a34e4e9dd27b299737cd3508a5624 upstream.
 
-Putting everything into VRAM seems to help.
+We were using the wrong set_properly callback so we always
+ended up with Full scaling even if something else (Center or
+Full aspect) was selected.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   34 ++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -80,9 +80,11 @@ static int radeon_cs_parser_relocs(struc
- 		p->relocs[i].lobj.bo = p->relocs[i].robj;
- 		p->relocs[i].lobj.written = !!r->write_domain;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1489,6 +1489,24 @@ static const struct drm_connector_funcs
+ 	.force = radeon_dvi_force,
+ };
  
--		/* the first reloc of an UVD job is the
--		   msg and that must be in VRAM */
--		if (p->ring == R600_RING_TYPE_UVD_INDEX && i == 0) {
-+		/* the first reloc of an UVD job is the msg and that must be in
-+		   VRAM, also but everything into VRAM on AGP cards to avoid
-+		   image corruptions */
-+		if (p->ring == R600_RING_TYPE_UVD_INDEX &&
-+		    (i == 0 || p->rdev->flags & RADEON_IS_AGP)) {
- 			/* TODO: is this still needed for NI+ ? */
- 			p->relocs[i].lobj.domain =
- 				RADEON_GEM_DOMAIN_VRAM;
++static const struct drm_connector_funcs radeon_edp_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.detect = radeon_dp_detect,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.set_property = radeon_lvds_set_property,
++	.destroy = radeon_dp_connector_destroy,
++	.force = radeon_dvi_force,
++};
++
++static const struct drm_connector_funcs radeon_lvds_bridge_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.detect = radeon_dp_detect,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.set_property = radeon_lvds_set_property,
++	.destroy = radeon_dp_connector_destroy,
++	.force = radeon_dvi_force,
++};
++
+ void
+ radeon_add_atom_connector(struct drm_device *dev,
+ 			  uint32_t connector_id,
+@@ -1580,8 +1598,6 @@ radeon_add_atom_connector(struct drm_dev
+ 			goto failed;
+ 		radeon_dig_connector->igp_lane_info = igp_lane_info;
+ 		radeon_connector->con_priv = radeon_dig_connector;
+-		drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
+-		drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
+ 		if (i2c_bus->valid) {
+ 			/* add DP i2c bus */
+ 			if (connector_type == DRM_MODE_CONNECTOR_eDP)
+@@ -1598,6 +1614,10 @@ radeon_add_atom_connector(struct drm_dev
+ 		case DRM_MODE_CONNECTOR_VGA:
+ 		case DRM_MODE_CONNECTOR_DVIA:
+ 		default:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_dp_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			connector->interlace_allowed = true;
+ 			connector->doublescan_allowed = true;
+ 			radeon_connector->dac_load_detect = true;
+@@ -1610,6 +1630,10 @@ radeon_add_atom_connector(struct drm_dev
+ 		case DRM_MODE_CONNECTOR_HDMIA:
+ 		case DRM_MODE_CONNECTOR_HDMIB:
+ 		case DRM_MODE_CONNECTOR_DisplayPort:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_dp_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			drm_object_attach_property(&radeon_connector->base.base,
+ 						      rdev->mode_info.underscan_property,
+ 						      UNDERSCAN_OFF);
+@@ -1634,6 +1658,10 @@ radeon_add_atom_connector(struct drm_dev
+ 			break;
+ 		case DRM_MODE_CONNECTOR_LVDS:
+ 		case DRM_MODE_CONNECTOR_eDP:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_lvds_bridge_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			drm_object_attach_property(&radeon_connector->base.base,
+ 						      dev->mode_config.scaling_mode_property,
+ 						      DRM_MODE_SCALE_FULLSCREEN);
+@@ -1797,7 +1825,7 @@ radeon_add_atom_connector(struct drm_dev
+ 				goto failed;
+ 			radeon_dig_connector->igp_lane_info = igp_lane_info;
+ 			radeon_connector->con_priv = radeon_dig_connector;
+-			drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
++			drm_connector_init(dev, &radeon_connector->base, &radeon_edp_connector_funcs, connector_type);
+ 			drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
+ 			if (i2c_bus->valid) {
+ 				/* add DP i2c bus */
 
 
