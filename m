@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3I2T5V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:57:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59325 "EHLO
+	id S1755537Ab3I2T14 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59292 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755549Ab3I2T17 (ORCPT
+	with ESMTP id S1755507Ab3I2T1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:59 -0400
+	Sun, 29 Sep 2013 15:27:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
-Subject: [ 18/49] usb: gadget: fix a bug and a WARN_ON in dummy-hcd
-Date: Sun, 29 Sep 2013 12:26:52 -0700
-Message-Id: <20130929191604.242548631@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 11/49] HID: multitouch: validate indexes details
+Date: Sun, 29 Sep 2013 12:26:45 -0700
+Message-Id: <20130929191603.779967947@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -26,54 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 5f5610f69be3a925b1f79af27150bb7377bc9ad6 upstream.
+commit 8821f5dc187bdf16cfb32ef5aa8c3035273fa79a upstream.
 
-This patch fixes a NULL pointer dereference and a WARN_ON in
-dummy-hcd.  These things were the result of moving to the UDC core
-framework, and possibly of changes to that framework.
+When working on report indexes, always validate that they are in bounds.
+Without this, a HID device could report a malicious feature report that
+could trick the driver into a heap overflow:
 
-Now unloading a gadget driver causes the UDC to be stopped after the
-gadget driver is unbound, not before.  Therefore the "driver" argument
-to dummy_udc_stop() can be NULL, so we must not try to print the
-driver's name without checking first.
+[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
+...
+[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-Also, the UDC framework automatically unregisters the gadget when the
-UDC is deleted.  Therefore a sysfs attribute file attached to the
-gadget must be removed before the UDC is deleted, not after.
+Note that we need to change the indexes from s8 to s16 as they can
+be between -1 and 255.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+CVE-2013-2897
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/dummy_hcd.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/hid/hid-multitouch.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -923,8 +923,9 @@ static int dummy_udc_stop(struct usb_gad
- 	struct dummy_hcd	*dum_hcd = gadget_to_dummy_hcd(g);
- 	struct dummy		*dum = dum_hcd->dum;
- 
--	dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
--			driver->driver.name);
-+	if (driver)
-+		dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
-+				driver->driver.name);
- 
- 	dum->driver = NULL;
- 
-@@ -1000,8 +1001,8 @@ static int dummy_udc_remove(struct platf
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -101,9 +101,9 @@ struct mt_device {
+ 	unsigned last_slot_field;	/* the last field of a slot */
+ 	unsigned mt_report_id;	/* the report ID of the multitouch device */
+ 	unsigned pen_report_id;	/* the report ID of the pen device */
+-	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
+-	__s8 inputmode_index;	/* InputMode HID feature index in the report */
+-	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
++	__s16 inputmode;	/* InputMode HID feature, -1 if non-existent */
++	__s16 inputmode_index;	/* InputMode HID feature index in the report */
++	__s16 maxcontact_report_id;	/* Maximum Contact Number HID feature,
+ 				   -1 if non-existent */
+ 	__u8 num_received;	/* how many contacts we received */
+ 	__u8 num_expected;	/* expected last contact index */
+@@ -317,20 +317,18 @@ static void mt_feature_mapping(struct hi
+ 		struct hid_field *field, struct hid_usage *usage)
  {
- 	struct dummy	*dum = platform_get_drvdata(pdev);
+ 	struct mt_device *td = hid_get_drvdata(hdev);
+-	int i;
  
--	usb_del_gadget_udc(&dum->gadget);
- 	device_remove_file(&dum->gadget.dev, &dev_attr_function);
-+	usb_del_gadget_udc(&dum->gadget);
- 	return 0;
- }
+ 	switch (usage->hid) {
+ 	case HID_DG_INPUTMODE:
+-		td->inputmode = field->report->id;
+-		td->inputmode_index = 0; /* has to be updated below */
+-
+-		for (i=0; i < field->maxusage; i++) {
+-			if (field->usage[i].hid == usage->hid) {
+-				td->inputmode_index = i;
+-				break;
+-			}
++		/* Ignore if value index is out of bounds. */
++		if (usage->usage_index >= field->report_count) {
++			dev_err(&hdev->dev, "HID_DG_INPUTMODE out of range\n");
++			break;
+ 		}
  
++		td->inputmode = field->report->id;
++		td->inputmode_index = usage->usage_index;
++
+ 		break;
+ 	case HID_DG_CONTACTMAX:
+ 		td->maxcontact_report_id = field->report->id;
+@@ -536,6 +534,10 @@ static int mt_touch_input_mapping(struct
+ 			mt_store_field(usage, td, hi);
+ 			return 1;
+ 		case HID_DG_CONTACTCOUNT:
++			/* Ignore if indexes are out of bounds. */
++			if (field->index >= field->report->maxfield ||
++			    usage->usage_index >= field->report_count)
++				return 1;
+ 			td->cc_index = field->index;
+ 			td->cc_value_index = usage->usage_index;
+ 			return 1;
 
 
