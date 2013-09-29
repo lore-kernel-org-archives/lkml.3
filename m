@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3I2T3H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59560 "EHLO
+	id S1756215Ab3I2Tnp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:43:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59612 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab3I2T3B (ORCPT
+	with ESMTP id S1755910Ab3I2T3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:01 -0400
+	Sun, 29 Sep 2013 15:29:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
-Subject: [ 21/71] usb: gadget: fix a bug and a WARN_ON in dummy-hcd
-Date: Sun, 29 Sep 2013 12:27:33 -0700
-Message-Id: <20130929192644.973119105@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Stuart Abercrombie <sabercrombie@chromium.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 23/71] drm/i915: fix hpd work vs. flush_work in the pageflip code deadlock
+Date: Sun, 29 Sep 2013 12:27:35 -0700
+Message-Id: <20130929192645.106139871@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,54 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 5f5610f69be3a925b1f79af27150bb7377bc9ad6 upstream.
+commit 645416f5adc87c8fae44289cdba7562f3ade8f5c upstream.
 
-This patch fixes a NULL pointer dereference and a WARN_ON in
-dummy-hcd.  These things were the result of moving to the UDC core
-framework, and possibly of changes to that framework.
+Historically we've run our own driver hotplug handling in our own
+work-queue, which then launched the drm core hotplug handling in the
+system workqueue. This is important since we flush our own driver
+workqueue in the pageflip code while hodling modeset locks, and only
+the drm hotplug code grabbed these locks. But with
 
-Now unloading a gadget driver causes the UDC to be stopped after the
-gadget driver is unbound, not before.  Therefore the "driver" argument
-to dummy_udc_stop() can be NULL, so we must not try to print the
-driver's name without checking first.
+commit 69787f7da6b2adc4054357a661aaa1701a9ca76f
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Oct 23 18:23:34 2012 +0000
 
-Also, the UDC framework automatically unregisters the gadget when the
-UDC is deleted.  Therefore a sysfs attribute file attached to the
-gadget must be removed before the UDC is deleted, not after.
+    drm: run the hpd irq event code directly
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+this was changed and now we could deadlock in our flip handler if
+there's a hotplug work blocking the progress of the crucial unpin
+works. So this broke the careful deadlock avoidance implemented in
+
+commit b4a98e57fc27854b5938fc8b08b68e5e68b91e1f
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Nov 1 09:26:26 2012 +0000
+
+    drm/i915: Flush outstanding unpin tasks before pageflipping
+
+Since the rule thus far has been that work items on our own workqueue
+may never grab modeset locks simply restore that rule again.
+
+v2: Add a comment to the declaration of dev_priv->wq to warn readers
+about the tricky implications of using it. Suggested by Chris Wilson.
+
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Stuart Abercrombie <sabercrombie@chromium.org>
+Reported-by: Stuart Abercrombie <sabercrombie@chromium.org>
+References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/26239
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Squash in a comment at the place where we schedule the work.
+Requested after-the-fact by Chris on irc since the hpd work isn't the
+only place we botch this.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/dummy_hcd.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h |    7 +++++++
+ drivers/gpu/drm/i915/i915_irq.c |    9 +++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -923,8 +923,9 @@ static int dummy_udc_stop(struct usb_gad
- 	struct dummy_hcd	*dum_hcd = gadget_to_dummy_hcd(g);
- 	struct dummy		*dum = dum_hcd->dum;
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1091,6 +1091,13 @@ typedef struct drm_i915_private {
  
--	dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
--			driver->driver.name);
-+	if (driver)
-+		dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
-+				driver->driver.name);
+ 	unsigned int fsb_freq, mem_freq, is_ddr3;
  
- 	dum->driver = NULL;
++	/**
++	 * wq - Driver workqueue for GEM.
++	 *
++	 * NOTE: Work items scheduled here are not allowed to grab any modeset
++	 * locks, for otherwise the flushing done in the pageflip code will
++	 * result in deadlocks.
++	 */
+ 	struct workqueue_struct *wq;
  
-@@ -1000,8 +1001,8 @@ static int dummy_udc_remove(struct platf
- {
- 	struct dummy	*dum = platform_get_drvdata(pdev);
+ 	/* Display functions */
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -910,8 +910,13 @@ static inline void intel_hpd_irq_handler
+ 		dev_priv->display.hpd_irq_setup(dev);
+ 	spin_unlock(&dev_priv->irq_lock);
  
--	usb_del_gadget_udc(&dum->gadget);
- 	device_remove_file(&dum->gadget.dev, &dev_attr_function);
-+	usb_del_gadget_udc(&dum->gadget);
- 	return 0;
+-	queue_work(dev_priv->wq,
+-		   &dev_priv->hotplug_work);
++	/*
++	 * Our hotplug handler can grab modeset locks (by calling down into the
++	 * fb helpers). Hence it must not be run on our own dev-priv->wq work
++	 * queue for otherwise the flush_work in the pageflip code will
++	 * deadlock.
++	 */
++	schedule_work(&dev_priv->hotplug_work);
  }
  
+ static void gmbus_irq_handler(struct drm_device *dev)
 
 
