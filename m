@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab3I2Tca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:32:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59885 "EHLO
+	id S1755682Ab3I2Tcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:32:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab3I2T36 (ORCPT
+	with ESMTP id S1756209Ab3I2T3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:58 -0400
+	Sun, 29 Sep 2013 15:29:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        FrankR Huang <FrankR.Huang@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 36/71] drm/radeon: enable UVD interrupts on CIK
-Date: Sun, 29 Sep 2013 12:27:48 -0700
-Message-Id: <20130929192645.966372393@linuxfoundation.org>
+        Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Subject: [ 71/71] netfilter: ipset: Fix serious failure in CIDR tracking
+Date: Sun, 29 Sep 2013 12:28:23 -0700
+Message-Id: <20130929192648.370474617@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,33 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <christian.koenig@amd.com>
+From: Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
 
-commit 6a3808b8233eb91b57c230cf1161ac116a189ffd upstream.
+commit 2cf55125c64d64cc106e204d53b107094762dfdf upstream.
 
-The same as on evergreen.
+This fixes a serious bug affecting all hash types with a net element -
+specifically, if a CIDR value is deleted such that none of the same size
+exist any more, all larger (less-specific) values will then fail to
+match. Adding back any prefix with a CIDR equal to or more specific than
+the one deleted will fix it.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Reported-by: FrankR Huang <FrankR.Huang@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Steps to reproduce:
+ipset -N test hash:net
+ipset -A test 1.1.0.0/16
+ipset -A test 2.2.2.0/24
+ipset -T test 1.1.1.1           #1.1.1.1 IS in set
+ipset -D test 2.2.2.0/24
+ipset -T test 1.1.1.1           #1.1.1.1 IS NOT in set
+
+This is due to the fact that the nets counter was unconditionally
+decremented prior to the iteration that shifts up the entries. Now, we
+first check if there is a proceeding entry and if not, decrement it and
+return. Otherwise, we proceed to iterate and then zero the last element,
+which, in most cases, will already be zero.
+
+Signed-off-by: Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/netfilter/ipset/ip_set_hash_gen.h |   26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -5763,6 +5763,10 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 124: /* UVD */
-+			DRM_DEBUG("IH: UVD int: 0x%08x\n", src_data);
-+			radeon_fence_process(rdev, R600_RING_TYPE_UVD_INDEX);
-+			break;
- 		case 146:
- 		case 147:
- 			addr = RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR);
+--- a/net/netfilter/ipset/ip_set_hash_gen.h
++++ b/net/netfilter/ipset/ip_set_hash_gen.h
+@@ -325,18 +325,22 @@ mtype_add_cidr(struct htype *h, u8 cidr,
+ static void
+ mtype_del_cidr(struct htype *h, u8 cidr, u8 nets_length)
+ {
+-	u8 i, j;
++	u8 i, j, net_end = nets_length - 1;
+ 
+-	for (i = 0; i < nets_length - 1 && h->nets[i].cidr != cidr; i++)
+-		;
+-	h->nets[i].nets--;
+-
+-	if (h->nets[i].nets != 0)
+-		return;
+-
+-	for (j = i; j < nets_length - 1 && h->nets[j].nets; j++) {
+-		h->nets[j].cidr = h->nets[j + 1].cidr;
+-		h->nets[j].nets = h->nets[j + 1].nets;
++	for (i = 0; i < nets_length; i++) {
++	        if (h->nets[i].cidr != cidr)
++	                continue;
++                if (h->nets[i].nets > 1 || i == net_end ||
++                    h->nets[i + 1].nets == 0) {
++                        h->nets[i].nets--;
++                        return;
++                }
++                for (j = i; j < net_end && h->nets[j].nets; j++) {
++		        h->nets[j].cidr = h->nets[j + 1].cidr;
++		        h->nets[j].nets = h->nets[j + 1].nets;
++                }
++                h->nets[j].nets = 0;
++                return;
+ 	}
+ }
+ #endif
 
 
