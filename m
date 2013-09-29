@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3I2T3b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59735 "EHLO
+	id S1756678Ab3I2Til (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:38:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab3I2T3U (ORCPT
+	with ESMTP id S1754972Ab3I2T3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:20 -0400
+	Sun, 29 Sep 2013 15:29:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 06/71] rt2800: change initialization sequence to fix system freeze
-Date: Sun, 29 Sep 2013 12:27:18 -0700
-Message-Id: <20130929192643.977225655@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 51/71] drm/radeon/r6xx: add a stubbed out set_uvd_clocks callback
+Date: Sun, 29 Sep 2013 12:28:03 -0700
+Message-Id: <20130929192646.959632126@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,71 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20 upstream.
+commit 1b9ba70a49ba92e910d8e5df702edf8c1858cecf upstream.
 
-My commit
+Certain r6xx boards use the same power state for both UVD
+and other things.  Since we don't support UVD on r6xx boards
+at the moment, there was no callback installed for setting
+the UVD clocks, however, on systems that use the same power
+state, this leads to a NULL pointer dereference.  Fill
+in a stubbed out implementation for now to avoid the crash.
 
-commit c630ccf1a127578421a928489d51e99c05037054
-Author: Stanislaw Gruszka <stf_xl@wp.pl>
-Date:   Sat Mar 16 19:19:46 2013 +0100
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=66963
 
-    rt2800: rearrange bbp/rfcsr initialization
-
-make Maxim machine freeze when try to start wireless device.
-
-Initialization order and sending MCU_BOOT_SIGNAL request, changed in
-above commit, is important. Doing things incorrectly make PCIe bus
-problems, which can froze the machine.
-
-This patch change initialization sequence like vendor driver do:
-function NICInitializeAsic() from
-2011_1007_RT5390_RT5392_Linux_STA_V2.5.0.3_DPO (PCI devices) and
-DPO_RT5572_LinuxSTA_2.6.1.3_20121022 (according Mediatek, latest driver
-for RT8070/RT3070/RT3370/RT3572/RT5370/RT5372/RT5572 USB devices).
-It fixes freezes on Maxim system.
-
-Resolve:
-https://bugzilla.redhat.com/show_bug.cgi?id=1000679
-
-Reported-and-tested-by: Maxim Polyakov <polyakov@dexmalabs.com>
-Bisected-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/r600.c        |    5 +++++
+ drivers/gpu/drm/radeon/radeon_asic.c |    2 ++
+ drivers/gpu/drm/radeon/radeon_asic.h |    1 +
+ 3 files changed, 8 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -5404,19 +5404,20 @@ int rt2800_enable_radio(struct rt2x00_de
- 		     rt2800_init_registers(rt2x00dev)))
- 		return -EIO;
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -119,6 +119,11 @@ u32 r600_get_xclk(struct radeon_device *
+ 	return rdev->clock.spll.reference_freq;
+ }
  
-+	if (unlikely(rt2800_wait_bbp_rf_ready(rt2x00dev)))
-+		return -EIO;
++int r600_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk)
++{
++	return 0;
++}
 +
- 	/*
- 	 * Send signal to firmware during boot time.
- 	 */
- 	rt2800_register_write(rt2x00dev, H2M_BBP_AGENT, 0);
- 	rt2800_register_write(rt2x00dev, H2M_MAILBOX_CSR, 0);
--	if (rt2x00_is_usb(rt2x00dev)) {
-+	if (rt2x00_is_usb(rt2x00dev))
- 		rt2800_register_write(rt2x00dev, H2M_INT_SRC, 0);
--		rt2800_mcu_request(rt2x00dev, MCU_BOOT_SIGNAL, 0, 0, 0);
--	}
-+	rt2800_mcu_request(rt2x00dev, MCU_BOOT_SIGNAL, 0, 0, 0);
- 	msleep(1);
- 
--	if (unlikely(rt2800_wait_bbp_rf_ready(rt2x00dev) ||
--		     rt2800_wait_bbp_ready(rt2x00dev)))
-+	if (unlikely(rt2800_wait_bbp_ready(rt2x00dev)))
- 		return -EIO;
- 
- 	rt2800_init_bbp(rt2x00dev);
+ /* get temperature in millidegrees */
+ int rv6xx_get_temp(struct radeon_device *rdev)
+ {
+--- a/drivers/gpu/drm/radeon/radeon_asic.c
++++ b/drivers/gpu/drm/radeon/radeon_asic.c
+@@ -1146,6 +1146,7 @@ static struct radeon_asic rv6xx_asic = {
+ 		.set_pcie_lanes = &r600_set_pcie_lanes,
+ 		.set_clock_gating = NULL,
+ 		.get_temperature = &rv6xx_get_temp,
++		.set_uvd_clocks = &r600_set_uvd_clocks,
+ 	},
+ 	.dpm = {
+ 		.init = &rv6xx_dpm_init,
+@@ -1257,6 +1258,7 @@ static struct radeon_asic rs780_asic = {
+ 		.set_pcie_lanes = NULL,
+ 		.set_clock_gating = NULL,
+ 		.get_temperature = &rv6xx_get_temp,
++		.set_uvd_clocks = &r600_set_uvd_clocks,
+ 	},
+ 	.dpm = {
+ 		.init = &rs780_dpm_init,
+--- a/drivers/gpu/drm/radeon/radeon_asic.h
++++ b/drivers/gpu/drm/radeon/radeon_asic.h
+@@ -405,6 +405,7 @@ int r600_mc_wait_for_idle(struct radeon_
+ u32 r600_get_xclk(struct radeon_device *rdev);
+ uint64_t r600_get_gpu_clock_counter(struct radeon_device *rdev);
+ int rv6xx_get_temp(struct radeon_device *rdev);
++int r600_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk);
+ int r600_dpm_pre_set_power_state(struct radeon_device *rdev);
+ void r600_dpm_post_set_power_state(struct radeon_device *rdev);
+ /* rv6xx dpm */
 
 
