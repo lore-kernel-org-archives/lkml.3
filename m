@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3I2Gwp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 02:52:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32592 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3I2Gwn (ORCPT
+	id S1754057Ab3I2Gyc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 02:54:32 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:47439 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab3I2Gya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 02:52:43 -0400
-Message-ID: <5247CECC.9050003@oracle.com>
-Date: Sun, 29 Sep 2013 14:55:08 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: axboe@kernel.dk, linux-kernel@vger.kernel.org, alexey.kodanev@oracle.com
-Subject: Re: [PATCH v2] block: register_blkdev doesn't check name against
- NULL
-References: <1378809614-17490-1-git-send-email-vaughan.cao@oracle.com> <1378866250-22679-1-git-send-email-vaughan.cao@oracle.com> <x49mwn3y4bo.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49mwn3y4bo.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sun, 29 Sep 2013 02:54:30 -0400
+Subject: Re: [BUG/RFC 3/3] perf tools: Add missing GTK2_SUPPORT ifdefs
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+In-Reply-To: <20130927185450.GB3943@infradead.org>
+References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+	 <1380292332-6518-1-git-send-email-jolsa@redhat.com>
+	 <1380292332-6518-3-git-send-email-jolsa@redhat.com>
+	 <20130927185450.GB3943@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 29 Sep 2013 15:54:25 +0900
+Message-ID: <1380437665.1727.13.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 10:56 PM, Jeff Moyer wrote:
-> Vaughan Cao <vaughan.cao@oracle.com> writes:
->
->> register_blkdev(0, NULL) can result kernel Oops by copying from NULL
->> in strlcpy(). Fix it by checking NULL pointer at the beginning and
->> WARN when encountered in unregister_blkdev.
-> Uhh, so yeah, this is an exported function, so I could see maybe wanting
-> to do the argument checking.  But honestly, if your driver can't even
-> get this right, is there any hope of it actually working?
->
-> This seems like a pointless patch to me, but ultimately it's up to Jens.
->
-> Cheers,
-> Jeff
->
-> p.s. the kerneldoc tells you what to put there:
->  * @name: the name of the new block device as a zero terminated string
-Thanks for your comment, Jeff. I have the same feeling as you, however,
-shouldn't kernel do its best to provide the maximum stable working ability?
-And it's test case 7 of block driver in ltp project -
-http://sourceforge.net/p/ltp/git/ci/master/tree/testcases/kernel/device-drivers/block/kernel_space/test_block.c.
-It seems their attitude is we should check this.
+Hi Arnaldo,
 
-Vaughan
+2013-09-27 (금), 15:54 -0300, Arnaldo Carvalho de Melo:
+> Em Fri, Sep 27, 2013 at 04:32:12PM +0200, Jiri Olsa escreveu:
+> > When building minimal perf via:
+> >   NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1 NO_DEMANGLE=1
+> >   NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1 NO_LIBNUMA=1 NO_LIBAUDIT=1
+> >   NO_LIBBIONIC=1
+> > 
+> > We dont link -ldl and that's causing error for gtk2 related code,
+> > which is disabled on command line (NO_GTK2), but not in the code
+> > (GTK2_SUPPORT).
+> > 
+> > We probably need some global fix/change for this browser
+> > enabled/disable code.
+> 
+> But for now what you did is enough, since the only module that uses
+> the dl mechanism is the GTK+ one, so I'm applying it.
+> 
+> I should have detected this before pushing out perf/core with the
+> changes that introduced this problem, that is what:
+> 
+>   make -C tools/perf -f tests/make
+> 
+> was made to catch, my bad, Namhyung, please use those tests next time
+> too :-)
+
+I almost forgot about that, sorry.  Will do the tests next time.
+
+Thanks,
+Namhyung
+
+
