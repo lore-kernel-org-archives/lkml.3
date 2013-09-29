@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab3I2TwQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:52:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59412 "EHLO
+	id S1755666Ab3I2T2P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab3I2T2R (ORCPT
+	with ESMTP id S1755556Ab3I2T2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:17 -0400
+	Sun, 29 Sep 2013 15:28:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 08/49] sched/fair: Fix small race where child->se.parent,cfs_rq might point to invalid ones
-Date: Sun, 29 Sep 2013 12:26:42 -0700
-Message-Id: <20130929191603.578404822@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 19/49] drm/i915: fix gpu hang vs. flip stall deadlocks
+Date: Sun, 29 Sep 2013 12:26:53 -0700
+Message-Id: <20130929191604.308797576@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,90 +33,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 6c9a27f5da9609fca46cb2b183724531b48f71ad upstream.
+commit 122f46badaafbe651f05c2c0f24cadee692f761b upstream.
 
-There is a small race between copy_process() and cgroup_attach_task()
-where child->se.parent,cfs_rq points to invalid (old) ones.
+Since we've started to clean up pending flips when the gpu hangs in
 
-        parent doing fork()      | someone moving the parent to another cgroup
-  -------------------------------+---------------------------------------------
-    copy_process()
-      + dup_task_struct()
-        -> parent->se is copied to child->se.
-           se.parent,cfs_rq of them point to old ones.
+commit 96a02917a0131e52efefde49c2784c0421d6c439
+Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Date:   Mon Feb 18 19:08:49 2013 +0200
 
-                                     cgroup_attach_task()
-                                       + cgroup_task_migrate()
-                                         -> parent->cgroup is updated.
-                                       + cpu_cgroup_attach()
-                                         + sched_move_task()
-                                           + task_move_group_fair()
-                                             +- set_task_rq()
-                                                -> se.parent,cfs_rq of parent
-                                                   are updated.
+    drm/i915: Finish page flips and update primary planes after a GPU reset
 
-      + cgroup_fork()
-        -> parent->cgroup is copied to child->cgroup. (*1)
-      + sched_fork()
-        + task_fork_fair()
-          -> se.parent,cfs_rq of child are accessed
-             while they point to old ones. (*2)
+the gpu reset work now also grabs modeset locks. But since work items
+on our private work queue are not allowed to do that due to the
+flush_workqueue from the pageflip code this results in a neat
+deadlock:
 
-In the worst case, this bug can lead to "use-after-free" and cause a panic,
-because it's new cgroup's refcount that is incremented at (*1),
-so the old cgroup(and related data) can be freed before (*2).
+INFO: task kms_flip:14676 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kms_flip        D ffff88019283a5c0     0 14676  13344 0x00000004
+ ffff88018e62dbf8 0000000000000046 ffff88013bdb12e0 ffff88018e62dfd8
+ ffff88018e62dfd8 00000000001d3b00 ffff88019283a5c0 ffff88018ec21000
+ ffff88018f693f00 ffff88018eece000 ffff88018e62dd60 ffff88018eece898
+Call Trace:
+ [<ffffffff8138ee7b>] schedule+0x60/0x62
+ [<ffffffffa046c0dd>] intel_crtc_wait_for_pending_flips+0xb2/0x114 [i915]
+ [<ffffffff81050ff4>] ? finish_wait+0x60/0x60
+ [<ffffffffa0478041>] intel_crtc_set_config+0x7f3/0x81e [i915]
+ [<ffffffffa031780a>] drm_mode_set_config_internal+0x4f/0xc6 [drm]
+ [<ffffffffa0319cf3>] drm_mode_setcrtc+0x44d/0x4f9 [drm]
+ [<ffffffff810e44da>] ? might_fault+0x38/0x86
+ [<ffffffffa030d51f>] drm_ioctl+0x2f9/0x447 [drm]
+ [<ffffffff8107a722>] ? trace_hardirqs_off+0xd/0xf
+ [<ffffffffa03198a6>] ? drm_mode_setplane+0x343/0x343 [drm]
+ [<ffffffff8112222f>] ? mntput_no_expire+0x3e/0x13d
+ [<ffffffff81117f33>] vfs_ioctl+0x18/0x34
+ [<ffffffff81118776>] do_vfs_ioctl+0x396/0x454
+ [<ffffffff81396b37>] ? sysret_check+0x1b/0x56
+ [<ffffffff81118886>] SyS_ioctl+0x52/0x7d
+ [<ffffffff81396b12>] system_call_fastpath+0x16/0x1b
+2 locks held by kms_flip/14676:
+ #0:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffffa0316545>] drm_modeset_lock_all+0x22/0x59 [drm]
+ #1:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa031656b>] drm_modeset_lock_all+0x48/0x59 [drm]
+INFO: task kworker/u8:4:175 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kworker/u8:4    D ffff88018de9a5c0     0   175      2 0x00000000
+Workqueue: i915 i915_error_work_func [i915]
+ ffff88018e37dc30 0000000000000046 ffff8801938ab8a0 ffff88018e37dfd8
+ ffff88018e37dfd8 00000000001d3b00 ffff88018de9a5c0 ffff88018ec21018
+ 0000000000000246 ffff88018e37dca0 000000005a865a86 ffff88018de9a5c0
+Call Trace:
+ [<ffffffff8138ee7b>] schedule+0x60/0x62
+ [<ffffffff8138f23d>] schedule_preempt_disabled+0x9/0xb
+ [<ffffffff8138d0cd>] mutex_lock_nested+0x205/0x3b1
+ [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
+ [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
+ [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
+ [<ffffffffa044e0a2>] i915_error_work_func+0x128/0x147 [i915]
+ [<ffffffff8104a89a>] process_one_work+0x1d4/0x35a
+ [<ffffffff8104a821>] ? process_one_work+0x15b/0x35a
+ [<ffffffff8104b4a5>] worker_thread+0x144/0x1f0
+ [<ffffffff8104b361>] ? rescuer_thread+0x275/0x275
+ [<ffffffff8105076d>] kthread+0xac/0xb4
+ [<ffffffff81059d30>] ? finish_task_switch+0x3b/0xc0
+ [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
+ [<ffffffff81396a6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
+3 locks held by kworker/u8:4/175:
+ #0:  (i915){.+.+.+}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
+ #1:  ((&dev_priv->gpu_error.work)){+.+.+.}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
+ #2:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
 
-In fact, a panic caused by this bug was originally caught in RHEL6.4.
+This blew up while running kms_flip/flip-vs-panning-vs-hang-interruptible
+on one of my older machines.
 
-    BUG: unable to handle kernel NULL pointer dereference at (null)
-    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
-    [...]
-    Call Trace:
-     [<ffffffff81051f25>] place_entity+0x75/0xa0
-     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
-     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
-     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
-     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
-     [<ffffffff8106d2f4>] do_fork+0x94/0x460
-     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
-     [<ffffffff81009598>] sys_clone+0x28/0x30
-     [<ffffffff8100b393>] stub_clone+0x13/0x20
-     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
+Unfortunately (despite the proper lockdep annotations for
+flush_workqueue) lockdep still doesn't detect this correctly, so we
+need to rely on chance to discover these bugs.
 
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Apply the usual bugfix and schedule the reset work on the system
+workqueue to keep our own driver workqueue free of any modeset lock
+grabbing.
+
+Note that this is not a terribly serious regression since before the
+offending commit we'd simply have stalled userspace forever due to
+failing to abort all outstanding pageflips.
+
+v2: Add a comment as requested by Chris.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/fair.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5778,11 +5778,15 @@ static void task_fork_fair(struct task_s
- 	cfs_rq = task_cfs_rq(current);
- 	curr = cfs_rq->curr;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1727,7 +1727,13 @@ void i915_handle_error(struct drm_device
+ 			wake_up_all(&ring->irq_queue);
+ 	}
  
--	if (unlikely(task_cpu(p) != this_cpu)) {
--		rcu_read_lock();
--		__set_task_cpu(p, this_cpu);
--		rcu_read_unlock();
--	}
+-	queue_work(dev_priv->wq, &dev_priv->gpu_error.work);
 +	/*
-+	 * Not only the cpu but also the task_group of the parent might have
-+	 * been changed after parent->se.parent,cfs_rq were copied to
-+	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
-+	 * of child point to valid ones.
++	 * Our reset work can grab modeset locks (since it needs to reset the
++	 * state of outstanding pagelips). Hence it must not be run on our own
++	 * dev-priv->wq work queue for otherwise the flush_work in the pageflip
++	 * code will deadlock.
 +	 */
-+	rcu_read_lock();
-+	__set_task_cpu(p, this_cpu);
-+	rcu_read_unlock();
++	schedule_work(&dev_priv->gpu_error.work);
+ }
  
- 	update_curr(cfs_rq);
- 
+ static void __always_unused i915_pageflip_stall_check(struct drm_device *dev, int pipe)
 
 
