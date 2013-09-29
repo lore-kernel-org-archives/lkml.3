@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab3I2T3Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59700 "EHLO
+	id S1756713Ab3I2TkH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:40:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59761 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab3I2T3N (ORCPT
+	with ESMTP id S1756014Ab3I2T3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:13 -0400
+	Sun, 29 Sep 2013 15:29:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 28/71] drm: fix DRM_IOCTL_MODE_GETFB handle-leak
-Date: Sun, 29 Sep 2013 12:27:40 -0700
-Message-Id: <20130929192645.437642542@linuxfoundation.org>
+        Tom Stellard <thomas.stellard@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 42/71] drm/radeon/si: Add support for CP DMA to CS checker for compute v2
+Date: Sun, 29 Sep 2013 12:27:54 -0700
+Message-Id: <20130929192646.363373682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,75 +27,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Tom Stellard <thomas.stellard@amd.com>
 
-commit 101b96f32956ee99bf1468afaf572b88cda9f88b upstream.
+commit e5b9e7503eb1f4884efa3b321d3cc47806779202 upstream.
 
-DRM_IOCTL_MODE_GETFB is used to retrieve information about a given
-framebuffer ID. It is a read-only helper and was thus declassified for
-unprivileged access in:
+Also add a new RADEON_INFO query to check that CP DMA packets are
+supported on the compute ring.
 
-  commit a14b1b42477c5ef089fcda88cbaae50d979eb8f9
-  Author: Mandeep Singh Baines <mandeep.baines@gmail.com>
-  Date:   Fri Jan 20 12:11:16 2012 -0800
+CP DMA has been supported since the 3.8 kernel, but due to an oversight
+we forgot to teach the CS checker that the CP DMA packet was legal for
+the compute ring on Southern Islands GPUs.
 
-      drm: remove master fd restriction on mode setting getters
+This patch fixes a bug where the radeon driver will incorrectly reject a legal
+CP DMA packet from user space.  I would like to have the patch
+backported to stable so that we don't have to require Mesa users to use a
+bleeding edge kernel in order to take advantage of this feature which
+is already present in the stable kernels (3.8 and newer).
 
-However, alongside width, height and stride information,
-DRM_IOCTL_MODE_GETFB also passes back a handle to the underlying buffer of
-the framebuffer. This handle allows users to mmap() it and read or write
-into it. Obviously, this should be restricted to DRM-Master.
+v2:
+  - Don't bump kms version, so this patch can be backported to stable
+    kernels.
 
-With the current setup, *any* process with access to /dev/dri/card0 (which
-means any process with access to hardware-accelerated rendering) can
-access the current screen framebuffer and modify it ad libitum.
-
-For backwards-compatibility reasons we want to keep the
-DRM_IOCTL_MODE_GETFB call unprivileged. Besides, it provides quite useful
-information regarding screen setup. So we simply test whether the caller
-is the current DRM-Master and if not, we return 0 as handle, which is
-always invalid. A following DRM_IOCTL_GEM_CLOSE on this handle will fail
-with EINVAL, but we accept this. Users shouldn't test for errors during
-GEM_CLOSE, anyway. And it is still better as a failing MODE_GETFB call.
-
-v2: add capable(CAP_SYS_ADMIN) check for compatibility with i-g-t
-
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Tom Stellard <thomas.stellard@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_crtc.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_kms.c |    3 +
+ drivers/gpu/drm/radeon/si.c         |  106 ++++++++++++++++++++----------------
+ include/uapi/drm/radeon_drm.h       |    2 
+ 3 files changed, 66 insertions(+), 45 deletions(-)
 
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -2604,10 +2604,22 @@ int drm_mode_getfb(struct drm_device *de
- 	r->depth = fb->depth;
- 	r->bpp = fb->bits_per_pixel;
- 	r->pitch = fb->pitches[0];
--	if (fb->funcs->create_handle)
--		ret = fb->funcs->create_handle(fb, file_priv, &r->handle);
--	else
-+	if (fb->funcs->create_handle) {
-+		if (file_priv->is_master || capable(CAP_SYS_ADMIN)) {
-+			ret = fb->funcs->create_handle(fb, file_priv,
-+						       &r->handle);
-+		} else {
-+			/* GET_FB() is an unprivileged ioctl so we must not
-+			 * return a buffer-handle to non-master processes! For
-+			 * backwards-compatibility reasons, we cannot make
-+			 * GET_FB() privileged, so just return an invalid handle
-+			 * for non-masters. */
-+			r->handle = 0;
-+			ret = 0;
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -433,6 +433,9 @@ int radeon_info_ioctl(struct drm_device
+ 			return -EINVAL;
+ 		}
+ 		break;
++	case RADEON_INFO_SI_CP_DMA_COMPUTE:
++		*value = 1;
++		break;
+ 	default:
+ 		DRM_DEBUG_KMS("Invalid request %d\n", info->request);
+ 		return -EINVAL;
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -4083,13 +4083,64 @@ static int si_vm_packet3_ce_check(struct
+ 	return 0;
+ }
+ 
++static int si_vm_packet3_cp_dma_check(u32 *ib, u32 idx)
++{
++	u32 start_reg, reg, i;
++	u32 command = ib[idx + 4];
++	u32 info = ib[idx + 1];
++	u32 idx_value = ib[idx];
++	if (command & PACKET3_CP_DMA_CMD_SAS) {
++		/* src address space is register */
++		if (((info & 0x60000000) >> 29) == 0) {
++			start_reg = idx_value << 2;
++			if (command & PACKET3_CP_DMA_CMD_SAIC) {
++				reg = start_reg;
++				if (!si_vm_reg_valid(reg)) {
++					DRM_ERROR("CP DMA Bad SRC register\n");
++					return -EINVAL;
++				}
++			} else {
++				for (i = 0; i < (command & 0x1fffff); i++) {
++					reg = start_reg + (4 * i);
++					if (!si_vm_reg_valid(reg)) {
++						DRM_ERROR("CP DMA Bad SRC register\n");
++						return -EINVAL;
++					}
++				}
++			}
 +		}
-+	} else {
- 		ret = -ENODEV;
 +	}
++	if (command & PACKET3_CP_DMA_CMD_DAS) {
++		/* dst address space is register */
++		if (((info & 0x00300000) >> 20) == 0) {
++			start_reg = ib[idx + 2];
++			if (command & PACKET3_CP_DMA_CMD_DAIC) {
++				reg = start_reg;
++				if (!si_vm_reg_valid(reg)) {
++					DRM_ERROR("CP DMA Bad DST register\n");
++					return -EINVAL;
++				}
++			} else {
++				for (i = 0; i < (command & 0x1fffff); i++) {
++					reg = start_reg + (4 * i);
++				if (!si_vm_reg_valid(reg)) {
++						DRM_ERROR("CP DMA Bad DST register\n");
++						return -EINVAL;
++					}
++				}
++			}
++		}
++	}
++	return 0;
++}
++
+ static int si_vm_packet3_gfx_check(struct radeon_device *rdev,
+ 				   u32 *ib, struct radeon_cs_packet *pkt)
+ {
++	int r;
+ 	u32 idx = pkt->idx + 1;
+ 	u32 idx_value = ib[idx];
+ 	u32 start_reg, end_reg, reg, i;
+-	u32 command, info;
  
- 	drm_framebuffer_unreference(fb);
+ 	switch (pkt->opcode) {
+ 	case PACKET3_NOP:
+@@ -4190,50 +4241,9 @@ static int si_vm_packet3_gfx_check(struc
+ 		}
+ 		break;
+ 	case PACKET3_CP_DMA:
+-		command = ib[idx + 4];
+-		info = ib[idx + 1];
+-		if (command & PACKET3_CP_DMA_CMD_SAS) {
+-			/* src address space is register */
+-			if (((info & 0x60000000) >> 29) == 0) {
+-				start_reg = idx_value << 2;
+-				if (command & PACKET3_CP_DMA_CMD_SAIC) {
+-					reg = start_reg;
+-					if (!si_vm_reg_valid(reg)) {
+-						DRM_ERROR("CP DMA Bad SRC register\n");
+-						return -EINVAL;
+-					}
+-				} else {
+-					for (i = 0; i < (command & 0x1fffff); i++) {
+-						reg = start_reg + (4 * i);
+-						if (!si_vm_reg_valid(reg)) {
+-							DRM_ERROR("CP DMA Bad SRC register\n");
+-							return -EINVAL;
+-						}
+-					}
+-				}
+-			}
+-		}
+-		if (command & PACKET3_CP_DMA_CMD_DAS) {
+-			/* dst address space is register */
+-			if (((info & 0x00300000) >> 20) == 0) {
+-				start_reg = ib[idx + 2];
+-				if (command & PACKET3_CP_DMA_CMD_DAIC) {
+-					reg = start_reg;
+-					if (!si_vm_reg_valid(reg)) {
+-						DRM_ERROR("CP DMA Bad DST register\n");
+-						return -EINVAL;
+-					}
+-				} else {
+-					for (i = 0; i < (command & 0x1fffff); i++) {
+-						reg = start_reg + (4 * i);
+-						if (!si_vm_reg_valid(reg)) {
+-							DRM_ERROR("CP DMA Bad DST register\n");
+-							return -EINVAL;
+-						}
+-					}
+-				}
+-			}
+-		}
++		r = si_vm_packet3_cp_dma_check(ib, idx);
++		if (r)
++			return r;
+ 		break;
+ 	default:
+ 		DRM_ERROR("Invalid GFX packet3: 0x%x\n", pkt->opcode);
+@@ -4245,6 +4255,7 @@ static int si_vm_packet3_gfx_check(struc
+ static int si_vm_packet3_compute_check(struct radeon_device *rdev,
+ 				       u32 *ib, struct radeon_cs_packet *pkt)
+ {
++	int r;
+ 	u32 idx = pkt->idx + 1;
+ 	u32 idx_value = ib[idx];
+ 	u32 start_reg, reg, i;
+@@ -4317,6 +4328,11 @@ static int si_vm_packet3_compute_check(s
+ 				return -EINVAL;
+ 		}
+ 		break;
++	case PACKET3_CP_DMA:
++		r = si_vm_packet3_cp_dma_check(ib, idx);
++		if (r)
++			return r;
++		break;
+ 	default:
+ 		DRM_ERROR("Invalid Compute packet3: 0x%x\n", pkt->opcode);
+ 		return -EINVAL;
+--- a/include/uapi/drm/radeon_drm.h
++++ b/include/uapi/drm/radeon_drm.h
+@@ -979,6 +979,8 @@ struct drm_radeon_cs {
+ #define RADEON_INFO_RING_WORKING	0x15
+ /* SI tile mode array */
+ #define RADEON_INFO_SI_TILE_MODE_ARRAY	0x16
++/* query if CP DMA is supported on the compute ring */
++#define RADEON_INFO_SI_CP_DMA_COMPUTE	0x17
  
+ 
+ struct drm_radeon_info {
 
 
