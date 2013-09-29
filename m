@@ -1,155 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3I2OEG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 10:04:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab3I2OEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 10:04:01 -0400
-Date: Sun, 29 Sep 2013 15:56:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20130929135646.GA3743@redhat.com>
-References: <20130924202423.GW12926@twins.programming.kicks-ass.net> <20130925155515.GA17447@redhat.com> <20130925174307.GA3220@laptop.programming.kicks-ass.net> <20130925175055.GA25914@redhat.com> <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net> <20130926165840.GA863@redhat.com> <20130926175016.GI3657@laptop.programming.kicks-ass.net> <20130927181532.GA8401@redhat.com>
+	id S1753732Ab3I2OLq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 10:11:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58396 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752140Ab3I2OLn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 10:11:43 -0400
+Date: Sun, 29 Sep 2013 15:11:37 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: devicetree@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mfd: arizona: Update device tree regulator bindings
+Message-ID: <20130929141137.GW3635@opensource.wolfsonmicro.com>
+References: <1380131272-16982-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20130925183201.GT3226@sirena.org.uk> <20130926152941.GQ3635@opensource.wolfsonmicro.com> <20130926175843.GS19304@sirena.org.uk> <20130928155308.GV3635@opensource.wolfsonmicro.com> <20130928225535.GQ19304@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130927181532.GA8401@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130928225535.GQ19304@sirena.org.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27, Oleg Nesterov wrote:
->
-> I tried hard to find any hole in this version but failed, I believe it
-> is correct.
+On Sat, Sep 28, 2013 at 11:55:35PM +0100, Mark Brown wrote:
+> No, having the supplies bound to the parent is desired (especially given
+> that there isn't a child node) - it's the fact that you're bodging this
+> in the framework by just randomly peering at the parent device and
+> hoping it's an MFD parent when a lookup fails.  That's not a safe thing
+> to do.  
+> 
+> Like I said in the quote above trying to handle this in the child isn't
+> a good approach, it's both more idiomatic and more robust to put the
+> mappings from the parent device to the child devices in when creating
+> the child devices.
 
-And I still believe it is. But now I am starting to think that we
-don't need cpuhp_seq. (and imo cpuhp_waitcount, but this is minor).
+Apologies I didn't mean to convey I was still pushing for the
+above patch. I am just trying to get a good handle on what needs
+to be done here, and thought I best clarify about the gpio
+functionality as it is starting to look like changes in quite a
+few places and I am wondering if there is a better more central
+place to handle the issue.
 
-> We need to ensure 2 things:
->
-> 1. The reader should notic state = BLOCK or the writer should see
->    inc(__cpuhp_refcount). This is guaranteed by 2 mb's in
->    __get_online_cpus() and in cpu_hotplug_begin().
->
->    We do not care if the writer misses some inc(__cpuhp_refcount)
->    in per_cpu_sum(__cpuhp_refcount), that reader(s) should notice
->    state = readers_block (and inc(cpuhp_seq) can't help anyway).
+> > For example, the GPIO driver has a similar issue if anything else
+> > wishes to use an Arizona devices GPIO, because the GPIO driver
+> > is on a different device to the MFD so again it can't locate it.
+> > I haven't checked yet but I am guessing there will be similar
+> > issues with the interrupts.
+> 
+> No, this isn't an issue at all.  Look at how the regulator API resolves
+> DT lookups for example, the structure of the driver offering the service
+> should have no impact on anything referencing it.  The fact that Linux
+> happens to split things up into a particular set of subsystems at the
+> current time should have no bearing on the way that the DT bindings are
+> written since that's just a detail of how Linux works.
 
-Yes!
+There is currently only one other MFD driver (tps65910) which defines
+the GPIOs on the main MFD node as we do in the Arizona driver and it
+uses the 'hack' that I suggested in my first email of copying the
+of_node.
 
-> 2. If the writer sees the result of this_cpu_dec(__cpuhp_refcount)
->    from __put_online_cpus() (note that the writer can miss the
->    corresponding inc() if it was done on another CPU, so this dec()
->    can lead to sum() == 0),
+tps65910_gpio->gpio_chip.of_node = tps65910->dev->of_node;
 
-But this can't happen in this version? Somehow I forgot that
-__get_online_cpus() does inc/get under preempt_disable(), always on
-the same CPU. And thanks to mb's the writer should not miss the
-reader which has already passed the "state != BLOCK" check.
+Looking around there seem to be quite a few drivers that copy
+of_node pointers like this are we sure this isn't an acceptable
+solution? I mean the arizona driver we know the components will
+always be loaded as part of the MFD and thus will be freed before
+the parent node.
 
-To simplify the discussion, lets ignore the "readers_fast" state,
-synchronize_sched() logic looks obviously correct. IOW, lets discuss
-only the SLOW -> BLOCK transition.
-
-	cput_hotplug_begin()
-	{
-		state = BLOCK;
-
-		mb();
-
-		wait_event(cpuhp_writer,
-				per_cpu_sum(__cpuhp_refcount) == 0);
-	}
-
-should work just fine? Ignoring all details, we have
-
-	get_online_cpus()
-	{
-	again:
-		preempt_disable();
-
-		__this_cpu_inc(__cpuhp_refcount);
-
-		mb();
-
-		if (state == BLOCK) {
-
-			mb();
-
-			__this_cpu_dec(__cpuhp_refcount);
-			wake_up_all(cpuhp_writer);
-
-			preempt_enable();
-			wait_event(state != BLOCK);
-			goto again;
-		}
-
-		preempt_enable();
-	}
-
-It seems to me that these mb's guarantee all we need, no?
-
-It looks really simple. The reader can only succed if it doesn't see
-BLOCK, in this case per_cpu_sum() should see the change,
-
-We have
-
-	WRITER					READER on CPU X
-
-	state = BLOCK;				__cpuhp_refcount[X]++;
-
-	mb();					mb();
-
-	...
-	count += __cpuhp_refcount[X];		if (state != BLOCK)
-	...						return;
-
-						mb();
-						__cpuhp_refcount[X]--;
-
-Either reader or writer should notice the STORE we care about.
-
-If a reader can decrement __cpuhp_refcount, we have 2 cases:
-
-	1. It is the reader holding this lock. In this case we
-	   can't miss the corresponding inc() done by this reader,
-	   because this reader didn't see BLOCK in the past.
-
-	   It is just the
-
-			A == B == 0
-	   	CPU_0			CPU_1
-	   	-----			-----
-	   	A = 1;			B = 1;
-	   	mb();			mb();
-	   	b = B;			a = A;
-
-	   pattern, at least one CPU should see 1 in its a/b.
-
-	2. It is the reader which tries to take this lock and
-	   noticed state == BLOCK. We could miss the result of
-	   its inc(), but we do not care, this reader is going
-	   to block.
-
-	   _If_ the reader could migrate between inc/dec, then
-	   yes, we have a problem. Because that dec() could make
-	   the result of per_cpu_sum() = 0. IOW, we could miss
-	   inc() but notice dec(). But given that it does this
-	   on the same CPU this is not possible.
-
-So why do we need cpuhp_seq?
-
-Oleg.
+Thanks,
+Charles
 
