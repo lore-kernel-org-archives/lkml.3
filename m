@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3I2Tjt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:39:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59766 "EHLO
+	id S1756020Ab3I2T3Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024Ab3I2T30 (ORCPT
+	with ESMTP id S1755924Ab3I2T3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:26 -0400
+	Sun, 29 Sep 2013 15:29:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 44/71] drm/radeon: update line buffer allocation for dce6
-Date: Sun, 29 Sep 2013 12:27:56 -0700
-Message-Id: <20130929192646.497398319@linuxfoundation.org>
+        David Herrmann <dh.herrmann@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 28/71] drm: fix DRM_IOCTL_MODE_GETFB handle-leak
+Date: Sun, 29 Sep 2013 12:27:40 -0700
+Message-Id: <20130929192645.437642542@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,87 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit 290d24576ccf1aa0373d2185cedfe262d0d4952a upstream.
+commit 101b96f32956ee99bf1468afaf572b88cda9f88b upstream.
 
-We need to allocate line buffer to each display when
-setting up the watermarks.  Failure to do so can lead
-to a blank screen.  This fixes blank screen problems
-on dce6 asics.
+DRM_IOCTL_MODE_GETFB is used to retrieve information about a given
+framebuffer ID. It is a read-only helper and was thus declassified for
+unprivileged access in:
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=64850
+  commit a14b1b42477c5ef089fcda88cbaae50d979eb8f9
+  Author: Mandeep Singh Baines <mandeep.baines@gmail.com>
+  Date:   Fri Jan 20 12:11:16 2012 -0800
 
-Based on an initial fix from:
-Jay Cornwall <jay.cornwall@amd.com>
+      drm: remove master fd restriction on mode setting getters
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+However, alongside width, height and stride information,
+DRM_IOCTL_MODE_GETFB also passes back a handle to the underlying buffer of
+the framebuffer. This handle allows users to mmap() it and read or write
+into it. Obviously, this should be restricted to DRM-Master.
+
+With the current setup, *any* process with access to /dev/dri/card0 (which
+means any process with access to hardware-accelerated rendering) can
+access the current screen framebuffer and modify it ad libitum.
+
+For backwards-compatibility reasons we want to keep the
+DRM_IOCTL_MODE_GETFB call unprivileged. Besides, it provides quite useful
+information regarding screen setup. So we simply test whether the caller
+is the current DRM-Master and if not, we return 0 as handle, which is
+always invalid. A following DRM_IOCTL_GEM_CLOSE on this handle will fail
+with EINVAL, but we accept this. Users shouldn't test for errors during
+GEM_CLOSE, anyway. And it is still better as a failing MODE_GETFB call.
+
+v2: add capable(CAP_SYS_ADMIN) check for compatibility with i-g-t
+
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si.c  |   23 +++++++++++++++++++----
- drivers/gpu/drm/radeon/sid.h |    4 ++++
- 2 files changed, 23 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/drm_crtc.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -1704,7 +1704,8 @@ static u32 dce6_line_buffer_adjust(struc
- 				   struct drm_display_mode *mode,
- 				   struct drm_display_mode *other_mode)
- {
--	u32 tmp;
-+	u32 tmp, buffer_alloc, i;
-+	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
- 	/*
- 	 * Line Buffer Setup
- 	 * There are 3 line buffers, each one shared by 2 display controllers.
-@@ -1719,16 +1720,30 @@ static u32 dce6_line_buffer_adjust(struc
- 	 * non-linked crtcs for maximum line buffer allocation.
- 	 */
- 	if (radeon_crtc->base.enabled && mode) {
--		if (other_mode)
-+		if (other_mode) {
- 			tmp = 0; /* 1/2 */
--		else
-+			buffer_alloc = 1;
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -2604,10 +2604,22 @@ int drm_mode_getfb(struct drm_device *de
+ 	r->depth = fb->depth;
+ 	r->bpp = fb->bits_per_pixel;
+ 	r->pitch = fb->pitches[0];
+-	if (fb->funcs->create_handle)
+-		ret = fb->funcs->create_handle(fb, file_priv, &r->handle);
+-	else
++	if (fb->funcs->create_handle) {
++		if (file_priv->is_master || capable(CAP_SYS_ADMIN)) {
++			ret = fb->funcs->create_handle(fb, file_priv,
++						       &r->handle);
 +		} else {
- 			tmp = 2; /* whole */
--	} else
-+			buffer_alloc = 2;
++			/* GET_FB() is an unprivileged ioctl so we must not
++			 * return a buffer-handle to non-master processes! For
++			 * backwards-compatibility reasons, we cannot make
++			 * GET_FB() privileged, so just return an invalid handle
++			 * for non-masters. */
++			r->handle = 0;
++			ret = 0;
 +		}
 +	} else {
- 		tmp = 0;
-+		buffer_alloc = 0;
+ 		ret = -ENODEV;
 +	}
  
- 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset,
- 	       DC_LB_MEMORY_CONFIG(tmp));
+ 	drm_framebuffer_unreference(fb);
  
-+	WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
-+	       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
-+		    DMIF_BUFFERS_ALLOCATED_COMPLETED)
-+			break;
-+		udelay(1);
-+	}
-+
- 	if (radeon_crtc->base.enabled && mode) {
- 		switch (tmp) {
- 		case 0:
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -282,6 +282,10 @@
- 
- #define DMIF_ADDR_CALC  				0xC00
- 
-+#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
-+#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
-+#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
-+
- #define	SRBM_STATUS				        0xE50
- #define		GRBM_RQ_PENDING 			(1 << 5)
- #define		VMC_BUSY 				(1 << 8)
 
 
