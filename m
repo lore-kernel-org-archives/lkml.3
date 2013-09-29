@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3I2T1o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59253 "EHLO
+	id S1755504Ab3I2T1u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755421Ab3I2T1i (ORCPT
+	with ESMTP id S1755421Ab3I2T1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:38 -0400
+	Sun, 29 Sep 2013 15:27:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 10/22] drm/radeon: fix endian bugs in hw i2c atom routines
-Date: Sun, 29 Sep 2013 12:26:56 -0700
-Message-Id: <20130929191159.589959535@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, Tejun Heo <tj@kernel.org>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [ 16/22] cgroup: fail if monitored file and event_control are in different cgroup
+Date: Sun, 29 Sep 2013 12:27:02 -0700
+Message-Id: <20130929191159.989285833@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -26,70 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 4543eda52113d1e2cc0e9bf416f79597e6ef1ec7 upstream.
+commit f169007b2773f285e098cb84c74aac0154d65ff7 upstream.
 
-Need to swap the data fetched over i2c properly.  This
-is the same fix as the endian fix for aux channel
-transactions.
+If we pass fd of memory.usage_in_bytes of cgroup A to cgroup.event_control
+of cgroup B, then we won't get memory usage notification from A but B!
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+What's worse, if A and B are in different mount hierarchy, we'll end up
+accessing NULL pointer!
+
+Disallow this kind of invalid usage.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c  |    6 +++---
- drivers/gpu/drm/radeon/atombios_i2c.c |    4 +++-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ kernel/cgroup.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -51,7 +51,7 @@ static char *pre_emph_names[] = {
-  * or from atom. Note that atom operates on
-  * dw units.
-  */
--static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
-+void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3476,6 +3476,7 @@ static int cgroup_write_event_control(st
+ 				      const char *buffer)
  {
- #ifdef __BIG_ENDIAN
- 	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
-@@ -101,7 +101,7 @@ static int radeon_process_aux_ch(struct
- 
- 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
- 
--	radeon_copy_swap(base, send, send_bytes, true);
-+	radeon_atom_copy_swap(base, send, send_bytes, true);
- 
- 	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
- 	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
-@@ -138,7 +138,7 @@ static int radeon_process_aux_ch(struct
- 		recv_bytes = recv_size;
- 
- 	if (recv && recv_size)
--		radeon_copy_swap(recv, base + 16, recv_bytes, false);
-+		radeon_atom_copy_swap(recv, base + 16, recv_bytes, false);
- 
- 	return recv_bytes;
- }
---- a/drivers/gpu/drm/radeon/atombios_i2c.c
-+++ b/drivers/gpu/drm/radeon/atombios_i2c.c
-@@ -27,6 +27,8 @@
- #include "radeon.h"
- #include "atom.h"
- 
-+extern void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le);
-+
- #define TARGET_HW_I2C_CLOCK 50
- 
- /* these are a limitation of ProcessI2cChannelTransaction not the hw */
-@@ -77,7 +79,7 @@ static int radeon_process_i2c_ch(struct
+ 	struct cgroup_event *event = NULL;
++	struct cgroup *cgrp_cfile;
+ 	unsigned int efd, cfd;
+ 	struct file *efile = NULL;
+ 	struct file *cfile = NULL;
+@@ -3531,6 +3532,16 @@ static int cgroup_write_event_control(st
+ 		goto fail;
  	}
  
- 	if (!(flags & HW_I2C_WRITE))
--		memcpy(buf, base, num);
-+		radeon_atom_copy_swap(buf, base, num, false);
- 
- 	return 0;
- }
++	/*
++	 * The file to be monitored must be in the same cgroup as
++	 * cgroup.event_control is.
++	 */
++	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
++	if (cgrp_cfile != cgrp) {
++		ret = -EINVAL;
++		goto fail;
++	}
++
+ 	if (!event->cft->register_event || !event->cft->unregister_event) {
+ 		ret = -EINVAL;
+ 		goto fail;
 
 
