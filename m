@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3I2StX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 14:49:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52024 "EHLO
+	id S1755078Ab3I2TEj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:04:39 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52035 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3I2StT (ORCPT
+	with ESMTP id S1754969Ab3I2TEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 14:49:19 -0400
-Date: Sun, 29 Sep 2013 19:49:18 +0100
+	Sun, 29 Sep 2013 15:04:36 -0400
+Date: Sun, 29 Sep 2013 20:04:34 +0100
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
 Subject: Re: [rfc][possible solution] RCU vfsmounts
-Message-ID: <20130929184917.GN13318@ZenIV.linux.org.uk>
+Message-ID: <20130929190434.GO13318@ZenIV.linux.org.uk>
 References: <20130928202728.GK13318@ZenIV.linux.org.uk>
  <CA+55aFzrjiM6bgqNgdckJGAZks2fR8ZD+R_5AqxvrnS64DD3ow@mail.gmail.com>
  <20130929060601.GL13318@ZenIV.linux.org.uk>
@@ -30,40 +30,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, Sep 29, 2013 at 07:10:47PM +0100, Al Viro wrote:
+
 > FWIW, right now I'm reviewing the subset of fs code that can be hit in
 > RCU mode.  Not a pretty sight, that... ;-/  First catch: in
-> fuse_dentry_revalidate() we have a case (reachable with LOOKUP_RCU) where
-> we do this:
->         } else if (inode) {
->                 fc = get_fuse_conn(inode);
->                 if (fc->readdirplus_auto) {
->                         parent = dget_parent(entry);
->                         fuse_advise_use_readdirplus(parent->d_inode);
->                         dput(parent);
->                 }
->         }
-> First of all, that'll lead to obvious nastiness if we get here when
-> ->s_fs_info has already been freed in process of fs shutdown; fc will
-> be pointing to kfreed object and no, freeing it isn't RCU-delayed.
-> That's not a problem with the current tree, of course, but this
-> dput(parent) very much is - doing that under rcu_read_lock() is
-> a Bloody Bad Idea(tm).
+[snip]
 
-Another one: 
-int ll_revalidate_nd(struct dentry *dentry, unsigned int flags)
-{
-        struct inode *parent = dentry->d_parent->d_inode;
-        int unplug = 0;
+and another, this one completely unrelated to RCU:
+                unsigned long gen = (unsigned long) dentry->d_fsdata;
+                unsigned long pgen =
+                        OCFS2_I(dentry->d_parent->d_inode)->ip_dir_lock_gen;
+in ocfs2_dentry_revalidate() needs dentry->d_lock around fetching pgen, as
+in the diff below.  I can put it into the next vfs.git pull request
+tonight, or pass the buck to ocfs2 folks.  Folks, which tree would
+you prefer that to go through?  I'm fine with either variant.  Strictly
+speaking, that's -stable fodder, but the race window is quite narrow,
+so it's not something earth-shattering...
 
-        CDEBUG(D_VFSTRACE, "VFS Op:name=%s,flags=%u\n",  
-               dentry->d_name.name, flags);
-
-        if (!(flags & (LOOKUP_PARENT|LOOKUP_OPEN|LOOKUP_CREATE)) &&
-            ll_need_statahead(parent, dentry) > 0) {
-                if (flags & LOOKUP_RCU)
-                        return -ECHILD;
-
-... and ll_need_statahead(NULL, ...) will oops.  Doesn't even need
-LOOKUP_RCU to barf - ->d_revalidate() can be called without ->i_mutex
-on parent, so we can race with e.g. rename() followed by rmdir() of
-old parent.
+diff --git a/fs/ocfs2/dcache.c b/fs/ocfs2/dcache.c
+index ef99972..0d3a97d 100644
+--- a/fs/ocfs2/dcache.c
++++ b/fs/ocfs2/dcache.c
+@@ -70,9 +70,10 @@ static int ocfs2_dentry_revalidate(struct dentry *dentry, unsigned int flags)
+ 	 */
+ 	if (inode == NULL) {
+ 		unsigned long gen = (unsigned long) dentry->d_fsdata;
+-		unsigned long pgen =
+-			OCFS2_I(dentry->d_parent->d_inode)->ip_dir_lock_gen;
+-
++		unsigned long pgen;
++		spin_lock(&dentry->d_lock);
++		pgen = OCFS2_I(dentry->d_parent->d_inode)->ip_dir_lock_gen;
++		spin_unlock(&dentry->d_lock);
+ 		trace_ocfs2_dentry_revalidate_negative(dentry->d_name.len,
+ 						       dentry->d_name.name,
+ 						       pgen, gen);
