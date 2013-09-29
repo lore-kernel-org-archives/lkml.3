@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab3I2T3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59691 "EHLO
+	id S1756750Ab3I2TlY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:41:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59731 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab3I2T3J (ORCPT
+	with ESMTP id S1755991Ab3I2T3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:09 -0400
+	Sun, 29 Sep 2013 15:29:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 26/71] drm/i915: do not update cursor in crtc mode set
-Date: Sun, 29 Sep 2013 12:27:38 -0700
-Message-Id: <20130929192645.304715975@linuxfoundation.org>
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 05/71] bgmac: fix internal switch initialization
+Date: Sun, 29 Sep 2013 12:27:17 -0700
+Message-Id: <20130929192643.911081186@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -33,61 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit cc173961a68034c1171a421f0dbed39edfb60880 upstream.
+commit 6a391e7bf26c04a6df5f77290e1146941d210d49 upstream.
 
-The cursor is disabled before crtc mode set in crtc disable (and we
-assert this is the case), and enabled afterwards in crtc enable. Do not
-update it in crtc mode set.
+Some devices (BCM4749, BCM5357, BCM53572) have internal switch that
+requires initialization. We already have code for this, but because
+of the typo in code it was never working. This resulted in network not
+working for some routers and possibility of soft-bricking them.
 
-On HSW enabling a plane on a disabled pipe may hang the entire system.
-And there's no good reason for doing it ever, so just don't.
+Use correct bit for switch initialization and fix typo in the define.
 
-v2: Add note about HSW hangs - vsyrjala
-
-Suggested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/net/ethernet/broadcom/bgmac.c |    2 +-
+ drivers/net/ethernet/broadcom/bgmac.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4837,9 +4837,6 @@ static int i9xx_crtc_mode_set(struct drm
- 		return -EINVAL;
- 	}
+--- a/drivers/net/ethernet/broadcom/bgmac.c
++++ b/drivers/net/ethernet/broadcom/bgmac.c
+@@ -908,7 +908,7 @@ static void bgmac_chip_reset(struct bgma
+ 		struct bcma_drv_cc *cc = &bgmac->core->bus->drv_cc;
+ 		u8 et_swtype = 0;
+ 		u8 sw_type = BGMAC_CHIPCTL_1_SW_TYPE_EPHY |
+-			     BGMAC_CHIPCTL_1_IF_TYPE_RMII;
++			     BGMAC_CHIPCTL_1_IF_TYPE_MII;
+ 		char buf[2];
  
--	/* Ensure that the cursor is valid for the new mode before changing... */
--	intel_crtc_update_cursor(crtc, true);
--
- 	if (is_lvds && dev_priv->lvds_downclock_avail) {
- 		/*
- 		 * Ensure we match the reduced clock's P to the target clock.
-@@ -5688,9 +5685,6 @@ static int ironlake_crtc_mode_set(struct
- 		intel_crtc->config.dpll.p2 = clock.p2;
- 	}
+ 		if (bcm47xx_nvram_getenv("et_swtype", buf, 1) > 0) {
+--- a/drivers/net/ethernet/broadcom/bgmac.h
++++ b/drivers/net/ethernet/broadcom/bgmac.h
+@@ -333,7 +333,7 @@
  
--	/* Ensure that the cursor is valid for the new mode before changing... */
--	intel_crtc_update_cursor(crtc, true);
--
- 	/* CPU eDP is the only output that doesn't need a PCH PLL of its own. */
- 	if (intel_crtc->config.has_pch_encoder) {
- 		fp = i9xx_dpll_compute_fp(&intel_crtc->config.dpll);
-@@ -5897,9 +5891,6 @@ static int haswell_crtc_mode_set(struct
- 	if (!intel_ddi_pll_mode_set(crtc))
- 		return -EINVAL;
- 
--	/* Ensure that the cursor is valid for the new mode before changing... */
--	intel_crtc_update_cursor(crtc, true);
--
- 	if (intel_crtc->config.has_dp_encoder)
- 		intel_dp_set_m_n(intel_crtc);
- 
+ #define BGMAC_CHIPCTL_1_IF_TYPE_MASK		0x00000030
+ #define BGMAC_CHIPCTL_1_IF_TYPE_RMII		0x00000000
+-#define BGMAC_CHIPCTL_1_IF_TYPE_MI		0x00000010
++#define BGMAC_CHIPCTL_1_IF_TYPE_MII		0x00000010
+ #define BGMAC_CHIPCTL_1_IF_TYPE_RGMII		0x00000020
+ #define BGMAC_CHIPCTL_1_SW_TYPE_MASK		0x000000C0
+ #define BGMAC_CHIPCTL_1_SW_TYPE_EPHY		0x00000000
 
 
