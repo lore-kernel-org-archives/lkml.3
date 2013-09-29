@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab3I2TtV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:49:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59459 "EHLO
+	id S1756973Ab3I2TtT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:49:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59463 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab3I2T21 (ORCPT
+	with ESMTP id S1755744Ab3I2T21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Sep 2013 15:28:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Subject: [ 49/49] netfilter: ipset: Fix serious failure in CIDR tracking
-Date: Sun, 29 Sep 2013 12:27:23 -0700
-Message-Id: <20130929191606.324864122@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 32/49] rt2800: change initialization sequence to fix system freeze
+Date: Sun, 29 Sep 2013 12:27:06 -0700
+Message-Id: <20130929191605.190068174@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -27,73 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 2cf55125c64d64cc106e204d53b107094762dfdf upstream.
+commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20 upstream.
 
-This fixes a serious bug affecting all hash types with a net element -
-specifically, if a CIDR value is deleted such that none of the same size
-exist any more, all larger (less-specific) values will then fail to
-match. Adding back any prefix with a CIDR equal to or more specific than
-the one deleted will fix it.
+My commit
 
-Steps to reproduce:
-ipset -N test hash:net
-ipset -A test 1.1.0.0/16
-ipset -A test 2.2.2.0/24
-ipset -T test 1.1.1.1           #1.1.1.1 IS in set
-ipset -D test 2.2.2.0/24
-ipset -T test 1.1.1.1           #1.1.1.1 IS NOT in set
+commit c630ccf1a127578421a928489d51e99c05037054
+Author: Stanislaw Gruszka <stf_xl@wp.pl>
+Date:   Sat Mar 16 19:19:46 2013 +0100
 
-This is due to the fact that the nets counter was unconditionally
-decremented prior to the iteration that shifts up the entries. Now, we
-first check if there is a proceeding entry and if not, decrement it and
-return. Otherwise, we proceed to iterate and then zero the last element,
-which, in most cases, will already be zero.
+    rt2800: rearrange bbp/rfcsr initialization
 
-Signed-off-by: Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+make Maxim machine freeze when try to start wireless device.
+
+Initialization order and sending MCU_BOOT_SIGNAL request, changed in
+above commit, is important. Doing things incorrectly make PCIe bus
+problems, which can froze the machine.
+
+This patch change initialization sequence like vendor driver do:
+function NICInitializeAsic() from
+2011_1007_RT5390_RT5392_Linux_STA_V2.5.0.3_DPO (PCI devices) and
+DPO_RT5572_LinuxSTA_2.6.1.3_20121022 (according Mediatek, latest driver
+for RT8070/RT3070/RT3370/RT3572/RT5370/RT5372/RT5572 USB devices).
+It fixes freezes on Maxim system.
+
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=1000679
+
+Reported-and-tested-by: Maxim Polyakov <polyakov@dexmalabs.com>
+Bisected-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Cc: stable@vger.kernel.org # 3.10+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- net/netfilter/ipset/ip_set_hash_gen.h |   26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
 
---- a/net/netfilter/ipset/ip_set_hash_gen.h
-+++ b/net/netfilter/ipset/ip_set_hash_gen.h
-@@ -325,18 +325,22 @@ mtype_add_cidr(struct htype *h, u8 cidr,
- static void
- mtype_del_cidr(struct htype *h, u8 cidr, u8 nets_length)
- {
--	u8 i, j;
-+	u8 i, j, net_end = nets_length - 1;
+---
+ drivers/net/wireless/rt2x00/rt2800lib.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -4048,10 +4048,6 @@ static int rt2800_init_bbp(struct rt2x00
+ 	u8 reg_id;
+ 	u8 value;
  
--	for (i = 0; i < nets_length - 1 && h->nets[i].cidr != cidr; i++)
--		;
--	h->nets[i].nets--;
+-	if (unlikely(rt2800_wait_bbp_rf_ready(rt2x00dev) ||
+-		     rt2800_wait_bbp_ready(rt2x00dev)))
+-		return -EACCES;
 -
--	if (h->nets[i].nets != 0)
--		return;
--
--	for (j = i; j < nets_length - 1 && h->nets[j].nets; j++) {
--		h->nets[j].cidr = h->nets[j + 1].cidr;
--		h->nets[j].nets = h->nets[j + 1].nets;
-+	for (i = 0; i < nets_length; i++) {
-+	        if (h->nets[i].cidr != cidr)
-+	                continue;
-+                if (h->nets[i].nets > 1 || i == net_end ||
-+                    h->nets[i + 1].nets == 0) {
-+                        h->nets[i].nets--;
-+                        return;
-+                }
-+                for (j = i; j < net_end && h->nets[j].nets; j++) {
-+		        h->nets[j].cidr = h->nets[j + 1].cidr;
-+		        h->nets[j].nets = h->nets[j + 1].nets;
-+                }
-+                h->nets[j].nets = 0;
-+                return;
- 	}
- }
- #endif
+ 	if (rt2x00_rt(rt2x00dev, RT5592)) {
+ 		rt2800_init_bbp_5592(rt2x00dev);
+ 		return 0;
+@@ -5192,20 +5188,23 @@ int rt2800_enable_radio(struct rt2x00_de
+ 		     rt2800_init_registers(rt2x00dev)))
+ 		return -EIO;
+ 
++	if (unlikely(rt2800_wait_bbp_rf_ready(rt2x00dev)))
++		return -EIO;
++
+ 	/*
+ 	 * Send signal to firmware during boot time.
+ 	 */
+ 	rt2800_register_write(rt2x00dev, H2M_BBP_AGENT, 0);
+ 	rt2800_register_write(rt2x00dev, H2M_MAILBOX_CSR, 0);
+-	if (rt2x00_is_usb(rt2x00dev)) {
++	if (rt2x00_is_usb(rt2x00dev))
+ 		rt2800_register_write(rt2x00dev, H2M_INT_SRC, 0);
+-		rt2800_mcu_request(rt2x00dev, MCU_BOOT_SIGNAL, 0, 0, 0);
+-	}
++	rt2800_mcu_request(rt2x00dev, MCU_BOOT_SIGNAL, 0, 0, 0);
+ 	msleep(1);
+ 
+-	if (unlikely(rt2800_init_bbp(rt2x00dev)))
++	if (unlikely(rt2800_wait_bbp_ready(rt2x00dev)))
+ 		return -EIO;
+ 
++	rt2800_init_bbp(rt2x00dev);
+ 	rt2800_init_rfcsr(rt2x00dev);
+ 
+ 	if (rt2x00_is_usb(rt2x00dev) &&
 
 
