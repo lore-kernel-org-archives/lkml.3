@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab3I2Toa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:44:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59553 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab3I2T2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755872Ab3I2T2u (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 29 Sep 2013 15:28:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59493 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab3I2T2f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 15:28:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 20/71] HID: logitech-dj: validate output report details
-Date: Sun, 29 Sep 2013 12:27:32 -0700
-Message-Id: <20130929192644.907089419@linuxfoundation.org>
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Dan Duval <dan.duval@oracle.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 40/49] audit: fix endless wait in audit_log_start()
+Date: Sun, 29 Sep 2013 12:27:14 -0700
+Message-Id: <20130929191605.721016878@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
-References: <20130929192643.539596256@linuxfoundation.org>
+In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
+References: <20130929191603.008825488@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit 297502abb32e225fb23801fcdb0e4f6f8e17099a upstream.
+commit 8ac1c8d5deba65513b6a82c35e89e73996c8e0d6 upstream.
 
-A HID device could send a malicious output report that would cause the
-logitech-dj HID driver to leak kernel memory contents to the device, or
-trigger a NULL dereference during initialization:
+After commit 829199197a43 ("kernel/audit.c: avoid negative sleep
+durations") audit emitters will block forever if userspace daemon cannot
+handle backlog.
 
-[  304.424553] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b
-...
-[  304.780467] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-[  304.781409] IP: [<ffffffff815d50aa>] logi_dj_recv_send_report.isra.11+0x1a/0x90
+After the timeout the waiting loop turns into busy loop and runs until
+daemon dies or returns back to work.  This is a minimal patch for that
+bug.
 
-CVE-2013-2895
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Chuck Anderson <chuck.anderson@oracle.com>
+Cc: Dan Duval <dan.duval@oracle.com>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ kernel/audit.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -461,7 +461,7 @@ static int logi_dj_recv_send_report(stru
- 	struct hid_report *report;
- 	struct hid_report_enum *output_report_enum;
- 	u8 *data = (u8 *)(&dj_report->device_index);
--	int i;
-+	unsigned int i;
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1117,9 +1117,10 @@ struct audit_buffer *audit_log_start(str
  
- 	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
- 	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-@@ -471,7 +471,7 @@ static int logi_dj_recv_send_report(stru
- 		return -ENODEV;
- 	}
- 
--	for (i = 0; i < report->field[0]->report_count; i++)
-+	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
- 		report->field[0]->value[i] = data[i];
- 
- 	hid_hw_request(hdev, report, HID_REQ_SET_REPORT);
-@@ -783,6 +783,12 @@ static int logi_dj_probe(struct hid_devi
- 		goto hid_parse_fail;
- 	}
- 
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, REPORT_ID_DJ_SHORT,
-+				 0, DJREPORT_SHORT_LENGTH - 1)) {
-+		retval = -ENODEV;
-+		goto hid_parse_fail;
-+	}
-+
- 	/* Starts the usb device and connects to upper interfaces hiddev and
- 	 * hidraw */
- 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 			sleep_time = timeout_start + audit_backlog_wait_time -
+ 					jiffies;
+-			if ((long)sleep_time > 0)
++			if ((long)sleep_time > 0) {
+ 				wait_for_auditd(sleep_time);
+-			continue;
++				continue;
++			}
+ 		}
+ 		if (audit_rate_check() && printk_ratelimit())
+ 			printk(KERN_WARNING
 
 
