@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab3I2V7n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 17:59:43 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49531 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3I2V7l (ORCPT
+	id S1753229Ab3I2WY5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 18:24:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52153 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab3I2WYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 17:59:41 -0400
-Date: Sun, 29 Sep 2013 17:59:36 -0400 (EDT)
-Message-Id: <20130929.175936.607666065014569193.davem@davemloft.net>
-To: vincent.mc.li@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ipv4:PATCH] Allow userspace to specify primary or secondary
- ip on interface
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1380056988-6717-1-git-send-email-vincent.mc.li@gmail.com>
-References: <1380056988-6717-1-git-send-email-vincent.mc.li@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sun, 29 Sep 2013 14:59:41 -0700 (PDT)
+	Sun, 29 Sep 2013 18:24:55 -0400
+Date: Sun, 29 Sep 2013 23:24:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] vfs: Get rid of duplicate file_ops check in
+ do_readv_writev()
+Message-ID: <20130929222453.GP13318@ZenIV.linux.org.uk>
+References: <1380447470-2811-1-git-send-email-namhyung@kernel.org>
+ <1380447470-2811-2-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380447470-2811-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vincent Li <vincent.mc.li@gmail.com>
-Date: Tue, 24 Sep 2013 14:09:48 -0700
+On Sun, Sep 29, 2013 at 06:37:50PM +0900, Namhyung Kim wrote:
+> The file->f_op check in do_readv_writev() is redundant since all of
+> its caller (vfs_readv and vfs_writev) already did the check.  The
+> same goes to compat_do_readv_writev().
 
-> the reason for this patch is that we have a multi blade cluster platform 
-> sharing 'floating management ip' and also that each blade has its own 
-> management ip on the management interface, so whichever blade in the
-> cluster becomes primary blade, the 'floating mangaement ip' follows it,
-> and we want any of our traffic originated from the primary blade source from
-> the 'floating management ip' for consistency. but in this case, since the local
-> blade management ip is always the primary ip on the mangaement interface and 
-> 'floating management ip' is always secondary, kernel always choose the primary
-> ip as source ip address. thus we would like to add the flexibility in kernel to
-> allow us to specify which ip to be primary or secondary.
-
-You have the flexibility already.
-
-You can specify a specific source address ot use in routes.
+... and the right fix is to kill all those checks completely.  I have that
+done in local queue; will push to #for-next tonight.  file->f_op should
+never be NULL, period.
