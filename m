@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab3I2Twh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:52:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59401 "EHLO
+	id S1757218Ab3I2Tw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:52:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab3I2T2Q (ORCPT
+	with ESMTP id S1755657Ab3I2T2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:16 -0400
+	Sun, 29 Sep 2013 15:28:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Stanislaw Gruszka <sgruszka@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 07/49] sched/cputime: Do not scale when utime == 0
-Date: Sun, 29 Sep 2013 12:26:41 -0700
-Message-Id: <20130929191603.511210143@linuxfoundation.org>
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 05/49] rt2800: fix wrong TX power compensation
+Date: Sun, 29 Sep 2013 12:26:39 -0700
+Message-Id: <20130929191603.377881169@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -32,90 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 5a8e01f8fa51f5cbce8f37acc050eb2319d12956 upstream.
+commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
 
-scale_stime() silently assumes that stime < rtime, otherwise
-when stime == rtime and both values are big enough (operations
-on them do not fit in 32 bits), the resulting scaling stime can
-be bigger than rtime. In consequence utime = rtime - stime
-results in negative value.
+We should not do temperature compensation on devices without
+EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
+Such devices can have totally bogus TSSI parameters on the EEPROM,
+but still threaded by us as valid and result doing wrong TX power
+calculations.
 
-User space visible symptoms of the bug are overflowed TIME
-values on ps/top, for example:
+This fix inability to connect to AP on slightly longer distance on
+some Ralink chips/devices.
 
- $ ps aux | grep rcu
- root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
- root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
- root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
- root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
- root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
- root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
-
-or overflowed utime values read directly from /proc/$PID/stat
-
-Reference:
-
-  https://lkml.org/lkml/2013/8/20/259
-
-Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
 Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: stable@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/20130904131602.GC2564@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/cputime.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -558,7 +558,7 @@ static void cputime_adjust(struct task_c
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, stime, utime, total;
-+	cputime_t rtime, stime, utime;
- 
- 	if (vtime_accounting_enabled()) {
- 		*ut = curr->utime;
-@@ -566,9 +566,6 @@ static void cputime_adjust(struct task_c
- 		return;
- 	}
- 
--	stime = curr->stime;
--	total = stime + curr->utime;
--
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
- 	 * timeslices of a task to be interrupted or not by the timer.
-@@ -589,13 +586,19 @@ static void cputime_adjust(struct task_c
- 	if (prev->stime + prev->utime >= rtime)
- 		goto out;
- 
--	if (total) {
-+	stime = curr->stime;
-+	utime = curr->utime;
-+
-+	if (utime == 0) {
-+		stime = rtime;
-+	} else if (stime == 0) {
-+		utime = rtime;
-+	} else {
-+		cputime_t total = stime + utime;
-+
- 		stime = scale_stime((__force u64)stime,
- 				    (__force u64)rtime, (__force u64)total);
- 		utime = rtime - stime;
--	} else {
--		stime = rtime;
--		utime = 0;
- 	}
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -2767,6 +2767,13 @@ static int rt2800_get_gain_calibration_d
+ 	int i;
  
  	/*
++	 * First check if temperature compensation is supported.
++	 */
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
++	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
++		return 0;
++
++	/*
+ 	 * Read TSSI boundaries for temperature compensation from
+ 	 * the EEPROM.
+ 	 *
 
 
