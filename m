@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3I2T2I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59311 "EHLO
+	id S932123Ab3I2Ty6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:54:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab3I2T14 (ORCPT
+	with ESMTP id S1755602Ab3I2T2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:56 -0400
+	Sun, 29 Sep 2013 15:28:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 15/49] HID: steelseries: validate output report details
-Date: Sun, 29 Sep 2013 12:26:49 -0700
-Message-Id: <20130929191604.044208831@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 26/49] drm/radeon: fix endian bugs in hw i2c atom routines
+Date: Sun, 29 Sep 2013 12:27:00 -0700
+Message-Id: <20130929191604.788742457@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -28,42 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 41df7f6d43723deb7364340b44bc5d94bf717456 upstream.
+commit 4543eda52113d1e2cc0e9bf416f79597e6ef1ec7 upstream.
 
-A HID device could send a malicious output report that would cause the
-steelseries HID driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+Need to swap the data fetched over i2c properly.  This
+is the same fix as the endian fix for aux channel
+transactions.
 
-[  167.981534] usb 1-1: New USB device found, idVendor=1038, idProduct=1410
-...
-[  182.050547] BUG kmalloc-256 (Tainted: G        W   ): Redzone overwritten
-
-CVE-2013-2891
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-steelseries.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/radeon/atombios_dp.c  |    6 +++---
+ drivers/gpu/drm/radeon/atombios_i2c.c |    4 +++-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/hid-steelseries.c
-+++ b/drivers/hid/hid-steelseries.c
-@@ -249,6 +249,11 @@ static int steelseries_srws1_probe(struc
- 		goto err_free;
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -50,7 +50,7 @@ static char *pre_emph_names[] = {
+  * or from atom. Note that atom operates on
+  * dw units.
+  */
+-static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
++void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
+ {
+ #ifdef __BIG_ENDIAN
+ 	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
+@@ -100,7 +100,7 @@ static int radeon_process_aux_ch(struct
+ 
+ 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ 
+-	radeon_copy_swap(base, send, send_bytes, true);
++	radeon_atom_copy_swap(base, send, send_bytes, true);
+ 
+ 	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
+ 	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
+@@ -137,7 +137,7 @@ static int radeon_process_aux_ch(struct
+ 		recv_bytes = recv_size;
+ 
+ 	if (recv && recv_size)
+-		radeon_copy_swap(recv, base + 16, recv_bytes, false);
++		radeon_atom_copy_swap(recv, base + 16, recv_bytes, false);
+ 
+ 	return recv_bytes;
+ }
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -27,6 +27,8 @@
+ #include "radeon.h"
+ #include "atom.h"
+ 
++extern void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le);
++
+ #define TARGET_HW_I2C_CLOCK 50
+ 
+ /* these are a limitation of ProcessI2cChannelTransaction not the hw */
+@@ -77,7 +79,7 @@ static int radeon_process_i2c_ch(struct
  	}
  
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 0, 0, 16)) {
-+		ret = -ENODEV;
-+		goto err_free;
-+	}
-+
- 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
- 	if (ret) {
- 		hid_err(hdev, "hw start failed\n");
+ 	if (!(flags & HW_I2C_WRITE))
+-		memcpy(buf, base, num);
++		radeon_atom_copy_swap(buf, base, num, false);
+ 
+ 	return 0;
+ }
 
 
