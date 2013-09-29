@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab3I2TkH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:40:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59761 "EHLO
+	id S1756741Ab3I2Tkb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:40:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014Ab3I2T3Y (ORCPT
+	with ESMTP id S1756011Ab3I2T3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:24 -0400
+	Sun, 29 Sep 2013 15:29:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Stellard <thomas.stellard@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 42/71] drm/radeon/si: Add support for CP DMA to CS checker for compute v2
-Date: Sun, 29 Sep 2013 12:27:54 -0700
-Message-Id: <20130929192646.363373682@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 09/71] sched/cputime: Do not scale when utime == 0
+Date: Sun, 29 Sep 2013 12:27:21 -0700
+Message-Id: <20130929192644.175870021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,201 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Stellard <thomas.stellard@amd.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit e5b9e7503eb1f4884efa3b321d3cc47806779202 upstream.
+commit 5a8e01f8fa51f5cbce8f37acc050eb2319d12956 upstream.
 
-Also add a new RADEON_INFO query to check that CP DMA packets are
-supported on the compute ring.
+scale_stime() silently assumes that stime < rtime, otherwise
+when stime == rtime and both values are big enough (operations
+on them do not fit in 32 bits), the resulting scaling stime can
+be bigger than rtime. In consequence utime = rtime - stime
+results in negative value.
 
-CP DMA has been supported since the 3.8 kernel, but due to an oversight
-we forgot to teach the CS checker that the CP DMA packet was legal for
-the compute ring on Southern Islands GPUs.
+User space visible symptoms of the bug are overflowed TIME
+values on ps/top, for example:
 
-This patch fixes a bug where the radeon driver will incorrectly reject a legal
-CP DMA packet from user space.  I would like to have the patch
-backported to stable so that we don't have to require Mesa users to use a
-bleeding edge kernel in order to take advantage of this feature which
-is already present in the stable kernels (3.8 and newer).
+ $ ps aux | grep rcu
+ root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
+ root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
+ root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
+ root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
+ root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
+ root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
 
-v2:
-  - Don't bump kms version, so this patch can be backported to stable
-    kernels.
+or overflowed utime values read directly from /proc/$PID/stat
 
-Signed-off-by: Tom Stellard <thomas.stellard@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reference:
+
+  https://lkml.org/lkml/2013/8/20/259
+
+Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: stable@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/20130904131602.GC2564@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_kms.c |    3 +
- drivers/gpu/drm/radeon/si.c         |  106 ++++++++++++++++++++----------------
- include/uapi/drm/radeon_drm.h       |    2 
- 3 files changed, 66 insertions(+), 45 deletions(-)
+ kernel/sched/cputime.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -433,6 +433,9 @@ int radeon_info_ioctl(struct drm_device
- 			return -EINVAL;
- 		}
- 		break;
-+	case RADEON_INFO_SI_CP_DMA_COMPUTE:
-+		*value = 1;
-+		break;
- 	default:
- 		DRM_DEBUG_KMS("Invalid request %d\n", info->request);
- 		return -EINVAL;
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -4083,13 +4083,64 @@ static int si_vm_packet3_ce_check(struct
- 	return 0;
- }
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -557,7 +557,7 @@ static void cputime_adjust(struct task_c
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
+ {
+-	cputime_t rtime, stime, utime, total;
++	cputime_t rtime, stime, utime;
  
-+static int si_vm_packet3_cp_dma_check(u32 *ib, u32 idx)
-+{
-+	u32 start_reg, reg, i;
-+	u32 command = ib[idx + 4];
-+	u32 info = ib[idx + 1];
-+	u32 idx_value = ib[idx];
-+	if (command & PACKET3_CP_DMA_CMD_SAS) {
-+		/* src address space is register */
-+		if (((info & 0x60000000) >> 29) == 0) {
-+			start_reg = idx_value << 2;
-+			if (command & PACKET3_CP_DMA_CMD_SAIC) {
-+				reg = start_reg;
-+				if (!si_vm_reg_valid(reg)) {
-+					DRM_ERROR("CP DMA Bad SRC register\n");
-+					return -EINVAL;
-+				}
-+			} else {
-+				for (i = 0; i < (command & 0x1fffff); i++) {
-+					reg = start_reg + (4 * i);
-+					if (!si_vm_reg_valid(reg)) {
-+						DRM_ERROR("CP DMA Bad SRC register\n");
-+						return -EINVAL;
-+					}
-+				}
-+			}
-+		}
-+	}
-+	if (command & PACKET3_CP_DMA_CMD_DAS) {
-+		/* dst address space is register */
-+		if (((info & 0x00300000) >> 20) == 0) {
-+			start_reg = ib[idx + 2];
-+			if (command & PACKET3_CP_DMA_CMD_DAIC) {
-+				reg = start_reg;
-+				if (!si_vm_reg_valid(reg)) {
-+					DRM_ERROR("CP DMA Bad DST register\n");
-+					return -EINVAL;
-+				}
-+			} else {
-+				for (i = 0; i < (command & 0x1fffff); i++) {
-+					reg = start_reg + (4 * i);
-+				if (!si_vm_reg_valid(reg)) {
-+						DRM_ERROR("CP DMA Bad DST register\n");
-+						return -EINVAL;
-+					}
-+				}
-+			}
-+		}
-+	}
-+	return 0;
-+}
+ 	if (vtime_accounting_enabled()) {
+ 		*ut = curr->utime;
+@@ -565,9 +565,6 @@ static void cputime_adjust(struct task_c
+ 		return;
+ 	}
+ 
+-	stime = curr->stime;
+-	total = stime + curr->utime;
+-
+ 	/*
+ 	 * Tick based cputime accounting depend on random scheduling
+ 	 * timeslices of a task to be interrupted or not by the timer.
+@@ -588,13 +585,19 @@ static void cputime_adjust(struct task_c
+ 	if (prev->stime + prev->utime >= rtime)
+ 		goto out;
+ 
+-	if (total) {
++	stime = curr->stime;
++	utime = curr->utime;
 +
- static int si_vm_packet3_gfx_check(struct radeon_device *rdev,
- 				   u32 *ib, struct radeon_cs_packet *pkt)
- {
-+	int r;
- 	u32 idx = pkt->idx + 1;
- 	u32 idx_value = ib[idx];
- 	u32 start_reg, end_reg, reg, i;
--	u32 command, info;
++	if (utime == 0) {
++		stime = rtime;
++	} else if (stime == 0) {
++		utime = rtime;
++	} else {
++		cputime_t total = stime + utime;
++
+ 		stime = scale_stime((__force u64)stime,
+ 				    (__force u64)rtime, (__force u64)total);
+ 		utime = rtime - stime;
+-	} else {
+-		stime = rtime;
+-		utime = 0;
+ 	}
  
- 	switch (pkt->opcode) {
- 	case PACKET3_NOP:
-@@ -4190,50 +4241,9 @@ static int si_vm_packet3_gfx_check(struc
- 		}
- 		break;
- 	case PACKET3_CP_DMA:
--		command = ib[idx + 4];
--		info = ib[idx + 1];
--		if (command & PACKET3_CP_DMA_CMD_SAS) {
--			/* src address space is register */
--			if (((info & 0x60000000) >> 29) == 0) {
--				start_reg = idx_value << 2;
--				if (command & PACKET3_CP_DMA_CMD_SAIC) {
--					reg = start_reg;
--					if (!si_vm_reg_valid(reg)) {
--						DRM_ERROR("CP DMA Bad SRC register\n");
--						return -EINVAL;
--					}
--				} else {
--					for (i = 0; i < (command & 0x1fffff); i++) {
--						reg = start_reg + (4 * i);
--						if (!si_vm_reg_valid(reg)) {
--							DRM_ERROR("CP DMA Bad SRC register\n");
--							return -EINVAL;
--						}
--					}
--				}
--			}
--		}
--		if (command & PACKET3_CP_DMA_CMD_DAS) {
--			/* dst address space is register */
--			if (((info & 0x00300000) >> 20) == 0) {
--				start_reg = ib[idx + 2];
--				if (command & PACKET3_CP_DMA_CMD_DAIC) {
--					reg = start_reg;
--					if (!si_vm_reg_valid(reg)) {
--						DRM_ERROR("CP DMA Bad DST register\n");
--						return -EINVAL;
--					}
--				} else {
--					for (i = 0; i < (command & 0x1fffff); i++) {
--						reg = start_reg + (4 * i);
--						if (!si_vm_reg_valid(reg)) {
--							DRM_ERROR("CP DMA Bad DST register\n");
--							return -EINVAL;
--						}
--					}
--				}
--			}
--		}
-+		r = si_vm_packet3_cp_dma_check(ib, idx);
-+		if (r)
-+			return r;
- 		break;
- 	default:
- 		DRM_ERROR("Invalid GFX packet3: 0x%x\n", pkt->opcode);
-@@ -4245,6 +4255,7 @@ static int si_vm_packet3_gfx_check(struc
- static int si_vm_packet3_compute_check(struct radeon_device *rdev,
- 				       u32 *ib, struct radeon_cs_packet *pkt)
- {
-+	int r;
- 	u32 idx = pkt->idx + 1;
- 	u32 idx_value = ib[idx];
- 	u32 start_reg, reg, i;
-@@ -4317,6 +4328,11 @@ static int si_vm_packet3_compute_check(s
- 				return -EINVAL;
- 		}
- 		break;
-+	case PACKET3_CP_DMA:
-+		r = si_vm_packet3_cp_dma_check(ib, idx);
-+		if (r)
-+			return r;
-+		break;
- 	default:
- 		DRM_ERROR("Invalid Compute packet3: 0x%x\n", pkt->opcode);
- 		return -EINVAL;
---- a/include/uapi/drm/radeon_drm.h
-+++ b/include/uapi/drm/radeon_drm.h
-@@ -979,6 +979,8 @@ struct drm_radeon_cs {
- #define RADEON_INFO_RING_WORKING	0x15
- /* SI tile mode array */
- #define RADEON_INFO_SI_TILE_MODE_ARRAY	0x16
-+/* query if CP DMA is supported on the compute ring */
-+#define RADEON_INFO_SI_CP_DMA_COMPUTE	0x17
- 
- 
- struct drm_radeon_info {
+ 	/*
 
 
