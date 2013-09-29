@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3I2UHY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:07:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59148 "EHLO
+	id S1755205Ab3I2T1O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab3I2T1P (ORCPT
+	with ESMTP id S1755101Ab3I2T1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:15 -0400
+	Sun, 29 Sep 2013 15:27:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 13/17] perf: Fix perf_cgroup_switch for sw-events
-Date: Sun, 29 Sep 2013 12:26:52 -0700
-Message-Id: <20130929190758.047604598@linuxfoundation.org>
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 02/17] net: usb: cdc_ether: Use wwan interface for Telit modules
+Date: Sun, 29 Sep 2013 12:26:41 -0700
+Message-Id: <20130929190757.320945916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -27,52 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
 
-commit 95cf59ea72331d0093010543b8951bb43f262cac upstream.
+commit 0092820407901a0b2c4e343e85f96bb7abfcded1 upstream.
 
-Jiri reported that he could trigger the WARN_ON_ONCE() in
-perf_cgroup_switch() using sw-events. This is because sw-events share
-a cpuctx with multiple PMUs.
-
-Use the ->unique_pmu pointer to limit the pmu iteration to unique
-cpuctx instances.
-
-Reported-and-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-so7wi2zf3jjzrwcutm2mkz0j@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/net/usb/cdc_ether.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -342,6 +342,8 @@ void perf_cgroup_switch(struct task_stru
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 
- 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->unique_pmu != pmu)
-+			continue; /* ensure we process each cpuctx once */
- 
- 		perf_pmu_disable(cpuctx->ctx.pmu);
- 
-@@ -365,9 +367,10 @@ void perf_cgroup_switch(struct task_stru
- 
- 			if (mode & PERF_CGROUP_SWIN) {
- 				WARN_ON_ONCE(cpuctx->cgrp);
--				/* set cgrp before ctxsw in to
--				 * allow event_filter_match() to not
--				 * have to pass task around
-+				/*
-+				 * set cgrp before ctxsw in to allow
-+				 * event_filter_match() to not have to pass
-+				 * task around
- 				 */
- 				cpuctx->cgrp = perf_cgroup_from_task(task);
- 				cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -615,6 +615,11 @@ static const struct usb_device_id	produc
+ 	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
+ 	.driver_info = (unsigned long)&wwan_info,
+ }, {
++	/* Telit modules */
++	USB_VENDOR_AND_INTERFACE_INFO(0x1bc7, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = (kernel_ulong_t) &wwan_info,
++}, {
+ 	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ETHERNET,
+ 			USB_CDC_PROTO_NONE),
+ 	.driver_info = (unsigned long) &cdc_info,
 
 
