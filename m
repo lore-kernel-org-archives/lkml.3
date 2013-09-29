@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab3I2TaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:30:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59882 "EHLO
+	id S1756278Ab3I2TaH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:30:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756218Ab3I2T34 (ORCPT
+	with ESMTP id S1755974Ab3I2T3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:56 -0400
+	Sun, 29 Sep 2013 15:29:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 35/71] drm/radeon: fix endian bugs in hw i2c atom routines
-Date: Sun, 29 Sep 2013 12:27:47 -0700
-Message-Id: <20130929192645.900332106@linuxfoundation.org>
+        Anatol Pomozov <anatol.pomozov@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@gmail.com>
+Subject: [ 64/71] cfq: explicitly use 64bit divide operation for 64bit arguments
+Date: Sun, 29 Sep 2013 12:28:16 -0700
+Message-Id: <20130929192647.906971859@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,70 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit 4543eda52113d1e2cc0e9bf416f79597e6ef1ec7 upstream.
+commit f3cff25f05f2ac29b2ee355e611b0657482f6f1d upstream.
 
-Need to swap the data fetched over i2c properly.  This
-is the same fix as the endian fix for aux channel
-transactions.
+'samples' is 64bit operant, but do_div() second parameter is 32.
+do_div silently truncates high 32 bits and calculated result
+is invalid.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+In case if low 32bit of 'samples' are zeros then do_div() produces
+kernel crash.
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c  |    6 +++---
- drivers/gpu/drm/radeon/atombios_i2c.c |    4 +++-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ block/cfq-iosched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -50,7 +50,7 @@ static char *pre_emph_names[] = {
-  * or from atom. Note that atom operates on
-  * dw units.
-  */
--static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
-+void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
- {
- #ifdef __BIG_ENDIAN
- 	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
-@@ -100,7 +100,7 @@ static int radeon_process_aux_ch(struct
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1803,7 +1803,7 @@ static u64 cfqg_prfill_avg_queue_size(st
  
- 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
- 
--	radeon_copy_swap(base, send, send_bytes, true);
-+	radeon_atom_copy_swap(base, send, send_bytes, true);
- 
- 	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
- 	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
-@@ -137,7 +137,7 @@ static int radeon_process_aux_ch(struct
- 		recv_bytes = recv_size;
- 
- 	if (recv && recv_size)
--		radeon_copy_swap(recv, base + 16, recv_bytes, false);
-+		radeon_atom_copy_swap(recv, base + 16, recv_bytes, false);
- 
- 	return recv_bytes;
- }
---- a/drivers/gpu/drm/radeon/atombios_i2c.c
-+++ b/drivers/gpu/drm/radeon/atombios_i2c.c
-@@ -27,6 +27,8 @@
- #include "radeon.h"
- #include "atom.h"
- 
-+extern void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le);
-+
- #define TARGET_HW_I2C_CLOCK 50
- 
- /* these are a limitation of ProcessI2cChannelTransaction not the hw */
-@@ -77,7 +79,7 @@ static int radeon_process_i2c_ch(struct
+ 	if (samples) {
+ 		v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
+-		do_div(v, samples);
++		v = div64_u64(v, samples);
  	}
- 
- 	if (!(flags & HW_I2C_WRITE))
--		memcpy(buf, base, num);
-+		radeon_atom_copy_swap(buf, base, num, false);
- 
+ 	__blkg_prfill_u64(sf, pd, v);
  	return 0;
- }
 
 
