@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab3I2Tq4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:46:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59517 "EHLO
+	id S1756151Ab3I2TrP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:47:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59508 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab3I2T2m (ORCPT
+	with ESMTP id S1755808Ab3I2T2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:42 -0400
+	Sun, 29 Sep 2013 15:28:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 13/71] HID: multitouch: validate indexes details
-Date: Sun, 29 Sep 2013 12:27:25 -0700
-Message-Id: <20130929192644.441182974@linuxfoundation.org>
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 11/71] HID: provide a helper for validating hid reports
+Date: Sun, 29 Sep 2013 12:27:23 -0700
+Message-Id: <20130929192644.308363275@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,85 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 8821f5dc187bdf16cfb32ef5aa8c3035273fa79a upstream.
+commit 331415ff16a12147d57d5c953f3a961b7ede348b upstream.
 
-When working on report indexes, always validate that they are in bounds.
-Without this, a HID device could report a malicious feature report that
-could trick the driver into a heap overflow:
+Many drivers need to validate the characteristics of their HID report
+during initialization to avoid misusing the reports. This adds a common
+helper to perform validation of the report exisitng, the field existing,
+and the expected number of values within the field.
 
-[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
-...
-[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
-
-Note that we need to change the indexes from s8 to s16 as they can
-be between -1 and 255.
-
-CVE-2013-2897
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-multitouch.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ drivers/hid/hid-core.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hid.h    |    4 +++
+ 2 files changed, 62 insertions(+)
 
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -101,9 +101,9 @@ struct mt_device {
- 	unsigned last_slot_field;	/* the last field of a slot */
- 	unsigned mt_report_id;	/* the report ID of the multitouch device */
- 	unsigned pen_report_id;	/* the report ID of the pen device */
--	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
--	__s8 inputmode_index;	/* InputMode HID feature index in the report */
--	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
-+	__s16 inputmode;	/* InputMode HID feature, -1 if non-existent */
-+	__s16 inputmode_index;	/* InputMode HID feature index in the report */
-+	__s16 maxcontact_report_id;	/* Maximum Contact Number HID feature,
- 				   -1 if non-existent */
- 	__u8 num_received;	/* how many contacts we received */
- 	__u8 num_expected;	/* expected last contact index */
-@@ -317,20 +317,18 @@ static void mt_feature_mapping(struct hi
- 		struct hid_field *field, struct hid_usage *usage)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
--	int i;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -759,6 +759,64 @@ int hid_parse_report(struct hid_device *
+ }
+ EXPORT_SYMBOL_GPL(hid_parse_report);
  
- 	switch (usage->hid) {
- 	case HID_DG_INPUTMODE:
--		td->inputmode = field->report->id;
--		td->inputmode_index = 0; /* has to be updated below */
--
--		for (i=0; i < field->maxusage; i++) {
--			if (field->usage[i].hid == usage->hid) {
--				td->inputmode_index = i;
--				break;
--			}
-+		/* Ignore if value index is out of bounds. */
-+		if (usage->usage_index >= field->report_count) {
-+			dev_err(&hdev->dev, "HID_DG_INPUTMODE out of range\n");
-+			break;
- 		}
- 
-+		td->inputmode = field->report->id;
-+		td->inputmode_index = usage->usage_index;
++static const char * const hid_report_names[] = {
++	"HID_INPUT_REPORT",
++	"HID_OUTPUT_REPORT",
++	"HID_FEATURE_REPORT",
++};
++/**
++ * hid_validate_values - validate existing device report's value indexes
++ *
++ * @device: hid device
++ * @type: which report type to examine
++ * @id: which report ID to examine (0 for first)
++ * @field_index: which report field to examine
++ * @report_counts: expected number of values
++ *
++ * Validate the number of values in a given field of a given report, after
++ * parsing.
++ */
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts)
++{
++	struct hid_report *report;
 +
- 		break;
- 	case HID_DG_CONTACTMAX:
- 		td->maxcontact_report_id = field->report->id;
-@@ -536,6 +534,10 @@ static int mt_touch_input_mapping(struct
- 			mt_store_field(usage, td, hi);
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
-+			/* Ignore if indexes are out of bounds. */
-+			if (field->index >= field->report->maxfield ||
-+			    usage->usage_index >= field->report_count)
-+				return 1;
- 			td->cc_index = field->index;
- 			td->cc_value_index = usage->usage_index;
- 			return 1;
++	if (type > HID_FEATURE_REPORT) {
++		hid_err(hid, "invalid HID report type %u\n", type);
++		return NULL;
++	}
++
++	if (id >= HID_MAX_IDS) {
++		hid_err(hid, "invalid HID report id %u\n", id);
++		return NULL;
++	}
++
++	/*
++	 * Explicitly not using hid_get_report() here since it depends on
++	 * ->numbered being checked, which may not always be the case when
++	 * drivers go to access report values.
++	 */
++	report = hid->report_enum[type].report_id_hash[id];
++	if (!report) {
++		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->maxfield <= field_index) {
++		hid_err(hid, "not enough fields in %s %u\n",
++			hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->field[field_index]->report_count < report_counts) {
++		hid_err(hid, "not enough values in %s %u field %u\n",
++			hid_report_names[type], id, field_index);
++		return NULL;
++	}
++	return report;
++}
++EXPORT_SYMBOL_GPL(hid_validate_values);
++
+ /**
+  * hid_open_report - open a driver-specific device report
+  *
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -749,6 +749,10 @@ void hid_output_report(struct hid_report
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts);
+ int hid_open_report(struct hid_device *device);
+ int hid_check_keys_pressed(struct hid_device *hid);
+ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
 
 
