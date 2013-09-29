@@ -1,81 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3I2T1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59272 "EHLO
+	id S1755589Ab3I2T2E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59287 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755421Ab3I2T1p (ORCPT
+	with ESMTP id S1755421Ab3I2T1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:45 -0400
+	Sun, 29 Sep 2013 15:27:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, Tejun Heo <tj@kernel.org>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [ 16/22] cgroup: fail if monitored file and event_control are in different cgroup
-Date: Sun, 29 Sep 2013 12:27:02 -0700
-Message-Id: <20130929191159.989285833@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 10/49] HID: validate feature and input report details
+Date: Sun, 29 Sep 2013 12:26:44 -0700
+Message-Id: <20130929191603.713082122@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
-References: <20130929191158.889693326@linuxfoundation.org>
+In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
+References: <20130929191603.008825488@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit f169007b2773f285e098cb84c74aac0154d65ff7 upstream.
+commit cc6b54aa54bf40b762cab45a9fc8aa81653146eb upstream.
 
-If we pass fd of memory.usage_in_bytes of cgroup A to cgroup.event_control
-of cgroup B, then we won't get memory usage notification from A but B!
+When dealing with usage_index, be sure to properly use unsigned instead of
+int to avoid overflows.
 
-What's worse, if A and B are in different mount hierarchy, we'll end up
-accessing NULL pointer!
+When working on report fields, always validate that their report_counts are
+in bounds.
+Without this, a HID device could report a malicious feature report that
+could trick the driver into a heap overflow:
 
-Disallow this kind of invalid usage.
+[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
+...
+[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+CVE-2013-2897
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/hid/hid-core.c  |   16 +++++++---------
+ drivers/hid/hid-input.c |   11 ++++++++++-
+ 2 files changed, 17 insertions(+), 10 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3476,6 +3476,7 @@ static int cgroup_write_event_control(st
- 				      const char *buffer)
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -94,7 +94,6 @@ EXPORT_SYMBOL_GPL(hid_register_report);
+ static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
  {
- 	struct cgroup_event *event = NULL;
-+	struct cgroup *cgrp_cfile;
- 	unsigned int efd, cfd;
- 	struct file *efile = NULL;
- 	struct file *cfile = NULL;
-@@ -3531,6 +3532,16 @@ static int cgroup_write_event_control(st
- 		goto fail;
+ 	struct hid_field *field;
+-	int i;
+ 
+ 	if (report->maxfield == HID_MAX_FIELDS) {
+ 		hid_err(report->device, "too many fields in report\n");
+@@ -113,9 +112,6 @@ static struct hid_field *hid_register_fi
+ 	field->value = (s32 *)(field->usage + usages);
+ 	field->report = report;
+ 
+-	for (i = 0; i < usages; i++)
+-		field->usage[i].usage_index = i;
+-
+ 	return field;
+ }
+ 
+@@ -226,9 +222,9 @@ static int hid_add_field(struct hid_pars
+ {
+ 	struct hid_report *report;
+ 	struct hid_field *field;
+-	int usages;
++	unsigned usages;
+ 	unsigned offset;
+-	int i;
++	unsigned i;
+ 
+ 	report = hid_register_report(parser->device, report_type, parser->global.report_id);
+ 	if (!report) {
+@@ -255,7 +251,8 @@ static int hid_add_field(struct hid_pars
+ 	if (!parser->local.usage_index) /* Ignore padding fields */
+ 		return 0;
+ 
+-	usages = max_t(int, parser->local.usage_index, parser->global.report_count);
++	usages = max_t(unsigned, parser->local.usage_index,
++				 parser->global.report_count);
+ 
+ 	field = hid_register_field(report, usages, parser->global.report_count);
+ 	if (!field)
+@@ -266,13 +263,14 @@ static int hid_add_field(struct hid_pars
+ 	field->application = hid_lookup_collection(parser, HID_COLLECTION_APPLICATION);
+ 
+ 	for (i = 0; i < usages; i++) {
+-		int j = i;
++		unsigned j = i;
+ 		/* Duplicate the last usage we parsed if we have excess values */
+ 		if (i >= parser->local.usage_index)
+ 			j = parser->local.usage_index - 1;
+ 		field->usage[i].hid = parser->local.usage[j];
+ 		field->usage[i].collection_index =
+ 			parser->local.collection_index[j];
++		field->usage[i].usage_index = i;
  	}
  
-+	/*
-+	 * The file to be monitored must be in the same cgroup as
-+	 * cgroup.event_control is.
-+	 */
-+	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
-+	if (cgrp_cfile != cgrp) {
-+		ret = -EINVAL;
-+		goto fail;
-+	}
+ 	field->maxusage = usages;
+@@ -1295,7 +1293,7 @@ int hid_report_raw_event(struct hid_devi
+ 			goto out;
+ 	}
+ 
+-	if (hid->claimed != HID_CLAIMED_HIDRAW) {
++	if (hid->claimed != HID_CLAIMED_HIDRAW && report->maxfield) {
+ 		for (a = 0; a < report->maxfield; a++)
+ 			hid_input_field(hid, report->field[a], cdata, interrupt);
+ 		hdrv = hid->driver;
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -485,6 +485,10 @@ static void hidinput_configure_usage(str
+ 	if (field->flags & HID_MAIN_ITEM_CONSTANT)
+ 		goto ignore;
+ 
++	/* Ignore if report count is out of bounds. */
++	if (field->report_count < 1)
++		goto ignore;
 +
- 	if (!event->cft->register_event || !event->cft->unregister_event) {
- 		ret = -EINVAL;
- 		goto fail;
+ 	/* only LED usages are supported in output fields */
+ 	if (field->report_type == HID_OUTPUT_REPORT &&
+ 			(usage->hid & HID_USAGE_PAGE) != HID_UP_LED) {
+@@ -1163,7 +1167,11 @@ static void report_features(struct hid_d
+ 
+ 	rep_enum = &hid->report_enum[HID_FEATURE_REPORT];
+ 	list_for_each_entry(rep, &rep_enum->report_list, list)
+-		for (i = 0; i < rep->maxfield; i++)
++		for (i = 0; i < rep->maxfield; i++) {
++			/* Ignore if report count is out of bounds. */
++			if (rep->field[i]->report_count < 1)
++				continue;
++
+ 			for (j = 0; j < rep->field[i]->maxusage; j++) {
+ 				/* Verify if Battery Strength feature is available */
+ 				hidinput_setup_battery(hid, HID_FEATURE_REPORT, rep->field[i]);
+@@ -1172,6 +1180,7 @@ static void report_features(struct hid_d
+ 					drv->feature_mapping(hid, rep->field[i],
+ 							     rep->field[i]->usage + j);
+ 			}
++		}
+ }
+ 
+ static struct hid_input *hidinput_allocate(struct hid_device *hid)
 
 
