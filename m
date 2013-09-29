@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab3I2TsE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:48:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59480 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab3I2T2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [ 37/49] Properly handle tristate dependencies on USB/PCI menus
-Date: Sun, 29 Sep 2013 12:27:11 -0700
-Message-Id: <20130929191605.522208598@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
-References: <20130929191603.008825488@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1756921Ab3I2TsT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:48:19 -0400
+Received: from mout.gmx.net ([212.227.17.20]:53073 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755773Ab3I2TsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 15:48:16 -0400
+Message-ID: <524883F9.6060403@gmx.de>
+Date: Sun, 29 Sep 2013 21:48:09 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Linux NFS mailing list <linux-nfs@vger.kernel.org>
+CC: UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: fuzz tested UML cores in pshrink_dcache_for_umount_subtree (dentry=0x47bd7840)
+ at fs/dcache.c:928
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:nPg2shakNqM/6Ih+0KTq4id1iFunJL1eRNrzHbqHi3cqBLdo2BA
+ iDCTJCpi/YK7P0iRZX8OzZjiQ5KSB0wii4t/tJ5ygT+P7p0t7clQSEKA5vn+aW2S4iE+ihr
+ vtnE0Bc92T4wS/cxk8kHFd4gyYwICQu34X78wnhOma3XNg/7Pr/lwwud8xeL0fsGTUu5KHZ
+ 82kRHxz6sDquq2wxmiR3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-commit 5077ac3b8108007f4a2b4589f2d373cf55453206 upstream.
-
-As USB/PCI/MEDIA_SUPPORT dependencies can be tristate, we can't
-simply make the bool menu to be dependent on it. Everything below
-the menu should also depend on it, otherwise, we risk to allow
-building them with 'y', while only 'm' would be supported.
-
-So, add an IF just before everything below, in order to avoid
-such risks.
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/media/pci/Kconfig |    4 +++-
- drivers/media/usb/Kconfig |    3 +--
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
---- a/drivers/media/pci/Kconfig
-+++ b/drivers/media/pci/Kconfig
-@@ -1,6 +1,7 @@
-+if PCI && MEDIA_SUPPORT
-+
- menuconfig MEDIA_PCI_SUPPORT
- 	bool "Media PCI Adapters"
--	depends on PCI && MEDIA_SUPPORT
- 	help
- 	  Enable media drivers for PCI/PCIe bus.
- 	  If you have such devices, say Y.
-@@ -45,3 +46,4 @@ source "drivers/media/pci/ddbridge/Kconf
- endif
- 
- endif #MEDIA_PCI_SUPPORT
-+endif #PCI
---- a/drivers/media/usb/Kconfig
-+++ b/drivers/media/usb/Kconfig
-@@ -1,8 +1,7 @@
--if USB
-+if USB && MEDIA_SUPPORT
- 
- menuconfig MEDIA_USB_SUPPORT
- 	bool "Media USB Adapters"
--	depends on MEDIA_SUPPORT
- 	help
- 	  Enable media drivers for USB bus.
- 	  If you have such devices, say Y.
+The following commit was bisected 2 times in a row to be the trigger(*) of the given back trace.
+The core dump happens at a 32 bit user mode linux image (stable Gentoo) fuzzy tested with trinity.
+It crashed often if 3 NFS shares heavily used by trinity were tried to be remounted.
 
 
+
+
+BAD commit
+Sun Sep 29 07:34:02 CEST 2013
+=======================================================================
+
+275bb307865a316cef390e01e6ab5e21e97023a2 is the first bad commit
+commit 275bb307865a316cef390e01e6ab5e21e97023a2
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed May 29 13:11:28 2013 -0400
+
+    NFSv4: Move dentry instantiation into the NFSv4-specific atomic open
+code
+
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+:040000 040000 075a18b71db9f50ad71f4637315f7f9c7cc19545
+9bead78040810cb77ced8c134a8315e2e90eb237 M fs
+bisect run success
+
+
+back trace :
+
+tfoerste@n22 ~ $ cat /mnt/ramdisk/bt.v3.10-rc1-24-g275bb30
+[New LWP 5953]
+[New LWP 5962]
+Core was generated by `/home/tfoerste/devel/linux/linux earlyprintk ubda=/home/tfoerste/virtual/uml/tr'.
+Program terminated with signal 6, Aborted.
+#0  0xb77dd424 in __kernel_vsyscall ()
+#0  0xb77dd424 in __kernel_vsyscall ()
+#1  0x0839bc45 in kill ()
+#2  0x0807155d in uml_abort () at arch/um/os-Linux/util.c:93
+#3  0x08071845 in os_dump_core () at arch/um/os-Linux/util.c:138
+#4  0x08061197 in panic_exit (self=0x8599518 <panic_exit_notifier>, unused1=0, unused2=0x85ced60 <buf.12233>) at arch/um/kernel/um_arch.c:240
+#5  0x0809dac8 in notifier_call_chain (nl=0x0, val=0, v=0x85ced60 <buf.12233>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
+#6  0x0809dc13 in __atomic_notifier_call_chain (nr_calls=<optimized out>, nr_to_call=<optimized out>, v=<optimized out>, val=<optimized out>, nh=<optimized out>) at kernel/notifier.c:182
+#7  atomic_notifier_call_chain (nh=0x85ced44 <panic_notifier_list>, val=0, v=0x85ced60 <buf.12233>) at kernel/notifier.c:191
+#8  0x083f8fc8 in panic (fmt=0x0) at kernel/panic.c:127
+#9  0x0810fee2 in shrink_dcache_for_umount_subtree (dentry=0x47bd7840) at fs/dcache.c:928
+#10 0x08110628 in shrink_dcache_for_umount (sb=0x47eeef50) at fs/dcache.c:989
+#11 0x080fed47 in generic_shutdown_super (sb=0x47eeef50) at fs/super.c:409
+#12 0x080ffad5 in kill_anon_super (sb=0x0) at fs/super.c:880
+#13 0x081cdea8 in nfs_kill_super (s=0x0) at fs/nfs/super.c:2563
+#14 0x080fec0a in deactivate_locked_super (s=0x47eeef50) at fs/super.c:299
+#15 0x080feca1 in deactivate_super (s=0x47eeef50) at fs/super.c:324
+#16 0x0811686c in mntfree (mnt=<optimized out>) at fs/namespace.c:891
+#17 mntput_no_expire (mnt=0x0) at fs/namespace.c:929
+#18 0x08117d55 in SYSC_umount (flags=<optimized out>, name=<optimized out>) at fs/namespace.c:1335
+#19 SyS_umount (name=134634000, flags=1) at fs/namespace.c:1305
+#20 0x080616d2 in handle_syscall (r=0x4653f7d4) at arch/um/kernel/skas/syscall.c:35
+#21 0x08073b1d in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+#22 userspace (regs=0x4653f7d4) at arch/um/os-Linux/skas/process.c:431
+#23 0x0805e44c in fork_handler () at arch/um/kernel/process.c:160
+#24 0x00000000 in ?? ()
+
+
+
+(*) due to the erratic nature of the issue the used test case is not 100% reproducible.
+Therefore although bisected 2 times in a row there's a chance that this commit is rather the upper limit instead of the 1st bad commit
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
