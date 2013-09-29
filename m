@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709Ab3I2FLy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 01:11:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52000 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab3I2FLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 01:11:52 -0400
-Message-ID: <5247B64F.4080100@zytor.com>
-Date: Sat, 28 Sep 2013 22:10:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1752164Ab3I2FeO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 01:34:14 -0400
+Received: from mail1.vodafone.ie ([213.233.128.43]:40020 "EHLO
+	mail1.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3I2FeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 01:34:09 -0400
+X-Greylist: delayed 669 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Sep 2013 01:34:08 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAMS4R1JtTFzt/2dsb2JhbAANTYM/wUWBOIMZAQEBBDIBRhALDQsJFg8JAwIBAgFFBg0BBQIBAa9uknaPUQeEIgOeWY5E
+Message-ID: <5247B928.2070307@draigBrady.com>
+Date: Sun, 29 Sep 2013 06:22:48 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        huawei.libin@huawei.com, wangyijing@huawei.com, fenghua.yu@intel.com,
-        tglx@linutronix.de, guohanjun@huawei.com, paul.gortmaker@windriver.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
-References: <20130928102305.GA5956@pd.tnic> <20130928134449.GB26931@gmail.com> <20130928174749.GE5956@pd.tnic> <20130928175444.GA4402@gmail.com> <20130928180459.GF5956@pd.tnic> <20130928181236.GA4999@gmail.com> <20130928191500.GG5956@pd.tnic> <20130928192545.GB8228@gmail.com> <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com> <20130928195803.GA32081@gmail.com> <20130928201053.GL5956@pd.tnic>
-In-Reply-To: <20130928201053.GL5956@pd.tnic>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Thomas Meyer <thomas@m3y3r.de>, Rob Landley <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Copy on write hard links?
+References: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de> <1380117572.1974.81@driftwood> <1380119333.7453.4.camel@localhost.localdomain> <CAFLxGvzSSTbrw1HvoOaQBcPZxRbQmpiwjfbGCQtpLN7M9S93Fg@mail.gmail.com>
+In-Reply-To: <CAFLxGvzSSTbrw1HvoOaQBcPZxRbQmpiwjfbGCQtpLN7M9S93Fg@mail.gmail.com>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2013 01:10 PM, Borislav Petkov wrote:
-> On Sat, Sep 28, 2013 at 09:58:04PM +0200, Ingo Molnar wrote:
->> It's also probably the first time that code entered on an ordinary
->> cell phone has gets into the Linux kernel, so it's probably a new
->> Linux milestone, in a twisted, sick way. ;-)
+On 09/25/2013 03:37 PM, richard -rw- weinberger wrote:
+> On Wed, Sep 25, 2013 at 4:28 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+>> Am Mittwoch, den 25.09.2013, 08:59 -0500 schrieb Rob Landley:
+>>> On 09/24/2013 01:36:56 PM, Thomas Meyer wrote:
+>>>> Hi,
+>>>>
+>>>> Is there such a thing?
+>>>
+>>> In the kernel's vfs layer?
+>>
+>> Yes, that would be a nice feature!
 > 
-> We could put the following comment *below* the function in
-> arch/x86/lib/misc.c:
-> 
-> /*
->  * Sent from my mobile phone.  Please pardon brevity and lack of formatting.
->  */
-> 
-> LoooL.
-> 
+> You mean reflinks?
+> Currently only OCFS2 and btrfs support them.
+> Both using a fs specific ioctl().
+> IIRC GNU cp uses the btrfs specific one if the --reflink parameter is used.
 
-*Snork* ;)
+coreutils is waiting for a reflink syscall to materialize
+rather than adding new per filesystem support
+http://lwn.net/Articles/335380/
 
-	-hpa
-
+thanks,
+Pádraig.
