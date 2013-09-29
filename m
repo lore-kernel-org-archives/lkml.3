@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab3I2T2L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59320 "EHLO
+	id S1756538Ab3I2Txb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:53:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab3I2T16 (ORCPT
+	with ESMTP id S1755644Ab3I2T2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:58 -0400
+	Sun, 29 Sep 2013 15:28:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 17/49] HID: logitech-dj: validate output report details
-Date: Sun, 29 Sep 2013 12:26:51 -0700
-Message-Id: <20130929191604.176441171@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>, Steve French <sfrench@samba.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 03/49] cifs: fix filp leak in cifs_atomic_open()
+Date: Sun, 29 Sep 2013 12:26:37 -0700
+Message-Id: <20130929191603.244325230@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -28,62 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 297502abb32e225fb23801fcdb0e4f6f8e17099a upstream.
+commit dfb1d61b0e9f9e2c542e9adc8d970689f4114ff6 upstream.
 
-A HID device could send a malicious output report that would cause the
-logitech-dj HID driver to leak kernel memory contents to the device, or
-trigger a NULL dereference during initialization:
+If an error occurs after having called finish_open() then fput() needs to
+be called on the already opened file.
 
-[  304.424553] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b
-...
-[  304.780467] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-[  304.781409] IP: [<ffffffff815d50aa>] logi_dj_recv_send_report.isra.11+0x1a/0x90
-
-CVE-2013-2895
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Steve French <sfrench@samba.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/cifs/dir.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -421,7 +421,7 @@ static int logi_dj_recv_send_report(stru
- 	struct hid_report *report;
- 	struct hid_report_enum *output_report_enum;
- 	u8 *data = (u8 *)(&dj_report->device_index);
--	int i;
-+	unsigned int i;
- 
- 	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
- 	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-@@ -431,7 +431,7 @@ static int logi_dj_recv_send_report(stru
- 		return -ENODEV;
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -491,6 +491,7 @@ cifs_atomic_open(struct inode *inode, st
+ 		if (server->ops->close)
+ 			server->ops->close(xid, tcon, &fid);
+ 		cifs_del_pending_open(&open);
++		fput(file);
+ 		rc = -ENOMEM;
  	}
  
--	for (i = 0; i < report->field[0]->report_count; i++)
-+	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
- 		report->field[0]->value[i] = data[i];
- 
- 	hid_hw_request(hdev, report, HID_REQ_SET_REPORT);
-@@ -738,6 +738,12 @@ static int logi_dj_probe(struct hid_devi
- 		goto hid_parse_fail;
- 	}
- 
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, REPORT_ID_DJ_SHORT,
-+				 0, DJREPORT_SHORT_LENGTH - 1)) {
-+		retval = -ENODEV;
-+		goto hid_parse_fail;
-+	}
-+
- 	/* Starts the usb device and connects to upper interfaces hiddev and
- 	 * hidraw */
- 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 
 
