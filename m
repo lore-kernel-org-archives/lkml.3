@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab3I2T2Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59394 "EHLO
+	id S1756517Ab3I2Tua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:50:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab3I2T2P (ORCPT
+	with ESMTP id S1755723Ab3I2T2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:15 -0400
+	Sun, 29 Sep 2013 15:28:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Lin Ming <minggr@gmail.com>, John Stultz <john.stultz@linaro.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 06/49] timekeeping: Fix HRTICK related deadlock from ntp lock changes
-Date: Sun, 29 Sep 2013 12:26:40 -0700
-Message-Id: <20130929191603.444266684@linuxfoundation.org>
+        Simo Sorce <simo@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 46/49] rpc: comment on linux_cred encoding, treat all as unsigned
+Date: Sun, 29 Sep 2013 12:27:20 -0700
+Message-Id: <20130929191606.126249615@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -29,107 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 7bd36014460f793c19e7d6c94dab67b0afcfcb7f upstream.
+commit 6a36978e6931e6601be586eb313375335f2cfaa3 upstream.
 
-Gerlando Falauto reported that when HRTICK is enabled, it is
-possible to trigger system deadlocks. These were hard to
-reproduce, as HRTICK has been broken in the past, but seemed
-to be connected to the timekeeping_seq lock.
+The encoding of linux creds is a bit confusing.
 
-Since seqlock/seqcount's aren't supported w/ lockdep, I added
-some extra spinlock based locking and triggered the following
-lockdep output:
+Also: I think in practice it doesn't really matter whether we treat any
+of these things as signed or unsigned, but unsigned seems more
+straightforward: uid_t/gid_t are unsigned and it simplifies the ngroups
+overflow check.
 
-[   15.849182] ntpd/4062 is trying to acquire lock:
-[   15.849765]  (&(&pool->lock)->rlock){..-...}, at: [<ffffffff810aa9b5>] __queue_work+0x145/0x480
-[   15.850051]
-[   15.850051] but task is already holding lock:
-[   15.850051]  (timekeeper_lock){-.-.-.}, at: [<ffffffff810df6df>] do_adjtimex+0x7f/0x100
-
-<snip>
-
-[   15.850051] Chain exists of: &(&pool->lock)->rlock --> &p->pi_lock --> timekeeper_lock
-[   15.850051]  Possible unsafe locking scenario:
-[   15.850051]
-[   15.850051]        CPU0                    CPU1
-[   15.850051]        ----                    ----
-[   15.850051]   lock(timekeeper_lock);
-[   15.850051]                                lock(&p->pi_lock);
-[   15.850051] lock(timekeeper_lock);
-[   15.850051] lock(&(&pool->lock)->rlock);
-[   15.850051]
-[   15.850051]  *** DEADLOCK ***
-
-The deadlock was introduced by 06c017fdd4dc48451a ("timekeeping:
-Hold timekeepering locks in do_adjtimex and hardpps") in 3.10
-
-This patch avoids this deadlock, by moving the call to
-schedule_delayed_work() outside of the timekeeper lock
-critical section.
-
-Reported-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-Tested-by: Lin Ming <minggr@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Link: http://lkml.kernel.org/r/1378943457-27314-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Tested-by: Simo Sorce <simo@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/timex.h     |    1 +
- kernel/time/ntp.c         |    6 ++----
- kernel/time/timekeeping.c |    2 ++
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ net/sunrpc/auth_gss/gss_rpc_xdr.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -141,6 +141,7 @@ extern int do_adjtimex(struct timex *);
- extern void hardpps(const struct timespec *, const struct timespec *);
- 
- int read_current_timer(unsigned long *timer_val);
-+void ntp_notify_cmos_timer(void);
- 
- /* The clock frequency of the i8253/i8254 PIT */
- #define PIT_TICK_RATE 1193182ul
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -516,13 +516,13 @@ static void sync_cmos_clock(struct work_
- 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
+--- a/net/sunrpc/auth_gss/gss_rpc_xdr.c
++++ b/net/sunrpc/auth_gss/gss_rpc_xdr.c
+@@ -166,14 +166,15 @@ static int dummy_dec_opt_array(struct xd
+ 	return 0;
  }
  
--static void notify_cmos_timer(void)
-+void ntp_notify_cmos_timer(void)
+-static int get_s32(struct xdr_stream *xdr, s32 *res)
++static int get_host_u32(struct xdr_stream *xdr, u32 *res)
  {
- 	schedule_delayed_work(&sync_cmos_work, 0);
+ 	__be32 *p;
+ 
+ 	p = xdr_inline_decode(xdr, 4);
+ 	if (!p)
+ 		return -EINVAL;
+-	memcpy(res, p, sizeof(s32));
++	/* Contents of linux creds are all host-endian: */
++	memcpy(res, p, sizeof(u32));
+ 	return 0;
  }
  
- #else
--static inline void notify_cmos_timer(void) { }
-+void ntp_notify_cmos_timer(void) { }
- #endif
+@@ -182,8 +183,9 @@ static int gssx_dec_linux_creds(struct x
+ {
+ 	u32 length;
+ 	__be32 *p;
+-	s32 tmp;
+-	int N, i, err;
++	u32 tmp;
++	u32 N;
++	int i, err;
  
+ 	p = xdr_inline_decode(xdr, 4);
+ 	if (unlikely(p == NULL))
+@@ -195,19 +197,19 @@ static int gssx_dec_linux_creds(struct x
+ 		return -ENOSPC;
  
-@@ -687,8 +687,6 @@ int __do_adjtimex(struct timex *txc, str
- 	if (!(time_status & STA_NANO))
- 		txc->time.tv_usec /= NSEC_PER_USEC;
+ 	/* uid */
+-	err = get_s32(xdr, &tmp);
++	err = get_host_u32(xdr, &tmp);
+ 	if (err)
+ 		return err;
+ 	creds->cr_uid = make_kuid(&init_user_ns, tmp);
  
--	notify_cmos_timer();
--
- 	return result;
- }
+ 	/* gid */
+-	err = get_s32(xdr, &tmp);
++	err = get_host_u32(xdr, &tmp);
+ 	if (err)
+ 		return err;
+ 	creds->cr_gid = make_kgid(&init_user_ns, tmp);
  
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1682,6 +1682,8 @@ int do_adjtimex(struct timex *txc)
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 
-+	ntp_notify_cmos_timer();
-+
- 	return ret;
- }
- 
+ 	/* number of additional gid's */
+-	err = get_s32(xdr, &tmp);
++	err = get_host_u32(xdr, &tmp);
+ 	if (err)
+ 		return err;
+ 	N = tmp;
+@@ -220,7 +222,7 @@ static int gssx_dec_linux_creds(struct x
+ 	/* gid's */
+ 	for (i = 0; i < N; i++) {
+ 		kgid_t kgid;
+-		err = get_s32(xdr, &tmp);
++		err = get_host_u32(xdr, &tmp);
+ 		if (err)
+ 			goto out_free_groups;
+ 		err = -EINVAL;
 
 
