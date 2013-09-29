@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab3I2T1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59179 "EHLO
+	id S1755464Ab3I2T1o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:27:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59253 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab3I2T1X (ORCPT
+	with ESMTP id S1755421Ab3I2T1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:23 -0400
+	Sun, 29 Sep 2013 15:27:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Kubecek <mkubecek@suse.cz>, Zijie Pan <zijie.pan@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 01/22] Revert "sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()"
-Date: Sun, 29 Sep 2013 12:26:47 -0700
-Message-Id: <20130929191158.989181071@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 10/22] drm/radeon: fix endian bugs in hw i2c atom routines
+Date: Sun, 29 Sep 2013 12:26:56 -0700
+Message-Id: <20130929191159.589959535@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -29,46 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-This reverts commit c2f5b7507ac5d808f29287d77ee6148358d7fbfe which is
-commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec.
+commit 4543eda52113d1e2cc0e9bf416f79597e6ef1ec7 upstream.
 
-Michal writes:
-	Mainline commit f6e80abe was introduced in v3.7-rc2 as a
-	follow-up fix to commit
+Need to swap the data fetched over i2c properly.  This
+is the same fix as the endian fix for aux channel
+transactions.
 
-	  edfee033  sctp: check src addr when processing SACK to update transport state
-
-	(from v3.7-rc1) which changed the interpretation of third
-	argument to sctp_cmd_process_sack() and sctp_outq_sack(). But as
-	commit edfee033 has never been backported to stable branches,
-	backport of commit f6e80abe actually breaks the code rather than
-	fixing it.
-
-Reported-by: Michal Kubecek <mkubecek@suse.cz>
-Cc: Zijie Pan <zijie.pan@6wind.com>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sctp/sm_sideeffect.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_dp.c  |    6 +++---
+ drivers/gpu/drm/radeon/atombios_i2c.c |    4 +++-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -1610,9 +1610,8 @@ static int sctp_cmd_interpreter(sctp_eve
- 					asoc->outqueue.outstanding_bytes;
- 			sackh.num_gap_ack_blocks = 0;
- 			sackh.num_dup_tsns = 0;
--			chunk->subh.sack_hdr = &sackh;
- 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
--					SCTP_CHUNK(chunk));
-+					SCTP_SACKH(&sackh));
- 			break;
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -51,7 +51,7 @@ static char *pre_emph_names[] = {
+  * or from atom. Note that atom operates on
+  * dw units.
+  */
+-static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
++void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
+ {
+ #ifdef __BIG_ENDIAN
+ 	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
+@@ -101,7 +101,7 @@ static int radeon_process_aux_ch(struct
  
- 		case SCTP_CMD_DISCARD_PACKET:
+ 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ 
+-	radeon_copy_swap(base, send, send_bytes, true);
++	radeon_atom_copy_swap(base, send, send_bytes, true);
+ 
+ 	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
+ 	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
+@@ -138,7 +138,7 @@ static int radeon_process_aux_ch(struct
+ 		recv_bytes = recv_size;
+ 
+ 	if (recv && recv_size)
+-		radeon_copy_swap(recv, base + 16, recv_bytes, false);
++		radeon_atom_copy_swap(recv, base + 16, recv_bytes, false);
+ 
+ 	return recv_bytes;
+ }
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -27,6 +27,8 @@
+ #include "radeon.h"
+ #include "atom.h"
+ 
++extern void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le);
++
+ #define TARGET_HW_I2C_CLOCK 50
+ 
+ /* these are a limitation of ProcessI2cChannelTransaction not the hw */
+@@ -77,7 +79,7 @@ static int radeon_process_i2c_ch(struct
+ 	}
+ 
+ 	if (!(flags & HW_I2C_WRITE))
+-		memcpy(buf, base, num);
++		radeon_atom_copy_swap(buf, base, num, false);
+ 
+ 	return 0;
+ }
 
 
