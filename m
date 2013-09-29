@@ -1,80 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3I2DA3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 23:00:29 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:60056 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753609Ab3I2DA2 (ORCPT
+	id S1754278Ab3I2DCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 23:02:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55654 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab3I2DCb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 23:00:28 -0400
-Date: Sat, 28 Sep 2013 23:00:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Tomasz Figa <tomasz.figa@gmail.com>
-cc: USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] USB: OHCI: Check the overrides pointer for NULL in
- ohci_init_driver()
-In-Reply-To: <1380390989-4740-1-git-send-email-tomasz.figa@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1309282259220.11462-100000@netrider.rowland.org>
+	Sat, 28 Sep 2013 23:02:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 29 Sep 2013 13:02:29 +1000
+Message-ID: <CAPM=9txEQqvqHtbXD0Z9Df8GFiU3+AQzdd7ArnOcJLwK5=yFYg@mail.gmail.com>
+Subject: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Sep 2013, Tomasz Figa wrote:
+Hi Linus,
 
-> A series of commit starting at
-> 
-> 50a97e059b USB: OHCI: make ohci-exynos a separate driver
-> 
-> and ending at
-> 
-> b8ad5c3706 USB: OHCI: make ohci-pxa27x a separate driver
-> 
-> introduced the concept of separate OHCI drivers for particular
-> controllers. Respective drivers need to call ohci_init_driver() to
-> initialize hc_driver struct with generic data and to certain extent
-> with platform specific overrides through ohci_driver_overrides struct
-> passed as second argument to this function. However the code does not
-> check if the ohci_driver_overrides struct pointer is non-NULL, which
-> leads for a NULL pointer dereference for drivers that do not need any
-> overrides.
-> 
-> This patch fixes the problem by dereferencing the passed pointer to
-> ohci_driver_overrides struct only if it is non-NULL.
-> 
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-> ---
->  drivers/usb/host/ohci-hcd.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-> index 21d937a..8ada13f 100644
-> --- a/drivers/usb/host/ohci-hcd.c
-> +++ b/drivers/usb/host/ohci-hcd.c
-> @@ -1161,10 +1161,12 @@ void ohci_init_driver(struct hc_driver *drv,
->  	/* Copy the generic table to drv and then apply the overrides */
->  	*drv = ohci_hc_driver;
->  
-> -	drv->product_desc = over->product_desc;
-> -	drv->hcd_priv_size += over->extra_priv_size;
-> -	if (over->reset)
-> -		drv->reset = over->reset;
-> +	if (over) {
-> +		drv->product_desc = over->product_desc;
-> +		drv->hcd_priv_size += over->extra_priv_size;
-> +		if (over->reset)
-> +			drv->reset = over->reset;
-> +	}
->  }
->  EXPORT_SYMBOL_GPL(ohci_init_driver);
+nothing too major, radeon still has some dpm changes for off by default.
 
-You were scooped by Kevin Hilman:
+radeon, intel, msm:
+radeon a few more dpm fixes (still off by default), uvd fixes,
+i915 runtime warn backtrace and regression fix
+msm: iommu changes fallout,
 
-	http://marc.info/?l=linux-usb&m=138029463906143&w=2
+Dave.
 
-Alan Stern
+The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
 
+  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 665441791f553221901f679cb47236798f9a649c:
+
+  Merge branch 'msm-fixes-3.12-rc2' of
+git://people.freedesktop.org/~robclark/linux into drm-fixes
+(2013-09-29 10:06:28 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (13):
+      drm/radeon: avoid UVD corruption on AGP cards using GPU gart
+      drm/radeon: additional gcc fixes for radeon_atombios.c
+      drm/radeon: fix missed variable sized access
+      drm/radeon/dpm: fetch the max clk from voltage dep tables helper
+      drm/radeon/dpm/btc: filter clocks based on voltage/clk dep tables
+      drm/radeon/dpm/ni: filter clocks based on voltage/clk dep tables
+      drm/radeon/dpm/si: filter clocks based on voltage/clk dep tables
+      drm/radeon/dpm/ci: filter clocks based on voltage/clk dep tables
+      drm/radeon: don't set default clocks for SI when DPM is disabled
+      drm/radeon: disable tests/benchmarks if accel is disabled
+      drm/radeon: add missing hdmi callbacks for rv6xx
+      drm/radeon/cik: fix overflow in vram fetch
+      drm/radeon: fix hdmi audio on DCE3.0/3.1 asics
+
+Alex Ivanov (1):
+      drm/radeon: Make r100_cp_ring_info() and radeon_ring_gfx() safe (v2)
+
+Chris Wilson (1):
+      drm/i915: Use a temporary va_list for two-pass string handling
+
+Christian König (1):
+      drm/radeon/uvd: lower msg&fb buffer requirements on UVD3
+
+Daniel Vetter (3):
+      drm/i915/tv: clear adjusted_mode.flags
+      drm/i915: preserve pipe A quirk in i9xx_set_pipeconf
+      drm/i915: Fix up usage of SHRINK_STOP
+
+Dave Airlie (3):
+      Merge tag 'drm-intel-fixes-2013-09-26' of
+git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge branch 'drm-fixes-3.12' of
+git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge branch 'msm-fixes-3.12-rc2' of
+git://people.freedesktop.org/~robclark/linux into drm-fixes
+
+Jani Nikula (1):
+      drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
+
+Joerg Roedel (1):
+      drm/msm: Remove iommu include from mdp4_kms.c
+
+Michel Dänzer (3):
+      drm/radeon/cik: Fix printing of client name on VM protection fault
+      drm/radeon/cik: Fix encoding of number of banks in tiling
+configuration info
+      drm/radeon/cik: Add tiling mode index for 1D tiled depth/stencil surfaces
+
+Rob Clark (2):
+      drm/msm: deal with mach/iommu.h removal
+      drm/msm: use drm_gem_dumb_destroy helper
+
+Thomas Meyer (1):
+      drm/msm: Odd PTR_ERR usage
+
+ drivers/gpu/drm/i915/i915_gem.c          |  8 ++--
+ drivers/gpu/drm/i915/i915_gpu_error.c    |  6 ++-
+ drivers/gpu/drm/i915/intel_display.c     |  4 ++
+ drivers/gpu/drm/i915/intel_dp.c          | 13 ++++++-
+ drivers/gpu/drm/i915/intel_tv.c          |  8 ++++
+ drivers/gpu/drm/msm/mdp4/mdp4_kms.c      |  2 -
+ drivers/gpu/drm/msm/msm_drv.c            |  8 ++--
+ drivers/gpu/drm/msm/msm_gem.c            |  7 ----
+ drivers/gpu/drm/radeon/btc_dpm.c         | 51 ++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/btc_dpm.h         |  2 +
+ drivers/gpu/drm/radeon/ci_dpm.c          | 26 +++++++++++++
+ drivers/gpu/drm/radeon/cik.c             | 17 ++++----
+ drivers/gpu/drm/radeon/ni_dpm.c          | 24 ++++++++++++
+ drivers/gpu/drm/radeon/r100.c            |  8 ++--
+ drivers/gpu/drm/radeon/r600_dpm.c        |  2 +-
+ drivers/gpu/drm/radeon/r600_hdmi.c       | 20 +++++++---
+ drivers/gpu/drm/radeon/radeon_asic.c     |  2 +
+ drivers/gpu/drm/radeon/radeon_atombios.c | 66 +++++++++++++++++++++-----------
+ drivers/gpu/drm/radeon/radeon_cs.c       |  5 ++-
+ drivers/gpu/drm/radeon/radeon_device.c   | 15 ++++++--
+ drivers/gpu/drm/radeon/radeon_pm.c       |  8 ++--
+ drivers/gpu/drm/radeon/radeon_ring.c     |  8 ++--
+ drivers/gpu/drm/radeon/radeon_uvd.c      |  3 +-
+ drivers/gpu/drm/radeon/si_dpm.c          | 24 ++++++++++++
+ drivers/gpu/drm/radeon/uvd_v1_0.c        |  4 +-
+ include/uapi/drm/radeon_drm.h            |  2 +
+ 26 files changed, 266 insertions(+), 77 deletions(-)
