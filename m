@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab3I2UEv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:04:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59199 "EHLO
+	id S1757493Ab3I2UFK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:05:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59192 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3I2T11 (ORCPT
+	with ESMTP id S1755305Ab3I2T10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:27 -0400
+	Sun, 29 Sep 2013 15:27:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 05/22] HID: provide a helper for validating hid reports
-Date: Sun, 29 Sep 2013 12:26:51 -0700
-Message-Id: <20130929191159.255502642@linuxfoundation.org>
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 04/22] sched/fair: Fix small race where child->se.parent,cfs_rq might point to invalid ones
+Date: Sun, 29 Sep 2013 12:26:50 -0700
+Message-Id: <20130929191159.188979587@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -28,104 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-commit 331415ff16a12147d57d5c953f3a961b7ede348b upstream.
+commit 6c9a27f5da9609fca46cb2b183724531b48f71ad upstream.
 
-Many drivers need to validate the characteristics of their HID report
-during initialization to avoid misusing the reports. This adds a common
-helper to perform validation of the report exisitng, the field existing,
-and the expected number of values within the field.
+There is a small race between copy_process() and cgroup_attach_task()
+where child->se.parent,cfs_rq points to invalid (old) ones.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+        parent doing fork()      | someone moving the parent to another cgroup
+  -------------------------------+---------------------------------------------
+    copy_process()
+      + dup_task_struct()
+        -> parent->se is copied to child->se.
+           se.parent,cfs_rq of them point to old ones.
+
+                                     cgroup_attach_task()
+                                       + cgroup_task_migrate()
+                                         -> parent->cgroup is updated.
+                                       + cpu_cgroup_attach()
+                                         + sched_move_task()
+                                           + task_move_group_fair()
+                                             +- set_task_rq()
+                                                -> se.parent,cfs_rq of parent
+                                                   are updated.
+
+      + cgroup_fork()
+        -> parent->cgroup is copied to child->cgroup. (*1)
+      + sched_fork()
+        + task_fork_fair()
+          -> se.parent,cfs_rq of child are accessed
+             while they point to old ones. (*2)
+
+In the worst case, this bug can lead to "use-after-free" and cause a panic,
+because it's new cgroup's refcount that is incremented at (*1),
+so the old cgroup(and related data) can be freed before (*2).
+
+In fact, a panic caused by this bug was originally caught in RHEL6.4.
+
+    BUG: unable to handle kernel NULL pointer dereference at (null)
+    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
+    [...]
+    Call Trace:
+     [<ffffffff81051f25>] place_entity+0x75/0xa0
+     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
+     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
+     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
+     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
+     [<ffffffff8106d2f4>] do_fork+0x94/0x460
+     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
+     [<ffffffff81009598>] sys_clone+0x28/0x30
+     [<ffffffff8100b393>] stub_clone+0x13/0x20
+     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/hid.h    |    4 +++
- 2 files changed, 62 insertions(+)
+ kernel/sched/fair.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -821,6 +821,64 @@ static int search(__s32 *array, __s32 va
- 	return -1;
- }
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5190,11 +5190,15 @@ static void task_fork_fair(struct task_s
+ 	cfs_rq = task_cfs_rq(current);
+ 	curr = cfs_rq->curr;
  
-+static const char * const hid_report_names[] = {
-+	"HID_INPUT_REPORT",
-+	"HID_OUTPUT_REPORT",
-+	"HID_FEATURE_REPORT",
-+};
-+/**
-+ * hid_validate_values - validate existing device report's value indexes
-+ *
-+ * @device: hid device
-+ * @type: which report type to examine
-+ * @id: which report ID to examine (0 for first)
-+ * @field_index: which report field to examine
-+ * @report_counts: expected number of values
-+ *
-+ * Validate the number of values in a given field of a given report, after
-+ * parsing.
-+ */
-+struct hid_report *hid_validate_values(struct hid_device *hid,
-+				       unsigned int type, unsigned int id,
-+				       unsigned int field_index,
-+				       unsigned int report_counts)
-+{
-+	struct hid_report *report;
-+
-+	if (type > HID_FEATURE_REPORT) {
-+		hid_err(hid, "invalid HID report type %u\n", type);
-+		return NULL;
-+	}
-+
-+	if (id >= HID_MAX_IDS) {
-+		hid_err(hid, "invalid HID report id %u\n", id);
-+		return NULL;
-+	}
-+
+-	if (unlikely(task_cpu(p) != this_cpu)) {
+-		rcu_read_lock();
+-		__set_task_cpu(p, this_cpu);
+-		rcu_read_unlock();
+-	}
 +	/*
-+	 * Explicitly not using hid_get_report() here since it depends on
-+	 * ->numbered being checked, which may not always be the case when
-+	 * drivers go to access report values.
++	 * Not only the cpu but also the task_group of the parent might have
++	 * been changed after parent->se.parent,cfs_rq were copied to
++	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
++	 * of child point to valid ones.
 +	 */
-+	report = hid->report_enum[type].report_id_hash[id];
-+	if (!report) {
-+		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
-+		return NULL;
-+	}
-+	if (report->maxfield <= field_index) {
-+		hid_err(hid, "not enough fields in %s %u\n",
-+			hid_report_names[type], id);
-+		return NULL;
-+	}
-+	if (report->field[field_index]->report_count < report_counts) {
-+		hid_err(hid, "not enough values in %s %u field %u\n",
-+			hid_report_names[type], id, field_index);
-+		return NULL;
-+	}
-+	return report;
-+}
-+EXPORT_SYMBOL_GPL(hid_validate_values);
-+
- /**
-  * hid_match_report - check if driver's raw_event should be called
-  *
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -737,6 +737,10 @@ void hid_output_report(struct hid_report
- struct hid_device *hid_allocate_device(void);
- struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
- int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
-+struct hid_report *hid_validate_values(struct hid_device *hid,
-+				       unsigned int type, unsigned int id,
-+				       unsigned int field_index,
-+				       unsigned int report_counts);
- int hid_check_keys_pressed(struct hid_device *hid);
- int hid_connect(struct hid_device *hid, unsigned int connect_mask);
- void hid_disconnect(struct hid_device *hid);
++	rcu_read_lock();
++	__set_task_cpu(p, this_cpu);
++	rcu_read_unlock();
+ 
+ 	update_curr(cfs_rq);
+ 
 
 
