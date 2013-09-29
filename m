@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab3I2T1L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59094 "EHLO
+	id S1757575Ab3I2UI7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:08:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab3I2T1D (ORCPT
+	with ESMTP id S1755167Ab3I2T1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:03 -0400
+	Sun, 29 Sep 2013 15:27:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Kubecek <mkubecek@suse.cz>, Zijie Pan <zijie.pan@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 01/17] Revert "sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()"
-Date: Sun, 29 Sep 2013 12:26:40 -0700
-Message-Id: <20130929190757.254907630@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 07/17] drm/radeon: update line buffer allocation for dce4.1/5
+Date: Sun, 29 Sep 2013 12:26:46 -0700
+Message-Id: <20130929190757.651006921@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -29,46 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-This reverts commit b23270416da409bd4e637a5acbe31a1126235fb6 which is
-commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec.
+commit 0b31e02363b0db4e7931561bc6c141436e729d9f upstream.
 
-Michal writes:
-	Mainline commit f6e80abe was introduced in v3.7-rc2 as a
-	follow-up fix to commit
+We need to allocate line buffer to each display when
+setting up the watermarks.  Failure to do so can lead
+to a blank screen.  This fixes blank screen problems
+on dce4.1/5 asics.
 
-	  edfee033  sctp: check src addr when processing SACK to update transport state
+Based on an initial fix from:
+Jay Cornwall <jay.cornwall@amd.com>
 
-	(from v3.7-rc1) which changed the interpretation of third
-	argument to sctp_cmd_process_sack() and sctp_outq_sack(). But as
-	commit edfee033 has never been backported to stable branches,
-	backport of commit f6e80abe actually breaks the code rather than
-	fixing it.
-
-Reported-by: Michal Kubecek <mkubecek@suse.cz>
-Cc: Zijie Pan <zijie.pan@6wind.com>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sctp/sm_sideeffect.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c  |   25 +++++++++++++++++++++----
+ drivers/gpu/drm/radeon/evergreend.h |    4 ++++
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -1604,9 +1604,8 @@ static int sctp_cmd_interpreter(sctp_eve
- 					asoc->outqueue.outstanding_bytes;
- 			sackh.num_gap_ack_blocks = 0;
- 			sackh.num_dup_tsns = 0;
--			chunk->subh.sack_hdr = &sackh;
- 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
--					SCTP_CHUNK(chunk));
-+					SCTP_SACKH(&sackh));
- 			break;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -419,7 +419,8 @@ static u32 evergreen_line_buffer_adjust(
+ 					struct drm_display_mode *mode,
+ 					struct drm_display_mode *other_mode)
+ {
+-	u32 tmp;
++	u32 tmp, buffer_alloc, i;
++	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
+ 	/*
+ 	 * Line Buffer Setup
+ 	 * There are 3 line buffers, each one shared by 2 display controllers.
+@@ -442,18 +443,34 @@ static u32 evergreen_line_buffer_adjust(
+ 	 * non-linked crtcs for maximum line buffer allocation.
+ 	 */
+ 	if (radeon_crtc->base.enabled && mode) {
+-		if (other_mode)
++		if (other_mode) {
+ 			tmp = 0; /* 1/2 */
+-		else
++			buffer_alloc = 1;
++		} else {
+ 			tmp = 2; /* whole */
+-	} else
++			buffer_alloc = 2;
++		}
++	} else {
+ 		tmp = 0;
++		buffer_alloc = 0;
++	}
  
- 		case SCTP_CMD_DISCARD_PACKET:
+ 	/* second controller of the pair uses second half of the lb */
+ 	if (radeon_crtc->crtc_id % 2)
+ 		tmp += 4;
+ 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset, tmp);
+ 
++	if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
++		WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
++		       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
++		for (i = 0; i < rdev->usec_timeout; i++) {
++			if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
++			    DMIF_BUFFERS_ALLOCATED_COMPLETED)
++				break;
++			udelay(1);
++		}
++	}
++
+ 	if (radeon_crtc->base.enabled && mode) {
+ 		switch (tmp) {
+ 		case 0:
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -450,6 +450,10 @@
+ #       define LATENCY_LOW_WATERMARK(x)                   ((x) << 0)
+ #       define LATENCY_HIGH_WATERMARK(x)                  ((x) << 16)
+ 
++#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
++#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
++#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
++
+ #define IH_RB_CNTL                                        0x3e00
+ #       define IH_RB_ENABLE                               (1 << 0)
+ #       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
 
 
