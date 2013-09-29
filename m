@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3I2GwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 02:52:17 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:33017 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3I2GwN (ORCPT
+	id S1753491Ab3I2Gwp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 02:52:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32592 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab3I2Gwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 02:52:13 -0400
-Subject: Re: [PATCH 1/3] perf tools: Separate lbfd check out of NO_DEMANGLE
- condition
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-In-Reply-To: <1380292332-6518-1-git-send-email-jolsa@redhat.com>
-References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
-	 <1380292332-6518-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 29 Sep 2013 15:52:06 +0900
-Message-ID: <1380437526.1727.10.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Sun, 29 Sep 2013 02:52:43 -0400
+Message-ID: <5247CECC.9050003@oracle.com>
+Date: Sun, 29 Sep 2013 14:55:08 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: axboe@kernel.dk, linux-kernel@vger.kernel.org, alexey.kodanev@oracle.com
+Subject: Re: [PATCH v2] block: register_blkdev doesn't check name against
+ NULL
+References: <1378809614-17490-1-git-send-email-vaughan.cao@oracle.com> <1378866250-22679-1-git-send-email-vaughan.cao@oracle.com> <x49mwn3y4bo.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49mwn3y4bo.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On 09/23/2013 10:56 PM, Jeff Moyer wrote:
+> Vaughan Cao <vaughan.cao@oracle.com> writes:
+>
+>> register_blkdev(0, NULL) can result kernel Oops by copying from NULL
+>> in strlcpy(). Fix it by checking NULL pointer at the beginning and
+>> WARN when encountered in unregister_blkdev.
+> Uhh, so yeah, this is an exported function, so I could see maybe wanting
+> to do the argument checking.  But honestly, if your driver can't even
+> get this right, is there any hope of it actually working?
+>
+> This seems like a pointless patch to me, but ultimately it's up to Jens.
+>
+> Cheers,
+> Jeff
+>
+> p.s. the kerneldoc tells you what to put there:
+>  * @name: the name of the new block device as a zero terminated string
+Thanks for your comment, Jeff. I have the same feeling as you, however,
+shouldn't kernel do its best to provide the maximum stable working ability?
+And it's test case 7 of block driver in ltp project -
+http://sourceforge.net/p/ltp/git/ci/master/tree/testcases/kernel/device-drivers/block/kernel_space/test_block.c.
+It seems their attitude is we should check this.
 
-2013-09-27 (금), 16:32 +0200, Jiri Olsa:
-> We fail build with NO_DEMANGLE with missing -lbfd externals error.
-> The reason is that we now use bfd code in srcline object:
->   perf tools: Implement addr2line directly using libbfd
-> 
-> So we need to check/add -lbfd always now.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/config/Makefile | 17 ++++++++---------
->  1 file changed, 8 insertions(+), 9 deletions(-)
-> 
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index 8b49a00..40a41c6 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -360,6 +360,13 @@ else
->    endif
->  endif
->  
-> +FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-> +has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-> +ifeq ($(has_bfd),y)
-> +  EXTLIBS += -lbfd
-> +  CFLAGS += -DLIBBFD_SUPPORT
-> +endif
-> +
->  ifdef NO_DEMANGLE
->    CFLAGS += -DNO_DEMANGLE
->  else
-> @@ -367,11 +374,7 @@ else
->      EXTLIBS += -liberty
->      CFLAGS += -DHAVE_CPLUS_DEMANGLE
->    else
-> -    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-> -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-> -    ifeq ($(has_bfd),y)
-> -      EXTLIBS += -lbfd
-> -    else
-> +    ifneq ($(has_bfd),y)
->        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
->        has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
->        ifeq ($(has_bfd_iberty),y)
-> @@ -397,10 +400,6 @@ else
->    endif
->  endif
->  
-> -ifndef ($(filter -lbfd,$(EXTLIBS)),)
-> -  CFLAGS += -DLIBBFD_SUPPORT
-> -endif
-> -
->  ifndef NO_STRLCPY
->    ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
->      CFLAGS += -DHAVE_STRLCPY
-
-Is it enough to check on -lbfd only?  I guess libbfd can have additional
-dependencies to libiberty and libz.  If so, this patch can fail to set
--DLIBBFD_SUPPORT, right?
-
-Thanks,
-Namhyung
-
-
+Vaughan
