@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab3I2TzW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:55:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59359 "EHLO
+	id S1757298Ab3I2Tzo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:55:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755595Ab3I2T2G (ORCPT
+	with ESMTP id S1755580Ab3I2T2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:06 -0400
+	Sun, 29 Sep 2013 15:28:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 25/49] drm/radeon: fix LCD record parsing
-Date: Sun, 29 Sep 2013 12:26:59 -0700
-Message-Id: <20130929191604.722286843@linuxfoundation.org>
+        "Y.C. Chen" <yc_chen@aspeedtech.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 22/49] drm/ast: fix the ast open key function
+Date: Sun, 29 Sep 2013 12:26:56 -0700
+Message-Id: <20130929191604.507792304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -26,34 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 95663948ba22a4be8b99acd67fbf83e86ddffba4 upstream.
+commit 2e8378136f28bea960cec643d3fa5d843c9049ec upstream.
 
-If the LCD table contains an EDID record, properly account
-for the edid size when walking through the records.
+When porting from UMS I mistyped this from the wrong place, AST noticed
+and pointed it out, so we should fix it to be like the X.org driver.
 
-This should fix error messages about unknown LCD records.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Y.C. Chen <yc_chen@aspeedtech.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/ast/ast_drv.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1651,7 +1651,9 @@ struct radeon_encoder_atom_dig *radeon_a
- 								kfree(edid);
- 						}
- 					}
--					record += sizeof(ATOM_FAKE_EDID_PATCH_RECORD);
-+					record += fake_edid_record->ucFakeEDIDLength ?
-+						fake_edid_record->ucFakeEDIDLength + 2 :
-+						sizeof(ATOM_FAKE_EDID_PATCH_RECORD);
- 					break;
- 				case LCD_PANEL_RESOLUTION_RECORD_TYPE:
- 					panel_res_record = (ATOM_PANEL_RESOLUTION_PATCH_RECORD *)record;
+--- a/drivers/gpu/drm/ast/ast_drv.h
++++ b/drivers/gpu/drm/ast/ast_drv.h
+@@ -177,7 +177,7 @@ uint8_t ast_get_index_reg_mask(struct as
+ 
+ static inline void ast_open_key(struct ast_private *ast)
+ {
+-	ast_set_index_reg_mask(ast, AST_IO_CRTC_PORT, 0xA1, 0xFF, 0x04);
++	ast_set_index_reg(ast, AST_IO_CRTC_PORT, 0x80, 0xA8);
+ }
+ 
+ #define AST_VIDMEM_SIZE_8M    0x00800000
 
 
