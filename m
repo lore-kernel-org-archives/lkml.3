@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab3I2T14 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59292 "EHLO
+	id S1756791Ab3I2T6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:58:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59306 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab3I2T1w (ORCPT
+	with ESMTP id S1755522Ab3I2T1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:52 -0400
+	Sun, 29 Sep 2013 15:27:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 11/49] HID: multitouch: validate indexes details
-Date: Sun, 29 Sep 2013 12:26:45 -0700
-Message-Id: <20130929191603.779967947@linuxfoundation.org>
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 14/49] HID: lenovo-tpkbd: fix leak if tpkbd_probe_tp fails
+Date: Sun, 29 Sep 2013 12:26:48 -0700
+Message-Id: <20130929191603.977889166@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -29,83 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 8821f5dc187bdf16cfb32ef5aa8c3035273fa79a upstream.
+commit 0ccdd9e7476680c16113131264ad6597bd10299d upstream.
 
-When working on report indexes, always validate that they are in bounds.
-Without this, a HID device could report a malicious feature report that
-could trick the driver into a heap overflow:
+If tpkbd_probe_tp() bails out, the probe() function return an error,
+but hid_hw_stop() is never called.
 
-[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
-...
-[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
-
-Note that we need to change the indexes from s8 to s16 as they can
-be between -1 and 255.
-
-CVE-2013-2897
+fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=1003998
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Acked-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-multitouch.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ drivers/hid/hid-lenovo-tpkbd.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -101,9 +101,9 @@ struct mt_device {
- 	unsigned last_slot_field;	/* the last field of a slot */
- 	unsigned mt_report_id;	/* the report ID of the multitouch device */
- 	unsigned pen_report_id;	/* the report ID of the pen device */
--	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
--	__s8 inputmode_index;	/* InputMode HID feature index in the report */
--	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
-+	__s16 inputmode;	/* InputMode HID feature, -1 if non-existent */
-+	__s16 inputmode_index;	/* InputMode HID feature index in the report */
-+	__s16 maxcontact_report_id;	/* Maximum Contact Number HID feature,
- 				   -1 if non-existent */
- 	__u8 num_received;	/* how many contacts we received */
- 	__u8 num_expected;	/* expected last contact index */
-@@ -317,20 +317,18 @@ static void mt_feature_mapping(struct hi
- 		struct hid_field *field, struct hid_usage *usage)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
--	int i;
+--- a/drivers/hid/hid-lenovo-tpkbd.c
++++ b/drivers/hid/hid-lenovo-tpkbd.c
+@@ -406,22 +406,27 @@ static int tpkbd_probe(struct hid_device
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "hid_parse failed\n");
+-		goto err_free;
++		goto err;
+ 	}
  
- 	switch (usage->hid) {
- 	case HID_DG_INPUTMODE:
--		td->inputmode = field->report->id;
--		td->inputmode_index = 0; /* has to be updated below */
--
--		for (i=0; i < field->maxusage; i++) {
--			if (field->usage[i].hid == usage->hid) {
--				td->inputmode_index = i;
--				break;
--			}
-+		/* Ignore if value index is out of bounds. */
-+		if (usage->usage_index >= field->report_count) {
-+			dev_err(&hdev->dev, "HID_DG_INPUTMODE out of range\n");
-+			break;
- 		}
+ 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (ret) {
+ 		hid_err(hdev, "hid_hw_start failed\n");
+-		goto err_free;
++		goto err;
+ 	}
  
-+		td->inputmode = field->report->id;
-+		td->inputmode_index = usage->usage_index;
-+
- 		break;
- 	case HID_DG_CONTACTMAX:
- 		td->maxcontact_report_id = field->report->id;
-@@ -536,6 +534,10 @@ static int mt_touch_input_mapping(struct
- 			mt_store_field(usage, td, hi);
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
-+			/* Ignore if indexes are out of bounds. */
-+			if (field->index >= field->report->maxfield ||
-+			    usage->usage_index >= field->report_count)
-+				return 1;
- 			td->cc_index = field->index;
- 			td->cc_value_index = usage->usage_index;
- 			return 1;
+ 	uhdev = (struct usbhid_device *) hdev->driver_data;
+ 
+-	if (uhdev->ifnum == 1)
+-		return tpkbd_probe_tp(hdev);
++	if (uhdev->ifnum == 1) {
++		ret = tpkbd_probe_tp(hdev);
++		if (ret)
++			goto err_hid;
++	}
+ 
+ 	return 0;
+-err_free:
++err_hid:
++	hid_hw_stop(hdev);
++err:
+ 	return ret;
+ }
+ 
 
 
