@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3I2T25 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59545 "EHLO
+	id S1755953Ab3I2T3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59651 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab3I2T2s (ORCPT
+	with ESMTP id S1755924Ab3I2T3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:48 -0400
+	Sun, 29 Sep 2013 15:29:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 19/71] HID: lenovo-tpkbd: validate output report details
-Date: Sun, 29 Sep 2013 12:27:31 -0700
-Message-Id: <20130929192644.840912678@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 24/71] drm/i915: fix gpu hang vs. flip stall deadlocks
+Date: Sun, 29 Sep 2013 12:27:36 -0700
+Message-Id: <20130929192645.172413948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,47 +33,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0a9cd0a80ac559357c6a90d26c55270ed752aa26 upstream.
+commit 122f46badaafbe651f05c2c0f24cadee692f761b upstream.
 
-A HID device could send a malicious output report that would cause the
-lenovo-tpkbd HID driver to write just beyond the output report allocation
-during initialization, causing a heap overflow:
+Since we've started to clean up pending flips when the gpu hangs in
 
-[   76.109807] usb 1-1: New USB device found, idVendor=17ef, idProduct=6009
-...
-[   80.462540] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+commit 96a02917a0131e52efefde49c2784c0421d6c439
+Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Date:   Mon Feb 18 19:08:49 2013 +0200
 
-CVE-2013-2894
+    drm/i915: Finish page flips and update primary planes after a GPU reset
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+the gpu reset work now also grabs modeset locks. But since work items
+on our private work queue are not allowed to do that due to the
+flush_workqueue from the pageflip code this results in a neat
+deadlock:
+
+INFO: task kms_flip:14676 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kms_flip        D ffff88019283a5c0     0 14676  13344 0x00000004
+ ffff88018e62dbf8 0000000000000046 ffff88013bdb12e0 ffff88018e62dfd8
+ ffff88018e62dfd8 00000000001d3b00 ffff88019283a5c0 ffff88018ec21000
+ ffff88018f693f00 ffff88018eece000 ffff88018e62dd60 ffff88018eece898
+Call Trace:
+ [<ffffffff8138ee7b>] schedule+0x60/0x62
+ [<ffffffffa046c0dd>] intel_crtc_wait_for_pending_flips+0xb2/0x114 [i915]
+ [<ffffffff81050ff4>] ? finish_wait+0x60/0x60
+ [<ffffffffa0478041>] intel_crtc_set_config+0x7f3/0x81e [i915]
+ [<ffffffffa031780a>] drm_mode_set_config_internal+0x4f/0xc6 [drm]
+ [<ffffffffa0319cf3>] drm_mode_setcrtc+0x44d/0x4f9 [drm]
+ [<ffffffff810e44da>] ? might_fault+0x38/0x86
+ [<ffffffffa030d51f>] drm_ioctl+0x2f9/0x447 [drm]
+ [<ffffffff8107a722>] ? trace_hardirqs_off+0xd/0xf
+ [<ffffffffa03198a6>] ? drm_mode_setplane+0x343/0x343 [drm]
+ [<ffffffff8112222f>] ? mntput_no_expire+0x3e/0x13d
+ [<ffffffff81117f33>] vfs_ioctl+0x18/0x34
+ [<ffffffff81118776>] do_vfs_ioctl+0x396/0x454
+ [<ffffffff81396b37>] ? sysret_check+0x1b/0x56
+ [<ffffffff81118886>] SyS_ioctl+0x52/0x7d
+ [<ffffffff81396b12>] system_call_fastpath+0x16/0x1b
+2 locks held by kms_flip/14676:
+ #0:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffffa0316545>] drm_modeset_lock_all+0x22/0x59 [drm]
+ #1:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa031656b>] drm_modeset_lock_all+0x48/0x59 [drm]
+INFO: task kworker/u8:4:175 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kworker/u8:4    D ffff88018de9a5c0     0   175      2 0x00000000
+Workqueue: i915 i915_error_work_func [i915]
+ ffff88018e37dc30 0000000000000046 ffff8801938ab8a0 ffff88018e37dfd8
+ ffff88018e37dfd8 00000000001d3b00 ffff88018de9a5c0 ffff88018ec21018
+ 0000000000000246 ffff88018e37dca0 000000005a865a86 ffff88018de9a5c0
+Call Trace:
+ [<ffffffff8138ee7b>] schedule+0x60/0x62
+ [<ffffffff8138f23d>] schedule_preempt_disabled+0x9/0xb
+ [<ffffffff8138d0cd>] mutex_lock_nested+0x205/0x3b1
+ [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
+ [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
+ [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
+ [<ffffffffa044e0a2>] i915_error_work_func+0x128/0x147 [i915]
+ [<ffffffff8104a89a>] process_one_work+0x1d4/0x35a
+ [<ffffffff8104a821>] ? process_one_work+0x15b/0x35a
+ [<ffffffff8104b4a5>] worker_thread+0x144/0x1f0
+ [<ffffffff8104b361>] ? rescuer_thread+0x275/0x275
+ [<ffffffff8105076d>] kthread+0xac/0xb4
+ [<ffffffff81059d30>] ? finish_task_switch+0x3b/0xc0
+ [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
+ [<ffffffff81396a6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
+3 locks held by kworker/u8:4/175:
+ #0:  (i915){.+.+.+}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
+ #1:  ((&dev_priv->gpu_error.work)){+.+.+.}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
+ #2:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
+
+This blew up while running kms_flip/flip-vs-panning-vs-hang-interruptible
+on one of my older machines.
+
+Unfortunately (despite the proper lockdep annotations for
+flush_workqueue) lockdep still doesn't detect this correctly, so we
+need to rely on chance to discover these bugs.
+
+Apply the usual bugfix and schedule the reset work on the system
+workqueue to keep our own driver workqueue free of any modeset lock
+grabbing.
+
+Note that this is not a terribly serious regression since before the
+offending commit we'd simply have stalled userspace forever due to
+failing to abort all outstanding pageflips.
+
+v2: Add a comment as requested by Chris.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lenovo-tpkbd.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_irq.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-lenovo-tpkbd.c
-+++ b/drivers/hid/hid-lenovo-tpkbd.c
-@@ -339,7 +339,15 @@ static int tpkbd_probe_tp(struct hid_dev
- 	struct tpkbd_data_pointer *data_pointer;
- 	size_t name_sz = strlen(dev_name(dev)) + 16;
- 	char *name_mute, *name_micmute;
--	int ret;
-+	int i, ret;
-+
-+	/* Validate required reports. */
-+	for (i = 0; i < 4; i++) {
-+		if (!hid_validate_values(hdev, HID_FEATURE_REPORT, 4, i, 1))
-+			return -ENODEV;
-+	}
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 3, 0, 2))
-+		return -ENODEV;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -2127,7 +2127,13 @@ void i915_handle_error(struct drm_device
+ 			wake_up_all(&ring->irq_queue);
+ 	}
  
- 	if (sysfs_create_group(&hdev->dev.kobj,
- 				&tpkbd_attr_group_pointer)) {
+-	queue_work(dev_priv->wq, &dev_priv->gpu_error.work);
++	/*
++	 * Our reset work can grab modeset locks (since it needs to reset the
++	 * state of outstanding pagelips). Hence it must not be run on our own
++	 * dev-priv->wq work queue for otherwise the flush_work in the pageflip
++	 * code will deadlock.
++	 */
++	schedule_work(&dev_priv->gpu_error.work);
+ }
+ 
+ static void __always_unused i915_pageflip_stall_check(struct drm_device *dev, int pipe)
 
 
