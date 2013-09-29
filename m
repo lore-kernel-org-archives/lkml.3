@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3I2UJX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:09:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59117 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab3I2T1J (ORCPT
+	id S1755774Ab3I2ULu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:11:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54945 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755342Ab3I2ULs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 06/17] drm/radeon: fix LCD record parsing
-Date: Sun, 29 Sep 2013 12:26:45 -0700
-Message-Id: <20130929190757.584920666@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
-References: <20130929190757.138351117@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Sun, 29 Sep 2013 16:11:48 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: linus.walleij@linaro.org
+Cc: broonie@kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH] gpio: arizona: Use the of_node from the Arizona device
+Date: Sun, 29 Sep 2013 21:00:37 +0100
+Message-Id: <1380484837-27668-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+We need to use the of_node from the main Arizona device as that
+holds our configuration.
 
-------------------
-
-From: Alex Deucher <alexander.deucher@amd.com>
-
-commit 95663948ba22a4be8b99acd67fbf83e86ddffba4 upstream.
-
-If the LCD table contains an EDID record, properly account
-for the edid size when walking through the records.
-
-This should fix error messages about unknown LCD records.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpio/gpio-arizona.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1658,7 +1658,9 @@ struct radeon_encoder_atom_dig *radeon_a
- 								kfree(edid);
- 						}
- 					}
--					record += sizeof(ATOM_FAKE_EDID_PATCH_RECORD);
-+					record += fake_edid_record->ucFakeEDIDLength ?
-+						fake_edid_record->ucFakeEDIDLength + 2 :
-+						sizeof(ATOM_FAKE_EDID_PATCH_RECORD);
- 					break;
- 				case LCD_PANEL_RESOLUTION_RECORD_TYPE:
- 					panel_res_record = (ATOM_PANEL_RESOLUTION_PATCH_RECORD *)record;
-
+diff --git a/drivers/gpio/gpio-arizona.c b/drivers/gpio/gpio-arizona.c
+index a2bec3c..dceb5dc 100644
+--- a/drivers/gpio/gpio-arizona.c
++++ b/drivers/gpio/gpio-arizona.c
+@@ -109,6 +109,9 @@ static int arizona_gpio_probe(struct platform_device *pdev)
+ 	arizona_gpio->arizona = arizona;
+ 	arizona_gpio->gpio_chip = template_chip;
+ 	arizona_gpio->gpio_chip.dev = &pdev->dev;
++#ifdef CONFIG_OF_GPIO
++	arizona_gpio->gpio_chip.of_node = arizona->dev->of_node;
++#endif
+ 
+ 	switch (arizona->type) {
+ 	case WM5102:
+-- 
+1.7.2.5
 
