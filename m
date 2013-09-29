@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3I2T1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59102 "EHLO
+	id S1757519Ab3I2UGn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:06:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab3I2T1F (ORCPT
+	with ESMTP id S1755110Ab3I2T1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:05 -0400
+	Sun, 29 Sep 2013 15:27:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 03/17] rt2800: fix wrong TX power compensation
-Date: Sun, 29 Sep 2013 12:26:42 -0700
-Message-Id: <20130929190757.387057411@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Vinson Lee <vlee@freedesktop.org>
+Subject: [ 15/17] perf tools: Handle JITed code in shared memory
+Date: Sun, 29 Sep 2013 12:26:54 -0700
+Message-Id: <20130929190758.179407060@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -27,43 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
+commit 89365e6c9ad4c0e090e4c6a4b67a3ce319381d89 upstream.
 
-We should not do temperature compensation on devices without
-EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
-Such devices can have totally bogus TSSI parameters on the EEPROM,
-but still threaded by us as valid and result doing wrong TX power
-calculations.
+Need to check for /dev/zero.
 
-This fix inability to connect to AP on slightly longer distance on
-some Ralink chips/devices.
+Most likely more strings are missing too.
 
-Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1366848182-30449-1-git-send-email-andi@firstfloor.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Vinson Lee <vlee@freedesktop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ tools/perf/util/map.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -1861,6 +1861,13 @@ static int rt2800_get_gain_calibration_d
- 	int i;
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -16,6 +16,7 @@ const char *map_type__name[MAP__NR_TYPES
+ static inline int is_anon_memory(const char *filename)
+ {
+ 	return !strcmp(filename, "//anon") ||
++	       !strcmp(filename, "/dev/zero (deleted)") ||
+ 	       !strcmp(filename, "/anon_hugepage (deleted)");
+ }
  
- 	/*
-+	 * First check if temperature compensation is supported.
-+	 */
-+	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
-+	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
-+		return 0;
-+
-+	/*
- 	 * Read TSSI boundaries for temperature compensation from
- 	 * the EEPROM.
- 	 *
 
 
