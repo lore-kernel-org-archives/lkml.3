@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab3I2Tcw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:32:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59879 "EHLO
+	id S1756203Ab3I2T3x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab3I2T3z (ORCPT
+	with ESMTP id S1756083Ab3I2T3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:55 -0400
+	Sun, 29 Sep 2013 15:29:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Subject: [ 71/71] netfilter: ipset: Fix serious failure in CIDR tracking
-Date: Sun, 29 Sep 2013 12:28:23 -0700
-Message-Id: <20130929192648.370474617@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 52/71] drm/radeon/atom: workaround vbios bug in transmitter table on rs880 (v2)
+Date: Sun, 29 Sep 2013 12:28:04 -0700
+Message-Id: <20130929192647.025998756@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,73 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2cf55125c64d64cc106e204d53b107094762dfdf upstream.
+commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
 
-This fixes a serious bug affecting all hash types with a net element -
-specifically, if a CIDR value is deleted such that none of the same size
-exist any more, all larger (less-specific) values will then fail to
-match. Adding back any prefix with a CIDR equal to or more specific than
-the one deleted will fix it.
+The OUTPUT_ENABLE action jumps past the point in the coder where
+the data_offset is set on certain rs780 cards.  This worked
+previously because the OUTPUT_ENABLE action is always called
+immediately after the ENABLE action so the data_offset remained
+set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
+(drm/radeon/atom: initialize more atom interpretor elements to 0),
+we explictly reset data_offset to 0 between atom calls which then
+caused this to fail.  The fix is to just skip calling the
+OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
+action does the same thing and more.  Ultimately, we could
+probably drop the OUTPUT_ENABLE action all together on DCE3
+asics.
 
-Steps to reproduce:
-ipset -N test hash:net
-ipset -A test 1.1.0.0/16
-ipset -A test 2.2.2.0/24
-ipset -T test 1.1.1.1           #1.1.1.1 IS in set
-ipset -D test 2.2.2.0/24
-ipset -T test 1.1.1.1           #1.1.1.1 IS NOT in set
+fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
 
-This is due to the fact that the nets counter was unconditionally
-decremented prior to the iteration that shifts up the entries. Now, we
-first check if there is a proceeding entry and if not, decrement it and
-return. Otherwise, we proceed to iterate and then zero the last element,
-which, in most cases, will already be zero.
+v2: only rs880 seems to be affected
 
-Signed-off-by: Oliver Smith <oliver@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipset/ip_set_hash_gen.h |   26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/netfilter/ipset/ip_set_hash_gen.h
-+++ b/net/netfilter/ipset/ip_set_hash_gen.h
-@@ -325,18 +325,22 @@ mtype_add_cidr(struct htype *h, u8 cidr,
- static void
- mtype_del_cidr(struct htype *h, u8 cidr, u8 nets_length)
- {
--	u8 i, j;
-+	u8 i, j, net_end = nets_length - 1;
- 
--	for (i = 0; i < nets_length - 1 && h->nets[i].cidr != cidr; i++)
--		;
--	h->nets[i].nets--;
--
--	if (h->nets[i].nets != 0)
--		return;
--
--	for (j = i; j < nets_length - 1 && h->nets[j].nets; j++) {
--		h->nets[j].cidr = h->nets[j + 1].cidr;
--		h->nets[j].nets = h->nets[j + 1].nets;
-+	for (i = 0; i < nets_length; i++) {
-+	        if (h->nets[i].cidr != cidr)
-+	                continue;
-+                if (h->nets[i].nets > 1 || i == net_end ||
-+                    h->nets[i + 1].nets == 0) {
-+                        h->nets[i].nets--;
-+                        return;
-+                }
-+                for (j = i; j < net_end && h->nets[j].nets; j++) {
-+		        h->nets[j].cidr = h->nets[j + 1].cidr;
-+		        h->nets[j].nets = h->nets[j + 1].nets;
-+                }
-+                h->nets[j].nets = 0;
-+                return;
- 	}
- }
- #endif
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1652,8 +1652,12 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+-			/* some early dce3.2 boards have a bug in their transmitter control table */
+-			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
++			/* some dce3.x boards have a bug in their transmitter control table.
++			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
++			 * does the same thing and more.
++			 */
++			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
++			    (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
 
