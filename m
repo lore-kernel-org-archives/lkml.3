@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab3I2TuI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:50:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59452 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab3I2T2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755726Ab3I2T2Z (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 29 Sep 2013 15:28:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59394 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab3I2T2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 15:28:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simo Sorce <simo@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 47/49] rpc: fix huge kmallocs in gss-proxy
-Date: Sun, 29 Sep 2013 12:27:21 -0700
-Message-Id: <20130929191606.192725883@linuxfoundation.org>
+        Gerlando Falauto <gerlando.falauto@keymile.com>,
+        Lin Ming <minggr@gmail.com>, John Stultz <john.stultz@linaro.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 06/49] timekeeping: Fix HRTICK related deadlock from ntp lock changes
+Date: Sun, 29 Sep 2013 12:26:40 -0700
+Message-Id: <20130929191603.444266684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -26,107 +29,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 9dfd87da1aeb0fd364167ad199f40fe96a6a87be upstream.
+commit 7bd36014460f793c19e7d6c94dab67b0afcfcb7f upstream.
 
-The reply to a gssproxy can include up to NGROUPS_MAX gid's, which will
-take up more than a page.  We therefore need to allocate an array of
-pages to hold the reply instead of trying to allocate a single huge
-buffer.
+Gerlando Falauto reported that when HRTICK is enabled, it is
+possible to trigger system deadlocks. These were hard to
+reproduce, as HRTICK has been broken in the past, but seemed
+to be connected to the timekeeping_seq lock.
 
-Tested-by: Simo Sorce <simo@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Since seqlock/seqcount's aren't supported w/ lockdep, I added
+some extra spinlock based locking and triggered the following
+lockdep output:
+
+[   15.849182] ntpd/4062 is trying to acquire lock:
+[   15.849765]  (&(&pool->lock)->rlock){..-...}, at: [<ffffffff810aa9b5>] __queue_work+0x145/0x480
+[   15.850051]
+[   15.850051] but task is already holding lock:
+[   15.850051]  (timekeeper_lock){-.-.-.}, at: [<ffffffff810df6df>] do_adjtimex+0x7f/0x100
+
+<snip>
+
+[   15.850051] Chain exists of: &(&pool->lock)->rlock --> &p->pi_lock --> timekeeper_lock
+[   15.850051]  Possible unsafe locking scenario:
+[   15.850051]
+[   15.850051]        CPU0                    CPU1
+[   15.850051]        ----                    ----
+[   15.850051]   lock(timekeeper_lock);
+[   15.850051]                                lock(&p->pi_lock);
+[   15.850051] lock(timekeeper_lock);
+[   15.850051] lock(&(&pool->lock)->rlock);
+[   15.850051]
+[   15.850051]  *** DEADLOCK ***
+
+The deadlock was introduced by 06c017fdd4dc48451a ("timekeeping:
+Hold timekeepering locks in do_adjtimex and hardpps") in 3.10
+
+This patch avoids this deadlock, by moving the call to
+schedule_delayed_work() outside of the timekeeper lock
+critical section.
+
+Reported-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+Tested-by: Lin Ming <minggr@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Link: http://lkml.kernel.org/r/1378943457-27314-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/gss_rpc_upcall.c |   30 ++++++++++++++++++++++++++++++
- net/sunrpc/auth_gss/gss_rpc_xdr.c    |    3 +++
- net/sunrpc/auth_gss/gss_rpc_xdr.h    |    5 ++++-
- 3 files changed, 37 insertions(+), 1 deletion(-)
+ include/linux/timex.h     |    1 +
+ kernel/time/ntp.c         |    6 ++----
+ kernel/time/timekeeping.c |    2 ++
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/net/sunrpc/auth_gss/gss_rpc_upcall.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_upcall.c
-@@ -213,6 +213,30 @@ static int gssp_call(struct net *net, st
- 	return status;
+--- a/include/linux/timex.h
++++ b/include/linux/timex.h
+@@ -141,6 +141,7 @@ extern int do_adjtimex(struct timex *);
+ extern void hardpps(const struct timespec *, const struct timespec *);
+ 
+ int read_current_timer(unsigned long *timer_val);
++void ntp_notify_cmos_timer(void);
+ 
+ /* The clock frequency of the i8253/i8254 PIT */
+ #define PIT_TICK_RATE 1193182ul
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -516,13 +516,13 @@ static void sync_cmos_clock(struct work_
+ 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
  }
  
-+static void gssp_free_receive_pages(struct gssx_arg_accept_sec_context *arg)
-+{
-+	int i;
-+
-+	for (i = 0; i < arg->npages && arg->pages[i]; i++)
-+		__free_page(arg->pages[i]);
-+}
-+
-+static int gssp_alloc_receive_pages(struct gssx_arg_accept_sec_context *arg)
-+{
-+	int i;
-+
-+	arg->npages = DIV_ROUND_UP(NGROUPS_MAX * 4, PAGE_SIZE);
-+	arg->pages = kzalloc(arg->npages * sizeof(struct page *), GFP_KERNEL);
-+
-+	for (i=0; i < arg->npages; i++) {
-+		arg->pages[i] = alloc_page(GFP_KERNEL);
-+		if (arg->pages[i] == NULL) {
-+			gssp_free_receive_pages(arg);
-+			return -ENOMEM;
-+		}
-+	}
-+	return 0;
-+}
+-static void notify_cmos_timer(void)
++void ntp_notify_cmos_timer(void)
+ {
+ 	schedule_delayed_work(&sync_cmos_work, 0);
+ }
  
- /*
-  * Public functions
-@@ -261,10 +285,16 @@ int gssp_accept_sec_context_upcall(struc
- 		arg.context_handle = &ctxh;
- 	res.output_token->len = GSSX_max_output_token_sz;
+ #else
+-static inline void notify_cmos_timer(void) { }
++void ntp_notify_cmos_timer(void) { }
+ #endif
  
-+	ret = gssp_alloc_receive_pages(&arg);
-+	if (ret)
-+		return ret;
+ 
+@@ -687,8 +687,6 @@ int __do_adjtimex(struct timex *txc, str
+ 	if (!(time_status & STA_NANO))
+ 		txc->time.tv_usec /= NSEC_PER_USEC;
+ 
+-	notify_cmos_timer();
+-
+ 	return result;
+ }
+ 
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1682,6 +1682,8 @@ int do_adjtimex(struct timex *txc)
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 
++	ntp_notify_cmos_timer();
 +
- 	/* use nfs/ for targ_name ? */
+ 	return ret;
+ }
  
- 	ret = gssp_call(net, &msg);
- 
-+	gssp_free_receive_pages(&arg);
-+
- 	/* we need to fetch all data even in case of error so
- 	 * that we can free special strctures is they have been allocated */
- 	data->major_status = res.status.major_status;
---- a/net/sunrpc/auth_gss/gss_rpc_xdr.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_xdr.c
-@@ -780,6 +780,9 @@ void gssx_enc_accept_sec_context(struct
- 	/* arg->options */
- 	err = dummy_enc_opt_array(xdr, &arg->options);
- 
-+	xdr_inline_pages(&req->rq_rcv_buf,
-+		PAGE_SIZE/2 /* pretty arbitrary */,
-+		arg->pages, 0 /* page base */, arg->npages * PAGE_SIZE);
- done:
- 	if (err)
- 		dprintk("RPC:       gssx_enc_accept_sec_context: %d\n", err);
---- a/net/sunrpc/auth_gss/gss_rpc_xdr.h
-+++ b/net/sunrpc/auth_gss/gss_rpc_xdr.h
-@@ -147,6 +147,8 @@ struct gssx_arg_accept_sec_context {
- 	struct gssx_cb *input_cb;
- 	u32 ret_deleg_cred;
- 	struct gssx_option_array options;
-+	struct page **pages;
-+	unsigned int npages;
- };
- 
- struct gssx_res_accept_sec_context {
-@@ -240,7 +242,8 @@ int gssx_dec_accept_sec_context(struct r
- 			     2 * GSSX_max_princ_sz + \
- 			     8 + 8 + 4 + 4 + 4)
- #define GSSX_max_output_token_sz 1024
--#define GSSX_max_creds_sz (4 + 4 + 4 + NGROUPS_MAX * 4)
-+/* grouplist not included; we allocate separate pages for that: */
-+#define GSSX_max_creds_sz (4 + 4 + 4 /* + NGROUPS_MAX*4 */)
- #define GSSX_RES_accept_sec_context_sz (GSSX_default_status_sz + \
- 					GSSX_default_ctx_sz + \
- 					GSSX_max_output_token_sz + \
 
 
