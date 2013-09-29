@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab3I2T1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:27:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59114 "EHLO
+	id S1757496Ab3I2UFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:05:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab3I2T1I (ORCPT
+	with ESMTP id S1755132Ab3I2T1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:08 -0400
+	Sun, 29 Sep 2013 15:27:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 05/17] HID: zeroplus: validate output report details
-Date: Sun, 29 Sep 2013 12:26:44 -0700
-Message-Id: <20130929190757.518954453@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 03/22] rt2800: fix wrong TX power compensation
+Date: Sun, 29 Sep 2013 12:26:49 -0700
+Message-Id: <20130929191159.122408413@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
-References: <20130929190757.138351117@linuxfoundation.org>
+In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
+References: <20130929191158.889693326@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 78214e81a1bf43740ce89bb5efda78eac2f8ef83 upstream.
+commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
 
-The zeroplus HID driver was not checking the size of allocated values
-in fields it used. A HID device could send a malicious output report
-that would cause the driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+We should not do temperature compensation on devices without
+EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
+Such devices can have totally bogus TSSI parameters on the EEPROM,
+but still threaded by us as valid and result doing wrong TX power
+calculations.
 
-[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
-...
-[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+This fix inability to connect to AP on slightly longer distance on
+some Ralink chips/devices.
 
-CVE-2013-2889
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-zpff.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/hid/hid-zpff.c
-+++ b/drivers/hid/hid-zpff.c
-@@ -69,21 +69,13 @@ static int zpff_init(struct hid_device *
- 	struct hid_report *report;
- 	struct hid_input *hidinput = list_entry(hid->inputs.next,
- 						struct hid_input, list);
--	struct list_head *report_list =
--			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	int error;
-+	int i, error;
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -2161,6 +2161,13 @@ static int rt2800_get_gain_calibration_d
+ 	int i;
  
--	if (list_empty(report_list)) {
--		hid_err(hid, "no output report found\n");
--		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 4) {
--		hid_err(hid, "not enough fields in report\n");
--		return -ENODEV;
-+	for (i = 0; i < 4; i++) {
-+		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
-+		if (!report)
-+			return -ENODEV;
- 	}
- 
- 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
+ 	/*
++	 * First check if temperature compensation is supported.
++	 */
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
++	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
++		return 0;
++
++	/*
+ 	 * Read TSSI boundaries for temperature compensation from
+ 	 * the EEPROM.
+ 	 *
 
 
