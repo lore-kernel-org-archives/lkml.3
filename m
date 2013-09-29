@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab3I2TvN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:51:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59439 "EHLO
+	id S1756028Ab3I2Tv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:51:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab3I2T2W (ORCPT
+	with ESMTP id S1755617Ab3I2T2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:22 -0400
+	Sun, 29 Sep 2013 15:28:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@gmail.com>
-Subject: [ 44/49] cfq: explicitly use 64bit divide operation for 64bit arguments
-Date: Sun, 29 Sep 2013 12:27:18 -0700
-Message-Id: <20130929191605.993599947@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Jonghwan Choi <jhbird.choi@gmail.com>
+Subject: [ 43/49] bio-integrity: Fix use of bs->bio_integrity_pool after free
+Date: Sun, 29 Sep 2013 12:27:17 -0700
+Message-Id: <20130929191605.927551991@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -27,37 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit f3cff25f05f2ac29b2ee355e611b0657482f6f1d upstream.
+commit adbe6991efd36104ac9eaf751993d35eaa7f493a upstream.
 
-'samples' is 64bit operant, but do_div() second parameter is 32.
-do_div silently truncates high 32 bits and calculated result
-is invalid.
+This fixes a copy and paste error introduced by 9f060e2231
+("block: Convert integrity to bvec_alloc_bs()").
 
-In case if low 32bit of 'samples' are zeros then do_div() produces
-kernel crash.
+Found by Coverity (CID 1020654).
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Kent Overstreet <koverstreet@google.com>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/cfq-iosched.c |    2 +-
+ fs/bio-integrity.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1803,7 +1803,7 @@ static u64 cfqg_prfill_avg_queue_size(st
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -734,7 +734,7 @@ void bioset_integrity_free(struct bio_se
+ 		mempool_destroy(bs->bio_integrity_pool);
  
- 	if (samples) {
- 		v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
--		do_div(v, samples);
-+		v = div64_u64(v, samples);
- 	}
- 	__blkg_prfill_u64(sf, pd, v);
- 	return 0;
+ 	if (bs->bvec_integrity_pool)
+-		mempool_destroy(bs->bio_integrity_pool);
++		mempool_destroy(bs->bvec_integrity_pool);
+ }
+ EXPORT_SYMBOL(bioset_integrity_free);
+ 
 
 
