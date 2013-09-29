@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab3I2Tsl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:48:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59476 "EHLO
+	id S1756945Ab3I2TtA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:49:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59469 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab3I2T2b (ORCPT
+	with ESMTP id S1755753Ab3I2T23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:31 -0400
+	Sun, 29 Sep 2013 15:28:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 36/49] media: media/usb: fix kconfig dependencies
-Date: Sun, 29 Sep 2013 12:27:10 -0700
-Message-Id: <20130929191605.455744886@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 34/49] drm/radeon: fix panel scaling with eDP and LVDS bridges
+Date: Sun, 29 Sep 2013 12:27:08 -0700
+Message-Id: <20130929191605.322350251@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -28,138 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <rdunlap@infradead.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a0f9354b1a319cb29c331bfd2e5a15d7f9b87fa4 upstream.
+commit 855f5f1d882a34e4e9dd27b299737cd3508a5624 upstream.
 
-(a.k.a. Kconfig bool depending on a tristate considered harmful)
-Fix various build errors when CONFIG_USB=m and media USB drivers
-are builtin.  In this case, CONFIG_USB_ZR364XX=y,
-CONFIG_VIDEO_PVRUSB2=y, and CONFIG_VIDEO_STK1160=y.
-This is caused by (from drivers/media/usb/Kconfig):
-menuconfig MEDIA_USB_SUPPORT
-	bool "Media USB Adapters"
-	depends on USB && MEDIA_SUPPORT
-	           =m     =y
-so MEDIA_USB_SUPPORT=y and all following Kconfig 'source' lines
-are included.  By adding an "if USB" guard around most of this file,
-the needed dependencies are enforced.
-drivers/built-in.o: In function `zr364xx_start_readpipe':
-zr364xx.c:(.text+0xc726a): undefined reference to `usb_alloc_urb'
-zr364xx.c:(.text+0xc72bb): undefined reference to `usb_submit_urb'
-drivers/built-in.o: In function `zr364xx_stop_readpipe':
-zr364xx.c:(.text+0xc72fd): undefined reference to `usb_kill_urb'
-zr364xx.c:(.text+0xc7309): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `read_pipe_completion':
-zr364xx.c:(.text+0xc7acc): undefined reference to `usb_submit_urb'
-drivers/built-in.o: In function `send_control_msg.constprop.12':
-zr364xx.c:(.text+0xc7d2f): undefined reference to `usb_control_msg'
-drivers/built-in.o: In function `pvr2_ctl_timeout':
-pvrusb2-hdw.c:(.text+0xcadb6): undefined reference to `usb_unlink_urb'
-pvrusb2-hdw.c:(.text+0xcadcb): undefined reference to `usb_unlink_urb'
-drivers/built-in.o: In function `pvr2_hdw_create':
-(.text+0xcc42c): undefined reference to `usb_alloc_urb'
-drivers/built-in.o: In function `pvr2_hdw_create':
-(.text+0xcc448): undefined reference to `usb_alloc_urb'
-drivers/built-in.o: In function `pvr2_hdw_create':
-(.text+0xcc5f9): undefined reference to `usb_set_interface'
-drivers/built-in.o: In function `pvr2_hdw_create':
-(.text+0xcc65a): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `pvr2_hdw_create':
-(.text+0xcc666): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `pvr2_send_request_ex.part.22':
-pvrusb2-hdw.c:(.text+0xccbe3): undefined reference to `usb_submit_urb'
-pvrusb2-hdw.c:(.text+0xccc83): undefined reference to `usb_submit_urb'
-drivers/built-in.o: In function `pvr2_hdw_remove_usb_stuff.part.25':
-pvrusb2-hdw.c:(.text+0xcd3f9): undefined reference to `usb_kill_urb'
-pvrusb2-hdw.c:(.text+0xcd405): undefined reference to `usb_free_urb'
-pvrusb2-hdw.c:(.text+0xcd421): undefined reference to `usb_kill_urb'
-pvrusb2-hdw.c:(.text+0xcd42d): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `pvr2_hdw_device_reset':
-(.text+0xcd658): undefined reference to `usb_lock_device_for_reset'
-drivers/built-in.o: In function `pvr2_hdw_device_reset':
-(.text+0xcd664): undefined reference to `usb_reset_device'
-drivers/built-in.o: In function `pvr2_hdw_cpureset_assert':
-(.text+0xcd6f9): undefined reference to `usb_control_msg'
-drivers/built-in.o: In function `pvr2_hdw_cpufw_set_enabled':
-(.text+0xcd84e): undefined reference to `usb_control_msg'
-drivers/built-in.o: In function `pvr2_upload_firmware1':
-pvrusb2-hdw.c:(.text+0xcda47): undefined reference to `usb_clear_halt'
-pvrusb2-hdw.c:(.text+0xcdb04): undefined reference to `usb_control_msg'
-drivers/built-in.o: In function `pvr2_upload_firmware2':
-(.text+0xce7dc): undefined reference to `usb_bulk_msg'
-drivers/built-in.o: In function `pvr2_stream_buffer_count':
-pvrusb2-io.c:(.text+0xd2e05): undefined reference to `usb_alloc_urb'
-pvrusb2-io.c:(.text+0xd2e5b): undefined reference to `usb_kill_urb'
-pvrusb2-io.c:(.text+0xd2e9f): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `pvr2_stream_internal_flush':
-pvrusb2-io.c:(.text+0xd2f9b): undefined reference to `usb_kill_urb'
-drivers/built-in.o: In function `pvr2_buffer_queue':
-(.text+0xd3328): undefined reference to `usb_kill_urb'
-drivers/built-in.o: In function `pvr2_buffer_queue':
-(.text+0xd33ea): undefined reference to `usb_submit_urb'
-drivers/built-in.o: In function `stk1160_read_reg':
-(.text+0xd3efa): undefined reference to `usb_control_msg'
-drivers/built-in.o: In function `stk1160_write_reg':
-(.text+0xd3f4f): undefined reference to `usb_control_msg'
-drivers/built-in.o: In function `stop_streaming':
-stk1160-v4l.c:(.text+0xd4997): undefined reference to `usb_set_interface'
-drivers/built-in.o: In function `start_streaming':
-stk1160-v4l.c:(.text+0xd4a9f): undefined reference to `usb_set_interface'
-stk1160-v4l.c:(.text+0xd4afa): undefined reference to `usb_submit_urb'
-stk1160-v4l.c:(.text+0xd4ba3): undefined reference to `usb_set_interface'
-drivers/built-in.o: In function `stk1160_isoc_irq':
-stk1160-video.c:(.text+0xd509b): undefined reference to `usb_submit_urb'
-drivers/built-in.o: In function `stk1160_cancel_isoc':
-(.text+0xd50ef): undefined reference to `usb_kill_urb'
-drivers/built-in.o: In function `stk1160_free_isoc':
-(.text+0xd5155): undefined reference to `usb_free_coherent'
-drivers/built-in.o: In function `stk1160_free_isoc':
-(.text+0xd515d): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `stk1160_alloc_isoc':
-(.text+0xd5278): undefined reference to `usb_alloc_urb'
-drivers/built-in.o: In function `stk1160_alloc_isoc':
-(.text+0xd52c2): undefined reference to `usb_alloc_coherent'
-drivers/built-in.o: In function `stk1160_alloc_isoc':
-(.text+0xd53c4): undefined reference to `usb_free_urb'
-drivers/built-in.o: In function `zr364xx_driver_init':
-zr364xx.c:(.init.text+0x463e): undefined reference to `usb_register_driver'
-drivers/built-in.o: In function `pvr_init':
-pvrusb2-main.c:(.init.text+0x4662): undefined reference to `usb_register_driver'
-drivers/built-in.o: In function `stk1160_usb_driver_init':
-stk1160-core.c:(.init.text+0x467d): undefined reference to `usb_register_driver'
-drivers/built-in.o: In function `zr364xx_driver_exit':
-zr364xx.c:(.exit.text+0x1377): undefined reference to `usb_deregister'
-drivers/built-in.o: In function `pvr_exit':
-pvrusb2-main.c:(.exit.text+0x1389): undefined reference to `usb_deregister'
-drivers/built-in.o: In function `stk1160_usb_driver_exit':
-stk1160-core.c:(.exit.text+0x13a0): undefined reference to `usb_deregister'
+We were using the wrong set_properly callback so we always
+ended up with Full scaling even if something else (Center or
+Full aspect) was selected.
 
-Suggested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/Kconfig |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   34 ++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
 
---- a/drivers/media/usb/Kconfig
-+++ b/drivers/media/usb/Kconfig
-@@ -1,6 +1,8 @@
-+if USB
-+
- menuconfig MEDIA_USB_SUPPORT
- 	bool "Media USB Adapters"
--	depends on USB && MEDIA_SUPPORT
-+	depends on MEDIA_SUPPORT
- 	help
- 	  Enable media drivers for USB bus.
- 	  If you have such devices, say Y.
-@@ -52,3 +54,4 @@ source "drivers/media/usb/em28xx/Kconfig
- endif
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1489,6 +1489,24 @@ static const struct drm_connector_funcs
+ 	.force = radeon_dvi_force,
+ };
  
- endif #MEDIA_USB_SUPPORT
-+endif #USB
++static const struct drm_connector_funcs radeon_edp_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.detect = radeon_dp_detect,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.set_property = radeon_lvds_set_property,
++	.destroy = radeon_dp_connector_destroy,
++	.force = radeon_dvi_force,
++};
++
++static const struct drm_connector_funcs radeon_lvds_bridge_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.detect = radeon_dp_detect,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.set_property = radeon_lvds_set_property,
++	.destroy = radeon_dp_connector_destroy,
++	.force = radeon_dvi_force,
++};
++
+ void
+ radeon_add_atom_connector(struct drm_device *dev,
+ 			  uint32_t connector_id,
+@@ -1580,8 +1598,6 @@ radeon_add_atom_connector(struct drm_dev
+ 			goto failed;
+ 		radeon_dig_connector->igp_lane_info = igp_lane_info;
+ 		radeon_connector->con_priv = radeon_dig_connector;
+-		drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
+-		drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
+ 		if (i2c_bus->valid) {
+ 			/* add DP i2c bus */
+ 			if (connector_type == DRM_MODE_CONNECTOR_eDP)
+@@ -1598,6 +1614,10 @@ radeon_add_atom_connector(struct drm_dev
+ 		case DRM_MODE_CONNECTOR_VGA:
+ 		case DRM_MODE_CONNECTOR_DVIA:
+ 		default:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_dp_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			connector->interlace_allowed = true;
+ 			connector->doublescan_allowed = true;
+ 			radeon_connector->dac_load_detect = true;
+@@ -1610,6 +1630,10 @@ radeon_add_atom_connector(struct drm_dev
+ 		case DRM_MODE_CONNECTOR_HDMIA:
+ 		case DRM_MODE_CONNECTOR_HDMIB:
+ 		case DRM_MODE_CONNECTOR_DisplayPort:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_dp_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			drm_object_attach_property(&radeon_connector->base.base,
+ 						      rdev->mode_info.underscan_property,
+ 						      UNDERSCAN_OFF);
+@@ -1634,6 +1658,10 @@ radeon_add_atom_connector(struct drm_dev
+ 			break;
+ 		case DRM_MODE_CONNECTOR_LVDS:
+ 		case DRM_MODE_CONNECTOR_eDP:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_lvds_bridge_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			drm_object_attach_property(&radeon_connector->base.base,
+ 						      dev->mode_config.scaling_mode_property,
+ 						      DRM_MODE_SCALE_FULLSCREEN);
+@@ -1797,7 +1825,7 @@ radeon_add_atom_connector(struct drm_dev
+ 				goto failed;
+ 			radeon_dig_connector->igp_lane_info = igp_lane_info;
+ 			radeon_connector->con_priv = radeon_dig_connector;
+-			drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
++			drm_connector_init(dev, &radeon_connector->base, &radeon_edp_connector_funcs, connector_type);
+ 			drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
+ 			if (i2c_bus->valid) {
+ 				/* add DP i2c bus */
 
 
