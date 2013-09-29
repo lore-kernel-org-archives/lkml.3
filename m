@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab3I2UBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:01:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60027 "EHLO
+	id S1757426Ab3I2UCH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:02:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab3I2UBE (ORCPT
+	with ESMTP id S1755846Ab3I2UCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 16:01:04 -0400
-Date: Sun, 29 Sep 2013 13:01:05 -0700
+	Sun, 29 Sep 2013 16:02:03 -0400
+Date: Sun, 29 Sep 2013 13:02:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] char/misc fixes for 3.12-rc3
-Message-ID: <20130929200105.GA30897@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.12-rc3
+Message-ID: <20130929200204.GA31117@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,42 +28,59 @@ The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.12-rc3
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.12-rc3
 
-for you to fetch changes up to 8bbf9f440f196ee08cc5ab1c19e62b1c5a736ff0:
+for you to fetch changes up to df3f4edc6ca6e7768376d05eb99536bcf92362f0:
 
-  Drivers: hv: vmbus: Terminate vmbus version negotiation on timeout (2013-09-26 14:20:22 -0700)
+  staging: r8188eu: Add new device ID (2013-09-26 16:44:45 -0700)
 
 ----------------------------------------------------------------
-Char / Misc driver fixes for 3.12-rc3
+Staging fixes for 3.12-rc3
 
-Here are some HyperV and MEI driver fixes for 3.12-rc3.  They resolve some
-issues that people have been reporting for them.
+Here are some staging driver fixes, MAINTAINER updates, and a new device
+id.  All of these have been in the linux-next tree, and are pretty
+simple patches.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alexander Usyskin (1):
-      mei: cancel stall timers in mei_reset
+Fabio Estevam (1):
+      staging: imx-drm: Fix probe failure
 
-K. Y. Srinivasan (2):
-      Drivers: hv: util: Correctly support ws2008R2 and earlier
-      Drivers: hv: vmbus: Terminate vmbus version negotiation on timeout
+Iker Pedrosa (1):
+      Staging: rtl8192u: r819xU_cmdpkt: checking NULL value after doing dev_alloc_skb
 
-Tomas Winkler (2):
-      mei: make me client counters less error prone
-      mei: bus: stop wait for read during cl state transition
+Larry Finger (1):
+      staging: r8188eu: Add new device ID
 
- drivers/hv/connection.c    |  2 +-
- drivers/hv/hv_kvp.c        | 38 +++++++++++++++++--------
- drivers/hv/hv_snapshot.c   |  6 ++--
- drivers/hv/hv_util.c       | 71 +++++++++++++++++++++++++++++++++++-----------
- drivers/misc/mei/amthif.c  |  1 +
- drivers/misc/mei/bus.c     |  5 +++-
- drivers/misc/mei/client.h  |  6 ++++
- drivers/misc/mei/hbm.c     | 10 ++++---
- drivers/misc/mei/init.c    |  3 ++
- drivers/misc/mei/main.c    | 11 +++----
- drivers/misc/mei/mei_dev.h |  6 ++--
- include/linux/hyperv.h     |  7 +++--
- 12 files changed, 116 insertions(+), 50 deletions(-)
+Lidza Louina (1):
+      MAINTAINERS: staging: dgnc and dgap drivers: add maintainer
+
+Malcolm Priestley (3):
+      staging: vt6656: rxtx.c [BUG] s_vGetFreeContext dead lock on null apTD.
+      staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
+      staging: vt6656: [BUG] iwctl_siwencodeext return if device not open
+
+Thomas Meyer (5):
+      staging: lustre: Cocci spatch "noderef"
+      staging: r8188eu: Add files for new drive: Cocci spatch "noderef"
+      staging: octeon-usb: Cocci spatch "noderef"
+      staging: r8188eu: Cocci spatch "noderef"
+      staging: r8188eu: Add files for new drive: Cocci spatch "noderef"
+
+Tobias Polzer (1):
+      staging: usbip: Orphan usbip
+
+ MAINTAINERS                                         | 15 +++++++++++++--
+ drivers/staging/imx-drm/imx-drm-core.c              | 11 +++--------
+ drivers/staging/lustre/lustre/obdecho/echo_client.c |  2 +-
+ drivers/staging/octeon-usb/cvmx-usb.c               |  2 +-
+ drivers/staging/rtl8188eu/core/rtw_mp.c             |  2 +-
+ drivers/staging/rtl8188eu/hal/rtl8188e_dm.c         |  2 +-
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c      |  2 +-
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c         |  1 +
+ drivers/staging/rtl8192u/r819xU_cmdpkt.c            |  2 ++
+ drivers/staging/vt6656/iwctl.c                      |  3 +++
+ drivers/staging/vt6656/main_usb.c                   |  3 ++-
+ drivers/staging/vt6656/rxtx.c                       |  2 ++
+ 12 files changed, 31 insertions(+), 16 deletions(-)
