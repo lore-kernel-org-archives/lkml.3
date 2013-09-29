@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab3I2TcL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:32:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59888 "EHLO
+	id S1756221Ab3I2T34 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59813 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab3I2T37 (ORCPT
+	with ESMTP id S1755924Ab3I2T3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:59 -0400
+	Sun, 29 Sep 2013 15:29:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 37/71] drm/radeon: fill in gpu_init for berlin GPU cores
-Date: Sun, 29 Sep 2013 12:27:49 -0700
-Message-Id: <20130929192646.032697011@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Vasiliy Glazov <vascom2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 58/71] skge: fix broken driver
+Date: Sun, 29 Sep 2013 12:28:10 -0700
+Message-Id: <20130929192647.501119952@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,69 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit b2e4c70a9747ecb618d563b004ba746869dde5aa upstream.
+commit c194992cbe71c20bb3623a566af8d11b0bfaa721 upstream.
 
-This fills in the GPU specific details for berlin
-GPU cores so that the driver will work with them.
+The patch 136d8f377e1575463b47840bc5f1b22d94bf8f63 broke the skge driver.
+Note this part of the patch:
++               if (skge_rx_setup(skge, e, nskb, skge->rx_buf_size) < 0) {
++                       dev_kfree_skb(nskb);
++                       goto resubmit;
++               }
++
+                pci_unmap_single(skge->hw->pdev,
+                                 dma_unmap_addr(e, mapaddr),
+                                 dma_unmap_len(e, maplen),
+                                 PCI_DMA_FROMDEVICE);
+                skb = e->skb;
+                prefetch(skb->data);
+-               skge_rx_setup(skge, e, nskb, skge->rx_buf_size);
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The function skge_rx_setup modifies e->skb to point to the new skb. Thus,
+after this change, the new buffer, not the old, is returned to the
+networking stack.
+
+This bug is present in kernels 3.11, 3.11.1 and 3.12-rc1. The patch should
+be queued for 3.11-stable.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Vasiliy Glazov <vascom2@gmail.com>
+Tested-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik.c |   41 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 40 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/marvell/skge.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -1880,7 +1880,46 @@ static void cik_gpu_init(struct radeon_d
- 		gb_addr_config = BONAIRE_GB_ADDR_CONFIG_GOLDEN;
- 		break;
- 	case CHIP_KAVERI:
--		/* TODO */
-+		rdev->config.cik.max_shader_engines = 1;
-+		rdev->config.cik.max_tile_pipes = 4;
-+		if ((rdev->pdev->device == 0x1304) ||
-+		    (rdev->pdev->device == 0x1305) ||
-+		    (rdev->pdev->device == 0x130C) ||
-+		    (rdev->pdev->device == 0x130F) ||
-+		    (rdev->pdev->device == 0x1310) ||
-+		    (rdev->pdev->device == 0x1311) ||
-+		    (rdev->pdev->device == 0x131C)) {
-+			rdev->config.cik.max_cu_per_sh = 8;
-+			rdev->config.cik.max_backends_per_se = 2;
-+		} else if ((rdev->pdev->device == 0x1309) ||
-+			   (rdev->pdev->device == 0x130A) ||
-+			   (rdev->pdev->device == 0x130D) ||
-+			   (rdev->pdev->device == 0x1313)) {
-+			rdev->config.cik.max_cu_per_sh = 6;
-+			rdev->config.cik.max_backends_per_se = 2;
-+		} else if ((rdev->pdev->device == 0x1306) ||
-+			   (rdev->pdev->device == 0x1307) ||
-+			   (rdev->pdev->device == 0x130B) ||
-+			   (rdev->pdev->device == 0x130E) ||
-+			   (rdev->pdev->device == 0x1315) ||
-+			   (rdev->pdev->device == 0x131B)) {
-+			rdev->config.cik.max_cu_per_sh = 4;
-+			rdev->config.cik.max_backends_per_se = 1;
-+		} else {
-+			rdev->config.cik.max_cu_per_sh = 3;
-+			rdev->config.cik.max_backends_per_se = 1;
-+		}
-+		rdev->config.cik.max_sh_per_se = 1;
-+		rdev->config.cik.max_texture_channel_caches = 4;
-+		rdev->config.cik.max_gprs = 256;
-+		rdev->config.cik.max_gs_threads = 16;
-+		rdev->config.cik.max_hw_contexts = 8;
+--- a/drivers/net/ethernet/marvell/skge.c
++++ b/drivers/net/ethernet/marvell/skge.c
+@@ -3092,6 +3092,9 @@ static struct sk_buff *skge_rx_get(struc
+ 		if (!nskb)
+ 			goto resubmit;
+ 
++		skb = e->skb;
++		prefetch(skb->data);
 +
-+		rdev->config.cik.sc_prim_fifo_size_frontend = 0x20;
-+		rdev->config.cik.sc_prim_fifo_size_backend = 0x100;
-+		rdev->config.cik.sc_hiz_tile_fifo_size = 0x30;
-+		rdev->config.cik.sc_earlyz_tile_fifo_size = 0x130;
-+		gb_addr_config = BONAIRE_GB_ADDR_CONFIG_GOLDEN;
- 		break;
- 	case CHIP_KABINI:
- 	default:
+ 		if (skge_rx_setup(skge, e, nskb, skge->rx_buf_size) < 0) {
+ 			dev_kfree_skb(nskb);
+ 			goto resubmit;
+@@ -3101,8 +3104,6 @@ static struct sk_buff *skge_rx_get(struc
+ 				 dma_unmap_addr(e, mapaddr),
+ 				 dma_unmap_len(e, maplen),
+ 				 PCI_DMA_FROMDEVICE);
+-		skb = e->skb;
+-		prefetch(skb->data);
+ 	}
+ 
+ 	skb_put(skb, len);
 
 
