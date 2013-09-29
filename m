@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab3I2Ttu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:49:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59455 "EHLO
+	id S1757048Ab3I2TuI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:50:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59452 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab3I2T20 (ORCPT
+	with ESMTP id S1755664Ab3I2T2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:26 -0400
+	Sun, 29 Sep 2013 15:28:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Simo Sorce <simo@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 48/49] rpc: let xdr layer allocate gssproxy receieve pages
-Date: Sun, 29 Sep 2013 12:27:22 -0700
-Message-Id: <20130929191606.258822045@linuxfoundation.org>
+Subject: [ 47/49] rpc: fix huge kmallocs in gss-proxy
+Date: Sun, 29 Sep 2013 12:27:21 -0700
+Message-Id: <20130929191606.192725883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -28,48 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit d4a516560fc96a9d486a9939bcb567e3fdce8f49 upstream.
+commit 9dfd87da1aeb0fd364167ad199f40fe96a6a87be upstream.
 
-In theory the linux cred in a gssproxy reply can include up to
-NGROUPS_MAX data, 256K of data.  In the common case we expect it to be
-shorter.  So do as the nfsv3 ACL code does and let the xdr code allocate
-the pages as they come in, instead of allocating a lot of pages that
-won't typically be used.
+The reply to a gssproxy can include up to NGROUPS_MAX gid's, which will
+take up more than a page.  We therefore need to allocate an array of
+pages to hold the reply instead of trying to allocate a single huge
+buffer.
 
 Tested-by: Simo Sorce <simo@redhat.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/gss_rpc_upcall.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ net/sunrpc/auth_gss/gss_rpc_upcall.c |   30 ++++++++++++++++++++++++++++++
+ net/sunrpc/auth_gss/gss_rpc_xdr.c    |    3 +++
+ net/sunrpc/auth_gss/gss_rpc_xdr.h    |    5 ++++-
+ 3 files changed, 37 insertions(+), 1 deletion(-)
 
 --- a/net/sunrpc/auth_gss/gss_rpc_upcall.c
 +++ b/net/sunrpc/auth_gss/gss_rpc_upcall.c
-@@ -223,18 +223,14 @@ static void gssp_free_receive_pages(stru
- 
- static int gssp_alloc_receive_pages(struct gssx_arg_accept_sec_context *arg)
- {
--	int i;
--
- 	arg->npages = DIV_ROUND_UP(NGROUPS_MAX * 4, PAGE_SIZE);
- 	arg->pages = kzalloc(arg->npages * sizeof(struct page *), GFP_KERNEL);
--
--	for (i=0; i < arg->npages; i++) {
--		arg->pages[i] = alloc_page(GFP_KERNEL);
--		if (arg->pages[i] == NULL) {
--			gssp_free_receive_pages(arg);
--			return -ENOMEM;
--		}
--	}
-+	/*
-+	 * XXX: actual pages are allocated by xdr layer in
-+	 * xdr_partial_copy_from_skb.
-+	 */
-+	if (!arg->pages)
-+		return -ENOMEM;
- 	return 0;
+@@ -213,6 +213,30 @@ static int gssp_call(struct net *net, st
+ 	return status;
  }
  
++static void gssp_free_receive_pages(struct gssx_arg_accept_sec_context *arg)
++{
++	int i;
++
++	for (i = 0; i < arg->npages && arg->pages[i]; i++)
++		__free_page(arg->pages[i]);
++}
++
++static int gssp_alloc_receive_pages(struct gssx_arg_accept_sec_context *arg)
++{
++	int i;
++
++	arg->npages = DIV_ROUND_UP(NGROUPS_MAX * 4, PAGE_SIZE);
++	arg->pages = kzalloc(arg->npages * sizeof(struct page *), GFP_KERNEL);
++
++	for (i=0; i < arg->npages; i++) {
++		arg->pages[i] = alloc_page(GFP_KERNEL);
++		if (arg->pages[i] == NULL) {
++			gssp_free_receive_pages(arg);
++			return -ENOMEM;
++		}
++	}
++	return 0;
++}
+ 
+ /*
+  * Public functions
+@@ -261,10 +285,16 @@ int gssp_accept_sec_context_upcall(struc
+ 		arg.context_handle = &ctxh;
+ 	res.output_token->len = GSSX_max_output_token_sz;
+ 
++	ret = gssp_alloc_receive_pages(&arg);
++	if (ret)
++		return ret;
++
+ 	/* use nfs/ for targ_name ? */
+ 
+ 	ret = gssp_call(net, &msg);
+ 
++	gssp_free_receive_pages(&arg);
++
+ 	/* we need to fetch all data even in case of error so
+ 	 * that we can free special strctures is they have been allocated */
+ 	data->major_status = res.status.major_status;
+--- a/net/sunrpc/auth_gss/gss_rpc_xdr.c
++++ b/net/sunrpc/auth_gss/gss_rpc_xdr.c
+@@ -780,6 +780,9 @@ void gssx_enc_accept_sec_context(struct
+ 	/* arg->options */
+ 	err = dummy_enc_opt_array(xdr, &arg->options);
+ 
++	xdr_inline_pages(&req->rq_rcv_buf,
++		PAGE_SIZE/2 /* pretty arbitrary */,
++		arg->pages, 0 /* page base */, arg->npages * PAGE_SIZE);
+ done:
+ 	if (err)
+ 		dprintk("RPC:       gssx_enc_accept_sec_context: %d\n", err);
+--- a/net/sunrpc/auth_gss/gss_rpc_xdr.h
++++ b/net/sunrpc/auth_gss/gss_rpc_xdr.h
+@@ -147,6 +147,8 @@ struct gssx_arg_accept_sec_context {
+ 	struct gssx_cb *input_cb;
+ 	u32 ret_deleg_cred;
+ 	struct gssx_option_array options;
++	struct page **pages;
++	unsigned int npages;
+ };
+ 
+ struct gssx_res_accept_sec_context {
+@@ -240,7 +242,8 @@ int gssx_dec_accept_sec_context(struct r
+ 			     2 * GSSX_max_princ_sz + \
+ 			     8 + 8 + 4 + 4 + 4)
+ #define GSSX_max_output_token_sz 1024
+-#define GSSX_max_creds_sz (4 + 4 + 4 + NGROUPS_MAX * 4)
++/* grouplist not included; we allocate separate pages for that: */
++#define GSSX_max_creds_sz (4 + 4 + 4 /* + NGROUPS_MAX*4 */)
+ #define GSSX_RES_accept_sec_context_sz (GSSX_default_status_sz + \
+ 					GSSX_default_ctx_sz + \
+ 					GSSX_max_output_token_sz + \
 
 
