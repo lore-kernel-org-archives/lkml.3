@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab3I2UFh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:05:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59190 "EHLO
+	id S1757504Ab3I2UF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:05:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59185 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab3I2T1Z (ORCPT
+	with ESMTP id S1755282Ab3I2T1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:25 -0400
+	Sun, 29 Sep 2013 15:27:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 03/22] rt2800: fix wrong TX power compensation
-Date: Sun, 29 Sep 2013 12:26:49 -0700
-Message-Id: <20130929191159.122408413@linuxfoundation.org>
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 02/22] net: usb: cdc_ether: Use wwan interface for Telit modules
+Date: Sun, 29 Sep 2013 12:26:48 -0700
+Message-Id: <20130929191159.055752760@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191158.889693326@linuxfoundation.org>
 References: <20130929191158.889693326@linuxfoundation.org>
@@ -27,43 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
 
-commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
+commit 0092820407901a0b2c4e343e85f96bb7abfcded1 upstream.
 
-We should not do temperature compensation on devices without
-EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
-Such devices can have totally bogus TSSI parameters on the EEPROM,
-but still threaded by us as valid and result doing wrong TX power
-calculations.
-
-This fix inability to connect to AP on slightly longer distance on
-some Ralink chips/devices.
-
-Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/usb/cdc_ether.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -2161,6 +2161,13 @@ static int rt2800_get_gain_calibration_d
- 	int i;
- 
- 	/*
-+	 * First check if temperature compensation is supported.
-+	 */
-+	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
-+	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
-+		return 0;
-+
-+	/*
- 	 * Read TSSI boundaries for temperature compensation from
- 	 * the EEPROM.
- 	 *
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -618,6 +618,11 @@ static const struct usb_device_id	produc
+ 	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
+ 	.driver_info = (unsigned long)&wwan_info,
+ }, {
++	/* Telit modules */
++	USB_VENDOR_AND_INTERFACE_INFO(0x1bc7, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = (kernel_ulong_t) &wwan_info,
++}, {
+ 	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ETHERNET,
+ 			USB_CDC_PROTO_NONE),
+ 	.driver_info = (unsigned long) &cdc_info,
 
 
