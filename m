@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab3I2T2E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59287 "EHLO
+	id S1755749Ab3I2T22 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59424 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755421Ab3I2T1v (ORCPT
+	with ESMTP id S1755689Ab3I2T2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:51 -0400
+	Sun, 29 Sep 2013 15:28:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 10/49] HID: validate feature and input report details
-Date: Sun, 29 Sep 2013 12:26:44 -0700
-Message-Id: <20130929191603.713082122@linuxfoundation.org>
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        Pravin B Shelar <pshelar@nicira.com>, Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 41/49] mm: fix aio performance regression for database caused by THP
+Date: Sun, 29 Sep 2013 12:27:15 -0700
+Message-Id: <20130929191605.794523403@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -27,134 +33,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Khalid Aziz <khalid.aziz@oracle.com>
 
-commit cc6b54aa54bf40b762cab45a9fc8aa81653146eb upstream.
+commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
 
-When dealing with usage_index, be sure to properly use unsigned instead of
-int to avoid overflows.
+I am working with a tool that simulates oracle database I/O workload.
+This tool (orion to be specific -
+<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
+does aio into these pages from flash disks using various common block
+sizes used by database.  I am looking at performance with two of the most
+common block sizes - 1M and 64K.  aio performance with these two block
+sizes plunged after Transparent HugePages was introduced in the kernel.
+Here are performance numbers:
 
-When working on report fields, always validate that their report_counts are
-in bounds.
-Without this, a HID device could report a malicious feature report that
-could trick the driver into a heap overflow:
+		pre-THP		2.6.39		3.11-rc5
+1M read		8384 MB/s	5629 MB/s	6501 MB/s
+64K read	7867 MB/s	4576 MB/s	4251 MB/s
 
-[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
-...
-[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+I have narrowed the performance impact down to the overheads introduced by
+THP in __get_page_tail() and put_compound_page() routines.  perf top shows
+>40% of cycles being spent in these two routines.  Every time direct I/O
+to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
+the pages and calls put_page() when I/O completes to put the reference
+away.  THP introduced significant amount of locking overhead to get_page()
+and put_page() when dealing with compound pages because hugepages can be
+split underneath get_page() and put_page().  It added this overhead
+irrespective of whether it is dealing with hugetlbfs pages or transparent
+hugepages.  This resulted in 20%-45% drop in aio performance when using
+hugetlbfs pages.
 
-CVE-2013-2897
+Since hugetlbfs pages can not be split, there is no reason to go through
+all the locking overhead for these pages from what I can see.  I added
+code to __get_page_tail() and put_compound_page() to bypass all the
+locking code when working with hugetlbfs pages.  This improved performance
+significantly.  Performance numbers with this patch:
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+		pre-THP		3.11-rc5	3.11-rc5 + Patch
+1M read		8384 MB/s	6501 MB/s	8371 MB/s
+64K read	7867 MB/s	4251 MB/s	6510 MB/s
+
+Performance with 64K read is still lower than what it was before THP, but
+still a 53% improvement.  It does mean there is more work to be done but I
+will take a 53% improvement for now.
+
+Please take a look at the following patch and let me know if it looks
+reasonable.
+
+[akpm@linux-foundation.org: tweak comments]
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c  |   16 +++++++---------
- drivers/hid/hid-input.c |   11 ++++++++++-
- 2 files changed, 17 insertions(+), 10 deletions(-)
+ mm/swap.c |   77 +++++++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 52 insertions(+), 25 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -94,7 +94,6 @@ EXPORT_SYMBOL_GPL(hid_register_report);
- static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -31,6 +31,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/gfp.h>
+ #include <linux/uio.h>
++#include <linux/hugetlb.h>
+ 
+ #include "internal.h"
+ 
+@@ -78,6 +79,19 @@ static void __put_compound_page(struct p
+ 
+ static void put_compound_page(struct page *page)
  {
- 	struct hid_field *field;
--	int i;
- 
- 	if (report->maxfield == HID_MAX_FIELDS) {
- 		hid_err(report->device, "too many fields in report\n");
-@@ -113,9 +112,6 @@ static struct hid_field *hid_register_fi
- 	field->value = (s32 *)(field->usage + usages);
- 	field->report = report;
- 
--	for (i = 0; i < usages; i++)
--		field->usage[i].usage_index = i;
--
- 	return field;
- }
- 
-@@ -226,9 +222,9 @@ static int hid_add_field(struct hid_pars
- {
- 	struct hid_report *report;
- 	struct hid_field *field;
--	int usages;
-+	unsigned usages;
- 	unsigned offset;
--	int i;
-+	unsigned i;
- 
- 	report = hid_register_report(parser->device, report_type, parser->global.report_id);
- 	if (!report) {
-@@ -255,7 +251,8 @@ static int hid_add_field(struct hid_pars
- 	if (!parser->local.usage_index) /* Ignore padding fields */
- 		return 0;
- 
--	usages = max_t(int, parser->local.usage_index, parser->global.report_count);
-+	usages = max_t(unsigned, parser->local.usage_index,
-+				 parser->global.report_count);
- 
- 	field = hid_register_field(report, usages, parser->global.report_count);
- 	if (!field)
-@@ -266,13 +263,14 @@ static int hid_add_field(struct hid_pars
- 	field->application = hid_lookup_collection(parser, HID_COLLECTION_APPLICATION);
- 
- 	for (i = 0; i < usages; i++) {
--		int j = i;
-+		unsigned j = i;
- 		/* Duplicate the last usage we parsed if we have excess values */
- 		if (i >= parser->local.usage_index)
- 			j = parser->local.usage_index - 1;
- 		field->usage[i].hid = parser->local.usage[j];
- 		field->usage[i].collection_index =
- 			parser->local.collection_index[j];
-+		field->usage[i].usage_index = i;
- 	}
- 
- 	field->maxusage = usages;
-@@ -1295,7 +1293,7 @@ int hid_report_raw_event(struct hid_devi
- 			goto out;
- 	}
- 
--	if (hid->claimed != HID_CLAIMED_HIDRAW) {
-+	if (hid->claimed != HID_CLAIMED_HIDRAW && report->maxfield) {
- 		for (a = 0; a < report->maxfield; a++)
- 			hid_input_field(hid, report->field[a], cdata, interrupt);
- 		hdrv = hid->driver;
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -485,6 +485,10 @@ static void hidinput_configure_usage(str
- 	if (field->flags & HID_MAIN_ITEM_CONSTANT)
- 		goto ignore;
- 
-+	/* Ignore if report count is out of bounds. */
-+	if (field->report_count < 1)
-+		goto ignore;
++	/*
++	 * hugetlbfs pages cannot be split from under us.  If this is a
++	 * hugetlbfs page, check refcount on head page and release the page if
++	 * the refcount becomes zero.
++	 */
++	if (PageHuge(page)) {
++		page = compound_head(page);
++		if (put_page_testzero(page))
++			__put_compound_page(page);
 +
- 	/* only LED usages are supported in output fields */
- 	if (field->report_type == HID_OUTPUT_REPORT &&
- 			(usage->hid & HID_USAGE_PAGE) != HID_UP_LED) {
-@@ -1163,7 +1167,11 @@ static void report_features(struct hid_d
- 
- 	rep_enum = &hid->report_enum[HID_FEATURE_REPORT];
- 	list_for_each_entry(rep, &rep_enum->report_list, list)
--		for (i = 0; i < rep->maxfield; i++)
-+		for (i = 0; i < rep->maxfield; i++) {
-+			/* Ignore if report count is out of bounds. */
-+			if (rep->field[i]->report_count < 1)
-+				continue;
++		return;
++	}
 +
- 			for (j = 0; j < rep->field[i]->maxusage; j++) {
- 				/* Verify if Battery Strength feature is available */
- 				hidinput_setup_battery(hid, HID_FEATURE_REPORT, rep->field[i]);
-@@ -1172,6 +1180,7 @@ static void report_features(struct hid_d
- 					drv->feature_mapping(hid, rep->field[i],
- 							     rep->field[i]->usage + j);
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -181,38 +195,51 @@ bool __get_page_tail(struct page *page)
+ 	 * proper PT lock that already serializes against
+ 	 * split_huge_page().
+ 	 */
+-	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head;
+ 
+-	if (likely(page != page_head && get_page_unless_zero(page_head))) {
++	/*
++	 * If this is a hugetlbfs page it cannot be split under us.  Simply
++	 * increment refcount for the head page.
++	 */
++	if (PageHuge(page)) {
++		page_head = compound_head(page);
++		atomic_inc(&page_head->_count);
++		got = true;
++	} else {
++		unsigned long flags;
++
++		page_head = compound_trans_head(page);
++		if (likely(page != page_head &&
++					get_page_unless_zero(page_head))) {
++
++			/* Ref to put_compound_page() comment. */
++			if (PageSlab(page_head)) {
++				if (likely(PageTail(page))) {
++					__get_page_tail_foll(page, false);
++					return true;
++				} else {
++					put_page(page_head);
++					return false;
++				}
++			}
+ 
+-		/* Ref to put_compound_page() comment. */
+-		if (PageSlab(page_head)) {
++			/*
++			 * page_head wasn't a dangling pointer but it
++			 * may not be a head page anymore by the time
++			 * we obtain the lock. That is ok as long as it
++			 * can't be freed from under us.
++			 */
++			flags = compound_lock_irqsave(page_head);
++			/* here __split_huge_page_refcount won't run anymore */
+ 			if (likely(PageTail(page))) {
+ 				__get_page_tail_foll(page, false);
+-				return true;
+-			} else {
+-				put_page(page_head);
+-				return false;
++				got = true;
  			}
-+		}
++			compound_unlock_irqrestore(page_head, flags);
++			if (unlikely(!got))
++				put_page(page_head);
+ 		}
+-
+-		/*
+-		 * page_head wasn't a dangling pointer but it
+-		 * may not be a head page anymore by the time
+-		 * we obtain the lock. That is ok as long as it
+-		 * can't be freed from under us.
+-		 */
+-		flags = compound_lock_irqsave(page_head);
+-		/* here __split_huge_page_refcount won't run anymore */
+-		if (likely(PageTail(page))) {
+-			__get_page_tail_foll(page, false);
+-			got = true;
+-		}
+-		compound_unlock_irqrestore(page_head, flags);
+-		if (unlikely(!got))
+-			put_page(page_head);
+ 	}
+ 	return got;
  }
- 
- static struct hid_input *hidinput_allocate(struct hid_device *hid)
 
 
