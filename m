@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab3I2RUE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 13:20:04 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:49934 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab3I2RUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 13:20:01 -0400
+	id S1754872Ab3I2Rlr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 13:41:47 -0400
+Received: from sauhun.de ([89.238.76.85]:35015 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754520Ab3I2Rlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 13:41:44 -0400
+Date: Sun, 29 Sep 2013 19:41:30 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/8] i2c: Remove redundant driver field from the
+ i2c_client struct
+Message-ID: <20130929174130.GA3367@katana>
+References: <1380444666-12019-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <20130929060601.GL13318@ZenIV.linux.org.uk>
-References: <20130928202728.GK13318@ZenIV.linux.org.uk>
-	<CA+55aFzrjiM6bgqNgdckJGAZks2fR8ZD+R_5AqxvrnS64DD3ow@mail.gmail.com>
-	<20130929060601.GL13318@ZenIV.linux.org.uk>
-Date: Sun, 29 Sep 2013 10:19:59 -0700
-X-Google-Sender-Auth: LtqcXp42FBJ8pKUk3eKVVyI5-Q8
-Message-ID: <CA+55aFyGY7hZTDhWiyWBe+oSkxd2GzoYWGhvXtGTyZKL-3PZ1w@mail.gmail.com>
-Subject: Re: [rfc][possible solution] RCU vfsmounts
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
+Content-Disposition: inline
+In-Reply-To: <1380444666-12019-1-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 11:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Sigh...  Looks like there's a lot of fun in shrink_dcache_for_umount() -
-> at the very least, it needs to bump ->d_seq on everything, because with
-> that change we *can* walk into a filesystem in the middle of that.
-> We obviously don't want to slap rcu_barrier() into the final mntput() -
 
-I have to say, that when I was working with the dcache lockref code, I
-absolutely _detested_ the magical shrink_dcache_for_umount() code that
-violated all the locking rules.
+--liOOAslEiF7prFVr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So I actually wouldn't mind at all if that was all forced to follow
-all the same rules that the live filesystem code is forced to follow.
-Yes, yes, it's going to slow things down, but it's not like umount()
-is _that_ performance critical. And I think the whole "let's ignore
-locking rules" actually comes from back when we had one global
-dcache_lock: we used to have batching in order to not hold the
-dcache_lock over long periods, and then it got converted to the
-per-dentry locking, and then that got removed entirely with the whole
-RCU lookup etc.
+On Sun, Sep 29, 2013 at 10:50:58AM +0200, Lars-Peter Clausen wrote:
 
-So I would be *entirely* ok with having
-shrink_dcache_for_umount_subtree() take the d_lock on the dentry as it
-shrinks it etc etc.
+> This series removes the redundant driver field from the i2c_client struct. The
+> field is redundant since the same pointer can be accessed through
+> to_i2c_driver(client->dev.driver). The commit log suggests that the field has
+> been around since forever (since before v2.6.12-rc2) and it looks as if it was
+> simply forgotten to remove it during the conversion of the i2c framework to the
+> generic device driver model.
 
-                     Linus
+Great! Looks proper from a first glimpse. I'd think it makes sense to
+take all patches via I2C. So, I am looking for ACKs for other subsystems
+touched.
+
+Thanks,
+
+   Wolfram
+
+
+--liOOAslEiF7prFVr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSSGZKAAoJEBQN5MwUoCm2/TkP/iB3Li27waUCgxPpQKf4gPQi
+49GJQg2lbVxpE+YpFHUiVbOrYY6sESM3Qtj4QpdsEhNulqujDJBtMK2Ie7eWyCFp
+TjyOJCjP8m0br6cUExHkxF+Pxt0YDoxbxkzKx2TGqxaNc9rCl2m7Mc8utzXWcSOd
+UIv5RhXPTwVLCtnP1aYSzRPK2kAe9R0vmZjTXYO2ogrlk7PTCTjwabekzPb/xcG9
+xJuEhgh7OguGtwDiCse6CUzCmmeNid5pPMdRDmlxz4EyvsI0n7veWLsCaNBQ9Tle
+1VY14aVx7rfMwsTDO2EBdUtqb6184wY2TD8osxtXcc9x8xwEU2RXZgPTcWspx9WB
+f+1sG/USwmFup2YEV3APVJlLQs+CyUIKDCoaDMEU1JKMFCSz9OwKnC5uoq5qf9fN
+kfSYjkqVsNFcQVsudHPrjAKhcL8QJADzmVDt7mMI/BWsAEmEy9w+VPe4MsHmYQAV
+J9blY7uTkIRSYtYYgRH2CcgxM5ucGf0taIzcgNqzMSyfHjRe6Z36s4hK2ftR6pWu
+o1lqKhk3mKdb9VS/ZNuZx7M9yqUOL/9fRIDbYbWVmFIqBVmKheZ/mNgR1wVBIZrK
+C45Tggj3qZPG5ILOB6LjowsDia+QQ8/rbUvrqoTPLhR13M0Ql8nJT9jycG/pjLtt
+Fpu3snXkRcaIxjZS7pQM
+=pXY2
+-----END PGP SIGNATURE-----
+
+--liOOAslEiF7prFVr--
