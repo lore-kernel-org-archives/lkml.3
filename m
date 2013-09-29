@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3I2T2c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59459 "EHLO
+	id S1755851Ab3I2T2q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59498 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755695Ab3I2T22 (ORCPT
+	with ESMTP id S1755755Ab3I2T2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:28 -0400
+	Sun, 29 Sep 2013 15:28:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 33/49] drm/radeon/atom: workaround vbios bug in transmitter table on rs880 (v2)
-Date: Sun, 29 Sep 2013 12:27:07 -0700
-Message-Id: <20130929191605.256289782@linuxfoundation.org>
+Subject: [ 31/49] drm/radeon: fix handling of variable sized arrays for router objects
+Date: Sun, 29 Sep 2013 12:27:05 -0700
+Message-Id: <20130929191605.123906721@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -28,49 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
+commit fb93df1c2d8b3b1fb16d6ee9e32554e0c038815d upstream.
 
-The OUTPUT_ENABLE action jumps past the point in the coder where
-the data_offset is set on certain rs780 cards.  This worked
-previously because the OUTPUT_ENABLE action is always called
-immediately after the ENABLE action so the data_offset remained
-set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
-(drm/radeon/atom: initialize more atom interpretor elements to 0),
-we explictly reset data_offset to 0 between atom calls which then
-caused this to fail.  The fix is to just skip calling the
-OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
-action does the same thing and more.  Ultimately, we could
-probably drop the OUTPUT_ENABLE action all together on DCE3
-asics.
+The table has the following format:
 
-fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60791
+typedef struct _ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT         //usSrcDstTableOffset pointing to this structure
+{
+  UCHAR               ucNumberOfSrc;
+  USHORT              usSrcObjectID[1];
+  UCHAR               ucNumberOfDst;
+  USHORT              usDstObjectID[1];
+}ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT;
 
-v2: only rs880 seems to be affected
+usSrcObjectID[] and usDstObjectID[] are variably sized, so we
+can't access them directly.  Use pointers and update the offset
+appropriately when accessing the Dst members.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1636,8 +1636,12 @@ radeon_atom_encoder_dpms_dig(struct drm_
- 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
--			/* some early dce3.2 boards have a bug in their transmitter control table */
--			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
-+			/* some dce3.x boards have a bug in their transmitter control table.
-+			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
-+			 * does the same thing and more.
-+			 */
-+			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
-+			    (rdev->family != CHIP_RS880))
- 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -715,13 +715,16 @@ bool radeon_get_atom_connector_info_from
+ 								(ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT *)
+ 								(ctx->bios + data_offset +
+ 								 le16_to_cpu(router_obj->asObjects[k].usSrcDstTableOffset));
++							u8 *num_dst_objs = (u8 *)
++								((u8 *)router_src_dst_table + 1 +
++								 (router_src_dst_table->ucNumberOfSrc * 2));
++							u16 *dst_objs = (u16 *)(num_dst_objs + 1);
+ 							int enum_id;
+ 
+ 							router.router_id = router_obj_id;
+-							for (enum_id = 0; enum_id < router_src_dst_table->ucNumberOfDst;
+-							     enum_id++) {
++							for (enum_id = 0; enum_id < (*num_dst_objs); enum_id++) {
+ 								if (le16_to_cpu(path->usConnObjectId) ==
+-								    le16_to_cpu(router_src_dst_table->usDstObjectID[enum_id]))
++								    le16_to_cpu(dst_objs[enum_id]))
+ 									break;
+ 							}
+ 
 
 
