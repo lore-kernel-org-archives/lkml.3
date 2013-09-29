@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab3I2TtT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:49:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59463 "EHLO
+	id S1757020Ab3I2Ttu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:49:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59455 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab3I2T21 (ORCPT
+	with ESMTP id S1755734Ab3I2T20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:27 -0400
+	Sun, 29 Sep 2013 15:28:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 32/49] rt2800: change initialization sequence to fix system freeze
-Date: Sun, 29 Sep 2013 12:27:06 -0700
-Message-Id: <20130929191605.190068174@linuxfoundation.org>
+        Simo Sorce <simo@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 48/49] rpc: let xdr layer allocate gssproxy receieve pages
+Date: Sun, 29 Sep 2013 12:27:22 -0700
+Message-Id: <20130929191606.258822045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -27,86 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20 upstream.
+commit d4a516560fc96a9d486a9939bcb567e3fdce8f49 upstream.
 
-My commit
+In theory the linux cred in a gssproxy reply can include up to
+NGROUPS_MAX data, 256K of data.  In the common case we expect it to be
+shorter.  So do as the nfsv3 ACL code does and let the xdr code allocate
+the pages as they come in, instead of allocating a lot of pages that
+won't typically be used.
 
-commit c630ccf1a127578421a928489d51e99c05037054
-Author: Stanislaw Gruszka <stf_xl@wp.pl>
-Date:   Sat Mar 16 19:19:46 2013 +0100
-
-    rt2800: rearrange bbp/rfcsr initialization
-
-make Maxim machine freeze when try to start wireless device.
-
-Initialization order and sending MCU_BOOT_SIGNAL request, changed in
-above commit, is important. Doing things incorrectly make PCIe bus
-problems, which can froze the machine.
-
-This patch change initialization sequence like vendor driver do:
-function NICInitializeAsic() from
-2011_1007_RT5390_RT5392_Linux_STA_V2.5.0.3_DPO (PCI devices) and
-DPO_RT5572_LinuxSTA_2.6.1.3_20121022 (according Mediatek, latest driver
-for RT8070/RT3070/RT3370/RT3572/RT5370/RT5372/RT5572 USB devices).
-It fixes freezes on Maxim system.
-
-Resolve:
-https://bugzilla.redhat.com/show_bug.cgi?id=1000679
-
-Reported-and-tested-by: Maxim Polyakov <polyakov@dexmalabs.com>
-Bisected-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Cc: stable@vger.kernel.org # 3.10+
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Tested-by: Simo Sorce <simo@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ net/sunrpc/auth_gss/gss_rpc_upcall.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -4048,10 +4048,6 @@ static int rt2800_init_bbp(struct rt2x00
- 	u8 reg_id;
- 	u8 value;
+--- a/net/sunrpc/auth_gss/gss_rpc_upcall.c
++++ b/net/sunrpc/auth_gss/gss_rpc_upcall.c
+@@ -223,18 +223,14 @@ static void gssp_free_receive_pages(stru
  
--	if (unlikely(rt2800_wait_bbp_rf_ready(rt2x00dev) ||
--		     rt2800_wait_bbp_ready(rt2x00dev)))
--		return -EACCES;
+ static int gssp_alloc_receive_pages(struct gssx_arg_accept_sec_context *arg)
+ {
+-	int i;
 -
- 	if (rt2x00_rt(rt2x00dev, RT5592)) {
- 		rt2800_init_bbp_5592(rt2x00dev);
- 		return 0;
-@@ -5192,20 +5188,23 @@ int rt2800_enable_radio(struct rt2x00_de
- 		     rt2800_init_registers(rt2x00dev)))
- 		return -EIO;
- 
-+	if (unlikely(rt2800_wait_bbp_rf_ready(rt2x00dev)))
-+		return -EIO;
-+
- 	/*
- 	 * Send signal to firmware during boot time.
- 	 */
- 	rt2800_register_write(rt2x00dev, H2M_BBP_AGENT, 0);
- 	rt2800_register_write(rt2x00dev, H2M_MAILBOX_CSR, 0);
--	if (rt2x00_is_usb(rt2x00dev)) {
-+	if (rt2x00_is_usb(rt2x00dev))
- 		rt2800_register_write(rt2x00dev, H2M_INT_SRC, 0);
--		rt2800_mcu_request(rt2x00dev, MCU_BOOT_SIGNAL, 0, 0, 0);
+ 	arg->npages = DIV_ROUND_UP(NGROUPS_MAX * 4, PAGE_SIZE);
+ 	arg->pages = kzalloc(arg->npages * sizeof(struct page *), GFP_KERNEL);
+-
+-	for (i=0; i < arg->npages; i++) {
+-		arg->pages[i] = alloc_page(GFP_KERNEL);
+-		if (arg->pages[i] == NULL) {
+-			gssp_free_receive_pages(arg);
+-			return -ENOMEM;
+-		}
 -	}
-+	rt2800_mcu_request(rt2x00dev, MCU_BOOT_SIGNAL, 0, 0, 0);
- 	msleep(1);
++	/*
++	 * XXX: actual pages are allocated by xdr layer in
++	 * xdr_partial_copy_from_skb.
++	 */
++	if (!arg->pages)
++		return -ENOMEM;
+ 	return 0;
+ }
  
--	if (unlikely(rt2800_init_bbp(rt2x00dev)))
-+	if (unlikely(rt2800_wait_bbp_ready(rt2x00dev)))
- 		return -EIO;
- 
-+	rt2800_init_bbp(rt2x00dev);
- 	rt2800_init_rfcsr(rt2x00dev);
- 
- 	if (rt2x00_is_usb(rt2x00dev) &&
 
 
