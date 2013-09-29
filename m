@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab3I2SKv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 14:10:51 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52003 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755064Ab3I2SKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 14:10:49 -0400
-Date: Sun, 29 Sep 2013 19:10:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [rfc][possible solution] RCU vfsmounts
-Message-ID: <20130929181047.GM13318@ZenIV.linux.org.uk>
-References: <20130928202728.GK13318@ZenIV.linux.org.uk>
- <CA+55aFzrjiM6bgqNgdckJGAZks2fR8ZD+R_5AqxvrnS64DD3ow@mail.gmail.com>
- <20130929060601.GL13318@ZenIV.linux.org.uk>
- <CA+55aFyGY7hZTDhWiyWBe+oSkxd2GzoYWGhvXtGTyZKL-3PZ1w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyGY7hZTDhWiyWBe+oSkxd2GzoYWGhvXtGTyZKL-3PZ1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754982Ab3I2SV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 14:21:27 -0400
+Received: from mout2.freenet.de ([195.4.92.92]:57328 "EHLO mout2.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754874Ab3I2SVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 14:21:24 -0400
+X-Greylist: delayed 1304 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Sep 2013 14:21:23 EDT
+Date: Sun, 29 Sep 2013 19:56:42 +0200
+From: Sascha Sommer <saschasommer@freenet.de>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 22/27] mmc: sdricoh_cs: Move away from using deprecated
+ APIs
+Message-ID: <20130929195642.7cefc9ef@madeira.sommer.dynalias.net>
+In-Reply-To: <1380207292-16968-23-git-send-email-ulf.hansson@linaro.org>
+References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
+	<1380207292-16968-23-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 29, 2013 at 10:19:59AM -0700, Linus Torvalds wrote:
-> I have to say, that when I was working with the dcache lockref code, I
-> absolutely _detested_ the magical shrink_dcache_for_umount() code that
-> violated all the locking rules.
+Hi,
 
-... and duplicated random-half-of-an-arseload of stuff done in other
-shrinking paths.  You are not alone at that - it's been a serious
-source of annoyances all along.
+Am Thu, 26 Sep 2013 16:54:47 +0200
+schrieb Ulf Hansson <ulf.hansson@linaro.org>:
 
-> So I actually wouldn't mind at all if that was all forced to follow
-> all the same rules that the live filesystem code is forced to follow.
-> Yes, yes, it's going to slow things down, but it's not like umount()
-> is _that_ performance critical. And I think the whole "let's ignore
-> locking rules" actually comes from back when we had one global
-> dcache_lock: we used to have batching in order to not hold the
-> dcache_lock over long periods, and then it got converted to the
-> per-dentry locking, and then that got removed entirely with the whole
-> RCU lookup etc.
+> Suspend and resume of cards are being handled from the protocol layer
+> and consequently the mmc_suspend|resume_host APIs are deprecated.
 > 
-> So I would be *entirely* ok with having
-> shrink_dcache_for_umount_subtree() take the d_lock on the dentry as it
-> shrinks it etc etc.
+> This means we can simplify the suspend|resume callbacks by removing
+> the use of the deprecated APIs.
+> 
+> Cc: Sascha Sommer <saschasommer@freenet.de>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> ---
+>  drivers/mmc/host/sdricoh_cs.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdricoh_cs.c
+> b/drivers/mmc/host/sdricoh_cs.c index 50adbd1..b7e3057 100644
+> --- a/drivers/mmc/host/sdricoh_cs.c
+> +++ b/drivers/mmc/host/sdricoh_cs.c
+> @@ -516,9 +516,7 @@ static void sdricoh_pcmcia_detach(struct
+> pcmcia_device *link) #ifdef CONFIG_PM
+>  static int sdricoh_pcmcia_suspend(struct pcmcia_device *link)
+>  {
+> -	struct mmc_host *mmc = link->priv;
+>  	dev_dbg(&link->dev, "suspend\n");
+> -	mmc_suspend_host(mmc);
+>  	return 0;
+>  }
+>  
+> @@ -527,7 +525,6 @@ static int sdricoh_pcmcia_resume(struct
+> pcmcia_device *link) struct mmc_host *mmc = link->priv;
+>  	dev_dbg(&link->dev, "resume\n");
+>  	sdricoh_reset(mmc_priv(mmc));
+> -	mmc_resume_host(mmc);
+>  	return 0;
+>  }
+>  #else
 
-I'm not even sure it will slow the things down that much these days; needs
-to be tested, obviously...
+Acked-by: Sascha Sommer <saschasommer@freenet.de> 
 
-FWIW, right now I'm reviewing the subset of fs code that can be hit in
-RCU mode.  Not a pretty sight, that... ;-/  First catch: in
-fuse_dentry_revalidate() we have a case (reachable with LOOKUP_RCU) where
-we do this:
-        } else if (inode) {
-                fc = get_fuse_conn(inode);
-                if (fc->readdirplus_auto) {
-                        parent = dget_parent(entry);
-                        fuse_advise_use_readdirplus(parent->d_inode);
-                        dput(parent);
-                }
-        }
-First of all, that'll lead to obvious nastiness if we get here when
-->s_fs_info has already been freed in process of fs shutdown; fc will
-be pointing to kfreed object and no, freeing it isn't RCU-delayed.
-That's not a problem with the current tree, of course, but this
-dput(parent) very much is - doing that under rcu_read_lock() is
-a Bloody Bad Idea(tm).
 
-If my reading of that code is right, the proper fix would be to
-turn that else if (inode) into else if (inode && !(flags & LOOKUP_RCU))
+Regards
 
-Miklos, could you confirm that?  Or would you prefer to deal with that
-in some other way?
+Sascha
