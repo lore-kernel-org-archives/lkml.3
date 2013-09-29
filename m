@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab3I2GOs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 02:14:48 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:42002 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab3I2GOp (ORCPT
+	id S1754411Ab3I2GP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 02:15:27 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:42063 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab3I2GOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 02:14:45 -0400
+	Sun, 29 Sep 2013 02:14:55 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 1/5] splice: Get rid of duplicate f_mode checks
-Date: Sun, 29 Sep 2013 15:14:34 +0900
-Message-Id: <1380435278-10927-1-git-send-email-namhyung@kernel.org>
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 5/5] pipe: Do not use sync wakeups
+Date: Sun, 29 Sep 2013 15:14:38 +0900
+Message-Id: <1380435278-10927-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1380435278-10927-1-git-send-email-namhyung@kernel.org>
+References: <1380435278-10927-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The do_splice() function was only called from sys_splice() but it
-already checks the f_mode both for in and out.
+Sync wakeup is a hint to the scheduler that means a waker would go to
+sleep right soon.  So don't use the sync wakeup unless it guarantees
+to sleep.
 
-Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- fs/splice.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ fs/pipe.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/splice.c b/fs/splice.c
-index 3b7ee656f3aa..320cc65585b2 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -1333,12 +1333,6 @@ static long do_splice(struct file *in, loff_t __user *off_in,
- 		if (off_in || off_out)
- 			return -ESPIPE;
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d2c45e14e6d8..58f4b9b009da 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -479,7 +479,7 @@ redo:
  
--		if (!(in->f_mode & FMODE_READ))
--			return -EBADF;
--
--		if (!(out->f_mode & FMODE_WRITE))
--			return -EBADF;
--
- 		/* Splicing to self would be fun, but... */
- 		if (ipipe == opipe)
- 			return -EINVAL;
-@@ -1358,9 +1352,6 @@ static long do_splice(struct file *in, loff_t __user *off_in,
- 			offset = out->f_pos;
- 		}
+ 	/* Signal writers asynchronously that there is more room. */
+ 	if (do_wakeup) {
+-		wake_up_interruptible_sync_poll(&pipe->wait, POLLOUT | POLLWRNORM);
++		wake_up_interruptible_poll(&pipe->wait, POLLOUT | POLLWRNORM);
+ 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+ 	}
+ 	if (ret > 0)
+@@ -660,7 +660,7 @@ redo2:
+ out:
+ 	__pipe_unlock(pipe);
+ 	if (do_wakeup) {
+-		wake_up_interruptible_sync_poll(&pipe->wait, POLLIN | POLLRDNORM);
++		wake_up_interruptible_poll(&pipe->wait, POLLIN | POLLRDNORM);
+ 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 	}
+ 	if (ret > 0) {
+@@ -739,7 +739,7 @@ pipe_release(struct inode *inode, struct file *file)
+ 		pipe->writers--;
  
--		if (unlikely(!(out->f_mode & FMODE_WRITE)))
--			return -EBADF;
--
- 		if (unlikely(out->f_flags & O_APPEND))
- 			return -EINVAL;
- 
+ 	if (pipe->readers || pipe->writers) {
+-		wake_up_interruptible_sync_poll(&pipe->wait, POLLIN | POLLOUT | POLLRDNORM | POLLWRNORM | POLLERR | POLLHUP);
++		wake_up_interruptible_poll(&pipe->wait, POLLIN | POLLOUT | POLLRDNORM | POLLWRNORM | POLLERR | POLLHUP);
+ 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+ 	}
 -- 
 1.7.9.2
 
