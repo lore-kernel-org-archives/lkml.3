@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab3I2Thz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:37:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59797 "EHLO
+	id S1756082Ab3I2T3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088Ab3I2T3f (ORCPT
+	with ESMTP id S1756000Ab3I2T3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:35 -0400
+	Sun, 29 Sep 2013 15:29:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 54/71] drm/radeon/dpm: fix fallback for empty UVD clocks
-Date: Sun, 29 Sep 2013 12:28:06 -0700
-Message-Id: <20130929192647.224674210@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 07/71] rt2800: fix wrong TX power compensation
+Date: Sun, 29 Sep 2013 12:27:19 -0700
+Message-Id: <20130929192644.043167015@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -26,73 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 84f3d9f7b4781dea6e11dcaf7f81367c1b39fef0 upstream.
+commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
 
-Some older 6xx-7xx boards didn't always fill in the
-UVD clocks properly in the UVD power states.  This
-leads to the driver trying to set a 0 clock which
-results in slow or broken UVD playback.
+We should not do temperature compensation on devices without
+EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
+Such devices can have totally bogus TSSI parameters on the EEPROM,
+but still threaded by us as valid and result doing wrong TX power
+calculations.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=69120
+This fix inability to connect to AP on slightly longer distance on
+some Ralink chips/devices.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rs780_dpm.c |   10 +++++++---
- drivers/gpu/drm/radeon/rv770_dpm.c |   10 +++++++---
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/gpu/drm/radeon/rs780_dpm.c
-+++ b/drivers/gpu/drm/radeon/rs780_dpm.c
-@@ -717,14 +717,18 @@ static void rs780_parse_pplib_non_clock_
- 	if (ATOM_PPLIB_NONCLOCKINFO_VER1 < table_rev) {
- 		rps->vclk = le32_to_cpu(non_clock_info->ulVCLK);
- 		rps->dclk = le32_to_cpu(non_clock_info->ulDCLK);
--	} else if (r600_is_uvd_state(rps->class, rps->class2)) {
--		rps->vclk = RS780_DEFAULT_VCLK_FREQ;
--		rps->dclk = RS780_DEFAULT_DCLK_FREQ;
- 	} else {
- 		rps->vclk = 0;
- 		rps->dclk = 0;
- 	}
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -2790,6 +2790,13 @@ static int rt2800_get_gain_calibration_d
+ 	int i;
  
-+	if (r600_is_uvd_state(rps->class, rps->class2)) {
-+		if ((rps->vclk == 0) || (rps->dclk == 0)) {
-+			rps->vclk = RS780_DEFAULT_VCLK_FREQ;
-+			rps->dclk = RS780_DEFAULT_DCLK_FREQ;
-+		}
-+	}
+ 	/*
++	 * First check if temperature compensation is supported.
++	 */
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
++	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
++		return 0;
 +
- 	if (rps->class & ATOM_PPLIB_CLASSIFICATION_BOOT)
- 		rdev->pm.dpm.boot_ps = rps;
- 	if (rps->class & ATOM_PPLIB_CLASSIFICATION_UVDSTATE)
---- a/drivers/gpu/drm/radeon/rv770_dpm.c
-+++ b/drivers/gpu/drm/radeon/rv770_dpm.c
-@@ -2147,14 +2147,18 @@ static void rv7xx_parse_pplib_non_clock_
- 	if (ATOM_PPLIB_NONCLOCKINFO_VER1 < table_rev) {
- 		rps->vclk = le32_to_cpu(non_clock_info->ulVCLK);
- 		rps->dclk = le32_to_cpu(non_clock_info->ulDCLK);
--	} else if (r600_is_uvd_state(rps->class, rps->class2)) {
--		rps->vclk = RV770_DEFAULT_VCLK_FREQ;
--		rps->dclk = RV770_DEFAULT_DCLK_FREQ;
- 	} else {
- 		rps->vclk = 0;
- 		rps->dclk = 0;
- 	}
- 
-+	if (r600_is_uvd_state(rps->class, rps->class2)) {
-+		if ((rps->vclk == 0) || (rps->dclk == 0)) {
-+			rps->vclk = RV770_DEFAULT_VCLK_FREQ;
-+			rps->dclk = RV770_DEFAULT_DCLK_FREQ;
-+		}
-+	}
-+
- 	if (rps->class & ATOM_PPLIB_CLASSIFICATION_BOOT)
- 		rdev->pm.dpm.boot_ps = rps;
- 	if (rps->class & ATOM_PPLIB_CLASSIFICATION_UVDSTATE)
++	/*
+ 	 * Read TSSI boundaries for temperature compensation from
+ 	 * the EEPROM.
+ 	 *
 
 
