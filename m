@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab3I2T2P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:28:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59329 "EHLO
+	id S1757203Ab3I2Twh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:52:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59401 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556Ab3I2T2A (ORCPT
+	with ESMTP id S1755669Ab3I2T2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:00 -0400
+	Sun, 29 Sep 2013 15:28:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 19/49] drm/i915: fix gpu hang vs. flip stall deadlocks
-Date: Sun, 29 Sep 2013 12:26:53 -0700
-Message-Id: <20130929191604.308797576@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 07/49] sched/cputime: Do not scale when utime == 0
+Date: Sun, 29 Sep 2013 12:26:41 -0700
+Message-Id: <20130929191603.511210143@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,122 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 122f46badaafbe651f05c2c0f24cadee692f761b upstream.
+commit 5a8e01f8fa51f5cbce8f37acc050eb2319d12956 upstream.
 
-Since we've started to clean up pending flips when the gpu hangs in
+scale_stime() silently assumes that stime < rtime, otherwise
+when stime == rtime and both values are big enough (operations
+on them do not fit in 32 bits), the resulting scaling stime can
+be bigger than rtime. In consequence utime = rtime - stime
+results in negative value.
 
-commit 96a02917a0131e52efefde49c2784c0421d6c439
-Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Date:   Mon Feb 18 19:08:49 2013 +0200
+User space visible symptoms of the bug are overflowed TIME
+values on ps/top, for example:
 
-    drm/i915: Finish page flips and update primary planes after a GPU reset
+ $ ps aux | grep rcu
+ root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
+ root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
+ root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
+ root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
+ root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
+ root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
 
-the gpu reset work now also grabs modeset locks. But since work items
-on our private work queue are not allowed to do that due to the
-flush_workqueue from the pageflip code this results in a neat
-deadlock:
+or overflowed utime values read directly from /proc/$PID/stat
 
-INFO: task kms_flip:14676 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-kms_flip        D ffff88019283a5c0     0 14676  13344 0x00000004
- ffff88018e62dbf8 0000000000000046 ffff88013bdb12e0 ffff88018e62dfd8
- ffff88018e62dfd8 00000000001d3b00 ffff88019283a5c0 ffff88018ec21000
- ffff88018f693f00 ffff88018eece000 ffff88018e62dd60 ffff88018eece898
-Call Trace:
- [<ffffffff8138ee7b>] schedule+0x60/0x62
- [<ffffffffa046c0dd>] intel_crtc_wait_for_pending_flips+0xb2/0x114 [i915]
- [<ffffffff81050ff4>] ? finish_wait+0x60/0x60
- [<ffffffffa0478041>] intel_crtc_set_config+0x7f3/0x81e [i915]
- [<ffffffffa031780a>] drm_mode_set_config_internal+0x4f/0xc6 [drm]
- [<ffffffffa0319cf3>] drm_mode_setcrtc+0x44d/0x4f9 [drm]
- [<ffffffff810e44da>] ? might_fault+0x38/0x86
- [<ffffffffa030d51f>] drm_ioctl+0x2f9/0x447 [drm]
- [<ffffffff8107a722>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffffa03198a6>] ? drm_mode_setplane+0x343/0x343 [drm]
- [<ffffffff8112222f>] ? mntput_no_expire+0x3e/0x13d
- [<ffffffff81117f33>] vfs_ioctl+0x18/0x34
- [<ffffffff81118776>] do_vfs_ioctl+0x396/0x454
- [<ffffffff81396b37>] ? sysret_check+0x1b/0x56
- [<ffffffff81118886>] SyS_ioctl+0x52/0x7d
- [<ffffffff81396b12>] system_call_fastpath+0x16/0x1b
-2 locks held by kms_flip/14676:
- #0:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffffa0316545>] drm_modeset_lock_all+0x22/0x59 [drm]
- #1:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa031656b>] drm_modeset_lock_all+0x48/0x59 [drm]
-INFO: task kworker/u8:4:175 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-kworker/u8:4    D ffff88018de9a5c0     0   175      2 0x00000000
-Workqueue: i915 i915_error_work_func [i915]
- ffff88018e37dc30 0000000000000046 ffff8801938ab8a0 ffff88018e37dfd8
- ffff88018e37dfd8 00000000001d3b00 ffff88018de9a5c0 ffff88018ec21018
- 0000000000000246 ffff88018e37dca0 000000005a865a86 ffff88018de9a5c0
-Call Trace:
- [<ffffffff8138ee7b>] schedule+0x60/0x62
- [<ffffffff8138f23d>] schedule_preempt_disabled+0x9/0xb
- [<ffffffff8138d0cd>] mutex_lock_nested+0x205/0x3b1
- [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
- [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
- [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
- [<ffffffffa044e0a2>] i915_error_work_func+0x128/0x147 [i915]
- [<ffffffff8104a89a>] process_one_work+0x1d4/0x35a
- [<ffffffff8104a821>] ? process_one_work+0x15b/0x35a
- [<ffffffff8104b4a5>] worker_thread+0x144/0x1f0
- [<ffffffff8104b361>] ? rescuer_thread+0x275/0x275
- [<ffffffff8105076d>] kthread+0xac/0xb4
- [<ffffffff81059d30>] ? finish_task_switch+0x3b/0xc0
- [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
- [<ffffffff81396a6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
-3 locks held by kworker/u8:4/175:
- #0:  (i915){.+.+.+}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
- #1:  ((&dev_priv->gpu_error.work)){+.+.+.}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
- #2:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
+Reference:
 
-This blew up while running kms_flip/flip-vs-panning-vs-hang-interruptible
-on one of my older machines.
+  https://lkml.org/lkml/2013/8/20/259
 
-Unfortunately (despite the proper lockdep annotations for
-flush_workqueue) lockdep still doesn't detect this correctly, so we
-need to rely on chance to discover these bugs.
-
-Apply the usual bugfix and schedule the reset work on the system
-workqueue to keep our own driver workqueue free of any modeset lock
-grabbing.
-
-Note that this is not a terribly serious regression since before the
-offending commit we'd simply have stalled userspace forever due to
-failing to abort all outstanding pageflips.
-
-v2: Add a comment as requested by Chris.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: stable@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/20130904131602.GC2564@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ kernel/sched/cputime.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1727,7 +1727,13 @@ void i915_handle_error(struct drm_device
- 			wake_up_all(&ring->irq_queue);
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -558,7 +558,7 @@ static void cputime_adjust(struct task_c
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
+ {
+-	cputime_t rtime, stime, utime, total;
++	cputime_t rtime, stime, utime;
+ 
+ 	if (vtime_accounting_enabled()) {
+ 		*ut = curr->utime;
+@@ -566,9 +566,6 @@ static void cputime_adjust(struct task_c
+ 		return;
  	}
  
--	queue_work(dev_priv->wq, &dev_priv->gpu_error.work);
-+	/*
-+	 * Our reset work can grab modeset locks (since it needs to reset the
-+	 * state of outstanding pagelips). Hence it must not be run on our own
-+	 * dev-priv->wq work queue for otherwise the flush_work in the pageflip
-+	 * code will deadlock.
-+	 */
-+	schedule_work(&dev_priv->gpu_error.work);
- }
+-	stime = curr->stime;
+-	total = stime + curr->utime;
+-
+ 	/*
+ 	 * Tick based cputime accounting depend on random scheduling
+ 	 * timeslices of a task to be interrupted or not by the timer.
+@@ -589,13 +586,19 @@ static void cputime_adjust(struct task_c
+ 	if (prev->stime + prev->utime >= rtime)
+ 		goto out;
  
- static void __always_unused i915_pageflip_stall_check(struct drm_device *dev, int pipe)
+-	if (total) {
++	stime = curr->stime;
++	utime = curr->utime;
++
++	if (utime == 0) {
++		stime = rtime;
++	} else if (stime == 0) {
++		utime = rtime;
++	} else {
++		cputime_t total = stime + utime;
++
+ 		stime = scale_stime((__force u64)stime,
+ 				    (__force u64)rtime, (__force u64)total);
+ 		utime = rtime - stime;
+-	} else {
+-		stime = rtime;
+-		utime = 0;
+ 	}
+ 
+ 	/*
 
 
