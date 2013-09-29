@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3I2Tl4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:41:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59721 "EHLO
+	id S1756591Ab3I2Tm3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:42:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab3I2T3R (ORCPT
+	with ESMTP id S1755960Ab3I2T3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:17 -0400
+	Sun, 29 Sep 2013 15:29:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 03/71] net: usb: cdc_ether: Use wwan interface for Telit modules
-Date: Sun, 29 Sep 2013 12:27:15 -0700
-Message-Id: <20130929192643.778423659@linuxfoundation.org>
+        Olof Johansson <olof@lixom.net>, Tony Lindgren <tony@atomide.com>
+Subject: [ 02/71] ARM: OMAP4: Fix clock_get error for GPMC during boot
+Date: Sun, 29 Sep 2013 12:27:14 -0700
+Message-Id: <20130929192643.712371821@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,32 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 0092820407901a0b2c4e343e85f96bb7abfcded1 upstream.
+commit 2cfeed314207f808077edb2f1ba41ba1ebbe3e69 upstream.
 
-Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-Acked-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Looks like we still have the legacy clock alias name for
+omap4 GPMC (General Purpose Memory Controller), so let's
+fix it for the device tree naming. There's no need to keep
+the legacy naming as omap4 is DT only nowadays.
+
+Without this fix we get the following error while booting:
+
+[    0.440399] omap-gpmc 50000000.gpmc: error: clk_get
+
+Reported-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/cdc_ether.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-omap2/cclock44xx_data.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -726,6 +726,11 @@ static const struct usb_device_id	produc
- 	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
- 	.driver_info = (unsigned long)&wwan_info,
- }, {
-+	/* Telit modules */
-+	USB_VENDOR_AND_INTERFACE_INFO(0x1bc7, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = (kernel_ulong_t) &wwan_info,
-+}, {
- 	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ETHERNET,
- 			USB_CDC_PROTO_NONE),
- 	.driver_info = (unsigned long) &cdc_info,
+--- a/arch/arm/mach-omap2/cclock44xx_data.c
++++ b/arch/arm/mach-omap2/cclock44xx_data.c
+@@ -1632,7 +1632,7 @@ static struct omap_clk omap44xx_clks[] =
+ 	CLK(NULL,	"auxclk5_src_ck",		&auxclk5_src_ck),
+ 	CLK(NULL,	"auxclk5_ck",			&auxclk5_ck),
+ 	CLK(NULL,	"auxclkreq5_ck",		&auxclkreq5_ck),
+-	CLK("omap-gpmc",	"fck",			&dummy_ck),
++	CLK("50000000.gpmc",	"fck",			&dummy_ck),
+ 	CLK("omap_i2c.1",	"ick",			&dummy_ck),
+ 	CLK("omap_i2c.2",	"ick",			&dummy_ck),
+ 	CLK("omap_i2c.3",	"ick",			&dummy_ck),
 
 
