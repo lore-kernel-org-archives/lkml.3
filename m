@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab3I2Tax (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:30:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59905 "EHLO
+	id S1756406Ab3I2TbO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:31:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756258Ab3I2TaF (ORCPT
+	with ESMTP id S1756250Ab3I2TaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:30:05 -0400
+	Sun, 29 Sep 2013 15:30:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Peres <martin.peres@labri.fr>,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 32/71] drm/nv50/disp: prevent false output detection on the original nv50
-Date: Sun, 29 Sep 2013 12:27:44 -0700
-Message-Id: <20130929192645.702231908@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 41/71] drm/radeon: add berlin pci ids
+Date: Sun, 29 Sep 2013 12:27:53 -0700
+Message-Id: <20130929192646.296917947@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,58 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Velikov <emil.l.velikov@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 5087f51da805f53cba7366f70d596e7bde2a5486 upstream.
+commit 0431b2742f8e7755f3bbf5924900d12973412e94 upstream.
 
-Commit ea9197cc323839ef3d5280c0453b2c622caa6bc7 effectively enabled the
-use of an improved DAC detection code, but introduced a regression on
-the original nv50 chipset, causing a ghost monitor to be detected.
+This adds the pci ids for the berlin GPU core.
 
-v2 (Ben Skeggs): the offending line was likely a thinko, removed it for
-all chipsets (tested nv50 and nve6 to cover entire range) and added
-some additional debugging.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=67382
-Tested-by: Martin Peres <martin.peres@labri.fr>
-Signed-off-by: Emil Velikov <emil.l.velikov@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ include/drm/drm_pciids.h |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c
-@@ -49,18 +49,23 @@ int
- nv50_dac_sense(struct nv50_disp_priv *priv, int or, u32 loadval)
- {
- 	const u32 doff = (or * 0x800);
--	int load = -EINVAL;
-+
- 	nv_mask(priv, 0x61a004 + doff, 0x807f0000, 0x80150000);
- 	nv_wait(priv, 0x61a004 + doff, 0x80000000, 0x00000000);
-+
- 	nv_wr32(priv, 0x61a00c + doff, 0x00100000 | loadval);
- 	mdelay(9);
- 	udelay(500);
--	nv_wr32(priv, 0x61a00c + doff, 0x80000000);
--	load = (nv_rd32(priv, 0x61a00c + doff) & 0x38000000) >> 27;
--	nv_wr32(priv, 0x61a00c + doff, 0x00000000);
-+	loadval = nv_mask(priv, 0x61a00c + doff, 0xffffffff, 0x00000000);
-+
- 	nv_mask(priv, 0x61a004 + doff, 0x807f0000, 0x80550000);
- 	nv_wait(priv, 0x61a004 + doff, 0x80000000, 0x00000000);
--	return load;
-+
-+	nv_debug(priv, "DAC%d sense: 0x%08x\n", or, loadval);
-+	if (!(loadval & 0x80000000))
-+		return -ETIMEDOUT;
-+
-+	return (loadval & 0x38000000) >> 27;
- }
- 
- int
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -1,4 +1,22 @@
+ #define radeon_PCI_IDS \
++	{0x1002, 0x1304, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1305, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1306, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1307, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1309, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x130A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x130B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x130C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x130D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x130E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x130F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1310, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1311, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1313, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1315, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1316, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x131B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x131C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x3150, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x3151, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x3152, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
 
 
