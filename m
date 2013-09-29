@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab3I2T46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:56:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59333 "EHLO
+	id S1755561Ab3I2T2A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab3I2T2B (ORCPT
+	with ESMTP id S1753432Ab3I2T1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:28:01 -0400
+	Sun, 29 Sep 2013 15:27:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 01/49] PCI / ACPI / PM: Clear pme_poll for devices in D3cold on wakeup
-Date: Sun, 29 Sep 2013 12:26:35 -0700
-Message-Id: <20130929191603.109464776@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 12/49] HID: LG: validate HID output report details
+Date: Sun, 29 Sep 2013 12:26:46 -0700
+Message-Id: <20130929191603.846449877@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929191603.008825488@linuxfoundation.org>
 References: <20130929191603.008825488@linuxfoundation.org>
@@ -27,53 +28,188 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 834145156bedadfb50121f0bc5e9d9f9f942bcca upstream.
+commit 0fb6bd06e06792469acc15bbe427361b56ada528 upstream.
 
-Commit 448bd85 (PCI/PM: add PCIe runtime D3cold support) added a
-piece of code to pci_acpi_wake_dev() causing that function to behave
-in a special way for devices in D3cold (so that their configuration
-registers are not accessed before those devices are resumed).
-However, it didn't take the clearing of the pme_poll flag into
-account.  That has to be done for all devices, even if they are in
-D3cold, or pci_pme_list_scan() will not know that wakeup has been
-signaled for the device and will poll its PME Status bit
-unnecessarily.
+A HID device could send a malicious output report that would cause the
+lg, lg3, and lg4 HID drivers to write beyond the output report allocation
+during an event, causing a heap overflow:
 
-Fix the problem by moving the clearing of the pme_poll flag in
-pci_acpi_wake_dev() before the code introduced by commit 448bd85.
+[  325.245240] usb 1-1: New USB device found, idVendor=046d, idProduct=c287
+...
+[  414.518960] BUG kmalloc-4096 (Not tainted): Redzone overwritten
 
-Reported-and-tested-by: David E. Box <david.e.box@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Additionally, while lg2 did correctly validate the report details, it was
+cleaned up and shortened.
+
+CVE-2013-2893
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-acpi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hid/hid-lg2ff.c |   19 +++----------------
+ drivers/hid/hid-lg3ff.c |   29 ++++++-----------------------
+ drivers/hid/hid-lg4ff.c |   20 +-------------------
+ drivers/hid/hid-lgff.c  |   17 ++---------------
+ 4 files changed, 12 insertions(+), 73 deletions(-)
 
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -47,6 +47,9 @@ static void pci_acpi_wake_dev(acpi_handl
- 	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
- 		return;
+--- a/drivers/hid/hid-lg2ff.c
++++ b/drivers/hid/hid-lg2ff.c
+@@ -64,26 +64,13 @@ int lg2ff_init(struct hid_device *hid)
+ 	struct hid_report *report;
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next,
+ 						struct hid_input, list);
+-	struct list_head *report_list =
+-			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+ 	int error;
  
-+	if (pci_dev->pme_poll)
-+		pci_dev->pme_poll = false;
-+
- 	if (pci_dev->current_state == PCI_D3cold) {
- 		pci_wakeup_event(pci_dev);
- 		pm_runtime_resume(&pci_dev->dev);
-@@ -57,9 +60,6 @@ static void pci_acpi_wake_dev(acpi_handl
- 	if (pci_dev->pme_support)
- 		pci_check_pme_status(pci_dev);
- 
--	if (pci_dev->pme_poll)
--		pci_dev->pme_poll = false;
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "no output report found\n");
++	/* Check that the report looks ok */
++	report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7);
++	if (!report)
+ 		return -ENODEV;
+-	}
 -
- 	pci_wakeup_event(pci_dev);
- 	pm_runtime_resume(&pci_dev->dev);
+-	report = list_entry(report_list->next, struct hid_report, list);
+-
+-	if (report->maxfield < 1) {
+-		hid_err(hid, "output report is empty\n");
+-		return -ENODEV;
+-	}
+-	if (report->field[0]->report_count < 7) {
+-		hid_err(hid, "not enough values in the field\n");
+-		return -ENODEV;
+-	}
  
+ 	lg2ff = kmalloc(sizeof(struct lg2ff_device), GFP_KERNEL);
+ 	if (!lg2ff)
+--- a/drivers/hid/hid-lg3ff.c
++++ b/drivers/hid/hid-lg3ff.c
+@@ -66,10 +66,11 @@ static int hid_lg3ff_play(struct input_d
+ 	int x, y;
+ 
+ /*
+- * Maxusage should always be 63 (maximum fields)
+- * likely a better way to ensure this data is clean
++ * Available values in the field should always be 63, but we only use up to
++ * 35. Instead, clear the entire area, however big it is.
+  */
+-	memset(report->field[0]->value, 0, sizeof(__s32)*report->field[0]->maxusage);
++	memset(report->field[0]->value, 0,
++	       sizeof(__s32) * report->field[0]->report_count);
+ 
+ 	switch (effect->type) {
+ 	case FF_CONSTANT:
+@@ -129,32 +130,14 @@ static const signed short ff3_joystick_a
+ int lg3ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	const signed short *ff_bits = ff3_joystick_ac;
+ 	int error;
+ 	int i;
+ 
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "No output report found\n");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	if (!report) {
+-		hid_err(hid, "NULL output report\n");
+-		return -1;
+-	}
+-
+-	field = report->field[0];
+-	if (!field) {
+-		hid_err(hid, "NULL field\n");
+-		return -1;
+-	}
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 35))
++		return -ENODEV;
+ 
+ 	/* Assume single fixed device G940 */
+ 	for (i = 0; ff_bits[i] >= 0; i++)
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -484,34 +484,16 @@ static enum led_brightness lg4ff_led_get
+ int lg4ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	struct lg4ff_device_entry *entry;
+ 	struct lg_drv_data *drv_data;
+ 	struct usb_device_descriptor *udesc;
+ 	int error, i, j;
+ 	__u16 bcdDevice, rev_maj, rev_min;
+ 
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "No output report found\n");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	if (!report) {
+-		hid_err(hid, "NULL output report\n");
+-		return -1;
+-	}
+-
+-	field = report->field[0];
+-	if (!field) {
+-		hid_err(hid, "NULL field\n");
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
+ 		return -1;
+-	}
+ 
+ 	/* Check what wheel has been connected */
+ 	for (i = 0; i < ARRAY_SIZE(lg4ff_devices); i++) {
+--- a/drivers/hid/hid-lgff.c
++++ b/drivers/hid/hid-lgff.c
+@@ -128,27 +128,14 @@ static void hid_lgff_set_autocenter(stru
+ int lgff_init(struct hid_device* hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	const signed short *ff_bits = ff_joystick;
+ 	int error;
+ 	int i;
+ 
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "No output report found\n");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	field = report->field[0];
+-	if (!field) {
+-		hid_err(hid, "NULL field\n");
+-		return -1;
+-	}
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
++		return -ENODEV;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(devices); i++) {
+ 		if (dev->id.vendor == devices[i].idVendor &&
 
 
