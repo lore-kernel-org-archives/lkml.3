@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab3I2Ti5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:38:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59784 "EHLO
+	id S1756709Ab3I2Tjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:39:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab3I2T3a (ORCPT
+	with ESMTP id S1756024Ab3I2T30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:30 -0400
+	Sun, 29 Sep 2013 15:29:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 49/71] tg3: Expand led off fix to include 5720
-Date: Sun, 29 Sep 2013 12:28:01 -0700
-Message-Id: <20130929192646.827797803@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 44/71] drm/radeon: update line buffer allocation for dce6
+Date: Sun, 29 Sep 2013 12:27:56 -0700
+Message-Id: <20130929192646.497398319@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,33 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 300cf9b93f74c3d969a0ad50bdac65416107c44c upstream.
+commit 290d24576ccf1aa0373d2185cedfe262d0d4952a upstream.
 
-Commit 989038e217e94161862a959e82f9a1ecf8dda152 ("tg3: Don't turn off
-led on 5719 serdes port 0") added code to skip turning led off on port
-0 of the 5719 since it powered down other ports. This workaround needs
-to be enabled on the 5720 as well.
+We need to allocate line buffer to each display when
+setting up the watermarks.  Failure to do so can lead
+to a blank screen.  This fixes blank screen problems
+on dce6 asics.
 
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=64850
+
+Based on an initial fix from:
+Jay Cornwall <jay.cornwall@amd.com>
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/si.c  |   23 +++++++++++++++++++----
+ drivers/gpu/drm/radeon/sid.h |    4 ++++
+ 2 files changed, 23 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -3034,6 +3034,7 @@ static bool tg3_phy_led_bug(struct tg3 *
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -1704,7 +1704,8 @@ static u32 dce6_line_buffer_adjust(struc
+ 				   struct drm_display_mode *mode,
+ 				   struct drm_display_mode *other_mode)
  {
- 	switch (tg3_asic_rev(tp)) {
- 	case ASIC_REV_5719:
-+	case ASIC_REV_5720:
- 		if ((tp->phy_flags & TG3_PHYFLG_MII_SERDES) &&
- 		    !tp->pci_fn)
- 			return true;
+-	u32 tmp;
++	u32 tmp, buffer_alloc, i;
++	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
+ 	/*
+ 	 * Line Buffer Setup
+ 	 * There are 3 line buffers, each one shared by 2 display controllers.
+@@ -1719,16 +1720,30 @@ static u32 dce6_line_buffer_adjust(struc
+ 	 * non-linked crtcs for maximum line buffer allocation.
+ 	 */
+ 	if (radeon_crtc->base.enabled && mode) {
+-		if (other_mode)
++		if (other_mode) {
+ 			tmp = 0; /* 1/2 */
+-		else
++			buffer_alloc = 1;
++		} else {
+ 			tmp = 2; /* whole */
+-	} else
++			buffer_alloc = 2;
++		}
++	} else {
+ 		tmp = 0;
++		buffer_alloc = 0;
++	}
+ 
+ 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset,
+ 	       DC_LB_MEMORY_CONFIG(tmp));
+ 
++	WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
++	       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
++		    DMIF_BUFFERS_ALLOCATED_COMPLETED)
++			break;
++		udelay(1);
++	}
++
+ 	if (radeon_crtc->base.enabled && mode) {
+ 		switch (tmp) {
+ 		case 0:
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -282,6 +282,10 @@
+ 
+ #define DMIF_ADDR_CALC  				0xC00
+ 
++#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
++#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
++#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
++
+ #define	SRBM_STATUS				        0xE50
+ #define		GRBM_RQ_PENDING 			(1 << 5)
+ #define		VMC_BUSY 				(1 << 8)
 
 
