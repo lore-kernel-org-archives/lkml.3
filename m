@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab3I2HWu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 03:22:50 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:42110 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab3I2HWr (ORCPT
+	id S1753483Ab3I2Hga (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 03:36:30 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50009 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3I2Hg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 03:22:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <6939844.AIXnPB8Wdj@vostro.rjw.lan>
-References: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com>
-	<CAF1_xX0suiHSgqWRBrA66qc1A_32Xq08hOikM2VSwQOEgRH-RA@mail.gmail.com>
-	<6939844.AIXnPB8Wdj@vostro.rjw.lan>
-Date: Sun, 29 Sep 2013 09:22:45 +0200
-Message-ID: <CAF1_xX0zQriGMKvH8aLs4GhmCnLGSd7C2ESTvsOQvB7q22Mk8Q@mail.gmail.com>
-Subject: Re: Fwd: [v3.12-rc1] [regression] PM / hibernate: Create memory
- bitmaps after freezing user space
-From: Ronald <ronald645@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 29 Sep 2013 03:36:27 -0400
+Date: Sun, 29 Sep 2013 15:36:25 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: "Jeff Moyer" <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH] block: Don't reread partitions of disk which already mouted.
+X-Priority: 3
+X-GUID: EB7A6798-AD45-409F-A2F2-7BAB3A953AB8
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
+Mime-Version: 1.0
+Message-ID: <201309291536174186150@gmail.com>
+Content-Type: text/plain;
+	charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8T7aonE001257
 
-Attached patch fixes the issue. Both methods function as they did
-before. Thanks for the superfast fix!
+If reread partitions of disk, the paths are:
+blkdev_ioctl->blkdev_reread_part->rescan_partitions->drop_partitions
+->invalidate_partition->__invalidate_device
+In func __invalidate_device, if disk already mounted, it will do
+shrink_dcache_sb and invalidate_inodes.
+This operation will effect the fs.
+So add a judgement before doing rescan_partiontions to judge disk
+whether mounted.
 
-2013/9/29 Rafael J. Wysocki <rjw@rjwysocki.net>:
-> On Saturday, September 28, 2013 08:18:18 PM Ronald wrote:
->> [ resend, forgot to disable HTML (sorry!) ]
->>
->> Dear kernel developers,
->>
->> Commit 8fd37a4c9 (PM / hibernate: Create memory bitmaps after freezing
->> user space) causes resume to fail.
->>
->> Only, when using the s2disk utility (through pm-hibernate).
->>
->> Not when I do:
->>
->> echo -n "disk" > /sys/power/state
->>
->> Reverting the commit did not work.
->>
->> I am using a encrypted LUKS partition with a temporary key that is
->> functioning as the swap device used for the suspend image.
->>
->> Awaiting further orders....
->
-> I'm traveling now, so I can't really test things, but I think I know what the
-> problem is.
->
-> Can you please check if the appended patch makes any difference for you?
->
-> Rafael
->
->
-> ---
->  kernel/power/snapshot.c |    5 ++++-
->  kernel/power/user.c     |    5 +++++
->  2 files changed, 9 insertions(+), 1 deletion(-)
->
-> Index: linux-pm/kernel/power/snapshot.c
-> ===================================================================
-> --- linux-pm.orig/kernel/power/snapshot.c
-> +++ linux-pm/kernel/power/snapshot.c
-> @@ -743,7 +743,10 @@ int create_basic_memory_bitmaps(void)
->         struct memory_bitmap *bm1, *bm2;
->         int error = 0;
->
-> -       BUG_ON(forbidden_pages_map || free_pages_map);
-> +       if (forbidden_pages_map && free_pages_map)
-> +               return 0;
-> +       else
-> +               BUG_ON(forbidden_pages_map || free_pages_map);
->
->         bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
->         if (!bm1)
-> Index: linux-pm/kernel/power/user.c
-> ===================================================================
-> --- linux-pm.orig/kernel/power/user.c
-> +++ linux-pm/kernel/power/user.c
-> @@ -82,6 +82,9 @@ static int snapshot_open(struct inode *i
->                 data->swap = -1;
->                 data->mode = O_WRONLY;
->                 error = pm_notifier_call_chain(PM_RESTORE_PREPARE);
-> +               if (!error)
-> +                       error = create_basic_memory_bitmaps();
-> +
->                 if (error)
->                         pm_notifier_call_chain(PM_POST_RESTORE);
->         }
->
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ block/ioctl.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/block/ioctl.c b/block/ioctl.c
+index a31d91d..374af7e 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -154,11 +154,19 @@ static int blkdev_reread_part(struct block_device *bdev)
+ {
+ 	struct gendisk *disk = bdev->bd_disk;
+ 	int res;
++	struct super_block *sb;
+ 
+ 	if (!disk_part_scan_enabled(disk) || bdev != bdev->bd_contains)
+ 		return -EINVAL;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
++
++	sb = get_super(bdev);
++	if (sb) {
++		drop_super(sb);
++		return -EBUSY;
++	}
++
+ 	if (!mutex_trylock(&bdev->bd_mutex))
+ 		return -EBUSY;
+ 	res = rescan_partitions(disk, bdev);
+-- 
+1.8.4
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
