@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab3I2T3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59686 "EHLO
+	id S1756041Ab3I2T31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab3I2T3I (ORCPT
+	with ESMTP id S1755974Ab3I2T3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:08 -0400
+	Sun, 29 Sep 2013 15:29:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 25/71] drm/i915: fix wait_for_pending_flips vs gpu hang deadlock
-Date: Sun, 29 Sep 2013 12:27:37 -0700
-Message-Id: <20130929192645.238568857@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 30/71] drm/ttm: fix the tt_populated check in ttm_tt_destroy()
+Date: Sun, 29 Sep 2013 12:27:42 -0700
+Message-Id: <20130929192645.569633620@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,196 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 17e1df07df0fbc77696a1e1b6ccf9f2e5af70e40 upstream.
+commit 182b17c8dc4e83aab000ce86587b6810e515da87 upstream.
 
-My g33 here seems to be shockingly good at hitting them all. This time
-around kms_flip/flip-vs-panning-vs-hang blows up:
+After a vmalloc failure in ttm_dma_tt_alloc_page_directory(),
+ttm_dma_tt_init() will call ttm_tt_destroy() to cleanup, and end up
+inside the driver's unpopulate() hook when populate() has never yet
+been called.
 
-intel_crtc_wait_for_pending_flips correctly checks for gpu hangs and
-if a gpu hang is pending aborts the wait for outstanding flips so that
-the setcrtc call will succeed and release the crtc mutex. And the gpu
-hang handler needs that lock in intel_display_handle_reset to be able
-to complete outstanding flips.
+On nouveau, the first issue to be hit because of this is that
+dma_address[] may be a NULL pointer.  After working around this,
+ttm_pool_unpopulate() may potentially hit the same issue with
+the pages[] array.
 
-The problem is that we can race in two ways:
-- Waiters on the dev_priv->pending_flip_queue aren't woken up after
-  we've the reset as pending, but before we actually start the reset
-  work. This means that the waiter doesn't notice the pending reset
-  and hence will keep on hogging the locks.
+It seems to make more sense to avoid calling unpopulate on already
+unpopulated TTMs than to add checks to all the implementations.
 
-  Like with dev->struct_mutex and the ring->irq_queue wait queues we
-  there need to wake up everyone that potentially holds a lock which
-  the reset handler needs.
-
-- intel_display_handle_reset was called _after_ we've already
-  signalled the completion of the reset work. Which means a waiter
-  could sneak in, grab the lock and never release it (since the
-  pageflips won't ever get released).
-
-  Similar to resetting the gem state all the reset work must complete
-  before we update the reset counter. Contrary to the gem reset we
-  don't need to have a second explicit wake up call since that will
-  have happened already when completing the pageflips. We also don't
-  have any issues that the completion happens while the reset state is
-  still pending - wait_for_pending_flips is only there to ensure we
-  display the right frame. After a gpu hang&reset events such
-  guarantees are out the window anyway. This is in contrast to the gem
-  code where too-early wake-up would result in unnecessary restarting
-  of ioctls.
-
-Also, since we've gotten these various deadlocks and ordering
-constraints wrong so often throw copious amounts of comments at the
-code.
-
-This deadlock regression has been introduced in the commit which added
-the pageflip reset logic to the gpu hang work:
-
-commit 96a02917a0131e52efefde49c2784c0421d6c439
-Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Date:   Mon Feb 18 19:08:49 2013 +0200
-
-    drm/i915: Finish page flips and update primary planes after a GPU reset
-
-v2:
-- Add comments to explain how the wake_up serves as memory barriers
-  for the atomic_t reset counter.
-- Improve the comments a bit as suggested by Chris Wilson.
-- Extract the wake_up calls before/after the reset into a little
-  i915_error_wake_up and unconditionally wake up the
-  pending_flip_queue waiters, again as suggested by Chris Wilson.
-
-v3: Throw copious amounts of comments at i915_error_wake_up as
-suggested by Chris Wilson.
-
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |   68 +++++++++++++++++++++++++++++++---------
- 1 file changed, 54 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/ttm/ttm_tt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1407,6 +1407,34 @@ done:
- 	return ret;
- }
- 
-+static void i915_error_wake_up(struct drm_i915_private *dev_priv,
-+			       bool reset_completed)
-+{
-+	struct intel_ring_buffer *ring;
-+	int i;
-+
-+	/*
-+	 * Notify all waiters for GPU completion events that reset state has
-+	 * been changed, and that they need to restart their wait after
-+	 * checking for potential errors (and bail out to drop locks if there is
-+	 * a gpu reset pending so that i915_error_work_func can acquire them).
-+	 */
-+
-+	/* Wake up __wait_seqno, potentially holding dev->struct_mutex. */
-+	for_each_ring(ring, dev_priv, i)
-+		wake_up_all(&ring->irq_queue);
-+
-+	/* Wake up intel_crtc_wait_for_pending_flips, holding crtc->mutex. */
-+	wake_up_all(&dev_priv->pending_flip_queue);
-+
-+	/*
-+	 * Signal tasks blocked in i915_gem_wait_for_error that the pending
-+	 * reset state is cleared.
-+	 */
-+	if (reset_completed)
-+		wake_up_all(&dev_priv->gpu_error.reset_queue);
-+}
-+
- /**
-  * i915_error_work_func - do process context error handling work
-  * @work: work struct
-@@ -1421,11 +1449,10 @@ static void i915_error_work_func(struct
- 	drm_i915_private_t *dev_priv = container_of(error, drm_i915_private_t,
- 						    gpu_error);
- 	struct drm_device *dev = dev_priv->dev;
--	struct intel_ring_buffer *ring;
- 	char *error_event[] = { "ERROR=1", NULL };
- 	char *reset_event[] = { "RESET=1", NULL };
- 	char *reset_done_event[] = { "ERROR=0", NULL };
--	int i, ret;
-+	int ret;
- 
- 	kobject_uevent_env(&dev->primary->kdev.kobj, KOBJ_CHANGE, error_event);
- 
-@@ -1444,8 +1471,16 @@ static void i915_error_work_func(struct
- 		kobject_uevent_env(&dev->primary->kdev.kobj, KOBJ_CHANGE,
- 				   reset_event);
- 
-+		/*
-+		 * All state reset _must_ be completed before we update the
-+		 * reset counter, for otherwise waiters might miss the reset
-+		 * pending state and not properly drop locks, resulting in
-+		 * deadlocks with the reset work.
-+		 */
- 		ret = i915_reset(dev);
- 
-+		intel_display_handle_reset(dev);
-+
- 		if (ret == 0) {
- 			/*
- 			 * After all the gem state is reset, increment the reset
-@@ -1466,12 +1501,11 @@ static void i915_error_work_func(struct
- 			atomic_set(&error->reset_counter, I915_WEDGED);
- 		}
- 
--		for_each_ring(ring, dev_priv, i)
--			wake_up_all(&ring->irq_queue);
--
--		intel_display_handle_reset(dev);
--
--		wake_up_all(&dev_priv->gpu_error.reset_queue);
-+		/*
-+		 * Note: The wake_up also serves as a memory barrier so that
-+		 * waiters see the update value of the reset counter atomic_t.
-+		 */
-+		i915_error_wake_up(dev_priv, true);
- 	}
- }
- 
-@@ -2109,8 +2143,6 @@ static void i915_report_and_clear_eir(st
- void i915_handle_error(struct drm_device *dev, bool wedged)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	struct intel_ring_buffer *ring;
--	int i;
- 
- 	i915_capture_error_state(dev);
- 	i915_report_and_clear_eir(dev);
-@@ -2120,11 +2152,19 @@ void i915_handle_error(struct drm_device
- 				&dev_priv->gpu_error.reset_counter);
- 
- 		/*
--		 * Wakeup waiting processes so that the reset work item
--		 * doesn't deadlock trying to grab various locks.
-+		 * Wakeup waiting processes so that the reset work function
-+		 * i915_error_work_func doesn't deadlock trying to grab various
-+		 * locks. By bumping the reset counter first, the woken
-+		 * processes will see a reset in progress and back off,
-+		 * releasing their locks and then wait for the reset completion.
-+		 * We must do this for _all_ gpu waiters that might hold locks
-+		 * that the reset work needs to acquire.
-+		 *
-+		 * Note: The wake_up serves as the required memory barrier to
-+		 * ensure that the waiters see the updated value of the reset
-+		 * counter atomic_t.
- 		 */
--		for_each_ring(ring, dev_priv, i)
--			wake_up_all(&ring->irq_queue);
-+		i915_error_wake_up(dev_priv, false);
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -170,7 +170,7 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
+ 		ttm_tt_unbind(ttm);
  	}
  
- 	/*
+-	if (likely(ttm->pages != NULL)) {
++	if (ttm->state == tt_unbound) {
+ 		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
+ 	}
+ 
 
 
