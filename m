@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab3I2UI7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 16:08:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59121 "EHLO
+	id S932180Ab3I2UJX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 16:09:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59117 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab3I2T1K (ORCPT
+	with ESMTP id S1755016Ab3I2T1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:27:10 -0400
+	Sun, 29 Sep 2013 15:27:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 07/17] drm/radeon: update line buffer allocation for dce4.1/5
-Date: Sun, 29 Sep 2013 12:26:46 -0700
-Message-Id: <20130929190757.651006921@linuxfoundation.org>
+Subject: [ 06/17] drm/radeon: fix LCD record parsing
+Date: Sun, 29 Sep 2013 12:26:45 -0700
+Message-Id: <20130929190757.584920666@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
 References: <20130929190757.138351117@linuxfoundation.org>
@@ -28,86 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 0b31e02363b0db4e7931561bc6c141436e729d9f upstream.
+commit 95663948ba22a4be8b99acd67fbf83e86ddffba4 upstream.
 
-We need to allocate line buffer to each display when
-setting up the watermarks.  Failure to do so can lead
-to a blank screen.  This fixes blank screen problems
-on dce4.1/5 asics.
+If the LCD table contains an EDID record, properly account
+for the edid size when walking through the records.
 
-Based on an initial fix from:
-Jay Cornwall <jay.cornwall@amd.com>
+This should fix error messages about unknown LCD records.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c  |   25 +++++++++++++++++++++----
- drivers/gpu/drm/radeon/evergreend.h |    4 ++++
- 2 files changed, 25 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -419,7 +419,8 @@ static u32 evergreen_line_buffer_adjust(
- 					struct drm_display_mode *mode,
- 					struct drm_display_mode *other_mode)
- {
--	u32 tmp;
-+	u32 tmp, buffer_alloc, i;
-+	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
- 	/*
- 	 * Line Buffer Setup
- 	 * There are 3 line buffers, each one shared by 2 display controllers.
-@@ -442,18 +443,34 @@ static u32 evergreen_line_buffer_adjust(
- 	 * non-linked crtcs for maximum line buffer allocation.
- 	 */
- 	if (radeon_crtc->base.enabled && mode) {
--		if (other_mode)
-+		if (other_mode) {
- 			tmp = 0; /* 1/2 */
--		else
-+			buffer_alloc = 1;
-+		} else {
- 			tmp = 2; /* whole */
--	} else
-+			buffer_alloc = 2;
-+		}
-+	} else {
- 		tmp = 0;
-+		buffer_alloc = 0;
-+	}
- 
- 	/* second controller of the pair uses second half of the lb */
- 	if (radeon_crtc->crtc_id % 2)
- 		tmp += 4;
- 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset, tmp);
- 
-+	if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
-+		WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
-+		       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
-+		for (i = 0; i < rdev->usec_timeout; i++) {
-+			if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
-+			    DMIF_BUFFERS_ALLOCATED_COMPLETED)
-+				break;
-+			udelay(1);
-+		}
-+	}
-+
- 	if (radeon_crtc->base.enabled && mode) {
- 		switch (tmp) {
- 		case 0:
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -450,6 +450,10 @@
- #       define LATENCY_LOW_WATERMARK(x)                   ((x) << 0)
- #       define LATENCY_HIGH_WATERMARK(x)                  ((x) << 16)
- 
-+#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
-+#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
-+#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
-+
- #define IH_RB_CNTL                                        0x3e00
- #       define IH_RB_ENABLE                               (1 << 0)
- #       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -1658,7 +1658,9 @@ struct radeon_encoder_atom_dig *radeon_a
+ 								kfree(edid);
+ 						}
+ 					}
+-					record += sizeof(ATOM_FAKE_EDID_PATCH_RECORD);
++					record += fake_edid_record->ucFakeEDIDLength ?
++						fake_edid_record->ucFakeEDIDLength + 2 :
++						sizeof(ATOM_FAKE_EDID_PATCH_RECORD);
+ 					break;
+ 				case LCD_PANEL_RESOLUTION_RECORD_TYPE:
+ 					panel_res_record = (ATOM_PANEL_RESOLUTION_PATCH_RECORD *)record;
 
 
