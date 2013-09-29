@@ -1,44 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab3I2RqQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 13:46:16 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:34304 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3I2RqO (ORCPT
+	id S1754948Ab3I2RxD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 13:53:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53041 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719Ab3I2RxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 13:46:14 -0400
-Message-ID: <52486760.1000105@gmail.com>
-Date: Sun, 29 Sep 2013 19:46:08 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Sun, 29 Sep 2013 13:53:01 -0400
+Date: Sun, 29 Sep 2013 18:52:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: devicetree@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130929175236.GV19304@sirena.org.uk>
+References: <1380131272-16982-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20130925183201.GT3226@sirena.org.uk>
+ <20130926152941.GQ3635@opensource.wolfsonmicro.com>
+ <20130926175843.GS19304@sirena.org.uk>
+ <20130928155308.GV3635@opensource.wolfsonmicro.com>
+ <20130928225535.GQ19304@sirena.org.uk>
+ <20130929141137.GW3635@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, David Airlie <airlied@linux.ie>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-i2c@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 2/8] [media] exynos4-is: Don't use i2c_client->driver
-References: <1380444666-12019-1-git-send-email-lars@metafoo.de> <1380444666-12019-3-git-send-email-lars@metafoo.de>
-In-Reply-To: <1380444666-12019-3-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GZxc/eAcyN/xQwfo"
+Content-Disposition: inline
+In-Reply-To: <20130929141137.GW3635@opensource.wolfsonmicro.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH] mfd: arizona: Update device tree regulator bindings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2013 10:51 AM, Lars-Peter Clausen wrote:
-> The 'driver' field of the i2c_client struct is redundant and is going to be
-> removed. The results of the expressions 'client->driver.driver->field' and
-> 'client->dev.driver->field' are identical, so replace all occurrences of the
-> former with the later.
->
-> Signed-off-by: Lars-Peter Clausen<lars@metafoo.de>
-> Cc: Kyungmin Park<kyungmin.park@samsung.com>
-> Cc: Sylwester Nawrocki<s.nawrocki@samsung.com>
 
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+--GZxc/eAcyN/xQwfo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Sun, Sep 29, 2013 at 03:11:37PM +0100, Charles Keepax wrote:
+
+> There is currently only one other MFD driver (tps65910) which defines
+> the GPIOs on the main MFD node as we do in the Arizona driver and it
+> uses the 'hack' that I suggested in my first email of copying the
+> of_node.
+
+> tps65910_gpio->gpio_chip.of_node = tps65910->dev->of_node;
+
+Look where it's copying it to - this isn't the hack you were suggesting
+before.  What you were suggesting before was setting the of_node of the
+child struct device which is a managed thing that the driver core knows
+about, the device is the owner of the of_node hanging off it.  You would
+end up with the same of_node referenced from two struct devices which
+isn't clever.  The above is putting a pointer into the gpio_chip which
+is just telling gpiolib that it should use this of_node when it needs
+one, gpiolib won't try and lifecycle manage the of_node.
+
+> Looking around there seem to be quite a few drivers that copy
+> of_node pointers like this are we sure this isn't an acceptable
+> solution? I mean the arizona driver we know the components will
+> always be loaded as part of the MFD and thus will be freed before
+> the parent node.
+
+It's fine to reference an of_node, that's obviously something that will
+need to happen at some point in order to do anything useful with the
+data.
+
+--GZxc/eAcyN/xQwfo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSSGjgAAoJELSic+t+oim9G7kP/0ZCoPEmMoaY4xuq2bZgjcgQ
+aLtONvcQuXfS46ikgwIFQu2B1nbGQekkAwC2UfqunJNzKwz4zRbZyWdBVVGJLKiC
+lyspzFNhUj6gn2ANiO6IIqNcBIIGxqfkVvYtzIFq7ZqbQXDklsVkqm61lbqA5SJM
+fRzIo33Q3FBKIvfZ9zvMm2SJ8gFp2goZ75wA0PRkChBMNMXUwTg4TzAoT+h0Wm8V
+qwntO92nCuduaeeTFLmVI2LbQsi1BMgFZvGMCa/xmkdSuDN72viAc6HEEsj40JcH
+sIs7uWeuyDi7/NwHoT1LWzKM6vPETpAYLuseBaxyZSSR69NReGtw6QqemcJCqiNA
+utvB6aKCkpN2UIrBYDyyMtTTCySuh/3lmmFOQWz5gvGbYslkZoz9fdVuOqxg92Rl
+DC9msb569pMGxRXpZuGJBMl7M4iR49pC0hAvQ17SbETIu3b2mM/s++XDKbJo0j//
+U2bXDQ6lVoc0tybYLt8BmOftS/1JiSiffVuWAP73IwlBCyFg8T3VFoK4zk66yrfs
+s/PFfnmVL9HpQoPFtwFtGNLCF5Y7MDmS/kHzwDFe5Vs01WOnHrWfgeN9DPDA5PLT
+4V+qvlzb+xGmhZf/n81/RKW0C4WM7zaay5JI7B2Vgg7xm/4yDvA7l9lMpYYZJu4A
+ziLl8YoPQTkuQSmpNT+j
+=KkL6
+-----END PGP SIGNATURE-----
+
+--GZxc/eAcyN/xQwfo--
