@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab3I2TpN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:45:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59535 "EHLO
+	id S1756840Ab3I2TpP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:45:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab3I2T2q (ORCPT
+	with ESMTP id S1755845Ab3I2T2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Sep 2013 15:28:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [ 17/71] HID: steelseries: validate output report details
-Date: Sun, 29 Sep 2013 12:27:29 -0700
-Message-Id: <20130929192644.707216936@linuxfoundation.org>
+Subject: [ 16/71] HID: lenovo-tpkbd: fix leak if tpkbd_probe_tp fails
+Date: Sun, 29 Sep 2013 12:27:28 -0700
+Message-Id: <20130929192644.640537469@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -28,42 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 41df7f6d43723deb7364340b44bc5d94bf717456 upstream.
+commit 0ccdd9e7476680c16113131264ad6597bd10299d upstream.
 
-A HID device could send a malicious output report that would cause the
-steelseries HID driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+If tpkbd_probe_tp() bails out, the probe() function return an error,
+but hid_hw_stop() is never called.
 
-[  167.981534] usb 1-1: New USB device found, idVendor=1038, idProduct=1410
-...
-[  182.050547] BUG kmalloc-256 (Tainted: G        W   ): Redzone overwritten
+fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=1003998
 
-CVE-2013-2891
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-steelseries.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/hid/hid-lenovo-tpkbd.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-steelseries.c
-+++ b/drivers/hid/hid-steelseries.c
-@@ -249,6 +249,11 @@ static int steelseries_srws1_probe(struc
- 		goto err_free;
+--- a/drivers/hid/hid-lenovo-tpkbd.c
++++ b/drivers/hid/hid-lenovo-tpkbd.c
+@@ -406,22 +406,27 @@ static int tpkbd_probe(struct hid_device
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "hid_parse failed\n");
+-		goto err_free;
++		goto err;
  	}
  
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 0, 0, 16)) {
-+		ret = -ENODEV;
-+		goto err_free;
-+	}
-+
  	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
  	if (ret) {
- 		hid_err(hdev, "hw start failed\n");
+ 		hid_err(hdev, "hid_hw_start failed\n");
+-		goto err_free;
++		goto err;
+ 	}
+ 
+ 	uhdev = (struct usbhid_device *) hdev->driver_data;
+ 
+-	if (uhdev->ifnum == 1)
+-		return tpkbd_probe_tp(hdev);
++	if (uhdev->ifnum == 1) {
++		ret = tpkbd_probe_tp(hdev);
++		if (ret)
++			goto err_hid;
++	}
+ 
+ 	return 0;
+-err_free:
++err_hid:
++	hid_hw_stop(hdev);
++err:
+ 	return ret;
+ }
+ 
 
 
