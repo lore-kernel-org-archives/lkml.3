@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab3I2T3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:29:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59651 "EHLO
+	id S1755975Ab3I2T3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:29:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab3I2T3G (ORCPT
+	with ESMTP id S1755857Ab3I2T3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:06 -0400
+	Sun, 29 Sep 2013 15:29:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
         =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
 	<ville.syrjala@linux.intel.com>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 24/71] drm/i915: fix gpu hang vs. flip stall deadlocks
-Date: Sun, 29 Sep 2013 12:27:36 -0700
-Message-Id: <20130929192645.172413948@linuxfoundation.org>
+Subject: [ 25/71] drm/i915: fix wait_for_pending_flips vs gpu hang deadlock
+Date: Sun, 29 Sep 2013 12:27:37 -0700
+Message-Id: <20130929192645.238568857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -35,9 +34,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 122f46badaafbe651f05c2c0f24cadee692f761b upstream.
+commit 17e1df07df0fbc77696a1e1b6ccf9f2e5af70e40 upstream.
 
-Since we've started to clean up pending flips when the gpu hangs in
+My g33 here seems to be shockingly good at hitting them all. This time
+around kms_flip/flip-vs-panning-vs-hang blows up:
+
+intel_crtc_wait_for_pending_flips correctly checks for gpu hangs and
+if a gpu hang is pending aborts the wait for outstanding flips so that
+the setcrtc call will succeed and release the crtc mutex. And the gpu
+hang handler needs that lock in intel_display_handle_reset to be able
+to complete outstanding flips.
+
+The problem is that we can race in two ways:
+- Waiters on the dev_priv->pending_flip_queue aren't woken up after
+  we've the reset as pending, but before we actually start the reset
+  work. This means that the waiter doesn't notice the pending reset
+  and hence will keep on hogging the locks.
+
+  Like with dev->struct_mutex and the ring->irq_queue wait queues we
+  there need to wake up everyone that potentially holds a lock which
+  the reset handler needs.
+
+- intel_display_handle_reset was called _after_ we've already
+  signalled the completion of the reset work. Which means a waiter
+  could sneak in, grab the lock and never release it (since the
+  pageflips won't ever get released).
+
+  Similar to resetting the gem state all the reset work must complete
+  before we update the reset counter. Contrary to the gem reset we
+  don't need to have a second explicit wake up call since that will
+  have happened already when completing the pageflips. We also don't
+  have any issues that the completion happens while the reset state is
+  still pending - wait_for_pending_flips is only there to ensure we
+  display the right frame. After a gpu hang&reset events such
+  guarantees are out the window anyway. This is in contrast to the gem
+  code where too-early wake-up would result in unnecessary restarting
+  of ioctls.
+
+Also, since we've gotten these various deadlocks and ordering
+constraints wrong so often throw copious amounts of comments at the
+code.
+
+This deadlock regression has been introduced in the commit which added
+the pageflip reset logic to the gpu hang work:
 
 commit 96a02917a0131e52efefde49c2784c0421d6c439
 Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
@@ -45,84 +84,17 @@ Date:   Mon Feb 18 19:08:49 2013 +0200
 
     drm/i915: Finish page flips and update primary planes after a GPU reset
 
-the gpu reset work now also grabs modeset locks. But since work items
-on our private work queue are not allowed to do that due to the
-flush_workqueue from the pageflip code this results in a neat
-deadlock:
+v2:
+- Add comments to explain how the wake_up serves as memory barriers
+  for the atomic_t reset counter.
+- Improve the comments a bit as suggested by Chris Wilson.
+- Extract the wake_up calls before/after the reset into a little
+  i915_error_wake_up and unconditionally wake up the
+  pending_flip_queue waiters, again as suggested by Chris Wilson.
 
-INFO: task kms_flip:14676 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-kms_flip        D ffff88019283a5c0     0 14676  13344 0x00000004
- ffff88018e62dbf8 0000000000000046 ffff88013bdb12e0 ffff88018e62dfd8
- ffff88018e62dfd8 00000000001d3b00 ffff88019283a5c0 ffff88018ec21000
- ffff88018f693f00 ffff88018eece000 ffff88018e62dd60 ffff88018eece898
-Call Trace:
- [<ffffffff8138ee7b>] schedule+0x60/0x62
- [<ffffffffa046c0dd>] intel_crtc_wait_for_pending_flips+0xb2/0x114 [i915]
- [<ffffffff81050ff4>] ? finish_wait+0x60/0x60
- [<ffffffffa0478041>] intel_crtc_set_config+0x7f3/0x81e [i915]
- [<ffffffffa031780a>] drm_mode_set_config_internal+0x4f/0xc6 [drm]
- [<ffffffffa0319cf3>] drm_mode_setcrtc+0x44d/0x4f9 [drm]
- [<ffffffff810e44da>] ? might_fault+0x38/0x86
- [<ffffffffa030d51f>] drm_ioctl+0x2f9/0x447 [drm]
- [<ffffffff8107a722>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffffa03198a6>] ? drm_mode_setplane+0x343/0x343 [drm]
- [<ffffffff8112222f>] ? mntput_no_expire+0x3e/0x13d
- [<ffffffff81117f33>] vfs_ioctl+0x18/0x34
- [<ffffffff81118776>] do_vfs_ioctl+0x396/0x454
- [<ffffffff81396b37>] ? sysret_check+0x1b/0x56
- [<ffffffff81118886>] SyS_ioctl+0x52/0x7d
- [<ffffffff81396b12>] system_call_fastpath+0x16/0x1b
-2 locks held by kms_flip/14676:
- #0:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffffa0316545>] drm_modeset_lock_all+0x22/0x59 [drm]
- #1:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa031656b>] drm_modeset_lock_all+0x48/0x59 [drm]
-INFO: task kworker/u8:4:175 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-kworker/u8:4    D ffff88018de9a5c0     0   175      2 0x00000000
-Workqueue: i915 i915_error_work_func [i915]
- ffff88018e37dc30 0000000000000046 ffff8801938ab8a0 ffff88018e37dfd8
- ffff88018e37dfd8 00000000001d3b00 ffff88018de9a5c0 ffff88018ec21018
- 0000000000000246 ffff88018e37dca0 000000005a865a86 ffff88018de9a5c0
-Call Trace:
- [<ffffffff8138ee7b>] schedule+0x60/0x62
- [<ffffffff8138f23d>] schedule_preempt_disabled+0x9/0xb
- [<ffffffff8138d0cd>] mutex_lock_nested+0x205/0x3b1
- [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
- [<ffffffffa0477094>] ? intel_display_handle_reset+0x7e/0xbd [i915]
- [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
- [<ffffffffa044e0a2>] i915_error_work_func+0x128/0x147 [i915]
- [<ffffffff8104a89a>] process_one_work+0x1d4/0x35a
- [<ffffffff8104a821>] ? process_one_work+0x15b/0x35a
- [<ffffffff8104b4a5>] worker_thread+0x144/0x1f0
- [<ffffffff8104b361>] ? rescuer_thread+0x275/0x275
- [<ffffffff8105076d>] kthread+0xac/0xb4
- [<ffffffff81059d30>] ? finish_task_switch+0x3b/0xc0
- [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
- [<ffffffff81396a6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810506c1>] ? __kthread_parkme+0x60/0x60
-3 locks held by kworker/u8:4/175:
- #0:  (i915){.+.+.+}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
- #1:  ((&dev_priv->gpu_error.work)){+.+.+.}, at: [<ffffffff8104a821>] process_one_work+0x15b/0x35a
- #2:  (&crtc->mutex){+.+.+.}, at: [<ffffffffa0477094>] intel_display_handle_reset+0x7e/0xbd [i915]
+v3: Throw copious amounts of comments at i915_error_wake_up as
+suggested by Chris Wilson.
 
-This blew up while running kms_flip/flip-vs-panning-vs-hang-interruptible
-on one of my older machines.
-
-Unfortunately (despite the proper lockdep annotations for
-flush_workqueue) lockdep still doesn't detect this correctly, so we
-need to rely on chance to discover these bugs.
-
-Apply the usual bugfix and schedule the reset work on the system
-workqueue to keep our own driver workqueue free of any modeset lock
-grabbing.
-
-Note that this is not a terribly serious regression since before the
-offending commit we'd simply have stalled userspace forever due to
-failing to abort all outstanding pageflips.
-
-v2: Add a comment as requested by Chris.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
 Cc: Chris Wilson <chris@chris-wilson.co.uk>
 Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
@@ -130,25 +102,126 @@ Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_irq.c |   68 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 54 insertions(+), 14 deletions(-)
 
 --- a/drivers/gpu/drm/i915/i915_irq.c
 +++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -2127,7 +2127,13 @@ void i915_handle_error(struct drm_device
- 			wake_up_all(&ring->irq_queue);
- 	}
- 
--	queue_work(dev_priv->wq, &dev_priv->gpu_error.work);
-+	/*
-+	 * Our reset work can grab modeset locks (since it needs to reset the
-+	 * state of outstanding pagelips). Hence it must not be run on our own
-+	 * dev-priv->wq work queue for otherwise the flush_work in the pageflip
-+	 * code will deadlock.
-+	 */
-+	schedule_work(&dev_priv->gpu_error.work);
+@@ -1407,6 +1407,34 @@ done:
+ 	return ret;
  }
  
- static void __always_unused i915_pageflip_stall_check(struct drm_device *dev, int pipe)
++static void i915_error_wake_up(struct drm_i915_private *dev_priv,
++			       bool reset_completed)
++{
++	struct intel_ring_buffer *ring;
++	int i;
++
++	/*
++	 * Notify all waiters for GPU completion events that reset state has
++	 * been changed, and that they need to restart their wait after
++	 * checking for potential errors (and bail out to drop locks if there is
++	 * a gpu reset pending so that i915_error_work_func can acquire them).
++	 */
++
++	/* Wake up __wait_seqno, potentially holding dev->struct_mutex. */
++	for_each_ring(ring, dev_priv, i)
++		wake_up_all(&ring->irq_queue);
++
++	/* Wake up intel_crtc_wait_for_pending_flips, holding crtc->mutex. */
++	wake_up_all(&dev_priv->pending_flip_queue);
++
++	/*
++	 * Signal tasks blocked in i915_gem_wait_for_error that the pending
++	 * reset state is cleared.
++	 */
++	if (reset_completed)
++		wake_up_all(&dev_priv->gpu_error.reset_queue);
++}
++
+ /**
+  * i915_error_work_func - do process context error handling work
+  * @work: work struct
+@@ -1421,11 +1449,10 @@ static void i915_error_work_func(struct
+ 	drm_i915_private_t *dev_priv = container_of(error, drm_i915_private_t,
+ 						    gpu_error);
+ 	struct drm_device *dev = dev_priv->dev;
+-	struct intel_ring_buffer *ring;
+ 	char *error_event[] = { "ERROR=1", NULL };
+ 	char *reset_event[] = { "RESET=1", NULL };
+ 	char *reset_done_event[] = { "ERROR=0", NULL };
+-	int i, ret;
++	int ret;
+ 
+ 	kobject_uevent_env(&dev->primary->kdev.kobj, KOBJ_CHANGE, error_event);
+ 
+@@ -1444,8 +1471,16 @@ static void i915_error_work_func(struct
+ 		kobject_uevent_env(&dev->primary->kdev.kobj, KOBJ_CHANGE,
+ 				   reset_event);
+ 
++		/*
++		 * All state reset _must_ be completed before we update the
++		 * reset counter, for otherwise waiters might miss the reset
++		 * pending state and not properly drop locks, resulting in
++		 * deadlocks with the reset work.
++		 */
+ 		ret = i915_reset(dev);
+ 
++		intel_display_handle_reset(dev);
++
+ 		if (ret == 0) {
+ 			/*
+ 			 * After all the gem state is reset, increment the reset
+@@ -1466,12 +1501,11 @@ static void i915_error_work_func(struct
+ 			atomic_set(&error->reset_counter, I915_WEDGED);
+ 		}
+ 
+-		for_each_ring(ring, dev_priv, i)
+-			wake_up_all(&ring->irq_queue);
+-
+-		intel_display_handle_reset(dev);
+-
+-		wake_up_all(&dev_priv->gpu_error.reset_queue);
++		/*
++		 * Note: The wake_up also serves as a memory barrier so that
++		 * waiters see the update value of the reset counter atomic_t.
++		 */
++		i915_error_wake_up(dev_priv, true);
+ 	}
+ }
+ 
+@@ -2109,8 +2143,6 @@ static void i915_report_and_clear_eir(st
+ void i915_handle_error(struct drm_device *dev, bool wedged)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	struct intel_ring_buffer *ring;
+-	int i;
+ 
+ 	i915_capture_error_state(dev);
+ 	i915_report_and_clear_eir(dev);
+@@ -2120,11 +2152,19 @@ void i915_handle_error(struct drm_device
+ 				&dev_priv->gpu_error.reset_counter);
+ 
+ 		/*
+-		 * Wakeup waiting processes so that the reset work item
+-		 * doesn't deadlock trying to grab various locks.
++		 * Wakeup waiting processes so that the reset work function
++		 * i915_error_work_func doesn't deadlock trying to grab various
++		 * locks. By bumping the reset counter first, the woken
++		 * processes will see a reset in progress and back off,
++		 * releasing their locks and then wait for the reset completion.
++		 * We must do this for _all_ gpu waiters that might hold locks
++		 * that the reset work needs to acquire.
++		 *
++		 * Note: The wake_up serves as the required memory barrier to
++		 * ensure that the waiters see the updated value of the reset
++		 * counter atomic_t.
+ 		 */
+-		for_each_ring(ring, dev_priv, i)
+-			wake_up_all(&ring->irq_queue);
++		i915_error_wake_up(dev_priv, false);
+ 	}
+ 
+ 	/*
 
 
