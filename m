@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab3I2Tnt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 15:43:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59565 "EHLO
+	id S1755887Ab3I2T2y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 15:28:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab3I2T3C (ORCPT
+	with ESMTP id S1755810Ab3I2T2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 15:29:02 -0400
+	Sun, 29 Sep 2013 15:28:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 22/71] drm/i915: try not to lose backlight CBLV precision
-Date: Sun, 29 Sep 2013 12:27:34 -0700
-Message-Id: <20130929192645.039982757@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 12/71] HID: validate feature and input report details
+Date: Sun, 29 Sep 2013 12:27:24 -0700
+Message-Id: <20130929192644.374667105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
 References: <20130929192643.539596256@linuxfoundation.org>
@@ -27,46 +27,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit cac6a5ae0118832936eb162ec4cedb30f2422bcc upstream.
+commit cc6b54aa54bf40b762cab45a9fc8aa81653146eb upstream.
 
-ACPI has _BCM and _BQC methods to set and query the backlight
-brightness, respectively. The ACPI opregion has variables BCLP and CBLV
-to hold the requested and current backlight brightness, respectively.
+When dealing with usage_index, be sure to properly use unsigned instead of
+int to avoid overflows.
 
-The BCLP variable has range 0..255 while the others have range
-0..100. This means the _BCM method has to scale the brightness for BCLP,
-and the gfx driver has to scale the requested value back for CBLV. If
-the _BQC method uses the CBLV variable (apparently some implementations
-do, some don't) for current backlight level reporting, there's room for
-rounding errors.
+When working on report fields, always validate that their report_counts are
+in bounds.
+Without this, a HID device could report a malicious feature report that
+could trick the driver into a heap overflow:
 
-Use DIV_ROUND_UP for scaling back to CBLV to get back to the same values
-that were passed to _BCM, presuming the _BCM simply uses bclp = (in *
-255) / 100 for scaling to BCLP.
+[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
+...
+[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-Reference: https://gist.github.com/aaronlu/6314920
-Reported-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+CVE-2013-2897
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_opregion.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-core.c  |   16 +++++++---------
+ drivers/hid/hid-input.c |   11 ++++++++++-
+ 2 files changed, 17 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -173,7 +173,7 @@ static u32 asle_set_backlight(struct drm
- 		return ASLE_BACKLIGHT_FAILED;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -94,7 +94,6 @@ EXPORT_SYMBOL_GPL(hid_register_report);
+ static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
+ {
+ 	struct hid_field *field;
+-	int i;
  
- 	intel_panel_set_backlight(dev, bclp, 255);
--	iowrite32((bclp*0x64)/0xff | ASLE_CBLV_VALID, &asle->cblv);
-+	iowrite32(DIV_ROUND_UP(bclp * 100, 255) | ASLE_CBLV_VALID, &asle->cblv);
+ 	if (report->maxfield == HID_MAX_FIELDS) {
+ 		hid_err(report->device, "too many fields in report\n");
+@@ -113,9 +112,6 @@ static struct hid_field *hid_register_fi
+ 	field->value = (s32 *)(field->usage + usages);
+ 	field->report = report;
  
- 	return 0;
+-	for (i = 0; i < usages; i++)
+-		field->usage[i].usage_index = i;
+-
+ 	return field;
  }
+ 
+@@ -226,9 +222,9 @@ static int hid_add_field(struct hid_pars
+ {
+ 	struct hid_report *report;
+ 	struct hid_field *field;
+-	int usages;
++	unsigned usages;
+ 	unsigned offset;
+-	int i;
++	unsigned i;
+ 
+ 	report = hid_register_report(parser->device, report_type, parser->global.report_id);
+ 	if (!report) {
+@@ -255,7 +251,8 @@ static int hid_add_field(struct hid_pars
+ 	if (!parser->local.usage_index) /* Ignore padding fields */
+ 		return 0;
+ 
+-	usages = max_t(int, parser->local.usage_index, parser->global.report_count);
++	usages = max_t(unsigned, parser->local.usage_index,
++				 parser->global.report_count);
+ 
+ 	field = hid_register_field(report, usages, parser->global.report_count);
+ 	if (!field)
+@@ -266,13 +263,14 @@ static int hid_add_field(struct hid_pars
+ 	field->application = hid_lookup_collection(parser, HID_COLLECTION_APPLICATION);
+ 
+ 	for (i = 0; i < usages; i++) {
+-		int j = i;
++		unsigned j = i;
+ 		/* Duplicate the last usage we parsed if we have excess values */
+ 		if (i >= parser->local.usage_index)
+ 			j = parser->local.usage_index - 1;
+ 		field->usage[i].hid = parser->local.usage[j];
+ 		field->usage[i].collection_index =
+ 			parser->local.collection_index[j];
++		field->usage[i].usage_index = i;
+ 	}
+ 
+ 	field->maxusage = usages;
+@@ -1295,7 +1293,7 @@ int hid_report_raw_event(struct hid_devi
+ 			goto out;
+ 	}
+ 
+-	if (hid->claimed != HID_CLAIMED_HIDRAW) {
++	if (hid->claimed != HID_CLAIMED_HIDRAW && report->maxfield) {
+ 		for (a = 0; a < report->maxfield; a++)
+ 			hid_input_field(hid, report->field[a], cdata, interrupt);
+ 		hdrv = hid->driver;
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -485,6 +485,10 @@ static void hidinput_configure_usage(str
+ 	if (field->flags & HID_MAIN_ITEM_CONSTANT)
+ 		goto ignore;
+ 
++	/* Ignore if report count is out of bounds. */
++	if (field->report_count < 1)
++		goto ignore;
++
+ 	/* only LED usages are supported in output fields */
+ 	if (field->report_type == HID_OUTPUT_REPORT &&
+ 			(usage->hid & HID_USAGE_PAGE) != HID_UP_LED) {
+@@ -1168,7 +1172,11 @@ static void report_features(struct hid_d
+ 
+ 	rep_enum = &hid->report_enum[HID_FEATURE_REPORT];
+ 	list_for_each_entry(rep, &rep_enum->report_list, list)
+-		for (i = 0; i < rep->maxfield; i++)
++		for (i = 0; i < rep->maxfield; i++) {
++			/* Ignore if report count is out of bounds. */
++			if (rep->field[i]->report_count < 1)
++				continue;
++
+ 			for (j = 0; j < rep->field[i]->maxusage; j++) {
+ 				/* Verify if Battery Strength feature is available */
+ 				hidinput_setup_battery(hid, HID_FEATURE_REPORT, rep->field[i]);
+@@ -1177,6 +1185,7 @@ static void report_features(struct hid_d
+ 					drv->feature_mapping(hid, rep->field[i],
+ 							     rep->field[i]->usage + j);
+ 			}
++		}
+ }
+ 
+ static struct hid_input *hidinput_allocate(struct hid_device *hid)
 
 
