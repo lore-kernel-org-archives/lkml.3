@@ -1,133 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3I2DCd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Sep 2013 23:02:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55654 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab3I2DCb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Sep 2013 23:02:31 -0400
+	id S1754087Ab3I2DPC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Sep 2013 23:15:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753466Ab3I2DO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Sep 2013 23:14:58 -0400
+Message-ID: <52479B28.9080609@redhat.com>
+Date: Sun, 29 Sep 2013 11:14:48 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Date: Sun, 29 Sep 2013 13:02:29 +1000
-Message-ID: <CAPM=9txEQqvqHtbXD0Z9Df8GFiU3+AQzdd7ArnOcJLwK5=yFYg@mail.gmail.com>
-Subject: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH net-next] virtio-net: switch to use XPS to choose txq
+References: <1380261444-40918-1-git-send-email-jasowang@redhat.com> <20130927143529.GA30007@redhat.com>
+In-Reply-To: <20130927143529.GA30007@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 09/27/2013 10:35 PM, Michael S. Tsirkin wrote:
+> On Fri, Sep 27, 2013 at 01:57:24PM +0800, Jason Wang wrote:
+>> We used to use a percpu structure vq_index to record the cpu to queue
+>> mapping, this is suboptimal since it duplicates the work of XPS and
+>> loses all other XPS functionality such as allowing use to configure
+>> their own transmission steering strategy.
+>>
+>> So this patch switches to use XPS and suggest a default mapping when
+>> the number of cpus is equal to the number of queues. With XPS support,
+>> there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
+>> so they were removed also.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> More lines deleted that added is good :)
+> But how does the result perform?
+> About the same?
+>
 
-nothing too major, radeon still has some dpm changes for off by default.
+Yes, the same.
+>> ---
+>>  drivers/net/virtio_net.c |   55 +++++++--------------------------------------
+>>  1 files changed, 9 insertions(+), 46 deletions(-)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index defec2b..4102c1b 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -127,9 +127,6 @@ struct virtnet_info {
+>>  	/* Does the affinity hint is set for virtqueues? */
+>>  	bool affinity_hint_set;
+>>  
+>> -	/* Per-cpu variable to show the mapping from CPU to virtqueue */
+>> -	int __percpu *vq_index;
+>> -
+>>  	/* CPU hot plug notifier */
+>>  	struct notifier_block nb;
+>>  };
+>> @@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
+>>  static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>>  {
+>>  	int i;
+>> -	int cpu;
+>>  
+>>  	if (vi->affinity_hint_set) {
+>>  		for (i = 0; i < vi->max_queue_pairs; i++) {
+>> @@ -1073,20 +1069,11 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>>  
+>>  		vi->affinity_hint_set = false;
+>>  	}
+>> -
+>> -	i = 0;
+>> -	for_each_online_cpu(cpu) {
+>> -		if (cpu == hcpu) {
+>> -			*per_cpu_ptr(vi->vq_index, cpu) = -1;
+>> -		} else {
+>> -			*per_cpu_ptr(vi->vq_index, cpu) =
+>> -				++i % vi->curr_queue_pairs;
+>> -		}
+>> -	}
+>>  }
+>>  
+>>  static void virtnet_set_affinity(struct virtnet_info *vi)
+>>  {
+>> +	cpumask_var_t cpumask;
+>>  	int i;
+>>  	int cpu;
+>>  
+>> @@ -1100,15 +1087,21 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
+>>  		return;
+>>  	}
+>>  
+>> +	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
+>> +		return;
+>> +
+>>  	i = 0;
+>>  	for_each_online_cpu(cpu) {
+>>  		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>>  		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>> -		*per_cpu_ptr(vi->vq_index, cpu) = i;
+>> +		cpumask_clear(cpumask);
+>> +		cpumask_set_cpu(cpu, cpumask);
+>> +		netif_set_xps_queue(vi->dev, cpumask, i);
+>>  		i++;
+>>  	}
+>>  
+>>  	vi->affinity_hint_set = true;
+>> +	free_cpumask_var(cpumask);
+>>  }
+>>  
+>>  static int virtnet_cpu_callback(struct notifier_block *nfb,
+>> @@ -1217,28 +1210,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>>  	return 0;
+>>  }
+>>  
+>> -/* To avoid contending a lock hold by a vcpu who would exit to host, select the
+>> - * txq based on the processor id.
+>> - */
+>> -static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+>> -{
+>> -	int txq;
+>> -	struct virtnet_info *vi = netdev_priv(dev);
+>> -
+>> -	if (skb_rx_queue_recorded(skb)) {
+>> -		txq = skb_get_rx_queue(skb);
+>> -	} else {
+>> -		txq = *__this_cpu_ptr(vi->vq_index);
+>> -		if (txq == -1)
+>> -			txq = 0;
+>> -	}
+>> -
+>> -	while (unlikely(txq >= dev->real_num_tx_queues))
+>> -		txq -= dev->real_num_tx_queues;
+>> -
+>> -	return txq;
+>> -}
+>> -
+>>  static const struct net_device_ops virtnet_netdev = {
+>>  	.ndo_open            = virtnet_open,
+>>  	.ndo_stop   	     = virtnet_close,
+>> @@ -1250,7 +1221,6 @@ static const struct net_device_ops virtnet_netdev = {
+>>  	.ndo_get_stats64     = virtnet_stats,
+>>  	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
+>>  	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
+>> -	.ndo_select_queue     = virtnet_select_queue,
+>>  #ifdef CONFIG_NET_POLL_CONTROLLER
+>>  	.ndo_poll_controller = virtnet_netpoll,
+>>  #endif
+>> @@ -1559,10 +1529,6 @@ static int virtnet_probe(struct virtio_device *vdev)
+>>  	if (vi->stats == NULL)
+>>  		goto free;
+>>  
+>> -	vi->vq_index = alloc_percpu(int);
+>> -	if (vi->vq_index == NULL)
+>> -		goto free_stats;
+>> -
+>>  	mutex_init(&vi->config_lock);
+>>  	vi->config_enable = true;
+>>  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+>> @@ -1589,7 +1555,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+>>  	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
+>>  	err = init_vqs(vi);
+>>  	if (err)
+>> -		goto free_index;
+>> +		goto free_stats;
+>>  
+>>  	netif_set_real_num_tx_queues(dev, 1);
+>>  	netif_set_real_num_rx_queues(dev, 1);
+>> @@ -1640,8 +1606,6 @@ free_recv_bufs:
+>>  free_vqs:
+>>  	cancel_delayed_work_sync(&vi->refill);
+>>  	virtnet_del_vqs(vi);
+>> -free_index:
+>> -	free_percpu(vi->vq_index);
+>>  free_stats:
+>>  	free_percpu(vi->stats);
+>>  free:
+>> @@ -1678,7 +1642,6 @@ static void virtnet_remove(struct virtio_device *vdev)
+>>  
+>>  	flush_work(&vi->config_work);
+>>  
+>> -	free_percpu(vi->vq_index);
+>>  	free_percpu(vi->stats);
+>>  	free_netdev(vi->dev);
+>>  }
+>> -- 
+>> 1.7.1
 
-radeon, intel, msm:
-radeon a few more dpm fixes (still off by default), uvd fixes,
-i915 runtime warn backtrace and regression fix
-msm: iommu changes fallout,
-
-Dave.
-
-The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
-
-  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 665441791f553221901f679cb47236798f9a649c:
-
-  Merge branch 'msm-fixes-3.12-rc2' of
-git://people.freedesktop.org/~robclark/linux into drm-fixes
-(2013-09-29 10:06:28 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (13):
-      drm/radeon: avoid UVD corruption on AGP cards using GPU gart
-      drm/radeon: additional gcc fixes for radeon_atombios.c
-      drm/radeon: fix missed variable sized access
-      drm/radeon/dpm: fetch the max clk from voltage dep tables helper
-      drm/radeon/dpm/btc: filter clocks based on voltage/clk dep tables
-      drm/radeon/dpm/ni: filter clocks based on voltage/clk dep tables
-      drm/radeon/dpm/si: filter clocks based on voltage/clk dep tables
-      drm/radeon/dpm/ci: filter clocks based on voltage/clk dep tables
-      drm/radeon: don't set default clocks for SI when DPM is disabled
-      drm/radeon: disable tests/benchmarks if accel is disabled
-      drm/radeon: add missing hdmi callbacks for rv6xx
-      drm/radeon/cik: fix overflow in vram fetch
-      drm/radeon: fix hdmi audio on DCE3.0/3.1 asics
-
-Alex Ivanov (1):
-      drm/radeon: Make r100_cp_ring_info() and radeon_ring_gfx() safe (v2)
-
-Chris Wilson (1):
-      drm/i915: Use a temporary va_list for two-pass string handling
-
-Christian König (1):
-      drm/radeon/uvd: lower msg&fb buffer requirements on UVD3
-
-Daniel Vetter (3):
-      drm/i915/tv: clear adjusted_mode.flags
-      drm/i915: preserve pipe A quirk in i9xx_set_pipeconf
-      drm/i915: Fix up usage of SHRINK_STOP
-
-Dave Airlie (3):
-      Merge tag 'drm-intel-fixes-2013-09-26' of
-git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Merge branch 'drm-fixes-3.12' of
-git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge branch 'msm-fixes-3.12-rc2' of
-git://people.freedesktop.org/~robclark/linux into drm-fixes
-
-Jani Nikula (1):
-      drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
-
-Joerg Roedel (1):
-      drm/msm: Remove iommu include from mdp4_kms.c
-
-Michel Dänzer (3):
-      drm/radeon/cik: Fix printing of client name on VM protection fault
-      drm/radeon/cik: Fix encoding of number of banks in tiling
-configuration info
-      drm/radeon/cik: Add tiling mode index for 1D tiled depth/stencil surfaces
-
-Rob Clark (2):
-      drm/msm: deal with mach/iommu.h removal
-      drm/msm: use drm_gem_dumb_destroy helper
-
-Thomas Meyer (1):
-      drm/msm: Odd PTR_ERR usage
-
- drivers/gpu/drm/i915/i915_gem.c          |  8 ++--
- drivers/gpu/drm/i915/i915_gpu_error.c    |  6 ++-
- drivers/gpu/drm/i915/intel_display.c     |  4 ++
- drivers/gpu/drm/i915/intel_dp.c          | 13 ++++++-
- drivers/gpu/drm/i915/intel_tv.c          |  8 ++++
- drivers/gpu/drm/msm/mdp4/mdp4_kms.c      |  2 -
- drivers/gpu/drm/msm/msm_drv.c            |  8 ++--
- drivers/gpu/drm/msm/msm_gem.c            |  7 ----
- drivers/gpu/drm/radeon/btc_dpm.c         | 51 ++++++++++++++++++++++++
- drivers/gpu/drm/radeon/btc_dpm.h         |  2 +
- drivers/gpu/drm/radeon/ci_dpm.c          | 26 +++++++++++++
- drivers/gpu/drm/radeon/cik.c             | 17 ++++----
- drivers/gpu/drm/radeon/ni_dpm.c          | 24 ++++++++++++
- drivers/gpu/drm/radeon/r100.c            |  8 ++--
- drivers/gpu/drm/radeon/r600_dpm.c        |  2 +-
- drivers/gpu/drm/radeon/r600_hdmi.c       | 20 +++++++---
- drivers/gpu/drm/radeon/radeon_asic.c     |  2 +
- drivers/gpu/drm/radeon/radeon_atombios.c | 66 +++++++++++++++++++++-----------
- drivers/gpu/drm/radeon/radeon_cs.c       |  5 ++-
- drivers/gpu/drm/radeon/radeon_device.c   | 15 ++++++--
- drivers/gpu/drm/radeon/radeon_pm.c       |  8 ++--
- drivers/gpu/drm/radeon/radeon_ring.c     |  8 ++--
- drivers/gpu/drm/radeon/radeon_uvd.c      |  3 +-
- drivers/gpu/drm/radeon/si_dpm.c          | 24 ++++++++++++
- drivers/gpu/drm/radeon/uvd_v1_0.c        |  4 +-
- include/uapi/drm/radeon_drm.h            |  2 +
- 26 files changed, 266 insertions(+), 77 deletions(-)
