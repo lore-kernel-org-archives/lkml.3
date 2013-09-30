@@ -1,36 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab3I3GVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 02:21:08 -0400
-Received: from cyb.cyberhouse.net ([198.20.243.207]:38977 "EHLO
-	cyb.cyberhouse.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab3I3GVF (ORCPT
+	id S1752380Ab3I3GWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 02:22:20 -0400
+Received: from [65.55.88.11] ([65.55.88.11]:15083 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750825Ab3I3GWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 02:21:05 -0400
-X-Greylist: delayed 27010 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Sep 2013 02:21:05 EDT
-Message-ID: <29003373954E4FCCB603F6FFAADCA02C@hbwvye>
-Reply-To: "aaa120775" <master74.2002@caesar.elte.hu>
-From: "aaa120775" <lmorris@cyberhouse.com>
-To: <linux-kernel@vger.kernel.org>, <belinda@etudes.freeserve.co.uk>,
-        <info@mymunami.rugestour>, <delta@vlad.ru>, <boris@vetomin.ru>
-Subject: =?iso-8859-5?B?7eLeIN3V0tjU2Nze1SDe4OPW2NUg397h3tTV2eHi?=
-	=?iso-8859-5?B?0uPV4iDe0eDV4eLYIN/e0dXU4w==?=
-Date: Mon, 30 Sep 2013 00:50:38 +0200
+	Mon, 30 Sep 2013 02:22:18 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <r65073@freescale.com>, <thierry.reding@gmail.com>
+CC: <s.hauer@pengutronix.de>, <swarren@wwwdotorg.org>, <t.figa@samsung.com>,
+        <grant.likely@linaro.org>, <linux@arm.linux.org.uk>, <rob@landley.net>,
+        <ian.campbell@citrix.com>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <rob.herring@calxeda.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: [PATCHv5 0/4] Add Freescale FTM PWM driver.
+Date: Mon, 30 Sep 2013 14:13:27 +0800
+Message-ID: <1380521611-2764-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-5";
-X-Priority: 3
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cyb.cyberhouse.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - cyberhouse.com
-X-Get-Message-Sender-Via: cyb.cyberhouse.net: authenticated_id: lmorris@cyberhouse.com
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8U6LdXP006777
 
-ÜÞçØ ÔÐÜÞçÕÚ ÞèÐàÐèØÒÐîâ http://sticker.yadro.ru/go?url=http://linksearch.it/229573
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hello,
+
+This patch series is the Freescale FTM PWM implementation. And there are 8 channels most supported by the FTM PWM. This implementation is only compatible with device tree definition.
+
+This patch series is based on linux-next and has been tested on Vybrid VF610 Tower board using device tree.
+
+Changes in v5:
+- Remove active/idle pinctrl stuff.
+
+Changes in v4:
+- Check for the result and return an error for devm_kzalloc().
+- Move pinmux setting from the SoC file to the board specific file.
+- Revise the written mistake of 'ret |= FTMSC_CLKEXT;' --> 'reg |= FTMSC_CLKEXT;'.
+
+
+Changes in v3:
+- Remove "availabe" field.
+- Remove "fsl,pwm-avaliable-chs" property.
+- ...
+
+Changes in v2:
+- Remove PWM CPWM/EPWM feature and sysfs.
+- Remove some redundant code.
+- Revise some code for more readable.
+- Remove "fsl,pwm-clk-ps", "fsl,pwm-number", "fsl,pwm-channels",etc.
+- Add "fsl,pwm-avaliable-chs", "fsl,pwm-counter-clk", etc.
+- Support 8 channels default in dtsi file.
+- Add counter clock source selection.
+- Rename some function name, macro name, etc.
+- Use PWM's and OF's existing function interfaces.
+- Split clk_unprepare_enable to clk_unprepare and clk_enable,etc.
+- ...
+
+Added in v1:
+- Add Freescale FTM PWM driver support.
+- Add Freescale FTM PWM node for VF610.
+- Enable Enables FTM PWM device for Vybrid VF610 TOWER.
+- Add device tree bindings for Freescale.
+
+
+
+
+
+
