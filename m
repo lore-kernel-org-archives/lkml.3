@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3I3KgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:36:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43421 "EHLO
+	id S1756843Ab3I3Kgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:36:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43416 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab3I3KL4 (ORCPT
+	with ESMTP id S1755085Ab3I3KLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:11:56 -0400
+	Mon, 30 Sep 2013 06:11:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Mack <zonque@gmail.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 020/104] usb: ehci-mxc: check for pdata before dereferencing
-Date: Mon, 30 Sep 2013 11:09:57 +0100
-Message-Id: <1380535881-9239-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 019/104] staging: comedi: dt282x: dt282x_ai_insn_read() always fails
+Date: Mon, 30 Sep 2013 11:09:56 +0100
+Message-Id: <1380535881-9239-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f375fc520d4df0cd9fcb570f33c103c6c0311f9e upstream.
+commit 2c4283ca7cdcc6605859c836fc536fcd83a4525f upstream.
 
-Commit 7e8d5cd93fac ("USB: Add EHCI support for MX27 and MX31 based
-boards") introduced code that could potentially lead to a NULL pointer
-dereference on driver removal.
+In dt282x_ai_insn_read() we call this macro like:
+wait_for(!mux_busy(), comedi_error(dev, "timeout\n"); return -ETIME;);
+Because the if statement doesn't have curly braces it means we always
+return -ETIME and the function never succeeds.
 
-Fix this by checking for the value of pdata before dereferencing it.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/ehci-mxc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/dt282x.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-index c778ffe..7bce025 100644
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -291,7 +291,7 @@ static int __exit ehci_mxc_drv_remove(struct platform_device *pdev)
- 	if (pdata && pdata->exit)
- 		pdata->exit(pdev);
+diff --git a/drivers/staging/comedi/drivers/dt282x.c b/drivers/staging/comedi/drivers/dt282x.c
+index 736d8fa..ec85fe2 100644
+--- a/drivers/staging/comedi/drivers/dt282x.c
++++ b/drivers/staging/comedi/drivers/dt282x.c
+@@ -277,8 +277,9 @@ struct dt282x_private {
+ 			}					\
+ 			udelay(5);				\
+ 		}						\
+-		if (_i)						\
++		if (_i) {					\
+ 			b					\
++		}						\
+ 	} while (0)
  
--	if (pdata->otg)
-+	if (pdata && pdata->otg)
- 		usb_phy_shutdown(pdata->otg);
- 
- 	usb_remove_hcd(hcd);
+ static int prep_ai_dma(struct comedi_device *dev, int chan, int size);
 -- 
 1.8.3.2
 
