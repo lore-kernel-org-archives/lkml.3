@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab3I3U1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:27:37 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:54057 "EHLO mx11.netapp.com"
+	id S1756537Ab3I3U3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:29:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8648 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab3I3U1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:27:32 -0400
+	id S1756268Ab3I3U3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:29:15 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
-   d="scan'208";a="54974929"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Ric Wheeler <rwheeler@redhat.com>
-CC: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        "Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Thread-Topic: [RFC] extending splice for copy offloading
-Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgCAABN0gP//8DAAgAASEgD//+/0AAACZFGAAAEyqoAAAZUqAAAA8DUAAAAqeIAAAHXeAAABqbqAAAGPWoAAAOtKAAAASGsAAACmv4A=
-Date: Mon, 30 Sep 2013 20:27:30 +0000
-Message-ID: <1380572847.6501.81.camel@leira.trondhjem.org>
-References: <20130930143432.GG16579@fieldses.org>
-				 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
-				 <52499026.3090802@redhat.com>
-				 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
-				 <52498AA8.2090204@redhat.com>
-				 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
-				 <52498DB6.7060901@redhat.com>
-				 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-				 <52498F68.8050200@redhat.com>
-				 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
-				 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
-				 <5249B21E.70603@itwm.fraunhofer.de>
-			 <1380563050.6501.15.camel@leira.trondhjem.org>
-			 <5249B987.8020807@itwm.fraunhofer.de>
-		 <1380564126.6501.23.camel@leira.trondhjem.org>
-		 <5249C7C7.7020207@itwm.fraunhofer.de>
-	 <1380569663.6501.63.camel@leira.trondhjem.org>
-	 <5249D86A.7080603@itwm.fraunhofer.de> <5249DA50.5060105@redhat.com>
-In-Reply-To: <5249DA50.5060105@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <4722E5C74CC75A45B195640398A61BA0@hq.netapp.com>
-MIME-Version: 1.0
+   d="scan'208";a="412029767"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 02/11] Disable initialized_var for clang
+Date: Mon, 30 Sep 2013 13:29:03 -0700
+Message-Id: <1380572952-30729-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
+References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UKRpbA012551
 
-On Mon, 2013-09-30 at 16:08 -0400, Ric Wheeler wrote:
-> On 09/30/2013 04:00 PM, Bernd Schubert wrote:
-> > pNFS, FhGFS, Lustre, Ceph, etc., all of them shall implement their own 
-> > interface? And userspace needs to address all of them differently? 
-> 
-> The NFS and SCSI groups have each defined a standard which Zach's proposal 
-> abstracts into a common user API.
-> 
-> Distributed file systems tend to be rather unique and do not have similar 
-> standard bodies, but a lot of them could hide server specific implementations 
-> under the current proposed interfaces.
-> 
-> What is not a good idea is to drag out the core, simple copy offload discussion 
-> for another 5 years to pull in every odd use case :)
+From: Andi Kleen <ak@linux.intel.com>
 
-Agreed. The whole idea of a common system call interface should be to
-allow us to abstract away the underlying storage and filesystem
-architectures. If filesystem developers also want a way to expose that
-underlying architecture to applications in order to enable further
-optimisations, then that belongs in a separate discussion.
+LLVM clang doesn't understand uninitialized_var and always throws a
+warning. Disable the macro for this case.
 
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/compiler-gcc.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 24545cd..fa93722 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -110,6 +110,10 @@
+  * A trick to suppress uninitialized variable warning without generating any
+  * code
+  */
++#ifdef __clang__
++#define uninitialized_var(x) x
++#else
+ #define uninitialized_var(x) x = x
++#endif
+ 
+ #define __always_inline		inline __attribute__((always_inline))
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.8.3.1
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
