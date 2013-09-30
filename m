@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab3I3Pua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:50:30 -0400
-Received: from smtprelay0145.hostedemail.com ([216.40.44.145]:37297 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754637Ab3I3Pu1 (ORCPT
+	id S1755635Ab3I3PwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:52:04 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:14136 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755236Ab3I3PwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:50:27 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:7652:7903:8957:10004:10400:10848:11658:11914:12043:12295:12517:12519:12740:13069:13071:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: money75_20b778a056e1c
-X-Filterd-Recvd-Size: 2139
-Message-ID: <1380556223.30647.10.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: warn about incorrect __initdata placement
-From: Joe Perches <joe@perches.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Mon, 30 Sep 2013 08:50:23 -0700
-In-Reply-To: <1534354.yq7QTJSTju@amdc1032>
-References: <1534354.yq7QTJSTju@amdc1032>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 30 Sep 2013 11:52:01 -0400
+Message-ID: <52499E13.8050109@hp.com>
+Date: Mon, 30 Sep 2013 11:51:47 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Jason Low <jason.low2@hp.com>
+CC: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com> <1380147049.3467.67.camel@schen9-DESK> <20130927152953.GA4464@linux.vnet.ibm.com> <1380310733.3467.118.camel@schen9-DESK> <20130927203858.GB9093@linux.vnet.ibm.com> <1380322005.3467.186.camel@schen9-DESK> <20130927230137.GE9093@linux.vnet.ibm.com> <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com> <20130928021947.GF9093@linux.vnet.ibm.com> <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>
+In-Reply-To: <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-30 at 15:23 +0200, Bartlomiej Zolnierkiewicz wrote:
-> __initdata tag should be placed between the variable name and equal
-> sign for the variable to be placed in the intended .init.data section.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -4275,6 +4275,12 @@ sub process {
-[]
-> +# check for incorrect __initdata placement
-> +		if ($line =~ /\bstruct\s+__initdata.*\=/) {
-> +			WARN("INITDATA_PLACEMENT",
-> +			     "__initdata tag should be placed between the variable name and equal sign\n" . $herecurr);
-> +		}
+On 09/28/2013 12:34 AM, Jason Low wrote:
+>> Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
+>> functions would look like after applying the proposed changes.
+>>
+>> static noinline
+>> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+>> {
+>>          struct mcs_spin_node *prev;
+>>
+>>          /* Init node */
+>>          node->locked = 0;
+>>          node->next   = NULL;
+>>
+>>          prev = xchg(lock, node);
+>>          if (likely(prev == NULL)) {
+>>                  /* Lock acquired. No need to set node->locked since it
+>> won't be used */
+>>                  return;
+>>          }
+>>          ACCESS_ONCE(prev->next) = node;
+>>          /* Wait until the lock holder passes the lock down */
+>>          while (!ACCESS_ONCE(node->locked))
+>>                  arch_mutex_cpu_relax();
+>>          smp_mb();
 
-Hello Bartlomiej
+I wonder if a memory barrier is really needed here.
 
-I believe that -next commit 12de1c1ad0df
-("checkpatch: add rules to check init attribute and const defects")
+>> }
+>>
+>> static void mcs_spin_unlock(struct mcs_spin_node **lock, struct
+>> mcs_spin_node *node)
+>> {
+>>          struct mcs_spin_node *next = ACCESS_ONCE(node->next);
+>>
+>>          if (likely(!next)) {
+>>                  /*
+>>                   * Release the lock by setting it to NULL
+>>                   */
+>>                  if (cmpxchg(lock, node, NULL) == node)
+>>                          return;
+>>                  /* Wait until the next pointer is set */
+>>                  while (!(next = ACCESS_ONCE(node->next)))
+>>                          arch_mutex_cpu_relax();
+>>          }
+>>          smp_wmb();
+>>          ACCESS_ONCE(next->locked) = 1;
+>> }
 
-which adds $InitAttribute already does this test.
+Instead, I think what we need may be:
 
-Anyway, this should be:
-	if ($line =~ /\b(struct|union)\s+$InitAttribute.*=/) {
+if (likely(!next)) {
+     ....
+} else
+     smp_mb();
+ACCESS_ONCE(next->locked) = 1;
 
-and please add this test adjacent to the other $InitAttribute
-tests only if it's not already covered by the first bit added
-by that commit below (again, I believe it is):
+That will ensure a memory barrier in the unlock path.
 
-------------------------
-
-# check for bad placement of section $InitAttribute (e.g.: __initdata)
-		if ($line =~ /(\b$InitAttribute\b)/) {
-			my $attr = $1;
-			if ($line =~ /^\+\s*static\s+(?:const\s+)?(?:$attr\s+)?($NonptrTypeWithAttr)\s+(?:$attr\s+)?($Ident(?:\[[^]]*\])?)\s*[=;]/) {
-
-
+Regards,
+Longman
