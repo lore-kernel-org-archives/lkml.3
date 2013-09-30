@@ -1,52 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab3I3HC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:02:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab3I3HCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:02:55 -0400
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [Bug] 12.864681  BUG: lock held when returning to user space! 
-Date: Mon, 30 Sep 2013 15:02:51 +0800
-Message-ID: <8761tilrl0.fsf@redhat.com>
+	id S1753445Ab3I3HEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:04:32 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48548 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3I3HE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 03:04:29 -0400
+X-AuditID: 9c93017e-b7ca5ae0000013bb-56-5249227b3a20
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
+References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
+Date: Mon, 30 Sep 2013 16:04:26 +0900
+In-Reply-To: <1378184708-31385-1-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 3 Sep 2013 14:05:08 +0900")
+Message-ID: <87txh2okn9.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-   With kernel3.12-rc2 the dmesg shows following logs:
-[   12.864680] ================================================
-[   12.864681] [ BUG: lock held when returning to user space! ]
-[   12.864682] 3.12.0-rc2 #1 Not tainted
-[   12.864683] ------------------------------------------------
-[   12.864684] iprinit/719 is leaving the kernel with locks still held!
-[   12.864685] 1 lock held by iprinit/719:
-[   12.864686]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffffa050de05>] sg_open+0x4b5/0x644 [sg]
-[   12.934954] ath9k 0000:01:00.0: enabling device (0000 -> 0002)
-[   12.940346] ath: phy0: timeout (1000 us) on reg 0x15f18: 0x00000000 & 0x00000007 != 0x00000004
-[   12.943125] ath: EEPROM regdomain: 0x60
-[   12.943127] ath: EEPROM indicates we should expect a direct regpair map
-[   12.943129] ath: Country alpha2 being used: 00
-[   12.943130] ath: Regpair used: 0x60
-[   12.960202] r8169 0000:02:00.0 p3p1: link down
-[   12.960236] r8169 0000:02:00.0 p3p1: link down
-[   12.960256] IPv6: ADDRCONF(NETDEV_UP): p3p1: link is not ready
-[   13.003523] ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
-[   13.003886] ieee80211 phy0: Atheros AR9485 Rev:1 mem=0xffffc9000bc80000, irq=16
-[   13.012120] ip6_tables: (C) 2000-2006 Netfilter Core Team
-[   13.023667] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
-[   13.055802] Ebtables v2.0 registered
-[   13.192291] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
-[   15.906392] r8169 0000:02:00.0 p3p1: link up
-[   15.906416] IPv6: ADDRCONF(NETDEV_CHANGE): p3p1: link becomes ready
-[   17.121989] systemd-udevd (334) used greatest stack depth: 3352 bytes left
+Ping!
 
-I'm working on finding which version bring this bug in.
--- 
-Best,
-Madper Xie.
+On Tue,  3 Sep 2013 14:05:08 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+>
+> The set_graph_notrace filter is analogous to set_ftrace_notrace and
+> can be used for eliminating uninteresting part of function graph trace
+> output.  It also works with set_graph_function nicely.
+>
+>   # cd /sys/kernel/debug/tracing/
+>   # echo do_page_fault > set_graph_function
+>   # perf ftrace live true
+>    2)               |  do_page_fault() {
+>    2)               |    __do_page_fault() {
+>    2)   0.381 us    |      down_read_trylock();
+>    2)   0.055 us    |      __might_sleep();
+>    2)   0.696 us    |      find_vma();
+>    2)               |      handle_mm_fault() {
+>    2)               |        handle_pte_fault() {
+>    2)               |          __do_fault() {
+>    2)               |            filemap_fault() {
+>    2)               |              find_get_page() {
+>    2)   0.033 us    |                __rcu_read_lock();
+>    2)   0.035 us    |                __rcu_read_unlock();
+>    2)   1.696 us    |              }
+>    2)   0.031 us    |              __might_sleep();
+>    2)   2.831 us    |            }
+>    2)               |            _raw_spin_lock() {
+>    2)   0.046 us    |              add_preempt_count();
+>    2)   0.841 us    |            }
+>    2)   0.033 us    |            page_add_file_rmap();
+>    2)               |            _raw_spin_unlock() {
+>    2)   0.057 us    |              sub_preempt_count();
+>    2)   0.568 us    |            }
+>    2)               |            unlock_page() {
+>    2)   0.084 us    |              page_waitqueue();
+>    2)   0.126 us    |              __wake_up_bit();
+>    2)   1.117 us    |            }
+>    2)   7.729 us    |          }
+>    2)   8.397 us    |        }
+>    2)   8.956 us    |      }
+>    2)   0.085 us    |      up_read();
+>    2) + 12.745 us   |    }
+>    2) + 13.401 us   |  }
+>   ...
+>
+>   # echo handle_mm_fault > set_graph_notrace
+>   # perf ftrace live true
+>    1)               |  do_page_fault() {
+>    1)               |    __do_page_fault() {
+>    1)   0.205 us    |      down_read_trylock();
+>    1)   0.041 us    |      __might_sleep();
+>    1)   0.344 us    |      find_vma();
+>    1)   0.069 us    |      up_read();
+>    1)   4.692 us    |    }
+>    1)   5.311 us    |  }
+>   ...
+>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  include/linux/ftrace.h               |   1 +
+>  kernel/trace/ftrace.c                | 118 ++++++++++++++++++++++++++++++++++-
+>  kernel/trace/trace.h                 |  23 +++++++
+>  kernel/trace/trace_functions_graph.c |  21 ++++++-
+>  4 files changed, 159 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> index 9f15c0064c50..ec85d48619e1 100644
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -721,6 +721,7 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
+>  extern char __irqentry_text_start[];
+>  extern char __irqentry_text_end[];
+>  
+> +#define FTRACE_NOTRACE_DEPTH 65536
+>  #define FTRACE_RETFUNC_DEPTH 50
+>  #define FTRACE_RETSTACK_ALLOC_SIZE 32
+>  extern int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index a6d098c6df3f..1b1f3409f788 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -3819,6 +3819,43 @@ static const struct seq_operations ftrace_graph_seq_ops = {
+>  	.show = g_show,
+>  };
+>  
+> +int ftrace_graph_notrace_count;
+> +int ftrace_graph_notrace_enabled;
+> +unsigned long ftrace_graph_notrace_funcs[FTRACE_GRAPH_MAX_FUNCS] __read_mostly;
+> +
+> +static void *
+> +__n_next(struct seq_file *m, loff_t *pos)
+> +{
+> +	if (*pos >= ftrace_graph_notrace_count)
+> +		return NULL;
+> +	return &ftrace_graph_notrace_funcs[*pos];
+> +}
+> +
+> +static void *
+> +n_next(struct seq_file *m, void *v, loff_t *pos)
+> +{
+> +	(*pos)++;
+> +	return __n_next(m, pos);
+> +}
+> +
+> +static void *n_start(struct seq_file *m, loff_t *pos)
+> +{
+> +	mutex_lock(&graph_lock);
+> +
+> +	/* Nothing, tell g_show to print all functions are enabled */
+> +	if (!ftrace_graph_notrace_enabled && !*pos)
+> +		return (void *)1;
+> +
+> +	return __n_next(m, pos);
+> +}
+> +
+> +static const struct seq_operations ftrace_graph_notrace_seq_ops = {
+> +	.start = n_start,
+> +	.next = n_next,
+> +	.stop = g_stop,
+> +	.show = g_show,
+> +};
+> +
+>  static int
+>  ftrace_graph_open(struct inode *inode, struct file *file)
+>  {
+> @@ -3843,6 +3880,30 @@ ftrace_graph_open(struct inode *inode, struct file *file)
+>  }
+>  
+>  static int
+> +ftrace_graph_notrace_open(struct inode *inode, struct file *file)
+> +{
+> +	int ret = 0;
+> +
+> +	if (unlikely(ftrace_disabled))
+> +		return -ENODEV;
+> +
+> +	mutex_lock(&graph_lock);
+> +	if ((file->f_mode & FMODE_WRITE) &&
+> +	    (file->f_flags & O_TRUNC)) {
+> +		ftrace_graph_notrace_enabled = 0;
+> +		ftrace_graph_notrace_count = 0;
+> +		memset(ftrace_graph_notrace_funcs, 0,
+> +		       sizeof(ftrace_graph_notrace_funcs));
+> +	}
+> +	mutex_unlock(&graph_lock);
+> +
+> +	if (file->f_mode & FMODE_READ)
+> +		ret = seq_open(file, &ftrace_graph_notrace_seq_ops);
+> +
+> +	return ret;
+> +}
+> +
+> +static int
+>  ftrace_graph_release(struct inode *inode, struct file *file)
+>  {
+>  	if (file->f_mode & FMODE_READ)
+> @@ -3910,8 +3971,6 @@ out:
+>  	if (fail)
+>  		return -EINVAL;
+>  
+> -	ftrace_graph_filter_enabled = !!(*idx);
+> -
+>  	return 0;
+>  }
+>  
+> @@ -3946,6 +4005,50 @@ ftrace_graph_write(struct file *file, const char __user *ubuf,
+>  
+>  	ret = read;
+>  
+> +	ftrace_graph_filter_enabled = ftrace_graph_count > 0;
+> +
+> +out_free:
+> +	trace_parser_put(&parser);
+> +out_unlock:
+> +	mutex_unlock(&graph_lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static ssize_t
+> +ftrace_graph_notrace_write(struct file *file, const char __user *ubuf,
+> +			   size_t cnt, loff_t *ppos)
+> +{
+> +	struct trace_parser parser;
+> +	ssize_t read, ret;
+> +
+> +	if (!cnt)
+> +		return 0;
+> +
+> +	mutex_lock(&graph_lock);
+> +
+> +	if (trace_parser_get_init(&parser, FTRACE_BUFF_MAX)) {
+> +		ret = -ENOMEM;
+> +		goto out_unlock;
+> +	}
+> +
+> +	read = trace_get_user(&parser, ubuf, cnt, ppos);
+> +
+> +	if (read >= 0 && trace_parser_loaded((&parser))) {
+> +		parser.buffer[parser.idx] = 0;
+> +
+> +		/* we allow only one expression at a time */
+> +		ret = ftrace_set_func(ftrace_graph_notrace_funcs,
+> +				      &ftrace_graph_notrace_count,
+> +				      parser.buffer);
+> +		if (ret)
+> +			goto out_free;
+> +	}
+> +
+> +	ret = read;
+> +
+> +	ftrace_graph_notrace_enabled = ftrace_graph_notrace_count > 0;
+> +
+>  out_free:
+>  	trace_parser_put(&parser);
+>  out_unlock:
+> @@ -3961,6 +4064,14 @@ static const struct file_operations ftrace_graph_fops = {
+>  	.llseek		= ftrace_filter_lseek,
+>  	.release	= ftrace_graph_release,
+>  };
+> +
+> +static const struct file_operations ftrace_graph_notrace_fops = {
+> +	.open		= ftrace_graph_notrace_open,
+> +	.read		= seq_read,
+> +	.write		= ftrace_graph_notrace_write,
+> +	.llseek		= ftrace_filter_lseek,
+> +	.release	= ftrace_graph_release,
+> +};
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  
+>  static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
+> @@ -3982,6 +4093,9 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
+>  	trace_create_file("set_graph_function", 0444, d_tracer,
+>  				    NULL,
+>  				    &ftrace_graph_fops);
+> +	trace_create_file("set_graph_notrace", 0444, d_tracer,
+> +				    NULL,
+> +				    &ftrace_graph_notrace_fops);
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  
+>  	return 0;
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index fe39acd4c1aa..797f6f7f3f56 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -732,6 +732,9 @@ extern void __trace_graph_return(struct trace_array *tr,
+>  extern int ftrace_graph_filter_enabled;
+>  extern int ftrace_graph_count;
+>  extern unsigned long ftrace_graph_funcs[FTRACE_GRAPH_MAX_FUNCS];
+> +extern int ftrace_graph_notrace_enabled;
+> +extern int ftrace_graph_notrace_count;
+> +extern unsigned long ftrace_graph_notrace_funcs[FTRACE_GRAPH_MAX_FUNCS];
+>  
+>  static inline int ftrace_graph_addr(unsigned long addr)
+>  {
+> @@ -757,11 +760,31 @@ static inline int ftrace_graph_addr(unsigned long addr)
+>  
+>  	return 0;
+>  }
+> +
+> +static inline int ftrace_graph_notrace_addr(unsigned long addr)
+> +{
+> +	int i;
+> +
+> +	if (!ftrace_graph_notrace_enabled)
+> +		return 0;
+> +
+> +	for (i = 0; i < ftrace_graph_notrace_count; i++) {
+> +		if (addr == ftrace_graph_notrace_funcs[i])
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+>  #else
+>  static inline int ftrace_graph_addr(unsigned long addr)
+>  {
+>  	return 1;
+>  }
+> +
+> +static inline int ftrace_graph_notrace_addr(unsigned long addr)
+> +{
+> +	return 0;
+> +}
+>  #endif /* CONFIG_DYNAMIC_FTRACE */
+>  #else /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  static inline enum print_line_t
+> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> index b5c09242683d..3ba240daa5e0 100644
+> --- a/kernel/trace/trace_functions_graph.c
+> +++ b/kernel/trace/trace_functions_graph.c
+> @@ -114,16 +114,22 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
+>  		return -EBUSY;
+>  	}
+>  
+> +	/* The function was filtered out */
+> +	if (current->curr_ret_stack < -1)
+> +		return -EBUSY;
+> +
+>  	calltime = trace_clock_local();
+>  
+>  	index = ++current->curr_ret_stack;
+> +	if (ftrace_graph_notrace_addr(func))
+> +		current->curr_ret_stack -= FTRACE_NOTRACE_DEPTH;
+>  	barrier();
+>  	current->ret_stack[index].ret = ret;
+>  	current->ret_stack[index].func = func;
+>  	current->ret_stack[index].calltime = calltime;
+>  	current->ret_stack[index].subtime = 0;
+>  	current->ret_stack[index].fp = frame_pointer;
+> -	*depth = index;
+> +	*depth = current->curr_ret_stack;
+>  
+>  	return 0;
+>  }
+> @@ -137,6 +143,9 @@ ftrace_pop_return_trace(struct ftrace_graph_ret *trace, unsigned long *ret,
+>  
+>  	index = current->curr_ret_stack;
+>  
+> +	if (index < 0)
+> +		index += FTRACE_NOTRACE_DEPTH;
+> +
+>  	if (unlikely(index < 0)) {
+>  		ftrace_graph_stop();
+>  		WARN_ON(1);
+> @@ -193,6 +202,10 @@ unsigned long ftrace_return_to_handler(unsigned long frame_pointer)
+>  	trace.rettime = trace_clock_local();
+>  	barrier();
+>  	current->curr_ret_stack--;
+> +	if (current->curr_ret_stack < -1) {
+> +		current->curr_ret_stack += FTRACE_NOTRACE_DEPTH;
+> +		return ret;
+> +	}
+>  
+>  	/*
+>  	 * The trace should run after decrementing the ret counter
+> @@ -259,10 +272,14 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
+>  
+>  	/* trace it when it is-nested-in or is a function enabled. */
+>  	if ((!(trace->depth || ftrace_graph_addr(trace->func)) ||
+> -	     ftrace_graph_ignore_irqs()) ||
+> +	     ftrace_graph_ignore_irqs()) || (trace->depth < 0) ||
+>  	    (max_depth && trace->depth >= max_depth))
+>  		return 0;
+>  
+> +	/* need to reserve a ret_stack entry to recover the depth */
+> +	if (ftrace_graph_notrace_addr(trace->func))
+> +		return 1;
+> +
+>  	local_irq_save(flags);
+>  	cpu = raw_smp_processor_id();
+>  	data = per_cpu_ptr(tr->trace_buffer.data, cpu);
