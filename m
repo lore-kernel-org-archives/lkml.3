@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab3I3Ro2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:44:28 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:2108 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753638Ab3I3Ro0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:44:26 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1009,1371106800"; 
-   d="scan'208";a="95048228"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
-        "Anna Schumaker" <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Thread-Topic: [RFC] extending splice for copy offloading
-Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgCAABN0gP//8DAAgAASEgD//+/0AAACZFGAAAEyqoAAAZUqAAAA8DUA
-Date: Mon, 30 Sep 2013 17:44:12 +0000
-Message-ID: <1380563050.6501.15.camel@leira.trondhjem.org>
-References: <20130930143432.GG16579@fieldses.org>
-	 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
-	 <52499026.3090802@redhat.com>
-	 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
-	 <52498AA8.2090204@redhat.com>
-	 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
-	 <52498DB6.7060901@redhat.com>
-	 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-	 <52498F68.8050200@redhat.com>
-	 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
-	 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
-	 <5249B21E.70603@itwm.fraunhofer.de>
-In-Reply-To: <5249B21E.70603@itwm.fraunhofer.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E198D47EDB60A1479EACDF1FB0A84939@hq.netapp.com>
+	id S1755861Ab3I3RpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:45:13 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50440 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805Ab3I3RpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 13:45:11 -0400
+Message-ID: <5249B8A4.9070905@gmail.com>
+Date: Mon, 30 Sep 2013 10:45:08 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        John Crispin <blogic@openwrt.org>
+Subject: Re: Issue with BUG() in asm-gemeric/bug.h if CONFIG_BUG=n
+References: <20130930145630.GA14672@linux-mips.org>,<52499E8B.6000702@gmail.com> <C9BC92C2-A7F5-4F9A-B001-D1A7F4ADEA5A@caviumnetworks.com>
+In-Reply-To: <C9BC92C2-A7F5-4F9A-B001-D1A7F4ADEA5A@caviumnetworks.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UHiX2o011738
 
-On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
-> It would be nice if there would be way if the file system would get a 
-> hint that the target file is supposed to be copy of another file. That 
-> way distributed file systems could also create the target-file with the 
-> correct meta-information (same storage targets as in-file has).
-> Well, if we cannot agree on that, file system with a custom protocol at 
-> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not 
-> sure if this would work for pNFS, though.
+On 09/30/2013 10:15 AM, Pinski, Andrew wrote:
+>> On Sep 30, 2013, at 9:20 AM, "David Daney" <ddaney.cavm@gmail.com> wrote:
+>
+>>
+>>> On 09/30/2013 07:56 AM, Ralf Baechle wrote:
+>>> Lately I received several patches for build issues that only strike if
+>>> CONFIG_BUG is disabled.  Here's a test case extracted from one of them:
+>>>
+>>> /*
+>>>   * Definition of BUG taken from asm-generic/bug.h for the CONFIG_BUG=n case
+>>>   */
+>>> #define BUG()    do {} while(0)
+>>>
+>>> int foo(int arg)
+>>> {
+>>>     int res;
+>>>
+>>>     if (arg == 1)
+>>>         res = 23;
+>>>     else if (arg == 2)
+>>>         res = 42;
+>>>     else
+>>>         BUG();
+>>>
+>>>     return res;
+>>> }
+>>>
+>>> [ralf@h7 ~]$ gcc -O2 -Wall -c bug.c
+>>> bug.c: In function ‘foo’:
+>>> bug.c:17:2: warning: ‘res’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>>>    return res;
+>>>    ^
+>>>
+>>> It's fairly obvious to see what's happening here - GCC doesn't know that
+>>> the else case can not be reached, thus razorsharply concludes that res
+>>> may be used uninitialized.
+>>>
+>>> There several locations where MIPS - possibly other architectures as well -
+>>> is affected by this.
+>>>
+>>> I think the definition of BUG should be changed to something like
+>>>
+>>> #define BUG()    unreachable()
+>>> 16304
+>>> unreachable() will depending on the compiler being used, expand either
+>>> into a call to __builtin_unreachable() or where that function is
+>>> unavailable, into do {} while (1).
+>>
+>> The *only* reason we have CONFIG_BUG=n is to reduce code size.
+>>
+>> Sticking in that empty loop, negates the entire point.
+>>
+>> IMHO: We should do one of:
+>> o Make CONFIG_BUG=y mandatory
+>> o Ignore the warnings.
+>> o Fix the warning sites so they quit Warning.
+>>
+>> So I don't think the patch is really an improvement over the status quo.
+>
+> What about using __builtin_unreachable when we can but turn off warnings and use do{}while(0) when __builtin_unreachable does not exist?  This seems the both worlds.  Newer compilers produce better code with unreachable anyways.
+>
 
-splice() does not create new files. What you appear to be asking for
-lies way outside the scope of that system call interface.
+Simply not true.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+do{}while(0) is a NOP it is no more useful than an ';' statement.  It 
+doesn't serve as a magic uninitialized variable hiding mechanism.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+David Daney
+
+
+> Thanks,
+> Andrew
+>
+>
+>>
+>> David Daney
+>>>
+>>> __builtin_unreachable() was introduce for GCC 4.5.0.
+>>>
+>>> This means there'd be minor bloat for antique compilers - but probably
+>>> even better code generation for compilers supporting __builtin_unreachable().
+>>>
+>>>    Ralf
+>>>
+>>> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+>>>
+>>>   include/asm-generic/bug.h | 2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+>>> index 7d10f96..6f78771 100644
+>>> --- a/include/asm-generic/bug.h
+>>> +++ b/include/asm-generic/bug.h
+>>> @@ -108,7 +108,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>>>
+>>>   #else /* !CONFIG_BUG */
+>>>   #ifndef HAVE_ARCH_BUG
+>>> -#define BUG() do {} while(0)
+>>> +#define BUG() unreachable()
+>>>   #endif
+>>>
+>>>   #ifndef HAVE_ARCH_BUG_ON
+>>>
+>>> ----- End forwarded message -----
+>>>
+>>>    Ralf
+>>
+>>
+>
+>
+
