@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3I3SBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:01:16 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:41240 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab3I3SBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:01:15 -0400
-Message-ID: <5249BC69.6080506@tilera.com>
-Date: Mon, 30 Sep 2013 14:01:13 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755536Ab3I3SCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:02:16 -0400
+Received: from mx1.netapp.com ([216.240.18.38]:34145 "EHLO mx1.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755224Ab3I3SCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 14:02:14 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1009,1371106800"; 
+   d="scan'208";a="282650473"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
+        "Anna Schumaker" <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Thread-Topic: [RFC] extending splice for copy offloading
+Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgCAABN0gP//8DAAgAASEgD//+/0AAACZFGAAAEyqoAAAZUqAAAA8DUAAAAqeIAAAHXeAA==
+Date: Mon, 30 Sep 2013 18:02:08 +0000
+Message-ID: <1380564126.6501.23.camel@leira.trondhjem.org>
+References: <20130930143432.GG16579@fieldses.org>
+		 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+		 <52499026.3090802@redhat.com>
+		 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+		 <52498AA8.2090204@redhat.com>
+		 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
+		 <52498DB6.7060901@redhat.com>
+		 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+		 <52498F68.8050200@redhat.com>
+		 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
+		 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
+		 <5249B21E.70603@itwm.fraunhofer.de>
+	 <1380563050.6501.15.camel@leira.trondhjem.org>
+	 <5249B987.8020807@itwm.fraunhofer.de>
+In-Reply-To: <5249B987.8020807@itwm.fraunhofer.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <F9714F28A52B4B40B8228A7E4EE5939C@hq.netapp.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-References: <201309261738.r8QHcGZX007708@farm-0012.internal.tilera.com> <20130926175754.GD7146@mudshark.cambridge.arm.com> <5245E6DB.4000401@tilera.com> <20130930094459.GC26036@mudshark.cambridge.arm.com>
-In-Reply-To: <20130930094459.GC26036@mudshark.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UI2K1d011852
 
-On 9/30/2013 5:45 AM, Will Deacon wrote:
-> On Fri, Sep 27, 2013 at 09:13:15PM +0100, Chris Metcalf wrote:
->> On 9/26/2013 1:57 PM, Will Deacon wrote:
->>> Hi Chris,
->>>
->>> On Thu, Sep 26, 2013 at 06:24:53PM +0100, Chris Metcalf wrote:
->>>> [...]
->>>> +static inline unsigned long __my_cpu_offset(void)
->>>> +{
->>>> +	unsigned long tp;
->>>> +	register unsigned long *sp asm("sp");
->>>> +	asm("move %0, tp" : "=r" (tp) : "m" (*sp));
->>>> +	return tp;
->>>> +}
->>> Hehe, nice to see this hack working out for you too. One thing to check is
->>> whether you have any funky addressing modes (things like writeback or
->>> post-increment), since the "m" constraint can bite you if you don't actually
->>> use it in the asm.
->> Well, we do have post increments, though I don't see why this is a problem here.
->> We define a target specific constraint "U" that excludes post-increments, but
->> again I don't see why "m" would cause trouble here.  What was your experience?
-> GCC assumes that each "m" operand is used *exactly once* in the asm, so if
-> it decided to generate a post-increment/writeback addressing mode, you can
-> end up with pointers off by a word if you didn't make use of the constraint
-> in the code. You can try using "o", but GCC sometimes decides that's
-> impossible during reload, so we end up combining it with the (undocumented,
-> ARM-specific) "Q" constraint which is simply a [rN] addressing mode.
+On Mon, 2013-09-30 at 19:48 +0200, Bernd Schubert wrote:
+> On 09/30/2013 07:44 PM, Myklebust, Trond wrote:
+> > On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
+> >> It would be nice if there would be way if the file system would get a
+> >> hint that the target file is supposed to be copy of another file. That
+> >> way distributed file systems could also create the target-file with the
+> >> correct meta-information (same storage targets as in-file has).
+> >> Well, if we cannot agree on that, file system with a custom protocol at
+> >> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not
+> >> sure if this would work for pNFS, though.
+> >
+> > splice() does not create new files. What you appear to be asking for
+> > lies way outside the scope of that system call interface.
+> >
+> 
+> Sorry I know, definitely outside the scope of splice, but in the context 
+> of offloaded file copies. So the question is, what is the best way to 
+> address/discuss that?
 
-OK, makes sense.  I've changed the code to use a "U" constraint (pushed up to the linux-tile tree).
+Why does it need to be addressed in the first place?
 
-Thanks!
+What is preventing an application from retrieving and setting this
+information using standard libc functions such as fstat()+open(), and
+supplemented with libattr attr_setf/getf(), and libacl acl_get_fd/set_fd
+where appropriate?
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
