@@ -1,191 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab3I3OPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:15:47 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:50976 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344Ab3I3OPa (ORCPT
+	id S1755594Ab3I3OQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:16:12 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49476 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab3I3OQJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:15:30 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de
-Cc: Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        Kedareswara rao Appana <appanad@xilinx.com>,
-        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-i2c@vger.kernel.org
-Subject: [PATCH v2 3/3] i2c: xilinx: Use devm_* functions
-Date: Mon, 30 Sep 2013 16:15:15 +0200
-Message-Id: <83ec9558211389896f21d9682e9824cd7979466c.1380550490.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
-References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
-In-Reply-To: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
-References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-15323-1380550527-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 30 Sep 2013 10:16:09 -0400
+Message-ID: <524987A3.4090204@arm.com>
+Date: Mon, 30 Sep 2013 15:16:03 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Sricharan R <r.sricharan@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>, "rnayak@ti.com" <rnayak@ti.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [RFC PATCH 1/6] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable
+ irqs
+References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <1380549564-31045-2-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1380549564-31045-2-git-send-email-r.sricharan@ti.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 30 Sep 2013 14:16:04.0338 (UTC) FILETIME=[990FFD20:01CEBDE7]
+X-MC-Unique: 113093015160603101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 30/09/13 14:59, Sricharan R wrote:
+> In some socs the gic can be preceded by a crossbar IP which
+> routes the peripheral interrupts to the gic inputs. The peripheral
+> interrupts are associated with a fixed crossbar input line and the
+> crossbar routes that to one of the free gic input line.
+> 
+> The DT entries for peripherals provides the fixed crossbar input line
+> as its interrupt number and the mapping code should associate this with
+> a free gic input line. This patch adds the support inside the gic irqchip
+> to handle such routable irqs. The routable irqs are registered in a linear
+> domain. The registered routable domain's callback should be implemented
+> to get a free irq and to configure the IP to route it.
 
---=_mimegpg-monstr-desktop-15323-1380550527-0001
+Isn't this just another chained interrupt controller? How is it GIC
+specific?
 
-From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-Simplified the probe and remove functions using devm_* functions
-
-Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Changes in v2: None
-
- drivers/i2c/busses/i2c-xiic.c | 69 +++++++++++--------------------------------
- 1 file changed, 18 insertions(+), 51 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index 44e6ae7..6dd3212 100644
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -32,6 +32,7 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/errno.h>
-+#include <linux/err.h>
- #include <linux/delay.h>
- #include <linux/platform_device.h>
- #include <linux/i2c.h>
-@@ -698,32 +699,28 @@ static int xiic_i2c_probe(struct platform_device *pdev)
- 	int ret, irq;
- 	u8 i;
-
-+	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
-+	if (!i2c)
-+		return -ENOMEM;
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		goto resource_missing;
-+	i2c->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(i2c->base)) {
-+		dev_err(&pdev->dev, "Could not allocate iomem\n");
-+		return PTR_ERR(i2c->base);
-+	}
-
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
--		goto resource_missing;
--
--	pdata = (struct xiic_i2c_platform_data *)dev_get_platdata(&pdev->dev);
-+		return irq;
-
--	i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
--	if (!i2c)
--		return -ENOMEM;
--
--	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
--		dev_err(&pdev->dev, "Memory region busy\n");
--		ret = -EBUSY;
--		goto request_mem_failed;
-+	ret = devm_request_irq(&pdev->dev, irq, xiic_isr, 0, pdev->name, i2c);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Cannot claim IRQ\n");
-+		return ret;
- 	}
-
--	i2c->base = ioremap(res->start, resource_size(res));
--	if (!i2c->base) {
--		dev_err(&pdev->dev, "Unable to map registers\n");
--		ret = -EIO;
--		goto map_failed;
--	}
-+	pdata = (struct xiic_i2c_platform_data *)dev_get_platdata(&pdev->dev);
-
- 	/* hook up driver to tree */
- 	platform_set_drvdata(pdev, i2c);
-@@ -736,17 +733,13 @@ static int xiic_i2c_probe(struct platform_device *pdev)
-
- 	spin_lock_init(&i2c->lock);
- 	init_waitqueue_head(&i2c->wait);
--	ret = request_irq(irq, xiic_isr, 0, pdev->name, i2c);
--	if (ret) {
--		dev_err(&pdev->dev, "Cannot claim IRQ\n");
--		goto request_irq_failed;
--	}
-
- 	/* add i2c adapter to i2c tree */
- 	ret = i2c_add_adapter(&i2c->adap);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to add adapter\n");
--		goto add_adapter_failed;
-+		xiic_deinit(i2c);
-+		return ret;
- 	}
-
- 	if (pdata) {
-@@ -756,43 +749,17 @@ static int xiic_i2c_probe(struct platform_device *pdev)
- 	}
-
- 	return 0;
--
--add_adapter_failed:
--	free_irq(irq, i2c);
--request_irq_failed:
--	xiic_deinit(i2c);
--	iounmap(i2c->base);
--map_failed:
--	release_mem_region(res->start, resource_size(res));
--request_mem_failed:
--	kfree(i2c);
--
--	return ret;
--resource_missing:
--	dev_err(&pdev->dev, "IRQ or Memory resource is missing\n");
--	return -ENOENT;
- }
-
- static int xiic_i2c_remove(struct platform_device *pdev)
- {
- 	struct xiic_i2c *i2c = platform_get_drvdata(pdev);
--	struct resource *res;
-
- 	/* remove adapter & data */
- 	i2c_del_adapter(&i2c->adap);
-
- 	xiic_deinit(i2c);
-
--	free_irq(platform_get_irq(pdev, 0), i2c);
--
--	iounmap(i2c->base);
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res)
--		release_mem_region(res->start, resource_size(res));
--
--	kfree(i2c);
--
- 	return 0;
- }
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-15323-1380550527-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlJJh38ACgkQykllyylKDCGSDwCfZe7StlBA21Q9Ekgx4blboEc+
-RigAnRNr6nqK2D70bxgpc0Z0S4/9GFVs
-=9G/X
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-15323-1380550527-0001--
