@@ -1,133 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab3I3Rln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:41:43 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:39393 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755272Ab3I3Rll (ORCPT
+	id S1756001Ab3I3RmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:42:00 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62478 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab3I3Rl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:41:41 -0400
-Message-ID: <5249B7C6.7010902@gmail.com>
-Date: Tue, 01 Oct 2013 01:41:26 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Mon, 30 Sep 2013 13:41:58 -0400
+Message-ID: <5249B7E2.5060201@linaro.org>
+Date: Mon, 30 Sep 2013 19:41:54 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-CC: linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, imtangchen@gmail.com
-Subject: [PATCH -mm] mm, memory-hotpulg: Rename movablenode boot option to
- movable_node
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
+        mlichvar@redhat.com, prarit@redhat.com,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        zoran markovic <zoran.markovic@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL]: clocksource: new material for 3.13
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Since we already has config MOVABLE_NODE, and the boot option
-movablenode is introduced as the boot-time switch to disable
-the effects of CONFIG_MOVABLE_NODE=y when the system is booting.
+Hi Thomas,
 
-So rename boot option movablenode to movable_node to match the
-config MOVABLE_NODE. And also updates the description of MOVABLE_NODE
-in mm/Kconfig and the description of movable_node in kernel doc.
+this pull request is based on 3.12-rc3 with the following content:
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- Documentation/kernel-parameters.txt |   16 ++--------------
- mm/Kconfig                          |   17 ++++++++++++-----
- mm/memory_hotplug.c                 |    6 +++---
- 3 files changed, 17 insertions(+), 22 deletions(-)
+  - Miroslav improved the RTC update by increasing the interval 
+acceptable for an update in the sync_cmos_clock workqueue callback
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a87e17e..953a533 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1773,20 +1773,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
- 
--	movablenode		[KNL,X86] This parameter enables/disables the
--			kernel to arrange hotpluggable memory ranges recorded
--			in ACPI SRAT(System Resource Affinity Table) as
--			ZONE_MOVABLE. And these memory can be hot-removed when
--			the system is up.
--			By specifying this option, all the hotpluggable memory
--			will be in ZONE_MOVABLE, which the kernel cannot use.
--			This will cause NUMA performance down. For users who
--			care about NUMA performance, just don't use it.
--			If all the memory ranges in the system are hotpluggable,
--			then the ones used by the kernel at early time, such as
--			kernel code and data segments, initrd file and so on,
--			won't be set as ZONE_MOVABLE, and won't be hotpluggable.
--			Otherwise the kernel won't have enough memory to boot.
-+	movable_node	[KNL,X86] Boot-time switch to disable the effects
-+			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
- 
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
-diff --git a/mm/Kconfig b/mm/Kconfig
-index ff6e820..8d4ebb0 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -153,11 +153,18 @@ config MOVABLE_NODE
- 	help
- 	  Allow a node to have only movable memory.  Pages used by the kernel,
- 	  such as direct mapping pages cannot be migrated.  So the corresponding
--	  memory device cannot be hotplugged.  This option allows users to
--	  online all the memory of a node as movable memory so that the whole
--	  node can be hotplugged.  Users who don't use the memory hotplug
--	  feature are fine with this option on since they don't online memory
--	  as movable.
-+	  memory device cannot be hotplugged.  This option allows the following
-+	  two things:
-+	  - When the system is booting, node full of hotpluggable memory can
-+	  be arranged to have only movable memory so that the whole node can
-+	  be hotplugged. (need movable_node boot option specified).
-+	  - After the system is up, the option allows users to online all the
-+	  memory of a node as movable memory so that the whole node can be
-+	  hotplugged.
-+
-+	  Users who don't use the memory hotplug feature are fine with this
-+	  option on since they don't specify movable_node boot option or they
-+	  don't online memory as movable.
- 
- 	  Say Y here if you want to hotplug a whole node.
- 	  Say N here if you want kernel to use memory on all nodes evenly.
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index b468f77..5e2aed9 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1424,7 +1424,7 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
- }
- #endif /* CONFIG_MOVABLE_NODE */
- 
--static int __init cmdline_parse_movablenode(char *p)
-+static int __init cmdline_parse_movable_node(char *p)
- {
- #ifdef CONFIG_MOVABLE_NODE
- 	/*
-@@ -1448,11 +1448,11 @@ static int __init cmdline_parse_movablenode(char *p)
- 	 */
- 	memblock_set_bottom_up(true);
- #else
--	pr_warn("movablenode option not supported");
-+	pr_warn("movable_node option not supported");
- #endif
- 	return 0;
- }
--early_param("movablenode", cmdline_parse_movablenode);
-+early_param("movable_node", cmdline_parse_movable_node);
- 
- /* check which state of node_states will be changed when offline memory */
- static void node_states_check_changes_offline(unsigned long nr_pages,
+  - Prarit added a missing function declaration to fix a compilation 
+issue on x86. Please *note*, this patch is coming from a pull from 
+John's tree, it would make sense to cherry-pick this fix into timers/urgent
+
+  - Soren added FEAT_PERCPU to a clock device when it is local per cpu. 
+This feature prevents the clock framework to choose a per cpu timer as a 
+broadcast timer. This problem arised when the ARM global timer is used 
+which is the case now on Xillinx.
+
+  - Stephen extended the generic sched_clock code to support 64bit 
+counters and removes the setup_sched_clock deprecation, as that causes 
+lots of warnings since there's still users in the arch/arm tree.
+
+  - Will and Sudeep implemented the event stream for architected timer. 
+The event streams can be used to impose a timeout on a wfe, to safeguard 
+against any programming error in case an expected event is not generated 
+or even to implement wfe-based timeouts for userspace locking 
+implementations.
+
+  - Zoran prevents to enter suspend mode if there are pending RTC timers 
+to be handled, avoiding these ones to be delayed as well as the 
+subsequent possible time critical code tied with them.
+
+Thanks
+   -- Daniel
+
+The following changes since commit 15c03dd4859ab16f9212238f29dd315654aa94f6:
+
+   Linux 3.12-rc3 (2013-09-29 15:02:38 -0700)
+
+are available in the git repository at:
+
+   git://git.linaro.org/people/dlezcano/linux.git clockevents/3.13
+
+for you to fetch changes up to 7267c876a4784f9b9a75d057bc487b6a5e01ced9:
+
+   Merge branch 'clockevents/3-13.arch-timer' into clockevents/3.13 
+(2013-09-30 16:37:56 +0200)
+
+----------------------------------------------------------------
+
+Daniel Lezcano (3):
+       Merge branch 'fordlezcano/3.13/sched-clock64-conversion' of 
+git://git.linaro.org/people/jstultz/linux into clockevents/3.13
+       Merge branch 'clockevents/3-13.global-timer' into clockevents/3.13
+       Merge branch 'clockevents/3-13.arch-timer' into clockevents/3.13
+
+John Stultz (3):
+       Merge branch 'fortglx/3.12/sched-clock64-base' into fortglx/3.13/time
+       Merge branch 'fortglx/3.12/time' into fortglx/3.13/time
+       Merge remote-tracking branch 'tip/timers/core' into 
+fordlezcano/3.13/sched-clock64-conversion
+
+Miroslav Lichvar (1):
+       ntp: Make periodic RTC update more reliable
+
+Prarit Bhargava (1):
+       clocksource: Fix !CONFIG_CLOCKSOURCE_WATCHDOG compile
+
+Soren Brinkmann (4):
+       clockchips: Add FEAT_PERCPU clockevent flag
+       clocksource/arm_global_timer: Set FEAT_PERCPU flag
+       tick: broadcast: Deny per-cpu clockevents from being broadcast 
+sources
+       arm: zynq: Enable arm_global_timer
+
+Stephen Boyd (14):
+       clocksource: Extract max nsec calculation into separate function
+       sched_clock: Use seqcount instead of rolling our own
+       sched_clock: Use an hrtimer instead of timer
+       sched_clock: Add support for >32 bit sched_clock
+       clocksource: bcm2835: Switch to sched_clock_register()
+       clocksource: dbx500-prcmu: Switch to sched_clock_register()
+       clocksource: dw_apb_timer_of: Switch to sched_clock_register()
+       clocksource: mxs_timer: Switch to sched_clock_register()
+       clocksource: nomadik: Switch to sched_clock_register()
+       clocksource: samsung_pwm_timer: Switch to sched_clock_register()
+       clocksource: tegra: Switch to sched_clock_register()
+       clocksource: time-armada-370-xp: Switch to sched_clock_register()
+       clocksource: sirf: Switch to sched_clock_register() and use 64 bits
+       clocksource: vf_pit_timer: Switch to sched_clock_register()
+
+Sudeep KarkadaNagesha (4):
+       ARM/ARM64: arch_timer: add macros for bits in control register
+       ARM: arch_timer: add support to configure and enable event stream
+       ARM64: arch_timer: add support to configure and enable event stream
+       drivers: clocksource: add CPU PM notifier for ARM architected timer
+
+Will Deacon (1):
+       drivers: clocksource: add support for ARM architected timer event 
+stream
+
+Zoran Markovic (1):
+       rtc: Keep system awake until all expired RTC timers are handled
+
+  arch/arm/boot/dts/zynq-7000.dtsi          |    8 +++
+  arch/arm/include/asm/arch_timer.h         |   36 ++++++++--
+  arch/arm/include/uapi/asm/hwcap.h         |    1 +
+  arch/arm/kernel/setup.c                   |    1 +
+  arch/arm/mach-zynq/Kconfig                |    1 +
+  arch/arm64/include/asm/arch_timer.h       |   42 +++++++++--
+  arch/arm64/include/asm/hwcap.h            |   11 +--
+  arch/arm64/include/uapi/asm/hwcap.h       |    1 +
+  arch/arm64/kernel/setup.c                 |   11 +++
+  drivers/clocksource/Kconfig               |   15 ++++
+  drivers/clocksource/arm_arch_timer.c      |   49 +++++++++++++
+  drivers/clocksource/arm_global_timer.c    |    3 +-
+  drivers/clocksource/bcm2835_timer.c       |    4 +-
+  drivers/clocksource/clksrc-dbx500-prcmu.c |    5 +-
+  drivers/clocksource/dw_apb_timer_of.c     |    4 +-
+  drivers/clocksource/mxs_timer.c           |    4 +-
+  drivers/clocksource/nomadik-mtu.c         |    4 +-
+  drivers/clocksource/samsung_pwm_timer.c   |    4 +-
+  drivers/clocksource/tegra20_timer.c       |    4 +-
+  drivers/clocksource/time-armada-370-xp.c  |    4 +-
+  drivers/clocksource/timer-prima2.c        |    6 +-
+  drivers/clocksource/vf_pit_timer.c        |    4 +-
+  drivers/rtc/interface.c                   |   13 ++--
+  include/clocksource/arm_arch_timer.h      |   10 +++
+  include/linux/clockchips.h                |    1 +
+  include/linux/clocksource.h               |    2 +
+  include/linux/sched_clock.h               |    2 +
+  kernel/time/clocksource.c                 |   46 ++++++++----
+  kernel/time/ntp.c                         |    3 +-
+  kernel/time/sched_clock.c                 |  111 
+++++++++++++++++-------------
+  kernel/time/tick-broadcast.c              |    1 +
+  31 files changed, 302 insertions(+), 109 deletions(-)
+
+
 -- 
-1.7.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
