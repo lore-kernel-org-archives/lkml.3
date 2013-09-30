@@ -1,165 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab3I3UKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:10:15 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:53824 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755816Ab3I3UKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:10:13 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1009,1371106800"; 
-   d="scan'208";a="95089585"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
-        "Anna Schumaker" <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Thread-Topic: [RFC] extending splice for copy offloading
-Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgCAABN0gP//8DAAgAASEgD//+/0AAACZFGAAAEyqoAAAZUqAAAA8DUAAAAqeIAAAHXeAAABqbqAAAGPWoAAAOtKAAAAU3IA
-Date: Mon, 30 Sep 2013 20:10:09 +0000
-Message-ID: <1380571802.6501.71.camel@leira.trondhjem.org>
-References: <20130930143432.GG16579@fieldses.org>
-				 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
-				 <52499026.3090802@redhat.com>
-				 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
-				 <52498AA8.2090204@redhat.com>
-				 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
-				 <52498DB6.7060901@redhat.com>
-				 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-				 <52498F68.8050200@redhat.com>
-				 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
-				 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
-				 <5249B21E.70603@itwm.fraunhofer.de>
-			 <1380563050.6501.15.camel@leira.trondhjem.org>
-			 <5249B987.8020807@itwm.fraunhofer.de>
-		 <1380564126.6501.23.camel@leira.trondhjem.org>
-		 <5249C7C7.7020207@itwm.fraunhofer.de>
-	 <1380569663.6501.63.camel@leira.trondhjem.org>
-	 <5249D86A.7080603@itwm.fraunhofer.de>
-In-Reply-To: <5249D86A.7080603@itwm.fraunhofer.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <78A6B703D38D7F44B7FB965F174BD301@hq.netapp.com>
+	id S1756379Ab3I3ULV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:11:21 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:33220 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317Ab3I3ULT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:11:19 -0400
+Message-ID: <5249DAE6.5030808@tilera.com>
+Date: Mon, 30 Sep 2013 16:11:18 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v3 1/3] tile: support KVM host mode
+References: <20130826120445.GD8218@redhat.com> <4bbdcdd0e94f6a7db210ef47f4a30f06325137cd.1377736306.git.cmetcalf@tilera.com> <20130910105349.GY17294@redhat.com>
+In-Reply-To: <20130910105349.GY17294@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UKANof012461
 
-On Mon, 2013-09-30 at 22:00 +0200, Bernd Schubert wrote:
-> On 09/30/2013 09:34 PM, Myklebust, Trond wrote:
-> > On Mon, 2013-09-30 at 20:49 +0200, Bernd Schubert wrote:
-> >> On 09/30/2013 08:02 PM, Myklebust, Trond wrote:
-> >>> On Mon, 2013-09-30 at 19:48 +0200, Bernd Schubert wrote:
-> >>>> On 09/30/2013 07:44 PM, Myklebust, Trond wrote:
-> >>>>> On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
-> >>>>>> It would be nice if there would be way if the file system would get a
-> >>>>>> hint that the target file is supposed to be copy of another file. That
-> >>>>>> way distributed file systems could also create the target-file with the
-> >>>>>> correct meta-information (same storage targets as in-file has).
-> >>>>>> Well, if we cannot agree on that, file system with a custom protocol at
-> >>>>>> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not
-> >>>>>> sure if this would work for pNFS, though.
-> >>>>>
-> >>>>> splice() does not create new files. What you appear to be asking for
-> >>>>> lies way outside the scope of that system call interface.
-> >>>>>
-> >>>>
-> >>>> Sorry I know, definitely outside the scope of splice, but in the context
-> >>>> of offloaded file copies. So the question is, what is the best way to
-> >>>> address/discuss that?
-> >>>
-> >>> Why does it need to be addressed in the first place?
-> >>
-> >> An offloaded copy is still not efficient if different storage
-> >> servers/targets used by from-file and to-file.
-> >
-> > So?
-> 
-> mds1: orig-file
-> oss1/target1: orig-chunk1
-> 
-> mds1: target-file
-> ossN/targetN: target-chunk1
-> 
-> clientN: Performs the copy
-> 
-> Ideally, orig-chunk1 and target-chunk1 are on the same server and same 
-> target. Copy offload then even could done from the underlying fs, 
-> similiar as local splice.
-> If different ossN servers are used copies still have to be done over 
-> network by these storage servers, although the client only would need to 
-> initiate the copy. Still faster, but also not ideal.
-> 
-> >
-> >>>
-> >>> What is preventing an application from retrieving and setting this
-> >>> information using standard libc functions such as fstat()+open(), and
-> >>> supplemented with libattr attr_setf/getf(), and libacl acl_get_fd/set_fd
-> >>> where appropriate?
-> >>>
-> >>
-> >> At a minimum this requires network and metadata overhead. And while I'm
-> >> working on FhGFS now, I still wonder what other file system need to do -
-> >> for example Lustre pre-allocates storage-target files on creating a
-> >> file, so file layout changes mean even more overhead there.
-> >
-> > The problem you are describing is limited to a narrow set of storage
-> > architectures. If copy offload using splice() doesn't make sense for
-> > those architectures, then don't implement it for them.
-> 
-> But it _does_ make sense. The file system just needs a hint that a 
-> splice copy is going to come up.
+First, sorry for the slow response to your thoughtful review comments.
+Things have been busy for me with a new major release of the Tilera
+software environment and the usual customer bug firefighting.
 
-Just wait for the splice() system call. How is this any different from
-write()?
+On 9/10/2013 6:53 AM, Gleb Natapov wrote:
+> On Wed, Aug 28, 2013 at 03:45:50PM -0400, Chris Metcalf wrote:
+>> This commit enables the host side of KVM support for tilegx.
+>>
+>> [...]
+>>
+>> The commit adds a KVM_EXIT_xxx code, KVM_EXIT_AGAIN, which is used to
+>> exit out to the host kernel, but not all the way out to qemu.  This is
+>> helpful if we are trying to handle resched, sigpending, etc., but don't
+>> need to end up back in userspace first.
+>>
+> I think there is a confusion here on how things suppose to work.
+> KVM_EXIT_xxx defines are only meant to be meaningful to userspace, they
+> are never used internally by KVM. So KVM_EXIT_AGAIN, as defined above,
+> does not make sense.
 
-> > You might be able to provide ioctls() to do these special hinted file
-> > creations for those filesystems that need it, but the vast majority
-> > don't, and you shouldn't enforce it on them.
-> 
-> And exactly for that we need a standard - it does not make sense if each 
-> and every distributed file system implements its own 
-> ioctl/libattr/libacl interface for that.
-> 
-> >
-> >> Anyway, if we could agree on to use libattr or libacl to teach the file
-> >> system about the upcoming splice call I would be fine.
-> >
-> > libattr and libacl are generic libraries that exist to manipulate xattrs
-> > and acls. They do not need to contain Lustre-specific code.
-> >
-> 
-> pNFS, FhGFS, Lustre, Ceph, etc., all of them shall implement their own 
-> interface? And userspace needs to address all of them differently?
->
-> I'm just asking for something like a vfs ioctl SPLICE_META_COPY (sorry, 
-> didn't find a better name yet), which would take in-file-path and 
-> out-file-path and allow the file system to create out-file-path with the 
-> same meta-layout as in-file-path. And it would need some flags, such as 
-> AUTO (file system decides if it makes sense to do a local copy) and 
-> FORCE (always try a local copy).
+Fair enough; we can certainly arrange for the same semantics without
+exposing a magic value in the user API.
 
-splice() is not a whole-file copy operation; it's a byte range copy. How
-does the above help other than in the whole-file case?
+
+> Looking at the code I see that you've reused those
+> defines for vmexit codes too and this is incorrect. On platform with HW
+> virt support vmexit codes are defined by CPU architecture (and there are
+> much more of vmexit codes that userspace exit codes), PV define their own
+> interface.
+
+I'm not clear on what you're suggesting with this comment.  We do have a
+kvm_trigger_vmexit() function that takes a KVM_EXIT_xxx value and stuffs
+it into kvm_run.exit_reason.  But since we are PV and don't have separate
+hardware-defined values, this seems like the right approach.  We effectively
+borrow the KVM_EXIT_xxx codes for our vmexit codes.  Why not?
+
+>> +#define gpud_offset(kvm, pgd, address) pud_offset(pgd, address)
+>> +
+>> +#define gpud_page_vaddr(kvm, pud) gfn_to_hva(kvm, pud_pfn(pud))
+>> +
+>> +#define gpmd_offset(kvm, pud, address) \
+>> +     ((pmd_t *)gpud_page_vaddr(kvm, *(pud)) + pmd_index(address))
+>> +
+>> +#define gpmd_page_vaddr(kvm, pmd) gfn_to_hva(kvm, pmd_pfn(pmd))
+>> +
+>> +#define gpte_offset_kernel(kvm, pmd, address) \
+>> +     ((pte_t *) gpmd_page_vaddr(kvm, *(pmd)) + pte_index(address))
+>> +
+> I can't find where those four defines are used, but in case they are
+> comment about gfn_to_pfn() bellow apples here to.
+
+Good catch; they were for some code that we changed to something else,
+so we don't need them any more.
+
+>> +#ifndef __KERNEL__
+>> +/* For hv_*() */
+>> +#define KVM_EMULATE(name) [HV_SYS_##name] = qemu_emulate_illegal,
+>> +#define USER_EMULATE(name) [HV_SYS_##name] = qemu_emulate_hv_##name,
+>> +#define NO_EMULATE(name) [HV_SYS_##name] = qemu_emulate_illegal,
+>> +#define BOTH_EMULATE(name) [HV_SYS_##name] = qemu_emulate_hv_##name,
+>> +/* For others */
+>> +#define USER_HCALL(name) [KVM_HCALL_##name] = qemu_handle_##name,
+> This does not belong to a kernel header. QEMU is not the only user of KVM
+> kernel APIs. Please drop that and change all the references in comment
+> from "qemu" to "userspace". If you add code that workarounds QEMU bugs it
+> is appropriate to mention QEMU by name, otherwise interface to userspace
+> should not be QEMU specific.
+
+Thanks, makes sense.
+
+
+>> +void kvm_arch_commit_memory_region(struct kvm *kvm,
+>> +                                struct kvm_userspace_memory_region *mem,
+>> +                                const struct kvm_memory_slot *old,
+>> +                                enum kvm_mr_change change)
+>> +{
+>> +     unsigned long gpa, address, pfn, i;
+>> +     struct page *page[1];
+>> +     pte_t *ptep, *vptep;
+>> +
+>> +     gpa = mem->guest_phys_addr;
+>> +     address = mem->userspace_addr;
+>> +     for (i = 0; i < mem->memory_size;
+>> +          i += PAGE_SIZE, gpa += PAGE_SIZE, address += PAGE_SIZE) {
+>> +             vptep = get_vpgd_pte(kvm, gpa);
+>> +             BUG_ON(vptep == NULL);
+>> +             get_user_pages_fast(address, 1, 1, page);
+> get_user_pages_fast() can fail and you do not handle an error. Do I
+> understand correctly that all guest memory is pinned here? Where is it
+> unpinned? I do not see put_page anywhere.
+
+Yes, we're pinning all of user memory here; this deserves more of
+a comment than is in the code (i.e. none), but was done to simplify
+our initial implementation of fast page faulting from the Tilera
+hypervisor.  I'll review this all more closely for the next version
+of the patch set.
+
+> +int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+> +                               struct kvm_sregs *sregs)
+> +{
+> +     vcpu->arch.sregs = *sregs;
+> +     return 0;
+> +}
+> Most arches prefer to use KVM_GET_ONE_REG/KVM_SET_ONE_REG interface
+> to get/set all vcpu registers since the interface is more flexible, but
+> the way you are doing it is OK too.
+
+We can certainly provide both interfaces.  For the time being,
+the way we're using it from qemu works best with SET_SREGS since we
+just set a bunch of SPRs at once.  Or maybe we just don't care in
+the kernel until we have a client that actually wants the ONE_REG APIs?
+
+> +static int kvm_emulate_hv_physaddr_write64(struct kvm_vcpu *vcpu)
+> +{
+> +     gpa_t gpa = vcpu->arch.regs.regs[0];
+> +     HV_PTE *access = (HV_PTE *)vcpu->arch.regs.regs[1];
+> +     uint64_t val = vcpu->arch.regs.regs[2];
+> +     gfn_t gfn;
+> +     pfn_t pfn;
+> +     hpa_t hpa;
+> +
+> +     gfn = gpa_to_gfn(gpa);
+> +     pfn = gfn_to_pfn(vcpu->kvm, gfn);
+> Here and in the function above you use gfn_to_pfn() which access
+> memslots. Memslots are srcu protected, so you have to take kvm->srcu
+> read lock around those calls. Here is the link with the patch that
+> documents that: http://www.mail-archive.com/kvm@vger.kernel.org/msg95566.html
+
+Thanks, yeah, I missed that.  I'll add the srcu stuff.
+
+
+> Another thing about those function is that they are very similar to
+> kvm_read_guest/kvm_write_guest, the only difference I see is that they
+> use hv_physaddr_write64/hv_physaddr_read64 instead of
+> __copy_to_user/__copy_from_user. What are those special functions and
+> why can't we use __copy_to_user/__copy_from_user here?
+
+The hv_physaddr_xxx functions actually do direct physical-address reads
+by requesting the Tilera hypervisor (basically like a BIOS) to do it.
+However, you may be right that if we instead just convert to an hva
+and use __copy_to_user we'd get the same results.  I'll see if we can
+convert these to just use kvm_read_guest etc.
+
+>> +int kvm_arch_vcpu_should_kick(struct kvm_vcpu *vcpu)
+>> +{
+>> +     return !test_and_set_bit(KVM_REQ_KICK, &vcpu->requests);
+>> +}
+> Use of KVM_REQ_KICK was deprecated some time ago by commit
+> d94e1dc9af60e3431a586c3edfbe42d8a0d3932b. You probably copied this from
+> ia64 which is a bad example since the kvm support there is broken and
+> will be removed soon. Set vcpu->mode to IN_GUEST_MODE/OUTSIDE_GUEST_MODE
+> instead and helper functions such as kvm_vcpu_exiting_guest_mode() here.
+
+Thanks.
+
+>> +int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+>> +{
+>> +     int i;
+>> +     unsigned long resv_gfn_start;
+>> +     struct kvm_memory_slot *s;
+>> +     struct kvm *kvm = vcpu->kvm;
+>> +
+>> +     if (!kvm->arch.resv_gpa_start) {
+>> +             resv_gfn_start = 0;
+>> +
+>> +             for (i = 0; i < KVM_USER_MEM_SLOTS; i++) {
+>> +                     s = &kvm->memslots->memslots[i];
+> Slots can be added or removed after vcpu is created. And of course
+> kvm->srcu comment applies. Memslot can be KVM_MEMSLOT_INVALID if it is
+> in the process of been deleted, so you have to check this too, but
+> probably it is better for userspace to set resv_gpa_start instead of
+> kernel trying to figure it out here.
+
+We are really just trying to get an illegal PA here.  We could probably
+just use PA values starting at the highest legal value and work down
+from there intead.
+
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -1978,7 +1978,8 @@ static long kvm_vcpu_ioctl(struct file *filp,
+>>       if (vcpu->kvm->mm != current->mm)
+>>               return -EIO;
+>>
+>> -#if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
+>> +#if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS) || \
+>> +     defined(CONFIG_TILEGX)
+> No need to do that. Use KVM_IRQ_LINE ioctl which is asynchronous in
+> respect to vcpu. S390 and PPC are here for historical reason and MIPS
+> was review mistake. BTW where interrupt controller is emulated in
+> userspace or in the kernel?
+
+We're using the s390 virtio model with a qemu hw/tile/tile-virtio-bus.c
+component in userspace at the moment.  We'll look at KVM_IRQ_LINE.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
