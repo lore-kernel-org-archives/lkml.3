@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab3I3O4m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:56:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9192 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755941Ab3I3O4j convert rfc822-to-8bit (ORCPT
+	id S1755969Ab3I3O4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:56:48 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:60206 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819Ab3I3O4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:56:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1008,1371106800"; 
-   d="scan'208";a="411868987"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yijing Wang <wangyijing@huawei.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>, infinipath <infinipath@intel.com>,
-        Roland Dreier <roland@kernel.org>,
-        Roland Dreier <roland@purestorage.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Einon <mark.einon@gmail.com>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: RE: [PATCH 4/6] IB/qib: Use pcie_set_mps() and pcie_get_mps() to
- simplify code
-Thread-Topic: [PATCH 4/6] IB/qib: Use pcie_set_mps() and pcie_get_mps() to
- simplify code
-Thread-Index: AQHOrV5pylnREKNYskOHTMKyILBtpZnVcU0sgAkOGjA=
-Date: Mon, 30 Sep 2013 14:56:37 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC211AE5BF@FMSMSX107.amr.corp.intel.com>
-References: <1378732388-4508-1-git-send-email-wangyijing@huawei.com>
- <1378732388-4508-5-git-send-email-wangyijing@huawei.com>
- <32E1700B9017364D9B60AED9960492BC2119F081@FMSMSX107.amr.corp.intel.com>
- <20130924203806.GA9302@google.com>
-In-Reply-To: <20130924203806.GA9302@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.106]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Sep 2013 10:56:45 -0400
+Date: Mon, 30 Sep 2013 16:56:30 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        David Howells <dhowells@redhat.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        linux-mips@linux-mips.org, David Daney <ddaney@caviumnetworks.com>,
+        Andrew Pinski <Andrew.Pinski@caviumnetworks.com>,
+        John Crispin <blogic@openwrt.org>
+Subject: Issue with BUG() in asm-gemeric/bug.h if CONFIG_BUG=n
+Message-ID: <20130930145630.GA14672@linux-mips.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Is something like the following what you had in mind?  If so, I can
-> just queue it up.  Otherwise, I'll wait for Yijing to post a v2 patch.
-> 
-> 
-> IB/qib: Use pcie_set_mps() and pcie_get_mps() to simplify code
-> 
-> From: Yijing Wang <wangyijing@huawei.com>
-> 
-> Refactor qib_tune_pcie_caps().  Use pcie_get_mps(), pcie_set_mps(),
-> pcie_get_readrq(), and pcie_set_readrq() to simplify the code.  The PCI
-> core caches the "PCIe Max Payload Size Supported" in pci_dev->pcie_mpss,
-> so use that instead of pcie_capability_read_word().  Remove the unused
-> val2fld() and fld2val().
-> 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Lately I received several patches for build issues that only strike if
+CONFIG_BUG is disabled.  Here's a test case extracted from one of them:
 
-This works!
+/*
+ * Definition of BUG taken from asm-generic/bug.h for the CONFIG_BUG=n case
+ */
+#define BUG() 	do {} while(0)
 
-Go ahead and queue it up.
+int foo(int arg)
+{
+	int res;
 
-Mike
+	if (arg == 1)
+		res = 23;
+	else if (arg == 2)
+		res = 42;
+	else
+		BUG();
+
+	return res;
+}
+
+[ralf@h7 ~]$ gcc -O2 -Wall -c bug.c 
+bug.c: In function ‘foo’:
+bug.c:17:2: warning: ‘res’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  return res;
+  ^
+
+It's fairly obvious to see what's happening here - GCC doesn't know that
+the else case can not be reached, thus razorsharply concludes that res
+may be used uninitialized.
+
+There several locations where MIPS - possibly other architectures as well -
+is affected by this.
+
+I think the definition of BUG should be changed to something like
+
+#define BUG()	unreachable()
+
+unreachable() will depending on the compiler being used, expand either
+into a call to __builtin_unreachable() or where that function is
+unavailable, into do {} while (1).
+
+__builtin_unreachable() was introduce for GCC 4.5.0.
+
+This means there'd be minor bloat for antique compilers - but probably
+even better code generation for compilers supporting __builtin_unreachable().
+
+  Ralf
+
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+
+ include/asm-generic/bug.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 7d10f96..6f78771 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -108,7 +108,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+ 
+ #else /* !CONFIG_BUG */
+ #ifndef HAVE_ARCH_BUG
+-#define BUG() do {} while(0)
++#define BUG() unreachable()
+ #endif
+ 
+ #ifndef HAVE_ARCH_BUG_ON
+
+----- End forwarded message -----
+
+  Ralf
