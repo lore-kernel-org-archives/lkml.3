@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab3I3N2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 09:28:50 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:55691 "EHLO
+	id S1755934Ab3I3N3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:29:23 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55673 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab3I3N04 (ORCPT
+	with ESMTP id S1755616Ab3I3N0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 09:26:56 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-d7-52497c1fe7e1
+	Mon, 30 Sep 2013 09:26:47 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-ca-52497c16197d
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: axboe@kernel.dk
 Cc: abhansali@stec-inc.com, jmoyer@redhat.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 08/14] skd: remove redundant skdev->pdev assignment from
- skd_pci_probe()
-Date: Mon, 30 Sep 2013 15:25:49 +0200
-Message-id: <1380547556-17719-9-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 05/14] skd: register block device only if some devices are
+ present
+Date: Mon, 30 Sep 2013 15:25:46 +0200
+Message-id: <1380547556-17719-6-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1380547556-17719-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1380547556-17719-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e+xgK58jWeQQdM/dYvenpPsFqvv9rNZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e+xgK5YjWeQQediYYvenpPsFqvv9rNZ
 	bJyxntXi7K+rLBZnm96wW1zeNYfNgc3j8tlSj/f7rrJ59G1Zxehx59wHJo/Pm+QCWKO4bFJS
-	czLLUov07RK4Mv5ev8RUMIu9Yt/hz2wNjK1sXYwcHBICJhKLzyR3MXICmWISF+6tBwpzcQgJ
-	LGKUeLughxHC6WKS+D5lDytIFZuAlcTE9lWMILaIgLDE/o5WFpAiZoEmRomNS+awgSSEBaIk
-	LixaywxiswioSry+3wZm8wp4SKx6d4cRYp28xNP7fWD1nAKeEv9vHwWLCwHVfDt0mWkCI+8C
-	RoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGh9ExqB+PKBotDjAIcjEo8vBOWewQJsSaW
-	FVfmHmKU4GBWEuEVL/MMEuJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1
-	CCbLxMEp1cCYrRL73XSt3uGnE0uE0o1L8xX0s9g5O0/t+OQfsn5mCef5rt+aqwQkstR/Gsw7
-	slrd7cecBTPPVYfMtL1q+4j3oMWMw/3W3sGa5696CaX3q1X/8/jYP29q/E2LxJub9prVLHj2
-	Suflw2dfZ7zV+eGn1p2iwDzh4pHt9SJMb3dd2fRaWKUg+2qJEktxRqKhFnNRcSIAJ/fTBCEC	AAA=
+	czLLUov07RK4MvYfW8JWsFiwYuXxw8wNjJP5uhg5OCQETCSu36/tYuQEMsUkLtxbzwZiCwks
+	YpSY+8aoi5ELyO5ikvjadJ4FJMEmYCUxsX0VI4gtIiAssb+jlQWkiFmgiVFi45I5YN3CAiES
+	Kw79YAexWQRUJc5f2QLWwCvgIdGx8R0rxDZ5iaf3+8DqOQU8Jf7fPsoIsdlD4tuhy0wTGHkX
+	MDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgOpGdSOxhXNlgcYhTgYFTi4Z2w3CNIiDWx
+	rLgy9xCjBAezkgiveJlnkBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWp
+	RTBZJg5OqQZGPvaIzTmyaxcu3yHjG63FfPN36j3rtrgCo6dm1YmTjY4+v3o0f1+mafQV1/y/
+	u9RzMx1ey2rMZF8vbJUbYHVn37SA6BOcshvPpoXfF7uZmjC79sNKI89wzeDyZVx+fb92Lj50
+	bYdlfNObD/tVnfK+X4rtTdBb8Vptmf6reZ36xfYzs6u5ZHSUWIozEg21mIuKEwHlutFRIAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-skdev->pdev is set to pdev twice in skd_pci_probe(), first time
-through skd_construct() call and the second time directly in
-the function. Remove the second assignment as it is not needed.
+Register block device in skd_pci_probe() instead of in skd_init() so it
+is registered only if some devices are present (currently it is always
+registered when the driver is loaded). Please note that this change
+depends on the fact that register_blkdev(0, ...) never returns 0.
 
 Cc: Akhil Bhansali <abhansali@stec-inc.com>
 Cc: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/block/skd_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/skd_main.c | 32 +++++++++++---------------------
+ 1 file changed, 11 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
-index e003137..9fe910d 100644
+index e63a63c..738f847 100644
 --- a/drivers/block/skd_main.c
 +++ b/drivers/block/skd_main.c
-@@ -5239,7 +5239,7 @@ static int skd_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+@@ -5215,6 +5215,14 @@ static int skd_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		}
+ 	}
  
- 
- 	pci_set_drvdata(pdev, skdev);
--	skdev->pdev = pdev;
++	if (!skd_major) {
++		rc = register_blkdev(0, DRV_NAME);
++		if (rc < 0)
++			goto err_out_regions;
++		BUG_ON(!rc);
++		skd_major = rc;
++	}
 +
- 	skdev->disk->driverfs_dev = &pdev->dev;
+ 	skdev = skd_construct(pdev);
+ 	if (skdev == NULL)
+ 		goto err_out_regions;
+@@ -5711,8 +5719,6 @@ static void skd_log_skreq(struct skd_device *skdev,
  
- 	for (i = 0; i < SKD_MAX_BARS; i++) {
+ static int __init skd_init(void)
+ {
+-	int rc = -ENOMEM;
+-
+ 	pr_info(PFX " v%s-b%s loaded\n", DRV_VERSION, DRV_BUILD_ID);
+ 
+ 	switch (skd_isr_type) {
+@@ -5763,24 +5769,7 @@ static int __init skd_init(void)
+ 		skd_max_pass_thru = SKD_N_SPECIAL_CONTEXT;
+ 	}
+ 
+-	/* Obtain major device number. */
+-	rc = register_blkdev(0, DRV_NAME);
+-	if (rc < 0)
+-		goto err_register_blkdev;
+-
+-	skd_major = rc;
+-
+-	rc = pci_register_driver(&skd_driver);
+-	if (rc < 0)
+-		goto err_pci_register_driver;
+-
+-	return rc;
+-
+-err_pci_register_driver:
+-	unregister_blkdev(skd_major, DRV_NAME);
+-
+-err_register_blkdev:
+-	return rc;
++	return pci_register_driver(&skd_driver);
+ }
+ 
+ static void __exit skd_exit(void)
+@@ -5789,7 +5778,8 @@ static void __exit skd_exit(void)
+ 
+ 	pci_unregister_driver(&skd_driver);
+ 
+-	unregister_blkdev(skd_major, DRV_NAME);
++	if (skd_major)
++		unregister_blkdev(skd_major, DRV_NAME);
+ 
+ 	if (skd_flush_slab)
+ 		kmem_cache_destroy(skd_flush_slab);
 -- 
 1.8.2.3
 
