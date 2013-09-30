@@ -1,224 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab3I3Qvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:51:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46103 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754448Ab3I3Qvj (ORCPT
+	id S1755534Ab3I3Qyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:54:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46837 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab3I3Qyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:51:39 -0400
-Date: Mon, 30 Sep 2013 17:51:26 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] media: rc: OF: Add Generic bindings for
- remote-control
-Message-ID: <20130930165125.GE22259@e106331-lin.cambridge.arm.com>
-References: <1380274391-26577-1-git-send-email-srinivas.kandagatla@st.com>
- <20130927113458.GB18672@e106331-lin.cambridge.arm.com>
- <20130927104719.6637368f@samsung.com>
+	Mon, 30 Sep 2013 12:54:32 -0400
+Date: Mon, 30 Sep 2013 18:54:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+Message-ID: <20130930165420.GI3081@twins.programming.kicks-ass.net>
+References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+ <20130930161546.GG3081@twins.programming.kicks-ass.net>
+ <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130927104719.6637368f@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 02:47:19PM +0100, Mauro Carvalho Chehab wrote:
-> Em Fri, 27 Sep 2013 12:34:58 +0100
-> Mark Rutland <mark.rutland@arm.com> escreveu:
+On Mon, Sep 30, 2013 at 06:48:55PM +0200, Stephane Eranian wrote:
+> On Mon, Sep 30, 2013 at 6:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, Sep 30, 2013 at 05:44:41PM +0200, Stephane Eranian wrote:
+> >> Hi,
+> >>
+> >> I was alerted by people trying to use the PERF_RECORD_MMAP2
+> >> record to disambiguate virtual address mappings that there is a case
+> >> where the record does not contain enough information.
+> >>
+> >> As you know, the MMAP2 record adds the major, minor, ino number,
+> >> inode generation numbers to a mapping. But it does that only for
+> >> file or pseudo -file backed mappings. That covers file mmaps and also
+> >> SYSV shared memory segments.
+> >>
+> >> However there is a another kind of situation that arises in some
+> >> multi-process benchmarks where a region of memory is cloned
+> >> using VM_CLONE. As such, the virtual addresses match between
+> >> the processes but the major, minor, inode, inode generation  fields
+> >> are all zeroes because there is no inode associated with the mapping.
+> >> Yet, it is important for the tool to know the mappings between the
+> >> processes are pointing to the same physical data.
+> >>
+> >> We need to cover this case and I am seeking for advice on how to
+> >> best address this need given that we discarded using the plain physical
+> >> address for disambiguation.
+> >
+> > Urgh.. who in his bloody mind is playing VM_CLNOE games that is not
+> > pthread_creatE() ?
 > 
-> > On Fri, Sep 27, 2013 at 10:33:11AM +0100, Srinivas KANDAGATLA wrote:
-> > > From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> > > 
-> > > This patch attempts to collate generic bindings which can be used by
-> > > the remote control hardwares. Currently the list is not long as there
-> > > are only 2 drivers which are device tree'd.
-> > > 
-> > > Mainly this patch tries to document few bindings used by ST IRB driver
-> > > which can be generic as well. This document also add fews common
-> > > bindings used by most of the drivers like, interrupts, regs, clocks and
-> > > pinctrls.
-> > > 
-> > > This document can also be holding place to describe generic bindings
-> > > used in remote controls devices.
-> > > 
-> > > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> > > ---
-> > > Hi All, 
-> > > Following Stephen Warren's suggestions at https://lkml.org/lkml/2013/9/24/452
-> > > this patch is an attempt to document such generic bindings in a common
-> > > document.
-> > > 
-> > > This document currently collates all the generic bindings used with
-> > > remote-controls and act as holding place to describe generic bindings for
-> > > remote controls.
-> > > 
-> > > Comments?
-> > > 
-> > > Thanks,
-> > > srini
-> > > 
-> > >  .../devicetree/bindings/media/remote-control.txt   |   31 ++++++++++++++++++++
-> > >  1 files changed, 31 insertions(+), 0 deletions(-)
-> > >  create mode 100644 Documentation/devicetree/bindings/media/remote-control.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/media/remote-control.txt b/Documentation/devicetree/bindings/media/remote-control.txt
-> > > new file mode 100644
-> > > index 0000000..901ea56
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/media/remote-control.txt
-> > > @@ -0,0 +1,31 @@
-> > > +Generic device tree bindings for remote control.
-> > > +
-> > > +properties:
-> > > +	- compatible: Can contain any remote control driver compatible string.
-> > > +	  example: "st-comms-irb, "gpio-ir-receiver".
-> > 
-> > This is more generic than remote control, could this not just be left
-> > for the specific binding to describe?
-> > 
-> > > +	- reg: Base physical address of the controller and length of memory
-> > > +	  mapped region.
-> > 
-> > What if it's on a bus that isn't memory mapped (e.g. i2c, SPI)?
-> > 
-> > > +	- interrupts: Interrupt-specifier for the sole interrupt generated by
-> > > +	  the device. The interrupt specifier format depends on the
-> > > +	  interrupt controller parent. Iff the device supports interrupts.
-> > 
-> > What if it has multiple interrupts, and has interrupts-names?
-> > 
-> > It might be better to only describe the properties that relate
-> > specifically to remote controls, rather than listing all of the generic
-> > properties that device tree bidnings may have. That would match the
-> > style of the clock bindings.
-> > 
-> > > +	- rx-mode: Can be "infrared" or "uhf". rx-mode should be present iff
-> > > +	  the rx pins are wired up.
-> > 
-> > I'm unsure on this. What if the device has multiple receivers that can
-> > be independently configured? 
-> 
-> Well, if a given remote controller hardware has more than one independent
-> receiver (or transmitter), each one should have its own devnode.
-> Likely, two entries at DT.
+> Some matrix multiply benchmark, I guess.
 
-Why? If an IP block happens to have support for N connections, that
-doesn't mean that each must be described individually. They likely share
-a bank of registers, and depending on the device they might not even be
-assigned consistently orgranised windows of that register bank.
-
-> 
-> > What if it supports something other than
-> > "infrared" or "uhf"? What if a device can only be wired up as
-> > "infrared"? 
-> 
-> I would say that a hardware that has both infrared and uhf has actually
-> two different devices. So, it should be mapped as two separate devnodes.
-
-I would say that it is still one device, one which happens to have two
-outputs. Just because we want two dev nodes does not mean the dt has to
-be structured as two devices.
-
-> 
-> > I'm not sure how generic these are, though we should certainly encourage
-> > bindings that can be described this way to be described in the same way.
-> > 
-> > > +	- tx-mode: Can be "infrared" or "uhf". tx-mode should be present iff
-> > > +	  the tx pins are wired up.
-> > 
-> > I have similar concerns here to those for the rx-mode property.
-> > 
-> > > +
-> > > +Optional properties:
-> > > +	- linux,rc-map-name: Linux specific remote control map name. Refer to
-> > > +	  include/media/rc-map.h for full list of maps.
-> > 
-> > We shouldn't refer to Linux specifics (i.e. headers) in general in
-> > bindings. While it's possible to relax that a bit for linux,*
-> > properties, I'd prefer to explicitly list elements in the binding. That
-> > prevents the ABI from changing under our feet by someone altering what
-> > looks like a completely internal header file.
-> 
-> Well, the remote controller keymaps at include/media/rc-map.h is just a
-> bunch of string names, defined as macro to avoid duplicating those names
-> everywhere, to avoid typos and to help some userspace parsing logic to get
-> all in just one single place. I don't see why the same names couldn't be 
-> used on any other OS using DT.
-
-To be used by another OS, they should be defined somewhere that's not
-subject to arbitrary changes at any time at the whim of Linux
-developers, without dt-related review.
-
-That's not to say we couldn't use strings the kernel happened to use.
-I'm saying that the names exposed by bindings should be well-defined,
-and should not depend on the current state of a linux-internal header
-file.
-
-I think it would be nicer to have a way of defining the keymap in dt
-anyway, so as to handle the general case and not get into the mess of
-having an arbitrary set of strings we need to constantly update.
-
-> 
-> The logic behind include/media/rc-map.h, is that those names are used
-> by:
-> 
-> 1) kernelspace: in order to locate a keytable with the same name, that
-> would be loaded when the device is initialized;
-
-The kernel uses the strings, so it has them defined in its include path
-somewhere. If dt bindings wish to use the strings, they should be
-defined somewhere. That somewhere should not be a Linux-internal header
-file.
-
-> 
-> 2) userspace: to seek for a keytable with that name, allowing to
-> dynamically load the keymap table on userspace, instead of hardwiring
-> them on Kernelspace (or replacing the kernel's one by an user-customized
-> one).
-
-The name of each table is not exposed to userspace, they are not defined
-under include/uapi. The fact that the names may be used to request other
-data does not change the fact that the kernel has one copy, userspace
-another. The set of strings the kernel understands *is* hard-wired.
-
-> 
-> So, I would simply call it as "keymap-name", keep pointing it to 
-> include/media/rc-map.h.
-> 
-> That's said, this is actually a mandatory requirement, as without it,
-> the RC core will not be able to load a keytable, and the userspace tool
-> won't load the proper keymap, being confused on what to do.
-
-It is possible to handle setting up the mapping within the kernel, or to
-actually describe the general case, something like how gpio-keys works.
-I think that would be preferable.
-
-> 
-> It should be noticed that, from time to time, manufacturers change the
-> remote control unit, as those devices are generally manufactured by a
-> third part. So, they change, for example, when they get a new BID to
-> provide IRs for a cheaper cost, or when they need/want to provide a "deluxe"
-> remote, a simplified "thin" one and/or when they need to provide customized
-> remotes to some Cable company, for example.
-> 
-> So, it makes sense for it to be mandatory, as only with this information it
-> is possible to load the keymap that matches that specific IR unit model.
-
-While it's true that some description is necessary, I do nto believe
-this is the right one.
-
-Thanks,
-Mark.
+So the problem is that we don't have a user visible address space
+identifier; with CLONE_THREAD we have the thread group id that acts
+like this. But for bare CLONE_VM usage there's nothing afaik.
