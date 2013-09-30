@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3I3Lwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 07:52:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40872 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab3I3Lwf (ORCPT
+	id S1755125Ab3I3LyK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 07:54:10 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31602 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753128Ab3I3LyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 07:52:35 -0400
-Date: Mon, 30 Sep 2013 12:52:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130930115210.GA19304@sirena.org.uk>
-References: <20130930114735.GZ19304@sirena.org.uk>
+	Mon, 30 Sep 2013 07:54:08 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1007,1371074400"; 
+   d="scan'208";a="34896121"
+Date: Mon, 30 Sep 2013 13:54:06 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Ruslan N. Marchenko" <me@ruff.mobi>
+cc: linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>
+Subject: Re: [BUG] Regression in 2fdac010 drivers/net/ethernet/via/via-velocity.c:
+ update napi implementation
+In-Reply-To: <20130930071531.GA13037@ruff.mobi>
+Message-ID: <alpine.DEB.2.02.1309301353150.2036@localhost6.localdomain6>
+References: <20130930071531.GA13037@ruff.mobi>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WbkWELb8d/6oR4nB"
-Content-Disposition: inline
-In-Reply-To: <20130930114735.GZ19304@sirena.org.uk>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] regulator updates for v3.12
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 Sep 2013, Ruslan N. Marchenko wrote:
 
---WbkWELb8d/6oR4nB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Hi Julia et al.,
+> 
+> With this commit VIA NANO board get CPU lockup in random places on any network activity.
+> The error is random, most of the times dead locked CPU on boot.
+> 
+> After loading via-velocity module it hangs for a while and then spits kernel mesages
+> about hanged tasks from varios places - like ata, rcu_preempt or network stack.
+> Also, if you boot the box with network disconnected - it works, until you plug the network cable.
+> 
+> On some kernel builds (like ubuntu stock) behaviour varies, sometimes the box itself works,
+> but network stack dies after multiple ICMPv6 skb errors, so box ends up with network disconnected.
+> Reloading network susbsys helps to recover for some time (depending on how fast eth led is blinking).
+> 
+> Reverting the patch allows me to boot without problems even from latest Linus trunk and send this mail.
 
-The following changes since commit 15c03dd4859ab16f9212238f29dd315654aa94f6:
+You can find the discussion and improved patch in this thread:
 
-  Linux 3.12-rc3 (2013-09-29 15:02:38 -0700)
+http://www.spinics.net/lists/netdev/msg251287.html
+Bug - regression - Via velocity interface coming up freezes kernel
+From: Dirk Kraft <dirk.kraft@xxxxxxxxx>
+Date: Sun, 22 Sep 2013 19:28:52 +0200
 
-are available in the git repository at:
+julia
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.12-rc3
 
-for you to fetch changes up to f3d17a7e4d9ea9301fd2608c25de7802239e5fbb:
 
-  Merge remote-tracking branch 'regulator/fix/wm8350' into regulator-linus (2013-09-30 12:04:33 +0100)
 
-----------------------------------------------------------------
-
-regulator: Fixes for v3.12
-
-Quite a few fixes here, mostly small driver specific ones.  The stand
-out thing is a fix for errors generating the documentation from Randy
-Dunlap, otherwise unless you're using the driver in question there
-should be no impact.
-
-----------------------------------------------------------------
-Axel Lin (2):
-      regulator: palmas: Remove wrong comment for the equation calculating num_voltages
-      regulator: wm831x-ldo: Fix max_uV for gp_ldo and aldo linear range settings
-
-Geert Uytterhoeven (1):
-      regulator: da9063: Fix PTR_ERR/ERR_PTR mismatch
-
-Laxman Dewangan (3):
-      regulator: palmas: fix the n_voltages for smps to 122
-      regulator: palmas: configure enable time for LDOs
-      regulator: wm8350: correct the max_uV of LDO
-
-Mark Brown (6):
-      Merge remote-tracking branch 'regulator/fix/da9063' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/doc' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/palmas' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/ti-abb' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/wm831x' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/wm8350' into regulator-linus
-
-Nishanth Menon (1):
-      regulator: ti-abb: Fix bias voltage glitch in transition to bypass mode
-
-Randy Dunlap (1):
-      regulator: fix fatal kernel-doc error
-
- drivers/regulator/da9063-regulator.c |  2 +-
- drivers/regulator/palmas-regulator.c | 14 +++++++-------
- drivers/regulator/ti-abb-regulator.c | 16 ++++++++++++++--
- drivers/regulator/wm831x-ldo.c       |  4 ++--
- drivers/regulator/wm8350-regulator.c |  2 +-
- include/linux/regulator/driver.h     |  2 ++
- 6 files changed, 27 insertions(+), 13 deletions(-)
-
---WbkWELb8d/6oR4nB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSSWXnAAoJELSic+t+oim9/CgP/230QwJiE+9eoq7DVCnJ9iiB
-JKcop5iTk41BFl4kFq+KOgEkQsMuBom2VwzhEWN//4d6K8XM8EM1IU9BiQetrPvi
-hvI4MJXHQA356tggQMryFKXGv/WDs5pCspqsA1nhKRDwCTsMSYQ8tqdsV1qhVRfY
-HI5HBQsKS2JgnNplF5vRjkquCoyzW6wxCQzo11m46WzIL5B99iE+GhQhfR+iy6BS
-aUw84Y1wpire6TuxUUsa6fNlsSPUXlF4kRskxO4VTSgqlSzutj/KuGvF8wGji3LQ
-f7TAZtpCG8JKTwdJp7SMb5ihUZrE/f48DlV93/XsoU+dA+Heyy/aSXGCVhgWH697
-wu0dh3yHB4/nAYbK39/I8keiK8/5R5KPn+z5Vo47sQ7qd3MlzDHyeEalvM/PPTOh
-2+PYr70AofpfXUzotklXgedHtC8onOnehlbMYrrIXhcwfEf7srGyE52aSVjuFzYw
-jJvgVS3AAtyMj1iNhUK+RvHrekmXiQZOh+GJb1/UvVcm0iXK7XFddl0pOFyGiyzd
-3sqCXfxM4QgKIEnbmhW+CwOhtnKVZiI76oxMPuTLdtZlQJoPtxgSfQlLVgU3yqXR
-eblUno8rdNN/Cx+YDwzuEncwQ/nwMlqYCIgWscHPiu6ecSQZENNMdQbQ2c0GAPeU
-hQDBDnf5GMc4n1ppz5hS
-=Sl1i
------END PGP SIGNATURE-----
-
---WbkWELb8d/6oR4nB--
+> 
+> Regards,
+> Ruslan
+> 
