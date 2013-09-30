@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab3I3TQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 15:16:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755272Ab3I3TQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 15:16:57 -0400
-Date: Mon, 30 Sep 2013 21:16:00 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Haggai Eran <haggaie@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Jerome Glisse <jglisse@redhat.com>
-Subject: Re: [PATCH] anon_vmas: Convert the rwsem to an rwlock_t
-Message-ID: <20130930191600.GL29230@redhat.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <20130928193739.GA8642@gmail.com>
- <20130930085243.GA25685@redhat.com>
- <CA+55aFxG3hK0CiZJh1XORv+tiNWXVxh8rzr37Vmu=ASWj1s4PQ@mail.gmail.com>
+	id S1756197Ab3I3TRw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 15:17:52 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:58580 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab3I3TRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 15:17:51 -0400
+Message-ID: <5249CE5B.7040505@gmail.com>
+Date: Mon, 30 Sep 2013 12:17:47 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxG3hK0CiZJh1XORv+tiNWXVxh8rzr37Vmu=ASWj1s4PQ@mail.gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        John Crispin <blogic@openwrt.org>
+Subject: Re: Issue with BUG() in asm-gemeric/bug.h if CONFIG_BUG=n
+References: <20130930145630.GA14672@linux-mips.org> <52499E8B.6000702@gmail.com> <C9BC92C2-A7F5-4F9A-B001-D1A7F4ADEA5A@caviumnetworks.com> <5249B8A4.9070905@gmail.com> <CAMuHMdXkb6BH=1QvfHwMN54db9mP64KnCgoAj3aXida7-6OtPA@mail.gmail.com>
+In-Reply-To: <CAMuHMdXkb6BH=1QvfHwMN54db9mP64KnCgoAj3aXida7-6OtPA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 09:26:21AM -0700, Linus Torvalds wrote:
-> On Mon, Sep 30, 2013 at 1:52 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> >
-> > Sorry having to break the party but the sleepable locks for anon_vma
-> > and i_mmap_mutex are now requirement for the "pageable RDMA" effort
-> > recently achieved upstream by mellanox with the MMU notifier.
-> 
-> I'll happily break that.
+On 09/30/2013 12:03 PM, Geert Uytterhoeven wrote:
+> On Mon, Sep 30, 2013 at 7:45 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+>>> What about using __builtin_unreachable when we can but turn off warnings
+>>> and use do{}while(0) when __builtin_unreachable does not exist?  This seems
+>>> the both worlds.  Newer compilers produce better code with unreachable
+>>> anyways.
+>>>
+>>
+>> Simply not true.
+>>
+>> do{}while(0) is a NOP it is no more useful than an ';' statement.  It
+>> doesn't serve as a magic uninitialized variable hiding mechanism.
+>
+> You missed the "turn off warnings" part of the "and".
 
-Unless a solution is found that could allow to invalidate secondary
-MMUs with a spinlock/rwlock for anon_vma->lock/i_mmap_lock, would it
-be acceptable to switch between spinlock/rwlock mutex/rwsem through a
-config option? option CONFIG_SLEEPABLE_RMAP, implicitly selected by
-CONFIG_SLEEPABLE_MMU_NOTIFIER, in turn selected by the RDMA and nvidia
-drivers if they're built (ideally nvidia drivers will figure out how
-to avoid scheduling).
+You are correct, I did miss it.
 
-I mean it only requires a wrapping header file, aside from the header
-file it wouldn't be a much bigger patch than the one posted already.
+The real problem here is that the kernel is written to expect that BUG() 
+never returns.  Any implementation that has BUG() return, is almost 
+certainly *not* what we want.
 
-It would be much easier to switch between spinning and sleeping locks
-to keep benchmarking different scenarios too.
+But wieh people select CONFIG_BUG=n they expect the smallest possible code.
+
+These two criteria are mutually exclusive, so something should change.
+
+It is not just the uninitialized variable warning, there can be others 
+as well (control reaching the end of a non-void function comes to mind). 
+  So I don't think turning off the warnings is a good solution.
+
+That leaves:
+
+1) Remove CONFIG_BUG and make it unconditionally enabled.
+
+2) Make CONFIG_BUG=n imply "static inline void BUG(void){do{}while(1);}" 
+which might be bigger than with CONFIG_BUG=y
+
+David Daney
+
+
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+>
+>
+
