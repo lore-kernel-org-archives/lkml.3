@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3I3VJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 17:09:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55560 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755507Ab3I3VJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 17:09:42 -0400
-Date: Mon, 30 Sep 2013 17:09:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
-        X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130930210921.GC6116@redhat.com>
-References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
- <52422A6A.8080305@zytor.com>
- <20130926031242.GA4487@dhcp-16-126.nay.redhat.com>
- <20130930201730.GD16383@pd.tnic>
- <20130930203505.GA6116@redhat.com>
- <20130930204154.GE19411@pd.tnic>
- <20130930204642.GB6116@redhat.com>
- <20130930210646.GF19411@pd.tnic>
+	id S1755837Ab3I3VKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 17:10:37 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:37951 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab3I3VKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 17:10:36 -0400
+Date: Mon, 30 Sep 2013 23:10:35 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: [PATCH] [IA64] aliasing-test: fix mem leaks
+Message-ID: <alpine.LNX.2.00.1309302309200.4992@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930210646.GF19411@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 11:06:46PM +0200, Borislav Petkov wrote:
-> On Mon, Sep 30, 2013 at 04:46:42PM -0400, Vivek Goyal wrote:
-> > On Mon, Sep 30, 2013 at 10:41:54PM +0200, Borislav Petkov wrote:
-> > 
-> > [..]
-> > > hpa, so, for the struct efi_mapping thing to work, I will have to grep
-> > > dmesg of the first kernel to get an output like the one below, filter
-> > > the runtime regions so that I can build the struct efi_mapping array of
-> > > mem regions which I pass on to the second, kexec kernel with setup_data.
-> > 
-> > Any data you need to pass to second kernel will have to be exported to
-> > user space either using /sys or /proc so that kexec-tools can parse it.
-> 
-> And I cannot parse dmesg? Because I have all the info there already.
+Fix a few trivial mem leaks when returning from scan_tree/scan_rom.
 
-dmesg can 't relied on. It is just a kernel buffer which root can
-clear. (dmesg --clear). So required info has to be exported to user
-space in a suitable form.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ Documentation/ia64/aliasing-test.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Thanks
-Vivek
+diff --git a/Documentation/ia64/aliasing-test.c b/Documentation/ia64/aliasing-test.c
+index 62a190d..33ed7a7 100644
+--- a/Documentation/ia64/aliasing-test.c
++++ b/Documentation/ia64/aliasing-test.c
+@@ -96,6 +96,7 @@ static int scan_tree(char *path, char *file, off_t offset, size_t length, int to
+ 				fprintf(stderr, "PASS: %s 0x%lx-0x%lx not mappable\n", path2, offset, offset + length);
+ 			else {
+ 				fprintf(stderr, "FAIL: %s 0x%lx-0x%lx not accessible\n", path2, offset, offset + length);
++				free(path2);
+ 				return rc;
+ 			}
+ 		} else {
+@@ -185,6 +186,7 @@ static int scan_rom(char *path, char *file)
+ 				fprintf(stderr, "PASS: %s read %d bytes\n", path2, rc);
+ 			else {
+ 				fprintf(stderr, "PASS: %s not readable\n", path2);
++				free(path2);
+ 				return rc;
+ 			}
+ 		} else {
+-- 
+1.7.1
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
