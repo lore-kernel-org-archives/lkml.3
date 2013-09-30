@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3I3P6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:58:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44587 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab3I3P6n (ORCPT
+	id S1756011Ab3I3P6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:58:44 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:19086 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab3I3P6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Sep 2013 11:58:43 -0400
-Date: Mon, 30 Sep 2013 11:58:08 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
-Subject: Re: [PATCH v6 14/19] swiotlb: print a warning when the swiotlb is
- full
-Message-ID: <20130930155808.GT3106@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
- <1380298207-29151-14-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <52499FA5.60701@hp.com>
+Date: Mon, 30 Sep 2013 11:58:29 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380298207-29151-14-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com> <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com> <20130928074144.GA17773@gmail.com> <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com> <20130928192123.GA8228@gmail.com> <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
+In-Reply-To: <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 05:10:02PM +0100, Stefano Stabellini wrote:
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/xen/swiotlb-xen.c |    1 +
->  lib/swiotlb.c             |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index 96ad316..790c2eb 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -674,6 +674,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  								 sg->length,
->  								 dir);
->  			if (map == SWIOTLB_MAP_ERROR) {
-> +				pr_warn("swiotlb buffer is full\n");
+On 09/28/2013 03:33 PM, Linus Torvalds wrote:
+> On Sat, Sep 28, 2013 at 12:21 PM, Ingo Molnar<mingo@kernel.org>  wrote:
+>> If we do that then I suspect the next step will be queued rwlocks :-/ The
+>> current rwlock_t implementation is rather primitive by modern standards.
+>> (We'd probably have killed rwlock_t long ago if not for the
+>> tasklist_lock.)
+> Yeah, I'm not happy about or rwlocks. That's one lock that currently
+> is so broken that I think we could easily argue for making that one
+> queued.
+>
+> Waiman had a qrwlock series that looked reasonable, and I think his
+> later versions were drop-in replacements (ie they automatically just
+> did the RightThing(tm) wrt interrupts taking a recursive read lock - I
+> objected to the first versions that required that to be stated
+> explicitly).
 
-It would be beneficial to use dev_warn instead.
+The latest version (v3) will allow recursive read lock in interrupt 
+handlers.
 
-And perhaps even call debug_dma_dump_mappings to help in diagnosing
-a problem?
+> I think Waiman's patches (even the later ones) made the queued rwlocks
+> be a side-by-side implementation with the old rwlocks, and I think
+> that was just being unnecessarily careful. It might be useful for
+> testing to have a config option to switch between the two, but we
+> might as well go all the way.
 
->  				/* Don't panic here, we expect map_sg users
->  				   to do proper error handling. */
->  				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
-> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> index eb45d17..f06da0d 100644
-> --- a/lib/swiotlb.c
-> +++ b/lib/swiotlb.c
-> @@ -502,6 +502,7 @@ phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
->  
->  not_found:
->  	spin_unlock_irqrestore(&io_tlb_lock, flags);
-> +	pr_warn("swiotlb buffer is full\n");
->  	return SWIOTLB_MAP_ERROR;
->  found:
->  	spin_unlock_irqrestore(&io_tlb_lock, flags);
-> -- 
-> 1.7.2.5
-> 
+It is not actually a side-by-side implementation. A user can choose 
+either regular rwlock or the queue one, but never both by setting a 
+configuration parameter. However, I now think that maybe we should do it 
+the lockref way by pre-determining it on a per-architecture level 
+without user visible configuration option.
+
+-Longman
