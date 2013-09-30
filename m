@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab3I3KQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:16:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43816 "EHLO
+	id S1756057Ab3I3KQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:16:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43821 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab3I3KNh (ORCPT
+	with ESMTP id S1755831Ab3I3KNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:37 -0400
+	Mon, 30 Sep 2013 06:13:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Gabor Juhos <juhosg@openwrt.org>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 094/104] intel-iommu: Fix leaks in pagetable freeing
-Date: Mon, 30 Sep 2013 11:11:11 +0100
-Message-Id: <1380535881-9239-95-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 095/104] MIPS: ath79: Fix ar933x watchdog clock
+Date: Mon, 30 Sep 2013 11:11:12 +0100
+Message-Id: <1380535881-9239-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,123 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
+commit a1191927ace7e6f827132aa9e062779eb3f11fa5 upstream.
 
-At best the current code only seems to free the leaf pagetables and
-the root.  If you're unlucky enough to have a large gap (like any
-QEMU guest with more than 3G of memory), only the first chunk of leaf
-pagetables are freed (plus the root).  This is a massive memory leak.
-This patch re-writes the pagetable freeing function to use a
-recursive algorithm and manages to not only free all the pagetables,
-but does it without any apparent performance loss versus the current
-broken version.
+The watchdog device on the AR933x is connected to
+the AHB clock, however the current code uses the
+reference clock. Due to the wrong rate, the watchdog
+driver can't calculate correct register values for
+a given timeout value and the watchdog unexpectedly
+restarts the system.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+The code uses the wrong value since the initial
+commit 04225e1d227c8e68d685936ecf42ac175fec0e54
+(MIPS: ath79: add AR933X specific clock init)
+
+The patch fixes the code to use the correct clock
+rate to avoid the problem.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5777/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iommu/intel-iommu.c | 72 ++++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 37 deletions(-)
+ arch/mips/ath79/clock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index eafc4ed..e560f54 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -887,56 +887,54 @@ static int dma_pte_clear_range(struct dmar_domain *domain,
- 	return order;
+diff --git a/arch/mips/ath79/clock.c b/arch/mips/ath79/clock.c
+index 579f452..300d7d3 100644
+--- a/arch/mips/ath79/clock.c
++++ b/arch/mips/ath79/clock.c
+@@ -164,7 +164,7 @@ static void __init ar933x_clocks_init(void)
+ 		ath79_ahb_clk.rate = freq / t;
+ 	}
+ 
+-	ath79_wdt_clk.rate = ath79_ref_clk.rate;
++	ath79_wdt_clk.rate = ath79_ahb_clk.rate;
+ 	ath79_uart_clk.rate = ath79_ref_clk.rate;
  }
  
-+static void dma_pte_free_level(struct dmar_domain *domain, int level,
-+			       struct dma_pte *pte, unsigned long pfn,
-+			       unsigned long start_pfn, unsigned long last_pfn)
-+{
-+	pfn = max(start_pfn, pfn);
-+	pte = &pte[pfn_level_offset(pfn, level)];
-+
-+	do {
-+		unsigned long level_pfn;
-+		struct dma_pte *level_pte;
-+
-+		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
-+			goto next;
-+
-+		level_pfn = pfn & level_mask(level - 1);
-+		level_pte = phys_to_virt(dma_pte_addr(pte));
-+
-+		if (level > 2)
-+			dma_pte_free_level(domain, level - 1, level_pte,
-+					   level_pfn, start_pfn, last_pfn);
-+
-+		/* If range covers entire pagetable, free it */
-+		if (!(start_pfn > level_pfn ||
-+		      last_pfn < level_pfn + level_size(level))) {
-+			dma_clear_pte(pte);
-+			domain_flush_cache(domain, pte, sizeof(*pte));
-+			free_pgtable_page(level_pte);
-+		}
-+next:
-+		pfn += level_size(level);
-+	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
-+}
-+
- /* free page table pages. last level pte should already be cleared */
- static void dma_pte_free_pagetable(struct dmar_domain *domain,
- 				   unsigned long start_pfn,
- 				   unsigned long last_pfn)
- {
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	struct dma_pte *first_pte, *pte;
--	int total = agaw_to_level(domain->agaw);
--	int level;
--	unsigned long tmp;
--	int large_page = 2;
- 
- 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
- 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
- 	BUG_ON(start_pfn > last_pfn);
- 
- 	/* We don't need lock here; nobody else touches the iova range */
--	level = 2;
--	while (level <= total) {
--		tmp = align_to_level(start_pfn, level);
--
--		/* If we can't even clear one PTE at this level, we're done */
--		if (tmp + level_size(level) - 1 > last_pfn)
--			return;
--
--		do {
--			large_page = level;
--			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
--			if (large_page > level)
--				level = large_page + 1;
--			if (!pte) {
--				tmp = align_to_level(tmp + 1, level + 1);
--				continue;
--			}
--			do {
--				if (dma_pte_present(pte)) {
--					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
--					dma_clear_pte(pte);
--				}
--				pte++;
--				tmp += level_size(level);
--			} while (!first_pte_in_page(pte) &&
--				 tmp + level_size(level) - 1 <= last_pfn);
-+	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
-+			   domain->pgd, 0, start_pfn, last_pfn);
- 
--			domain_flush_cache(domain, first_pte,
--					   (void *)pte - (void *)first_pte);
--			
--		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
--		level++;
--	}
- 	/* free pgd */
- 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
- 		free_pgtable_page(domain->pgd);
 -- 
 1.8.3.2
 
