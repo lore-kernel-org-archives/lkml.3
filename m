@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3I3WkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 18:40:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab3I3WkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 18:40:19 -0400
-Date: Mon, 30 Sep 2013 19:39:57 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 03/15] KVM: MMU: lazily drop large spte
-Message-ID: <20130930223957.GA3262@amt.cnet>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1378376958-27252-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1755537Ab3I3Wnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 18:43:47 -0400
+Received: from outbound-mail03.westnet.com.au ([203.10.1.244]:32949 "EHLO
+	outbound-mail03.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754789Ab3I3Wnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 18:43:46 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAJP9SVI6B/5Q/2dsb2JhbAANTMUOgUiDGQEBAQQ4QAEQCw4KCRYPCQMCAQIBRQYNAQUCAQGyOJM4j1EHhCIDojiKdg
+X-IronPort-AV: E=Sophos;i="4.90,1010,1371052800"; 
+   d="scan'208";a="361321520"
+X-WN-REMOTEIP: 58.7.254.80
+X-WN-ENVELOPESENDER: gerg@uclinux.org
+X-WN-MID: 361321520
+X-WN-SMTPAUTHID: gregungerer@westnet.com.au
+Message-ID: <5249FE9C.2000208@uclinux.org>
+Date: Tue, 01 Oct 2013 08:43:40 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378376958-27252-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] ARM: ks8695: fix incorrect placement of __initdata tag
+References: <1551134.v305P4LSfh@amdc1032>
+In-Reply-To: <1551134.v305P4LSfh@amdc1032>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 06:29:06PM +0800, Xiao Guangrong wrote:
-> Currently, kvm zaps the large spte if write-protected is needed, the later
-> read can fault on that spte. Actually, we can make the large spte readonly
-> instead of making them un-present, the page fault caused by read access can
-> be avoided
-> 
-> The idea is from Avi:
-> | As I mentioned before, write-protecting a large spte is a good idea,
-> | since it moves some work from protect-time to fault-time, so it reduces
-> | jitter.  This removes the need for the return value.
-> 
-> This version has fixed the issue reported in 6b73a9606, the reason of that
-> issue is that fast_page_fault() directly sets the readonly large spte to
-> writable but only dirty the first page into the dirty-bitmap that means
-> other pages are missed. Fixed it by only the normal sptes (on the
-> PT_PAGE_TABLE_LEVEL level) can be fast fixed
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c | 36 ++++++++++++++++++++----------------
->  arch/x86/kvm/x86.c |  8 ++++++--
->  2 files changed, 26 insertions(+), 18 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 869f1db..88107ee 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1177,8 +1177,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
->  
->  /*
->   * Write-protect on the specified @sptep, @pt_protect indicates whether
-> - * spte writ-protection is caused by protecting shadow page table.
-> - * @flush indicates whether tlb need be flushed.
-> + * spte write-protection is caused by protecting shadow page table.
->   *
->   * Note: write protection is difference between drity logging and spte
->   * protection:
-> @@ -1187,10 +1186,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
->   * - for spte protection, the spte can be writable only after unsync-ing
->   *   shadow page.
->   *
-> - * Return true if the spte is dropped.
-> + * Return true if tlb need be flushed.
->   */
-> -static bool
-> -spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-> +static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
->  {
->  	u64 spte = *sptep;
->  
-> @@ -1200,17 +1198,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
->  
->  	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
->  
-> -	if (__drop_large_spte(kvm, sptep)) {
-> -		*flush |= true;
-> -		return true;
-> -	}
-> -
->  	if (pt_protect)
->  		spte &= ~SPTE_MMU_WRITEABLE;
->  	spte = spte & ~PT_WRITABLE_MASK;
->  
-> -	*flush |= mmu_spte_update(sptep, spte);
-> -	return false;
-> +	return mmu_spte_update(sptep, spte);
->  }
+On 30/09/13 23:02, Bartlomiej Zolnierkiewicz wrote:
+> __initdata tag should be placed between the variable name and equal
+> sign for the variable to be placed in the intended .init.data section.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Is it necessary for kvm_mmu_unprotect_page to search for an entire range large 
-page range now, instead of a 4k page?
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+
+
+> ---
+>   arch/arm/mach-ks8695/board-og.c | 2 +-
+>   arch/arm/mach-ks8695/cpu.c      | 3 +--
+>   2 files changed, 2 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mach-ks8695/board-og.c b/arch/arm/mach-ks8695/board-og.c
+> index 002bc61..9204f5a 100644
+> --- a/arch/arm/mach-ks8695/board-og.c
+> +++ b/arch/arm/mach-ks8695/board-og.c
+> @@ -79,7 +79,7 @@ static void __init og_pci_bus_reset(void)
+>   #define	S8250_VIRT	0xf4000000
+>   #define	S8250_SIZE	0x00100000
+>
+> -static struct __initdata map_desc og_io_desc[] = {
+> +static struct map_desc og_io_desc[] __initdata = {
+>   	{
+>   		.virtual	= S8250_VIRT,
+>   		.pfn		= __phys_to_pfn(S8250_PHYS),
+> diff --git a/arch/arm/mach-ks8695/cpu.c b/arch/arm/mach-ks8695/cpu.c
+> index ddb2422..9618654 100644
+> --- a/arch/arm/mach-ks8695/cpu.c
+> +++ b/arch/arm/mach-ks8695/cpu.c
+> @@ -33,8 +33,7 @@
+>   #include <mach/regs-sys.h>
+>   #include <mach/regs-misc.h>
+>
+> -
+> -static struct __initdata map_desc ks8695_io_desc[] = {
+> +static struct map_desc ks8695_io_desc[] __initdata = {
+>   	{
+>   		.virtual	= (unsigned long)KS8695_IO_VA,
+>   		.pfn		= __phys_to_pfn(KS8695_IO_PA),
+>
+
