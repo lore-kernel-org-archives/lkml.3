@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab3I3VN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 17:13:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56744 "EHLO mx1.redhat.com"
+	id S1755922Ab3I3VUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 17:20:13 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:55268 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab3I3VN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 17:13:57 -0400
-Date: Mon, 30 Sep 2013 17:13:42 -0400
-From: Dave Jones <davej@redhat.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
-        james.l.morris@oracle.com, Paul Moore <paul@paul-moore.com>
-Subject: Re: [PATCH] conditionally reschedule while loading selinux policy.
-Message-ID: <20130930211342.GA24001@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Stephen Smalley <sds@tycho.nsa.gov>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
-	james.l.morris@oracle.com, Paul Moore <paul@paul-moore.com>
-References: <20130916173036.GA17950@redhat.com>
- <52374350.1090403@tycho.nsa.gov>
- <20130916184030.GA15800@redhat.com>
- <20130930172447.GA10562@redhat.com>
- <5249B6F1.4050507@tycho.nsa.gov>
+	id S1755171Ab3I3VUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 17:20:12 -0400
+Date: Mon, 30 Sep 2013 15:20:03 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to
+ sysfs into tpm-sysfs.c
+Message-ID: <20130930212003.GA10393@obsidianresearch.com>
+References: <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com>
+ <52408E5D.4020904@tycho.nsa.gov>
+ <20130923193633.GA9194@obsidianresearch.com>
+ <5240A2A3.4040102@tycho.nsa.gov>
+ <20130923204232.GB16345@obsidianresearch.com>
+ <5240BA0E.3000304@tycho.nsa.gov>
+ <20130923222324.GA9533@obsidianresearch.com>
+ <5241A199.1080505@tycho.nsa.gov>
+ <20130930181005.GG28898@obsidianresearch.com>
+ <5249E0CB.2070106@tycho.nsa.gov>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5249B6F1.4050507@tycho.nsa.gov>
+In-Reply-To: <5249E0CB.2070106@tycho.nsa.gov>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 01:37:53PM -0400, Stephen Smalley wrote:
- 
- > > With that patch applied, the problem seems to have moved elsewhere..
- > > 
- > > BUG: soft lockup - CPU#3 stuck for 22s! [load_policy:8119]
- > >  irq event stamp: 1590886
- > >  hardirqs last  enabled at (1590885): [<ffffffff8152c3dd>] __slab_alloc.constprop.78+0x4c0/0x4d7
- > >  hardirqs last disabled at (1590886): [<ffffffff8153e06a>] apic_timer_interrupt+0x6a/0x80
- > >  softirqs last  enabled at (1590336): [<ffffffff810480d9>] __do_softirq+0x169/0x200
- > >  softirqs last disabled at (1590331): [<ffffffff8104839d>] irq_exit+0x11d/0x140
- > >  RIP: 0010:[<ffffffff81223182>]  [<ffffffff81223182>] hashtab_insert+0x62/0x110
- > > 
- > > Call Trace:
- > >  [<ffffffff812283b5>] policydb_read+0xc25/0x1200
- > ...
- > > We're holding a bunch of locks here, so we can't just cond_resched.  Thoughts ?
- > 
- > Sorry, what locks are we holding there?  You ought to be able to do a
- > cond_resched() anywhere during policydb_read() AFAIK; it is loading the
- > policy into a new structure that isn't being accessed by anything else
- > yet and the policy_rwlock is only held by security_load_policy after
- > calling policydb_read and only to switch it into place as the active
- > policydb.
+On Mon, Sep 30, 2013 at 04:36:27PM -0400, Daniel De Graaf wrote:
 
-Hmm, I thought I had tried this already, and got a lot of spew, but it turns out
-for some reason I had previously patched hashtab_search instead.
+> >I think using CONFIG_ options would make this feature unavaiable to
+> >distro kernel users...
+> 
+> This just moves the problem - now you need a custom initrd instead of
+> a custom kernel. Other TPM options like IMA's PCR selection also must
+> be changed at CONFIG_ time, although that seems to be more justified
+> since IMA in TCB mode is not usable on any distro kernel that makes
+> the TPM driver a module (i.e. most or all of them).
 
-I'll try running with this for a while..
+A 'custom' initrd is something a distro can automate. Eg a distro's
+initrd generation script could read /etc/tpm.cfg and generate an
+initrd with the module load and correct sysfs writes. This is more
+accessible than recompiling the kernel.
 
-	Dave
+My comments would apply to IMA as well, it should work with standard
+distros, meaning the initrd must be able to set it up. So, load the
+module in the initrd, setup localities, select the PCR, then enable
+IMA.
 
+The bootloader should measure the kernel and initrd together.
 
-diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
-index 933e735..2cc4961 100644
---- a/security/selinux/ss/hashtab.c
-+++ b/security/selinux/ss/hashtab.c
-@@ -6,6 +6,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/errno.h>
-+#include <linux/sched.h>
- #include "hashtab.h"
- 
- struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const void *key),
-@@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void *key, void *datum)
- 	u32 hvalue;
- 	struct hashtab_node *prev, *cur, *newnode;
- 
-+	cond_resched();
-+
- 	if (!h || h->nel == HASHTAB_MAX_NODES)
- 		return -EINVAL;
- 
+IMHO, distros are not making it easy to enable TPM features, and
+requiring a kernel recompile is not helping :)
+
+> There is also the fact that the driver may not be able to tell if a
+> locality is available without doing some kind of test command. The
+> Xen
+
+Make sense.
+
+> Or, for more flexibility (I actually like this one better):
+> 
+>  - CONFIG_TPM_KERNEL_DEFAULT_LOCALITY = [int]
+>  - CONFIG_TPM_KERNEL_LOCALITY_FIXED = [bool]
+> 
+> And sysfs contains:
+>  - kernel_locality [0644, int; 0444 if FIXED=y or when locked(?)]
+>  - lock_kernel_locality [write-once; only exists if FIXED=n]
+
+Yes, this looks simple and sane.
+
+But if there isn't really a need to have a hardwired kernel, the
+defaults can be DEFAULT_LOCALITY=0, LOCALITY_FIXED=n and we can
+recommend distros rely on the initrd.
+
+> So far, nobody I have talked to has offered any strong opinions on
+> what locality should be used or how it should be set. I think finding
+> a developer of trousers may be the most useful to talk about how the
+> ioctl portion of this would need to be set up - if someone is actually
+> needed.
+
+It would be nice to have a user! As I said, we don't use it here.
+
+Jason
