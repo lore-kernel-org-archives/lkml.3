@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab3I3RZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:25:14 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33644 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab3I3RZL (ORCPT
+	id S1755816Ab3I3RZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:25:41 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51344 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755776Ab3I3RZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:25:11 -0400
+	Mon, 30 Sep 2013 13:25:40 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Ronald <ronald645@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] PM / hibernate: Fix user space driven resume regression
+Date: Mon, 30 Sep 2013 19:37:07 +0200
+Message-ID: <1904990.pSWyZTIzEi@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <7570724.v5QLmkRO38@vostro.rjw.lan>
+References: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com> <CAF1_xX1DO1V-cZyDWsDyrbCfG7uWnPeKP5w0H7Bz=oSpRMXTvQ@mail.gmail.com> <7570724.v5QLmkRO38@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20130930100351.7843a62b.akpm@linux-foundation.org>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
-	<20130928074144.GA17773@gmail.com>
-	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
-	<20130928192123.GA8228@gmail.com>
-	<20130928193739.GA8642@gmail.com>
-	<CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
-	<20130928195207.GA31245@gmail.com>
-	<20130930100351.7843a62b.akpm@linux-foundation.org>
-Date: Mon, 30 Sep 2013 10:25:10 -0700
-X-Google-Sender-Auth: GCMh_i8-8UgeO54wcGbcmroZNJ8
-Message-ID: <CA+55aFzOXzQike3zjTdhvB+eqSYDgKzwP7zh4diZnwROmSeu8Q@mail.gmail.com>
-Subject: Re: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 10:03 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
->
-> Let's convince ourselves that we won't be undoing things which will
-> return to bite us?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Umm. We call them regressions, and we fix them.
+Recent commit 8fd37a4 (PM / hibernate: Create memory bitmaps after
+freezing user space) broke the resume part of the user space driven
+hibernation (s2disk), because I forgot that the resume utility
+loaded the image into memory without freezing user space (it still
+freezes tasks after loading the image).  This means that during user
+space driven resume we need to create the memory bitmaps at the
+"device open" time rather than at the "freeze tasks" time, so make
+that happen (that's a special case anyway, so it needs to be treated
+in a special way).
 
-As already mentioned, the original switch to a mutex didn't even have
-any good explanation for it, much less actual data.
+Reported-and-tested-by: Ronald <ronald645@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ kernel/power/snapshot.c |    5 ++++-
+ kernel/power/user.c     |    8 ++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-When we make mistakes, we'd better realize it and fix them, rather
-than assume that they were fixes just because they were made.
+Index: linux-pm/kernel/power/snapshot.c
+===================================================================
+--- linux-pm.orig/kernel/power/snapshot.c
++++ linux-pm/kernel/power/snapshot.c
+@@ -743,7 +743,10 @@ int create_basic_memory_bitmaps(void)
+ 	struct memory_bitmap *bm1, *bm2;
+ 	int error = 0;
+ 
+-	BUG_ON(forbidden_pages_map || free_pages_map);
++	if (forbidden_pages_map && free_pages_map)
++		return 0;
++	else
++		BUG_ON(forbidden_pages_map || free_pages_map);
+ 
+ 	bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
+ 	if (!bm1)
+Index: linux-pm/kernel/power/user.c
+===================================================================
+--- linux-pm.orig/kernel/power/user.c
++++ linux-pm/kernel/power/user.c
+@@ -39,6 +39,7 @@ static struct snapshot_data {
+ 	char frozen;
+ 	char ready;
+ 	char platform_support;
++	bool free_bitmaps;
+ } snapshot_state;
+ 
+ atomic_t snapshot_device_available = ATOMIC_INIT(1);
+@@ -82,6 +83,10 @@ static int snapshot_open(struct inode *i
+ 		data->swap = -1;
+ 		data->mode = O_WRONLY;
+ 		error = pm_notifier_call_chain(PM_RESTORE_PREPARE);
++		if (!error) {
++			error = create_basic_memory_bitmaps();
++			data->free_bitmaps = !error;
++		}
+ 		if (error)
+ 			pm_notifier_call_chain(PM_POST_RESTORE);
+ 	}
+@@ -111,6 +116,8 @@ static int snapshot_release(struct inode
+ 		pm_restore_gfp_mask();
+ 		free_basic_memory_bitmaps();
+ 		thaw_processes();
++	} else if (data->free_bitmaps) {
++		free_basic_memory_bitmaps();
+ 	}
+ 	pm_notifier_call_chain(data->mode == O_RDONLY ?
+ 			PM_POST_HIBERNATION : PM_POST_RESTORE);
+@@ -231,6 +238,7 @@ static long snapshot_ioctl(struct file *
+ 			break;
+ 		pm_restore_gfp_mask();
+ 		free_basic_memory_bitmaps();
++		data->free_bitmaps = false;
+ 		thaw_processes();
+ 		data->frozen = 0;
+ 		break;
 
-The performance numbers are pretty damn compelling for this having
-been a major mistake.
-
-(Of course, the current performance numbers also contain the
-conversion to a rwlock_t rather than back to a spinlock, which may
-actually help wrt the original situation too)
-
-                 Linus
