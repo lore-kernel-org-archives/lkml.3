@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab3I3PZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:25:42 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52742 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab3I3PZk (ORCPT
+	id S1756080Ab3I3PZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:25:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49222 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756040Ab3I3PZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:25:40 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: takasi-y@ops.dti.ne.jp
-Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
-        ben.dooks@codethink.co.uk,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] serial8250-em: convert to clk_prepare/unprepare
-Date: Mon, 30 Sep 2013 17:25:40 +0200
-Message-ID: <4895580.Leadr2OAf1@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130924131039.3c871cad7acb2a068a988d0f@ops.dti.ne.jp>
-References: <52410F86.4040301@renesas.com> <20130924131039.3c871cad7acb2a068a988d0f@ops.dti.ne.jp>
+	Mon, 30 Sep 2013 11:25:51 -0400
+Date: Mon, 30 Sep 2013 17:25:42 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Simon Horman <horms@verge.net.au>
+cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] ARM: shmobile: CPUFreq support on Lager
+In-Reply-To: <1380216060-14506-1-git-send-email-g.liakhovetski@gmx.de>
+Message-ID: <Pine.LNX.4.64.1309301719460.16868@axis700.grange>
+References: <1380216060-14506-1-git-send-email-g.liakhovetski@gmx.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:sOeKMNQBcAPN0nUt5iQZImWOwDjtaImQK67Fj4nHnHa
+ Ife9VtzfsBt8QdCrFUdv8y6mIFCW4GjJHKRBNvgcT+X48IDQW2
+ noPX8kmaC1m8VAJvNMmvqk2XcxO7hLXtJrly4LZLmnp46HnusS
+ iN+PQ8Qk84uJOcAjmOV59LVzfFs3NsxRPsTSdI1oa+MYtRkKom
+ +jAXXQVuzwD8YuwL+iHZ6rQQjN04aqSrf0431nkjnxchzPBvMd
+ GZ4PPLemv+YK2bWXKPkXN2T5CIzJSuaSWModIE8ByLJrPdxa/g
+ w1go50D5FxjIXTOTULxlx8JI+pkovEejXLsewEYHmUu5/nGbxM
+ n+LWyxuKbTv1aLj15Z0OKhvWN4YhP4d6+kOmlWI8Mg/Yl6IdWr
+ R68CBPcTd/Tgg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yoshii-san,
+Hi Simon,
 
-Thank you for the patch.
+Just a quick check of the status of this patch series:
 
-On Tuesday 24 September 2013 13:10:39 takasi-y@ops.dti.ne.jp wrote:
-> From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
-> 
-> Add calls to clk_prepare and unprepare so that EMMA Mobile EV2 can
-> migrate to the common clock framework.
-> 
-> Signed-off-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
-> [takashi.yoshii.ze@renesas.com: edited for conflicts]
-> Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
+On Thu, 26 Sep 2013, Guennadi Liakhovetski wrote:
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> On Lager a da9210 regulator is used to supply DVFS power to the SoC. This
+> patch series adds I2C and Z-clock support on r8a7790 and CPUFreq support
+> for the Lager board. Please note, that patch 4/4 is an RFC as explained
+> inline.
+> 
+> Developed on top of today's
+> 
+>     git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git    devel
+> 
+> plus i2c-rcar patches from my earlier patch series
+> 
+> [PATCH v2 0/5] i2c: rcar: Device Tree support and clock improvements
+> 
+> and the "sh-pfc: r8a7790: Add I2C pin groups and functions" patch from
+> Ulrich Hecht.
+> 
+> All changes since v1 are noted in respective patches. They all are trivial,
+> still as soon as test hardware is available, it would be good to run-time
+> test this version too.
+> 
+> Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> 
+> Guennadi Liakhovetski (5):
+>   pinctrl: sh-pfc: r8a7790: add pin definitions for the I2C3 interface
 
-> ---
->  drivers/tty/serial/8250/8250_em.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250_em.c
-> b/drivers/tty/serial/8250/8250_em.c index 5f3bba1..d1a9078 100644
-> --- a/drivers/tty/serial/8250/8250_em.c
-> +++ b/drivers/tty/serial/8250/8250_em.c
-> @@ -122,7 +122,7 @@ static int serial8250_em_probe(struct platform_device
-> *pdev) up.port.dev = &pdev->dev;
->  	up.port.private_data = priv;
-> 
-> -	clk_enable(priv->sclk);
-> +	clk_prepare_enable(priv->sclk);
->  	up.port.uartclk = clk_get_rate(priv->sclk);
-> 
->  	up.port.iotype = UPIO_MEM32;
-> @@ -134,7 +134,7 @@ static int serial8250_em_probe(struct platform_device
-> *pdev) ret = serial8250_register_8250_port(&up);
->  	if (ret < 0) {
->  		dev_err(&pdev->dev, "unable to register 8250 port\n");
-> -		clk_disable(priv->sclk);
-> +		clk_disable_unprepare(priv->sclk);
->  		return ret;
->  	}
-> 
-> @@ -148,7 +148,7 @@ static int serial8250_em_remove(struct platform_device
-> *pdev) struct serial8250_em_priv *priv = platform_get_drvdata(pdev);
-> 
->  	serial8250_unregister_port(priv->line);
-> -	clk_disable(priv->sclk);
-> +	clk_disable_unprepare(priv->sclk);
->  	return 0;
->  }
--- 
-Regards,
+Laurent has taken this one.
 
-Laurent Pinchart
+>   ARM: shmobile: r8a7790: add I2C clocks and aliases for the DT mode
+>   ARM: shmobile: r8a7790: add I2C DT nodes
 
+You've applied the above two too, thanks.
+
+>   ARM: shmobile: r8a7790: add CPUFreq clock support
+
+Do I see it right, that you're waiting for a review for the above one?
+
+>   ARM: shmobile: lager: (DEVEL) add CPUFreq support
+
+Once a review of #4/5 is posted, I can split the above patch into two to 
+separate shmobile and DT parts, as requested by Sergei. Is that about what 
+you're expecting too?
+
+Thanks
+Guennadi
+
+>  arch/arm/boot/dts/r8a7790-lager-reference.dts  |   33 +++++
+>  arch/arm/boot/dts/r8a7790.dtsi                 |   40 ++++++
+>  arch/arm/mach-shmobile/Kconfig                 |    2 +
+>  arch/arm/mach-shmobile/board-lager-reference.c |    4 +-
+>  arch/arm/mach-shmobile/clock-r8a7790.c         |  160 ++++++++++++++++++++++++
+>  drivers/pinctrl/sh-pfc/pfc-r8a7790.c           |   28 ++++
+>  6 files changed, 266 insertions(+), 1 deletions(-)
+> 
+> -- 
+> 1.7.2.5
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
