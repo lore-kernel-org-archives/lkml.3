@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3I3DMk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 23:12:40 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:42400 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989Ab3I3DMh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 23:12:37 -0400
-Date: Mon, 30 Sep 2013 03:12:36 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Suman Anna <s-anna@ti.com>
-cc: Ohad Ben-Cohen <ohad@wizery.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCHv2 0/9] omap hwspinlock dt support
-In-Reply-To: <5245A8CA.4020805@ti.com>
-Message-ID: <alpine.DEB.2.02.1309300309530.17980@utopia.booyaka.com>
-References: <cover.1379445653.git.s-anna@ti.com> <5245A8CA.4020805@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755175Ab3I3DNa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 23:13:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57918 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754147Ab3I3DN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 23:13:27 -0400
+Date: Mon, 30 Sep 2013 05:13:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tools: Separate lbfd check out of NO_DEMANGLE
+ condition
+Message-ID: <20130930031306.GB993@krava.redhat.com>
+References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+ <1380292332-6518-1-git-send-email-jolsa@redhat.com>
+ <1380437526.1727.10.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380437526.1727.10.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, Sep 29, 2013 at 03:52:06PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> 2013-09-27 (금), 16:32 +0200, Jiri Olsa:
+> > We fail build with NO_DEMANGLE with missing -lbfd externals error.
+> > The reason is that we now use bfd code in srcline object:
+> >   perf tools: Implement addr2line directly using libbfd
+> > 
+> > So we need to check/add -lbfd always now.
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: David Ahern <dsahern@gmail.com>
+> > ---
+> >  tools/perf/config/Makefile | 17 ++++++++---------
+> >  1 file changed, 8 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> > index 8b49a00..40a41c6 100644
+> > --- a/tools/perf/config/Makefile
+> > +++ b/tools/perf/config/Makefile
+> > @@ -360,6 +360,13 @@ else
+> >    endif
+> >  endif
+> >  
+> > +FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+> > +has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+> > +ifeq ($(has_bfd),y)
+> > +  EXTLIBS += -lbfd
+> > +  CFLAGS += -DLIBBFD_SUPPORT
+> > +endif
+> > +
+> >  ifdef NO_DEMANGLE
+> >    CFLAGS += -DNO_DEMANGLE
+> >  else
+> > @@ -367,11 +374,7 @@ else
+> >      EXTLIBS += -liberty
+> >      CFLAGS += -DHAVE_CPLUS_DEMANGLE
+> >    else
+> > -    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+> > -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+> > -    ifeq ($(has_bfd),y)
+> > -      EXTLIBS += -lbfd
+> > -    else
+> > +    ifneq ($(has_bfd),y)
+> >        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+> >        has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+> >        ifeq ($(has_bfd_iberty),y)
+> > @@ -397,10 +400,6 @@ else
+> >    endif
+> >  endif
+> >  
+> > -ifndef ($(filter -lbfd,$(EXTLIBS)),)
+> > -  CFLAGS += -DLIBBFD_SUPPORT
+> > -endif
+> > -
+> >  ifndef NO_STRLCPY
+> >    ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+> >      CFLAGS += -DHAVE_STRLCPY
+> 
+> Is it enough to check on -lbfd only?  I guess libbfd can have additional
+> dependencies to libiberty and libz.  If so, this patch can fail to set
+> -DLIBBFD_SUPPORT, right?
 
-On Fri, 27 Sep 2013, Suman Anna wrote:
+hum, you're right.. so it's 2 bugs fixed by removing that code ;-)
 
-> Paul,
-> The hwmod data patches needs to be merged only after the respective DT
-> node patches are merged, without which the hwmod entry will not have a
-> base address while enabling and idling (using sysc) the hwmod during
-> hwmod initialization.
-
-Hmm, ideally there shouldn't be a merge dependency here. Could you please 
-send a patch to the hwmod core that logs a warning and skips the operation 
-in these circumstances?  Or maybe just skips the registration of the 
-device?
-
-
-- Paul
+jirka
