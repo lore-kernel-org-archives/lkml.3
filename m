@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3I3SsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:48:09 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:58665 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244Ab3I3SsH (ORCPT
+	id S1755776Ab3I3Sto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:49:44 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:44050 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755380Ab3I3Stm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:48:07 -0400
+	Mon, 30 Sep 2013 14:49:42 -0400
 MIME-Version: 1.0
-Date: Mon, 30 Sep 2013 11:48:06 -0700
-Message-ID: <CAHKr1a5tHy1o1Tve87jkgC6AT_Nic6G+BTb8zVEX8KZXwC0Vbg@mail.gmail.com>
-Subject: getitimer() returns a value different from the one set by setitimer()
- for ITIMER_PROF
-From: Sashi Madduri <mail.to.sashi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de
+In-Reply-To: <CAC24_3tuw2Ejcg_TLB0kd2XumhS8UDdBd_3YAmY9hh0G8y9kKQ@mail.gmail.com>
+References: <CAC24_3tuw2Ejcg_TLB0kd2XumhS8UDdBd_3YAmY9hh0G8y9kKQ@mail.gmail.com>
+Date: Mon, 30 Sep 2013 20:49:42 +0200
+Message-ID: <CANq1E4QhpY1TdE2sXhwpY4RAHErAJs_Pek4-EKoRXCeGh_0j6A@mail.gmail.com>
+Subject: Re: xpad input driver: Xbox 360 Wireless Adapter
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Zachary Lund <admin@computerquip.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Marko Friedemann <mfr@bmx-chemnitz.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doing a getitimer() immediately after a setitimer() on ITIMER_PROF
-returns the value incremented by 4ms. I can reproduce the issue with
-itimer values less than 1s.
+Hi
 
-I verified that this issue does not occur on CentOS (kernel 2.6 from Dec 2009).
+I'm not very familiar with the xbox-gamepad driver, but please see
+below for some comments:
 
-I checked the source code for kernel/itimer.c, and the following
-commit in 2011 seems relevant:
+On Mon, Sep 23, 2013 at 2:34 AM, Zachary Lund <admin@computerquip.com> wrote:
+> I'm apologize ahead of time if this thread isn't appropriate, I'm not
+> very familiar with mailing lists, especially lkml. I'm also very new
+> to kernel/module development (as of literally yesterday).
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/kernel/itimer.c?id=648616343cdbe904c585a6c12e323d3b3c72e46f
+Input-drivers are discussed on <linux-input@vger.kernel.org> (now
+CC'ed). I recommend subscribing to that list. I also put some driver
+developers on CC as they are probably more qualified to answer your
+questions.
 
-I do not understand the source fully to confirm that the issue is due
-to the above commit.
+Note that LKML is a high-traffic list mostly used in CC. Please always
+CC the driver authors or maintainers.
 
-Test program:
+> I was looking into getting the LED working properly for the Xbox 360
+> controllers and learning about the basics of a kernel module at the
+> same time. There were a few things that confused me. I will reference
+> functions by name and all functions are from the current 3.12 branch.
 
-#include <sys/time.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-#include <iostream>
+It might be useful to mention the driver in question (it's
+drivers/input/joystick/xpad.c I guess?).
 
-int main(int argc, char** argv) {
-  struct itimerval ts;
-  ts.it_value.tv_sec = 0;
-  ts.it_value.tv_usec = 8000;
-  ts.it_interval.tv_sec = 0;
-  ts.it_interval.tv_usec = 8000;
+> First, xpad_send_led_command seems to be geared only towards the
+> "Microsoft X-Box 360 pad". Using xboxdrv as a reference, they use a
+> completely different packet structure to set the LED status on the
+> wireless controller which can be seen here:
+> https://github.com/Grumbel/xboxdrv/blob/master/src/controller/xbox360_wireless_controller.cpp#L66
 
-  for (int i = 0; i < 10; ++i) {
-    syscall(SYS_setitimer, ITIMER_PROF, &ts, NULL);
-    syscall(SYS_getitimer, ITIMER_PROF, &ts);
-    std::cout << "Got back itimer value of " << ts.it_interval.tv_sec
-<< ", " << ts.it_interval.tv_usec << "\n";
-  }
-}
+I don't think the kernel driver supports wireless pads, so it might
+have a different "wireless optimized" wire-protocol. The driver is
+USB-only, isn't it?
 
-My current setup:
+> Second, the driver acts strangely when setting the LED. It calls
+> xpad_send_led_command during xpad_led_probe during xpad_probe but
+> there's a chance that a controller might not even be connected if
+> using the wireless adapter during that time!
 
-/proc/version:
-Linux version 3.8.0-19-generic (buildd@allspice) (gcc version 4.7.3
-(Ubuntu/Linaro 4.7.3-1ubuntu1) ) #29-Ubuntu SMP Wed Apr 17 18:16:28
-UTC 2013
+What? During xpad_probe() a device must be fully functional. What
+adapter are your talking about?
 
-/proc/cpuinfo:
-processor : 0
-vendor_id : GenuineIntel
-cpu family : 6
-model : 58
-model name : Intel(R) Core(TM) i5-3210M CPU @ 2.50GHz
-stepping : 9
-cpu MHz : 2379.182
-cache size : 6144 KB
-physical id : 0
-siblings : 4
-core id : 0
-cpu cores : 4
-apicid : 0
-initial apicid : 0
-fpu : yes
-fpu_exception : yes
-cpuid level : 5
-wp : yes
-flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
-pat pse36 clflush mmx fxsr sse sse2 ht syscall nx rdtscp lm
-constant_tsc rep_good nopl pni ssse3 lahf_lm
-bogomips : 4758.36
-clflush size : 64
-cache_alignment : 64
-address sizes : 36 bits physical, 48 bits virtual
-power management:
+> The only way to seemingly
+> tell if a controller is connected is by receiving the correct
+> connection packets. If I use the correct packet structure (which I
+> ripped almost directly from xboxdrv) and set the led after parsing a
+> connection packet, the LED seemingly works fine!
 
-Sashi.
+Sounds reasonable. Do all devices send the connection-packets? If yes,
+feel free to send a patch which moves LED initialization after receipt
+of this package.
+
+> Third, I'm incredibly new to really low level development. Whenever
+> loading the module, it finds my wireless adapter but then creates 4
+> devices (which seems to mean only 4 controllers are allowed per
+> wireless adapter), each of which cause a call to xpad_probe. I
+> couldn't figure out how to tell if other wireless controllers were
+> already connected to the wireless adapter so I could light up the
+> correct LED. How would I go about this properly?
+
+Ugh? Sorry, but I don't understand what kind of wireless adapter this
+is? Please give us a bit more information here. If the device is a
+Bluetooth-device, why use an adapter at all?
+
+Cheers
+David
