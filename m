@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3I3JTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:19:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54222 "EHLO mx2.suse.de"
+	id S1754816Ab3I3JT7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:19:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54234 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3I3JTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:19:38 -0400
-Date: Mon, 30 Sep 2013 11:22:07 +0200
-Message-ID: <s5h1u467jgg.wl%tiwai@suse.de>
+	id S1752828Ab3I3JT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 05:19:57 -0400
+Date: Mon, 30 Sep 2013 11:22:30 +0200
+Message-ID: <s5hzjqu64vd.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, David Airlie <airlied@linux.ie>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 6/8] ALSA: ppc: keywest: Don't use i2c_client->driver
-In-Reply-To: <1380444666-12019-7-git-send-email-lars@metafoo.de>
-References: <1380444666-12019-1-git-send-email-lars@metafoo.de>
-	<1380444666-12019-7-git-send-email-lars@metafoo.de>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 1/2] [RESEND] snd-ac97-codec: Add ID for TI	TLV320AIC27 codec
+In-Reply-To: <201309272027.59117.linux@rainbow-software.org>
+References: <201309272027.59117.linux@rainbow-software.org>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,48 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 29 Sep 2013 10:51:04 +0200,
-Lars-Peter Clausen wrote:
+At Fri, 27 Sep 2013 20:27:58 +0200,
+Ondrej Zary wrote:
 > 
-> The 'driver' field of the i2c_client struct is redundant and is going to be
-> removed. Use 'to_i2c_driver(client->dev.driver)' instead to get direct
-> access to the i2c_driver struct.
+> Add 0x54584e03 ID for TI TLV320AIC27 AC'97 codec according to datasheet:
+> http://www.ti.com/lit/ds/slas253a/slas253a.pdf
 > 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> The weird thing is that the chip is physically marked 320AD91.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Acked-by: Takashi Iwai <tiwai@suse.de>
+Applied now.  Thanks.
 
-
-thanks,
 
 Takashi
 
 > ---
->  sound/ppc/keywest.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  sound/pci/ac97/ac97_codec.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/sound/ppc/keywest.c b/sound/ppc/keywest.c
-> index 01aecc2..0d1c27e 100644
-> --- a/sound/ppc/keywest.c
-> +++ b/sound/ppc/keywest.c
-> @@ -65,7 +65,7 @@ static int keywest_attach_adapter(struct i2c_adapter *adapter)
->  	 * already bound. If not it means binding failed, and then there
->  	 * is no point in keeping the device instantiated.
->  	 */
-> -	if (!keywest_ctx->client->driver) {
-> +	if (!keywest_ctx->client->dev.driver) {
->  		i2c_unregister_device(keywest_ctx->client);
->  		keywest_ctx->client = NULL;
->  		return -ENODEV;
-> @@ -76,7 +76,7 @@ static int keywest_attach_adapter(struct i2c_adapter *adapter)
->  	 * This is safe because i2c-core holds the core_lock mutex for us.
->  	 */
->  	list_add_tail(&keywest_ctx->client->detected,
-> -		      &keywest_ctx->client->driver->clients);
-> +		      &to_i2c_driver(keywest_ctx->client->dev.driver)->clients);
->  	return 0;
->  }
->  
+> diff --git a/sound/pci/ac97/ac97_codec.c b/sound/pci/ac97/ac97_codec.c
+> index 445ca48..bf578ba2 100644
+> --- a/sound/pci/ac97/ac97_codec.c
+> +++ b/sound/pci/ac97/ac97_codec.c
+> @@ -175,6 +175,7 @@ static const struct ac97_codec_id snd_ac97_codec_ids[] = {
+>  { 0x54524106, 0xffffffff, "TR28026",		NULL,		NULL },
+>  { 0x54524108, 0xffffffff, "TR28028",		patch_tritech_tr28028,	NULL }, // added by xin jin [07/09/99]
+>  { 0x54524123, 0xffffffff, "TR28602",		NULL,		NULL }, // only guess --jk [TR28023 = eMicro EM28023 (new CT1297)]
+> +{ 0x54584e03, 0xffffffff, "TLV320AIC27",	NULL,		NULL },
+>  { 0x54584e20, 0xffffffff, "TLC320AD9xC",	NULL,		NULL },
+>  { 0x56494161, 0xffffffff, "VIA1612A",		NULL,		NULL }, // modified ICE1232 with S/PDIF
+>  { 0x56494170, 0xffffffff, "VIA1617A",		patch_vt1617a,	NULL }, // modified VT1616 with S/PDIF
 > -- 
-> 1.8.0
+> Ondrej Zary
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
 > 
