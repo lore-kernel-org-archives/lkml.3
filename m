@@ -1,131 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3I3Opi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:45:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32763 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab3I3Ope (ORCPT
+	id S1755835Ab3I3OqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:46:09 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:54587 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab3I3OqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:45:34 -0400
-Date: Mon, 30 Sep 2013 10:45:13 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Julien Grall <julien.grall@linaro.org>
-Cc: ian.campbell@citrix.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
- guests.
-Message-ID: <20130930144513.GM3106@phenom.dumpdata.com>
-References: <1380317117-21719-1-git-send-email-konrad.wilk@oracle.com>
- <5245FD71.3080408@linaro.org>
+	Mon, 30 Sep 2013 10:46:06 -0400
+Message-ID: <52498EA2.2080207@gmail.com>
+Date: Mon, 30 Sep 2013 22:45:54 +0800
+From: Lennox Wu <lennox.wu@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5245FD71.3080408@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: [git pull] Score: Fix compiling errors and update the information
+ of maintainers (Fixed format)
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="N2SgWIUbJ1IkpxcRIFQeosr47REIF6E9u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 10:49:37PM +0100, Julien Grall wrote:
-> On 09/27/2013 10:25 PM, Konrad Rzeszutek Wilk wrote:
-> 
-> >@@ -641,7 +641,20 @@ struct console xenboot_console = {
-> >
-> >  void xen_raw_console_write(const char *str)
-> >  {
-> >-	dom0_write_console(0, str, strlen(str));
-> >+	ssize_t len = strlen(str);
-> >+	int rc = 0;
-> >+
-> >+	if (xen_domain()) {
-> >+		dom0_write_console(0, str, len);
-> >+		if (rc == -ENOSYS && xen_hvm_domain())
-> >+			goto outb_print;
-> >+
-> >+	} else if (xen_cpuid_base()) {
-> >+		int i;
-> >+outb_print:
-> >+		for (i = 0; i < len; i++)
-> >+			outb(str[i], 0xe9);
-> >+	}
-> >  }
-> 
-> xen_cpuid_base and outb(0xe9) is x86 specific and won't compile on ARM.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--N2SgWIUbJ1IkpxcRIFQeosr47REIF6E9u
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Odd, I see outb defined in arch/arm and arch/arm64 ?(arch/arm[|64]/include/asm.io.h)
+Hi Linus,
+Please pull these updates for S+core architecture. These updates include
+updating information of maintainers, fix some trivial errors, and add
+a necessary function for supporting ipv6. We fix the format of the link
+and use a tag.
 
-You are of course right about xen_cpuid_base.
+The following changes since commit 22356f447ceb8d97a4885792e7d9e4607f712e=
+1b
 
-How about this:
+mm: Place preemption point in do_mlockall() loop (2013-9-24 18:29:11 -070=
+0)
 
->From 04b772d2b819f0dda2163e3193fa7cd447a6245c Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 27 Sep 2013 17:18:13 -0400
-Subject: [PATCH] xen/hvc: If we use xen_raw_printk let it also work on HVM
- guests.
+are available in the git repository at:
 
-The xen_raw_printk works great for debugging purposes. We use
-for PV guests and we can also use it for HVM guests.
+git://github.com/sctscore/official-linux.git
+<https://github.com/sctscore/official-linux.git>tags/for-linus-20130929
 
-However, for HVM guests we have a fallback of using the 0xe9
-port in case the hypervisor does not support an HVM guest of
-using the console_io hypercall. As such lets use 0xe9 during
-early bootup, and once the hyper-page is setup and if the
-console_io hypercall is supported - use that. Otherwise we
-will fallback to using the 0xe9 after early bootup.
+For you to fetch changes up to ed38665eb50ef7ad530f9b2db531a09b8520ed32
 
-We also alter the return value for dom0_write_console to return
-an error value instead of zero. The HVC API has been supporting
-returning error values for quite some time.
+Score: Update the information of Score maintaners (2013-9-26 01:41:22 +08=
+00)
 
-P.S.
-To use (and to see the output in the Xen ring buffer) one has to build
-the hypervisor with 'debug=y'.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v1: ifdef xen_cpuid_base as it is X86 specific]
----
- drivers/tty/hvc/hvc_xen.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+Thanks for your patience.
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index e61c36c..6458c9f 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -183,7 +183,7 @@ static int dom0_write_console(uint32_t vtermno, const char *str, int len)
- {
- 	int rc = HYPERVISOR_console_io(CONSOLEIO_write, len, (char *)str);
- 	if (rc < 0)
--		return 0;
-+		return rc;
- 
- 	return len;
- }
-@@ -641,7 +641,22 @@ struct console xenboot_console = {
- 
- void xen_raw_console_write(const char *str)
- {
--	dom0_write_console(0, str, strlen(str));
-+	ssize_t len = strlen(str);
-+	int rc = 0;
-+
-+	if (xen_domain()) {
-+		rc = dom0_write_console(0, str, len);
-+#ifdef CONFIG_X86
-+		if (rc == -ENOSYS && xen_hvm_domain())
-+			goto outb_print;
-+
-+	} else if (xen_cpuid_base()) {
-+		int i;
-+outb_print:
-+		for (i = 0; i < len; i++)
-+			outb(str[i], 0xe9);
-+#endif
-+	}
- }
- 
- void xen_raw_printk(const char *fmt, ...)
--- 
-1.8.3.1
+Best,
+Lennox Wu
 
+-----------------------------------------------
+Summary these commits:
+1. Fix some trivial errors for successfully compiling the latest
+version Linux kernel.
+2. Provide necessary function for support IPV6.
+3. Update the information of maintainers.
+
+Signed-off-by: Lennox Wu <lennox.wu@gmail.com <mailto:lennox.wu@gmail.com=
+>>
+
+------------------------------------------------
+ MAINTAINERS                       |    4 +-
+ arch/score/Kconfig                |    4 ++
+ arch/score/Makefile               |    4 +-
+ arch/score/include/asm/checksum.h |   93
+++++++++++++++++++++-----------------
+ arch/score/include/asm/io.h       |    1 -
+ arch/score/include/asm/pgalloc.h  |    2 +-
+ arch/score/kernel/entry.S         |    4 +-
+ arch/score/kernel/process.c       |    4 +-
+ 8 files changed, 64 insertions(+), 52 deletions(-)
+
+
+--N2SgWIUbJ1IkpxcRIFQeosr47REIF6E9u
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEVAwUBUkmOpxIBnItolwGVAQJoiAf/WFLad305mAZZddldQ9ITc2nlqsuKT0zK
+yc6E5hshZUXqU2hA8GR6UF30DxU23C+KJ+R39ayF3iHKc/b7ca8xIpImeR/HpGTe
+93MqFJYmGwuDN8bp4nSlg7tBooN/b97GMSxi/qHXQzLGrINsrZMbpig0eFaw/sSF
++g3Kocp6E6DDfZ+j2wVEuSrjEabx4blN3LImU7NIgv2K+bc3giXHeTzT7jWzRxXP
+wXKDol7BKLGH1Jv/eUwRIgf4LM8fEEAzZCgyQJsm4W//tV8c5j3tCmurUxlNofPb
+jNhpFmcdLTOX2YozOuktb/4ziEncvOmNizfANav9433/lP/FzoOcnw==
+=vYuT
+-----END PGP SIGNATURE-----
+
+--N2SgWIUbJ1IkpxcRIFQeosr47REIF6E9u--
