@@ -1,87 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab3I3KPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:15:18 -0400
-Received: from sauhun.de ([89.238.76.85]:35000 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755863Ab3I3KPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:15:14 -0400
-Date: Mon, 30 Sep 2013 12:15:00 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Libo Chen <libo.chen@huawei.com>, linux-i2c@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 1/4] driver core: introduce helper macro initcall_driver()
-Message-ID: <20130930101500.GA3222@katana>
-References: <1380518035-5319-1-git-send-email-hanjun.guo@linaro.org>
- <1380518035-5319-2-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-In-Reply-To: <1380518035-5319-2-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756014Ab3I3KPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:15:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43838 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab3I3KNn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 06:13:43 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Khalid Aziz <khalid.aziz@oracle.com>, Pravin B Shelar <pshelar@nicira.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 092/104] mm: fix aio performance regression for database caused by THP
+Date: Mon, 30 Sep 2013 11:11:09 +0100
+Message-Id: <1380535881-9239-93-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
+References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Mon, Sep 30, 2013 at 01:13:52PM +0800, Hanjun Guo wrote:
-> For some devices especially on platform/I2C/SPI bus, they want to
-> be initialized earlier than other devices, so the driver use initcall
-> such as subsys_initcall to make this device initialize earlier.
+From: Khalid Aziz <khalid.aziz@oracle.com>
 
-And this is something we want to get rid of in favor of deferred
-probing.
+commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
 
->=20
-> But for those drivers, lots of them just do nothing special in
-> xxx_initcall/exit, so introduce a helper macro initcall_driver() to
-> eliminate lots of boilerplate just like module_driver() did.
->=20
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+I am working with a tool that simulates oracle database I/O workload.
+This tool (orion to be specific -
+<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
+does aio into these pages from flash disks using various common block
+sizes used by database.  I am looking at performance with two of the most
+common block sizes - 1M and 64K.  aio performance with these two block
+sizes plunged after Transparent HugePages was introduced in the kernel.
+Here are performance numbers:
 
-So, NACK because using some *_initcall in drivers should not be
-encouraged.
+		pre-THP		2.6.39		3.11-rc5
+1M read		8384 MB/s	5629 MB/s	6501 MB/s
+64K read	7867 MB/s	4576 MB/s	4251 MB/s
 
-Thanks,
+I have narrowed the performance impact down to the overheads introduced by
+THP in __get_page_tail() and put_compound_page() routines.  perf top shows
+>40% of cycles being spent in these two routines.  Every time direct I/O
+to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
+the pages and calls put_page() when I/O completes to put the reference
+away.  THP introduced significant amount of locking overhead to get_page()
+and put_page() when dealing with compound pages because hugepages can be
+split underneath get_page() and put_page().  It added this overhead
+irrespective of whether it is dealing with hugetlbfs pages or transparent
+hugepages.  This resulted in 20%-45% drop in aio performance when using
+hugetlbfs pages.
 
-   Wolfram
+Since hugetlbfs pages can not be split, there is no reason to go through
+all the locking overhead for these pages from what I can see.  I added
+code to __get_page_tail() and put_compound_page() to bypass all the
+locking code when working with hugetlbfs pages.  This improved performance
+significantly.  Performance numbers with this patch:
 
+		pre-THP		3.11-rc5	3.11-rc5 + Patch
+1M read		8384 MB/s	6501 MB/s	8371 MB/s
+64K read	7867 MB/s	4251 MB/s	6510 MB/s
 
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Performance with 64K read is still lower than what it was before THP, but
+still a 53% improvement.  It does mean there is more work to be done but I
+will take a 53% improvement for now.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Please take a look at the following patch and let me know if it looks
+reasonable.
 
-iQIcBAEBAgAGBQJSSU8kAAoJEBQN5MwUoCm22lYP/1yp8oyuansz0qy9vW/oUeHa
-dBr2w1JH66nXyVx46p3kfnMaYfLvw7WxmiMQLm5lse1uObAKH+xXC9dZCG2VCdLu
-MTokQFYi0ueejnAr61FrDX5hUGx6hfkbSN5XO5ftHeOnNiSuCNwBRf5gekx4wABC
-kR9+DyB41dxy7dRI046aNYY4dXsMwyAlU0lsAOeVJniNWFqftmpx91ETmvqMIUsn
-/V7D0qRV+EwIllnc4t4p5CXxvW2saQVEcT3wag8LCM/ylk3QcOPODMtKtaUa9Hms
-LB9VHEIAxsezzgbTP//xrkcksHX9KvkSG/4H0D4FmhjgvzrbGFSRLltGkdkieiv/
-Uh9/mmv+3CDjsQwiyjMqtapugZWfyfQ667cwUTbLepSdvb22WfvRVrBGBi9JnAgQ
-368WlzedAF7+x12zoT/ZRF9F2LDIu05JaYOZpL+hoQpX7zZ7U7nrM3u14tXPnf5V
-M1it6tKbymxI9+OZEV7zjJpKPXkagVSn9I4z9bJidtwj415aQ3Q30d8CS6OAnMvv
-6a6+YOztmhNj2JX9IWq2K6n6kgdp9n46aOrbBcaFIGGYg+1vj1YAivJ6uHWjEo70
-0Vo0m4EzAPNblDAmp12ZAhG0BdKbZrudA0IyBhq8UvInJ9Jgp6zLJNn87tgAZq6Y
-XDXXVodMXz+STDPOl3xb
-=FBar
------END PGP SIGNATURE-----
+[akpm@linux-foundation.org: tweak comments]
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ mm/swap.c | 77 ++++++++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 52 insertions(+), 25 deletions(-)
 
---EVF5PPMfhYS0aIcm--
+diff --git a/mm/swap.c b/mm/swap.c
+index 4e7e2ec..0c833e8 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -30,6 +30,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/memcontrol.h>
+ #include <linux/gfp.h>
++#include <linux/hugetlb.h>
+ 
+ #include "internal.h"
+ 
+@@ -77,6 +78,19 @@ static void __put_compound_page(struct page *page)
+ 
+ static void put_compound_page(struct page *page)
+ {
++	/*
++	 * hugetlbfs pages cannot be split from under us.  If this is a
++	 * hugetlbfs page, check refcount on head page and release the page if
++	 * the refcount becomes zero.
++	 */
++	if (PageHuge(page)) {
++		page = compound_head(page);
++		if (put_page_testzero(page))
++			__put_compound_page(page);
++
++		return;
++	}
++
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -180,38 +194,51 @@ bool __get_page_tail(struct page *page)
+ 	 * proper PT lock that already serializes against
+ 	 * split_huge_page().
+ 	 */
+-	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head;
+ 
+-	if (likely(page != page_head && get_page_unless_zero(page_head))) {
++	/*
++	 * If this is a hugetlbfs page it cannot be split under us.  Simply
++	 * increment refcount for the head page.
++	 */
++	if (PageHuge(page)) {
++		page_head = compound_head(page);
++		atomic_inc(&page_head->_count);
++		got = true;
++	} else {
++		unsigned long flags;
++
++		page_head = compound_trans_head(page);
++		if (likely(page != page_head &&
++					get_page_unless_zero(page_head))) {
++
++			/* Ref to put_compound_page() comment. */
++			if (PageSlab(page_head)) {
++				if (likely(PageTail(page))) {
++					__get_page_tail_foll(page, false);
++					return true;
++				} else {
++					put_page(page_head);
++					return false;
++				}
++			}
+ 
+-		/* Ref to put_compound_page() comment. */
+-		if (PageSlab(page_head)) {
++			/*
++			 * page_head wasn't a dangling pointer but it
++			 * may not be a head page anymore by the time
++			 * we obtain the lock. That is ok as long as it
++			 * can't be freed from under us.
++			 */
++			flags = compound_lock_irqsave(page_head);
++			/* here __split_huge_page_refcount won't run anymore */
+ 			if (likely(PageTail(page))) {
+ 				__get_page_tail_foll(page, false);
+-				return true;
+-			} else {
+-				put_page(page_head);
+-				return false;
++				got = true;
+ 			}
++			compound_unlock_irqrestore(page_head, flags);
++			if (unlikely(!got))
++				put_page(page_head);
+ 		}
+-
+-		/*
+-		 * page_head wasn't a dangling pointer but it
+-		 * may not be a head page anymore by the time
+-		 * we obtain the lock. That is ok as long as it
+-		 * can't be freed from under us.
+-		 */
+-		flags = compound_lock_irqsave(page_head);
+-		/* here __split_huge_page_refcount won't run anymore */
+-		if (likely(PageTail(page))) {
+-			__get_page_tail_foll(page, false);
+-			got = true;
+-		}
+-		compound_unlock_irqrestore(page_head, flags);
+-		if (unlikely(!got))
+-			put_page(page_head);
+ 	}
+ 	return got;
+ }
+-- 
+1.8.3.2
+
