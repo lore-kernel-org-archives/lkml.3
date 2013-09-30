@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab3I3Kij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:38:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43349 "EHLO
+	id S1756920Ab3I3Kih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:38:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43371 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab3I3KLh (ORCPT
+	with ESMTP id S1754805Ab3I3KLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:11:37 -0400
+	Mon, 30 Sep 2013 06:11:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@gmail.com>,
+Cc: =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 006/104] drm/vmwgfx: Split GMR2_REMAP commands if they are to large
-Date: Mon, 30 Sep 2013 11:09:43 +0100
-Message-Id: <1380535881-9239-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 010/104] xen-gnt: prevent adding duplicate gnt callbacks
+Date: Mon, 30 Sep 2013 11:09:47 +0100
+Message-Id: <1380535881-9239-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,117 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakob Bornecrantz <jakob@vmware.com>
+From: Roger Pau Monne <roger.pau@citrix.com>
 
-commit 6e4dcff3adbf25acb87e74500a58e3c07bdec40f upstream.
+commit 5f338d9001094a56cf87bd8a280b4e7ff953bb59 upstream.
 
-This fixes the piglit test texturing/max-texture-size
-causing the VM to die due to a too large SVGA command.
+With the current implementation, the callback in the tail of the list
+can be added twice, because the check done in
+gnttab_request_free_callback is bogus, callback->next can be NULL if
+it is the last callback in the list. If we add the same callback twice
+we end up with an infinite loop, were callback == callback->next.
 
-Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
-Reviewed-by: Biran Paul <brianp@vmware.com>
-Reviewed-by: Zack Rusin <zackr@vmware.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+Replace this check with a proper one that iterates over the list to
+see if the callback has already been added.
+
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Matt Wilson <msw@amazon.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c | 58 +++++++++++++++++++++++++------------
- 1 file changed, 39 insertions(+), 19 deletions(-)
+ drivers/xen/grant-table.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-index 21ee782..e1978a2 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-@@ -29,7 +29,9 @@
- #include "drmP.h"
- #include "ttm/ttm_bo_driver.h"
- 
--#define VMW_PPN_SIZE sizeof(unsigned long)
-+#define VMW_PPN_SIZE (sizeof(unsigned long))
-+/* A future safe maximum remap size. */
-+#define VMW_PPN_PER_REMAP ((31 * 1024) / VMW_PPN_SIZE)
- 
- static int vmw_gmr2_bind(struct vmw_private *dev_priv,
- 			 struct page *pages[],
-@@ -38,43 +40,61 @@ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 22be735..8a6ecc5 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -728,9 +728,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
+ 				  void (*fn)(void *), void *arg, u16 count)
  {
- 	SVGAFifoCmdDefineGMR2 define_cmd;
- 	SVGAFifoCmdRemapGMR2 remap_cmd;
--	uint32_t define_size = sizeof(define_cmd) + 4;
--	uint32_t remap_size = VMW_PPN_SIZE * num_pages + sizeof(remap_cmd) + 4;
- 	uint32_t *cmd;
- 	uint32_t *cmd_orig;
-+	uint32_t define_size = sizeof(define_cmd) + sizeof(*cmd);
-+	uint32_t remap_num = num_pages / VMW_PPN_PER_REMAP + ((num_pages % VMW_PPN_PER_REMAP) > 0);
-+	uint32_t remap_size = VMW_PPN_SIZE * num_pages + (sizeof(remap_cmd) + sizeof(*cmd)) * remap_num;
-+	uint32_t remap_pos = 0;
-+	uint32_t cmd_size = define_size + remap_size;
- 	uint32_t i;
- 
--	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, define_size + remap_size);
-+	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, cmd_size);
- 	if (unlikely(cmd == NULL))
- 		return -ENOMEM;
- 
- 	define_cmd.gmrId = gmr_id;
- 	define_cmd.numPages = num_pages;
- 
-+	*cmd++ = SVGA_CMD_DEFINE_GMR2;
-+	memcpy(cmd, &define_cmd, sizeof(define_cmd));
-+	cmd += sizeof(define_cmd) / sizeof(*cmd);
+ 	unsigned long flags;
++	struct gnttab_free_callback *cb;
 +
-+	/*
-+	 * Need to split the command if there are too many
-+	 * pages that goes into the gmr.
-+	 */
+ 	spin_lock_irqsave(&gnttab_list_lock, flags);
+-	if (callback->next)
+-		goto out;
 +
- 	remap_cmd.gmrId = gmr_id;
- 	remap_cmd.flags = (VMW_PPN_SIZE > sizeof(*cmd)) ?
- 		SVGA_REMAP_GMR2_PPN64 : SVGA_REMAP_GMR2_PPN32;
--	remap_cmd.offsetPages = 0;
--	remap_cmd.numPages = num_pages;
- 
--	*cmd++ = SVGA_CMD_DEFINE_GMR2;
--	memcpy(cmd, &define_cmd, sizeof(define_cmd));
--	cmd += sizeof(define_cmd) / sizeof(uint32);
-+	while (num_pages > 0) {
-+		unsigned long nr = min(num_pages, (unsigned long)VMW_PPN_PER_REMAP);
++	/* Check if the callback is already on the list */
++	cb = gnttab_free_callback_list;
++	while (cb) {
++		if (cb == callback)
++			goto out;
++		cb = cb->next;
++	}
 +
-+		remap_cmd.offsetPages = remap_pos;
-+		remap_cmd.numPages = nr;
- 
--	*cmd++ = SVGA_CMD_REMAP_GMR2;
--	memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
--	cmd += sizeof(remap_cmd) / sizeof(uint32);
-+		*cmd++ = SVGA_CMD_REMAP_GMR2;
-+		memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
-+		cmd += sizeof(remap_cmd) / sizeof(*cmd);
- 
--	for (i = 0; i < num_pages; ++i) {
--		if (VMW_PPN_SIZE <= 4)
--			*cmd = page_to_pfn(*pages++);
--		else
--			*((uint64_t *)cmd) = page_to_pfn(*pages++);
-+		for (i = 0; i < nr; ++i) {
-+			if (VMW_PPN_SIZE <= 4)
-+				*cmd = page_to_pfn(*pages++);
-+			else
-+				*((uint64_t *)cmd) = page_to_pfn(*pages++);
- 
--		cmd += VMW_PPN_SIZE / sizeof(*cmd);
-+			cmd += VMW_PPN_SIZE / sizeof(*cmd);
-+		}
-+
-+		num_pages -= nr;
-+		remap_pos += nr;
- 	}
- 
--	vmw_fifo_commit(dev_priv, define_size + remap_size);
-+	BUG_ON(cmd != cmd_orig + cmd_size / sizeof(*cmd));
-+
-+	vmw_fifo_commit(dev_priv, cmd_size);
- 
- 	return 0;
- }
+ 	callback->fn = fn;
+ 	callback->arg = arg;
+ 	callback->count = count;
 -- 
 1.8.3.2
 
