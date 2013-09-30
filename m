@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3I3BYD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 21:24:03 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:42076 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab3I3BX7 (ORCPT
+	id S1754685Ab3I3BY6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 21:24:58 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63632 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3I3BY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 21:23:59 -0400
-Date: Mon, 30 Sep 2013 01:23:58 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de,
-        aaro.koskinen@iki.fi, joelf@ti.com
-Subject: Re: [RFC v2] gpio/omap: auto-setup a GPIO when used as an IRQ
-In-Reply-To: <52453545.3090504@collabora.co.uk>
-Message-ID: <alpine.DEB.2.02.1309300122450.17980@utopia.booyaka.com>
-References: <1380009480-4975-1-git-send-email-javier.martinez@collabora.co.uk> <5244C0C4.2030004@wwwdotorg.org> <52453545.3090504@collabora.co.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 29 Sep 2013 21:24:57 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5248D2E4.10206@roeck-us.net>
+Date: Sun, 29 Sep 2013 18:24:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [ 00/17] 3.0.98-stable review
+References: <20130929190757.138351117@linuxfoundation.org>
+In-Reply-To: <20130929190757.138351117@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep 2013, Javier Martinez Canillas wrote:
+On 09/29/2013 12:26 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.98 release.
+> There are 17 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Tue Oct  1 19:07:47 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.98-rc1.gz
+> and the diffstat can be found below.
+>
 
-> I cc'ed Aaro Koskinen and Paul Walmsley now which seems to have OMAP1 platforms
-> to test. Could you please test [1] and [2] on a OMAP1 board? These patches
-> solves a long standing issue we have on OMAP2+ when booting with DT and it would
-> be great if you can check that it does not cause regressions on OMAP1 based boards.
 
-Unfortunately my OMAP1 test platform is down at the moment, so am not able 
-to test.  But saw that it passed Aaro's tests, so I'd say that's a pretty 
-good endorsement.
+Build test results:
+	total: 98 pass: 71 skipped: 16 fail: 11
 
+qemu:
+	ppc, sh, sparc, x86, x86_64 passed
+	arm, microblaze, mips, mips64, sparc64 skipped
 
-- Paul
+Same results as with 3.0.97.
+
+Guenter
+
