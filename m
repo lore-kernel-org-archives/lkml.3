@@ -1,382 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3I3HEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:04:32 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:48548 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3I3HE3 (ORCPT
+	id S1752828Ab3I3HE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:04:59 -0400
+Received: from mail-bk0-f68.google.com ([209.85.214.68]:63903 "EHLO
+	mail-bk0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3I3HE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:04:29 -0400
-X-AuditID: 9c93017e-b7ca5ae0000013bb-56-5249227b3a20
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
-References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
-Date: Mon, 30 Sep 2013 16:04:26 +0900
-In-Reply-To: <1378184708-31385-1-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Tue, 3 Sep 2013 14:05:08 +0900")
-Message-ID: <87txh2okn9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 30 Sep 2013 03:04:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Date: Mon, 30 Sep 2013 09:04:55 +0200
+Message-ID: <CAOihqkLYiL7iU1YGqTXbAYSjU5cOUQD2uRJ=5avOku6q3hLHzw@mail.gmail.com>
+Subject: corrupt mm-slab-wrap-functions
+From: Andreas Starzer <stzlinux@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=bcaec53fee9d19f86304e794746b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+--bcaec53fee9d19f86304e794746b
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Tue,  3 Sep 2013 14:05:08 +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
->
-> The set_graph_notrace filter is analogous to set_ftrace_notrace and
-> can be used for eliminating uninteresting part of function graph trace
-> output.  It also works with set_graph_function nicely.
->
->   # cd /sys/kernel/debug/tracing/
->   # echo do_page_fault > set_graph_function
->   # perf ftrace live true
->    2)               |  do_page_fault() {
->    2)               |    __do_page_fault() {
->    2)   0.381 us    |      down_read_trylock();
->    2)   0.055 us    |      __might_sleep();
->    2)   0.696 us    |      find_vma();
->    2)               |      handle_mm_fault() {
->    2)               |        handle_pte_fault() {
->    2)               |          __do_fault() {
->    2)               |            filemap_fault() {
->    2)               |              find_get_page() {
->    2)   0.033 us    |                __rcu_read_lock();
->    2)   0.035 us    |                __rcu_read_unlock();
->    2)   1.696 us    |              }
->    2)   0.031 us    |              __might_sleep();
->    2)   2.831 us    |            }
->    2)               |            _raw_spin_lock() {
->    2)   0.046 us    |              add_preempt_count();
->    2)   0.841 us    |            }
->    2)   0.033 us    |            page_add_file_rmap();
->    2)               |            _raw_spin_unlock() {
->    2)   0.057 us    |              sub_preempt_count();
->    2)   0.568 us    |            }
->    2)               |            unlock_page() {
->    2)   0.084 us    |              page_waitqueue();
->    2)   0.126 us    |              __wake_up_bit();
->    2)   1.117 us    |            }
->    2)   7.729 us    |          }
->    2)   8.397 us    |        }
->    2)   8.956 us    |      }
->    2)   0.085 us    |      up_read();
->    2) + 12.745 us   |    }
->    2) + 13.401 us   |  }
->   ...
->
->   # echo handle_mm_fault > set_graph_notrace
->   # perf ftrace live true
->    1)               |  do_page_fault() {
->    1)               |    __do_page_fault() {
->    1)   0.205 us    |      down_read_trylock();
->    1)   0.041 us    |      __might_sleep();
->    1)   0.344 us    |      find_vma();
->    1)   0.069 us    |      up_read();
->    1)   4.692 us    |    }
->    1)   5.311 us    |  }
->   ...
->
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  include/linux/ftrace.h               |   1 +
->  kernel/trace/ftrace.c                | 118 ++++++++++++++++++++++++++++++++++-
->  kernel/trace/trace.h                 |  23 +++++++
->  kernel/trace/trace_functions_graph.c |  21 ++++++-
->  4 files changed, 159 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index 9f15c0064c50..ec85d48619e1 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -721,6 +721,7 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
->  extern char __irqentry_text_start[];
->  extern char __irqentry_text_end[];
->  
-> +#define FTRACE_NOTRACE_DEPTH 65536
->  #define FTRACE_RETFUNC_DEPTH 50
->  #define FTRACE_RETSTACK_ALLOC_SIZE 32
->  extern int register_ftrace_graph(trace_func_graph_ret_t retfunc,
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index a6d098c6df3f..1b1f3409f788 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -3819,6 +3819,43 @@ static const struct seq_operations ftrace_graph_seq_ops = {
->  	.show = g_show,
->  };
->  
-> +int ftrace_graph_notrace_count;
-> +int ftrace_graph_notrace_enabled;
-> +unsigned long ftrace_graph_notrace_funcs[FTRACE_GRAPH_MAX_FUNCS] __read_mostly;
-> +
-> +static void *
-> +__n_next(struct seq_file *m, loff_t *pos)
-> +{
-> +	if (*pos >= ftrace_graph_notrace_count)
-> +		return NULL;
-> +	return &ftrace_graph_notrace_funcs[*pos];
-> +}
-> +
-> +static void *
-> +n_next(struct seq_file *m, void *v, loff_t *pos)
-> +{
-> +	(*pos)++;
-> +	return __n_next(m, pos);
-> +}
-> +
-> +static void *n_start(struct seq_file *m, loff_t *pos)
-> +{
-> +	mutex_lock(&graph_lock);
-> +
-> +	/* Nothing, tell g_show to print all functions are enabled */
-> +	if (!ftrace_graph_notrace_enabled && !*pos)
-> +		return (void *)1;
-> +
-> +	return __n_next(m, pos);
-> +}
-> +
-> +static const struct seq_operations ftrace_graph_notrace_seq_ops = {
-> +	.start = n_start,
-> +	.next = n_next,
-> +	.stop = g_stop,
-> +	.show = g_show,
-> +};
-> +
->  static int
->  ftrace_graph_open(struct inode *inode, struct file *file)
->  {
-> @@ -3843,6 +3880,30 @@ ftrace_graph_open(struct inode *inode, struct file *file)
->  }
->  
->  static int
-> +ftrace_graph_notrace_open(struct inode *inode, struct file *file)
-> +{
-> +	int ret = 0;
-> +
-> +	if (unlikely(ftrace_disabled))
-> +		return -ENODEV;
-> +
-> +	mutex_lock(&graph_lock);
-> +	if ((file->f_mode & FMODE_WRITE) &&
-> +	    (file->f_flags & O_TRUNC)) {
-> +		ftrace_graph_notrace_enabled = 0;
-> +		ftrace_graph_notrace_count = 0;
-> +		memset(ftrace_graph_notrace_funcs, 0,
-> +		       sizeof(ftrace_graph_notrace_funcs));
-> +	}
-> +	mutex_unlock(&graph_lock);
-> +
-> +	if (file->f_mode & FMODE_READ)
-> +		ret = seq_open(file, &ftrace_graph_notrace_seq_ops);
-> +
-> +	return ret;
-> +}
-> +
-> +static int
->  ftrace_graph_release(struct inode *inode, struct file *file)
->  {
->  	if (file->f_mode & FMODE_READ)
-> @@ -3910,8 +3971,6 @@ out:
->  	if (fail)
->  		return -EINVAL;
->  
-> -	ftrace_graph_filter_enabled = !!(*idx);
-> -
->  	return 0;
->  }
->  
-> @@ -3946,6 +4005,50 @@ ftrace_graph_write(struct file *file, const char __user *ubuf,
->  
->  	ret = read;
->  
-> +	ftrace_graph_filter_enabled = ftrace_graph_count > 0;
-> +
-> +out_free:
-> +	trace_parser_put(&parser);
-> +out_unlock:
-> +	mutex_unlock(&graph_lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static ssize_t
-> +ftrace_graph_notrace_write(struct file *file, const char __user *ubuf,
-> +			   size_t cnt, loff_t *ppos)
-> +{
-> +	struct trace_parser parser;
-> +	ssize_t read, ret;
-> +
-> +	if (!cnt)
-> +		return 0;
-> +
-> +	mutex_lock(&graph_lock);
-> +
-> +	if (trace_parser_get_init(&parser, FTRACE_BUFF_MAX)) {
-> +		ret = -ENOMEM;
-> +		goto out_unlock;
-> +	}
-> +
-> +	read = trace_get_user(&parser, ubuf, cnt, ppos);
-> +
-> +	if (read >= 0 && trace_parser_loaded((&parser))) {
-> +		parser.buffer[parser.idx] = 0;
-> +
-> +		/* we allow only one expression at a time */
-> +		ret = ftrace_set_func(ftrace_graph_notrace_funcs,
-> +				      &ftrace_graph_notrace_count,
-> +				      parser.buffer);
-> +		if (ret)
-> +			goto out_free;
-> +	}
-> +
-> +	ret = read;
-> +
-> +	ftrace_graph_notrace_enabled = ftrace_graph_notrace_count > 0;
-> +
->  out_free:
->  	trace_parser_put(&parser);
->  out_unlock:
-> @@ -3961,6 +4064,14 @@ static const struct file_operations ftrace_graph_fops = {
->  	.llseek		= ftrace_filter_lseek,
->  	.release	= ftrace_graph_release,
->  };
-> +
-> +static const struct file_operations ftrace_graph_notrace_fops = {
-> +	.open		= ftrace_graph_notrace_open,
-> +	.read		= seq_read,
-> +	.write		= ftrace_graph_notrace_write,
-> +	.llseek		= ftrace_filter_lseek,
-> +	.release	= ftrace_graph_release,
-> +};
->  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
->  
->  static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
-> @@ -3982,6 +4093,9 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
->  	trace_create_file("set_graph_function", 0444, d_tracer,
->  				    NULL,
->  				    &ftrace_graph_fops);
-> +	trace_create_file("set_graph_notrace", 0444, d_tracer,
-> +				    NULL,
-> +				    &ftrace_graph_notrace_fops);
->  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
->  
->  	return 0;
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index fe39acd4c1aa..797f6f7f3f56 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -732,6 +732,9 @@ extern void __trace_graph_return(struct trace_array *tr,
->  extern int ftrace_graph_filter_enabled;
->  extern int ftrace_graph_count;
->  extern unsigned long ftrace_graph_funcs[FTRACE_GRAPH_MAX_FUNCS];
-> +extern int ftrace_graph_notrace_enabled;
-> +extern int ftrace_graph_notrace_count;
-> +extern unsigned long ftrace_graph_notrace_funcs[FTRACE_GRAPH_MAX_FUNCS];
->  
->  static inline int ftrace_graph_addr(unsigned long addr)
->  {
-> @@ -757,11 +760,31 @@ static inline int ftrace_graph_addr(unsigned long addr)
->  
->  	return 0;
->  }
-> +
-> +static inline int ftrace_graph_notrace_addr(unsigned long addr)
-> +{
-> +	int i;
-> +
-> +	if (!ftrace_graph_notrace_enabled)
-> +		return 0;
-> +
-> +	for (i = 0; i < ftrace_graph_notrace_count; i++) {
-> +		if (addr == ftrace_graph_notrace_funcs[i])
-> +			return 1;
-> +	}
-> +
-> +	return 0;
-> +}
->  #else
->  static inline int ftrace_graph_addr(unsigned long addr)
->  {
->  	return 1;
->  }
-> +
-> +static inline int ftrace_graph_notrace_addr(unsigned long addr)
-> +{
-> +	return 0;
-> +}
->  #endif /* CONFIG_DYNAMIC_FTRACE */
->  #else /* CONFIG_FUNCTION_GRAPH_TRACER */
->  static inline enum print_line_t
-> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> index b5c09242683d..3ba240daa5e0 100644
-> --- a/kernel/trace/trace_functions_graph.c
-> +++ b/kernel/trace/trace_functions_graph.c
-> @@ -114,16 +114,22 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
->  		return -EBUSY;
->  	}
->  
-> +	/* The function was filtered out */
-> +	if (current->curr_ret_stack < -1)
-> +		return -EBUSY;
-> +
->  	calltime = trace_clock_local();
->  
->  	index = ++current->curr_ret_stack;
-> +	if (ftrace_graph_notrace_addr(func))
-> +		current->curr_ret_stack -= FTRACE_NOTRACE_DEPTH;
->  	barrier();
->  	current->ret_stack[index].ret = ret;
->  	current->ret_stack[index].func = func;
->  	current->ret_stack[index].calltime = calltime;
->  	current->ret_stack[index].subtime = 0;
->  	current->ret_stack[index].fp = frame_pointer;
-> -	*depth = index;
-> +	*depth = current->curr_ret_stack;
->  
->  	return 0;
->  }
-> @@ -137,6 +143,9 @@ ftrace_pop_return_trace(struct ftrace_graph_ret *trace, unsigned long *ret,
->  
->  	index = current->curr_ret_stack;
->  
-> +	if (index < 0)
-> +		index += FTRACE_NOTRACE_DEPTH;
-> +
->  	if (unlikely(index < 0)) {
->  		ftrace_graph_stop();
->  		WARN_ON(1);
-> @@ -193,6 +202,10 @@ unsigned long ftrace_return_to_handler(unsigned long frame_pointer)
->  	trace.rettime = trace_clock_local();
->  	barrier();
->  	current->curr_ret_stack--;
-> +	if (current->curr_ret_stack < -1) {
-> +		current->curr_ret_stack += FTRACE_NOTRACE_DEPTH;
-> +		return ret;
-> +	}
->  
->  	/*
->  	 * The trace should run after decrementing the ret counter
-> @@ -259,10 +272,14 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
->  
->  	/* trace it when it is-nested-in or is a function enabled. */
->  	if ((!(trace->depth || ftrace_graph_addr(trace->func)) ||
-> -	     ftrace_graph_ignore_irqs()) ||
-> +	     ftrace_graph_ignore_irqs()) || (trace->depth < 0) ||
->  	    (max_depth && trace->depth >= max_depth))
->  		return 0;
->  
-> +	/* need to reserve a ret_stack entry to recover the depth */
-> +	if (ftrace_graph_notrace_addr(trace->func))
-> +		return 1;
-> +
->  	local_irq_save(flags);
->  	cpu = raw_smp_processor_id();
->  	data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+Hello!
+
+I just tried to use the latest RT-patch from
+https://rt.wiki.kernel.org (patch-3.10.10-rt7.patch) and found a
+corrupt patch file "mm-slab-wrap-functions.patch"
+For example at line 165 in the attached patch file, the line had been
+duplicated. So I cannot trust the patch at all. :(
+
+I had many other errors concerning raw_spinlock_t vs spin_lock_t and
+cachep->nodelists, ... maybe they all just come from a patch-creation
+failure.
+I'm afraid there are more patch-files corrupt, since I cannot build
+with slub too.
+
+I've searched through all previous patches, back to
+patch-3.10.4-rt1.patch, but all had the same corrupt line :(
+
+I think there is no bug in the original code but only an error
+happened when the patches were created since 3.10 Kernel.
+
+The patch 3.8.13.7-rt18 is the youngest patch that does not have this
+corrupt line.
+
+
+Many thanks for any answers and best regards
+
+Andreas
+
+--bcaec53fee9d19f86304e794746b
+Content-Type: application/octet-stream; name="mm-slab-wrap-functions.patch"
+Content-Disposition: attachment; filename="mm-slab-wrap-functions.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hm7cr0t50
+
+U3ViamVjdDogbW0tc2xhYi13cmFwLWZ1bmN0aW9ucy5wYXRjaApGcm9tOiBUaG9tYXMgR2xlaXhu
+ZXIgPHRnbHhAbGludXRyb25peC5kZT4KRGF0ZTogU2F0LCAxOCBKdW4gMjAxMSAxOTo0NDo0MyAr
+MDIwMAoKU2lnbmVkLW9mZi1ieTogVGhvbWFzIEdsZWl4bmVyIDx0Z2x4QGxpbnV0cm9uaXguZGU+
+Ci0tLQogbW0vc2xhYi5jIHwgIDE1NyArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDEwOCBpbnNlcnRp
+b25zKCspLCA0OSBkZWxldGlvbnMoLSkKCi0tLSBhL21tL3NsYWIuYworKysgYi9tbS9zbGFiLmMK
+QEAgLTExNiw2ICsxMTYsNyBAQAogI2luY2x1ZGUJPGxpbnV4L2ttZW1jaGVjay5oPgogI2luY2x1
+ZGUJPGxpbnV4L21lbW9yeS5oPgogI2luY2x1ZGUJPGxpbnV4L3ByZWZldGNoLmg+CisjaW5jbHVk
+ZQk8bGludXgvbG9jYWxsb2NrLmg+CiAKICNpbmNsdWRlCTxuZXQvc29jay5oPgogCkBAIC02MzMs
+NiArNjM0LDM3IEBAIHN0YXRpYyB2b2lkIHNsYWJfc2V0X2RlYnVnb2JqX2xvY2tfY2xhc3MKICNl
+bmRpZgogCiBzdGF0aWMgREVGSU5FX1BFUl9DUFUoc3RydWN0IGRlbGF5ZWRfd29yaywgc2xhYl9y
+ZWFwX3dvcmspOworc3RhdGljIERFRklORV9MT0NBTF9JUlFfTE9DSyhzbGFiX2xvY2spOworCisj
+aWZuZGVmIENPTkZJR19QUkVFTVBUX1JUX0JBU0UKKyMgZGVmaW5lIHNsYWJfb25fZWFjaF9jcHUo
+ZnVuYywgY3ApCW9uX2VhY2hfY3B1KGZ1bmMsIGNwLCAxKQorI2Vsc2UKKy8qCisgKiBleGVjdXRl
+IGZ1bmMoKSBmb3IgYWxsIENQVXMuIE9uIFBSRUVNUFRfUlQgd2UgZG9udCBhY3R1YWxseSBoYXZl
+CisgKiB0byBydW4gb24gdGhlIHJlbW90ZSBDUFVzIC0gd2Ugb25seSBoYXZlIHRvIHRha2UgdGhl
+aXIgQ1BVLWxvY2tzLgorICogKFRoaXMgaXMgYSByYXJlIG9wZXJhdGlvbiwgc28gY2FjaGVsaW5l
+IGJvdW5jaW5nIGlzIG5vdCBhbiBpc3N1ZS4pCisgKi8KK3N0YXRpYyB2b2lkCitzbGFiX29uX2Vh
+Y2hfY3B1KHZvaWQgKCpmdW5jKSh2b2lkICphcmcsIGludCB0aGlzX2NwdSksIHZvaWQgKmFyZykK
+K3sKKwl1bnNpZ25lZCBpbnQgaTsKKworCWdldF9jcHVfbGlnaHQoKTsKKwlmb3JfZWFjaF9vbmxp
+bmVfY3B1KGkpCisJCWZ1bmMoYXJnLCBpKTsKKwlwdXRfY3B1X2xpZ2h0KCk7Cit9CisKK3N0YXRp
+YyB2b2lkIGxvY2tfc2xhYl9vbih1bnNpZ25lZCBpbnQgY3B1KQoreworCWxvY2FsX2xvY2tfaXJx
+X29uKHNsYWJfbG9jaywgY3B1KTsKK30KKworc3RhdGljIHZvaWQgdW5sb2NrX3NsYWJfb24odW5z
+aWduZWQgaW50IGNwdSkKK3sKKwlsb2NhbF91bmxvY2tfaXJxX29uKHNsYWJfbG9jaywgY3B1KTsK
+K30KKyNlbmRpZgogCiBzdGF0aWMgaW5saW5lIHN0cnVjdCBhcnJheV9jYWNoZSAqY3B1X2NhY2hl
+X2dldChzdHJ1Y3Qga21lbV9jYWNoZSAqY2FjaGVwKQogewpAQCAtMTA3Myw5ICsxMTA1LDEwIEBA
+IHN0YXRpYyB2b2lkIHJlYXBfYWxpZW4oc3RydWN0IGttZW1fY2FjaGUKIAlpZiAobi0+YWxpZW4p
+IHsKIAkJc3RydWN0IGFycmF5X2NhY2hlICphYyA9IG4tPmFsaWVuW25vZGVdOwogCi0JCWlmIChh
+YyAmJiBhYy0+YXZhaWwgJiYgc3Bpbl90cnlsb2NrX2lycSgmYWMtPmxvY2spKSB7CisJCWlmIChh
+YyAmJiBhYy0+YXZhaWwgJiYKKwkJICAgIGxvY2FsX3NwaW5fdHJ5bG9ja19pcnEoc2xhYl9sb2Nr
+LCAmYWMtPmxvY2spKSB7CiAJCQlfX2RyYWluX2FsaWVuX2NhY2hlKGNhY2hlcCwgYWMsIG5vZGUp
+OwotCQkJc3Bpbl91bmxvY2tfaXJxKCZhYy0+bG9jayk7CisJCQlsb2NhbF9zcGluX3VubG9ja19p
+cnEoc2xhYl9sb2NrLCAmYWMtPmxvY2spOwogCQl9CiAJfQogfQpAQCAtMTA5MCw5ICsxMTIzLDkg
+QEAgc3RhdGljIHZvaWQgZHJhaW5fYWxpZW5fY2FjaGUoc3RydWN0IGttZQogCWZvcl9lYWNoX29u
+bGluZV9ub2RlKGkpIHsKIAkJYWMgPSBhbGllbltpXTsKIAkJaWYgKGFjKSB7Ci0JCQlzcGluX2xv
+Y2tfaXJxc2F2ZSgmYWMtPmxvY2ssIGZsYWdzKTsKKwkJCWxvY2FsX3NwaW5fbG9ja19pcnFzYXZl
+KHNsYWJfbG9jaywgJmFjLT5sb2NrLCBmbGFncyk7CiAJCQlfX2RyYWluX2FsaWVuX2NhY2hlKGNh
+Y2hlcCwgYWMsIGkpOwotCQkJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmYWMtPmxvY2ssIGZsYWdz
+KTsKKwkJCWxvY2FsX3NwaW5fdW5sb2NrX2lycXJlc3RvcmUoc2xhYl9sb2NrLCAmYWMtPmxvY2ss
+IGZsYWdzKTsKIAkJfQogCX0KIH0KQEAgLTExNzEsMTEgKzEyMDQsMTEgQEAgc3RhdGljIGludCBp
+bml0X2NhY2hlX25vZGVfbm9kZShpbnQgbm9kZQogCQkJY2FjaGVwLT5ub2RlW25vZGVdID0gbjsK
+IAkJfQogCi0JCXNwaW5fbG9ja19pcnEoJmNhY2hlcC0+bm9kZVtub2RlXS0+bGlzdF9sb2NrKTsK
+KwkJbG9jYWxfc3Bpbl9sb2NrX2lycShzbGFiX2xvY2ssICZjYWNoZXAtPm5vZGVsaXN0c1tub2Rl
+XS0+bGlzdF9sb2NrKTsKIAkJY2FjaGVwLT5ub2RlW25vZGVdLT5mcmVlX2xpbWl0ID0KIAkJCSgx
+ICsgbnJfY3B1c19ub2RlKG5vZGUpKSAqCiAJCQljYWNoZXAtPmJhdGNoY291bnQgKyBjYWNoZXAt
+Pm51bTsKLQkJc3Bpbl91bmxvY2tfaXJxKCZjYWNoZXAtPm5vZGVbbm9kZV0tPmxpc3RfbG9jayk7
+CisJCWxvY2FsX3NwaW5fdW5sb2NrX2lycShzbGFiX2xvY2ssICZjYWNoZXAtPm5vZGVsaXN0c1tu
+b2RlXS0+bGlzdF9sb2NrKTsKIAl9CiAJcmV0dXJuIDA7CiB9CkBAIC0xMjAwLDcgKzEyMzMsNyBA
+QCBzdGF0aWMgdm9pZCBfX2NwdWluaXQgY3B1dXBfY2FuY2VsZWQobG9uCiAJCWlmICghbikKIAkJ
+CWdvdG8gZnJlZV9hcnJheV9jYWNoZTsKIAotCQlzcGluX2xvY2tfaXJxKCZuLT5saXN0X2xvY2sp
+OworCQlsb2NhbF9zcGluX2xvY2tfaXJxKHNsYWJfbG9jaywgJm4tPmxpc3RfbG9jayk7CiAKIAkJ
+LyogRnJlZSBsaW1pdCBmb3IgdGhpcyBrbWVtX2NhY2hlX25vZGUgKi8KIAkJbi0+ZnJlZV9saW1p
+dCAtPSBjYWNoZXAtPmJhdGNoY291bnQ7CkBAIC0xMjA4LDcgKzEyNDEsNyBAQCBzdGF0aWMgdm9p
+ZCBfX2NwdWluaXQgY3B1dXBfY2FuY2VsZWQobG9uCiAJCQlmcmVlX2Jsb2NrKGNhY2hlcCwgbmMt
+PmVudHJ5LCBuYy0+YXZhaWwsIG5vZGUpOwogCiAJCWlmICghY3B1bWFza19lbXB0eShtYXNrKSkg
+ewotCQkJc3Bpbl91bmxvY2tfaXJxKCZuLT5saXN0X2xvY2spOworCQkJbG9jYWxfc3Bpbl91bmxv
+Y2tfaXJxKHNsYWJfbG9jaywgJm4tPmxpc3RfbG9jayk7CiAJCQlnb3RvIGZyZWVfYXJyYXlfY2Fj
+aGU7CiAJCX0KIApAQCAtMTIyMiw3ICsxMjU1LDcgQEAgc3RhdGljIHZvaWQgX19jcHVpbml0IGNw
+dXVwX2NhbmNlbGVkKGxvbgogCQlhbGllbiA9IG4tPmFsaWVuOwogCQluLT5hbGllbiA9IE5VTEw7
+CiAKLQkJc3Bpbl91bmxvY2tfaXJxKCZuLT5saXN0X2xvY2spOworCQlsb2NhbF9zcGluX3VubG9j
+a19pcnEoc2xhYl9sb2NrLCAmbi0+bGlzdF9sb2NrKTsKIAogCQlrZnJlZShzaGFyZWQpOwogCQlp
+ZiAoYWxpZW4pIHsKQEAgLTEyOTYsNyArMTMyOSw3IEBAIHN0YXRpYyBpbnQgX19jcHVpbml0IGNw
+dXVwX3ByZXBhcmUobG9uZwogCQluID0gY2FjaGVwLT5ub2RlW25vZGVdOwogCQlCVUdfT04oIW4p
+OwogCi0JCXNwaW5fbG9ja19pcnEoJm4tPmxpc3RfbG9jayk7CisJCWxvY2FsX3NwaW5fbG9ja19p
+cnEoc2xhYl9sb2NrLCAmbi0+bGlzdF9sb2NrKTsKIAkJaWYgKCFuLT5zaGFyZWQpIHsKIAkJCS8q
+CiAJCQkgKiBXZSBhcmUgc2VyaWFsaXNlZCBmcm9tIENQVV9ERUFEIG9yCkBAIC0xMzExLDcgKzEz
+NDQsNyBAQCBzdGF0aWMgaW50IF9fY3B1aW5pdCBjcHV1cF9wcmVwYXJlKGxvbmcKIAkJCWFsaWVu
+ID0gTlVMTDsKIAkJfQogI2VuZGlmCi0JCXNwaW5fdW5sb2NrX2lycSgmbi0+bGlzdF9sb2NrKTsK
+KwkJbG9jYWxfc3Bpbl91bmxvY2tfaXJxKHNsYWJfbG9jaywgJm4tPmxpc3RfbG9jayk7CiAJCWtm
+cmVlKHNoYXJlZCk7CiAJCWZyZWVfYWxpZW5fY2FjaGUoYWxpZW4pOwogCQlpZiAoY2FjaGVwLT5m
+bGFncyAmIFNMQUJfREVCVUdfT0JKRUNUUykKQEAgLTE1MTIsNiArMTU0NSw4IEBAIHZvaWQgX19p
+bml0IGttZW1fY2FjaGVfaW5pdCh2b2lkKQogCWlmIChudW1fcG9zc2libGVfbm9kZXMoKSA9PSAx
+KQogCQl1c2VfYWxpZW5fY2FjaGVzID0gMDsKIAorCWxvY2FsX2lycV9sb2NrX2luaXQoc2xhYl9s
+b2NrKTsKKwogCWZvciAoaSA9IDA7IGkgPCBOVU1fSU5JVF9MSVNUUzsgaSsrKQogCQlrbWVtX2Nh
+Y2hlX25vZGVfaW5pdCgmaW5pdF9rbWVtX2NhY2hlX25vZGVbaV0pOwogCkBAIC0yNDA4LDcgKzI0
+NDMsNyBAQCBfX2ttZW1fY2FjaGVfY3JlYXRlIChzdHJ1Y3Qga21lbV9jYWNoZSAqCiAjaWYgREVC
+VUcKIHN0YXRpYyB2b2lkIGNoZWNrX2lycV9vZmYodm9pZCkKIHsKLQlCVUdfT04oIWlycXNfZGlz
+YWJsZWQoKSk7CisJQlVHX09OX05PTlJUKCFpcnFzX2Rpc2FibGVkKCkpOwogfQogCiBzdGF0aWMg
+dm9pZCBjaGVja19pcnFfb24odm9pZCkKQEAgLTI0NDMsMjYgKzI0NzgsMzcgQEAgc3RhdGljIHZv
+aWQgZHJhaW5fYXJyYXkoc3RydWN0IGttZW1fY2FjaAogCQkJc3RydWN0IGFycmF5X2NhY2hlICph
+YywKIAkJCWludCBmb3JjZSwgaW50IG5vZGUpOwogCi1zdGF0aWMgdm9pZCBkb19kcmFpbih2b2lk
+ICphcmcpCitzdGF0aWMgdm9pZCBfX2RvX2RyYWluKHZvaWQgKmFyZywgdW5zaWduZWQgaW50IGNw
+dSkrc3RhdGljIHZvaWQgX19kb19kcmFpbih2b2lkICphcmcsIHVuc2lnbmVkIGludCBjcHUpCiB7
+CiAJc3RydWN0IGttZW1fY2FjaGUgKmNhY2hlcCA9IGFyZzsKIAlzdHJ1Y3QgYXJyYXlfY2FjaGUg
+KmFjOwotCWludCBub2RlID0gbnVtYV9tZW1faWQoKTsKKwlpbnQgbm9kZSA9IGNwdV90b19tZW0o
+Y3B1KTsKIAotCWNoZWNrX2lycV9vZmYoKTsKLQlhYyA9IGNwdV9jYWNoZV9nZXQoY2FjaGVwKTsK
+KwlhYyA9IGNwdV9jYWNoZV9nZXRfb25fY3B1KGNhY2hlcCwgY3B1KTsKIAlzcGluX2xvY2soJmNh
+Y2hlcC0+bm9kZVtub2RlXS0+bGlzdF9sb2NrKTsKIAlmcmVlX2Jsb2NrKGNhY2hlcCwgYWMtPmVu
+dHJ5LCBhYy0+YXZhaWwsIG5vZGUpOwogCXNwaW5fdW5sb2NrKCZjYWNoZXAtPm5vZGVbbm9kZV0t
+Pmxpc3RfbG9jayk7CiAJYWMtPmF2YWlsID0gMDsKIH0KIAorI2lmbmRlZiBDT05GSUdfUFJFRU1Q
+VF9SVF9CQVNFCitzdGF0aWMgdm9pZCBkb19kcmFpbih2b2lkICphcmcpCit7CisJX19kb19kcmFp
+bihhcmcsIHNtcF9wcm9jZXNzb3JfaWQoKSk7Cit9CisjZWxzZQorc3RhdGljIHZvaWQgZG9fZHJh
+aW4odm9pZCAqYXJnLCBpbnQgdGhpc19jcHUpCit7CisJX19kb19kcmFpbihhcmcsIHRoaXNfY3B1
+KTsKK30KKyNlbmRpZgorCiBzdGF0aWMgdm9pZCBkcmFpbl9jcHVfY2FjaGVzKHN0cnVjdCBrbWVt
+X2NhY2hlICpjYWNoZXApCiB7CiAJc3RydWN0IGttZW1fY2FjaGVfbm9kZSAqbjsKIAlpbnQgbm9k
+ZTsKIAotCW9uX2VhY2hfY3B1KGRvX2RyYWluLCBjYWNoZXAsIDEpOworCXNsYWJfb25fZWFjaF9j
+cHUoZG9fZHJhaW4sIGNhY2hlcCk7CiAJY2hlY2tfaXJxX29uKCk7CiAJZm9yX2VhY2hfb25saW5l
+X25vZGUobm9kZSkgewogCQluID0gY2FjaGVwLT5ub2RlW25vZGVdOwpAQCAtMjQ5MywxMCArMjUz
+OSwxMCBAQCBzdGF0aWMgaW50IGRyYWluX2ZyZWVsaXN0KHN0cnVjdCBrbWVtX2NhCiAJbnJfZnJl
+ZWQgPSAwOwogCXdoaWxlIChucl9mcmVlZCA8IHRvZnJlZSAmJiAhbGlzdF9lbXB0eSgmbi0+c2xh
+YnNfZnJlZSkpIHsKIAotCQlzcGluX2xvY2tfaXJxKCZuLT5saXN0X2xvY2spOworCQlsb2NhbF9z
+cGluX2xvY2tfaXJxKHNsYWJfbG9jaywgJm4tPmxpc3RfbG9jayk7CiAJCXAgPSBuLT5zbGFic19m
+cmVlLnByZXY7CiAJCWlmIChwID09ICZuLT5zbGFic19mcmVlKSB7Ci0JCQlzcGluX3VubG9ja19p
+cnEoJm4tPmxpc3RfbG9jayk7CisJCQlsb2NhbF9zcGluX3VubG9ja19pcnEoc2xhYl9sb2NrLCAm
+bi0+bGlzdF9sb2NrKTsKIAkJCWdvdG8gb3V0OwogCQl9CiAKQEAgLTI1MTAsNyArMjU1Niw3IEBA
+IHN0YXRpYyBpbnQgZHJhaW5fZnJlZWxpc3Qoc3RydWN0IGttZW1fY2EKIAkJICogdG8gdGhlIGNh
+Y2hlLgogCQkgKi8KIAkJbi0+ZnJlZV9vYmplY3RzIC09IGNhY2hlLT5udW07Ci0JCXNwaW5fdW5s
+b2NrX2lycSgmbi0+bGlzdF9sb2NrKTsKKwkJbG9jYWxfc3Bpbl91bmxvY2tfaXJxKHNsYWJfbG9j
+aywgJm4tPmxpc3RfbG9jayk7CiAJCXNsYWJfZGVzdHJveShjYWNoZSwgc2xhYnApOwogCQlucl9m
+cmVlZCsrOwogCX0KQEAgLTI3ODUsNyArMjgzMSw3IEBAIHN0YXRpYyBpbnQgY2FjaGVfZ3Jvdyhz
+dHJ1Y3Qga21lbV9jYWNoZQogCW9mZnNldCAqPSBjYWNoZXAtPmNvbG91cl9vZmY7CiAKIAlpZiAo
+bG9jYWxfZmxhZ3MgJiBfX0dGUF9XQUlUKQotCQlsb2NhbF9pcnFfZW5hYmxlKCk7CisJCWxvY2Fs
+X3VubG9ja19pcnEoc2xhYl9sb2NrKTsKIAogCS8qCiAJICogVGhlIHRlc3QgZm9yIG1pc3Npbmcg
+YXRvbWljIGZsYWcgaXMgcGVyZm9ybWVkIGhlcmUsIHJhdGhlciB0aGFuCkBAIC0yODE1LDcgKzI4
+NjEsNyBAQCBzdGF0aWMgaW50IGNhY2hlX2dyb3coc3RydWN0IGttZW1fY2FjaGUKIAljYWNoZV9p
+bml0X29ianMoY2FjaGVwLCBzbGFicCk7CiAKIAlpZiAobG9jYWxfZmxhZ3MgJiBfX0dGUF9XQUlU
+KQotCQlsb2NhbF9pcnFfZGlzYWJsZSgpOworCQlsb2NhbF9sb2NrX2lycShzbGFiX2xvY2spOwog
+CWNoZWNrX2lycV9vZmYoKTsKIAlzcGluX2xvY2soJm4tPmxpc3RfbG9jayk7CiAKQEAgLTI4Mjks
+NyArMjg3NSw3IEBAIG9wcHMxOgogCWttZW1fZnJlZXBhZ2VzKGNhY2hlcCwgb2JqcCk7CiBmYWls
+ZWQ6CiAJaWYgKGxvY2FsX2ZsYWdzICYgX19HRlBfV0FJVCkKLQkJbG9jYWxfaXJxX2Rpc2FibGUo
+KTsKKwkJbG9jYWxfbG9ja19pcnEoc2xhYl9sb2NrKTsKIAlyZXR1cm4gMDsKIH0KIApAQCAtMzI0
+MywxMSArMzI4OSwxMSBAQCByZXRyeToKIAkJICogc2V0IGFuZCBnbyBpbnRvIG1lbW9yeSByZXNl
+cnZlcyBpZiBuZWNlc3NhcnkuCiAJCSAqLwogCQlpZiAobG9jYWxfZmxhZ3MgJiBfX0dGUF9XQUlU
+KQotCQkJbG9jYWxfaXJxX2VuYWJsZSgpOworCQkJbG9jYWxfdW5sb2NrX2lycShzbGFiX2xvY2sp
+OwogCQlrbWVtX2ZsYWdjaGVjayhjYWNoZSwgZmxhZ3MpOwogCQlvYmogPSBrbWVtX2dldHBhZ2Vz
+KGNhY2hlLCBsb2NhbF9mbGFncywgbnVtYV9tZW1faWQoKSk7CiAJCWlmIChsb2NhbF9mbGFncyAm
+IF9fR0ZQX1dBSVQpCi0JCQlsb2NhbF9pcnFfZGlzYWJsZSgpOworCQkJbG9jYWxfbG9ja19pcnEo
+c2xhYl9sb2NrKTsKIAkJaWYgKG9iaikgewogCQkJLyoKIAkJCSAqIEluc2VydCBpbnRvIHRoZSBh
+cHByb3ByaWF0ZSBwZXIgbm9kZSBxdWV1ZXMKQEAgLTMzNjgsNyArMzQxNCw3IEBAIHNsYWJfYWxs
+b2Nfbm9kZShzdHJ1Y3Qga21lbV9jYWNoZSAqY2FjaGUKIAljYWNoZXAgPSBtZW1jZ19rbWVtX2dl
+dF9jYWNoZShjYWNoZXAsIGZsYWdzKTsKIAogCWNhY2hlX2FsbG9jX2RlYnVnY2hlY2tfYmVmb3Jl
+KGNhY2hlcCwgZmxhZ3MpOwotCWxvY2FsX2lycV9zYXZlKHNhdmVfZmxhZ3MpOworCWxvY2FsX2xv
+Y2tfaXJxc2F2ZShzbGFiX2xvY2ssIHNhdmVfZmxhZ3MpOwogCiAJaWYgKG5vZGVpZCA9PSBOVU1B
+X05PX05PREUpCiAJCW5vZGVpZCA9IHNsYWJfbm9kZTsKQEAgLTMzOTMsNyArMzQzOSw3IEBAIHNs
+YWJfYWxsb2Nfbm9kZShzdHJ1Y3Qga21lbV9jYWNoZSAqY2FjaGUKIAkvKiBfX19jYWNoZV9hbGxv
+Y19ub2RlIGNhbiBmYWxsIGJhY2sgdG8gb3RoZXIgbm9kZXMgKi8KIAlwdHIgPSBfX19fY2FjaGVf
+YWxsb2Nfbm9kZShjYWNoZXAsIGZsYWdzLCBub2RlaWQpOwogICBvdXQ6Ci0JbG9jYWxfaXJxX3Jl
+c3RvcmUoc2F2ZV9mbGFncyk7CisJbG9jYWxfdW5sb2NrX2lycXJlc3RvcmUoc2xhYl9sb2NrLCBz
+YXZlX2ZsYWdzKTsKIAlwdHIgPSBjYWNoZV9hbGxvY19kZWJ1Z2NoZWNrX2FmdGVyKGNhY2hlcCwg
+ZmxhZ3MsIHB0ciwgY2FsbGVyKTsKIAlrbWVtbGVha19hbGxvY19yZWN1cnNpdmUocHRyLCBjYWNo
+ZXAtPm9iamVjdF9zaXplLCAxLCBjYWNoZXAtPmZsYWdzLAogCQkJCSBmbGFncyk7CkBAIC0zNDU1
+LDkgKzM1MDEsOSBAQCBzbGFiX2FsbG9jKHN0cnVjdCBrbWVtX2NhY2hlICpjYWNoZXAsIGdmCiAJ
+Y2FjaGVwID0gbWVtY2dfa21lbV9nZXRfY2FjaGUoY2FjaGVwLCBmbGFncyk7CiAKIAljYWNoZV9h
+bGxvY19kZWJ1Z2NoZWNrX2JlZm9yZShjYWNoZXAsIGZsYWdzKTsKLQlsb2NhbF9pcnFfc2F2ZShz
+YXZlX2ZsYWdzKTsKKwlsb2NhbF9sb2NrX2lycXNhdmUoc2xhYl9sb2NrLCBzYXZlX2ZsYWdzKTsK
+IAlvYmpwID0gX19kb19jYWNoZV9hbGxvYyhjYWNoZXAsIGZsYWdzKTsKLQlsb2NhbF9pcnFfcmVz
+dG9yZShzYXZlX2ZsYWdzKTsKKwlsb2NhbF91bmxvY2tfaXJxcmVzdG9yZShzbGFiX2xvY2ssIHNh
+dmVfZmxhZ3MpOwogCW9ianAgPSBjYWNoZV9hbGxvY19kZWJ1Z2NoZWNrX2FmdGVyKGNhY2hlcCwg
+ZmxhZ3MsIG9ianAsIGNhbGxlcik7CiAJa21lbWxlYWtfYWxsb2NfcmVjdXJzaXZlKG9ianAsIGNh
+Y2hlcC0+b2JqZWN0X3NpemUsIDEsIGNhY2hlcC0+ZmxhZ3MsCiAJCQkJIGZsYWdzKTsKQEAgLTM3
+NzQsOSArMzgyMCw5IEBAIHZvaWQga21lbV9jYWNoZV9mcmVlKHN0cnVjdCBrbWVtX2NhY2hlICoK
+IAlkZWJ1Z19jaGVja19ub19sb2Nrc19mcmVlZChvYmpwLCBjYWNoZXAtPm9iamVjdF9zaXplKTsK
+IAlpZiAoIShjYWNoZXAtPmZsYWdzICYgU0xBQl9ERUJVR19PQkpFQ1RTKSkKIAkJZGVidWdfY2hl
+Y2tfbm9fb2JqX2ZyZWVkKG9ianAsIGNhY2hlcC0+b2JqZWN0X3NpemUpOwotCWxvY2FsX2lycV9z
+YXZlKGZsYWdzKTsKKwlsb2NhbF9sb2NrX2lycXNhdmUoc2xhYl9sb2NrLCBmbGFncyk7CiAJX19j
+YWNoZV9mcmVlKGNhY2hlcCwgb2JqcCwgX1JFVF9JUF8pOwotCWxvY2FsX2lycV9yZXN0b3JlKGZs
+YWdzKTsKKwlsb2NhbF91bmxvY2tfaXJxcmVzdG9yZShzbGFiX2xvY2ssIGZsYWdzKTsKIAogCXRy
+YWNlX2ttZW1fY2FjaGVfZnJlZShfUkVUX0lQXywgb2JqcCk7CiB9CkBAIC0zODA1LDkgKzM4NTEs
+OSBAQCB2b2lkIGtmcmVlKGNvbnN0IHZvaWQgKm9ianApCiAJZGVidWdfY2hlY2tfbm9fbG9ja3Nf
+ZnJlZWQob2JqcCwgYy0+b2JqZWN0X3NpemUpOwogCiAJZGVidWdfY2hlY2tfbm9fb2JqX2ZyZWVk
+KG9ianAsIGMtPm9iamVjdF9zaXplKTsKLQlsb2NhbF9pcnFfc2F2ZShmbGFncyk7CisJbG9jYWxf
+bG9ja19pcnFzYXZlKHNsYWJfbG9jaywgZmxhZ3MpOwogCV9fY2FjaGVfZnJlZShjLCAodm9pZCAq
+KW9ianAsIF9SRVRfSVBfKTsKLQlsb2NhbF9pcnFfcmVzdG9yZShmbGFncyk7CisJbG9jYWxfdW5s
+b2NrX2lycXJlc3RvcmUoc2xhYl9sb2NrLCBmbGFncyk7CiB9CiBFWFBPUlRfU1lNQk9MKGtmcmVl
+KTsKIApAQCAtMzg0NCw3ICszODkwLDcgQEAgc3RhdGljIGludCBhbGxvY19rbWVtbGlzdChzdHJ1
+Y3Qga21lbV9jYQogCQlpZiAobikgewogCQkJc3RydWN0IGFycmF5X2NhY2hlICpzaGFyZWQgPSBu
+LT5zaGFyZWQ7CiAKLQkJCXNwaW5fbG9ja19pcnEoJm4tPmxpc3RfbG9jayk7CisJCQlsb2NhbF9z
+cGluX2xvY2tfaXJxKHNsYWJfbG9jaywgJm4tPmxpc3RfbG9jayk7CiAKIAkJCWlmIChzaGFyZWQp
+CiAJCQkJZnJlZV9ibG9jayhjYWNoZXAsIHNoYXJlZC0+ZW50cnksCkBAIC0zODU3LDcgKzM5MDMs
+NyBAQCBzdGF0aWMgaW50IGFsbG9jX2ttZW1saXN0KHN0cnVjdCBrbWVtX2NhCiAJCQl9CiAJCQlu
+LT5mcmVlX2xpbWl0ID0gKDEgKyBucl9jcHVzX25vZGUobm9kZSkpICoKIAkJCQkJY2FjaGVwLT5i
+YXRjaGNvdW50ICsgY2FjaGVwLT5udW07Ci0JCQlzcGluX3VubG9ja19pcnEoJm4tPmxpc3RfbG9j
+ayk7CisJCQlsb2NhbF9zcGluX3VubG9ja19pcnEoc2xhYl9sb2NrLCAmbi0+bGlzdF9sb2NrKTsK
+IAkJCWtmcmVlKHNoYXJlZCk7CiAJCQlmcmVlX2FsaWVuX2NhY2hlKG5ld19hbGllbik7CiAJCQlj
+b250aW51ZTsKQEAgLTM5MDQsMTcgKzM5NTAsMjggQEAgc3RydWN0IGNjdXBkYXRlX3N0cnVjdCB7
+CiAJc3RydWN0IGFycmF5X2NhY2hlICpuZXdbMF07CiB9OwogCi1zdGF0aWMgdm9pZCBkb19jY3Vw
+ZGF0ZV9sb2NhbCh2b2lkICppbmZvKQorc3RhdGljIHZvaWQgX19kb19jY3VwZGF0ZV9sb2NhbCh2
+b2lkICppbmZvLCBpbnQgY3B1KQogewogCXN0cnVjdCBjY3VwZGF0ZV9zdHJ1Y3QgKm5ldyA9IGlu
+Zm87CiAJc3RydWN0IGFycmF5X2NhY2hlICpvbGQ7CiAKLQljaGVja19pcnFfb2ZmKCk7Ci0Jb2xk
+ID0gY3B1X2NhY2hlX2dldChuZXctPmNhY2hlcCk7CisJb2xkID0gY3B1X2NhY2hlX2dldF9vbl9j
+cHUobmV3LT5jYWNoZXAsIGNwdSk7CisKKwluZXctPmNhY2hlcC0+YXJyYXlbY3B1XSA9IG5ldy0+
+bmV3W2NwdV07CisJbmV3LT5uZXdbY3B1XSA9IG9sZDsKK30KIAotCW5ldy0+Y2FjaGVwLT5hcnJh
+eVtzbXBfcHJvY2Vzc29yX2lkKCldID0gbmV3LT5uZXdbc21wX3Byb2Nlc3Nvcl9pZCgpXTsKLQlu
+ZXctPm5ld1tzbXBfcHJvY2Vzc29yX2lkKCldID0gb2xkOworI2lmbmRlZiBDT05GSUdfUFJFRU1Q
+VF9SVF9CQVNFCitzdGF0aWMgdm9pZCBkb19jY3VwZGF0ZV9sb2NhbCh2b2lkICppbmZvKQorewor
+CV9fZG9fY2N1cGRhdGVfbG9jYWwoaW5mbywgc21wX3Byb2Nlc3Nvcl9pZCgpKTsKIH0KKyNlbHNl
+CitzdGF0aWMgdm9pZCBkb19jY3VwZGF0ZV9sb2NhbCh2b2lkICppbmZvLCBpbnQgY3B1KQorewor
+CV9fZG9fY2N1cGRhdGVfbG9jYWwoaW5mbywgY3B1KTsKK30KKyNlbmRpZgogCiAvKiBBbHdheXMg
+Y2FsbGVkIHdpdGggdGhlIHNsYWJfbXV0ZXggaGVsZCAqLwogc3RhdGljIGludCBfX2RvX3R1bmVf
+Y3B1Y2FjaGUoc3RydWN0IGttZW1fY2FjaGUgKmNhY2hlcCwgaW50IGxpbWl0LApAQCAtMzk0MCw3
+ICszOTk3LDcgQEAgc3RhdGljIGludCBfX2RvX3R1bmVfY3B1Y2FjaGUoc3RydWN0IGttZQogCX0K
+IAluZXctPmNhY2hlcCA9IGNhY2hlcDsKIAotCW9uX2VhY2hfY3B1KGRvX2NjdXBkYXRlX2xvY2Fs
+LCAodm9pZCAqKW5ldywgMSk7CisJc2xhYl9vbl9lYWNoX2NwdShkb19jY3VwZGF0ZV9sb2NhbCwg
+KHZvaWQgKiluZXcpOwogCiAJY2hlY2tfaXJxX29uKCk7CiAJY2FjaGVwLT5iYXRjaGNvdW50ID0g
+YmF0Y2hjb3VudDsKQEAgLTM5NTEsOSArNDAwOCwxMSBAQCBzdGF0aWMgaW50IF9fZG9fdHVuZV9j
+cHVjYWNoZShzdHJ1Y3Qga21lCiAJCXN0cnVjdCBhcnJheV9jYWNoZSAqY2NvbGQgPSBuZXctPm5l
+d1tpXTsKIAkJaWYgKCFjY29sZCkKIAkJCWNvbnRpbnVlOwotCQlzcGluX2xvY2tfaXJxKCZjYWNo
+ZXAtPm5vZGVbY3B1X3RvX21lbShpKV0tPmxpc3RfbG9jayk7CisJCWxvY2FsX3NwaW5fbG9ja19p
+cnEoc2xhYl9sb2NrLAorCQkJCSAgICAmY2FjaGVwLT5ub2RlW2NwdV90b19tZW0oaSldLT5saXN0
+X2xvY2spOwogCQlmcmVlX2Jsb2NrKGNhY2hlcCwgY2NvbGQtPmVudHJ5LCBjY29sZC0+YXZhaWws
+IGNwdV90b19tZW0oaSkpOwotCQlzcGluX3VubG9ja19pcnEoJmNhY2hlcC0+bm9kZVtjcHVfdG9f
+bWVtKGkpXS0+bGlzdF9sb2NrKTsKKwkJbG9jYWxfc3Bpbl91bmxvY2tfaXJxKHNsYWJfbG9jaywK
+K3gJCQkJICAgICAgJmNhY2hlcC0+bm9kZVtjcHVfdG9fbWVtKGkpXS0+bGlzdF9sb2NrKTsKIAkJ
+a2ZyZWUoY2NvbGQpOwogCX0KIAlrZnJlZShuZXcpOwpAQCAtNDA2OCw3ICs0MTI3LDcgQEAgc3Rh
+dGljIHZvaWQgZHJhaW5fYXJyYXkoc3RydWN0IGttZW1fY2FjaAogCWlmIChhYy0+dG91Y2hlZCAm
+JiAhZm9yY2UpIHsKIAkJYWMtPnRvdWNoZWQgPSAwOwogCX0gZWxzZSB7Ci0JCXNwaW5fbG9ja19p
+cnEoJm4tPmxpc3RfbG9jayk7CisJCWxvY2FsX3NwaW5fbG9ja19pcnEoc2xhYl9sb2NrLCAmbi0+
+bGlzdF9sb2NrKTsKIAkJaWYgKGFjLT5hdmFpbCkgewogCQkJdG9mcmVlID0gZm9yY2UgPyBhYy0+
+YXZhaWwgOiAoYWMtPmxpbWl0ICsgNCkgLyA1OwogCQkJaWYgKHRvZnJlZSA+IGFjLT5hdmFpbCkK
+QEAgLTQwNzgsNyArNDEzNyw3IEBAIHN0YXRpYyB2b2lkIGRyYWluX2FycmF5KHN0cnVjdCBrbWVt
+X2NhY2gKIAkJCW1lbW1vdmUoYWMtPmVudHJ5LCAmKGFjLT5lbnRyeVt0b2ZyZWVdKSwKIAkJCQlz
+aXplb2Yodm9pZCAqKSAqIGFjLT5hdmFpbCk7CiAJCX0KLQkJc3Bpbl91bmxvY2tfaXJxKCZuLT5s
+aXN0X2xvY2spOworCQlsb2NhbF9zcGluX3VubG9ja19pcnEoc2xhYl9sb2NrLCAmbi0+bGlzdF9s
+b2NrKTsKIAl9CiB9CiAKQEAgLTQxNzEsNyArNDIzMCw3IEBAIHZvaWQgZ2V0X3NsYWJpbmZvKHN0
+cnVjdCBrbWVtX2NhY2hlICpjYWMKIAkJCWNvbnRpbnVlOwogCiAJCWNoZWNrX2lycV9vbigpOwot
+CQlzcGluX2xvY2tfaXJxKCZuLT5saXN0X2xvY2spOworCQlsb2NhbF9zcGluX2xvY2tfaXJxKHNs
+YWJfbG9jaywgJm4tPmxpc3RfbG9jayk7CiAKIAkJbGlzdF9mb3JfZWFjaF9lbnRyeShzbGFicCwg
+Jm4tPnNsYWJzX2Z1bGwsIGxpc3QpIHsKIAkJCWlmIChzbGFicC0+aW51c2UgIT0gY2FjaGVwLT5u
+dW0gJiYgIWVycm9yKQpAQCAtNDE5Niw3ICs0MjU1LDcgQEAgdm9pZCBnZXRfc2xhYmluZm8oc3Ry
+dWN0IGttZW1fY2FjaGUgKmNhYwogCQlpZiAobi0+c2hhcmVkKQogCQkJc2hhcmVkX2F2YWlsICs9
+IG4tPnNoYXJlZC0+YXZhaWw7CiAKLQkJc3Bpbl91bmxvY2tfaXJxKCZuLT5saXN0X2xvY2spOwor
+CQlsb2NhbF9zcGluX3VubG9ja19pcnEoc2xhYl9sb2NrLCAmbi0+bGlzdF9sb2NrKTsKIAl9CiAJ
+bnVtX3NsYWJzICs9IGFjdGl2ZV9zbGFiczsKIAludW1fb2JqcyA9IG51bV9zbGFicyAqIGNhY2hl
+cC0+bnVtOwpAQCAtNDM5NiwxMyArNDQ1NSwxMyBAQCBzdGF0aWMgaW50IGxlYWtzX3Nob3coc3Ry
+dWN0IHNlcV9maWxlICptCiAJCQljb250aW51ZTsKIAogCQljaGVja19pcnFfb24oKTsKLQkJc3Bp
+bl9sb2NrX2lycSgmbi0+bGlzdF9sb2NrKTsKKwkJbG9jYWxfc3Bpbl9sb2NrX2lycShzbGFiX2xv
+Y2ssICZuLT5saXN0X2xvY2spOwogCiAJCWxpc3RfZm9yX2VhY2hfZW50cnkoc2xhYnAsICZuLT5z
+bGFic19mdWxsLCBsaXN0KQogCQkJaGFuZGxlX3NsYWIoeCwgY2FjaGVwLCBzbGFicCk7CiAJCWxp
+c3RfZm9yX2VhY2hfZW50cnkoc2xhYnAsICZuLT5zbGFic19wYXJ0aWFsLCBsaXN0KQogCQkJaGFu
+ZGxlX3NsYWIoeCwgY2FjaGVwLCBzbGFicCk7Ci0JCXNwaW5fdW5sb2NrX2lycSgmbi0+bGlzdF9s
+b2NrKTsKKwkJbG9jYWxfc3Bpbl91bmxvY2tfaXJxKHNsYWJfbG9jaywgJm4tPmxpc3RfbG9jayk7
+CiAJfQogCW5hbWUgPSBjYWNoZXAtPm5hbWU7CiAJaWYgKHhbMF0gPT0geFsxXSkgewo=
+--bcaec53fee9d19f86304e794746b--
