@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab3I3KX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:23:57 -0400
-Received: from sauhun.de ([89.238.76.85]:42203 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756506Ab3I3KXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:23:45 -0400
-Date: Mon, 30 Sep 2013 12:23:42 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        Kedareswara rao Appana <appanad@xilinx.com>,
-        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/3] i2c: xilinx: Fix i2c sparse warnings
-Message-ID: <20130930102342.GC3222@katana>
-References: <c122ad49b27406ee495ef0d6cac191968d64f09f.1380532113.git.michal.simek@xilinx.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="S1BNGpv0yoYahz37"
-Content-Disposition: inline
-In-Reply-To: <c122ad49b27406ee495ef0d6cac191968d64f09f.1380532113.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755985Ab3I3KYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:24:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43667 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755609Ab3I3KM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 06:12:57 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 065/104] drm/radeon: fix endian bugs in hw i2c atom routines
+Date: Mon, 30 Sep 2013 11:10:42 +0100
+Message-Id: <1380535881-9239-66-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
+References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
 
---S1BNGpv0yoYahz37
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Mon, Sep 30, 2013 at 11:08:50AM +0200, Michal Simek wrote:
-> From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
->=20
-> code changes to fix sparse warnings
+From: Alex Deucher <alexander.deucher@amd.com>
 
-Would be nice to either have them listed here or at least shortly
-described.
+commit 4543eda52113d1e2cc0e9bf416f79597e6ef1ec7 upstream.
 
->=20
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Need to swap the data fetched over i2c properly.  This
+is the same fix as the endian fix for aux channel
+transactions.
 
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/radeon/atombios_dp.c  | 6 +++---
+ drivers/gpu/drm/radeon/atombios_i2c.c | 4 +++-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---S1BNGpv0yoYahz37
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
+index 824d03c..a672379 100644
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -51,7 +51,7 @@ static char *pre_emph_names[] = {
+  * or from atom. Note that atom operates on
+  * dw units.
+  */
+-static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
++void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
+ {
+ #ifdef __BIG_ENDIAN
+ 	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
+@@ -101,7 +101,7 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan *chan,
+ 
+ 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ 
+-	radeon_copy_swap(base, send, send_bytes, true);
++	radeon_atom_copy_swap(base, send, send_bytes, true);
+ 
+ 	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
+ 	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
+@@ -138,7 +138,7 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan *chan,
+ 		recv_bytes = recv_size;
+ 
+ 	if (recv && recv_size)
+-		radeon_copy_swap(recv, base + 16, recv_bytes, false);
++		radeon_atom_copy_swap(recv, base + 16, recv_bytes, false);
+ 
+ 	return recv_bytes;
+ }
+diff --git a/drivers/gpu/drm/radeon/atombios_i2c.c b/drivers/gpu/drm/radeon/atombios_i2c.c
+index 44d87b6..9ed94a8 100644
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -27,6 +27,8 @@
+ #include "radeon.h"
+ #include "atom.h"
+ 
++extern void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le);
++
+ #define TARGET_HW_I2C_CLOCK 50
+ 
+ /* these are a limitation of ProcessI2cChannelTransaction not the hw */
+@@ -77,7 +79,7 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+ 	}
+ 
+ 	if (!(flags & HW_I2C_WRITE))
+-		memcpy(buf, base, num);
++		radeon_atom_copy_swap(buf, base, num, false);
+ 
+ 	return 0;
+ }
+-- 
+1.8.3.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSSVEuAAoJEBQN5MwUoCm2BfsP/3nUETZuoj746f4rc73i7lSj
-NRE4WYXiqiq0J83guuV0XH0yHw1dtHw6xI91Zb7GE2eO3ZBa6cRw5vaSGr6FKo2A
-YDlLi5yhPKiF4yTV+RX8idLcy2hQ6IUllqTUt+omCOis7AcXUB3U/2KS/3gVuUb4
-QPjdjF4Bq1/GyzxTA2oFKGoy610OTy9BwzyFTdyYXo0M/ZytCuncZEW5zkqoL9U/
-cmizFvfQKaTvyOulLjZDenVBUoHwlNv5hptYJFuPaHYJJrDYAmocleDbYdmzzpFB
-nzCeEXvGQn1o5LgQXSEpl+ZwEm+TSt/zlXkNthjE4rP5ZTyKJedRoKeJ+bDLFplH
-nokgCzxRGKIHnchs1KlmZmIgq4rlbCmYjly/Z2J0mBy40aXNd2P84R/84WKW2v/j
-7qMlrjMgq7LQITmejaE5qexs/eRXfI4CJ6mJ4SLbvl76TDUb2ViPR1gbo3r5Vce4
-UJf2rXlqfgH+XkLqgUvOBytbKXPyPcKKb30IMhGANSrsAYzrkG3M3dMKJKELI0Ur
-Al02UDJrQpPz8po4/APcno3s0XgqpKTyTOxQmAnlcsgfvwQ39lBW4k68acUTPrCx
-JoTX3Tl047kJjEbsaA/39r9V0GM8ooQrSmcggHVsaevfFGZazqtusM4JpvW55+Xu
-33I5OM2TDuN/C6wF1SzW
-=1jnd
------END PGP SIGNATURE-----
-
---S1BNGpv0yoYahz37--
