@@ -1,116 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab3I3Ixa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 04:53:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15594 "EHLO mx1.redhat.com"
+	id S1753768Ab3I3I5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 04:57:14 -0400
+Received: from canardo.mork.no ([148.122.252.1]:56913 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754154Ab3I3Ix0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 04:53:26 -0400
-Date: Mon, 30 Sep 2013 10:52:43 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Haggai Eran <haggaie@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Jerome Glisse <jglisse@redhat.com>
-Subject: Re: [PATCH] anon_vmas: Convert the rwsem to an rwlock_t
-Message-ID: <20130930085243.GA25685@redhat.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <20130928193739.GA8642@gmail.com>
+	id S1752041Ab3I3I5L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 04:57:11 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Enrico Mioso <mrkiko.rs@gmail.com>
+Cc: Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert de Vries <rhdv@xs4all.nl>, Hayes Wang <hayeswang@realtek.com>,
+        Freddy Xin <freddy@asix.com.tw>,
+        Liu Junliang <liujunliang_ljl@163.com>,
+        linux-kernel@vger.kernel.org (open list),
+        linux-usb@vger.kernel.org (open list:USB NETWORKING DR...),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
+        ModemManager-devel@lists.freedesktop.org
+Subject: Re: [PATCH V5 net-next 0/3] The huawei_cdc_ncm driver
+Organization: m
+References: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com>
+Date: Mon, 30 Sep 2013 10:56:23 +0200
+In-Reply-To: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com> (Enrico
+	Mioso's message of "Mon, 30 Sep 2013 04:50:06 +0000")
+Message-ID: <87zjquhemg.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130928193739.GA8642@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Enrico Mioso <mrkiko.rs@gmail.com> writes:
 
-On Sat, Sep 28, 2013 at 09:37:39PM +0200, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > If we do that then I suspect the next step will be queued rwlocks :-/ 
-> > The current rwlock_t implementation is rather primitive by modern 
-> > standards. (We'd probably have killed rwlock_t long ago if not for the 
-> > tasklist_lock.)
-> > 
-> > But yeah, it would work and conceptually a hard spinlock fits something 
-> > as lowlevel as the anon-vma lock.
-> > 
-> > I did a quick review pass and it appears nothing obvious is scheduling 
-> > with the anon-vma lock held. If it did in a non-obvious way it's likely 
-> > a bug anyway. The hugepage code grew a lot of logic running under the 
-> > anon-vma lock, but it all seems atomic.
-> > 
-> > So a conversion to rwlock_t could be attempted. (It should be relatively 
-> > easy patch as well, because the locking operation is now nicely 
-> > abstracted out.)
-> 
-> Here's a totally untested patch to convert the anon vma lock to an 
-> rwlock_t.
+> So this is a new, revised, edition of the huawei_cdc_ncm.c driver, which 
+> supports devices resembling the NCM standard, but using it also as a mean 
+> to encapsulate other protocols, as is the case for the Huawei E3131 and
+> E3251 modem devices.
+> Some precisations are needed however - and I encourage discussion on this: and 
+> that's why I'm sending this message with a broader CC.
+> Merging those patches might change:
+> - the way Modem Manager interacts with those devices
+> - some regressions might be possible if there are some unknown firmware 
+>   variants around (Franko?)
+>
+> First of all: I observed the behaviours of two devices.
+> Huawei E3131: this device doesn't accept NDIS setup requests unless they're 
+> sent via the embedded AT channel exposed by this driver.
+> So actually we gain funcionality in this case!
+>
+> The second case, is the Huawei E3251: which works with standard NCM driver, 
+> still exposing an AT embedded channel. Whith this patch set applied, you gain 
+> some funcionality, loosing the ability to catch standard NCM events for now.
+> The device will work in both ways with no problems, but this has to be 
+> acknowledged and discussed. Might be we can develop this driver further to 
+> change this, when more devices are tested.
 
-Sorry having to break the party but the sleepable locks for anon_vma
-and i_mmap_mutex are now requirement for the "pageable RDMA" effort
-recently achieved upstream by mellanox with the MMU notifier.
+Your driver, and the cdc-wdm subdriver API in general, could certainly
+be extended to support standard NCM events.  There have been some
+discussions in the linux-usb list already on how to best do this.  I
+believe this message from Oliver is the current conclusion to that
+discussion: http://www.spinics.net/lists/linux-usb/msg70140.html
 
-And as far as I can tell that's the only single good reason for why
-those locks shouldn't be spinlocks (otherwise I would have also
-complianed at the time of that conversion, the original regression was
-known, ask Andi). After the lock conversion it took a while to fix all
-other minor bits to make mmu notifier methods fully sleepable.
+I.e:
+ - extend the cdc-wdm subdriver API by creating a struct holding all
+   necessary callbacks, and use this struct instead of the current
+   single "manage_power" callback, and
+ - create one callback hook per notification you want to handle, with
+   clear semantics and reasonable names
 
-The problem with the spinlocks is that in the rmap code (like
-try_to_unmap) we need to call mmu_notifier_invalidate_page with an
-"mm" as parameter, and the callee assumes the "mm" won't go away under
-it. The other second requirement is that the page cannot be freed
-until we call the mmu_notifier_invalidate_page (secondary MMU is ok to
-still access the page after the linux pte has been dropped and the TLB
-flushed).
+But I still believe your driver should go in as it is for now. As you
+note, it is required for the E3131.  And the same is most likely the
+case for other devices in the same family.
 
-In the rmap code the only things that keep things afloat is either the
-anon_vma lock or the i_mmap_mutex so it is quite tricky to drop that
-lock while keeping "mm" and "page" both afloat for the invalidate
-post-anon-vma-unlock.
+Handling the NCM notifications can always be added later. IMHO, they can
+be considered optional given that a separate management channel is
+required in any case to configure these devices and start/stop the
+connection.  The NCM events you lose compared to cdc_ncm are
+NETWORK_CONNECTION and SPEED_CHANGE. The first one is useful as it is
+implemented in cdc_ncm because it controls the network device link
+state, but it is still redundant for devices like these where a managing
+userspace application is required and the connection events are
+available via the management channel.  The implementation of
+SPEED_CHANGE events is less useful. The cdc_ncm driver doesn't use the
+received speed data for anything except printing an informational
+message.  I don't think implementing it in your driver will gain you
+anything.
 
-Maybe there are ways to makes that safe? (reference counting,
-trylocking the mmap_sem). But there isn't a very strightforward way to
-do that.
+> We where thinking Huawei changed their interfaces on new devices - but probably 
+> this driver only works around a nice firmware bug present in E3131, which 
+> prevented the modem from being used in NDIS mode.
 
-It isn't just mellanox drivers: originally SGI XPMEM driver also
-needed to schedule in those methods (then they figured how to get away
-in only scheduling in the mmu_notifier range calls but I suppose they
-prefer to be able to schedule in all invalidate methods including
-mmu_notifier_invalidate_page).
+I am not sure this is a firmware bug.  It could very well be by design,
+and the differences in observed behaviour could be just artifacts of the
+interface implementation on top of different chipsets and/or base
+firmwares.  AFAIK, Huawei have never officially supported the serial
+port for network device management on this class of devices. The
+embedded AT channel is most likely the only AT command channel intended
+for network device management, even on the devices with serial ports.
 
-Nvidia is now also going to use mmu notifier to allow the GPU (acting
-as a secondary MMU with pagetables) to access main memory without
-requiring RAM pinning and without disabling all VM features on the
-graphics memory (and without GART physical). Probably they don't need
-to schedule but I CC'ed Jerome just in case they need (as that would
-add one more relevant user of the feature).
+> I think committing this is definitely wortth-while, since it will allow for 
+> more Huawei devices to be used without serial connection. Some devices like the 
+> E3251 also, reports some status information only via the embedded AT channel, 
+> at least in my case.
+> Note: I'm not subscribed to any list except the Modem Manager's one, so please 
+> CC me, thanks!!
 
-As far as KVM is concerned, there is no benefit in scheduling in the
-methods. The KVM mmu notifier invalidate consists in zeroing out one
-or more sptes and sending an IPI to flush the guest TLBs if others
-vcpus are running in other cpus. It's a mechanism pretty much
-identical to the one used by the primary MMU and it only requires irqs
-enabled to avoid deadlocks in case of cross-IPIs.
+Yes, this is most definitely a driver worth being added.  There are a
+number of devices which just cannot be made working in Linux without it
+because the embedded management channel is the only one available.
+
+I don't know if you are aware of this, but I have pointed a few people
+to your previous submission attempts and there are therefore some
+success stories around already.  An example:
+http://lists.freedesktop.org/archives/libqmi-devel/2013-September/000650.html
+
+
+Bjørn
