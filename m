@@ -1,134 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3I3QH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:07:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34113 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab3I3QHX (ORCPT
+	id S1756150Ab3I3QIs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:08:48 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:40951 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281Ab3I3QIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:07:23 -0400
-Date: Mon, 30 Sep 2013 12:06:46 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
-Subject: Re: [PATCH v6 16/19] arm,arm64: do not always merge biovec if we are
- running on Xen
-Message-ID: <20130930160646.GV3106@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
- <1380298207-29151-16-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380298207-29151-16-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 30 Sep 2013 12:08:47 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@linaro.org>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH v2] rwsem: reduce spinlock contention in wakeup code path
+Date: Mon, 30 Sep 2013 12:08:04 -0400
+Message-Id: <1380557284-60784-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 05:10:04PM +0100, Stefano Stabellini wrote:
-> This is similar to what it is done on X86: biovecs are prevented from merging
-> otherwise every dma requests would be forced to bounce on the swiotlb buffer.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+With the 3.12-rc2 kernel, there is sizable spinlock contention on
+the rwsem wakeup code path when running AIM7's high_systime workload
+on a 8-socket 80-core DL980 (HT off) as reported by perf:
 
+  7.64%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+             |--41.77%-- rwsem_wake
+  1.61%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irq
+             |--92.37%-- rwsem_down_write_failed
 
-This also alters the generic (well, was x86, now it is generic) code.
-Perhaps that change should be made in a seperate patch and explain
-what the autotranslate extra check will do for PV, PVH and HVM guests?
+That was 4.7% of recorded CPU cycles.
 
-Wait, does that mean we had not been merging requests on HVM guests?
-Is that good or bad?
+On a large NUMA machine, it is entirely possible that a fairly large
+number of threads are queuing up in the ticket spinlock queue to do
+the wakeup operation. In fact, only one will be needed.  This patch
+tries to reduce spinlock contention by doing just that.
 
-> ---
->  arch/arm/include/asm/io.h   |    8 ++++++++
->  arch/arm64/include/asm/io.h |    9 +++++++++
->  drivers/xen/biomerge.c      |    4 +++-
->  3 files changed, 20 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-> index d070741..c45effc 100644
-> --- a/arch/arm/include/asm/io.h
-> +++ b/arch/arm/include/asm/io.h
-> @@ -24,9 +24,11 @@
->  #ifdef __KERNEL__
->  
->  #include <linux/types.h>
-> +#include <linux/blk_types.h>
->  #include <asm/byteorder.h>
->  #include <asm/memory.h>
->  #include <asm-generic/pci_iomap.h>
-> +#include <xen/xen.h>
->  
->  /*
->   * ISA I/O bus memory addresses are 1:1 with the physical address.
-> @@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
->  #define BIOVEC_MERGEABLE(vec1, vec2)	\
->  	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
->  
-> +extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-> +				      const struct bio_vec *vec2);
-> +#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-> +	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-> +	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-> +
->  #ifdef CONFIG_MMU
->  #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
->  extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
-> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-> index 1d12f89..c163287b 100644
-> --- a/arch/arm64/include/asm/io.h
-> +++ b/arch/arm64/include/asm/io.h
-> @@ -22,11 +22,14 @@
->  #ifdef __KERNEL__
->  
->  #include <linux/types.h>
-> +#include <linux/blk_types.h>
->  
->  #include <asm/byteorder.h>
->  #include <asm/barrier.h>
->  #include <asm/pgtable.h>
->  
-> +#include <xen/xen.h>
-> +
->  /*
->   * Generic IO read/write.  These perform native-endian accesses.
->   */
-> @@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
->   */
->  #define xlate_dev_kmem_ptr(p)	p
->  
-> +extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-> +				      const struct bio_vec *vec2);
-> +#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-> +	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-> +	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-> +
->  #endif	/* __KERNEL__ */
->  #endif	/* __ASM_IO_H */
-> diff --git a/drivers/xen/biomerge.c b/drivers/xen/biomerge.c
-> index 0edb91c..f323a2d 100644
-> --- a/drivers/xen/biomerge.c
-> +++ b/drivers/xen/biomerge.c
-> @@ -2,6 +2,7 @@
->  #include <linux/io.h>
->  #include <linux/export.h>
->  #include <xen/page.h>
-> +#include <xen/features.h>
->  
->  bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
->  			       const struct bio_vec *vec2)
-> @@ -9,7 +10,8 @@ bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
->  	unsigned long mfn1 = pfn_to_mfn(page_to_pfn(vec1->bv_page));
->  	unsigned long mfn2 = pfn_to_mfn(page_to_pfn(vec2->bv_page));
->  
-> -	return __BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
-> +	return !xen_feature(XENFEAT_auto_translated_physmap) &&
-> +		__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
->  		((mfn1 == mfn2) || ((mfn1+1) == mfn2));
->  }
->  EXPORT_SYMBOL(xen_biovec_phys_mergeable);
-> -- 
-> 1.7.2.5
-> 
+A new wakeup field is added to the rwsem structure. This field is
+set on entry to rwsem_wake() and __rwsem_do_wake() to mark that a
+thread is pending to do the wakeup call. It is cleared on exit from
+those functions. There is no size increase in 64-bit systems and a
+4 bytes size increase in 32-bit systems.
+
+By checking if the wakeup flag is set, a thread can exit rwsem_wake()
+immediately if another thread is pending to do the wakeup instead of
+waiting to get the spinlock and find out that nothing need to be done.
+
+The setting of the wakeup flag may not be visible on all processors in
+some architectures. However, this won't affect program correctness. The
+clearing of the wakeup flag before spin_unlock and other barrier-type
+atomic instructions will ensure that it is visible to all processors.
+
+With this patch, the performance improvement on jobs per minute
+(JPM) of an sample run of the high_systime workload (at 1500 users)
+was as follows:
+
+HT	JPM w/o patch	JPM with patch	% Change
+--	-------------	--------------	--------
+off	   148265	   170896	 +15.3%
+on	   140078	   159319	 +13.7%
+
+The new perf profile (HT off) was as follows:
+
+  2.96%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+             |--0.94%-- rwsem_wake
+  1.00%   reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irq
+             |--88.70%-- rwsem_down_write_failed
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ include/linux/rwsem.h |    2 ++
+ lib/rwsem.c           |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 0616ffe..e25792e 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -25,6 +25,7 @@ struct rw_semaphore;
+ struct rw_semaphore {
+ 	long			count;
+ 	raw_spinlock_t		wait_lock;
++	int			wakeup;	/* Waking-up in progress flag */
+ 	struct list_head	wait_list;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+@@ -58,6 +59,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ #define __RWSEM_INITIALIZER(name)			\
+ 	{ RWSEM_UNLOCKED_VALUE,				\
+ 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
++	  0,						\
+ 	  LIST_HEAD_INIT((name).wait_list)		\
+ 	  __RWSEM_DEP_MAP_INIT(name) }
+ 
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 19c5fa9..ded30f8 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -25,6 +25,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 	lockdep_init_map(&sem->dep_map, name, key, 0);
+ #endif
+ 	sem->count = RWSEM_UNLOCKED_VALUE;
++	sem->wakeup = 0;
+ 	raw_spin_lock_init(&sem->wait_lock);
+ 	INIT_LIST_HEAD(&sem->wait_list);
+ }
+@@ -66,6 +67,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	struct list_head *next;
+ 	long oldcount, woken, loop, adjustment;
+ 
++	sem->wakeup = 1;	/* Waking up in progress */
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+ 		if (wake_type == RWSEM_WAKE_ANY)
+@@ -75,6 +77,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 			 * will block as they will notice the queued writer.
+ 			 */
+ 			wake_up_process(waiter->task);
++		sem->wakeup = 0;	/* Wakeup done */
+ 		goto out;
+ 	}
+ 
+@@ -83,6 +86,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	 * so we can bail out early if a writer stole the lock.
+ 	 */
+ 	adjustment = 0;
++	sem->wakeup = 0;
+ 	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+ 		adjustment = RWSEM_ACTIVE_READ_BIAS;
+  try_reader_grant:
+@@ -256,11 +260,36 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
++	if (sem->wakeup)
++		return sem;	/* Waking up in progress already */
++	/*
++	 * Optimistically set the wakeup flag to indicate that the current
++	 * thread is going to wakeup the sleeping waiters so that the
++	 * following threads don't need to wait for doing the wakeup call.
++	 * It is perfectly fine if another thread clears the flag. It just
++	 * leads to one more thread waiting to call __rwsem_do_wake().
++	 *
++	 * Writer lock stealing is not an issue for writers which are
++	 * unconditionally woken up. The woken writer is synchronized with
++	 * the waker via the spinlock. So the writer can't start doing
++	 * anything before the spinlock is released. For readers, the
++	 * situation is more complicated. The write lock stealer or the
++	 * woken readers are not synchronized with the waker. So they may
++	 * finish before the waker clears the wakeup flag. To prevent this
++	 * situation, the wakeup flag is cleared before the atomic update
++	 * of the count which also acts as a barrier.
++	 *
++	 * The spin_unlock() call at the end will force the just-cleared
++	 * wakeup flag to be visible to all the processors.
++	 */
++	sem->wakeup = 1;
+ 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	/* do nothing if list empty */
+ 	if (!list_empty(&sem->wait_list))
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
++	else
++		sem->wakeup = 0;	/* Make sure wakeup flag is cleared */
+ 
+ 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+-- 
+1.7.1
+
