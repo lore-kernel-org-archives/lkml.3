@@ -1,45 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3I3Hsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:48:32 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:64427 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3I3Hsb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:48:31 -0400
-X-AuditID: 9c93017d-b7c2dae000000ea6-7a-52492ccd8285
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, jolsa@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, namhyung.kim@lge.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, tools: Fix sorting for 64bit entries
-References: <1380325164-4478-1-git-send-email-andi@firstfloor.org>
-Date: Mon, 30 Sep 2013 16:48:25 +0900
-In-Reply-To: <1380325164-4478-1-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Fri, 27 Sep 2013 16:39:24 -0700")
-Message-ID: <87pprqoily.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1753638Ab3I3Htc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:49:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45762 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394Ab3I3Htb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 03:49:31 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [net-next PATCH V2] virtio-net: switch to use XPS to choose txq
+Date: Mon, 30 Sep 2013 15:37:17 +0800
+Message-Id: <1380526637-35524-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+We used to use a percpu structure vq_index to record the cpu to queue
+mapping, this is suboptimal since it duplicates the work of XPS and
+loses all other XPS functionality such as allowing use to configure
+their own transmission steering strategy.
 
-On Fri, 27 Sep 2013 16:39:24 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Some of the node comparisons in hist.c dropped the upper
-> 32bit by using an int variable to store the compare
-> result. This broke various 64bit fields, causing
-> incorrect collapsing (found for the TSX transaction field)
->
-> Just use int64_t always.
+So this patch switches to use XPS and suggest a default mapping when
+the number of cpus is equal to the number of queues. With XPS support,
+there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
+so they were removed also.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V1:
+- use cpumask_of() instead of allocate dynamically
 
-Thanks,
-Namhyung
+ drivers/net/virtio_net.c |   48 +--------------------------------------------
+ 1 files changed, 2 insertions(+), 46 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index defec2b..4eca652 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -127,9 +127,6 @@ struct virtnet_info {
+ 	/* Does the affinity hint is set for virtqueues? */
+ 	bool affinity_hint_set;
+ 
+-	/* Per-cpu variable to show the mapping from CPU to virtqueue */
+-	int __percpu *vq_index;
+-
+ 	/* CPU hot plug notifier */
+ 	struct notifier_block nb;
+ };
+@@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
+ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+ {
+ 	int i;
+-	int cpu;
+ 
+ 	if (vi->affinity_hint_set) {
+ 		for (i = 0; i < vi->max_queue_pairs; i++) {
+@@ -1073,16 +1069,6 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+ 
+ 		vi->affinity_hint_set = false;
+ 	}
+-
+-	i = 0;
+-	for_each_online_cpu(cpu) {
+-		if (cpu == hcpu) {
+-			*per_cpu_ptr(vi->vq_index, cpu) = -1;
+-		} else {
+-			*per_cpu_ptr(vi->vq_index, cpu) =
+-				++i % vi->curr_queue_pairs;
+-		}
+-	}
+ }
+ 
+ static void virtnet_set_affinity(struct virtnet_info *vi)
+@@ -1104,7 +1090,7 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
+ 	for_each_online_cpu(cpu) {
+ 		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+ 		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+-		*per_cpu_ptr(vi->vq_index, cpu) = i;
++		netif_set_xps_queue(vi->dev, cpumask_of(cpu), i);
+ 		i++;
+ 	}
+ 
+@@ -1217,28 +1203,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+ 	return 0;
+ }
+ 
+-/* To avoid contending a lock hold by a vcpu who would exit to host, select the
+- * txq based on the processor id.
+- */
+-static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+-{
+-	int txq;
+-	struct virtnet_info *vi = netdev_priv(dev);
+-
+-	if (skb_rx_queue_recorded(skb)) {
+-		txq = skb_get_rx_queue(skb);
+-	} else {
+-		txq = *__this_cpu_ptr(vi->vq_index);
+-		if (txq == -1)
+-			txq = 0;
+-	}
+-
+-	while (unlikely(txq >= dev->real_num_tx_queues))
+-		txq -= dev->real_num_tx_queues;
+-
+-	return txq;
+-}
+-
+ static const struct net_device_ops virtnet_netdev = {
+ 	.ndo_open            = virtnet_open,
+ 	.ndo_stop   	     = virtnet_close,
+@@ -1250,7 +1214,6 @@ static const struct net_device_ops virtnet_netdev = {
+ 	.ndo_get_stats64     = virtnet_stats,
+ 	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
+ 	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
+-	.ndo_select_queue     = virtnet_select_queue,
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+ 	.ndo_poll_controller = virtnet_netpoll,
+ #endif
+@@ -1559,10 +1522,6 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	if (vi->stats == NULL)
+ 		goto free;
+ 
+-	vi->vq_index = alloc_percpu(int);
+-	if (vi->vq_index == NULL)
+-		goto free_stats;
+-
+ 	mutex_init(&vi->config_lock);
+ 	vi->config_enable = true;
+ 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+@@ -1589,7 +1548,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
+ 	err = init_vqs(vi);
+ 	if (err)
+-		goto free_index;
++		goto free_stats;
+ 
+ 	netif_set_real_num_tx_queues(dev, 1);
+ 	netif_set_real_num_rx_queues(dev, 1);
+@@ -1640,8 +1599,6 @@ free_recv_bufs:
+ free_vqs:
+ 	cancel_delayed_work_sync(&vi->refill);
+ 	virtnet_del_vqs(vi);
+-free_index:
+-	free_percpu(vi->vq_index);
+ free_stats:
+ 	free_percpu(vi->stats);
+ free:
+@@ -1678,7 +1635,6 @@ static void virtnet_remove(struct virtio_device *vdev)
+ 
+ 	flush_work(&vi->config_work);
+ 
+-	free_percpu(vi->vq_index);
+ 	free_percpu(vi->stats);
+ 	free_netdev(vi->dev);
+ }
+-- 
+1.7.1
+
