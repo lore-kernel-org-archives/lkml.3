@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab3I3WDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 18:03:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2916 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756118Ab3I3WDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 18:03:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
-   d="scan'208";a="412070792"
-Subject: Re: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Date: Mon, 30 Sep 2013 15:03:58 -0700
-In-Reply-To: <1380570436.3467.199.camel@schen9-DESK>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
-	 <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
-	 <20130928074144.GA17773@gmail.com>
-	 <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
-	 <20130928192123.GA8228@gmail.com> <20130928193739.GA8642@gmail.com>
-	 <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
-	 <20130928195207.GA31245@gmail.com> <1380561027.3467.196.camel@schen9-DESK>
-	 <20130930181411.GO15690@laptop.programming.kicks-ass.net>
-	 <1380568987.3467.198.camel@schen9-DESK>  <5249D26C.8020208@hp.com>
-	 <1380570436.3467.199.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1380578642.29259.1.camel@schen9-mobl3>
-Mime-Version: 1.0
+	id S1756370Ab3I3WI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 18:08:29 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:44364 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755415Ab3I3WI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 18:08:28 -0400
+Date: Mon, 30 Sep 2013 15:08:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sergey Dyasly <dserrg@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to
+ exit
+In-Reply-To: <20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
+Message-ID: <alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com>
+References: <1378740624-2456-1-git-send-email-dserrg@gmail.com> <alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com> <20130911190605.5528ee4563272dbea1ed56a6@gmail.com> <alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
+ <20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-30 at 12:47 -0700, Tim Chen wrote:
-> On Mon, 2013-09-30 at 15:35 -0400, Waiman Long wrote:
-> > On 09/30/2013 03:23 PM, Tim Chen wrote:
-> > > On Mon, 2013-09-30 at 20:14 +0200, Peter Zijlstra wrote:
-> > >> On Mon, Sep 30, 2013 at 10:10:27AM -0700, Tim Chen wrote:
-> > >>> Here's the exim workload data:
-> > >>>
-> > >>> rwsem improvment:
-> > >>> Waimain's patch:        +2.0%
-> > >>> Alex+Tim's patchset:    +4.8%
-> > >>> Waiman+Alex+Tim:        +5.3%
-> > >>>
-> > >>> convert rwsem to rwlock_t for root anon_vma lock
-> > >>> Ingo's patch		+11.7%
-> > >>>
-> > >> What happens if you stuff Waiman's qrwlock patches on top of that?
-> > >> admittedly and oft mentioned in this thread, our current rwlock_t is
-> > >> somewhat suboptimal under a number of conditions.
-> > > I've tested with Waiman's qrwlock patches on top of Ingo's patches.
-> > > It does not affect the throughput for exim and I still get
-> > > about +11.7% throughput change (same as with Ingo's patch only).
-> > >
-> > > Tim
-> > >
-> > 
-> > My qrwlock doesn't enable qrwlock by default. You have to use menuconfig 
-> > to explicitly enable it. Have you done that when you build the test 
-> > kernel? I am thinking of explicitly enabling it for x86 if the anon-vma 
-> > lock is converted back to a rwlock.
-> > 
-> 
-> Yes, I have explicitly enabled it during my testing.
-> 
-The workload I have is dominated by writer locks, with only very
-occasional readers. So it may not benefit from the various tweaks you
-have put in qrwlock.
+On Fri, 27 Sep 2013, Sergey Dyasly wrote:
 
-Tim 
+> What you are saying contradicts current OOMk code the way I read it. Comment in
+> oom_kill_process() says:
+> 
+> "If the task is already exiting ... set TIF_MEMDIE so it can die quickly"
+> 
+> I just want to know the right solution.
+> 
 
+That's a comment, not code.  The point of the PF_EXITING special handling 
+in oom_kill_process() is to avoid telling sysadmins that a process has 
+been killed to free memory when it has already called exit() and to avoid 
+sacrificing one of its children for the exiting process.
+
+It may or may not need access to memory reserves to actually exit after 
+PF_EXITING depending on whether it needs to allocate memory for 
+coredumping or anything else.  So instead of waiting for it to recall the 
+oom killer, TIF_MEMDIE is set anyway.  The point is that PF_EXITING 
+processes can already get TIF_MEMDIE immediately when their memory 
+allocation fails so there's no reason not to set it now as an 
+optimization.
+
+But we definitely want to avoid printing anything to the kernel log when 
+the process has already called exit() and issuing the SIGKILL at that 
+point would be pointless.
+
+> You are mistaken, oom_kill_process() is only called from out_of_memory()
+> and mem_cgroup_out_of_memory().
+> 
+
+out_of_memory() calls oom_kill_process() in two places, plus the call from 
+mem_cgroup_out_of_memory(), making three calls in the tree.  Not that this 
+matters in the slightest, though.
+
+> > Read the comment about why we don't emit anything to the kernel log in 
+> > this case; the process is already exiting, there's no need to kill it or 
+> > make anyone believe that it was killed.
+> 
+> Yes, but there is already the PF_EXITING check in oom_scan_process_thread(),
+> and in this case oom_kill_process() won't be even called. That's why it's
+> redundant.
+> 
+
+You apparently have no idea how long select_bad_process() runs on a large 
+system with thousands of processes.  Keep in mind that SGI requested the 
+addition of the oom_kill_allocating_task sysctl specifically because of 
+how long select_bad_process() runs.  The PF_EXITING check in 
+oom_kill_process() is simply an optimization to return early and with 
+access to memory reserves so it can exit as quickly as possible and 
+without the kernel stating it's killing something that has already called 
+exit().
