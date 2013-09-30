@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab3I3RtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:49:04 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:58379 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab3I3RtC (ORCPT
+	id S1756003Ab3I3Rth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:49:37 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:56761 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771Ab3I3Rtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:49:02 -0400
-Message-ID: <5249B987.8020807@itwm.fraunhofer.de>
-Date: Mon, 30 Sep 2013 19:48:55 +0200
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+	Mon, 30 Sep 2013 13:49:36 -0400
+Message-ID: <5249B9AC.8050209@linaro.org>
+Date: Mon, 30 Sep 2013 10:49:32 -0700
+From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-References: <20130930143432.GG16579@fieldses.org>	 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>	 <52499026.3090802@redhat.com>	 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>	 <52498AA8.2090204@redhat.com>	 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>	 <52498DB6.7060901@redhat.com>	 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>	 <52498F68.8050200@redhat.com>	 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>	 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>	 <5249B21E.70603@itwm.fraunhofer.de> <1380563050.6501.15.camel@leira.trondhjem.org>
-In-Reply-To: <1380563050.6501.15.camel@leira.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, mlichvar@redhat.com, prarit@redhat.com,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        zoran markovic <zoran.markovic@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL]: clocksource: new material for 3.13
+References: <5249B7E2.5060201@linaro.org>
+In-Reply-To: <5249B7E2.5060201@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: UTF-8
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 07:44 PM, Myklebust, Trond wrote:
-> On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
->> It would be nice if there would be way if the file system would get a
->> hint that the target file is supposed to be copy of another file. That
->> way distributed file systems could also create the target-file with the
->> correct meta-information (same storage targets as in-file has).
->> Well, if we cannot agree on that, file system with a custom protocol at
->> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not
->> sure if this would work for pNFS, though.
+On 09/30/2013 10:41 AM, Daniel Lezcano wrote:
 >
-> splice() does not create new files. What you appear to be asking for
-> lies way outside the scope of that system call interface.
+> Hi Thomas,
+>
+> this pull request is based on 3.12-rc3 with the following content:
+>
+>  - Miroslav improved the RTC update by increasing the interval
+> acceptable for an update in the sync_cmos_clock workqueue callback
+>
+>  - Prarit added a missing function declaration to fix a compilation
+> issue on x86. Please *note*, this patch is coming from a pull from
+> John's tree, it would make sense to cherry-pick this fix into
+> timers/urgent
+>
+>  - Soren added FEAT_PERCPU to a clock device when it is local per cpu.
+> This feature prevents the clock framework to choose a per cpu timer as
+> a broadcast timer. This problem arised when the ARM global timer is
+> used which is the case now on Xillinx.
+>
+>  - Stephen extended the generic sched_clock code to support 64bit
+> counters and removes the setup_sched_clock deprecation, as that causes
+> lots of warnings since there's still users in the arch/arm tree.
+>
+>  - Will and Sudeep implemented the event stream for architected timer.
+> The event streams can be used to impose a timeout on a wfe, to
+> safeguard against any programming error in case an expected event is
+> not generated or even to implement wfe-based timeouts for userspace
+> locking implementations.
+>
+>  - Zoran prevents to enter suspend mode if there are pending RTC
+> timers to be handled, avoiding these ones to be delayed as well as the
+> subsequent possible time critical code tied with them.
 >
 
-Sorry I know, definitely outside the scope of splice, but in the context 
-of offloaded file copies. So the question is, what is the best way to 
-address/discuss that?
 
-Thanks,
-Bernd
+Hey Daniel,
+    So this looks like a strange pull request. You based it on 3.12-rc3
+instead of the current tip/timers/core (which is what your submitting
+this to). Unfortunately since the branch you pulled from me was based on
+tip/timers/core, this pull request seems to be submitting items that are
+already in tip/timers/core (like the changes from Prarit, Miroslav and
+Zoran).
+
+Does any of the changes here actually depend on 3.12-rc3? If not you
+might just re-generate the branch against tip/timers/core, and you'll
+end up with a much cleaner pull request.
+
+thanks
+-john
+
