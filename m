@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab3I3KXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:23:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43676 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab3I3KNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:00 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 067/104] drm/radeon: update line buffer allocation for dce6
-Date: Mon, 30 Sep 2013 11:10:44 +0100
-Message-Id: <1380535881-9239-68-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
-References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1756529Ab3I3KX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:23:57 -0400
+Received: from sauhun.de ([89.238.76.85]:42203 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756506Ab3I3KXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 06:23:45 -0400
+Date: Mon, 30 Sep 2013 12:23:42 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Kedareswara rao Appana <appanad@xilinx.com>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/3] i2c: xilinx: Fix i2c sparse warnings
+Message-ID: <20130930102342.GC3222@katana>
+References: <c122ad49b27406ee495ef0d6cac191968d64f09f.1380532113.git.michal.simek@xilinx.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="S1BNGpv0yoYahz37"
+Content-Disposition: inline
+In-Reply-To: <c122ad49b27406ee495ef0d6cac191968d64f09f.1380532113.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--S1BNGpv0yoYahz37
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Alex Deucher <alexander.deucher@amd.com>
+On Mon, Sep 30, 2013 at 11:08:50AM +0200, Michal Simek wrote:
+> From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+>=20
+> code changes to fix sparse warnings
 
-commit 290d24576ccf1aa0373d2185cedfe262d0d4952a upstream.
+Would be nice to either have them listed here or at least shortly
+described.
 
-We need to allocate line buffer to each display when
-setting up the watermarks.  Failure to do so can lead
-to a blank screen.  This fixes blank screen problems
-on dce6 asics.
+>=20
+> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=64850
 
-Based on an initial fix from:
-Jay Cornwall <jay.cornwall@amd.com>
+--S1BNGpv0yoYahz37
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/si.c  | 23 +++++++++++++++++++----
- drivers/gpu/drm/radeon/sid.h |  4 ++++
- 2 files changed, 23 insertions(+), 4 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index 625c4ba..d3454a0 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -411,7 +411,8 @@ static u32 dce6_line_buffer_adjust(struct radeon_device *rdev,
- 				   struct drm_display_mode *mode,
- 				   struct drm_display_mode *other_mode)
- {
--	u32 tmp;
-+	u32 tmp, buffer_alloc, i;
-+	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
- 	/*
- 	 * Line Buffer Setup
- 	 * There are 3 line buffers, each one shared by 2 display controllers.
-@@ -426,16 +427,30 @@ static u32 dce6_line_buffer_adjust(struct radeon_device *rdev,
- 	 * non-linked crtcs for maximum line buffer allocation.
- 	 */
- 	if (radeon_crtc->base.enabled && mode) {
--		if (other_mode)
-+		if (other_mode) {
- 			tmp = 0; /* 1/2 */
--		else
-+			buffer_alloc = 1;
-+		} else {
- 			tmp = 2; /* whole */
--	} else
-+			buffer_alloc = 2;
-+		}
-+	} else {
- 		tmp = 0;
-+		buffer_alloc = 0;
-+	}
- 
- 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset,
- 	       DC_LB_MEMORY_CONFIG(tmp));
- 
-+	WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
-+	       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
-+		    DMIF_BUFFERS_ALLOCATED_COMPLETED)
-+			break;
-+		udelay(1);
-+	}
-+
- 	if (radeon_crtc->base.enabled && mode) {
- 		switch (tmp) {
- 		case 0:
-diff --git a/drivers/gpu/drm/radeon/sid.h b/drivers/gpu/drm/radeon/sid.h
-index 916e13f..0a240fa 100644
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -62,6 +62,10 @@
- 
- #define DMIF_ADDR_CALC  				0xC00
- 
-+#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
-+#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
-+#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
-+
- #define	SRBM_STATUS				        0xE50
- 
- #define	CC_SYS_RB_BACKEND_DISABLE			0xe80
--- 
-1.8.3.2
+iQIcBAEBAgAGBQJSSVEuAAoJEBQN5MwUoCm2BfsP/3nUETZuoj746f4rc73i7lSj
+NRE4WYXiqiq0J83guuV0XH0yHw1dtHw6xI91Zb7GE2eO3ZBa6cRw5vaSGr6FKo2A
+YDlLi5yhPKiF4yTV+RX8idLcy2hQ6IUllqTUt+omCOis7AcXUB3U/2KS/3gVuUb4
+QPjdjF4Bq1/GyzxTA2oFKGoy610OTy9BwzyFTdyYXo0M/ZytCuncZEW5zkqoL9U/
+cmizFvfQKaTvyOulLjZDenVBUoHwlNv5hptYJFuPaHYJJrDYAmocleDbYdmzzpFB
+nzCeEXvGQn1o5LgQXSEpl+ZwEm+TSt/zlXkNthjE4rP5ZTyKJedRoKeJ+bDLFplH
+nokgCzxRGKIHnchs1KlmZmIgq4rlbCmYjly/Z2J0mBy40aXNd2P84R/84WKW2v/j
+7qMlrjMgq7LQITmejaE5qexs/eRXfI4CJ6mJ4SLbvl76TDUb2ViPR1gbo3r5Vce4
+UJf2rXlqfgH+XkLqgUvOBytbKXPyPcKKb30IMhGANSrsAYzrkG3M3dMKJKELI0Ur
+Al02UDJrQpPz8po4/APcno3s0XgqpKTyTOxQmAnlcsgfvwQ39lBW4k68acUTPrCx
+JoTX3Tl047kJjEbsaA/39r9V0GM8ooQrSmcggHVsaevfFGZazqtusM4JpvW55+Xu
+33I5OM2TDuN/C6wF1SzW
+=1jnd
+-----END PGP SIGNATURE-----
 
+--S1BNGpv0yoYahz37--
