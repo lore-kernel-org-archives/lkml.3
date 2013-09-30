@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab3I3A47 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 20:56:59 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18136 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab3I3A45 (ORCPT
+	id S1755298Ab3I3A50 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 20:57:26 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59543 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab3I3A5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 20:56:57 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-ae-5248cc57edce
+	Sun, 29 Sep 2013 20:57:24 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-4d-5248cc734d80
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Lars-Peter Clausen'" <lars@metafoo.de>
 References: <007401cebd77$0652a340$12f7e9c0$%han@samsung.com>
 In-reply-to: <007401cebd77$0652a340$12f7e9c0$%han@samsung.com>
-Subject: [PATCH V4 09/14] regulator: pcap: use devm_regulator_register()
-Date: Mon, 30 Sep 2013 09:56:55 +0900
-Message-id: <007c01cebd77$f5417a30$dfc46e90$%han@samsung.com>
+Subject: [PATCH V4 10/14] regulator: pcf50633: use devm_regulator_register()
+Date: Mon, 30 Sep 2013 09:57:23 +0900
+Message-id: <007d01cebd78$05f8ce00$11ea6a00$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac69dwY7qCw/SuPGSmKRawAumfnevwAAN2cA
+Thread-index: Ac69dwY7qCw/SuPGSmKRawAumfnevwAAPAEg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zA93wMx5BBlueallMffiEzeLywkus
-	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8bhi71s
-	Be3cFYf2zWZrYJzD2cXIySEhYCLx5exrRghbTOLCvfVsILaQwDJGiSWXfGFqXpx6CVTDBRRf
-	xCjx6NVtZgjnF6PE/ss72EGq2ATUJL58OQxkc3CICKhK/H/lDmIyC+RKdG9Lh5hpKzHn/Fmw
-	XZwCdhJ3NrSC2cICHhJb288xgdgsQJ0vu26wgbTyAtUveu0JEuYVEJT4MfkeC4jNLKAlsX7n
-	cSYIW15i85q3zCDlEgLqEo/+6oKERQSMJKYue80GUSIise/FO7DrJQTOsUtcOLmLFWKVgMS3
-	yYdYIHplJTYdYIb4VlLi4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJTveLE
-	3OLSvHS95PzcTYyQeJy4g/H+AetDjMlA6ycyS4km5wPjOa8k3tDYzMjC1MTU2Mjc0ow0YSVx
-	XvUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjJ6Mu86wal5Q0dg42WBusOrVWxOKtfRC
-	/PwUK01jIuzdZQtFuJ8zTtF+99/j2fYLS4S7NA78Ppm6bfHzv0qV+Z+N1GfZds/Yxf2tnnNW
-	8mPJXu0pSYdldcUW8Ldk3+refK88z3YuU6W/U4nQE3OFGdNedcsIsGVdyC78MeX8PjZ+5ar2
-	rUunKLEUZyQaajEXFScCALGW51DdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd3wMx5BBgd/qllMffiEzeLywkus
-	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPG4Yu9bAXt3BWH9s1ma2Ccw9nFyMkhIWAi8eLUS0YIW0ziwr31
-	bF2MXBxCAosYJR69us0M4fxilNh/eQc7SBWbgJrEly+HgWwODhEBVYn/r9xBTGaBXInubekg
-	FUICthJzzp8Fm8kpYCdxZ0MrmC0s4CGxtf0cE4jNAtT5susGG0grL1D9oteeIGFeAUGJH5Pv
-	sYDYzAJaEut3HmeCsOUlNq95ywxSLiGgLvHory5IWETASGLqstdsECUiEvtevGOcwCg0C8mk
-	WUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxguP9mfQOxlUNFocYBTgY
-	lXh4LZZ6BAmxJpYVV+YeYpTgYFYS4V2eBBTiTUmsrEotyo8vKs1JLT7EmAz050RmKdHkfGAq
-	yiuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxsg5XZOXSbcm
-	nxCpWfmE+WNvzJRXBlXvWHPdTJ+4fTh0QvXrtu2WJQebrbc9c94+LWGbVvn9FP3/yge8dXxu
-	Cx1wEvE0euI9zV74V9oLXq0pX51lAgPkp906VjVjj9CnRYs1d04+zqB9a6KxPF/PQxadx8ca
-	cz8XRgdfOPDg04zYYn/uwDCll0osxRmJhlrMRcWJAHJ3UEU7AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zQ93iMx5BBjsmaFpMffiEzeLywkus
+	Fksmz2e1+Halg8ni8q45bA6sHjtn3WX32LSqk81jyZtDrB59W1YxenzeJBfAGsVlk5Kak1mW
+	WqRvl8CVsWKpesFfroqmjx/YGxhncnYxcnBICJhIrPkS08XICWSKSVy4t56ti5GLQ0hgGaPE
+	3Dlb2WFqXn/hg4hPZ5ToPrueHcL5xShxonM/O0g3m4CaxJcvh8EaRARUJf6/cgcJMwtMBWpY
+	Ww5iCwnYSsw5f5YRxOYUsJO4s6EVzBYW8JE4fuMdK4jNAtT6+/1sMJsXqP7o9iYWCFtQ4sfk
+	eywQM7Uk1u88zgRhy0tsXvOWGeJOdYlHf3VBwiICRhIH57xlhSgRkdj34h0jyMkSArfYJa53
+	7WSB2CUg8W3yIRaIXlmJTQeYIeEgKXFwxQ2WCYwSs5BsnoVk8ywkm2chWbGAkWUVo2hqQXJB
+	cVJ6kYlecWJucWleul5yfu4mRkiMTtjBeO+A9SHGZKD1E5mlRJPzgTGeVxJvaGxmZGFqYmps
+	ZG5pRpqwkjiveot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbG3rMTmu7MN85VnNHc9GxP
+	5TU+7tv89rp2k/rSTifekWDfe0hTjdvJ9G2T37GEL7OPWU7YUXTuy4u163dJZodYhORvLGTT
+	viV6lnvNPjuOi/4Z0ez5078o3AgQtCqa/tp5lbTI4tj/YcZrkpbs+/dR8DZLwsrtIS5vixTb
+	jukvrNz09vvNi+2+SizFGYmGWsxFxYkAY3YNC+cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jQd3iMx5BBt8mq1pMffiEzeLywkus
+	Fksmz2e1+Halg8ni8q45bA6sHjtn3WX32LSqk81jyZtDrB59W1YxenzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLFiqXrBX66Kpo8f2BsYZ3J2MXJwSAiYSLz+
+	wtfFyAlkiklcuLeerYuRi0NIYDqjRPfZ9ewQzi9GiROd+9lBqtgE1CS+fDnMDtIsIqAq8f+V
+	O0iYWWAqUMPachBbSMBWYs75s4wgNqeAncSdDa1gtrCAj8TxG+9YQWwWoNbf72eD2bxA9Ue3
+	N7FA2IISPybfY4GYqSWxfudxJghbXmLzmrfMEDerSzz6qwsSFhEwkjg45y0rRImIxL4X7xgn
+	MArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4BTwTHoH46oG
+	i0OMAhyMSjy8Fks9goRYE8uKK3MPMUpwMCuJ8C5PAgrxpiRWVqUW5ccXleakFh9iTAZ6dCKz
+	lGhyPjA95ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo/XM
+	j3plkp5LcnqKZ524ltb/MGZH74Z3HNrKMxYabjl0VE/u6tct0xZ437NkXTvvyecDn8Vvu2Rw
+	xf6T7pSyWassFLrn/NuXZ77dvn8tKzM16T7jf/GHMr6eMpdfSFWeUJxT8nzp1L2fA75PK/W/
+	KP04csLMzHX3ctTfPp+kuPfAm78Nl9M3pVspsRRnJBpqMRcVJwIANOOTPUUDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,28 +61,28 @@ and remove unnecessary remove().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/pcap-regulator.c |   13 ++-----------
+ drivers/regulator/pcf50633-regulator.c |   13 ++-----------
  1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/pcap-regulator.c b/drivers/regulator/pcap-regulator.c
-index b49eaee..3727b7d 100644
---- a/drivers/regulator/pcap-regulator.c
-+++ b/drivers/regulator/pcap-regulator.c
-@@ -246,7 +246,8 @@ static int pcap_regulator_probe(struct platform_device *pdev)
- 	config.init_data = dev_get_platdata(&pdev->dev);
- 	config.driver_data = pcap;
+diff --git a/drivers/regulator/pcf50633-regulator.c b/drivers/regulator/pcf50633-regulator.c
+index 0f3576d..d7da1c1 100644
+--- a/drivers/regulator/pcf50633-regulator.c
++++ b/drivers/regulator/pcf50633-regulator.c
+@@ -90,7 +90,8 @@ static int pcf50633_regulator_probe(struct platform_device *pdev)
+ 	config.driver_data = pcf;
+ 	config.regmap = pcf->regmap;
  
--	rdev = regulator_register(&pcap_regulators[pdev->id], &config);
-+	rdev = devm_regulator_register(&pdev->dev, &pcap_regulators[pdev->id],
+-	rdev = regulator_register(&regulators[pdev->id], &config);
++	rdev = devm_regulator_register(&pdev->dev, &regulators[pdev->id],
 +				       &config);
  	if (IS_ERR(rdev))
  		return PTR_ERR(rdev);
  
-@@ -255,22 +256,12 @@ static int pcap_regulator_probe(struct platform_device *pdev)
+@@ -102,21 +103,11 @@ static int pcf50633_regulator_probe(struct platform_device *pdev)
  	return 0;
  }
  
--static int pcap_regulator_remove(struct platform_device *pdev)
+-static int pcf50633_regulator_remove(struct platform_device *pdev)
 -{
 -	struct regulator_dev *rdev = platform_get_drvdata(pdev);
 -
@@ -90,16 +91,15 @@ index b49eaee..3727b7d 100644
 -	return 0;
 -}
 -
- static struct platform_driver pcap_regulator_driver = {
+ static struct platform_driver pcf50633_regulator_driver = {
  	.driver = {
- 		.name	= "pcap-regulator",
- 		.owner	= THIS_MODULE,
+ 		.name = "pcf50633-regltr",
  	},
- 	.probe	= pcap_regulator_probe,
--	.remove	= pcap_regulator_remove,
+ 	.probe = pcf50633_regulator_probe,
+-	.remove = pcf50633_regulator_remove,
  };
  
- static int __init pcap_regulator_init(void)
+ static int __init pcf50633_regulator_init(void)
 -- 
 1.7.10.4
 
