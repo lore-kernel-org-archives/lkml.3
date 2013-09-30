@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3I3KcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:32:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43496 "EHLO
+	id S1755340Ab3I3KMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:12:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43441 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab3I3KMP (ORCPT
+	with ESMTP id S1755233Ab3I3KMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:12:15 -0400
+	Mon, 30 Sep 2013 06:12:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Cho, Yu-Chen" <acho@suse.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Tejun Heo <tj@kernel.org>, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
+        Patrick McHardy <kaber@trash.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 031/104] Bluetooth: Add support for Mediatek Bluetooth device [0e8d:763f]
-Date: Mon, 30 Sep 2013 11:10:08 +0100
-Message-Id: <1380535881-9239-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 016/104] rculist: list_first_or_null_rcu() should use list_entry_rcu()
+Date: Mon, 30 Sep 2013 11:09:53 +0100
+Message-Id: <1380535881-9239-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -29,68 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Cho, Yu-Chen" <acho@suse.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 178c059e7640aa8e50213400c6f3dde00189d979 upstream.
+commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
 
-This patch adds support for Mediatek Bluetooth device
+list_first_or_null() should test whether the list is empty and return
+pointer to the first entry if not in a RCU safe manner.  It's broken
+in several ways.
 
-T:  Bus=02 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
-D:  Ver= 2.01 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0e8d ProdID=763f Rev= 1.00
-S:  Manufacturer=MediaTek
-S:  Product=BT
-S:  SerialNumber=1.0
-C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=450mA
-A:  FirstIf#= 0 IfCount= 2 Cls=ff(vend.) Sub=ff Prot=ff
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=125us
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=125us
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-I:  If#= 1 Alt= 6 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  63 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  63 Ivl=1ms
+* It compares __kernel @__ptr with __rcu @__next triggering the
+  following sparse warning.
 
-Signed-off-by: Cho, Yu-Chen <acho@suse.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
+
+* It doesn't perform rcu_dereference*() and computes the entry address
+  using container_of() directly from the __rcu pointer which is
+  inconsitent with other rculist interface.  As a result, all three
+  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
+  dereference the pointer w/o going through read barrier.
+
+* While ->next dereference passes through list_next_rcu(), the
+  compiler is still free to fetch ->next more than once and thus
+  nullify the "__ptr != __next" condition check.
+
+Fix it by making list_first_or_null_rcu() dereference ->next directly
+using ACCESS_ONCE() and then use list_entry_rcu() on it like other
+rculist accessors.
+
+v2: Paul pointed out that the compiler may fetch the pointer more than
+    once nullifying the condition check.  ACCESS_ONCE() added on
+    ->next dereference.
+
+v3: Restored () around macro param which was accidentally removed.
+    Spotted by Paul.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/bluetooth/btusb.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/rculist.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index bb480fd..5cdfd34 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -63,6 +63,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple-specific (Broadcom) devices */
- 	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index e0f0fab..bbea697 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -267,8 +267,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
+  */
+ #define list_first_or_null_rcu(ptr, type, member) \
+ 	({struct list_head *__ptr = (ptr); \
+-	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
+-	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
++	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
++	  likely(__ptr != __next) ? \
++		list_entry_rcu(__next, type, member) : NULL; \
+ 	})
  
-+	/* MediaTek MT76x0E */
-+	{ USB_DEVICE(0x0e8d, 0x763f) },
-+
- 	/* Broadcom SoftSailing reporting vendor specific */
- 	{ USB_DEVICE(0x0a5c, 0x21e1) },
- 
+ /**
 -- 
 1.8.3.2
 
