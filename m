@@ -1,206 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab3I3Mtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 08:49:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab3I3Mtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 08:49:39 -0400
-Date: Mon, 30 Sep 2013 14:42:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] introduce synchronize_sched_{enter,exit}()
-Message-ID: <20130930124214.GA19560@redhat.com>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130929183634.GA15563@redhat.com> <20130929200114.GC19582@linux.vnet.ibm.com>
+	id S1754982Ab3I3Mun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 08:50:43 -0400
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:3219 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806Ab3I3Mum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 08:50:42 -0400
+Message-ID: <52497360.2040808@xs4all.nl>
+Date: Mon, 30 Sep 2013 14:49:36 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130929200114.GC19582@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 3/8] [media] core: Don't use i2c_client->driver
+References: <1380444666-12019-1-git-send-email-lars@metafoo.de> <1380444666-12019-4-git-send-email-lars@metafoo.de>
+In-Reply-To: <1380444666-12019-4-git-send-email-lars@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29, Paul E. McKenney wrote:
->
-> On Sun, Sep 29, 2013 at 08:36:34PM +0200, Oleg Nesterov wrote:
-> >
-> > 	struct xxx_struct {
-> > 		atomic_t counter;
-> > 	};
-> >
-> > 	static inline bool xxx_is_idle(struct xxx_struct *xxx)
-> > 	{
-> > 		return atomic_read(&xxx->counter) == 0;
-> > 	}
-> >
-> > 	static inline void xxx_enter(struct xxx_struct *xxx)
-> > 	{
-> > 		atomic_inc(&xxx->counter);
-> > 		synchronize_sched();
-> > 	}
-> >
-> > 	static inline void xxx_enter(struct xxx_struct *xxx)
-> > 	{
-> > 		synchronize_sched();
-> > 		atomic_dec(&xxx->counter);
-> > 	}
->
-> But there is nothing for synchronize_sched() to wait for in the above.
-> Presumably the caller of xxx_is_idle() is required to disable preemption
-> or be under rcu_read_lock_sched()?
+On 09/29/2013 10:51 AM, Lars-Peter Clausen wrote:
+> The 'driver' field of the i2c_client struct is redundant and is going to be
+> removed. The results of the expressions 'client->driver.driver->field' and
+> 'client->dev.driver->field' are identical, so replace all occurrences of the
+> former with the later.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Yes, yes, sure, xxx_is_idle() should be called under preempt_disable().
-(or rcu_read_lock() if xxx_enter() uses synchronize_rcu()).
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-> So you are trying to make something that abstracts the RCU-protected
-> state-change pattern?  Or perhaps more accurately, the RCU-protected
-> state-change-and-back pattern?
+Regards,
 
-Yes, exactly.
+	Hans
 
-> > struct xxx_struct {
-> > 	int			gp_state;
-> >
-> > 	int			gp_count;
-> > 	wait_queue_head_t	gp_waitq;
-> >
-> > 	int			cb_state;
-> > 	struct rcu_head		cb_head;
->
-> 	spinlock_t		xxx_lock;  /* ? */
-
-See
-
-	#define xxx_lock	gp_waitq.lock
-	
-in .c below, but we can add another spinlock.
-
-> This spinlock might not make the big-system guys happy, but it appears to
-> be needed below.
-
-Only the writers use this spinlock, and they should synchronize with each
-other anyway. I don't think this can really penalize, say, percpu_down_write
-or cpu_hotplug_begin.
-
-> > // .c	-----------------------------------------------------------------------
-> >
-> > enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
-> >
-> > enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
-> >
-> > #define xxx_lock	gp_waitq.lock
-> >
-> > void xxx_enter(struct xxx_struct *xxx)
-> > {
-> > 	bool need_wait, need_sync;
-> >
-> > 	spin_lock_irq(&xxx->xxx_lock);
-> > 	need_wait = xxx->gp_count++;
-> > 	need_sync = xxx->gp_state == GP_IDLE;
->
-> Suppose ->gp_state is GP_PASSED.  It could transition to GP_IDLE at any
-> time, right?
-
-As you already pointed below - no.
-
-Once we incremented ->nr_writers, nobody can set GP_IDLE. And if the
-caller is the "first" writer (need_sync == T) nobody else can change
-->gp_state, so xxx_enter() sets GP_PASSED lockless.
-
-> > 	if (need_sync)
-> > 		xxx->gp_state = GP_PENDING;
-> > 	spin_unlock_irq(&xxx->xxx_lock);
-> >
-> > 	BUG_ON(need_wait && need_sync);
-> >
-> > 	} if (need_sync) {
-> > 		synchronize_sched();
-> > 		xxx->gp_state = GP_PASSED;
-> > 		wake_up_all(&xxx->gp_waitq);
-> > 	} else if (need_wait) {
-> > 		wait_event(&xxx->gp_waitq, xxx->gp_state == GP_PASSED);
->
-> Suppose the wakeup is delayed until after the state has been updated
-> back to GP_IDLE?  Ah, presumably the non-zero ->gp_count prevents this.
-
-Yes, exactly.
-
-> > static void cb_rcu_func(struct rcu_head *rcu)
-> > {
-> > 	struct xxx_struct *xxx = container_of(rcu, struct xxx_struct, cb_head);
-> > 	long flags;
-> >
-> > 	BUG_ON(xxx->gp_state != GP_PASSED);
-> > 	BUG_ON(xxx->cb_state == CB_IDLE);
-> >
-> > 	spin_lock_irqsave(&xxx->xxx_lock, flags);
-> > 	if (xxx->gp_count) {
-> > 		xxx->cb_state = CB_IDLE;
-> > 	} else if (xxx->cb_state == CB_REPLAY) {
-> > 		xxx->cb_state = CB_PENDING;
-> > 		call_rcu_sched(&xxx->cb_head, cb_rcu_func);
-> > 	} else {
-> > 		xxx->cb_state = CB_IDLE;
-> > 		xxx->gp_state = GP_IDLE;
-> > 	}
->
-> It took me a bit to work out the above.  It looks like the intent is
-> to have the last xxx_exit() put the state back to GP_IDLE, which appears
-> to be the state in which readers can use a fastpath.
-
-Yes, and we we offload this work to rcu callback so xxx_exit() doesn't
-block.
-
-The only complication is the next writer which does xxx_enter() after
-xxx_exit(). If there are no other writers, the next xxx_exit() should do
-
-	rcu_cancel(&xxx->cb_head);
-	call_rcu_sched(&xxx->cb_head, cb_rcu_func);
-
-to "extend" the gp, but since we do not have rcu_cancel() it simply sets
-CB_REPLAY to instruct cb_rcu_func() to reschedule itself.
-
-> This works because if ->gp_count is non-zero and ->cb_state is CB_IDLE,
-> there must be an xxx_exit() in our future.
-
-Yes, but ->cb_state doesn't really matter if ->gp_count != 0 in xxx_exit()
-or cb_rcu_func() (except it can't be CB_IDLE in cb_rcu_func).
-
-> > void xxx_exit(struct xxx_struct *xxx)
-> > {
-> > 	spin_lock_irq(&xxx->xxx_lock);
-> > 	if (!--xxx->gp_count) {
-> > 		if (xxx->cb_state == CB_IDLE) {
-> > 			xxx->cb_state = CB_PENDING;
-> > 			call_rcu_sched(&xxx->cb_head, cb_rcu_func);
-> > 		} else if (xxx->cb_state == CB_PENDING) {
-> > 			xxx->cb_state = CB_REPLAY;
-> > 		}
-> > 	}
-> > 	spin_unlock_irq(&xxx->xxx_lock);
-> > }
->
-> Then we also have something like this?
->
-> bool xxx_readers_fastpath_ok(struct xxx_struct *xxx)
-> {
-> 	BUG_ON(!rcu_read_lock_sched_held());
-> 	return xxx->gp_state == GP_IDLE;
-> }
-
-Yes, this is what xxx_is_idle() does (ignoring BUG_ON). It actually
-checks xxx->gp_state == 0, this is just to avoid the unnecessary export
-of GP_* enum.
-
-Oleg.
+> ---
+>  drivers/media/v4l2-core/tuner-core.c  |  6 +++---
+>  drivers/media/v4l2-core/v4l2-common.c | 10 +++++-----
+>  include/media/v4l2-common.h           |  2 +-
+>  3 files changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/media/v4l2-core/tuner-core.c b/drivers/media/v4l2-core/tuner-core.c
+> index ddc9379..4133af0 100644
+> --- a/drivers/media/v4l2-core/tuner-core.c
+> +++ b/drivers/media/v4l2-core/tuner-core.c
+> @@ -43,7 +43,7 @@
+>  
+>  #define UNSET (-1U)
+>  
+> -#define PREFIX (t->i2c->driver->driver.name)
+> +#define PREFIX (t->i2c->dev.driver->name)
+>  
+>  /*
+>   * Driver modprobe parameters
+> @@ -452,7 +452,7 @@ static void set_type(struct i2c_client *c, unsigned int type,
+>  	}
+>  
+>  	tuner_dbg("%s %s I2C addr 0x%02x with type %d used for 0x%02x\n",
+> -		  c->adapter->name, c->driver->driver.name, c->addr << 1, type,
+> +		  c->adapter->name, c->dev.driver->name, c->addr << 1, type,
+>  		  t->mode_mask);
+>  	return;
+>  
+> @@ -556,7 +556,7 @@ static void tuner_lookup(struct i2c_adapter *adap,
+>  		int mode_mask;
+>  
+>  		if (pos->i2c->adapter != adap ||
+> -		    strcmp(pos->i2c->driver->driver.name, "tuner"))
+> +		    strcmp(pos->i2c->dev.driver->name, "tuner"))
+>  			continue;
+>  
+>  		mode_mask = pos->mode_mask;
+> diff --git a/drivers/media/v4l2-core/v4l2-common.c b/drivers/media/v4l2-core/v4l2-common.c
+> index 037d7a5..433d6d7 100644
+> --- a/drivers/media/v4l2-core/v4l2-common.c
+> +++ b/drivers/media/v4l2-core/v4l2-common.c
+> @@ -236,14 +236,14 @@ void v4l2_i2c_subdev_init(struct v4l2_subdev *sd, struct i2c_client *client,
+>  	v4l2_subdev_init(sd, ops);
+>  	sd->flags |= V4L2_SUBDEV_FL_IS_I2C;
+>  	/* the owner is the same as the i2c_client's driver owner */
+> -	sd->owner = client->driver->driver.owner;
+> +	sd->owner = client->dev.driver->owner;
+>  	sd->dev = &client->dev;
+>  	/* i2c_client and v4l2_subdev point to one another */
+>  	v4l2_set_subdevdata(sd, client);
+>  	i2c_set_clientdata(client, sd);
+>  	/* initialize name */
+>  	snprintf(sd->name, sizeof(sd->name), "%s %d-%04x",
+> -		client->driver->driver.name, i2c_adapter_id(client->adapter),
+> +		client->dev.driver->name, i2c_adapter_id(client->adapter),
+>  		client->addr);
+>  }
+>  EXPORT_SYMBOL_GPL(v4l2_i2c_subdev_init);
+> @@ -274,11 +274,11 @@ struct v4l2_subdev *v4l2_i2c_new_subdev_board(struct v4l2_device *v4l2_dev,
+>  	   loaded. This delay-load mechanism doesn't work if other drivers
+>  	   want to use the i2c device, so explicitly loading the module
+>  	   is the best alternative. */
+> -	if (client == NULL || client->driver == NULL)
+> +	if (client == NULL || client->dev.driver == NULL)
+>  		goto error;
+>  
+>  	/* Lock the module so we can safely get the v4l2_subdev pointer */
+> -	if (!try_module_get(client->driver->driver.owner))
+> +	if (!try_module_get(client->dev.driver->owner))
+>  		goto error;
+>  	sd = i2c_get_clientdata(client);
+>  
+> @@ -287,7 +287,7 @@ struct v4l2_subdev *v4l2_i2c_new_subdev_board(struct v4l2_device *v4l2_dev,
+>  	if (v4l2_device_register_subdev(v4l2_dev, sd))
+>  		sd = NULL;
+>  	/* Decrease the module use count to match the first try_module_get. */
+> -	module_put(client->driver->driver.owner);
+> +	module_put(client->dev.driver->owner);
+>  
+>  error:
+>  	/* If we have a client but no subdev, then something went wrong and
+> diff --git a/include/media/v4l2-common.h b/include/media/v4l2-common.h
+> index 16550c4..a707529 100644
+> --- a/include/media/v4l2-common.h
+> +++ b/include/media/v4l2-common.h
+> @@ -35,7 +35,7 @@
+>  	printk(level "%s %d-%04x: " fmt, name, i2c_adapter_id(adapter), addr , ## arg)
+>  
+>  #define v4l_client_printk(level, client, fmt, arg...)			    \
+> -	v4l_printk(level, (client)->driver->driver.name, (client)->adapter, \
+> +	v4l_printk(level, (client)->dev.driver->name, (client)->adapter, \
+>  		   (client)->addr, fmt , ## arg)
+>  
+>  #define v4l_err(client, fmt, arg...) \
+> 
 
