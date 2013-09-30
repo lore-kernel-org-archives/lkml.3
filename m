@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab3I3JWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:22:15 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49872 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754000Ab3I3JWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:22:12 -0400
-Date: Mon, 30 Sep 2013 10:22:07 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Linn Crosetto <linn@hp.com>
-Cc: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] x86: EFI stub support for large memory maps
-Message-ID: <20130930092207.GN21381@console-pimps.org>
-References: <1378487056-9857-1-git-send-email-linn@hp.com>
- <1379901548-70954-1-git-send-email-linn@hp.com>
- <20130925125840.GK21381@console-pimps.org>
- <20130925224541.GT13098@oranje.fc.hp.com>
- <20130926113400.GM21381@console-pimps.org>
- <20130927234607.GA17867@oranje.fc.hp.com>
+	id S1755140Ab3I3JXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:23:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54491 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753229Ab3I3JX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 05:23:28 -0400
+Date: Mon, 30 Sep 2013 11:23:27 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, Zheng Liu <gnehzuil.liu@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [ 062/117] ext4: fix ext4_writepages() in presence of truncate
+Message-ID: <20130930092327.GA28023@quack.suse.cz>
+References: <20130925001740.833541979@linuxfoundation.org>
+ <20130925001747.625543023@linuxfoundation.org>
+ <1380496031.14493.3.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130927234607.GA17867@oranje.fc.hp.com>
+In-Reply-To: <1380496031.14493.3.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep, at 05:46:07PM, Linn Crosetto wrote:
-> Given that we have already successfully called exit_boot_services, can
-> we still make this call to free_pool?
+On Mon 30-09-13 00:07:11, Ben Hutchings wrote:
+> On Tue, 2013-09-24 at 17:18 -0700, Greg Kroah-Hartman wrote:
+> > 3.11-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Jan Kara <jack@suse.cz>
+> > 
+> > commit 5f1132b2ba8c873f25982cf45917e8455fb6c962 upstream.
+> [...]
+> 
+> Is this needed for any older kernel versions?
+  Commit 4e7ea81db53465ddd753678bc4cebf95369d0984 (and related ones)
+introduced the problem. That was merged in 3.11-rc2 so that fix needs to be
+only in 3.11 and newer stable kernels.
 
-Urgh, good point. The answer is "no, not really".
-
-I'll add your change verbatim and push out the 'next' branch again.
-
+								Honza
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
