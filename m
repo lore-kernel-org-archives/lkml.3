@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3I3DNa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 23:13:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab3I3DN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 23:13:27 -0400
-Date: Mon, 30 Sep 2013 05:13:06 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Separate lbfd check out of NO_DEMANGLE
- condition
-Message-ID: <20130930031306.GB993@krava.redhat.com>
-References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
- <1380292332-6518-1-git-send-email-jolsa@redhat.com>
- <1380437526.1727.10.camel@leonhard>
+	id S1755237Ab3I3DPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 23:15:07 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:47416 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab3I3DPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 23:15:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1380437526.1727.10.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130930030655.GB21361@srcf.ucam.org>
+References: <20130925001344.GA13554@redhat.com>
+	<5245E7B1.2000408@zytor.com>
+	<20130930025733.GA21361@srcf.ucam.org>
+	<5248E8C2.2000108@zytor.com>
+	<20130930030655.GB21361@srcf.ucam.org>
+Date: Mon, 30 Sep 2013 13:15:02 +1000
+Message-ID: <CAPM=9txNWRKPzE=FNz63fi-7mwQq5DvNkVHik4gNodD9WBP9mw@mail.gmail.com>
+Subject: Re: Fix apparent cut-n-paste mistake in Dell reboot workaround.
+From: Dave Airlie <airlied@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 29, 2013 at 03:52:06PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> 2013-09-27 (금), 16:32 +0200, Jiri Olsa:
-> > We fail build with NO_DEMANGLE with missing -lbfd externals error.
-> > The reason is that we now use bfd code in srcline object:
-> >   perf tools: Implement addr2line directly using libbfd
-> > 
-> > So we need to check/add -lbfd always now.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > ---
-> >  tools/perf/config/Makefile | 17 ++++++++---------
-> >  1 file changed, 8 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> > index 8b49a00..40a41c6 100644
-> > --- a/tools/perf/config/Makefile
-> > +++ b/tools/perf/config/Makefile
-> > @@ -360,6 +360,13 @@ else
-> >    endif
-> >  endif
-> >  
-> > +FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-> > +has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-> > +ifeq ($(has_bfd),y)
-> > +  EXTLIBS += -lbfd
-> > +  CFLAGS += -DLIBBFD_SUPPORT
-> > +endif
-> > +
-> >  ifdef NO_DEMANGLE
-> >    CFLAGS += -DNO_DEMANGLE
-> >  else
-> > @@ -367,11 +374,7 @@ else
-> >      EXTLIBS += -liberty
-> >      CFLAGS += -DHAVE_CPLUS_DEMANGLE
-> >    else
-> > -    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-> > -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-> > -    ifeq ($(has_bfd),y)
-> > -      EXTLIBS += -lbfd
-> > -    else
-> > +    ifneq ($(has_bfd),y)
-> >        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-> >        has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
-> >        ifeq ($(has_bfd_iberty),y)
-> > @@ -397,10 +400,6 @@ else
-> >    endif
-> >  endif
-> >  
-> > -ifndef ($(filter -lbfd,$(EXTLIBS)),)
-> > -  CFLAGS += -DLIBBFD_SUPPORT
-> > -endif
-> > -
-> >  ifndef NO_STRLCPY
-> >    ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
-> >      CFLAGS += -DHAVE_STRLCPY
-> 
-> Is it enough to check on -lbfd only?  I guess libbfd can have additional
-> dependencies to libiberty and libz.  If so, this patch can fail to set
-> -DLIBBFD_SUPPORT, right?
+On Mon, Sep 30, 2013 at 1:06 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Sun, Sep 29, 2013 at 07:58:10PM -0700, H. Peter Anvin wrote:
+>> On 09/29/2013 07:57 PM, Matthew Garrett wrote:
+>> > On Fri, Sep 27, 2013 at 03:16:49PM -0500, H. Peter Anvin wrote:
+>> >>
+>> >> It really is starting to feel like *ALL* Dell machines need reboot=pci?
+>> >
+>> > Now that ACPI is default, I'd be surprised if any of them do.
+>> >
+>>
+>> Look at the stream of Dell machines we're still getting reboot bug
+>> reports for...
+>
+> Likely indicates that our ACPI reboot handling still isn't bug
+> compatible with Windows. We'd do better fixing that than adding more DMI
+> entries.
 
-hum, you're right.. so it's 2 bugs fixed by removing that code ;-)
+are these only with VTd enabled? I have some Dells that won't reboot
+with VTd turned on, I remember you though it was an acpi bug we
+couldn't do much with.
 
-jirka
+Dave.
