@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab3I3EdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 00:33:23 -0400
-Received: from hermes.synopsys.com ([198.182.44.81]:45299 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab3I3EdU convert rfc822-to-8bit (ORCPT
+	id S1752238Ab3I3FIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 01:08:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50512 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab3I3FIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 00:33:20 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: linus Torvalds <torvalds@linux-foundation.org>
-CC: "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] ARC fixes for 3.12
-Thread-Topic: [GIT PULL] ARC fixes for 3.12
-Thread-Index: Ac69lipXTlMIAEmqQViPwbL1wSOG8Q==
-Date: Mon, 30 Sep 2013 04:33:16 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514ED20@IN01WEMBXA.internal.synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.15.84.232]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Sep 2013 01:08:10 -0400
+X-AuditID: 9c930179-b7c8bae000006c65-75-524907384661
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -tip ] [BUGFIX] perf probe: Fix to find line information for probe list
+References: <20130927065707.17408.36033.stgit@udc4-manage.rcp.hitachi.co.jp>
+Date: Mon, 30 Sep 2013 14:08:07 +0900
+In-Reply-To: <20130927065707.17408.36033.stgit@udc4-manage.rcp.hitachi.co.jp>
+	(Masami Hiramatsu's message of "Fri, 27 Sep 2013 15:57:07 +0900")
+Message-ID: <87y56eoq14.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Masami,
 
-Please pull ARC fixes for 3.12.
+Just a nitpick.
 
-Thx,
--Vineet
+On Fri, 27 Sep 2013 15:57:07 +0900, Masami Hiramatsu wrote:
+>  /**
+> + * die_find_inlinefunc_next - Search an inlined function at given address
+> + * @cu_die: a CU DIE which including @addr
 
---------------------->
-The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+s/cu_die/sp_die/
 
-  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+And it doesn't look like a CU DIE, anyway.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/
-tags/arc-fixes-for-3.12
+Thanks,
+Namhyung
 
-for you to fetch changes up to 55c2e26204276b27f2b7a63123b701c950e45d89:
 
-  ARC: Use clockevents_config_and_register over clockevents_register_device
-(2013-09-27 16:28:48 +0530)
-
-----------------------------------------------------------------
-ARC Fixes for 3.12
-
-* Handling unaligned access in zero delay loops
-* spinlock livelock fix for SMP systemC model
-* fixing 32bit overflow in access_ok
-* better setup of clockevents
-
-----------------------------------------------------------------
-Mischa Jonker (1):
-      ARC: Handle zero-overhead-loop in unaligned access handler
-
-Uwe Kleine-König (1):
-      ARC: Use clockevents_config_and_register over clockevents_register_device
-
-Vineet Gupta (2):
-      ARC: Fix 32-bit wrap around in access_ok()
-      ARC: Workaround spinlock livelock in SMP SystemC simulation
-
- arch/arc/include/asm/spinlock.h | 9 ++++++++-
- arch/arc/include/asm/uaccess.h  | 4 ++--
- arch/arc/kernel/time.c          | 7 ++-----
- arch/arc/kernel/unaligned.c     | 6 ++++++
- 4 files changed, 18 insertions(+), 8 deletions(-)
+> + * @addr: target address
+> + * @die_mem: a buffer for result DIE
+> + *
+> + * Search an inlined function DIE which includes @addr. Stores the
+> + * DIE to @die_mem and returns it if found. Returns NULL if failed.
+> + * Even if several inlined functions are expanded recursively, this
+> + * doesn't trace it down, and returns the topmost one.
+> + */
+> +Dwarf_Die *die_find_inlinefunc_next(Dwarf_Die *sp_die, Dwarf_Addr addr,
+> +				    Dwarf_Die *die_mem)
+> +{
+> +	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
+> +}
