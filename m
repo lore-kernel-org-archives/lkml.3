@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab3I3K1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:27:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43622 "EHLO
+	id S1755522Ab3I3KMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:12:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43539 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab3I3KMp (ORCPT
+	with ESMTP id S1755443Ab3I3KMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:12:45 -0400
+	Mon, 30 Sep 2013 06:12:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianpeng Ma <majianpeng@gmail.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Dmitry Vyukov <dvyukov@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 056/104] libceph: unregister request in __map_request failed and nofail == false
-Date: Mon, 30 Sep 2013 11:10:33 +0100
-Message-Id: <1380535881-9239-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 042/104] fib_trie: remove potential out of bound access
+Date: Mon, 30 Sep 2013 11:10:19 +0100
+Message-Id: <1380535881-9239-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 73d9f7eef3d98c3920e144797cc1894c6b005a1e upstream.
+commit aab515d7c32a34300312416c50314e755ea6f765 upstream.
 
-For nofail == false request, if __map_request failed, the caller does
-cleanup work, like releasing the relative pages.  It doesn't make any sense
-to retry this request.
+AddressSanitizer [1] dynamic checker pointed a potential
+out of bound access in leaf_walk_rcu()
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-[ luis: backported to 3.5: adjusted context ]
+We could allocate one more slot in tnode_new() to leave the prefetch()
+in-place but it looks not worth the pain.
+
+Bug added in commit 82cfbb008572b ("[IPV4] fib_trie: iterator recode")
+
+[1] :
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+
+Reported-by: Andrey Konovalov <andreyknvl@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ceph/osd_client.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/fib_trie.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index f181972..a90c575 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1745,6 +1745,8 @@ int ceph_osdc_start_request(struct ceph_osd_client *osdc,
- 				dout("osdc_start_request failed map, "
- 				     " will retry %lld\n", req->r_tid);
- 				rc = 0;
-+			} else {
-+				__unregister_request(osdc, req);
- 			}
- 			goto out_unlock;
- 		}
+diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
+index 30b88d7..424704a 100644
+--- a/net/ipv4/fib_trie.c
++++ b/net/ipv4/fib_trie.c
+@@ -71,7 +71,6 @@
+ #include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/slab.h>
+-#include <linux/prefetch.h>
+ #include <linux/export.h>
+ #include <net/net_namespace.h>
+ #include <net/ip.h>
+@@ -1772,10 +1771,8 @@ static struct leaf *leaf_walk_rcu(struct tnode *p, struct rt_trie_node *c)
+ 			if (!c)
+ 				continue;
+ 
+-			if (IS_LEAF(c)) {
+-				prefetch(rcu_dereference_rtnl(p->child[idx]));
++			if (IS_LEAF(c))
+ 				return (struct leaf *) c;
+-			}
+ 
+ 			/* Rescan start scanning in new node */
+ 			p = (struct tnode *) c;
 -- 
 1.8.3.2
 
