@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3I3QWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:22:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47216 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab3I3QWg (ORCPT
+	id S1755367Ab3I3Q0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:26:23 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:61911 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945Ab3I3Q0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:22:36 -0400
-Date: Mon, 30 Sep 2013 11:22:24 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: David Cohen <david.a.cohen@linux.intel.com>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: add support for Merrifield
-Message-ID: <20130930162224.GC23534@radagast>
-Reply-To: <balbi@ti.com>
-References: <1380225704-28923-1-git-send-email-david.a.cohen@linux.intel.com>
- <20130926201454.GC16369@kroah.com>
+	Mon, 30 Sep 2013 12:26:22 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f0KYrhQ4vYSV2aJu"
-Content-Disposition: inline
-In-Reply-To: <20130926201454.GC16369@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130930085243.GA25685@redhat.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+	<20130928074144.GA17773@gmail.com>
+	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+	<20130928192123.GA8228@gmail.com>
+	<20130928193739.GA8642@gmail.com>
+	<20130930085243.GA25685@redhat.com>
+Date: Mon, 30 Sep 2013 09:26:21 -0700
+X-Google-Sender-Auth: C1a0hMA2LXsB0wVwKsgFy7jXYJ0
+Message-ID: <CA+55aFxG3hK0CiZJh1XORv+tiNWXVxh8rzr37Vmu=ASWj1s4PQ@mail.gmail.com>
+Subject: Re: [PATCH] anon_vmas: Convert the rwsem to an rwlock_t
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Haggai Eran <haggaie@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f0KYrhQ4vYSV2aJu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 30, 2013 at 1:52 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>
+> Sorry having to break the party but the sleepable locks for anon_vma
+> and i_mmap_mutex are now requirement for the "pageable RDMA" effort
+> recently achieved upstream by mellanox with the MMU notifier.
 
-Hi,
+I'll happily break that.
 
-On Thu, Sep 26, 2013 at 01:14:54PM -0700, Greg KH wrote:
-> On Thu, Sep 26, 2013 at 01:01:44PM -0700, David Cohen wrote:
-> > Add PCI id for Intel Merrifield
-> >=20
-> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > ---
-> >  drivers/usb/dwc3/dwc3-pci.c | 2 ++
-> >  1 file changed, 2 insertions(+)
->=20
-> Nice, Felipe, mind if I just pick this up now, as I'm applying USB
-> patches at the moment...
+No way will some random crazy RDMA be a reason why we'd drop this kind
+of improvement on actual loads that matter way more.
 
-Sure, just go ahead.
-
---=20
-balbi
-
---f0KYrhQ4vYSV2aJu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSSaVAAAoJEIaOsuA1yqREDeQQAK1V8tLzD3CkMSUQICxVxazd
-6HDgR8yFaTMJFKgL53lGtK3LRhngjPtqbXl7NDVwWivHeCsr4Ui0xI6MomOK/aL7
-Rss35VeIzUCPNgEWt/+dX+OI+/lhvG5+tT0siHx+7g16X+JXKJEoN8jWuqGjLgDM
-RUH1C4wxUEqHrLy0tJRHLDPiwkGdo1wxAxtpcjny74ER+LF18NBzRGjhWZOjoDGx
-twUKWQYMJ61NC7Yqluqf+AQ3NR1qXiLutgwj5lMnycyTGTu8OKw3y/SwfkSaLMlZ
-N6RKhVQ0X8iis1HcJ+1Hk7oLTX2j8ZrYJM4omcFdeMsq0qJCEaqJZO1RL0wZY2JM
-TC3bGuTKfkIQQ4qoXab2QvwTDhJtHABjY5qM5q1nwk59zp3QfeYRdrOlyeEOgGnT
-NZS7Q5i2l3WXiIAasH2Uttc1NPprIv2XbxzB1Gt9VTi3ZD7tpaao1AhgR7BsivNp
-i7IsZAHA30nDpNJeeqxZUEACqv/Xr4mYKWHcWeCbw0i2StOT+8M+CjqZTFJAc8ai
-DaEy23PeOzZn3ArtBWGipdDvLGXP5Orxtd6FEvkYqd61ycHbSorrnf4L9J8ELixx
-PW2CojarAUCkhFNzAfJhtbJ2jr3v0YREIGcVPnx+eDkRAMXmSwUpE7X+4ZNigWa+
-/ZeQgPQQFbAE/8S1nW7e
-=IXHw
------END PGP SIGNATURE-----
-
---f0KYrhQ4vYSV2aJu--
+                 Linus
