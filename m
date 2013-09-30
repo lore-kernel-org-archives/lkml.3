@@ -1,179 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab3I3WAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 18:00:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33880 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422Ab3I3V7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 17:59:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
-   d="scan'208";a="367935970"
-From: Andi Kleen <andi@firstfloor.org>
-To: acma@infradead.org
-Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/6] perf, core: Add generic transaction flags v5
-Date: Mon, 30 Sep 2013 14:58:58 -0700
-Message-Id: <1380578343-31301-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380578343-31301-1-git-send-email-andi@firstfloor.org>
-References: <1380578343-31301-1-git-send-email-andi@firstfloor.org>
+	id S932096Ab3I3WL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 18:11:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56124 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756365Ab3I3WL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 18:11:58 -0400
+Date: Mon, 30 Sep 2013 18:47:09 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: cinifr <cinifr@gmail.com>
+Cc: coosty@163.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
+Subject: Re: [PATCH V3: Add Smp support for Allwinner A20. 1/3] Add smp
+ support for Allwinner A20(sunxi 7i).
+Message-ID: <20130930164709.GA5287@lukather>
+References: <1379852488-32147-1-git-send-email-cinifr@gmail.com>
+ <1379852488-32147-2-git-send-email-cinifr@gmail.com>
+ <20130923181707.GR2779@lukather>
+ <CAK3cCBwLrnV7L9WzJ+1P_62PEjEEtgzVjFH8m6SZzWG1O+2vEw@mail.gmail.com>
+ <20130925184435.GH2954@lukather>
+ <CAK3cCBwOpkk5ObeEm+by=RS6jSptPdGZM+fvpgGZpX9TPij5gg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Disposition: inline
+In-Reply-To: <CAK3cCBwOpkk5ObeEm+by=RS6jSptPdGZM+fvpgGZpX9TPij5gg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
 
-Add a generic qualifier for transaction events, as a new sample
-type that returns a flag word. This is particularly useful
-for qualifying aborts: to distinguish aborts which happen
-due to asynchronous events (like conflicts caused by another
-CPU) versus instructions that lead to an abort.
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The tuning strategies are very different for those cases,
-so it's important to distinguish them easily and early.
+Hi Fan,
 
-Since it's inconvenient and inflexible to filter for this
-in the kernel we report all the events out and allow
-some post processing in user space.
+On Sat, Sep 28, 2013 at 09:48:11PM +0800, cinifr wrote:
+> Hi  Maxime,
+>     I have test it, but I found it does not work. If using
+> smp_prepare_cpus, the kernenl cannot find the secondary cpus because
+> that smp_prepare_cpus semms not be excuted before kernel is booting
+> secondary cpus. So I have to use early_initcall.
 
-The flags are based on the Intel TSX events, but should be fairly
-generic and mostly applicable to other HTM architectures too. In addition
-to various flag words there's also reserved space to report an
-program supplied abort code. For TSX this is used to distinguish specific
-classes of aborts, like a lock busy abort when doing lock elision.
+At least two other platforms (sti and rockchip) do it like that.
 
-Flags:
+And an early_initcall is not an option.
 
-Elision and generic transactions 		   (ELISION vs TRANSACTION)
-(HLE vs RTM on TSX; IBM etc.  would likely only use TRANSACTION)
-Aborts caused by current thread vs aborts caused by others (SYNC vs ASYNC)
-Retryable transaction				   (RETRY)
-Conflicts with other threads			   (CONFLICT)
-Transaction write capacity overflow		   (CAPACITY WRITE)
-Transaction read capacity overflow		   (CAPACITY READ)
+Thanks!
+Maxime
 
-Transactions implicitely aborted can also return an abort code.
-This can be used to signal specific events to the profiler. A common
-case is abort on lock busy in a RTM eliding library (code 0xff)
-To handle this case we include the TSX abort code
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Common example aborts in TSX would be:
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-- Data conflict with another thread on memory read.
-                                      Flags: TRANSACTION|ASYNC|CONFLICT
-- executing a WRMSR in a transaction. Flags: TRANSACTION|SYNC
-- HLE transaction in user space is too large
-                                      Flags: ELISION|SYNC|CAPACITY-WRITE
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The only flag that is somewhat TSX specific is ELISION.
+iQIcBAEBAgAGBQJSSasNAAoJEBx+YmzsjxAgi5IP/2icGkG2a/zHtsHryi3XkEH1
+A1C6dEKqgk7wrxPyibdvMpsre4V/scPrTR66U0MzfQWQs5pNapxgsm4p2tCC0n85
+XdFMMqgPmeUIK0yi3IOFJgkveW6G3F/Ba+FZnhKGVIrg3iy2dhgslOnpuUoBNiLM
+hCOVqYNuoYMD5buJ8uRJ1gORgen4LRRktxrOtdS1InYspQG2EAukK38+aU++SH+f
+0beSsUd73QBOMYiqqAh9+gk8sVWi0kH1WzmBzdBs6svVAMRlLSGZyGPXwtCJYmYl
+IR+hwsqoSrdIXsNb2nkgVWt6Rt1oQKjTNiCjn8VAy/yCUs/t2pdjVGBbVoDYeRmL
+D+oz5/IscApNLipyOaLVowOtmAsqofjSPWIXocIbnGc7bH7yJ1MvfWZp8Dnzvt+b
+MO8ciNrQnWbjpDLzRmA5/FokC+gQkhpZ61EsEmgwNSgejQ5m/kiqTtUa3XWipxsS
+6Pdl/BZRkStKI8tnLkpq90cuoG0jJJgLD3WNEtu9vowJzbX25F/5jM3TtfS8QV90
+IY2ksGnSjHblEdvKrUl6UI3vPWbh887LPhmqUj0QWyJYliTbG+iny/lUd4VwLfic
+6Lsbq1X8Rw/tbXR8Oj3Tm0vRm3t1lETKW54WdzLIdWsqIAs7KVAN+G4KWK8QZEmT
+RLD9AIDGOf6nXwDtoOFJ
+=/drZ
+-----END PGP SIGNATURE-----
 
-This adds the perf core glue needed for reporting the new flag word out.
-
-v2: Add MEM/MISC
-v3: Move transaction to the end
-v4: Separate capacity-read/write and remove misc
-v5: Remove _SAMPLE. Move abort flags to 32bit. Rename
-    transaction to txn
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/perf_event.h      |  5 +++++
- include/uapi/linux/perf_event.h | 25 ++++++++++++++++++++++++-
- kernel/events/core.c            |  6 ++++++
- 3 files changed, 35 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 866e85c..ee96093 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -562,6 +562,10 @@ struct perf_sample_data {
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
- 	u64				weight;
-+	/*
-+	 * Transaction flags for abort events:
-+	 */
-+	u64				txn;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -577,6 +581,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->stack_user_size = 0;
- 	data->weight = 0;
- 	data->data_src.val = 0;
-+	data->txn = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index ca1d90b..fee1264 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -136,8 +136,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
- 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
-+	PERF_SAMPLE_TRANSACTION			= 1U << 17,
- 
--	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
- };
- 
- /*
-@@ -181,6 +182,28 @@ enum perf_sample_regs_abi {
- };
- 
- /*
-+ * Values for the memory transaction event qualifier, mostly for
-+ * abort events. Multiple bits can be set.
-+ */
-+enum {
-+	PERF_TXN_ELISION        = (1 << 0), /* From elision */
-+	PERF_TXN_TRANSACTION    = (1 << 1), /* From transaction */
-+	PERF_TXN_SYNC           = (1 << 2), /* Instruction is related */
-+	PERF_TXN_ASYNC          = (1 << 3), /* Instruction not related */
-+	PERF_TXN_RETRY          = (1 << 4), /* Retry possible */
-+	PERF_TXN_CONFLICT       = (1 << 5), /* Conflict abort */
-+	PERF_TXN_CAPACITY_WRITE = (1 << 6), /* Capacity write abort */
-+	PERF_TXN_CAPACITY_READ  = (1 << 7), /* Capacity read abort */
-+
-+	PERF_TXN_MAX	        = (1 << 8), /* non-ABI */
-+
-+	/* bits 32..63 are reserved for the abort code */
-+
-+	PERF_TXN_ABORT_MASK  = (0xffffffffULL << 32),
-+	PERF_TXN_ABORT_SHIFT = 32,
-+};
-+
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dd236b6..fe2d7c8 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1201,6 +1201,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_DATA_SRC)
- 		size += sizeof(data->data_src.val);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		size += sizeof(data->txn);
-+
- 	event->header_size = size;
- }
- 
-@@ -4551,6 +4554,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_DATA_SRC)
- 		perf_output_put(handle, data->data_src.val);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		perf_output_put(handle, data->txn);
-+
- 	if (!event->attr.watermark) {
- 		int wakeup_events = event->attr.wakeup_events;
- 
--- 
-1.8.3.1
-
+--3MwIy2ne0vdjdPXF--
