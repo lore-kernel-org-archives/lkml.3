@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab3I3KUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:20:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43738 "EHLO
+	id S1755978Ab3I3KVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:21:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713Ab3I3KNQ (ORCPT
+	with ESMTP id S1755656Ab3I3KNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:16 -0400
+	Mon, 30 Sep 2013 06:13:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 077/104] s5p-g2d: Fix registration failure
-Date: Mon, 30 Sep 2013 11:10:54 +0100
-Message-Id: <1380535881-9239-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 075/104] fuse: postpone end_page_writeback() in fuse_writepage_locked()
+Date: Mon, 30 Sep 2013 11:10:52 +0100
+Message-Id: <1380535881-9239-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,61 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit 8a09a4cc9bd9389dc6a3b5b2dd3a7d64d2fab7e1 upstream.
+commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
 
-Commit 1c1d86a1ea ("[media] v4l2: always require v4l2_dev,
-rename parent to dev_parent") expects v4l2_dev to be always set.
-It converted most of the drivers using the parent field of video_device
-to v4l2_dev field. G2D driver did not set the parent field. Hence it got
-left out. Without this patch we get the following boot warning and G2D
-driver fails to register the video device.
-WARNING: CPU: 0 PID: 1 at drivers/media/v4l2-core/v4l2-dev.c:775 __video_register_device+0xfc0/0x1028()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc1-00001-g1c3e372-dirty #9
-[<c0014b7c>] (unwind_backtrace+0x0/0xf4) from [<c0011524>] (show_stack+0x10/0x14)
-[<c0011524>] (show_stack+0x10/0x14) from [<c041d7a8>] (dump_stack+0x7c/0xb0)
-[<c041d7a8>] (dump_stack+0x7c/0xb0) from [<c001dc94>] (warn_slowpath_common+0x6c/0x88)
-[<c001dc94>] (warn_slowpath_common+0x6c/0x88) from [<c001dd4c>] (warn_slowpath_null+0x1c/0x24)
-[<c001dd4c>] (warn_slowpath_null+0x1c/0x24) from [<c02cf8d4>] (__video_register_device+0xfc0/0x1028)
-[<c02cf8d4>] (__video_register_device+0xfc0/0x1028) from [<c0311a94>] (g2d_probe+0x1f8/0x398)
-[<c0311a94>] (g2d_probe+0x1f8/0x398) from [<c0247d54>] (platform_drv_probe+0x14/0x18)
-[<c0247d54>] (platform_drv_probe+0x14/0x18) from [<c0246b10>] (driver_probe_device+0x108/0x220)
-[<c0246b10>] (driver_probe_device+0x108/0x220) from [<c0246cf8>] (__driver_attach+0x8c/0x90)
-[<c0246cf8>] (__driver_attach+0x8c/0x90) from [<c0245050>] (bus_for_each_dev+0x60/0x94)
-[<c0245050>] (bus_for_each_dev+0x60/0x94) from [<c02462c8>] (bus_add_driver+0x1c0/0x24c)
-[<c02462c8>] (bus_add_driver+0x1c0/0x24c) from [<c02472d0>] (driver_register+0x78/0x140)
-[<c02472d0>] (driver_register+0x78/0x140) from [<c00087c8>] (do_one_initcall+0xf8/0x144)
-[<c00087c8>] (do_one_initcall+0xf8/0x144) from [<c05b29e8>] (kernel_init_freeable+0x13c/0x1d8)
-[<c05b29e8>] (kernel_init_freeable+0x13c/0x1d8) from [<c041a108>] (kernel_init+0xc/0x160)
-[<c041a108>] (kernel_init+0xc/0x160) from [<c000e2f8>] (ret_from_fork+0x14/0x3c)
----[ end trace 4e0ec028b0028e02 ]---
-s5p-g2d 12800000.g2d: Failed to register video device
-s5p-g2d: probe of 12800000.g2d failed with error -22
+The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[ luis: backported to 3.5: adjusted context ]
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs shrinking truncate(2) intended to purge the page.
+3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
+   the original page by end_page_writeback.
+4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
+   is free.
+5) Ordinary write(2) extends i_size back to cover the page. Note that
+   fuse_send_write_pages do wait for fuse writeback, but for another
+   page->index.
+6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
+   fuse_send_writepage is supposed to crop inarg->size of the request,
+   but it doesn't because i_size has already been extended back.
+
+Moving end_page_writeback to the end of fuse_writepage_locked fixes the
+race because now the fact that truncate_pagecache is successfully returned
+infers that fuse_writepage_locked has already called end_page_writeback.
+And this, in turn, infers that fuse_flush_writepages has already called
+fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
+could not extend it because of i_mutex held by ftruncate(2).
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/video/s5p-g2d/g2d.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/fuse/file.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/video/s5p-g2d/g2d.c b/drivers/media/video/s5p-g2d/g2d.c
-index 7c98ee7..a96d7a2 100644
---- a/drivers/media/video/s5p-g2d/g2d.c
-+++ b/drivers/media/video/s5p-g2d/g2d.c
-@@ -753,6 +753,7 @@ static int g2d_probe(struct platform_device *pdev)
- 	   This driver needs auditing so that this flag can be removed. */
- 	set_bit(V4L2_FL_LOCK_ALL_FOPS, &vfd->flags);
- 	vfd->lock = &dev->mutex;
-+	vfd->v4l2_dev = &dev->v4l2_dev;
- 	ret = video_register_device(vfd, VFL_TYPE_GRABBER, 0);
- 	if (ret) {
- 		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 514f12a..e7785e4 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1296,7 +1296,6 @@ static int fuse_writepage_locked(struct page *page)
+ 
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
+ 
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1304,6 +1303,8 @@ static int fuse_writepage_locked(struct page *page)
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
+ 
++	end_page_writeback(page);
++
+ 	return 0;
+ 
+ err_free:
 -- 
 1.8.3.2
 
