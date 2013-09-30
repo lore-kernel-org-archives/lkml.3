@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab3I3Vo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 17:44:56 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:38734 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756123Ab3I3Voz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 17:44:55 -0400
+	id S1756247Ab3I3VuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 17:50:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41668 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755415Ab3I3VuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 17:50:17 -0400
+Date: Mon, 30 Sep 2013 18:23:08 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 02/15] KVM: MMU: properly check last spte in
+ fast_page_fault()
+Message-ID: <20130930212308.GA31805@amt.cnet>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1378376958-27252-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130930200313.GT13318@ZenIV.linux.org.uk>
-References: <1379353350-11320-1-git-send-email-adityakali@google.com>
- <20130917024040.GH13318@ZenIV.linux.org.uk> <523B5AEA.1070808@google.com>
- <CAGr1F2E1Xo7Y_xb-UXt6WCyhi0Hq+ygovuAp8pAHkwTkKOV-FA@mail.gmail.com>
- <5249BF43.705@google.com> <20130930200313.GT13318@ZenIV.linux.org.uk>
-From: Aditya Kali <adityakali@google.com>
-Date: Mon, 30 Sep 2013 14:44:33 -0700
-Message-ID: <CAGr1F2HF0sXD5Ejq3HN9YAtpeLqYJkZc=79+B=2XErj_Z_kufA@mail.gmail.com>
-Subject: Re: [RFC] vfs: avoid sb->s_umount lock while changing bind-mount flags
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anatol Pomazau <anatol@google.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        tj@kernel.org, axboe@kernel.dk
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378376958-27252-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 1:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Sep 30, 2013 at 11:13:23AM -0700, Aditya Kali wrote:
->> +Ted Ts'o, Tejun Heo, Jens Axboe
->>
->>
->> On 09/30/2013 10:54 AM, Aditya Kali wrote:
->> >Hi Al and other fs-developers,
->> >
->> >Please let me know what you think about this patch.
->
-> Don't top-post, please...  What prevents a race between MS_BIND remounts
-> and plain ones?  Used to be serialized on ->s_umount, but...
+On Thu, Sep 05, 2013 at 06:29:05PM +0800, Xiao Guangrong wrote:
+> Using sp->role.level instead of @level since @level is not got from the
+> page table hierarchy
+> 
+> There is no issue in current code since the fast page fault currently only
+> fixes the fault caused by dirty-log that is always on the last level
+> (level = 1)
+> 
+> This patch makes the code more readable and avoids potential issue in the
+> further development
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 7714fd8..869f1db 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2804,9 +2804,9 @@ static bool page_fault_can_be_fast(u32 error_code)
+>  }
+>  
+>  static bool
+> -fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 spte)
+> +fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> +			u64 *sptep, u64 spte)
+>  {
+> -	struct kvm_mmu_page *sp = page_header(__pa(sptep));
+>  	gfn_t gfn;
+>  
+>  	WARN_ON(!sp->role.direct);
+> @@ -2832,6 +2832,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+>  			    u32 error_code)
+>  {
+>  	struct kvm_shadow_walk_iterator iterator;
+> +	struct kvm_mmu_page *sp;
+>  	bool ret = false;
+>  	u64 spte = 0ull;
+>  
+> @@ -2852,7 +2853,8 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+>  		goto exit;
+>  	}
+>  
+> -	if (!is_last_spte(spte, level))
+> +	sp = page_header(__pa(iterator.sptep));
+> +	if (!is_last_spte(spte, sp->role.level))
+>  		goto exit;
+>  
+>  	/*
+> @@ -2878,7 +2880,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+>  	 * the gfn is not stable for indirect shadow page.
+>  	 * See Documentation/virtual/kvm/locking.txt to get more detail.
+>  	 */
+> -	ret = fast_pf_fix_direct_spte(vcpu, iterator.sptep, spte);
+> +	ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
+>  exit:
+>  	trace_fast_page_fault(vcpu, gva, error_code, iterator.sptep,
+>  			      spte, ret);
+> -- 
+> 1.8.1.4
 
-The rational here is that MS_BIND remounts need to act on the bind
-mount-point only (struct vfsmount *) and not on the underlying
-superblock (struct super_block *). So, intuitively, it should not be
-necessary to take a superblock level lock for the MS_BIND case. As for
-the modification of mnt_flags on vfsmount, there is already
-vfsmount_lock taken in both MS_BIND and non-MS_BIND case to prevent
-the race.
+Unrelated to this patch:
 
-Following is the example that demonstrates the problem that I am
-trying to address with this patch:
+If vcpu->mode = OUTSIDE_GUEST_MODE, no IPI is sent
+by kvm_flush_remote_tlbs.
 
-(1) /dev/sda is mounted at /mnt/sda
-(2) /mnt/sda/users/user1 is bind mounted at /home/user1/ ;
-/mnt/sda/users/user2 is bind mounted at /home/user2/
-(3) user1 is doing buffered writes in /home/user1/logs/
-(4) admin tries to make /home/user2/bin/ read-only using a bind-mounts:
-    $ mount --bind /home/user2/bin/ /home/user2/bin/    # this is fast
-    $ mount --bind -o remount,ro /home/user2/bin/    # this blocks
-behind any writeback happening on sda (because of sb->s_umount write
-lock)
+So how is this supposed to work again?
 
-Please advise.
+        /*
+         * Wait for all vcpus to exit guest mode and/or lockless shadow
+         * page table walks.
+         */
+        kvm_flush_remote_tlbs(kvm);
 
-Thanks,
--- 
-Aditya
+Patch looks fine.
+
