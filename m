@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3I3Ec1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 00:32:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53925 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3I3EcZ (ORCPT
+	id S1753095Ab3I3EdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 00:33:23 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:45299 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab3I3EdU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 00:32:25 -0400
-Date: Mon, 30 Sep 2013 05:32:13 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Fix apparent cut-n-paste mistake in Dell reboot workaround.
-Message-ID: <20130930043213.GA22194@srcf.ucam.org>
-References: <20130925001344.GA13554@redhat.com>
- <5245E7B1.2000408@zytor.com>
- <20130930025733.GA21361@srcf.ucam.org>
- <5248E8C2.2000108@zytor.com>
- <20130930030655.GB21361@srcf.ucam.org>
- <CAPM=9txNWRKPzE=FNz63fi-7mwQq5DvNkVHik4gNodD9WBP9mw@mail.gmail.com>
+	Mon, 30 Sep 2013 00:33:20 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: linus Torvalds <torvalds@linux-foundation.org>
+CC: "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ARC fixes for 3.12
+Thread-Topic: [GIT PULL] ARC fixes for 3.12
+Thread-Index: Ac69lipXTlMIAEmqQViPwbL1wSOG8Q==
+Date: Mon, 30 Sep 2013 04:33:16 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514ED20@IN01WEMBXA.internal.synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.15.84.232]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM=9txNWRKPzE=FNz63fi-7mwQq5DvNkVHik4gNodD9WBP9mw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 01:15:02PM +1000, Dave Airlie wrote:
-> On Mon, Sep 30, 2013 at 1:06 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > Likely indicates that our ACPI reboot handling still isn't bug
-> > compatible with Windows. We'd do better fixing that than adding more DMI
-> > entries.
-> 
-> are these only with VTd enabled? I have some Dells that won't reboot
-> with VTd turned on, I remember you though it was an acpi bug we
-> couldn't do much with.
+Hi Linus,
 
-Oh, that's true - the ACPI reboot vector on the Dell tables I have to 
-hand appears to be via the keyboard controller, so there's probably some 
-SMM involved. I don't know if the VTd thing is still a problem (David 
-Woodhouse was looking into that at one point), but that would be a 
-reasonable point to start from.
+Please pull ARC fixes for 3.12.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thx,
+-Vineet
+
+--------------------->
+The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+
+  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/
+tags/arc-fixes-for-3.12
+
+for you to fetch changes up to 55c2e26204276b27f2b7a63123b701c950e45d89:
+
+  ARC: Use clockevents_config_and_register over clockevents_register_device
+(2013-09-27 16:28:48 +0530)
+
+----------------------------------------------------------------
+ARC Fixes for 3.12
+
+* Handling unaligned access in zero delay loops
+* spinlock livelock fix for SMP systemC model
+* fixing 32bit overflow in access_ok
+* better setup of clockevents
+
+----------------------------------------------------------------
+Mischa Jonker (1):
+      ARC: Handle zero-overhead-loop in unaligned access handler
+
+Uwe Kleine-König (1):
+      ARC: Use clockevents_config_and_register over clockevents_register_device
+
+Vineet Gupta (2):
+      ARC: Fix 32-bit wrap around in access_ok()
+      ARC: Workaround spinlock livelock in SMP SystemC simulation
+
+ arch/arc/include/asm/spinlock.h | 9 ++++++++-
+ arch/arc/include/asm/uaccess.h  | 4 ++--
+ arch/arc/kernel/time.c          | 7 ++-----
+ arch/arc/kernel/unaligned.c     | 6 ++++++
+ 4 files changed, 18 insertions(+), 8 deletions(-)
