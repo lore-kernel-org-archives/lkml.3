@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3I3BxF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 21:53:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33625 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab3I3BxD (ORCPT
+	id S1754530Ab3I3CDM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 22:03:12 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:45226 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab3I3CDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 21:53:03 -0400
-Date: Sun, 29 Sep 2013 18:53:05 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>, Bastian Blank <waldi@debian.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysrq: Allow access to sensitive keys to be restricted
- by default
-Message-ID: <20130930015305.GE13344@kroah.com>
-References: <1380504668.14493.22.camel@deadeye.wl.decadent.org.uk>
- <20130930014009.GA30635@redhat.com>
+	Sun, 29 Sep 2013 22:03:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930014009.GA30635@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130930105234.73b5380ec08bf4cc6b2c9677@samsung.com>
+References: <003a01cde30b$e13c1910$a3b44b30$%cho@samsung.com>
+	<CAOw6vbJfi7UhwxgFKmMzO91fnywWZNTRVDLLSWQOkbbU=C5ndA@mail.gmail.com>
+	<20130930093500.ffa527f8f5f004e02a9cb187@samsung.com>
+	<CAOw6vbKSQ2xTj7__D5F40vRLxU5Yt1NH4zEp4WcRtB1rVK5gQQ@mail.gmail.com>
+	<20130930105234.73b5380ec08bf4cc6b2c9677@samsung.com>
+Date: Sun, 29 Sep 2013 19:03:06 -0700
+X-Google-Sender-Auth: QmixMZA5XT6-1uAYg-J_UsZhgMc
+Message-ID: <CALiw-2HwQvpHCoJw0JyGn87ZV1vuvqMtPv8i+AcVGQHnAKtEJw@mail.gmail.com>
+Subject: Re: [PATCH v6 07/12] ARM: EXYNOS: remove system mmu initialization
+ from exynos tree
+From: Olof Johansson <olof@lixom.net>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Sean Paul <seanpaul@chromium.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Hyunwoong Kim <khw0178.kim@samsung.com>,
+        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Subash Patel <supash.ramaswamy@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 29, 2013 at 09:40:09PM -0400, Dave Jones wrote:
-> On Mon, Sep 30, 2013 at 02:31:08AM +0100, Ben Hutchings wrote:
->  > From: Bastian Blank <waldi@debian.org>
->  > 
->  > Add a Kconfig variable to set the initial value of the Magic SysRq mask
->  > (sysctl: kernel.sysrq).
->  > 
->  > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->  > ---
->  > This has been in Debian for a while, but should probably be signed-off
->  > by Bastian as well.
->  > 
->  > Debian sets this to 0x01b6, which excludes.
->  > 
->  >           8 - enable debugging dumps of processes etc.
->  >          64 - enable signalling of processes (term, kill, oom-kill)
->  > ...
->  >  
->  > +config MAGIC_SYSRQ_DEFAULT_MASK
->  > +	hex "Default mask for Magic SysRq keys on the console"
->  > +	depends on MAGIC_SYSRQ
->  > +	default 1
->  > +	help
->  > +	  Specifies the default mask for the allowed SysRq keys.  This can be
->  > +	  used to disable several sensitive keys by default.
-> 
-> Might be nice to have the mask values duplicated here to save having to
-> go grepping through code ?
+Hi,
 
-Yeah, a hit would be good.  Like what '1' does as default would be a
-nice start :)
+2013/9/29 Cho KyongHo <pullip.cho@samsung.com>:
 
-thanks,
+> Ah, I remember that this is merged.
+> I agreed to merge this patch because iommu driver need to be completely changed.
+> Whenever I change exynos-iommu driver, synchronizing samsung-next and iommu-next
+> branches is a big challenge.
+> Thus I decided to remove dependencies to samsung-next branch.
+> But I didn't know that the rest of the new driver is not merged soon. :(
+> I am sorry about that.
+>
+> new patch (v10) will be posted soon.
 
-greg k-h
+Will the v10 patch set be incremental based on v6?
+
+How have you tested v10 on mainline?
+
+Thanks,
+
+-Olof
