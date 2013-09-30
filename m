@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab3I3KLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:11:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43333 "EHLO
+	id S1754946Ab3I3KLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:11:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43356 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab3I3KLd (ORCPT
+	with ESMTP id S1754781Ab3I3KLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:11:33 -0400
+	Mon, 30 Sep 2013 06:11:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 001/104] iwl4965: fix rfkill set state regression
-Date: Mon, 30 Sep 2013 11:09:38 +0100
-Message-Id: <1380535881-9239-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 007/104] ALSA: ak4xx-adda: info leak in ak4xxx_capture_source_info()
+Date: Mon, 30 Sep 2013 11:09:44 +0100
+Message-Id: <1380535881-9239-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b2fcc0aee58a3435566dd6d8501a0b355552f28b upstream.
+commit bd5fe738e388ceaa32e5171481e0d3ec59f0ccfe upstream.
 
-My current 3.11 fix:
+"idx" is controled by the user and can be a negative offset into the
+input_names[] array.
 
-commit 788f7a56fce1bcb2067b62b851a086fca48a0056
-Author: Stanislaw Gruszka <sgruszka@redhat.com>
-Date:   Thu Aug 1 12:07:55 2013 +0200
-
-    iwl4965: reset firmware after rfkill off
-
-broke rfkill notification to user-space . I missed that bug, because
-I compiled without CONFIG_RFKILL, sorry about that.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlegacy/4965-mac.c | 2 +-
+ sound/i2c/other/ak4xxx-adda.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
-index cbcf6f2..fde725c 100644
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -4415,9 +4415,9 @@ il4965_irq_tasklet(struct il_priv *il)
- 			set_bit(S_RFKILL, &il->status);
- 		} else {
- 			clear_bit(S_RFKILL, &il->status);
--			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
- 			il_force_reset(il, true);
- 		}
-+		wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
+diff --git a/sound/i2c/other/ak4xxx-adda.c b/sound/i2c/other/ak4xxx-adda.c
+index cef813d..ed726d1 100644
+--- a/sound/i2c/other/ak4xxx-adda.c
++++ b/sound/i2c/other/ak4xxx-adda.c
+@@ -571,7 +571,7 @@ static int ak4xxx_capture_source_info(struct snd_kcontrol *kcontrol,
+ 	struct snd_akm4xxx *ak = snd_kcontrol_chip(kcontrol);
+ 	int mixer_ch = AK_GET_SHIFT(kcontrol->private_value);
+ 	const char **input_names;
+-	int  num_names, idx;
++	unsigned int num_names, idx;
  
- 		handled |= CSR_INT_BIT_RF_KILL;
- 	}
+ 	num_names = ak4xxx_capture_num_inputs(ak, mixer_ch);
+ 	if (!num_names)
 -- 
 1.8.3.2
 
