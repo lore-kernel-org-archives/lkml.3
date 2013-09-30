@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab3I3UVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:21:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35569 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979Ab3I3UVP (ORCPT
+	id S1756558Ab3I3UWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:22:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:40555 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab3I3UWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:21:15 -0400
-Date: Mon, 30 Sep 2013 15:21:12 -0500
-From: rkuo <rkuo@codeaurora.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-hexagon@vger.kernel.org
-Subject: Re: [PATCH 07/21] hexagon: remove unnecessary prom.h includes
-Message-ID: <20130930202112.GA4839@codeaurora.org>
-References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
- <1380221456-11192-8-git-send-email-robherring2@gmail.com>
+	Mon, 30 Sep 2013 16:22:13 -0400
+Date: Mon, 30 Sep 2013 22:22:11 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Forest Bond <forest@alittletooquiet.net>, Joe Perches <joe@perches.com>,
+        Hema Prathaban <hemaklnce@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: vt6655: don't leak when returning -EOPNOTSUPP in
+ vt6655_hostap_ioctl
+Message-ID: <alpine.LNX.2.00.1309302220160.4992@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380221456-11192-8-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 01:50:42PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Hexagon does not have a prom.h header, so it is probably broken with
-> CONFIG_OF enabled. In any case, remove unnecessary prom.h include in
-> preparation to make prom.h optional.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> Cc: linux-hexagon@vger.kernel.org
-> ---
->  arch/hexagon/kernel/setup.c | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/arch/hexagon/kernel/setup.c b/arch/hexagon/kernel/setup.c
-> index 29d1f1b..0e7c1db 100644
-> --- a/arch/hexagon/kernel/setup.c
-> +++ b/arch/hexagon/kernel/setup.c
-> @@ -32,9 +32,6 @@
->  #include <asm/hexagon_vm.h>
->  #include <asm/vm_mmu.h>
->  #include <asm/time.h>
-> -#ifdef CONFIG_OF
-> -#include <asm/prom.h>
-> -#endif
->  
->  char cmd_line[COMMAND_LINE_SIZE];
->  static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
-> -- 
-> 1.8.1.2
-> 
+Make sure we always free(param); and remove a redundant "goto out;"
+just before we'll hit the label anyway.
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/vt6655/hostap.c |   25 ++++++++++---------------
+ 1 files changed, 10 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/staging/vt6655/hostap.c b/drivers/staging/vt6655/hostap.c
+index 8acff44..fdd63b6 100644
+--- a/drivers/staging/vt6655/hostap.c
++++ b/drivers/staging/vt6655/hostap.c
+@@ -720,7 +720,6 @@ static int hostap_get_encryption(PSDevice pDevice,
+  * Return Value:
+  *
+  */
+-
+ int vt6655_hostap_ioctl(PSDevice pDevice, struct iw_point *p)
+ {
+ 	struct viawget_hostapd_param *param;
+@@ -755,8 +754,8 @@ int vt6655_hostap_ioctl(PSDevice pDevice, struct iw_point *p)
+ 		break;
+ 	case VIAWGET_HOSTAPD_SET_ASSOC_AP_ADDR:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SET_ASSOC_AP_ADDR \n");
+-		return -EOPNOTSUPP;
+-		break;
++		ret = -EOPNOTSUPP;
++		goto out;
+ 	case VIAWGET_HOSTAPD_FLUSH:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_FLUSH \n");
+ 		spin_lock_irq(&pDevice->lock);
+@@ -790,40 +789,36 @@ int vt6655_hostap_ioctl(PSDevice pDevice, struct iw_point *p)
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SET_FLAGS_STA \n");
+ 		ret = hostap_set_flags_sta(pDevice, param);
+ 		break;
+-
+ 	case VIAWGET_HOSTAPD_MLME:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_MLME \n");
+-		return -EOPNOTSUPP;
+-
++		ret = -EOPNOTSUPP;
++		goto out;
+ 	case VIAWGET_HOSTAPD_SET_GENERIC_ELEMENT:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SET_GENERIC_ELEMENT \n");
+ 		ret = hostap_set_generic_element(pDevice, param);
+ 		break;
+-
+ 	case VIAWGET_HOSTAPD_SCAN_REQ:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SCAN_REQ \n");
+-		return -EOPNOTSUPP;
+-
++		ret = -EOPNOTSUPP;
++		goto out;
+ 	case VIAWGET_HOSTAPD_STA_CLEAR_STATS:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_STA_CLEAR_STATS \n");
+-		return -EOPNOTSUPP;
+-
++		ret = -EOPNOTSUPP;
++		goto out;
+ 	default:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "vt6655_hostap_ioctl: unknown cmd=%d\n",
+ 			(int)param->cmd);
+-		return -EOPNOTSUPP;
+-		break;
++		ret = -EOPNOTSUPP;
++		goto out;
+ 	}
+ 
+ 	if ((ret == 0) && ap_ioctl) {
+ 		if (copy_to_user(p->pointer, param, p->length)) {
+ 			ret = -EFAULT;
+-			goto out;
+ 		}
+ 	}
+ 
+ out:
+ 	kfree(param);
+-
+ 	return ret;
+ }
+-- 
+1.7.1
 
 
 -- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
