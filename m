@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab3I3Sa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:30:59 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:53647 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab3I3Sa6 (ORCPT
+	id S1755599Ab3I3Shv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:37:51 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56620 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab3I3Shu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:30:58 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2] ARM: shmobile: ape6evm: fix incorrect placement of __initdata tag
-Date: Mon, 30 Sep 2013 20:31:05 +0200
-Message-ID: <27072275.6rIbiFzHY2@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1959578.PFsrHiTtYY@amdc1032>
-References: <1959578.PFsrHiTtYY@amdc1032>
+	Mon, 30 Sep 2013 14:37:50 -0400
+Message-ID: <5249C4FB.1060705@linaro.org>
+Date: Mon, 30 Sep 2013 20:37:47 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: paulmck@linux.vnet.ibm.com
+CC: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 19/21] cpuidle: create list of registered drivers
+References: <cover.1379779777.git.viresh.kumar@linaro.org> <7e9565e323c1e065eeb2a2a1075967bd21ee6066.1379779777.git.viresh.kumar@linaro.org> <5243641B.6050604@linaro.org> <CAKohpo=3qFQ+gD+3u__NtZEL4xu51FBN+og+_UE7aTR26XvRng@mail.gmail.com> <5243EE02.9020207@linaro.org> <20130928213343.GA19582@linux.vnet.ibm.com>
+In-Reply-To: <20130928213343.GA19582@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 September 2013 17:34:36 Bartlomiej Zolnierkiewicz wrote:
-> __initdata tag should be placed between the variable name and equal
-> sign for the variable to be placed in the intended .init.data section.
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+On 09/28/2013 11:33 PM, Paul E. McKenney wrote:
+> On Thu, Sep 26, 2013 at 10:19:14AM +0200, Daniel Lezcano wrote:
+>> On 09/26/2013 08:17 AM, Viresh Kumar wrote:
+>>> On 26 September 2013 04:00, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>>>> If you introduce a list, you will have to introduce a lock to protect
+>>>> it.
+>>>
+>>> I missed it, should have added that :)
+>>>
+>>>> This lock will be in the fast path cpuidle_idle_call with the
+>>>> get_driver function and conforming to the comment: "NOTE: no locks or
+>>>> semaphores should be used here".
+>>>>
+>>>> A lock has been introduced in this function already and the system hangs
+>>>> with 1024 cpus.
+>>>
+>>> Hmm... I see.. I didn't knew about this expectation.. What about a rcu
+>>> read/write lock? As far as I know its too lightweight... Can we have that
+>>> in fast path?
+>>
+>> Nope, we can't use rcu in the idle path :)
+>>
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-February/083054.html
+>
+> But you should be able to use SRCU in the idle path, if that helps.
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Interesting, thanks for the pointer.
 
-> ---
-> v2:
-> - use __initdata as it is OK to do it
-> 
->  arch/arm/mach-shmobile/board-ape6evm.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-shmobile/board-ape6evm.c
-> b/arch/arm/mach-shmobile/board-ape6evm.c index 7627385..8954f55 100644
-> --- a/arch/arm/mach-shmobile/board-ape6evm.c
-> +++ b/arch/arm/mach-shmobile/board-ape6evm.c
-> @@ -86,7 +86,7 @@ static struct gpio_keys_button gpio_buttons[] = {
->  	GPIO_KEY(KEY_VOLUMEDOWN,	329,	"S21"),
->  };
-> 
-> -static struct __initdata gpio_keys_platform_data ape6evm_keys_pdata = {
-> +static struct gpio_keys_platform_data ape6evm_keys_pdata __initdata = {
->  	.buttons	= gpio_buttons,
->  	.nbuttons	= ARRAY_SIZE(gpio_buttons),
->  };
+   -- Daniel
+
+
 -- 
-Regards,
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Laurent Pinchart
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
