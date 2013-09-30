@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab3I3QQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:16:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46029 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab3I3QQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:16:06 -0400
-Date: Mon, 30 Sep 2013 18:15:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-Message-ID: <20130930161546.GG3081@twins.programming.kicks-ass.net>
-References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+	id S1755469Ab3I3QTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:19:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55725 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788Ab3I3QTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 12:19:04 -0400
+Date: Mon, 30 Sep 2013 18:18:56 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Eduardo Habkost <ehabkost@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Andre Przywara <andre@andrep.de>,
+        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
+        KVM <kvm@vger.kernel.org>, qemu-devel@nongnu.org,
+        libvir-list@redhat.com, Jiri Denemark <jdenemar@redhat.com>
+Subject: Re: [PATCH 1/6] kvm: Add KVM_GET_EMULATED_CPUID
+Message-ID: <20130930161856.GC16383@pd.tnic>
+References: <20130923162856.GC7264@otherpad.lan.raisama.net>
+ <2f5d83d4d90ba9c5930f099d6f73e61b.squirrel@www.skyhub.de>
+ <20130924100414.GE17294@redhat.com>
+ <20130926141915.GV2840@otherpad.lan.raisama.net>
+ <20130926185524.GA10123@pd.tnic>
+ <20130926192059.GD10924@otherpad.lan.raisama.net>
+ <20130926203206.GB10123@pd.tnic>
+ <20130927142100.GB2840@otherpad.lan.raisama.net>
+ <20130928104903.GB5956@pd.tnic>
+ <20130930161334.GA5831@otherpad.lan.raisama.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130930161334.GA5831@otherpad.lan.raisama.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 05:44:41PM +0200, Stephane Eranian wrote:
-> Hi,
-> 
-> I was alerted by people trying to use the PERF_RECORD_MMAP2
-> record to disambiguate virtual address mappings that there is a case
-> where the record does not contain enough information.
-> 
-> As you know, the MMAP2 record adds the major, minor, ino number,
-> inode generation numbers to a mapping. But it does that only for
-> file or pseudo -file backed mappings. That covers file mmaps and also
-> SYSV shared memory segments.
-> 
-> However there is a another kind of situation that arises in some
-> multi-process benchmarks where a region of memory is cloned
-> using VM_CLONE. As such, the virtual addresses match between
-> the processes but the major, minor, inode, inode generation  fields
-> are all zeroes because there is no inode associated with the mapping.
-> Yet, it is important for the tool to know the mappings between the
-> processes are pointing to the same physical data.
-> 
-> We need to cover this case and I am seeking for advice on how to
-> best address this need given that we discarded using the plain physical
-> address for disambiguation.
+On Mon, Sep 30, 2013 at 01:13:34PM -0300, Eduardo Habkost wrote:
+> I have added it to my TODO-list.  :-)
 
-Urgh.. who in his bloody mind is playing VM_CLNOE games that is not
-pthread_creatE() ?
+Cool, thanks. Let me know if I can test stuff and help out somehow.
+
+> > 
+> > Also, there's another aspect, while we're here: now that QEMU emulates
+> > MOVBE with TCG too, how do we specify on the command line, which
+> > emulation should be used - kvm.ko or QEMU?
+> 
+> You can use accel={tcg,kvm} option on the "-machine" argument, e.g.
+> "-machine pc,accel=kvm". Or the "-enable-kvm" option.
+
+Ah, ok.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
