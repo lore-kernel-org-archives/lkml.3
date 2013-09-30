@@ -1,117 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab3I3Ryo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:54:44 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:17127 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab3I3Ryn (ORCPT
+	id S1755690Ab3I3RzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:55:13 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:42136 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347Ab3I3RzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:54:43 -0400
-Message-ID: <1380563681.2431.9.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc/sem.c: synchronize semop and semctl with IPC_RMID
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Date: Mon, 30 Sep 2013 10:54:41 -0700
-In-Reply-To: <1380532423-19613-1-git-send-email-manfred@colorfullife.com>
-References: <1380532423-19613-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Sep 2013 13:55:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <523B5AEA.1070808@google.com>
+References: <1379353350-11320-1-git-send-email-adityakali@google.com>
+ <20130917024040.GH13318@ZenIV.linux.org.uk> <523B5AEA.1070808@google.com>
+From: Aditya Kali <adityakali@google.com>
+Date: Mon, 30 Sep 2013 10:54:50 -0700
+Message-ID: <CAGr1F2E1Xo7Y_xb-UXt6WCyhi0Hq+ygovuAp8pAHkwTkKOV-FA@mail.gmail.com>
+Subject: Re: [RFC] vfs: avoid sb->s_umount lock while changing bind-mount flags
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anatol Pomazau <anatol@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manfred,
+Hi Al and other fs-developers,
 
-On Mon, 2013-09-30 at 11:13 +0200, Manfred Spraul wrote:
-> After acquiring the semlock spinlock, the operations must test that the
-> array is still valid.
-> 
-> - semctl() and exit_sem() would walk stale linked lists (ugly, but should
->   be ok: all lists are empty)
-> 
-> - semtimedop() would sleep forever - and if woken up due to a signal -
->   access memory after free.
-
-Yep, that was next on my list - I had a patch for semtimedop() but was
-waiting to rebase it on top of your previous changes. Anyway thanks for
-sending this.
-
-> 
-> The patch standardizes the tests for .deleted, so that all tests in one
-> function leave the function with the same approach.
-> 
-> Right now, it's a mixture of "goto cleanup", some cleanup and then
-> "goto further_cleanup" and all cleanup+"return -EIDRM" - that makes the
-> review much harder.
-> 
-> Davidlohr: Could you please review the patch?
-> I did some stress test, but probably I didn't hit exactly the modified
-> lines.
-
-This shouldn't affect performance, if that's what you mean. One more
-read in the critical region won't make any difference. The patch looks
-good, just one doubt below.
-
-
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-> ---
->  ipc/sem.c | 43 ++++++++++++++++++++++++++++++-------------
->  1 file changed, 30 insertions(+), 13 deletions(-)
-> 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 19c8b98..a2fa795 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -1229,6 +1229,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
->  
->  	sem_lock(sma, NULL, -1);
->  
-> +	if (sma->sem_perm.deleted) {
-> +		sem_unlock(sma, -1);
-> +		rcu_read_unlock();
-> +		return -EIDRM;
-> +	}
-> +
->  	curr = &sma->sem_base[semnum];
->  
->  	ipc_assert_locked_object(&sma->sem_perm);
-> @@ -1285,10 +1291,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  		sem_lock(sma, NULL, -1);
->  		if(nsems > SEMMSL_FAST) {
->  			if (!ipc_rcu_getref(sma)) {
-> -				sem_unlock(sma, -1);
-> -				rcu_read_unlock();
->  				err = -EIDRM;
-> -				goto out_free;
-> +				goto out_unlock;
->  			}
->  			sem_unlock(sma, -1);
->  			rcu_read_unlock();
-> @@ -1301,10 +1305,13 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  			rcu_read_lock();
->  			sem_lock_and_putref(sma);
->  			if (sma->sem_perm.deleted) {
-> -				sem_unlock(sma, -1);
-> -				rcu_read_unlock();
->  				err = -EIDRM;
-> -				goto out_free;
-> +				goto out_unlock;
-> +			}
-> +		} else {
-> +			if (sma->sem_perm.deleted) {
-> +				err = -EIDRM;
-> +				goto out_unlock;
->  			}
-
-I'm a bit lost here. Why should we only check the existence of the sem
-if nsems <= SEMMSL_FAST? Shouldn't the same should apply either way? 
+Please let me know what you think about this patch.
 
 Thanks,
-Davidlohr
+-- 
+Aditya
 
+On Thu, Sep 19, 2013 at 1:13 PM, Aditya Kali <adityakali@google.com> wrote:
+>
+>
+> On 09/16/2013 07:40 PM, Al Viro wrote:
+>>
+>> On Mon, Sep 16, 2013 at 10:42:30AM -0700, Aditya Kali wrote:
+>>>
+>>> During remount of a bind mount (mount -o remount,bind,ro,... /mnt/mntpt),
+>>> we currently take down_write(&sb->s_umount). This causes the remount
+>>> operation to get blocked behind writes occuring on device (possibly
+>>> mounted somewhere else). We have observed that simply trying to change
+>>> the bind-mount from read-write to read-only can take several seconds
+>>> becuase writeback is in progress. Looking at the code it seems to me that
+>>> we need s_umount lock only around the do_remount_sb() call.
+>>> vfsmount_lock seems enough to protect the flag change on the mount.
+>>> So this patch fixes the locking so that changing of flags can happen
+>>> outside the down_write(&sb->s_umount).
+>>
+>>
+>> What's to prevent mount -o remount,ro /mnt and mount -o remount,rw,nodev
+>> /mnt
+>> racing and ending up with that sucker rw and without nodev?
+>
+>
+> Thanks for the reply! I see the problem in my patch. Please find the second
+> attempt at this patch below. I have tried to keep the non-MS_BIND remount
+> semantics same while moving the MS_BIND remount code outside of s_umount
+> lock. Is it OK to not synchronize the non-MS_BIND do_remount_sb() call with
+> change of mnt_flags in MS_BIND case?
+>
+>
+> ---
+>  fs/namespace.c | 37 +++++++++++++++++++++++--------------
+>  1 file changed, 23 insertions(+), 14 deletions(-)
+>
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index da5c494..25c4faf 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+>
+> @@ -454,11 +454,13 @@ void mnt_drop_write_file(struct file *file)
+>  }
+>  EXPORT_SYMBOL(mnt_drop_write_file);
+>
+> +/*
+> + * Must be called under br_write_lock(&vfsmount_lock);
+> + */
+>  static int mnt_make_readonly(struct mount *mnt)
+>  {
+>         int ret = 0;
+>
+> -       br_write_lock(&vfsmount_lock);
+>         mnt->mnt.mnt_flags |= MNT_WRITE_HOLD;
+>         /*
+>          * After storing MNT_WRITE_HOLD, we'll read the counters. This store
+> @@ -492,15 +494,15 @@ static int mnt_make_readonly(struct mount *mnt)
+>          */
+>         smp_wmb();
+>         mnt->mnt.mnt_flags &= ~MNT_WRITE_HOLD;
+> -       br_write_unlock(&vfsmount_lock);
+>         return ret;
+>  }
+>
+> +/*
+> + * Must be called under br_write_lock(&vfsmount_lock);
+> + */
+>  static void __mnt_unmake_readonly(struct mount *mnt)
+>  {
+> -       br_write_lock(&vfsmount_lock);
+>         mnt->mnt.mnt_flags &= ~MNT_READONLY;
+> -       br_write_unlock(&vfsmount_lock);
+>  }
+>
+>  int sb_prepare_remount_readonly(struct super_block *sb)
+> @@ -1838,20 +1840,27 @@ static int do_remount(struct path *path, int flags,
+> int mnt_flags,
+>
+>         if (err)
+>                 return err;
+>
+> -       down_write(&sb->s_umount);
+> -       if (flags & MS_BIND)
+> +       if (flags & MS_BIND) {
+> +               br_write_lock(&vfsmount_lock);
+>                 err = change_mount_flags(path->mnt, flags);
+> -       else if (!capable(CAP_SYS_ADMIN))
+> +               if (!err) {
+> +                       mnt_flags |= mnt->mnt.mnt_flags &
+> MNT_PROPAGATION_MASK;
+> +                       mnt->mnt.mnt_flags = mnt_flags;
+> +               }
+> +               br_write_unlock(&vfsmount_lock);
+> +       } else if (!capable(CAP_SYS_ADMIN))
+>
+>                 err = -EPERM;
+> -       else
+> +       else {
+> +               down_write(&sb->s_umount);
+>                 err = do_remount_sb(sb, flags, data, 0);
+> -       if (!err) {
+> -               br_write_lock(&vfsmount_lock);
+> -               mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
+> -               mnt->mnt.mnt_flags = mnt_flags;
+> -               br_write_unlock(&vfsmount_lock);
+> +               if (!err) {
+> +                       br_write_lock(&vfsmount_lock);
+> +                       mnt_flags |= mnt->mnt.mnt_flags &
+> MNT_PROPAGATION_MASK;
+> +                       mnt->mnt.mnt_flags = mnt_flags;
+> +                       br_write_unlock(&vfsmount_lock);
+> +               }
+> +               up_write(&sb->s_umount);
+>         }
+> -       up_write(&sb->s_umount);
+>         if (!err) {
+>                 br_write_lock(&vfsmount_lock);
+>                 touch_mnt_namespace(mnt->mnt_ns);
+> --
+> 1.8.4
+>
+>
+>
