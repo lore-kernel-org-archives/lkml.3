@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab3I3NXb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 09:23:31 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:13609 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab3I3NXa (ORCPT
+	id S1755461Ab3I3NXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:23:39 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50887 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755329Ab3I3NXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 09:23:30 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-5b-52497b509171
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] checkpatch: warn about incorrect __initdata placement
-Date: Mon, 30 Sep 2013 15:23:11 +0200
-Message-id: <1534354.yq7QTJSTju@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jQd2Aas8gg+lTNC0+rNWwmH3/MYvF
-	2aY37BaXd81hc2DxmNXQy+bxZdU1Zo++LasYPT5vkgtgieKySUnNySxLLdK3S+DK+PdyClNB
-	A0fFjRXNrA2Me9m6GDk5JARMJF4/egtli0lcuLceyObiEBKYziix93g7O4TTwiQxrWsfM0gV
-	m4CVxMT2VYwgtoiAmsTdM91gcWaBHInXP9eDTRIWcJP413SHHcRmEVCV6JxzCayGV0BT4vrb
-	SWC2qICnxKdJS6HighI/Jt9jgZgjL7Fv/1RWCFtLYv3O40wTGPlmISmbhaRsFpKyBYzMqxhF
-	UwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCg/GZ1A7GlQ0WhxgFOBiVeHgnLPcIEmJNLCuuzD3E
-	KMHBrCTCK17mGSTEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomD
-	U6qBMcb/YsSnIIUjH91ifrr/3/MoNW9lJ/M0Sda1DYc311Wy2Mgaa1lVHfY7adn50kS9lGf3
-	3T/Xj++9v+JOqsLVez/Y6nw+L7qUaLDlGtNVr94WRY2qPdpfvx28efXRm4VrV8nOrLslWyvP
-	FjjLgKkhWvqS4Z2wJ1ybfl/guvC6wmJPVlvrnfsn+pVYijMSDbWYi4oTARZffXRCAgAA
+	Mon, 30 Sep 2013 09:23:35 -0400
+Message-ID: <52497B4A.2020409@pengutronix.de>
+Date: Mon, 30 Sep 2013 15:23:22 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130821 Icedove/17.0.8
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 01/21] drivers: remove unnecessary prom.h includes
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com> <1380221456-11192-2-git-send-email-robherring2@gmail.com> <52492E4F.2020701@pengutronix.de> <52497A6E.5010908@gmail.com>
+In-Reply-To: <52497A6E.5010908@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="7V7bqdqEoSOLFc2OvX8r5N8QO3a5281aj"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__initdata tag should be placed between the variable name and equal
-sign for the variable to be placed in the intended .init.data section.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--7V7bqdqEoSOLFc2OvX8r5N8QO3a5281aj
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- scripts/checkpatch.pl | 6 ++++++
- 1 file changed, 6 insertions(+)
+On 09/30/2013 03:19 PM, Rob Herring wrote:
+> On 09/30/2013 02:54 AM, Marc Kleine-Budde wrote:
+>> On 09/26/2013 08:50 PM, Rob Herring wrote:
+>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>
+>>> Remove unnecessary prom.h includes in preparation to remove implicit
+>>> includes of prom.h.
+>>>
+>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>> Cc: Wolfgang Grandegger <wg@grandegger.com>
+>>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>>> Cc: linux-can@vger.kernel.org
+>>> Cc: netdev@vger.kernel.org
+>>
+>> Applied to linux-can-next/testing, it will be included in my next pull=
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 23d55bf..88d07a6 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4275,6 +4275,12 @@ sub process {
- 			WARN("EXPORTED_WORLD_WRITABLE",
- 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
- 		}
-+
-+# check for incorrect __initdata placement
-+		if ($line =~ /\bstruct\s+__initdata.*\=/) {
-+			WARN("INITDATA_PLACEMENT",
-+			     "__initdata tag should be placed between the variable name and equal sign\n" . $herecurr);
-+		}
- 	}
- 
- 	# If we have no input at all, then there is nothing to report on
--- 
-1.8.2.3
+>> request to David Miller.
+>=20
+> Please don't apply this. The whole series needs to be applied together.=
+
+> This patch is a dependency for the rest of the series.
+
+Okay, then add my Acked-by to this patch.
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
+--7V7bqdqEoSOLFc2OvX8r5N8QO3a5281aj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlJJe0oACgkQjTAFq1RaXHN9pwCfVsN6WRkRPfEbHYiqSYOYWZ8O
+CD4An03DCJm2LZtQwWmB4BQkTodid83l
+=S39I
+-----END PGP SIGNATURE-----
+
+--7V7bqdqEoSOLFc2OvX8r5N8QO3a5281aj--
