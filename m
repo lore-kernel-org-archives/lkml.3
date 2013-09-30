@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab3I3KNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:13:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43758 "EHLO
+	id S1755823Ab3I3KNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:13:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43774 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755745Ab3I3KNW (ORCPT
+	with ESMTP id S1754127Ab3I3KN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:22 -0400
+	Mon, 30 Sep 2013 06:13:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>,
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 083/104] libceph: use pg_num_mask instead of pgp_num_mask for pg.seed calc
-Date: Mon, 30 Sep 2013 11:11:00 +0100
-Message-Id: <1380535881-9239-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 086/104] HID: picolcd_core: validate output report details
+Date: Mon, 30 Sep 2013 11:11:03 +0100
+Message-Id: <1380535881-9239-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 9542cf0bf9b1a3adcc2ef271edbcbdba03abf345 upstream.
+commit 1e87a2456b0227ca4ab881e19a11bb99d164e792 upstream.
 
-Fix a typo that used the wrong bitmask for the pg.seed calculation.  This
-is normally unnoticed because in most cases pg_num == pgp_num.  It is, however,
-a bug that is easily corrected.
+A HID device could send a malicious output report that would cause the
+picolcd HID driver to trigger a NULL dereference during attr file writing.
 
-Signed-off-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <alex.elder@linary.org>
-[ luis: backported to 3.5: adjusted context ]
+[jkosina@suse.cz: changed
+
+	report->maxfield < 1
+
+to
+
+	report->maxfield != 1
+
+as suggested by Bruno].
+
+CVE-2013-2899
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Bruno Prémont <bonbons@linux-vserver.org>
+Acked-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[ luis: backported to 3.5:
+  - file rename drivers/hid/hid-picolcd_core.c ->
+    drivers/hid/hid-picolcd.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ceph/osdmap.c | 2 +-
+ drivers/hid/hid-picolcd.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ceph/osdmap.c b/net/ceph/osdmap.c
-index d10a72b..dfedfd8 100644
---- a/net/ceph/osdmap.c
-+++ b/net/ceph/osdmap.c
-@@ -1064,7 +1064,7 @@ static int *calc_pg_raw(struct ceph_osdmap *osdmap, struct ceph_pg pgid,
+diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+index 45c3433..95f9047 100644
+--- a/drivers/hid/hid-picolcd.c
++++ b/drivers/hid/hid-picolcd.c
+@@ -1424,7 +1424,7 @@ static ssize_t picolcd_operation_mode_store(struct device *dev,
+ 		buf += 10;
+ 		cnt -= 10;
+ 	}
+-	if (!report)
++	if (!report || report->maxfield != 1)
+ 		return -EINVAL;
  
- 	/* pg_temp? */
- 	t = ceph_stable_mod(ps, le32_to_cpu(pool->v.pg_num),
--			    pool->pgp_num_mask);
-+			    pool->pg_num_mask);
- 	pgid.ps = cpu_to_le16(t);
- 	pg = __lookup_pg_mapping(&osdmap->pg_temp, pgid);
- 	if (pg) {
+ 	while (cnt > 0 && (buf[cnt-1] == '\n' || buf[cnt-1] == '\r'))
 -- 
 1.8.3.2
 
