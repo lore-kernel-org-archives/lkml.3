@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3I3KSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:18:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43779 "EHLO
+	id S1755769Ab3I3KNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:13:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43735 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab3I3KN1 (ORCPT
+	with ESMTP id S1754127Ab3I3KNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:27 -0400
+	Mon, 30 Sep 2013 06:13:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 087/104] HID: check for NULL field when setting values
-Date: Mon, 30 Sep 2013 11:11:04 +0100
-Message-Id: <1380535881-9239-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 078/104] DocBook: upgrade media_api DocBook version to 4.2
+Date: Mon, 30 Sep 2013 11:10:55 +0100
+Message-Id: <1380535881-9239-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,36 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Andrzej Hajda <a.hajda@samsung.com>
 
-commit be67b68d52fa28b9b721c47bb42068f0c1214855 upstream.
+commit 8bfd4a68ecc003c1a142f35551be846d6b13e822 upstream.
 
-Defensively check that the field to be worked on is not NULL.
+Fixes the last three errors of media_api DocBook validatation:
+(...)
+media_api.xml:414: element imagedata: validity error : Value "SVG" for attribute format of imagedata is not among the enumerated set
+media_api.xml:432: element imagedata: validity error : Value "SVG" for attribute format of imagedata is not among the enumerated set
+media_api.xml:452: element imagedata: validity error : Value "SVG" for attribute format of imagedata is not among the enumerated set
+(...)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-core.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ Documentation/DocBook/media_api.tmpl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 104792d..0d76d3f 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1133,7 +1133,12 @@ EXPORT_SYMBOL_GPL(hid_output_report);
- 
- int hid_set_field(struct hid_field *field, unsigned offset, __s32 value)
- {
--	unsigned size = field->report_size;
-+	unsigned size;
-+
-+	if (!field)
-+		return -1;
-+
-+	size = field->report_size;
- 
- 	hid_dump_input(field->report->device, field->usage + offset, value);
+diff --git a/Documentation/DocBook/media_api.tmpl b/Documentation/DocBook/media_api.tmpl
+index 4e8e898..541f22d 100644
+--- a/Documentation/DocBook/media_api.tmpl
++++ b/Documentation/DocBook/media_api.tmpl
+@@ -1,6 +1,6 @@
+ <?xml version="1.0"?>
+-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+-	"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
++<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
++	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+ <!ENTITY % media-entities SYSTEM "./media-entities.tmpl"> %media-entities;
+ <!ENTITY media-indices SYSTEM "./media-indices.tmpl">
  
 -- 
 1.8.3.2
