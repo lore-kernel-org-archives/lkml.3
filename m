@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3I3IVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 04:21:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36200 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab3I3IVd (ORCPT
+	id S1754183Ab3I3IYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 04:24:24 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:35071 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab3I3IYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 04:21:33 -0400
-Date: Mon, 30 Sep 2013 10:20:58 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: r65073@freescale.com, thierry.reding@gmail.com, swarren@wwwdotorg.org,
-        t.figa@samsung.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
-        rob@landley.net, ian.campbell@citrix.com, mark.rutland@arm.com,
-        pawel.moll@arm.com, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCHv5 0/4] Add Freescale FTM PWM driver.
-Message-ID: <20130930082058.GB30088@pengutronix.de>
-Mail-Followup-To: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
-	thierry.reding@gmail.com, swarren@wwwdotorg.org, t.figa@samsung.com,
-	grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
-	ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
-	rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
-	linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-References: <1380521611-2764-1-git-send-email-Li.Xiubo@freescale.com>
+	Mon, 30 Sep 2013 04:24:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380521611-2764-1-git-send-email-Li.Xiubo@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:19:49 up 36 days, 17:50, 45 users,  load average: 0.13, 0.11,
- 0.07
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1309271219530.10254-100000@netrider.rowland.org>
+References: <1380207292-16968-11-git-send-email-ulf.hansson@linaro.org>
+	<Pine.LNX.4.44L0.1309271219530.10254-100000@netrider.rowland.org>
+Date: Mon, 30 Sep 2013 10:24:20 +0200
+Message-ID: <CAPDyKFoN_m7P-hpDvnew4qEWOPxBUaffpP2ZYjVEfE1XVsRjTw@mail.gmail.com>
+Subject: Re: [PATCH 10/27] mmc: vub300: Remove redundant suspend and resume callbacks
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
+        Tony Olech <tony.olech@elandigitalsystems.com>,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 02:13:27PM +0800, Xiubo Li wrote:
-> Hello,
-> 
-> This patch series is the Freescale FTM PWM implementation. And there are 8 channels most supported by the FTM PWM. This implementation is only compatible with device tree definition.
-> 
-> This patch series is based on linux-next and has been tested on Vybrid VF610 Tower board using device tree.
+On 27 September 2013 18:22, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Thu, 26 Sep 2013, Ulf Hansson wrote:
+>
+>> Suspend and resume of cards are handled by the protocol layer and
+>> consequently the mmc_suspend|resume_host APIs are marked as deprecated.
+>>
+>> While moving away from using the deprecated APIs, there are nothing
+>> left to be done for the suspend and resume callbacks, so remove them.
+>>
+>> Cc: Tony Olech <tony.olech@elandigitalsystems.com>
+>> Cc: linux-usb@vger.kernel.org
+>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+>> ---
+>>  drivers/mmc/host/vub300.c |   30 ------------------------------
+>>  1 file changed, 30 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
+>> index e9028ad..db99edc 100644
+>> --- a/drivers/mmc/host/vub300.c
+>> +++ b/drivers/mmc/host/vub300.c
+>> @@ -2389,34 +2389,6 @@ static void vub300_disconnect(struct usb_interface *interface)
+>>       }
+>>  }
+>>
+>> -#ifdef CONFIG_PM
+>> -static int vub300_suspend(struct usb_interface *intf, pm_message_t message)
+>> -{
+>> -     struct vub300_mmc_host *vub300 = usb_get_intfdata(intf);
+>> -     if (!vub300 || !vub300->mmc) {
+>> -             return 0;
+>> -     } else {
+>> -             struct mmc_host *mmc = vub300->mmc;
+>> -             mmc_suspend_host(mmc);
+>> -             return 0;
+>> -     }
+>> -}
+>> -
+>> -static int vub300_resume(struct usb_interface *intf)
+>> -{
+>> -     struct vub300_mmc_host *vub300 = usb_get_intfdata(intf);
+>> -     if (!vub300 || !vub300->mmc) {
+>> -             return 0;
+>> -     } else {
+>> -             struct mmc_host *mmc = vub300->mmc;
+>> -             mmc_resume_host(mmc);
+>> -             return 0;
+>> -     }
+>> -}
+>> -#else
+>> -#define vub300_suspend NULL
+>> -#define vub300_resume NULL
+>> -#endif
+>>  static int vub300_pre_reset(struct usb_interface *intf)
+>>  {                            /* NOT irq */
+>>       struct vub300_mmc_host *vub300 = usb_get_intfdata(intf);
+>> @@ -2437,8 +2409,6 @@ static struct usb_driver vub300_driver = {
+>>       .name = "vub300",
+>>       .probe = vub300_probe,
+>>       .disconnect = vub300_disconnect,
+>> -     .suspend = vub300_suspend,
+>> -     .resume = vub300_resume,
+>>       .pre_reset = vub300_pre_reset,
+>>       .post_reset = vub300_post_reset,
+>>       .id_table = vub300_table,
+>
+> You shouldn't do it this way.  The USB core treats drivers differently
+> depending on whether their suspend and resume callbacks are defined.
+> If those method pointers are NULL, the driver will be treated as though
+> it doesn't support power management at all.
+>
+> You should keep the pointers and the routines.  The contents of the
+> routines can be removed, leaving nothing but a "return 0;" line.
 
-Looks good to me now. Thanks for fixing.
+Thanks for your comment Alan. Did not know USB core was handling the
+callbacks like that, should of course have checked that.
 
-For the series:
+Instead of sending a v2, I have dropped this patch and just sent a new
+one with an updated commit message as well.
 
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
+Kind regards
+Ulf Hansson
 
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
+> Alan Stern
+>
