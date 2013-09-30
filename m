@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab3I3XZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 19:25:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57201 "EHLO
+	id S1755388Ab3I3X1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 19:27:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57240 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab3I3XZx (ORCPT
+	with ESMTP id S1754343Ab3I3X13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 19:25:53 -0400
-Date: Tue, 1 Oct 2013 00:25:48 +0100
+	Mon, 30 Sep 2013 19:27:29 -0400
+Date: Tue, 1 Oct 2013 00:27:05 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Chanwoo Choi <cw00.choi@samsung.com>
 Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
         myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Message-ID: <20130930232548.GH19304@sirena.org.uk>
+Message-ID: <20130930232705.GI19304@sirena.org.uk>
 References: <1380378897-7164-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
  <5248B9BA.9020003@samsung.com>
  <20130930095202.GY3635@opensource.wolfsonmicro.com>
  <524A0369.1080101@samsung.com>
+ <524A05DF.7070008@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K5rlT6r/WqkiQKGB"
+	protocol="application/pgp-signature"; boundary="bzuizT9vlVVqWfw+"
 Content-Disposition: inline
-In-Reply-To: <524A0369.1080101@samsung.com>
+In-Reply-To: <524A05DF.7070008@samsung.com>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
@@ -36,45 +37,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---K5rlT6r/WqkiQKGB
+--bzuizT9vlVVqWfw+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Oct 01, 2013 at 08:04:09AM +0900, Chanwoo Choi wrote:
-> On 09/30/2013 06:52 PM, Charles Keepax wrote:
+On Tue, Oct 01, 2013 at 08:14:39AM +0900, Chanwoo Choi wrote:
 
-> > I would also be happy to implement this as a NULL check on the
-> > pdata when we use it if that is preferable? But since we have the
-> > cached pdata seems we might as well use it.
+> Additionally,I have a question.
+> As I mentioned, extcon-arizon driver don't get pdata from dt parsing.
+> I think extcon-arizona haven't operated without pdata.
 
-> I find below pdata list for extcon-arizona driver.
-> But, drivers/mfd/arizona-core.c don't parse dt data for below pdata list
-> of extcon-arizona. Did you test this patch for extcon-arizona operation?
+It should work fine on Wolfson reference systems and anything cloned
+=66rom them (it did when I was working there, that was the intened goal).
 
-Charles had some patches out for review but there were issues with the
-DT binding that meant it needs a respin - it will need to support extcon
-at some point.
-
---K5rlT6r/WqkiQKGB
+--bzuizT9vlVVqWfw+
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.21 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSSgh4AAoJELSic+t+oim9VZQP/2yTD3vmy3/qp0scmPECduXc
-OM8rB1JOFoVgIG24i40B4PJq3duBmfPrqy2FLSclYCA3HpEmBdV6rNXjdgiZyDc7
-q62y/vcYiVjF2987sDdFRuHDhTGAUl4sw1JUy7aLfEsky/qD7pEPHXIQ5zr0DB6r
-joKQM88dBLKULUDCetqBKBX2/Wlc8Xbja51AvS42SD3y9n6HzUC7usNKgcizPI+Y
-nQSK2L/TkSa4MYOF6U4YPu4Kl/YDYD54/02DxqEB1WwOPFubf/c13sM03bZbqCvb
-flov4o5xAsSdV7h7MjZZVTiWEdtZ9c+TLKxa8bj4xcWQimeTKB3TIjgIdxx+UuKj
-ouyYUOEF4ROcn/nexYg6T01AwuyYFe7By3wsi+5LDoHzAP9LVBKCg8YQoe3VWV5/
-0xEXRQo2HOXebiFa3/oau4uVEkfiIXAdtZChSdMflNKVrqRzzJcu2KjFFFKGP2Zx
-sQI4gZhn6xlWeF3kqAEKrY2rhOS5i3rE1TtESIqIixc12VxpXrzNYX8AmpzQULHr
-rw8h2BRsSIfyz7O81k4cbzZHzeOCtGLDjiBmw+C19PXSzLrcCuh6NK850Xcblo9X
-5c0kVzgnI3HfmorfThkWAWrSPvoAZ55E8PUo18gYDU7qieyfOwf7XkRzrtEtPOfQ
-ZoO8kQJh7TtpPGWCbKMe
-=uUn5
+iQIcBAEBAgAGBQJSSgjGAAoJELSic+t+oim9/iAQAJAaxc/n8Rq0qDxVrct/H9X4
+Zds+0CJDzRMwIPI2TiCaQeLW1mSOLmzfnreShc8E42M67FwDa/nlynio7uoJmj0H
+jNU8toJLEM7C7H2JeJxOADCdUvt7J4e/Nf9xjBSXK/2LZlCXNvpbLY+nDG5IOrSJ
+rY/jo0CUzoWB3Momj6CH5IEy3nsLdMNP0/9WJwAcg3VTA4S4U9CttN5mEpHip8LR
+d5ILb0i2A6+5TRW9wyUkzZZUPFW/JA3asiae8JG77e5TZkaiM8tBmPNGQc7a6MB7
+dLPeZywkbCeLs5O8a/OuAfzxO6zWGqnNsJYKUUkSSRu4U0K0PmS1SdDIhiwahjsn
+p8Gmn2hwROP0rA4xGylVm7YS56IkTLahYG7CV0JP/3AzPliJZNOajf5V3mu+Re1D
+BQwFIo5PKQrzSN4WsHZArmWgnz7IRXn6e5nijN4PvaJ816bC0SwDTBXophDhjMwp
+NovI1RcpTB/yjy9RzgU7HhdCx4WFLwXTJ1RvKknkb0MslkUgpCd+oNjpzCAWEZ/X
+Ko+B/W0sm+iNXGEiNEvptOED6lQcZsEyrZ3Jzhl9KkXKUleTibhz5QiMJNnxDOib
+CPzw631Oy/H872UxjP3DopB9nRPpKK5iNZDVjhxGGLWQwJbY1x+ByCaLviuAYq6T
+sHFJMaGqRtuxMRcVqw4E
+=lYOC
 -----END PGP SIGNATURE-----
 
---K5rlT6r/WqkiQKGB--
+--bzuizT9vlVVqWfw+--
