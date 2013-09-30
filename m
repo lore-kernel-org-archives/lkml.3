@@ -1,53 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3I3JBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:01:20 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42057 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab3I3JBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:01:19 -0400
-X-AuditID: 9c930179-b7c8bae000006c65-5f-52493ddde619
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf stat: Set child_pid after perf_evlist__prepare_workload()
-Date: Mon, 30 Sep 2013 18:01:11 +0900
-Message-Id: <1380531671-28076-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	id S1754739Ab3I3JBr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:01:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369Ab3I3JBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 05:01:46 -0400
+Date: Mon, 30 Sep 2013 12:04:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next PATCH V2] virtio-net: switch to use XPS to choose txq
+Message-ID: <20130930090402.GB20291@redhat.com>
+References: <1380526637-35524-1-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380526637-35524-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, Sep 30, 2013 at 03:37:17PM +0800, Jason Wang wrote:
+> We used to use a percpu structure vq_index to record the cpu to queue
+> mapping, this is suboptimal since it duplicates the work of XPS and
+> loses all other XPS functionality such as allowing use to configure
+> their own transmission steering strategy.
+> 
+> So this patch switches to use XPS and suggest a default mapping when
+> the number of cpus is equal to the number of queues. With XPS support,
+> there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
+> so they were removed also.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-The commit acf2892270dc ("perf stat: Use perf_evlist__prepare/
-start_workload()") converted to use the function but forgot to update
-child_pid.  Fix it.
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-stat.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index f686d5ff594e..5098f144b92d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -457,6 +457,7 @@ static int __run_perf_stat(int argc, const char **argv)
- 			perror("failed to prepare workload");
- 			return -1;
- 		}
-+		child_pid = evsel_list->workload.pid;
- 	}
- 
- 	if (group)
--- 
-1.7.11.7
-
+> ---
+> Changes from V1:
+> - use cpumask_of() instead of allocate dynamically
+> 
+>  drivers/net/virtio_net.c |   48 +--------------------------------------------
+>  1 files changed, 2 insertions(+), 46 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index defec2b..4eca652 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -127,9 +127,6 @@ struct virtnet_info {
+>  	/* Does the affinity hint is set for virtqueues? */
+>  	bool affinity_hint_set;
+>  
+> -	/* Per-cpu variable to show the mapping from CPU to virtqueue */
+> -	int __percpu *vq_index;
+> -
+>  	/* CPU hot plug notifier */
+>  	struct notifier_block nb;
+>  };
+> @@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
+>  static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>  {
+>  	int i;
+> -	int cpu;
+>  
+>  	if (vi->affinity_hint_set) {
+>  		for (i = 0; i < vi->max_queue_pairs; i++) {
+> @@ -1073,16 +1069,6 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>  
+>  		vi->affinity_hint_set = false;
+>  	}
+> -
+> -	i = 0;
+> -	for_each_online_cpu(cpu) {
+> -		if (cpu == hcpu) {
+> -			*per_cpu_ptr(vi->vq_index, cpu) = -1;
+> -		} else {
+> -			*per_cpu_ptr(vi->vq_index, cpu) =
+> -				++i % vi->curr_queue_pairs;
+> -		}
+> -	}
+>  }
+>  
+>  static void virtnet_set_affinity(struct virtnet_info *vi)
+> @@ -1104,7 +1090,7 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
+>  	for_each_online_cpu(cpu) {
+>  		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>  		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+> -		*per_cpu_ptr(vi->vq_index, cpu) = i;
+> +		netif_set_xps_queue(vi->dev, cpumask_of(cpu), i);
+>  		i++;
+>  	}
+>  
+> @@ -1217,28 +1203,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>  	return 0;
+>  }
+>  
+> -/* To avoid contending a lock hold by a vcpu who would exit to host, select the
+> - * txq based on the processor id.
+> - */
+> -static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+> -{
+> -	int txq;
+> -	struct virtnet_info *vi = netdev_priv(dev);
+> -
+> -	if (skb_rx_queue_recorded(skb)) {
+> -		txq = skb_get_rx_queue(skb);
+> -	} else {
+> -		txq = *__this_cpu_ptr(vi->vq_index);
+> -		if (txq == -1)
+> -			txq = 0;
+> -	}
+> -
+> -	while (unlikely(txq >= dev->real_num_tx_queues))
+> -		txq -= dev->real_num_tx_queues;
+> -
+> -	return txq;
+> -}
+> -
+>  static const struct net_device_ops virtnet_netdev = {
+>  	.ndo_open            = virtnet_open,
+>  	.ndo_stop   	     = virtnet_close,
+> @@ -1250,7 +1214,6 @@ static const struct net_device_ops virtnet_netdev = {
+>  	.ndo_get_stats64     = virtnet_stats,
+>  	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
+>  	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
+> -	.ndo_select_queue     = virtnet_select_queue,
+>  #ifdef CONFIG_NET_POLL_CONTROLLER
+>  	.ndo_poll_controller = virtnet_netpoll,
+>  #endif
+> @@ -1559,10 +1522,6 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (vi->stats == NULL)
+>  		goto free;
+>  
+> -	vi->vq_index = alloc_percpu(int);
+> -	if (vi->vq_index == NULL)
+> -		goto free_stats;
+> -
+>  	mutex_init(&vi->config_lock);
+>  	vi->config_enable = true;
+>  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+> @@ -1589,7 +1548,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
+>  	err = init_vqs(vi);
+>  	if (err)
+> -		goto free_index;
+> +		goto free_stats;
+>  
+>  	netif_set_real_num_tx_queues(dev, 1);
+>  	netif_set_real_num_rx_queues(dev, 1);
+> @@ -1640,8 +1599,6 @@ free_recv_bufs:
+>  free_vqs:
+>  	cancel_delayed_work_sync(&vi->refill);
+>  	virtnet_del_vqs(vi);
+> -free_index:
+> -	free_percpu(vi->vq_index);
+>  free_stats:
+>  	free_percpu(vi->stats);
+>  free:
+> @@ -1678,7 +1635,6 @@ static void virtnet_remove(struct virtio_device *vdev)
+>  
+>  	flush_work(&vi->config_work);
+>  
+> -	free_percpu(vi->vq_index);
+>  	free_percpu(vi->stats);
+>  	free_netdev(vi->dev);
+>  }
+> -- 
+> 1.7.1
