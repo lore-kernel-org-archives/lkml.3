@@ -1,116 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab3I3WZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 18:25:54 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:42522 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756506Ab3I3WZq (ORCPT
+	id S932094Ab3I3WZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 18:25:53 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:30003 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756490Ab3I3WZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 18:25:46 -0400
+	Mon, 30 Sep 2013 18:25:43 -0400
 To: akpm@linux-foundation.org
 Cc: normalperson@yhbt.net, nzimmer@sgi.com, viro@zeniv.linux.org.uk,
         nelhage@nelhage.com, davidel@xmailserver.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Message-Id: <968a95ca45c21520c3d0b4a8f3ffc0f269bf4ef3.1380577995.git.jbaron@akamai.com>
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Message-Id: <ddf3b5e4f546a5541903eae890a11febeeb90510.1380577995.git.jbaron@akamai.com>
 In-Reply-To: <cover.1380577995.git.jbaron@akamai.com>
 References: <cover.1380577995.git.jbaron@akamai.com>
 From: Jason Baron <jbaron@akamai.com>
-Subject: [PATCH 3/3] epoll: restore 'struct epitem' size
-Date: Mon, 30 Sep 2013 22:25:46 +0000 (GMT)
+Subject: [PATCH 2/3] epoll: Do not take global 'epmutex' for simple topologies
+Date: Mon, 30 Sep 2013 22:25:42 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch entitled 'epoll: optimize EPOLL_CTL_DEL using rcu', increases the
-size of 'struct epitem' over 128 bytes as it adds a 'struct rcu_head' field
-to 'struct epitem', in order to make use of RCU. This patch restores the size
-of 'struct epitem' back to <= 128 bytes. This size restriction and enforcement
-was orignally brought in by commit 39732ca5af4b09f4db561149041ddad7211019a5.
+When calling EPOLL_CTL_ADD for an epoll file descriptor that is attached
+directly to a wakeup source, we do not need to take the global 'epmutex',
+unless the epoll file descriptor is nested. The purpose of taking
+the 'epmutex' on add is to prevent complex topologies such as loops and
+deep wakeup paths from forming in parallel through multiple EPOLL_CTL_ADD
+operations. However, for the simple case of an epoll file descriptor
+attached directly to a wakeup source (with no nesting), we should not
+have to pay by taking the 'epmutex'.
 
-The idea of this patch is to use the 'struct rb_node rbn', which is embedded in
-the 'stuct epitem' as the 'rcu_head' callback point. This is ok, since the 'rbn'
-is no longer in use when we schedule the item to be freed with RCU and its
-access is guarded by ep->mtx. Further, the RCU reader does not access the rbn
-field.
+This patch along with 'epoll: optimize EPOLL_CTL_DEL using rcu' improves
+scalability on larger systems. Quoting Nathan Zimmer's mail on SPECjbb
+performance:
 
-I've also added a build-time check to ensure that 'struct rb_node' is >= 'struct
-rcu_head'.
+"
+On the 16 socket run the performance went from 35k jOPS to 125k jOPS.
+In addition the benchmark when from scaling well on 10 sockets to scaling well
+on just over 40 sockets.
 
-Note, I've kept this separate from 'epoll: optimize EPOLL_CTL_DEL using rcu'
-in order to make clear the hack-ish nature of this thing.
+...
+
+Currently the benchmark stops scaling at around 40-44 sockets but it seems like
+I found a second unrelated bottleneck.
+"
 
 Tested-by: Nathan Zimmer <nzimmer@sgi.com>
 Signed-off-by: Jason Baron <jbaron@akamai.com>
 ---
- fs/eventpoll.c | 32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
+ fs/eventpoll.c | 94 ++++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 68 insertions(+), 26 deletions(-)
 
 diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index daaec16..2f06737 100644
+index f4251a6..daaec16 100644
 --- a/fs/eventpoll.c
 +++ b/fs/eventpoll.c
-@@ -168,11 +168,7 @@ struct epitem {
- 	/* The structure that describe the interested events and the source fd */
- 	struct epoll_event event;
- 
--	/*
--	 * Free the epitem using rcu to enable a CTL_DEL to happen in parallel
--	 * with reverse path checks.
--	 */
--	struct rcu_head rcu;
-+	/* The fllink is in use. Since rcu can't do 'list_del_init()' */
- 	int on_list;
- };
- 
-@@ -682,9 +678,10 @@ static int ep_scan_ready_list(struct eventpoll *ep,
- 	return error;
- }
- 
--static void epi_rcu_free(struct rcu_head *head)
-+static void epi_rcu_free(struct rcu_head *rcu)
+@@ -595,8 +595,7 @@ static inline void ep_pm_stay_awake_rcu(struct epitem *epi)
+ static int ep_scan_ready_list(struct eventpoll *ep,
+ 			      int (*sproc)(struct eventpoll *,
+ 					   struct list_head *, void *),
+-			      void *priv,
+-			      int depth)
++			      void *priv, int depth, int ep_locked)
  {
--	struct epitem *epi = container_of(head, struct epitem, rcu);
-+	struct epitem *epi = (struct epitem *)((char *)rcu -
-+					offsetof(struct epitem, rbn));
- 	kmem_cache_free(epi_cache, epi);
- }
+ 	int error, pwake = 0;
+ 	unsigned long flags;
+@@ -607,7 +606,9 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 	 * We need to lock this because we could be hit by
+ 	 * eventpoll_release_file() and epoll_ctl().
+ 	 */
+-	mutex_lock_nested(&ep->mtx, depth);
++
++	if (!ep_locked)
++		mutex_lock_nested(&ep->mtx, depth);
  
-@@ -723,9 +720,15 @@ static int ep_remove(struct eventpoll *ep, struct epitem *epi)
+ 	/*
+ 	 * Steal the ready list, and re-init the original one to the
+@@ -671,7 +672,8 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 	}
  	spin_unlock_irqrestore(&ep->lock, flags);
  
- 	wakeup_source_unregister(ep_wakeup_source(epi));
+-	mutex_unlock(&ep->mtx);
++	if (!ep_locked)
++		mutex_unlock(&ep->mtx);
+ 
+ 	/* We have to call this outside the lock */
+ 	if (pwake)
+@@ -824,15 +826,34 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
+ 	return 0;
+ }
+ 
++static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
++				 poll_table *pt);
++
++struct readyevents_arg {
++	struct eventpoll *ep;
++	int locked;
++};
++
+ static int ep_poll_readyevents_proc(void *priv, void *cookie, int call_nests)
+ {
+-	return ep_scan_ready_list(priv, ep_read_events_proc, NULL, call_nests + 1);
++	struct readyevents_arg *arg = (struct readyevents_arg *)priv;
++
++	return ep_scan_ready_list(arg->ep, ep_read_events_proc, NULL,
++				  call_nests + 1, arg->locked);
+ }
+ 
+ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
+ {
+ 	int pollflags;
+ 	struct eventpoll *ep = file->private_data;
++	struct readyevents_arg arg;
++
++	/*
++	 * During ep_insert() we already hold the ep->mtx for the tfile.
++	 * Prevent re-aquisition.
++	 */
++	arg.locked = ((wait && (wait->_qproc == ep_ptable_queue_proc)) ? 1 : 0);
++	arg.ep = ep;
+ 
+ 	/* Insert inside our poll wait queue */
+ 	poll_wait(file, &ep->poll_wait, wait);
+@@ -844,7 +865,7 @@ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
+ 	 * could re-enter here.
+ 	 */
+ 	pollflags = ep_call_nested(&poll_readywalk_ncalls, EP_MAX_NESTS,
+-				   ep_poll_readyevents_proc, ep, ep, current);
++				   ep_poll_readyevents_proc, &arg, ep, current);
+ 
+ 	return pollflags != -1 ? pollflags : 0;
+ }
+@@ -1245,7 +1266,7 @@ static noinline void ep_destroy_wakeup_source(struct epitem *epi)
+  * Must be called with "mtx" held.
+  */
+ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+-		     struct file *tfile, int fd)
++		     struct file *tfile, int fd, int full_check)
+ {
+ 	int error, revents, pwake = 0;
+ 	unsigned long flags;
+@@ -1313,7 +1334,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 
+ 	/* now check if we've created too many backpaths */
+ 	error = -EINVAL;
+-	if (reverse_path_check())
++	if (full_check && reverse_path_check())
+ 		goto error_remove_epi;
+ 
+ 	/* We have to drop the new item inside our item list to keep track of it */
+@@ -1537,7 +1558,7 @@ static int ep_send_events(struct eventpoll *ep,
+ 	esed.maxevents = maxevents;
+ 	esed.events = events;
+ 
+-	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0);
++	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0, 0);
+ }
+ 
+ static inline struct timespec ep_set_mstimeout(long ms)
+@@ -1808,11 +1829,12 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 		struct epoll_event __user *, event)
+ {
+ 	int error;
+-	int did_lock_epmutex = 0;
++	int full_check = 0;
+ 	struct fd f, tf;
+ 	struct eventpoll *ep;
+ 	struct epitem *epi;
+ 	struct epoll_event epds;
++	struct eventpoll *tep = NULL;
+ 
+ 	error = -EFAULT;
+ 	if (ep_op_has_event(op) &&
+@@ -1861,23 +1883,40 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	 * and hang them on the tfile_check_list, so we can check that we
+ 	 * haven't created too many possible wakeup paths.
+ 	 *
+-	 * We need to hold the epmutex across both ep_insert to prevent
+-	 * multple adds from creating loops in parallel.
++	 * We do not need to take the global 'epumutex' on EPOLL_CTL_ADD when
++	 * the epoll file descriptor is attaching directly to a wakeup source,
++	 * unless the epoll file descriptor is nested. The purpose of taking the
++	 * 'epmutex' on add is to prevent complex toplogies such as loops and
++	 * deep wakeup paths from forming in parallel through multiple
++	 * EPOLL_CTL_ADD operations.
+ 	 */
++	mutex_lock_nested(&ep->mtx, 0);
+ 	if (op == EPOLL_CTL_ADD) {
+-		mutex_lock(&epmutex);
+-		did_lock_epmutex = 1;
+-		if (is_file_epoll(tf.file)) {
+-			error = -ELOOP;
+-			if (ep_loop_check(ep, tf.file) != 0) {
+-				clear_tfile_check_list();
+-				goto error_tgt_fput;
++		if (!list_empty(&f.file->f_ep_links) ||
++						is_file_epoll(tf.file)) {
++			full_check = 1;
++			mutex_unlock(&ep->mtx);
++			mutex_lock(&epmutex);
++			if (is_file_epoll(tf.file)) {
++				error = -ELOOP;
++				if (ep_loop_check(ep, tf.file) != 0) {
++					clear_tfile_check_list();
++					goto error_tgt_fput;
++				}
++			} else
++				list_add(&tf.file->f_tfile_llink,
++							&tfile_check_list);
++			mutex_lock_nested(&ep->mtx, 0);
++			if (is_file_epoll(tf.file)) {
++				tep = tf.file->private_data;
++				mutex_lock_nested(&tep->mtx, 1);
+ 			}
+-		} else
+-			list_add(&tf.file->f_tfile_llink, &tfile_check_list);
++		}
++	}
++	if (op == EPOLL_CTL_DEL && is_file_epoll(tf.file)) {
++		tep = tf.file->private_data;
++		mutex_lock_nested(&tep->mtx, 1);
+ 	}
 -
--	/* At this point it is safe to free the eventpoll item */
--	call_rcu(&epi->rcu, epi_rcu_free);
-+	/*
-+	 * At this point it is safe to free the eventpoll item.
-+	 * Use epi->rbn, instead of struct rcu_head, since we
-+	 * are trying to minimize the size of 'struct epitem'.
-+	 * The 'rbn' field is no longer in use. Protected
-+	 * by ep->mtx. the rcu read side, reverse_path_check_proc(),
-+	 * does not make use of the rbn field.
-+	 */
-+	call_rcu((struct rcu_head *)&epi->rbn, epi_rcu_free);
+-	mutex_lock_nested(&ep->mtx, 0);
  
- 	atomic_long_dec(&ep->user->epoll_watches);
+ 	/*
+ 	 * Try to lookup the file inside our RB tree, Since we grabbed "mtx"
+@@ -1891,10 +1930,11 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	case EPOLL_CTL_ADD:
+ 		if (!epi) {
+ 			epds.events |= POLLERR | POLLHUP;
+-			error = ep_insert(ep, &epds, tf.file, fd);
++			error = ep_insert(ep, &epds, tf.file, fd, full_check);
+ 		} else
+ 			error = -EEXIST;
+-		clear_tfile_check_list();
++		if (full_check)
++			clear_tfile_check_list();
+ 		break;
+ 	case EPOLL_CTL_DEL:
+ 		if (epi)
+@@ -1910,10 +1950,12 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 			error = -ENOENT;
+ 		break;
+ 	}
++	if (tep != NULL)
++		mutex_unlock(&tep->mtx);
+ 	mutex_unlock(&ep->mtx);
  
-@@ -2126,6 +2129,15 @@ static int __init eventpoll_init(void)
- 	/* Initialize the structure used to perform file's f_op->poll() calls */
- 	ep_nested_calls_init(&poll_readywalk_ncalls);
+ error_tgt_fput:
+-	if (did_lock_epmutex)
++	if (full_check)
+ 		mutex_unlock(&epmutex);
  
-+	/*
-+	 * We can have many thousands of epitems, so prevent this from
-+	 * using an extra cache line on 64-bit (and smaller) CPUs
-+	 */
-+	BUILD_BUG_ON(sizeof(void *) <= 8 && sizeof(struct epitem) > 128);
-+
-+	/* make sure the overloading continues to work */
-+	BUILD_BUG_ON(sizeof(struct rb_node) < sizeof(struct rcu_head));
-+
- 	/* Allocates slab cache used to allocate "struct epitem" items */
- 	epi_cache = kmem_cache_create("eventpoll_epi", sizeof(struct epitem),
- 			0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
+ 	fdput(tf);
 -- 
 1.8.2
 
