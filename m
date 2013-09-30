@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3I3RC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:02:57 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:38258 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab3I3RCz (ORCPT
+	id S1755600Ab3I3RDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:03:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40558 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab3I3RDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:02:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1380559686-2605-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1380559686-2605-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Mon, 30 Sep 2013 10:02:54 -0700
-Message-ID: <CAOesGMh8sv0mSZ5NbJGd=oN4Ay_k8WMUDkVjpM7Aw+S6_jJk3w@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.12 #2
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
-        boris brezillon <b.brezillon@overkiz.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 30 Sep 2013 13:03:30 -0400
+Date: Mon, 30 Sep 2013 10:03:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
+Message-Id: <20130930100351.7843a62b.akpm@linux-foundation.org>
+In-Reply-To: <20130928195207.GA31245@gmail.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+	<20130928074144.GA17773@gmail.com>
+	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+	<20130928192123.GA8228@gmail.com>
+	<20130928193739.GA8642@gmail.com>
+	<CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
+	<20130928195207.GA31245@gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 9:48 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> Arnd, Olof, Kevin,
->
-> Second batch of fixes for AT91. Two little patches but that can be important
-> for AT91.
-> One is finishing the conversion to clk_xxx_[un]prepare() routines. That will
-> allow us to begin the move to common clock framework with help from Boris and
-> his big patch series. I tried to push it through Thomas and John's git tree but
-> without success.
+On Sat, 28 Sep 2013 21:52:07 +0200 Ingo Molnar <mingo@kernel.org> wrote:
 
-It sounds to me like this patch should go in together with the CCF
-patches, since it doesn't address a regression and is just a
-prerequisite for the conversion? If you can shake an Ack out of John
-you should be all set for that. :-)
+> Here's a an almost totally untested patch to convert the anon vma lock to 
+> an rwlock_t.
 
-> The other one is important for sam9g45 when the second DDR conrtoller is in
-> use. The DDR / EBI lines are not properly reseted after a shutdown and could
-> prevent the use of whatever is connected to this EBI. It is not a configuration
-> that we are using on the Evaluation Kit and this explains why we face this isue
-> just now...
+Both the anon vma lock and i_mmap_lock used to be spinlocks.  Peter
+turned them both into sleeping locks in this series:
+https://lkml.org/lkml/2011/4/1/141
 
-Ok, that sounds like a valid fix.
+Later, Ingo turned the anon vma lock from an rwsem into a mutex
+(https://lkml.org/lkml/2012/12/1/141) to permit a scalability fix
+(https://lkml.org/lkml/2012/12/1/142).
 
-I'll cherry-pick in the DDR fix right away, and if you for some reason
-need the other one we can add it later, but it sounds like it should
-just go in with the CCF branch.
+Let's convince ourselves that we won't be undoing things which will
+return to bite us?
 
-
--Olof
