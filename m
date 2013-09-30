@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab3I3P1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:27:35 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:37196 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797Ab3I3P1c (ORCPT
+	id S1756115Ab3I3P2A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:28:00 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:19966 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347Ab3I3P17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:27:32 -0400
-Message-ID: <5249985A.1030400@gmail.com>
-Date: Mon, 30 Sep 2013 23:27:22 +0800
-From: Lennox Wu <lennox.wu@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-CC: lennox.wu@gmail.com
-Subject: [git pull] Score: Fix compiling errors and update the information
- of maintainers (Fixed format 2)
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB"
+	Mon, 30 Sep 2013 11:27:59 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-91-5249987db405
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] x86/acpi: fix incorrect placement of __initdata tag
+Date: Mon, 30 Sep 2013 17:27:46 +0200
+Message-id: <10479344.AmK4cG4GID@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <Pine.LNX.4.44L0.1309301023040.1352-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1309301023040.1352-100000@iolanthe.rowland.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=US-ASCII
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9jAd3aGZ5BBnNv6FqcbXrDbjFryl4m
+	i8u75rBZfO49wmhx99RRNov+hb1MFhN+X2BzYPdYvOclk8fsuz8YPfq2rGL0eLS4hdFjxerv
+	7B6fN8kFsEVx2aSk5mSWpRbp2yVwZcw/Oou54BdXxYVr59kbGD9xdDFyckgImEhs//+EFcIW
+	k7hwbz1bFyMXh5DAIkaJ653bGSGcFiaJpztnsoFUsQlYSUxsX8UIYosIaElsbnrJDFLELHCK
+	UWLJ7StgRcICHhKLHi0Gsjk4WARUJQ60WIOEeYHq58zpZAexRQU8JT5NWsoMYnMK+Er0N35h
+	BykXEvCR6DpqAFEuKPFj8j0WEJtZQF5i3/6prBA20NptTawTGAVmISmbhaRsFpKyBYzMqxhF
+	UwuSC4qT0nON9IoTc4tL89L1kvNzNzGCw/2Z9A7GVQ0WhxgFOBiVeHgN6j2DhFgTy4orcw8x
+	SnAwK4nwvp4AFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp
+	1cA4b/Zl1c4rVcJMExrYHIwOWm2Sea52siNin8aX+J7O12w+7RfviCi5am7k+Mmfq7q6iulc
+	6lVmn7+CbkI6sl2+D+/9/9cX9GTd6inJLiaJyznktYNzn66YJ2C4gnVy8XI2iRXMtw447G7V
+	Tb1xd7dg/MzaujNNB8zUn878ma3/JS/L97U2X6oSS3FGoqEWc1FxIgC+R1xocwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Monday, September 30, 2013 10:24:41 AM Alan Stern wrote:
+> On Mon, 30 Sep 2013, Bartlomiej Zolnierkiewicz wrote:
+> 
+> > __initdata tag should be placed between the variable name and equal
+> > sign for the variable to be placed in the intended .init.data section.
+> 
+> The line you are changing does not have an equals sign.  Therefore, 
+> according to your own patch description, the patch is incorrect.  :-)
 
-Hi Linus,
-Please pull these updates for S+core architecture. These updates include
-updating information of maintainers, fix some trivial errors, and add
-a necessary function for supporting ipv6. We fix the format of the link
-and use a tag.
+Uh, indeed, copypasta is bad. :)
 
-The following changes since commit 22356f447ceb8d97a4885792e7d9e4607f712e=
-1b
+Thanks for noticing, I'll post v2 shortly.
 
-mm: Place preemption point in do_mlockall() loop (2013-9-24 18:29:11 -070=
-0)
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-are available in the git repository at:
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  arch/x86/kernel/acpi/boot.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> > index 1f7c074..6c0b43b 100644
+> > --- a/arch/x86/kernel/acpi/boot.c
+> > +++ b/arch/x86/kernel/acpi/boot.c
+> > @@ -695,7 +695,7 @@ static int __init acpi_parse_sbf(struct acpi_table_header *table)
+> >  #ifdef CONFIG_HPET_TIMER
+> >  #include <asm/hpet.h>
+> >  
+> > -static struct __initdata resource *hpet_res;
+> > +static struct resource *hpet_res __initdata;
+> >  
+> >  static int __init acpi_parse_hpet(struct acpi_table_header *table)
+> >  {
+> 
+> Alan Stern
 
-git://github.com/sctscore/official-linux.git tags/for-linus-20130929
-
-For you to fetch changes up to ed38665eb50ef7ad530f9b2db531a09b8520ed32
-
-Score: Update the information of Score maintaners (2013-9-26 01:41:22 +08=
-00)
-
-Thanks for your patience.
-
-Best,
-Lennox Wu
-
------------------------------------------------
-Summary these commits:
-1. Fix some trivial errors for successfully compiling the latest
-version Linux kernel.
-2. Provide necessary function for support IPV6.
-3. Update the information of maintainers.
-
-Signed-off-by: Lennox Wu <lennox.wu@gmail.com>
-
-------------------------------------------------
- MAINTAINERS                       |    4 +-
- arch/score/Kconfig                |    4 ++
- arch/score/Makefile               |    4 +-
- arch/score/include/asm/checksum.h |   93
-++++++++++++++++++++-----------------
- arch/score/include/asm/io.h       |    1 -
- arch/score/include/asm/pgalloc.h  |    2 +-
- arch/score/kernel/entry.S         |    4 +-
- arch/score/kernel/process.c       |    4 +-
- 8 files changed, 64 insertions(+), 52 deletions(-)
-
-
---G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (MingW32)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEVAwUBUkmYXRIBnItolwGVAQLw8Qf+OTqOGeyorw2mm0HkFGaexoCkUxIIC0px
-Gqh3+76wTZdX0BfYTIUOTThjlu9npDwsQSyMB3sbgYsQFQRSIgYgpTZqi//kWEEZ
-ogMDqQb1h57Fgt6iddYtn64K9njGE5vy73HkpIxY+U7gldnrhaIwfE43ywUpDDoI
-yhwJdeMNMU/qs4evLT2xLbLYDIV4p6gW+bEkWXjmQFTFgfT68aHNYJOwUQ677cWr
-BGGECwAPjULpuR5ASDOLJEjPD55D7/A4T1fZ97eUhh36+IpekQs9TAYPZsViouOQ
-QtFVpn+ve81Wb408igv1urAxRfF1B6saGWBeEfg77Dc/Ys+6AFpfgQ==
-=QskS
------END PGP SIGNATURE-----
-
---G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB--
