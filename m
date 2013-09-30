@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3I3KSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:18:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43784 "EHLO
+	id S1756115Ab3I3KSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:18:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43792 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab3I3KNa (ORCPT
+	with ESMTP id S1755745Ab3I3KNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:30 -0400
+	Mon, 30 Sep 2013 06:13:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 088/104] drm/i915: try not to lose backlight CBLV precision
-Date: Mon, 30 Sep 2013 11:11:05 +0100
-Message-Id: <1380535881-9239-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 089/104] powerpc: Default arch idle could cede processor on pseries
+Date: Mon, 30 Sep 2013 11:11:06 +0100
+Message-Id: <1380535881-9239-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-commit cac6a5ae0118832936eb162ec4cedb30f2422bcc upstream.
+commit 363edbe2614aa90df706c0f19ccfa2a6c06af0be upstream.
 
-ACPI has _BCM and _BQC methods to set and query the backlight
-brightness, respectively. The ACPI opregion has variables BCLP and CBLV
-to hold the requested and current backlight brightness, respectively.
+When adding cpuidle support to pSeries, we introduced two
+regressions:
 
-The BCLP variable has range 0..255 while the others have range
-0..100. This means the _BCM method has to scale the brightness for BCLP,
-and the gfx driver has to scale the requested value back for CBLV. If
-the _BQC method uses the CBLV variable (apparently some implementations
-do, some don't) for current backlight level reporting, there's room for
-rounding errors.
+  - The new cpuidle backend driver only works under hypervisors
+    supporting the "SLPLAR" option, which isn't the case of the
+    old POWER4 hypervisor and the HV "light" used on js2x blades
 
-Use DIV_ROUND_UP for scaling back to CBLV to get back to the same values
-that were passed to _BCM, presuming the _BCM simply uses bclp = (in *
-255) / 100 for scaling to BCLP.
+  - The cpuidle driver registers fairly late, meaning that for
+    a significant portion of the boot process, we end up having
+    all threads spinning. This slows down the boot process and
+    increases the overall resource usage if the hypervisor has
+    shared processors.
 
-Reference: https://gist.github.com/aaronlu/6314920
-Reported-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+This fixes both by implementing a "default" idle that will cede
+to the hypervisor when possible, in a very simple way without
+all the bells and whisles of cpuidle.
+
+Reported-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_opregion.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/setup.c | 31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-index e27c170..6d708d7 100644
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -163,7 +163,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
- 
- 	max = intel_panel_get_max_backlight(dev);
- 	intel_panel_set_backlight(dev, bclp * max / 255);
--	iowrite32((bclp*0x64)/0xff | ASLE_CBLV_VALID, &asle->cblv);
-+	iowrite32(DIV_ROUND_UP(bclp * 100, 255) | ASLE_CBLV_VALID, &asle->cblv);
- 
- 	return 0;
+diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
+index 51ecac9..1e09357 100644
+--- a/arch/powerpc/platforms/pseries/setup.c
++++ b/arch/powerpc/platforms/pseries/setup.c
+@@ -352,7 +352,7 @@ static int alloc_dispatch_log_kmem_cache(void)
  }
+ early_initcall(alloc_dispatch_log_kmem_cache);
+ 
+-static void pSeries_idle(void)
++static void pseries_lpar_idle(void)
+ {
+ 	/* This would call on the cpuidle framework, and the back-end pseries
+ 	 * driver to  go to idle states
+@@ -360,10 +360,22 @@ static void pSeries_idle(void)
+ 	if (cpuidle_idle_call()) {
+ 		/* On error, execute default handler
+ 		 * to go into low thread priority and possibly
+-		 * low power mode.
++		 * low power mode by cedeing processor to hypervisor
+ 		 */
+-		HMT_low();
+-		HMT_very_low();
++
++		/* Indicate to hypervisor that we are idle. */
++		get_lppaca()->idle = 1;
++
++		/*
++		 * Yield the processor to the hypervisor.  We return if
++		 * an external interrupt occurs (which are driven prior
++		 * to returning here) or if a prod occurs from another
++		 * processor. When returning here, external interrupts
++		 * are enabled.
++		 */
++		cede_processor();
++
++		get_lppaca()->idle = 0;
+ 	}
+ }
+ 
+@@ -395,15 +407,14 @@ static void __init pSeries_setup_arch(void)
+ 
+ 	pSeries_nvram_init();
+ 
+-	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
++	if (firmware_has_feature(FW_FEATURE_LPAR)) {
+ 		vpa_init(boot_cpuid);
+-		ppc_md.power_save = pSeries_idle;
+-	}
+-
+-	if (firmware_has_feature(FW_FEATURE_LPAR))
++		ppc_md.power_save = pseries_lpar_idle;
+ 		ppc_md.enable_pmcs = pseries_lpar_enable_pmcs;
+-	else
++	} else {
++		/* No special idle routine */
+ 		ppc_md.enable_pmcs = power4_enable_pmcs;
++	}
+ }
+ 
+ static int __init pSeries_init_panel(void)
 -- 
 1.8.3.2
 
