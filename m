@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3I3KMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:12:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43441 "EHLO
+	id S1756803Ab3I3Kct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:32:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43489 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab3I3KMA (ORCPT
+	with ESMTP id S1755233Ab3I3KMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:12:00 -0400
+	Mon, 30 Sep 2013 06:12:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>,
-        Patrick McHardy <kaber@trash.net>,
+Cc: Sujith Manoharan <sujith@msujith.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 016/104] rculist: list_first_or_null_rcu() should use list_entry_rcu()
-Date: Mon, 30 Sep 2013 11:09:53 +0100
-Message-Id: <1380535881-9239-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 033/104] Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
+Date: Mon, 30 Sep 2013 11:10:10 +0100
+Message-Id: <1380535881-9239-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,70 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Sujith Manoharan <sujith@msujith.org>
 
-commit c34ac00caefbe49d40058ae7200bd58725cebb45 upstream.
+commit 5b77a1f3d7b7360dc2b7c6d2188d39b9f8432907 upstream.
 
-list_first_or_null() should test whether the list is empty and return
-pointer to the first entry if not in a RCU safe manner.  It's broken
-in several ways.
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=13d3 ProdID=3402 Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-* It compares __kernel @__ptr with __rcu @__next triggering the
-  following sparse warning.
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=59701
 
-  net/core/dev.c:4331:17: error: incompatible types in comparison expression (different address spaces)
-
-* It doesn't perform rcu_dereference*() and computes the entry address
-  using container_of() directly from the __rcu pointer which is
-  inconsitent with other rculist interface.  As a result, all three
-  in-kernel users - net/core/dev.c, macvlan, cgroup - are buggy.  They
-  dereference the pointer w/o going through read barrier.
-
-* While ->next dereference passes through list_next_rcu(), the
-  compiler is still free to fetch ->next more than once and thus
-  nullify the "__ptr != __next" condition check.
-
-Fix it by making list_first_or_null_rcu() dereference ->next directly
-using ACCESS_ONCE() and then use list_entry_rcu() on it like other
-rculist accessors.
-
-v2: Paul pointed out that the compiler may fetch the pointer more than
-    once nullifying the condition check.  ACCESS_ONCE() added on
-    ->next dereference.
-
-v3: Restored () around macro param which was accidentally removed.
-    Spotted by Paul.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/rculist.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index e0f0fab..bbea697 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -267,8 +267,9 @@ static inline void list_splice_init_rcu(struct list_head *list,
-  */
- #define list_first_or_null_rcu(ptr, type, member) \
- 	({struct list_head *__ptr = (ptr); \
--	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
--	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	  struct list_head *__next = ACCESS_ONCE(__ptr->next); \
-+	  likely(__ptr != __next) ? \
-+		list_entry_rcu(__next, type, member) : NULL; \
- 	})
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 3e7e2ee..a9e5be4 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -92,6 +92,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x0489, 0xe056) },
+ 	{ USB_DEVICE(0x0489, 0xe04d) },
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
++	{ USB_DEVICE(0x13d3, 0x3402) },
+ 	{ USB_DEVICE(0x0cf3, 0x3121) },
  
- /**
+ 	/* Atheros AR5BBU12 with sflash firmware */
+@@ -131,6 +132,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 93fb265..b6a17c6 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -161,6 +161,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
 -- 
 1.8.3.2
 
