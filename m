@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3I3KMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:12:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43539 "EHLO
+	id S1756633Ab3I3K1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:27:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43614 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab3I3KMa (ORCPT
+	with ESMTP id S1755519Ab3I3KMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:12:30 -0400
+	Mon, 30 Sep 2013 06:12:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Dmitry Vyukov <dvyukov@google.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 042/104] fib_trie: remove potential out of bound access
-Date: Mon, 30 Sep 2013 11:10:19 +0100
-Message-Id: <1380535881-9239-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 054/104] net: ipv6: tcp: fix potential use after free in tcp_v6_do_rcv
+Date: Mon, 30 Sep 2013 11:10:31 +0100
+Message-Id: <1380535881-9239-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit aab515d7c32a34300312416c50314e755ea6f765 upstream.
+commit 3a1c756590633c0e86df606e5c618c190926a0df upstream.
 
-AddressSanitizer [1] dynamic checker pointed a potential
-out of bound access in leaf_walk_rcu()
+In tcp_v6_do_rcv() code, when processing pkt options, we soley work
+on our skb clone opt_skb that we've created earlier before entering
+tcp_rcv_established() on our way. However, only in condition ...
 
-We could allocate one more slot in tnode_new() to leave the prefetch()
-in-place but it looks not worth the pain.
+  if (np->rxopt.bits.rxtclass)
+    np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(skb));
 
-Bug added in commit 82cfbb008572b ("[IPV4] fib_trie: iterator recode")
+... we work on skb itself. As we extract every other information out
+of opt_skb in ipv6_pktoptions path, this seems wrong, since skb can
+already be released by tcp_rcv_established() earlier on. When we try
+to access it in ipv6_hdr(), we will dereference freed skb.
 
-[1] :
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+[ Bug added by commit 4c507d2897bd9b ("net: implement IP_RECVTOS for
+  IP_PKTOPTIONS") ]
 
-Reported-by: Andrey Konovalov <andreyknvl@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Jiri Benc <jbenc@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/fib_trie.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ net/ipv6/tcp_ipv6.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
-index 30b88d7..424704a 100644
---- a/net/ipv4/fib_trie.c
-+++ b/net/ipv4/fib_trie.c
-@@ -71,7 +71,6 @@
- #include <linux/init.h>
- #include <linux/list.h>
- #include <linux/slab.h>
--#include <linux/prefetch.h>
- #include <linux/export.h>
- #include <net/net_namespace.h>
- #include <net/ip.h>
-@@ -1772,10 +1771,8 @@ static struct leaf *leaf_walk_rcu(struct tnode *p, struct rt_trie_node *c)
- 			if (!c)
- 				continue;
- 
--			if (IS_LEAF(c)) {
--				prefetch(rcu_dereference_rtnl(p->child[idx]));
-+			if (IS_LEAF(c))
- 				return (struct leaf *) c;
--			}
- 
- 			/* Rescan start scanning in new node */
- 			p = (struct tnode *) c;
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 989c024..1467fc7 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1573,7 +1573,7 @@ ipv6_pktoptions:
+ 		if (np->rxopt.bits.rxhlim || np->rxopt.bits.rxohlim)
+ 			np->mcast_hops = ipv6_hdr(opt_skb)->hop_limit;
+ 		if (np->rxopt.bits.rxtclass)
+-			np->rcv_tclass = ipv6_tclass(ipv6_hdr(skb));
++			np->rcv_tclass = ipv6_tclass(ipv6_hdr(opt_skb));
+ 		if (ipv6_opt_accepted(sk, opt_skb)) {
+ 			skb_set_owner_r(opt_skb, sk);
+ 			opt_skb = xchg(&np->pktoptions, opt_skb);
 -- 
 1.8.3.2
 
