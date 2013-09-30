@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3I3Jtu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:49:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34010 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab3I3Jtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:49:45 -0400
-Date: Mon, 30 Sep 2013 11:49:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Eduardo Habkost <ehabkost@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>, Andre Przywara <andre@andrep.de>,
-        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
-        KVM <kvm@vger.kernel.org>, qemu-devel@nongnu.org,
-        libvir-list@redhat.com, Jiri Denemark <jdenemar@redhat.com>,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: qemu, numa: non-contiguous cpusets
-Message-ID: <20130930094936.GA16383@pd.tnic>
-References: <20130929151044.GB5426@pd.tnic>
- <52493EC6.4020403@redhat.com>
+	id S1754555Ab3I3JwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:52:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44871 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751840Ab3I3JwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 05:52:05 -0400
+Date: Mon, 30 Sep 2013 10:52:02 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, broonie@kernel.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: arizona: Get pdata from arizona structure not
+	device
+Message-ID: <20130930095202.GY3635@opensource.wolfsonmicro.com>
+References: <1380378897-7164-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5248B9BA.9020003@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52493EC6.4020403@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5248B9BA.9020003@samsung.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 11:05:10AM +0200, Paolo Bonzini wrote:
-> I think there are already patches on the list to do that, as part of
-> the NUMA memory binding series from Wanlong Gao.
+On Mon, Sep 30, 2013 at 08:37:30AM +0900, Chanwoo Choi wrote:
+> No, extcon-arizona driver don't currently support DT to get platform data.
+> I cannot find some dt function to parse data from dts file.
+> You have to implement extcon-arizona driver by using DT binding style
+> to get platform data. I think this patch is not necessary.
 
-Yeah: https://lists.gnu.org/archive/html/qemu-devel/2013-09/msg02833.html
+Currently the Arizona MFD driver reads the device tree
+information and populates the pdata structure, this happens in
+drivers/mfd/arizona-core.c. Then the various drivers just use the
+pdata as normal.
 
-Although I don't see from it how the syntax for -cpus will look like
-from that QAPI magic except that it is an
+Admittedly, at the moment we don't parse any data for the extcon
+driver but without this patch we will attempt to use a NULL
+pointer on device tree systems.
 
-+   '*cpus':   ['uint16'],
+I would also be happy to implement this as a NULL check on the
+pdata when we use it if that is preferable? But since we have the
+cached pdata seems we might as well use it.
 
-:-)
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Charles
