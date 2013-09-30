@@ -1,65 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab3I3Ubu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:31:50 -0400
+	id S1756719Ab3I3UcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:32:13 -0400
 Received: from mga02.intel.com ([134.134.136.20]:8648 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756502Ab3I3U3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:29:16 -0400
+	id S1756492Ab3I3U3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:29:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
-   d="scan'208";a="412029771"
+   d="scan'208";a="412029765"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, jeffrey.t.kirsher@intel.com,
-        netdev@vger.kernel.org
-Subject: [PATCH 07/11] igb: Avoid uninitialized advertised variable in eee_set_cur
-Date: Mon, 30 Sep 2013 13:29:08 -0700
-Message-Id: <1380572952-30729-8-git-send-email-andi@firstfloor.org>
+Subject: Various static checker fixes
+Date: Mon, 30 Sep 2013 13:29:01 -0700
+Message-Id: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
-References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+I was playing around with LLVM's static checker. Here are some fixes
+from reviewing the output on a kernel build.
 
-eee_get_cur assumes that the output data is already zeroed. It can
-read-modify-write the advertised field:
+Some merely shut up the checker -- it is technically right, but
+the problem is not a real bug as far as I can tell. Still it's
+cleaner/clearer to avoid uninitialized variables and similar.
 
-              if (ipcnfg & E1000_IPCNFG_EEE_100M_AN)
-2594			edata->advertised |= ADVERTISED_100baseT_Full;
+A few others are real bugs.
 
-This is ok for the normal ethtool eee_get call, which always
-zeroes the input data before.
-
-But eee_set_cur also calls eee_get_cur and it did not zero the input
-field. Later on it then compares agsinst the field, which can contain partial
-stack garbage.
-
-Zero the input field in eee_set_cur() too.
-
-Cc: jeffrey.t.kirsher@intel.com
-Cc: netdev@vger.kernel.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-index 48cbc83..41e37ff 100644
---- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
-+++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-@@ -2652,6 +2652,8 @@ static int igb_set_eee(struct net_device *netdev,
- 	    (hw->phy.media_type != e1000_media_type_copper))
- 		return -EOPNOTSUPP;
- 
-+	memset(&eee_curr, 0, sizeof(struct ethtool_eee));
-+
- 	ret_val = igb_get_eee(netdev, &eee_curr);
- 	if (ret_val)
- 		return ret_val;
--- 
-1.8.3.1
+-Andi
 
