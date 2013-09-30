@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3I3SCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:02:16 -0400
-Received: from mx1.netapp.com ([216.240.18.38]:34145 "EHLO mx1.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224Ab3I3SCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:02:14 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1009,1371106800"; 
-   d="scan'208";a="282650473"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
-        "Anna Schumaker" <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Thread-Topic: [RFC] extending splice for copy offloading
-Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgCAABN0gP//8DAAgAASEgD//+/0AAACZFGAAAEyqoAAAZUqAAAA8DUAAAAqeIAAAHXeAA==
-Date: Mon, 30 Sep 2013 18:02:08 +0000
-Message-ID: <1380564126.6501.23.camel@leira.trondhjem.org>
-References: <20130930143432.GG16579@fieldses.org>
-		 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
-		 <52499026.3090802@redhat.com>
-		 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
-		 <52498AA8.2090204@redhat.com>
-		 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
-		 <52498DB6.7060901@redhat.com>
-		 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-		 <52498F68.8050200@redhat.com>
-		 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
-		 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
-		 <5249B21E.70603@itwm.fraunhofer.de>
-	 <1380563050.6501.15.camel@leira.trondhjem.org>
-	 <5249B987.8020807@itwm.fraunhofer.de>
-In-Reply-To: <5249B987.8020807@itwm.fraunhofer.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <F9714F28A52B4B40B8228A7E4EE5939C@hq.netapp.com>
+	id S1755644Ab3I3SDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:03:05 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:45109 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab3I3SDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 14:03:02 -0400
+Date: Mon, 30 Sep 2013 15:02:47 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
+ in parallel
+Message-ID: <20130930180247.GJ10293@ghostprotocols.net>
+References: <20130912203116.GD32644@gmail.com>
+ <20130912204313.GA3259@gmail.com>
+ <20130915091029.GA21465@gmail.com>
+ <20130930164210.GA22342@gmail.com>
+ <20130930171220.GC10293@ghostprotocols.net>
+ <20130930172741.GD10293@ghostprotocols.net>
+ <20130930173052.GE10293@ghostprotocols.net>
+ <20130930173627.GF10293@ghostprotocols.net>
+ <20130930173914.GG10293@ghostprotocols.net>
+ <20130930174639.GH10293@ghostprotocols.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930174639.GH10293@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UI2K1d011852
 
-On Mon, 2013-09-30 at 19:48 +0200, Bernd Schubert wrote:
-> On 09/30/2013 07:44 PM, Myklebust, Trond wrote:
-> > On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
-> >> It would be nice if there would be way if the file system would get a
-> >> hint that the target file is supposed to be copy of another file. That
-> >> way distributed file systems could also create the target-file with the
-> >> correct meta-information (same storage targets as in-file has).
-> >> Well, if we cannot agree on that, file system with a custom protocol at
-> >> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not
-> >> sure if this would work for pNFS, though.
-> >
-> > splice() does not create new files. What you appear to be asking for
-> > lies way outside the scope of that system call interface.
-> >
-> 
-> Sorry I know, definitely outside the scope of splice, but in the context 
-> of offloaded file copies. So the question is, what is the best way to 
-> address/discuss that?
+Em Mon, Sep 30, 2013 at 02:46:39PM -0300, Arnaldo Carvalho de Melo escreveu:
+> I'm testing removing devel packages, one by one, removing gtk2-devel provides
+> the biggest reduction in build time, no surprises :)
 
-Why does it need to be addressed in the first place?
+And this exercise spotted a but:
 
-What is preventing an application from retrieving and setting this
-information using standard libc functions such as fstat()+open(), and
-supplemented with libattr attr_setf/getf(), and libacl acl_get_fd/set_fd
-where appropriate?
+make[1]: Leaving directory `/home/git/linux/tools/lib/lk'
+    GEN /tmp/build/perf/python/perf.so
+Context.xs:22:20: fatal error: EXTERN.h: No such file or directory
+compilation terminated.
+make: *** [/tmp/build/perf/scripts/perl/Perf-Trace-Util/Context.o] Error 1
+make: *** Waiting for unfinished jobs....
+util/scripting-engines/trace-event-perl.c:29:20: fatal error: EXTERN.h: No such file or directory
+compilation terminated.
+make: *** [/tmp/build/perf/util/scripting-engines/trace-event-perl.o] Error 1
+make: Leaving directory `/home/git/linux/tools/perf'
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+ Performance counter stats for 'make -j4 -C tools/perf O=/tmp/build/perf' (3 runs):
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+       6.453914638 seconds time elapsed                                          ( +- 80.66% )
+
+[acme@zoo linux]$ 
+[acme@zoo linux]$
+
+I.e. I did a 'yum remove python-devel', that removed some more packages that
+require this package, one of them is needed for perf to build, and this is
+not stated on those:
+
+config/Makefile:444: No numa.h found, disables 'perf bench numa mem' benchmark,
+please install numa-libs-devel or libnuma-dev
+
+
+In fact this is why I thought those messages had been missing in your
+patchset, they don't appear when I remove perl-devel, i.e. 'perl' supporty
+is correctly detected as not possible to build due to missing deps, but
+no message is emitted for this case.
+
+And the bug is that the feature test for perl support passes, but since it
+doesn't try to use EXTERN.h, like something that is enabled when the feature
+test passes (util/scripting-engines/trace-event-perl.c), the build fails.
+
+Notebook battery dying, will continue later...
+
+- Arnaldo
