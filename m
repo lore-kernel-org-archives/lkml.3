@@ -1,153 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3I3K5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:57:48 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57954 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab3I3K5o (ORCPT
+	id S1754899Ab3I3LBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 07:01:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38498 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab3I3LBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:57:44 -0400
-X-AuditID: cbfee6a1-b7f876d0000032d0-02-52495925b349
-Date: Mon, 30 Sep 2013 10:57:41 +0000 (GMT)
-From: Yuan Zhong <yuan.mark.zhong@samsung.com>
-Subject: [f2fs-dev][PATCH]f2fs: avoid congestion_wait when do_checkpoint for
- better performance
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shu.tan@samsung.com
-Reply-to: yuan.mark.zhong@samsung.com
-MIME-version: 1.0
-X-MTR: 20130930105513378@yuan.mark.zhong
-Msgkey: 20130930105513378@yuan.mark.zhong
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130930105513378@yuan.mark.zhong
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <20389937.79321380538660833.JavaMail.weblogic@epml14>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/tGbqqkZ5BBtParC0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGzwU9rAXnlCuWnu5hbmC8otTFyMkhJKAl8f7HQ2YQW0LARGL/
-	qy52CFtM4sK99WxdjFxANfMZJQ52TmQFSbAIqEp0NT0Gs9kE9CXu7NvHCGILC8RLHN39Aiwu
-	IqAgMbltMzNIM7PANEaJ278WAxVxAE1SlTi+thSkhldAUOLkzCcsIGEJAQ2Jb2fMIcKaEo3X
-	9jNB3CAnsWTqZSibV2JG+1MWmPi0r2ugbpaWOD9rAyPMzYu/P4aK80scu72DCWI8r8ST+8Ew
-	Y3Zv/sIGYQtITD1zEKpVV6Lr5zmoVj6JNQvfssCM2XVqOTNM7/0tc8HOYRZQlJjS/ZAdwjaQ
-	OLJoDiuqr0BsR4kpi/8wTWCUm4UkNQtJ+ywk7chqFjCyrGIUTS1ILihOSq8w1CtOzC0uzUvX
-	S87P3cQIjvJnC3cwfjlvfYhRgINRiYd3wnKPICHWxLLiytxDjBIczEoivBPcPIOEeFMSK6tS
-	i/Lji0pzUosPMUpzsCiJ8z5ttQ4UEkhPLEnNTk0tSC2CyTJxcEo1MM7+/DaCu3+ltccb9jrJ
-	J0cVXvrKctQve9bRXTVD9su+/L2hbQZ9RRz9bYc1+t3K1q8057p/ve3Dw6hLt9RfW546sXZ7
-	4Jl53ZObmx1CZufO+TcnWKuiZmJi5LPapaGeGY9OaQq8OVJef2rSR4ZgOWuJedcMpqSKueVw
-	6/c3tF/PWbSMcX7PfiWW4oxEQy3mouJEADDS6HbuAgAA
+	Mon, 30 Sep 2013 07:01:15 -0400
+Date: Mon, 30 Sep 2013 13:00:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
+Message-ID: <20130930110047.GY3081@twins.programming.kicks-ass.net>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+ <20130928074144.GA17773@gmail.com>
+ <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+ <20130928192123.GA8228@gmail.com>
+ <20130928193739.GA8642@gmail.com>
+ <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
+ <20130928195207.GA31245@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130928195207.GA31245@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UAvsOV008948
+
+On Sat, Sep 28, 2013 at 09:52:07PM +0200, Ingo Molnar wrote:
+> Index: tip/mm/rmap.c
+> ===================================================================
+> --- tip.orig/mm/rmap.c
+> +++ tip/mm/rmap.c
+> @@ -98,12 +98,12 @@ static inline void anon_vma_free(struct
+>  	 * page_lock_anon_vma_read()	VS	put_anon_vma()
+>  	 *   down_read_trylock()		  atomic_dec_and_test()
+>  	 *   LOCK				  MB
+> -	 *   atomic_read()			  rwsem_is_locked()
+> +	 *   atomic_read()			  rwlock_is_locked()
+>  	 *
+>  	 * LOCK should suffice since the actual taking of the lock must
+>  	 * happen _before_ what follows.
+>  	 */
+> -	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
+> +	if (!write_can_lock(&anon_vma->root->rwlock)) {
+>  		anon_vma_lock_write(anon_vma);
+>  		anon_vma_unlock_write(anon_vma);
+>  	}
+> @@ -457,14 +457,14 @@ struct anon_vma *page_lock_anon_vma_read
+>  
+>  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+>  	root_anon_vma = ACCESS_ONCE(anon_vma->root);
+> -	if (down_read_trylock(&root_anon_vma->rwsem)) {
+> +	if (read_trylock(&root_anon_vma->rwlock)) {
+>  		/*
+>  		 * If the page is still mapped, then this anon_vma is still
+>  		 * its anon_vma, and holding the mutex ensures that it will
+>  		 * not go away, see anon_vma_free().
+>  		 */
+>  		if (!page_mapped(page)) {
+> -			up_read(&root_anon_vma->rwsem);
+> +			read_unlock(&root_anon_vma->rwlock);
+>  			anon_vma = NULL;
+>  		}
+>  		goto out;
+> @@ -1293,7 +1293,7 @@ out_mlock:
+>  	/*
+>  	 * We need mmap_sem locking, Otherwise VM_LOCKED check makes
+>  	 * unstable result and race. Plus, We can't wait here because
+> -	 * we now hold anon_vma->rwsem or mapping->i_mmap_mutex.
+> +	 * we now hold anon_vma->rwlock or mapping->i_mmap_mutex.
+>  	 * if trylock failed, the page remain in evictable lru and later
+>  	 * vmscan could retry to move the page to unevictable lru if the
+>  	 * page is actually mlocked.
 
 
-Previously,  do_checkpoint() will call congestion_wait() for waiting the pages (previous submitted node/meta/data pages) to be written back.
-Because congestion_wait() will set a regular period (e.g. HZ / 50 ) for waiting.
-For this reason, there is a situation that after the pages have been written back, but the checkpoint thread still wait for congestion_wait to exit.
-This is a problem here, especially, when sync a large number of small files or dirs.
-In order to avoid this, a wait_list is introduced, the checkpoint thread will be dropped into the wait_list if the pages have not been written back, and will be waked up by contrast.
+You can remove all that -- all that trickery was only needed because the
+lock could sleep;
 
-Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
 ---
- fs/f2fs/checkpoint.c |  3 +--
- fs/f2fs/f2fs.h       | 19 +++++++++++++++++++
- fs/f2fs/segment.c    |  1 +
- fs/f2fs/super.c      |  1 +
- 4 files changed, 22 insertions(+), 2 deletions(-)
-
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index bb31220..cf6b4a5 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -756,8 +756,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	f2fs_put_page(cp_page, 1);
- 
- 	/* wait for previous submitted node/meta pages writeback */
--	while (get_pages(sbi, F2FS_WRITEBACK))
--		congestion_wait(BLK_RW_ASYNC, HZ / 50);
-+	f2fs_writeback_wait(sbi);
- 
- 	filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
- 	filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 608f0df..f8b62cc 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -18,6 +18,7 @@
- #include <linux/crc32.h>
- #include <linux/magic.h>
- #include <linux/kobject.h>
-+#include <linux/wait.h>
- 
- /*
-  * For mount options
-@@ -430,6 +431,8 @@ struct f2fs_sb_info {
- 	/* For sysfs suppport */
- 	struct kobject s_kobj;
- 	struct completion s_kobj_unregister;
-+	
-+	wait_queue_head_t writeback_wqh;
- };
- 
- /*
-@@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
- 	return sb->s_flags & MS_RDONLY;
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -85,29 +85,6 @@ static inline struct anon_vma *anon_vma_
+ static inline void anon_vma_free(struct anon_vma *anon_vma)
+ {
+ 	VM_BUG_ON(atomic_read(&anon_vma->refcount));
+-
+-	/*
+-	 * Synchronize against page_lock_anon_vma_read() such that
+-	 * we can safely hold the lock without the anon_vma getting
+-	 * freed.
+-	 *
+-	 * Relies on the full mb implied by the atomic_dec_and_test() from
+-	 * put_anon_vma() against the acquire barrier implied by
+-	 * down_read_trylock() from page_lock_anon_vma_read(). This orders:
+-	 *
+-	 * page_lock_anon_vma_read()	VS	put_anon_vma()
+-	 *   down_read_trylock()		  atomic_dec_and_test()
+-	 *   LOCK				  MB
+-	 *   atomic_read()			  rwlock_is_locked()
+-	 *
+-	 * LOCK should suffice since the actual taking of the lock must
+-	 * happen _before_ what follows.
+-	 */
+-	if (!write_can_lock(&anon_vma->root->rwlock)) {
+-		anon_vma_lock_write(anon_vma);
+-		anon_vma_unlock_write(anon_vma);
+-	}
+-
+ 	kmem_cache_free(anon_vma_cachep, anon_vma);
  }
  
-+static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi)
-+{
-+	DEFINE_WAIT(wait);
-+
-+	prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
-+	if (get_pages(sbi, F2FS_WRITEBACK))
-+		io_schedule();
-+	finish_wait(&sbi->writeback_wqh, &wait);
-+}
-+
-+static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi)
-+{
-+	if (!get_pages(sbi, F2FS_WRITEBACK))
-+		wake_up_all(&sbi->writeback_wqh);
-+}
-+
+@@ -437,15 +414,10 @@ struct anon_vma *page_get_anon_vma(struc
+ 
  /*
-  * file.c
+  * Similar to page_get_anon_vma() except it locks the anon_vma.
+- *
+- * Its a little more complex as it tries to keep the fast path to a single
+- * atomic op -- the trylock. If we fail the trylock, we fall back to getting a
+- * reference like with page_get_anon_vma() and then block on the mutex.
   */
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 09af9c7..79293fe 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+ struct anon_vma *page_lock_anon_vma_read(struct page *page)
+ {
+ 	struct anon_vma *anon_vma = NULL;
+-	struct anon_vma *root_anon_vma;
+ 	unsigned long anon_mapping;
  
- 	if (p->is_sync)
- 		complete(p->wait);
-+	f2fs_writeback_wake(p->sbi);	
- 	kfree(p);
- 	bio_put(bio);
+ 	rcu_read_lock();
+@@ -456,51 +428,22 @@ struct anon_vma *page_lock_anon_vma_read
+ 		goto out;
+ 
+ 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+-	root_anon_vma = ACCESS_ONCE(anon_vma->root);
+-	if (read_trylock(&root_anon_vma->rwlock)) {
+-		/*
+-		 * If the page is still mapped, then this anon_vma is still
+-		 * its anon_vma, and holding the mutex ensures that it will
+-		 * not go away, see anon_vma_free().
+-		 */
+-		if (!page_mapped(page)) {
+-			read_unlock(&root_anon_vma->rwlock);
+-			anon_vma = NULL;
+-		}
+-		goto out;
+-	}
+-
+-	/* trylock failed, we got to sleep */
+-	if (!atomic_inc_not_zero(&anon_vma->refcount)) {
+-		anon_vma = NULL;
+-		goto out;
+-	}
+-
+-	if (!page_mapped(page)) {
+-		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
+-		goto out;
+-	}
+-
+-	/* we pinned the anon_vma, its safe to sleep */
+-	rcu_read_unlock();
+ 	anon_vma_lock_read(anon_vma);
+ 
+-	if (atomic_dec_and_test(&anon_vma->refcount)) {
+-		/*
+-		 * Oops, we held the last refcount, release the lock
+-		 * and bail -- can't simply use put_anon_vma() because
+-		 * we'll deadlock on the anon_vma_lock_write() recursion.
+-		 */
++	/*
++	 * If this page is still mapped, then its anon_vma cannot have been
++	 * freed.  But if it has been unmapped, we have no security against the
++	 * anon_vma structure being freed and reused (for another anon_vma:
++	 * SLAB_DESTROY_BY_RCU guarantees that - so the atomic_inc_not_zero()
++	 * above cannot corrupt).
++	 */
++	if (!page_mapped(page)) {
+ 		anon_vma_unlock_read(anon_vma);
+-		__put_anon_vma(anon_vma);
+ 		anon_vma = NULL;
+ 	}
+-
+-	return anon_vma;
+-
+ out:
+ 	rcu_read_unlock();
++
+ 	return anon_vma;
  }
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 13d0a0f..b31f686 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -818,6 +818,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	mutex_init(&sbi->gc_mutex);
- 	mutex_init(&sbi->writepages);
- 	mutex_init(&sbi->cp_mutex);
-+	init_waitqueue_head(&sbi->writeback_wqh);
- 	for (i = 0; i < NR_GLOBAL_LOCKS; i++)
- 		mutex_init(&sbi->fs_lock[i]);
- 	mutex_init(&sbi->node_write);
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+ 
