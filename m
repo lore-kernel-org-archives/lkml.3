@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab3I3USL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:18:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32254 "EHLO mx1.redhat.com"
+	id S1756533Ab3I3UT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:19:28 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:52683 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756425Ab3I3USI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:18:08 -0400
-Date: Mon, 30 Sep 2013 22:17:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, acme@infradead.org, mingo@kernel.org,
-        peterz@infradead.org, eranian@google.com
-Subject: Re: perf, x86: Add last TSX PMU code for Haswell v2
-Message-ID: <20130930201721.GA1079@krava>
-References: <1379688044-14173-1-git-send-email-andi@firstfloor.org>
+	id S1755734Ab3I3UT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:19:27 -0400
+Date: Mon, 30 Sep 2013 14:19:25 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Sparse files, sendfile and tmpfs ENOSPC
+Message-ID: <20130930201925.GA2007@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379688044-14173-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 07:40:38AM -0700, Andi Kleen wrote:
-> [This has kernel and user parts, so will need
-> review/ack/merges from both perf kernel and user land maintainers]
-> [v2: Address Peter's feedback for the kernel parts]
-> 
-> This is currently the last part of the TSX PMU code,
-> just adding the left over bits:
-> 
-> This adds some changes to the user interfaces.
-> I'll send patches for the manpage separately.
-> 
-> - Report the transaction abort flags to user space
-> using a new field, and add the code to display them.
-> This is used to classify abort types, also fairly
-> important for tuning as it guides the tuning process,
-> together with the abort weight that was added earleir.
-> 
-> [3 patches, generic, x86, user tools]
-> 
-> - Add support for reporting the two new TSX LBR flags: in_tx
-> and abort_tx. The code to handle the LBRs was already
-> added earlier, this just adds the code to report,
-> filter and display them.
+Hi Folks, I hope this is a good CC list for this misbehavior..
 
-perf tool changes look ok
+I've noticed that tmpfs is eager to expand holes in sparse files and
+ends up accounting for that memory as counting against the filesystem
+limit.
 
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Specifically, it does this if you try to sendfile() from a holey file,
+or mmap(PROT_READ) (and then touch pages). In both cases allocation
+errors can happen.
 
-btw, kernel changes didn't apply cleanly on tip tree for me
-last week.. I couldn't test on Haswel, but I at least tried
-your changes with no data and all seem ok ;-)
+I've attached a short test program to show what I mean..
 
-jirka
+$ mount -t tmpfs -o size=1048576 tmpfs jnk/
+$ df -h jnk/
+tmpfs           1.0M     0  1.0M   0% /mnt/jnk
+$ strace a.out jnk/test
+open("jnk/test", O_RDWR|O_CREAT|O_TRUNC, 0666) = 3
+lseek(3, 524288000, SEEK_SET)           = 524288000
+write(3, "\3\0\0\0", 4)                 = 4
+open("/dev/null", O_WRONLY)             = 4
+sendfile(4, 3, [0], 524288000)          = 1044480
+sendfile(4, 3, [1044480], 523243520)    = -1 ENOSPC (No space left on device)
+$ df -h jnk/
+tmpfs           1.0M  1.0M     0 100% /mnt/jnk
+
+The scenario I have that is making this behavior problematic is core
+files on embedded. Our system is setup to write core files to a tmpfs,
+and the core files are very sparse. When the system tries to send the
+core over the network (eg with sendfile or mmap+write) it quickly runs
+the tmpfs out of space, fails and blows up. read() works fine without
+expanding the hole..
+
+We've been doing this for a long time on PPC, but new systems use ARM
+and the ARM core files have significantly more sparse area, exposing
+this problem..
+
+I find this surprising since I would have thought the hole would have
+just map'd the zero page multiple times? Is this an accounting
+error someplace? I've seen Hugh's comments in past threads that this
+area is very complex..
+
+Regards,
+Jason
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/sendfile.h>
+#include <assert.h>
+
+int main (int argc,const char *argv[])
+{
+	int fd;
+	int fd2;
+	off_t off = 0;
+	size_t count = 500*1024*1024;
+	ssize_t rc;
+	off_t orc;
+
+	fd = open(argv[1],O_CREAT | O_TRUNC | O_RDWR,0666);
+	assert(fd != -1);
+
+	orc = lseek(fd,count,SEEK_SET);
+	assert(orc == count);
+	rc = write(fd,&fd,sizeof(fd));
+	assert(rc == sizeof(fd));
+
+	fd2 = open("/dev/null",O_WRONLY);
+	assert(fd2 != -1);
+
+	while (count != 0) {
+		rc = sendfile(fd2,fd,&off,count);
+		assert(rc > 0);
+		count -= rc;
+	}
+	return 0;
+}
