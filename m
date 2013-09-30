@@ -1,133 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3I3R3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:29:47 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:57507 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab3I3R3q (ORCPT
+	id S1755758Ab3I3RbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:31:09 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:56299 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809Ab3I3RbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:29:46 -0400
-X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Sep 2013 13:29:46 EDT
-Message-ID: <5249B21E.70603@itwm.fraunhofer.de>
-Date: Mon, 30 Sep 2013 19:17:18 +0200
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 30 Sep 2013 13:31:07 -0400
+Date: Mon, 30 Sep 2013 14:30:52 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
+ in parallel
+Message-ID: <20130930173052.GE10293@ghostprotocols.net>
+References: <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+ <20130912184341.GA11400@ghostprotocols.net>
+ <52321CE4.1080804@gmail.com>
+ <20130912200236.GC11400@ghostprotocols.net>
+ <20130912203116.GD32644@gmail.com>
+ <20130912204313.GA3259@gmail.com>
+ <20130915091029.GA21465@gmail.com>
+ <20130930164210.GA22342@gmail.com>
+ <20130930171220.GC10293@ghostprotocols.net>
+ <20130930172741.GD10293@ghostprotocols.net>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-References: <20130930143432.GG16579@fieldses.org> <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com> <52499026.3090802@redhat.com> <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com> <52498AA8.2090204@redhat.com> <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com> <52498DB6.7060901@redhat.com> <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com> <52498F68.8050200@redhat.com> <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com> <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: UTF-8
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930172741.GD10293@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 06:31 PM, Miklos Szeredi wrote:
-> Here's an example "cp" app using direct splice (and without fallback to
-> non-splice, which is obviously required unless the kernel is known to support
-> direct splice).
->
-> Untested, but trivial enough...
->
-> The important part is, I think, that the app must not assume that the kernel can
-> complete the request in one go.
->
-> Thanks,
-> Miklos
->
-> ----
-> #define _GNU_SOURCE
->
-> #include <stdio.h>
-> #include <fcntl.h>
-> #include <unistd.h>
-> #include <limits.h>
-> #include <sys/stat.h>
-> #include <err.h>
->
-> #ifndef SPLICE_F_DIRECT
-> #define SPLICE_F_DIRECT        (0x10)  /* neither splice fd is a pipe */
-> #endif
->
-> int main(int argc, char *argv[])
-> {
-> 	struct stat stbuf;
-> 	int in_fd;
-> 	int out_fd;
-> 	int res;
-> 	off_t off;
+Em Mon, Sep 30, 2013 at 02:27:41PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Mon, Sep 30, 2013 at 02:12:20PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Mon, Sep 30, 2013 at 06:42:10PM +0200, Ingo Molnar escreveu:
+> > > This series (with combo patch attached) implements (much) faster 
+> > > perf-tools feature-auto-detection.
 
-off_t off = 0;
+> > Cool stuff!
 
->
-> 	if (argc != 3)
-> 		errx(1, "usage: %s from to", argv[0]);
->
-> 	in_fd = open(argv[1], O_RDONLY);
-> 	if (in_fd == -1)
-> 		err(1, "opening %s", argv[1]);
->
-> 	res = fstat(in_fd, &stbuf);
-> 	if (res == -1)
-> 		err(1, "fstat");
->
-> 	out_fd = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC, stbuf.st_mode);
-> 	if (out_fd == -1)
-> 		err(1, "opening %s", argv[2]);
->
-> 	do {
-> 		off_t in_off = off, out_off = off;
-> 		ssize_t rres;
->
-> 		rres = splice(in_fd, &in_off, out_fd, &out_off, SSIZE_MAX,
-> 			     SPLICE_F_DIRECT);
-> 		if (rres == -1)
-> 			err(1, "splice");
-> 		if (rres == 0)
-> 			break;
->
-> 		off += rres;
-> 	} while (off < stbuf.st_size);
->
-> 	res = close(in_fd);
-> 	if (res == -1)
-> 		err(1, "close");
->
-> 	res = fsync(out_fd);
-> 	if (res == -1)
-> 		err(1, "fsync");
->
-> 	res = close(out_fd);
-> 	if (res == -1)
-> 		err(1, "close");
->
-> 	return 0;
-> }
+> > Testing:
 
 
-It would be nice if there would be way if the file system would get a 
-hint that the target file is supposed to be copy of another file. That 
-way distributed file systems could also create the target-file with the 
-correct meta-information (same storage targets as in-file has).
-Well, if we cannot agree on that, file system with a custom protocol at 
-least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not 
-sure if this would work for pNFS, though.
+Removed python-devel and it correctly turned those off:
 
+...                     libpython: [ OFF ]
+...             libpython-version: [ OFF ]
 
-Bernd
+One possible way to speed this up a bit more would be to somehow state that if
+the test A fails, then don't even bother testing test B, like in the case above.
 
-
-
+- Arnaldo
