@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3I3KPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:15:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43838 "EHLO
+	id S1756033Ab3I3KQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:16:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43834 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab3I3KNn (ORCPT
+	with ESMTP id S1755767Ab3I3KNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:43 -0400
+	Mon, 30 Sep 2013 06:13:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Khalid Aziz <khalid.aziz@oracle.com>, Pravin B Shelar <pshelar@nicira.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Peter Maydell <peter.maydell@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 092/104] mm: fix aio performance regression for database caused by THP
-Date: Mon, 30 Sep 2013 11:11:09 +0100
-Message-Id: <1380535881-9239-93-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 097/104] ARM: PCI: versatile: Fix SMAP register offsets
+Date: Mon, 30 Sep 2013 11:11:14 +0100
+Message-Id: <1380535881-9239-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -34,180 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
+From: Peter Maydell <peter.maydell@linaro.org>
 
-commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
+commit 99f2b130370b904ca5300079243fdbcafa2c708b upstream.
 
-I am working with a tool that simulates oracle database I/O workload.
-This tool (orion to be specific -
-<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
-allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
-does aio into these pages from flash disks using various common block
-sizes used by database.  I am looking at performance with two of the most
-common block sizes - 1M and 64K.  aio performance with these two block
-sizes plunged after Transparent HugePages was introduced in the kernel.
-Here are performance numbers:
+The SMAP register offsets in the versatile PCI controller code were
+all off by four.  (This didn't have any observable bad effects
+because on this board PHYS_OFFSET is zero, and (a) writing zero to
+the flags register at offset 0x10 has no effect and (b) the reset
+value of the SMAP register is zero anyway, so failing to write SMAP2
+didn't matter.)
 
-		pre-THP		2.6.39		3.11-rc5
-1M read		8384 MB/s	5629 MB/s	6501 MB/s
-64K read	7867 MB/s	4576 MB/s	4251 MB/s
-
-I have narrowed the performance impact down to the overheads introduced by
-THP in __get_page_tail() and put_compound_page() routines.  perf top shows
->40% of cycles being spent in these two routines.  Every time direct I/O
-to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
-the pages and calls put_page() when I/O completes to put the reference
-away.  THP introduced significant amount of locking overhead to get_page()
-and put_page() when dealing with compound pages because hugepages can be
-split underneath get_page() and put_page().  It added this overhead
-irrespective of whether it is dealing with hugetlbfs pages or transparent
-hugepages.  This resulted in 20%-45% drop in aio performance when using
-hugetlbfs pages.
-
-Since hugetlbfs pages can not be split, there is no reason to go through
-all the locking overhead for these pages from what I can see.  I added
-code to __get_page_tail() and put_compound_page() to bypass all the
-locking code when working with hugetlbfs pages.  This improved performance
-significantly.  Performance numbers with this patch:
-
-		pre-THP		3.11-rc5	3.11-rc5 + Patch
-1M read		8384 MB/s	6501 MB/s	8371 MB/s
-64K read	7867 MB/s	4251 MB/s	6510 MB/s
-
-Performance with 64K read is still lower than what it was before THP, but
-still a 53% improvement.  It does mean there is more work to be done but I
-will take a 53% improvement for now.
-
-Please take a look at the following patch and let me know if it looks
-reasonable.
-
-[akpm@linux-foundation.org: tweak comments]
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Peter Maydell <peter.maydell@linaro.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/swap.c | 77 ++++++++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 52 insertions(+), 25 deletions(-)
+ arch/arm/mach-versatile/pci.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 4e7e2ec..0c833e8 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -30,6 +30,7 @@
- #include <linux/backing-dev.h>
- #include <linux/memcontrol.h>
- #include <linux/gfp.h>
-+#include <linux/hugetlb.h>
+diff --git a/arch/arm/mach-versatile/pci.c b/arch/arm/mach-versatile/pci.c
+index 2dbaee9..474e76d 100644
+--- a/arch/arm/mach-versatile/pci.c
++++ b/arch/arm/mach-versatile/pci.c
+@@ -43,9 +43,9 @@
+ #define PCI_IMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x0)
+ #define PCI_IMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x4)
+ #define PCI_IMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x8)
+-#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x10)
+-#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
+-#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
++#define PCI_SMAP0		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x14)
++#define PCI_SMAP1		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x18)
++#define PCI_SMAP2		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0x1c)
+ #define PCI_SELFID		__IO_ADDRESS(VERSATILE_PCI_CORE_BASE+0xc)
  
- #include "internal.h"
- 
-@@ -77,6 +78,19 @@ static void __put_compound_page(struct page *page)
- 
- static void put_compound_page(struct page *page)
- {
-+	/*
-+	 * hugetlbfs pages cannot be split from under us.  If this is a
-+	 * hugetlbfs page, check refcount on head page and release the page if
-+	 * the refcount becomes zero.
-+	 */
-+	if (PageHuge(page)) {
-+		page = compound_head(page);
-+		if (put_page_testzero(page))
-+			__put_compound_page(page);
-+
-+		return;
-+	}
-+
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -180,38 +194,51 @@ bool __get_page_tail(struct page *page)
- 	 * proper PT lock that already serializes against
- 	 * split_huge_page().
- 	 */
--	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
-+	struct page *page_head;
- 
--	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+	/*
-+	 * If this is a hugetlbfs page it cannot be split under us.  Simply
-+	 * increment refcount for the head page.
-+	 */
-+	if (PageHuge(page)) {
-+		page_head = compound_head(page);
-+		atomic_inc(&page_head->_count);
-+		got = true;
-+	} else {
-+		unsigned long flags;
-+
-+		page_head = compound_trans_head(page);
-+		if (likely(page != page_head &&
-+					get_page_unless_zero(page_head))) {
-+
-+			/* Ref to put_compound_page() comment. */
-+			if (PageSlab(page_head)) {
-+				if (likely(PageTail(page))) {
-+					__get_page_tail_foll(page, false);
-+					return true;
-+				} else {
-+					put_page(page_head);
-+					return false;
-+				}
-+			}
- 
--		/* Ref to put_compound_page() comment. */
--		if (PageSlab(page_head)) {
-+			/*
-+			 * page_head wasn't a dangling pointer but it
-+			 * may not be a head page anymore by the time
-+			 * we obtain the lock. That is ok as long as it
-+			 * can't be freed from under us.
-+			 */
-+			flags = compound_lock_irqsave(page_head);
-+			/* here __split_huge_page_refcount won't run anymore */
- 			if (likely(PageTail(page))) {
- 				__get_page_tail_foll(page, false);
--				return true;
--			} else {
--				put_page(page_head);
--				return false;
-+				got = true;
- 			}
-+			compound_unlock_irqrestore(page_head, flags);
-+			if (unlikely(!got))
-+				put_page(page_head);
- 		}
--
--		/*
--		 * page_head wasn't a dangling pointer but it
--		 * may not be a head page anymore by the time
--		 * we obtain the lock. That is ok as long as it
--		 * can't be freed from under us.
--		 */
--		flags = compound_lock_irqsave(page_head);
--		/* here __split_huge_page_refcount won't run anymore */
--		if (likely(PageTail(page))) {
--			__get_page_tail_foll(page, false);
--			got = true;
--		}
--		compound_unlock_irqrestore(page_head, flags);
--		if (unlikely(!got))
--			put_page(page_head);
- 	}
- 	return got;
- }
+ #define DEVICE_ID_OFFSET		0x00
 -- 
 1.8.3.2
 
