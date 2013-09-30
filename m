@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab3I3Re3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:34:29 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:40441 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab3I3Re2 (ORCPT
+	id S1755804Ab3I3Rgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:36:40 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:53331 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab3I3Rgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:34:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130930171220.GC10293@ghostprotocols.net>
-References: <20130912133855.GA23780@gmail.com>
-	<CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
-	<CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
-	<20130912184341.GA11400@ghostprotocols.net>
-	<52321CE4.1080804@gmail.com>
-	<20130912200236.GC11400@ghostprotocols.net>
-	<20130912203116.GD32644@gmail.com>
-	<20130912204313.GA3259@gmail.com>
-	<20130915091029.GA21465@gmail.com>
-	<20130930164210.GA22342@gmail.com>
-	<20130930171220.GC10293@ghostprotocols.net>
-Date: Mon, 30 Sep 2013 10:34:27 -0700
-X-Google-Sender-Auth: 1hJWq9l-chcqVUhOaZ8_Ll_AyzE
-Message-ID: <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
-Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them in parallel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+	Mon, 30 Sep 2013 13:36:39 -0400
+Date: Mon, 30 Sep 2013 14:36:27 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
+ in parallel
+Message-ID: <20130930173627.GF10293@ghostprotocols.net>
+References: <20130912184341.GA11400@ghostprotocols.net>
+ <52321CE4.1080804@gmail.com>
+ <20130912200236.GC11400@ghostprotocols.net>
+ <20130912203116.GD32644@gmail.com>
+ <20130912204313.GA3259@gmail.com>
+ <20130915091029.GA21465@gmail.com>
+ <20130930164210.GA22342@gmail.com>
+ <20130930171220.GC10293@ghostprotocols.net>
+ <20130930172741.GD10293@ghostprotocols.net>
+ <20130930173052.GE10293@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930173052.GE10293@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 10:12 AM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
->
-> Checking why that strlcpy failed...
+Em Mon, Sep 30, 2013 at 02:30:52PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Mon, Sep 30, 2013 at 02:27:41PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Mon, Sep 30, 2013 at 02:12:20PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Em Mon, Sep 30, 2013 at 06:42:10PM +0200, Ingo Molnar escreveu:
+> > > > This series (with combo patch attached) implements (much) faster 
+> > > > perf-tools feature-auto-detection.
 
-I don't think glibc does strlcpy. It's not a standard C function, and
-it's somewhat controversial (although I dislike strncpy more with the
-crazy zero-padding, ugh).
+> Removed python-devel and it correctly turned those off:
+> 
+> ...                     libpython: [ OFF ]
+> ...             libpython-version: [ OFF ]
+> 
+> One possible way to speed this up a bit more would be to somehow state that if
+> the test A fails, then don't even bother testing test B, like in the case above.
 
-            Linus
+Another suggestion: To provide a short sentence with each feature
+stating what will be not present when something is "OFF", or even a
+sentence stating what the feature is about, so the user get a better
+picture of what is (not) being built into his tool.
+
+Probably reusing strings we already have in the makefiles.
+
+- Arnaldo
