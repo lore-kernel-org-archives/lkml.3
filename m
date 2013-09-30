@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab3I3KMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:12:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43565 "EHLO
+	id S1755649Ab3I3KNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:13:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755463Ab3I3KMe (ORCPT
+	with ESMTP id S1755622Ab3I3KM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:12:34 -0400
+	Mon, 30 Sep 2013 06:12:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 047/104] 8139cp: Fix skb leak in rx_status_loop failure path.
-Date: Mon, 30 Sep 2013 11:10:24 +0100
-Message-Id: <1380535881-9239-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 066/104] drm/radeon: update line buffer allocation for dce4.1/5
+Date: Mon, 30 Sep 2013 11:10:43 +0100
+Message-Id: <1380535881-9239-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,32 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit d06f5187469eee1b2932c02fd093d113cfc60d5e upstream.
+commit 0b31e02363b0db4e7931561bc6c141436e729d9f upstream.
 
-Introduced in cf3c4c03060b688cbc389ebc5065ebcce5653e96
-("8139cp: Add dma_mapping_error checking")
+We need to allocate line buffer to each display when
+setting up the watermarks.  Failure to do so can lead
+to a blank screen.  This fixes blank screen problems
+on dce4.1/5 asics.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Based on an initial fix from:
+Jay Cornwall <jay.cornwall@amd.com>
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/realtek/8139cp.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/evergreen.c  | 25 +++++++++++++++++++++----
+ drivers/gpu/drm/radeon/evergreend.h |  4 ++++
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index bf8eb57..efd3e34 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -524,6 +524,7 @@ rx_status_loop:
- 					 PCI_DMA_FROMDEVICE);
- 		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
- 			dev->stats.rx_dropped++;
-+			kfree_skb(new_skb);
- 			goto rx_next;
- 		}
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 7ac565f..269fa76 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -534,7 +534,8 @@ static u32 evergreen_line_buffer_adjust(struct radeon_device *rdev,
+ 					struct drm_display_mode *mode,
+ 					struct drm_display_mode *other_mode)
+ {
+-	u32 tmp;
++	u32 tmp, buffer_alloc, i;
++	u32 pipe_offset = radeon_crtc->crtc_id * 0x20;
+ 	/*
+ 	 * Line Buffer Setup
+ 	 * There are 3 line buffers, each one shared by 2 display controllers.
+@@ -557,18 +558,34 @@ static u32 evergreen_line_buffer_adjust(struct radeon_device *rdev,
+ 	 * non-linked crtcs for maximum line buffer allocation.
+ 	 */
+ 	if (radeon_crtc->base.enabled && mode) {
+-		if (other_mode)
++		if (other_mode) {
+ 			tmp = 0; /* 1/2 */
+-		else
++			buffer_alloc = 1;
++		} else {
+ 			tmp = 2; /* whole */
+-	} else
++			buffer_alloc = 2;
++		}
++	} else {
+ 		tmp = 0;
++		buffer_alloc = 0;
++	}
  
+ 	/* second controller of the pair uses second half of the lb */
+ 	if (radeon_crtc->crtc_id % 2)
+ 		tmp += 4;
+ 	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset, tmp);
+ 
++	if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
++		WREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset,
++		       DMIF_BUFFERS_ALLOCATED(buffer_alloc));
++		for (i = 0; i < rdev->usec_timeout; i++) {
++			if (RREG32(PIPE0_DMIF_BUFFER_CONTROL + pipe_offset) &
++			    DMIF_BUFFERS_ALLOCATED_COMPLETED)
++				break;
++			udelay(1);
++		}
++	}
++
+ 	if (radeon_crtc->base.enabled && mode) {
+ 		switch (tmp) {
+ 		case 0:
+diff --git a/drivers/gpu/drm/radeon/evergreend.h b/drivers/gpu/drm/radeon/evergreend.h
+index 735e515..5e24050 100644
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -707,6 +707,10 @@
+ #       define LATENCY_LOW_WATERMARK(x)                   ((x) << 0)
+ #       define LATENCY_HIGH_WATERMARK(x)                  ((x) << 16)
+ 
++#define	PIPE0_DMIF_BUFFER_CONTROL			  0x0ca0
++#       define DMIF_BUFFERS_ALLOCATED(x)                  ((x) << 0)
++#       define DMIF_BUFFERS_ALLOCATED_COMPLETED           (1 << 4)
++
+ #define IH_RB_CNTL                                        0x3e00
+ #       define IH_RB_ENABLE                               (1 << 0)
+ #       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
 -- 
 1.8.3.2
 
