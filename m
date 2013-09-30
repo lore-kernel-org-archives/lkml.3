@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092Ab3I3NSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 09:18:42 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:13543 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3I3NSj (ORCPT
+	id S1755272Ab3I3NTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:19:48 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:43623 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab3I3NTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 09:18:39 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-3a-52497a2efabd
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Jonas Jensen <jonas.jensen@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] ethernet: moxa: fix incorrect placement of __initdata tag
-Date: Mon, 30 Sep 2013 15:18:27 +0200
-Message-id: <172588984.DhoE4BmVdc@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jQV29Ks8gg+07pCzmnG9hsZj8Yx+L
-	xdmmN+wWl3fNYbM4tkDMgdVjy8qbTB47Z91l9+jbsorR4/MmuQCWKC6blNSczLLUIn27BK6M
-	TUv/sBSs5Kj4tmkzewNjC3sXIyeHhICJxNsTv1ggbDGJC/fWs3UxcnEICUxnlHgxtZsdwmlh
-	kvgyfS9YFZuAlcTE9lWMILaIgLbEugM9rCBFzAI9jBJX/q1h7mLk4BAW8JJovcUCYrIIqErs
-	mp0DUs4LVP55UhsziC0q4CnxadJSZoi4oMSPyffAxjMLyEvs2z+VFcLWkli/8zjTBEa+WUjK
-	ZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4KB8JrWDcWWDxSFGAQ5GJR7e
-	Ccs9goRYE8uKK3MPMUpwMCuJ8IqXeQYJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCe
-	WJKanZpakFoEk2Xi4JRqYDzLKH3eQHYT45elaR3Ojr0ik1O63Y5Z/bx6QPzuotvBb9VXfrzO
-	5Xgs1HfR66Q9k3P+7pHL6Pj0a95BV7Z4f6llkee3ec0XzHl+tqvI20xoQdTmlvyLcyaJr1Xm
-	6UtYIBloZ7vjrmNmpnhx0Gz2l+Fqfp5W88RPRiY8v/wxf03xlNRJvo93lSmxFGckGmoxFxUn
-	AgD6kvj3RgIAAA==
+	Mon, 30 Sep 2013 09:19:46 -0400
+Message-ID: <52497A6E.5010908@gmail.com>
+Date: Mon, 30 Sep 2013 08:19:42 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 01/21] drivers: remove unnecessary prom.h includes
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com> <1380221456-11192-2-git-send-email-robherring2@gmail.com> <52492E4F.2020701@pengutronix.de>
+In-Reply-To: <52492E4F.2020701@pengutronix.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__initdata tag should be placed between the variable name and equal
-sign for the variable to be placed in the intended .init.data section.
+On 09/30/2013 02:54 AM, Marc Kleine-Budde wrote:
+> On 09/26/2013 08:50 PM, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Remove unnecessary prom.h includes in preparation to remove implicit
+>> includes of prom.h.
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Wolfgang Grandegger <wg@grandegger.com>
+>> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+>> Cc: linux-can@vger.kernel.org
+>> Cc: netdev@vger.kernel.org
+> 
+> Applied to linux-can-next/testing, it will be included in my next pull
+> request to David Miller.
 
-In this particular case __initdata is incorrect as moxart_mac_driver
-can be used after the driver gets initialized.
+Please don't apply this. The whole series needs to be applied together.
+This patch is a dependency for the rest of the series.
 
-Also while at it static-ize moxart_mac_driver.
-
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/net/ethernet/moxa/moxart_ether.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
-index 83c2091..bd1a2d2 100644
---- a/drivers/net/ethernet/moxa/moxart_ether.c
-+++ b/drivers/net/ethernet/moxa/moxart_ether.c
-@@ -543,7 +543,7 @@ static const struct of_device_id moxart_mac_match[] = {
- 	{ }
- };
- 
--struct __initdata platform_driver moxart_mac_driver = {
-+static struct platform_driver moxart_mac_driver = {
- 	.probe	= moxart_mac_probe,
- 	.remove	= moxart_remove,
- 	.driver	= {
--- 
-1.8.2.3
-
+Rob
 
