@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab3I3KMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:12:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43515 "EHLO
+	id S1755474Ab3I3KMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:12:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43550 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176Ab3I3KMV (ORCPT
+	with ESMTP id S1755439Ab3I3KM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:12:21 -0400
+	Mon, 30 Sep 2013 06:12:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
+Cc: Eric Dumazet <edumazet@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 038/104] htb: fix sign extension bug
-Date: Mon, 30 Sep 2013 11:10:15 +0100
-Message-Id: <1380535881-9239-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 044/104] tcp: cubic: fix bug in bictcp_acked()
+Date: Mon, 30 Sep 2013 11:10:21 +0100
+Message-Id: <1380535881-9239-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Eric Dumazet <edumazet@google.com>
 
-commit cbd375567f7e4811b1c721f75ec519828ac6583f upstream.
+commit cd6b423afd3c08b27e1fed52db828ade0addbc6b upstream.
 
-When userspace passes a large priority value
-the assignment of the unsigned value hopt->prio
-to  signed int cl->prio causes cl->prio to become negative and the
-comparison is with TC_HTB_NUMPRIO is always false.
+While investigating about strange increase of retransmit rates
+on hosts ~24 days after boot, Van found hystart was disabled
+if ca->epoch_start was 0, as following condition is true
+when tcp_time_stamp high order bit is set.
 
-The result is that HTB crashes by referencing outside
-the array when processing packets. With this patch the large value
-wraps around like other values outside the normal range.
+(s32)(tcp_time_stamp - ca->epoch_start) < HZ
 
-See: https://bugzilla.kernel.org/show_bug.cgi?id=60669
+Quoting Van :
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+ At initialization & after every loss ca->epoch_start is set to zero so
+ I believe that the above line will turn off hystart as soon as the 2^31
+ bit is set in tcp_time_stamp & hystart will stay off for 24 days.
+ I think we've observed that cubic's restart is too aggressive without
+ hystart so this might account for the higher drop rate we observe.
+
+Diagnosed-by: Van Jacobson <vanj@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sched/sch_htb.c | 2 +-
+ net/ipv4/tcp_cubic.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
-index e9ea2f3..6f15bd1 100644
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -86,7 +86,7 @@ struct htb_class {
- 	unsigned int children;
- 	struct htb_class *parent;	/* parent class */
+diff --git a/net/ipv4/tcp_cubic.c b/net/ipv4/tcp_cubic.c
+index b6b591f..b6ae92a 100644
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -416,7 +416,7 @@ static void bictcp_acked(struct sock *sk, u32 cnt, s32 rtt_us)
+ 		return;
  
--	int prio;		/* these two are used only by leaves... */
-+	u32 prio;		/* these two are used only by leaves... */
- 	int quantum;		/* but stored for parent-to-leaf return */
+ 	/* Discard delay samples right after fast recovery */
+-	if ((s32)(tcp_time_stamp - ca->epoch_start) < HZ)
++	if (ca->epoch_start && (s32)(tcp_time_stamp - ca->epoch_start) < HZ)
+ 		return;
  
- 	union {
+ 	delay = (rtt_us << 3) / USEC_PER_MSEC;
 -- 
 1.8.3.2
 
