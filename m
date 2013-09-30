@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab3I3P5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:57:41 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43976 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755286Ab3I3P5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:57:39 -0400
-Message-ID: <52499F43.3010007@ti.com>
-Date: Mon, 30 Sep 2013 10:56:51 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755919Ab3I3P5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:57:51 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:39143 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab3I3P5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 11:57:44 -0400
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 0/9] omap hwspinlock dt support
-References: <cover.1379445653.git.s-anna@ti.com> <5245A8CA.4020805@ti.com> <alpine.DEB.2.02.1309300309530.17980@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1309300309530.17980@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <52498F68.8050200@redhat.com>
+References: <20130925210742.GG30372@lenny.home.zabbo.net>
+	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	<20130926185508.GO30372@lenny.home.zabbo.net>
+	<5244A68F.906@redhat.com>
+	<20130927200550.GA22640@fieldses.org>
+	<20130927205013.GZ30372@lenny.home.zabbo.net>
+	<CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
+	<52474839.2080201@redhat.com>
+	<CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
+	<20130930143432.GG16579@fieldses.org>
+	<CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+	<52499026.3090802@redhat.com>
+	<CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+	<52498AA8.2090204@redhat.com>
+	<CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
+	<52498DB6.7060901@redhat.com>
+	<CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+	<52498F68.8050200@redhat.com>
+Date: Mon, 30 Sep 2013 17:57:41 +0200
+Message-ID: <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2013 10:12 PM, Paul Walmsley wrote:
-> Hi
-> 
-> On Fri, 27 Sep 2013, Suman Anna wrote:
-> 
->> Paul,
->> The hwmod data patches needs to be merged only after the respective DT
->> node patches are merged, without which the hwmod entry will not have a
->> base address while enabling and idling (using sysc) the hwmod during
->> hwmod initialization.
-> 
-> Hmm, ideally there shouldn't be a merge dependency here. Could you please 
-> send a patch to the hwmod core that logs a warning and skips the operation 
-> in these circumstances?  Or maybe just skips the registration of the 
-> device?
-> 
+On Mon, Sep 30, 2013 at 4:49 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+> On 09/30/2013 10:46 AM, Miklos Szeredi wrote:
+>>
+>> On Mon, Sep 30, 2013 at 4:41 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+>>>
+>>> The way the array based offload (and some software side reflink works) is
+>>> not a byte by byte copy. We cannot assume that a valid count can be
+>>> returned
+>>> or that such a count would be an indication of a sequential segment of
+>>> good
+>>> data.  The whole thing would normally have to be reissued.
+>>>
+>>> To make that a true assumption, you would have to mandate that in each of
+>>> the specifications (and sw targets)...
+>>
+>> You're missing my point.
+>>
+>>   - user issues SIZE_MAX splice request
+>>   - fs issues *64M* (or whatever) request to offload
+>>   - when that completes *fully* then we return 64M to userspace
+>>   - if it completes partially, then we return an error to userspace
+>>
+>> Again, wouldn't that work?
+>>
+>> Thanks,
+>> Miklos
+>
+>
+> Yes, if you send a copy offload command and it works, you can assume that it
+> worked fully. It would be pretty interesting if that were not true :)
+>
+> If it fails, we cannot assume anything about partial completion.
 
-Yes, will look into this. This is not specific to hwspinlock, but may be
-seen with others as well if the omap_hwmod_addr_space or its equivalent
-is not populated.
+Sure, that was my understanding from the start.  Maybe I wasn't
+precise enough in my explanation.
 
-regards
-Suman
-
+Thanks,
+Miklos
