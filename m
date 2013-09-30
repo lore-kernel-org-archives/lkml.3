@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3I3ITx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 04:19:53 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58546 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab3I3ITv (ORCPT
+	id S1754691Ab3I3IVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 04:21:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36200 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab3I3IVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 04:19:51 -0400
-X-AuditID: 9c93016f-b7bc8ae000004e6e-0c-524934252122
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Sonny Rao <sonnyrao@chromium.org>
-Subject: [PATCH] perf session: Fix infinite loop on invalid perf.data file
-Date: Mon, 30 Sep 2013 17:19:48 +0900
-Message-Id: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 30 Sep 2013 04:21:33 -0400
+Date: Mon, 30 Sep 2013 10:20:58 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, thierry.reding@gmail.com, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
+        rob@landley.net, ian.campbell@citrix.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCHv5 0/4] Add Freescale FTM PWM driver.
+Message-ID: <20130930082058.GB30088@pengutronix.de>
+Mail-Followup-To: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+	thierry.reding@gmail.com, swarren@wwwdotorg.org, t.figa@samsung.com,
+	grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
+	ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
+	rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+	linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+References: <1380521611-2764-1-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380521611-2764-1-git-send-email-Li.Xiubo@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:19:49 up 36 days, 17:50, 45 users,  load average: 0.13, 0.11,
+ 0.07
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, Sep 30, 2013 at 02:13:27PM +0800, Xiubo Li wrote:
+> Hello,
+> 
+> This patch series is the Freescale FTM PWM implementation. And there are 8 channels most supported by the FTM PWM. This implementation is only compatible with device tree definition.
+> 
+> This patch series is based on linux-next and has been tested on Vybrid VF610 Tower board using device tree.
 
-perf-record updates the header in the perf.data file at termination.
-Without this update perf-report (and other processing built-ins) it
-caused an infinite loop when perf report (or something like) called.
+Looks good to me now. Thanks for fixing.
 
-This is because the algorithm in __perf_session__process_events()
-depends on the data_size which is read from file header.  Use file
-size directly instead in this case to do the best-effort processing.
+For the series:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/header.c  | 9 +++++++++
- tools/perf/util/session.c | 2 +-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 26441d0e571b..cedccde6a6b2 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2753,6 +2753,15 @@ int perf_session__read_header(struct perf_session *session)
- 	if (perf_file_header__read(&f_header, header, fd) < 0)
- 		return -EINVAL;
- 
-+	/*
-+	 * Sanity check that perf.data was written cleanly; data size is
-+	 * initialized to 0 and updated only if the on_exit function is run.
-+	 * If data size is still 0 then the file contains only partial
-+	 * information.  Just warn user and process it as much as it can.
-+	 */
-+	if (f_header.data.size == 0)
-+		pr_warning("Data size is 0. Was the record command properly terminated?\n");
-+
- 	nr_attrs = f_header.attrs.size / f_header.attr_size;
- 	lseek(fd, f_header.attrs.offset, SEEK_SET);
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6c1d4447c5b4..7bbd60c0a0ed 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1323,7 +1323,7 @@ int __perf_session__process_events(struct perf_session *session,
- 	file_offset = page_offset;
- 	head = data_offset - page_offset;
- 
--	if (data_offset + data_size < file_size)
-+	if (data_size && (data_offset + data_size < file_size))
- 		file_size = data_offset + data_size;
- 
- 	progress_next = file_size / 16;
+Sascha
+
 -- 
-1.7.11.7
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
