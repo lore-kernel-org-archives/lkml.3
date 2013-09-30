@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab3I3PYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:24:30 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:44647 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982Ab3I3PY1 (ORCPT
+	id S1756037Ab3I3PZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:25:42 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52742 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab3I3PZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:24:27 -0400
+	Mon, 30 Sep 2013 11:25:40 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: takasi-y@ops.dti.ne.jp
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] serial8250-em: convert to clk_prepare/unprepare
+Date: Mon, 30 Sep 2013 17:25:40 +0200
+Message-ID: <4895580.Leadr2OAf1@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130924131039.3c871cad7acb2a068a988d0f@ops.dti.ne.jp>
+References: <52410F86.4040301@renesas.com> <20130924131039.3c871cad7acb2a068a988d0f@ops.dti.ne.jp>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <52499026.3090802@redhat.com>
-References: <20130925210742.GG30372@lenny.home.zabbo.net>
-	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
-	<20130926185508.GO30372@lenny.home.zabbo.net>
-	<5244A68F.906@redhat.com>
-	<20130927200550.GA22640@fieldses.org>
-	<20130927205013.GZ30372@lenny.home.zabbo.net>
-	<CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
-	<52474839.2080201@redhat.com>
-	<CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
-	<20130930143432.GG16579@fieldses.org>
-	<CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
-	<52499026.3090802@redhat.com>
-Date: Mon, 30 Sep 2013 17:24:26 +0200
-Message-ID: <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
-Subject: Re: [RFC] extending splice for copy offloading
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 4:52 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
-> On 09/30/2013 10:51 AM, Miklos Szeredi wrote:
->>
->> On Mon, Sep 30, 2013 at 4:34 PM, J. Bruce Fields <bfields@fieldses.org>
->> wrote:
->>>>
->>>> My other worry is about interruptibility/restartability.  Ideas?
->>>>
->>>> What happens on splice(from, to, 4G) and it's a non-reflink copy?
->>>> Can the page cache copy be made restartable?   Or should splice() be
->>>> allowed to return a short count?  What happens on (non-reflink) remote
->>>> copies and huge request sizes?
->>>
->>> If I were writing an application that required copies to be restartable,
->>> I'd probably use the largest possible range in the reflink case but
->>> break the copy into smaller chunks in the splice case.
->>>
->> The app really doesn't want to care about that.  And it doesn't want
->> to care about restartability, etc..  It's something the *kernel* has
->> to care about.   You just can't have uninterruptible syscalls that
->> sleep for a "long" time, otherwise first you'll just have annoyed
->> users pressing ^C in vain; then, if the sleep is even longer, warnings
->> about task sleeping too long.
->>
->> One idea is letting splice() return a short count, and so the app can
->> safely issue SIZE_MAX requests and the kernel can decide if it can
->> copy the whole file in one go or if it wants to do it in smaller
->> chunks.
->>
+Hi Yoshii-san,
 
->
-> You cannot rely on a short count. That implies that an offloaded copy starts
-> at byte 0 and the short count first bytes are all valid.
+Thank you for the patch.
 
-Huh?
+On Tuesday 24 September 2013 13:10:39 takasi-y@ops.dti.ne.jp wrote:
+> From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+> 
+> Add calls to clk_prepare and unprepare so that EMMA Mobile EV2 can
+> migrate to the common clock framework.
+> 
+> Signed-off-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+> [takashi.yoshii.ze@renesas.com: edited for conflicts]
+> Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
 
-- app calls splice(from, 0, to, 0, SIZE_MAX)
- 1) VFS calls ->direct_splice(from, 0,  to, 0, SIZE_MAX)
-    1.a) fs reflinks the whole file in a jiffy and returns the size of the file
-    1 b) fs does copy offload of, say, 64MB and returns 64M
- 2) VFS does page copy of, say, 1MB and returns 1MB
-- app calls splice(from, X, to, X, SIZE_MAX) where X is the new offset
-...
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-The point is: the app is always doing the same (incrementing offset
-with the return value from splice) and the kernel can decide what is
-the best size it can service within a single uninterruptible syscall.
+> ---
+>  drivers/tty/serial/8250/8250_em.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/8250/8250_em.c
+> b/drivers/tty/serial/8250/8250_em.c index 5f3bba1..d1a9078 100644
+> --- a/drivers/tty/serial/8250/8250_em.c
+> +++ b/drivers/tty/serial/8250/8250_em.c
+> @@ -122,7 +122,7 @@ static int serial8250_em_probe(struct platform_device
+> *pdev) up.port.dev = &pdev->dev;
+>  	up.port.private_data = priv;
+> 
+> -	clk_enable(priv->sclk);
+> +	clk_prepare_enable(priv->sclk);
+>  	up.port.uartclk = clk_get_rate(priv->sclk);
+> 
+>  	up.port.iotype = UPIO_MEM32;
+> @@ -134,7 +134,7 @@ static int serial8250_em_probe(struct platform_device
+> *pdev) ret = serial8250_register_8250_port(&up);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "unable to register 8250 port\n");
+> -		clk_disable(priv->sclk);
+> +		clk_disable_unprepare(priv->sclk);
+>  		return ret;
+>  	}
+> 
+> @@ -148,7 +148,7 @@ static int serial8250_em_remove(struct platform_device
+> *pdev) struct serial8250_em_priv *priv = platform_get_drvdata(pdev);
+> 
+>  	serial8250_unregister_port(priv->line);
+> -	clk_disable(priv->sclk);
+> +	clk_disable_unprepare(priv->sclk);
+>  	return 0;
+>  }
+-- 
+Regards,
 
-Wouldn't that work?
+Laurent Pinchart
 
-Thanks,
-Miklos
