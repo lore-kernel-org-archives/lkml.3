@@ -1,226 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3I3V7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 17:59:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16835 "EHLO mga09.intel.com"
+	id S1756586Ab3I3V7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 17:59:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32199 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756014Ab3I3V7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 17:59:08 -0400
+	id S1756001Ab3I3V7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 17:59:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
-   d="scan'208";a="385921929"
+   d="scan'208";a="367935969"
 From: Andi Kleen <andi@firstfloor.org>
 To: acma@infradead.org
 Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/6] perf, tools: Support sorting by in_tx, abort branch flags v3
-Date: Mon, 30 Sep 2013 14:59:00 -0700
-Message-Id: <1380578343-31301-4-git-send-email-andi@firstfloor.org>
+        jolsa@redhat.com
+Subject: perf, x86: Add last TSX PMU code for Haswell v3
+Date: Mon, 30 Sep 2013 14:58:57 -0700
+Message-Id: <1380578343-31301-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380578343-31301-1-git-send-email-andi@firstfloor.org>
-References: <1380578343-31301-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+[This has kernel and user parts.
+Both sides have been reviewed now, so hopefully it's good
+to merge.]
+[v2: Address Peter's feedback for the kernel parts]
+[v3: Rebased to current tip. Added Ack/Reviewed-by for user tools code]
 
-Extend the perf branch sorting code to support sorting by in_tx
-or abort_tx qualifiers. Also print out those qualifiers.
+Note this also needs the separately posted 
+64bit comparison fix to correctly report abort codes.
 
-This also fixes up some of the existing sort key documentation.
+This is currently the last part of the TSX PMU code,
+just adding the left over bits:
 
-We do not support no_tx here, because it's simply not showing
-the in_tx flag.
+This adds some changes to the user interfaces.
+I'll send patches for the manpage separately.
 
-v2: Readd flags to man pages
-v3: Rename intx
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |  4 ++-
- tools/perf/Documentation/perf-top.txt    |  3 +-
- tools/perf/builtin-report.c              |  2 +-
- tools/perf/builtin-top.c                 |  3 +-
- tools/perf/perf.h                        |  4 ++-
- tools/perf/util/hist.h                   |  2 ++
- tools/perf/util/sort.c                   | 51 ++++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |  2 ++
- 8 files changed, 66 insertions(+), 5 deletions(-)
+- Report the transaction abort flags to user space
+using a new field, and add the code to display them.
+This is used to classify abort types, also fairly
+important for tuning as it guides the tuning process,
+together with the abort weight that was added earleir.
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 2b8097e..ae337e3 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -71,7 +71,7 @@ OPTIONS
- 	entries are displayed as "[other]".
- 	- cpu: cpu number the task ran at the time of sample
- 	- srcline: filename and line number executed at the time of sample.  The
--	DWARF debuggin info must be provided.
-+	DWARF debugging info must be provided.
- 
- 	By default, comm, dso and symbol keys are used.
- 	(i.e. --sort comm,dso,symbol)
-@@ -85,6 +85,8 @@ OPTIONS
- 	- symbol_from: name of function branched from
- 	- symbol_to: name of function branched to
- 	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
-+	- in_tx: branch in TSX transaction
-+	- abort: TSX transaction abort.
- 
- 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
- 	and symbol_to, see '--branch-stack'.
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 58d6598..f852eb5 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -112,7 +112,8 @@ Default is to monitor all CPUS.
- 
- -s::
- --sort::
--	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight, local_weight.
-+	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
-+	local_weight, abort, in_tx
- 
- -n::
- --show-nr-samples::
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 8e50d8d..1e84103 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -786,7 +786,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
- 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
- 		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
--		   "snoop, locked"),
-+		   "snoop, locked, abort, in_tx"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2122141..6534a37 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1103,7 +1103,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
-+		   " abort, in_tx"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index cf20187..acf3d66 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -182,7 +182,9 @@ struct ip_callchain {
- struct branch_flags {
- 	u64 mispred:1;
- 	u64 predicted:1;
--	u64 reserved:62;
-+	u64 in_tx:1;
-+	u64 abort:1;
-+	u64 reserved:60;
- };
- 
- struct branch_entry {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 1329b6b..f743e96 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -45,6 +45,8 @@ enum hist_column {
- 	HISTC_CPU,
- 	HISTC_SRCLINE,
- 	HISTC_MISPREDICT,
-+	HISTC_IN_TX,
-+	HISTC_ABORT,
- 	HISTC_SYMBOL_FROM,
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 5f118a0..1771566 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -858,6 +858,55 @@ struct sort_entry sort_mem_snoop = {
- 	.se_width_idx	= HISTC_MEM_SNOOP,
- };
- 
-+static int64_t
-+sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.abort !=
-+		right->branch_info->flags.abort;
-+}
-+
-+static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.abort)
-+		out = "A";
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_abort = {
-+	.se_header	= "Transaction abort",
-+	.se_cmp		= sort__abort_cmp,
-+	.se_snprintf	= hist_entry__abort_snprintf,
-+	.se_width_idx	= HISTC_ABORT,
-+};
-+
-+static int64_t
-+sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.in_tx !=
-+		right->branch_info->flags.in_tx;
-+}
-+
-+static int hist_entry__in_tx_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.in_tx)
-+		out = "T";
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_in_tx = {
-+	.se_header	= "Branch in transaction",
-+	.se_cmp		= sort__in_tx_cmp,
-+	.se_snprintf	= hist_entry__in_tx_snprintf,
-+	.se_width_idx	= HISTC_IN_TX,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -888,6 +937,8 @@ static struct sort_dimension bstack_sort_dimensions[] = {
- 	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
- 	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
- 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
-+	DIM(SORT_IN_TX, "in_tx", sort_in_tx),
-+	DIM(SORT_ABORT, "abort", sort_abort),
- };
- 
- #undef DIM
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 4e80dbd..9dad3a0 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -153,6 +153,8 @@ enum sort_type {
- 	SORT_SYM_FROM,
- 	SORT_SYM_TO,
- 	SORT_MISPREDICT,
-+	SORT_ABORT,
-+	SORT_IN_TX,
- 
- 	/* memory mode specific sort keys */
- 	__SORT_MEMORY_MODE,
--- 
-1.8.3.1
+[3 patches, generic, x86, user tools]
 
+- Add support for reporting the two new TSX LBR flags: in_tx
+and abort_tx. The code to handle the LBRs was already
+added earlier, this just adds the code to report,
+filter and display them.
+
+- Add a workaround for a Haswell issue that it reports
+an extra LBR record for every abort. We just filter
+those out in the kernel.
+
+Open perf TSX issues left:
+- Revisit automatic enabling of precise for tx/el-abort
+- Need to fix the sort handling in the user tools
+to actually sort on other fields
+- The aggregated LBR display in the user tools is not 
+very useful for transactions, need a way to report them 
+in a histogram like backtraces.
+- May want some shortcut options for
+record --transaction --weight / report --sort symbol,transaction,weight
+
+-Andi
