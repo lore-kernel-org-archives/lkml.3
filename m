@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab3I3HzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:55:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48613 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab3I3HzI (ORCPT
+	id S1753707Ab3I3H67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:58:59 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44889 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab3I3H65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:55:08 -0400
-Message-ID: <52492E4F.2020701@pengutronix.de>
-Date: Mon, 30 Sep 2013 09:54:55 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 01/21] drivers: remove unnecessary prom.h includes
-References: <1380221456-11192-1-git-send-email-robherring2@gmail.com> <1380221456-11192-2-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1380221456-11192-2-git-send-email-robherring2@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="xktXMclENS0wfIOadoWo9wEvOknUc3Ljc"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 30 Sep 2013 03:58:57 -0400
+X-AuditID: 9c93016f-b7bc8ae000004e6e-d2-52492f3e6bb3
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] mm, hugetlb: correct missing private flag clearing
+Date: Mon, 30 Sep 2013 16:59:44 +0900
+Message-Id: <1380527985-18499-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---xktXMclENS0wfIOadoWo9wEvOknUc3Ljc
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+We should clear the page's private flag when returing the page to
+the page allocator or the hugepage pool. This patch fixes it.
 
-On 09/26/2013 08:50 PM, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->=20
-> Remove unnecessary prom.h includes in preparation to remove implicit
-> includes of prom.h.
->=20
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Wolfgang Grandegger <wg@grandegger.com>
-> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-> Cc: linux-can@vger.kernel.org
-> Cc: netdev@vger.kernel.org
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+Hello, Andrew.
 
-Applied to linux-can-next/testing, it will be included in my next pull
-request to David Miller.
+I sent the new version of commit ('07443a8') before you did pull request,
+but it isn't included. It may be losted :)
+So I send this fix. IMO, this is good for v3.12.
 
-tnx,
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Thanks.
 
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index b49579c..691f226 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -653,6 +653,7 @@ static void free_huge_page(struct page *page)
+ 	BUG_ON(page_count(page));
+ 	BUG_ON(page_mapcount(page));
+ 	restore_reserve = PagePrivate(page);
++	ClearPagePrivate(page);
+ 
+ 	spin_lock(&hugetlb_lock);
+ 	hugetlb_cgroup_uncharge_page(hstate_index(h),
+-- 
+1.7.9.5
 
---xktXMclENS0wfIOadoWo9wEvOknUc3Ljc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlJJLk8ACgkQjTAFq1RaXHMeJACeK9HZUEC1VQZeq2GzjerfTgrG
-ckcAniqhgxJhqm/Ho/b7PXMpVeEW1pRc
-=ixWT
------END PGP SIGNATURE-----
-
---xktXMclENS0wfIOadoWo9wEvOknUc3Ljc--
