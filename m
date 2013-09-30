@@ -1,48 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab3I3JwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:52:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44871 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751840Ab3I3JwF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:52:05 -0400
-Date: Mon, 30 Sep 2013 10:52:02 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: myungjoo.ham@samsung.com, broonie@kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: arizona: Get pdata from arizona structure not
-	device
-Message-ID: <20130930095202.GY3635@opensource.wolfsonmicro.com>
-References: <1380378897-7164-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5248B9BA.9020003@samsung.com>
+	id S1754198Ab3I3J4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:56:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50719 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753210Ab3I3J4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 05:56:32 -0400
+Date: Mon, 30 Sep 2013 11:56:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        huawei.libin@huawei.com, wangyijing@huawei.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, guohanjun@huawei.com, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH -v1.1] x86, boot: Further compress CPUs bootup message
+Message-ID: <20130930095624.GB16383@pd.tnic>
+References: <20130928192545.GB8228@gmail.com>
+ <fc8a60d5-a876-4fe5-836f-cd778617003e@email.android.com>
+ <20130928194927.GI5956@pd.tnic>
+ <20130928195448.GJ5956@pd.tnic>
+ <20130928195833.GB32081@gmail.com>
+ <20130928200838.GK5956@pd.tnic>
+ <6c689698-aaa0-48cc-8e6e-93d9059c0c34@email.android.com>
+ <20130929091453.GA5426@pd.tnic>
+ <a4c8ed48-24c3-437e-9f06-e42a8b7a80f4@email.android.com>
+ <20130930062848.GB13482@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5248B9BA.9020003@samsung.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20130930062848.GB13482@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 08:37:30AM +0900, Chanwoo Choi wrote:
-> No, extcon-arizona driver don't currently support DT to get platform data.
-> I cannot find some dt function to parse data from dts file.
-> You have to implement extcon-arizona driver by using DT binding style
-> to get platform data. I think this patch is not necessary.
+On Mon, Sep 30, 2013 at 08:28:48AM +0200, Ingo Molnar wrote:
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+> > If the goal is to feed this to the field width in printf, which I would 
+> > think would be the dominant use, then you do have to account for the 
+> > minus sign.
+> 
+> The input here is always a nonzero positive integer.
+> 
+> Anyway, I have no objections against using the more generic library 
+> function either.
 
-Currently the Arizona MFD driver reads the device tree
-information and populates the pdata structure, this happens in
-drivers/mfd/arizona-core.c. Then the various drivers just use the
-pdata as normal.
+Ok, let's do it this way - if someone wants to change it later, she can
+split/carve/write anew/whatever it... I don't care anymore.
 
-Admittedly, at the moment we don't parse any data for the extcon
-driver but without this patch we will attempt to use a NULL
-pointer on device tree systems.
+:-)
 
-I would also be happy to implement this as a NULL check on the
-pdata when we use it if that is preferable? But since we have the
-cached pdata seems we might as well use it.
+--
+From: Borislav Petkov <bp@suse.de>
+Date: Sat, 28 Sep 2013 19:37:18 +0200
+Subject: [PATCH] x86, boot: Further compress CPUs bootup message
 
-Thanks,
-Charles
+Turn it into (for example):
+
+[    0.073380] x86: Booting SMP configuration:
+[    0.074005] .... node   #0, CPUs:          #1   #2   #3   #4   #5   #6   #7
+[    0.603005] .... node   #1, CPUs:     #8   #9  #10  #11  #12  #13  #14  #15
+[    1.200005] .... node   #2, CPUs:    #16  #17  #18  #19  #20  #21  #22  #23
+[    1.796005] .... node   #3, CPUs:    #24  #25  #26  #27  #28  #29  #30  #31
+[    2.393005] .... node   #4, CPUs:    #32  #33  #34  #35  #36  #37  #38  #39
+[    2.996005] .... node   #5, CPUs:    #40  #41  #42  #43  #44  #45  #46  #47
+[    3.600005] .... node   #6, CPUs:    #48  #49  #50  #51  #52  #53  #54  #55
+[    4.202005] .... node   #7, CPUs:    #56  #57  #58  #59  #60  #61  #62  #63
+[    4.811005] .... node   #8, CPUs:    #64  #65  #66  #67  #68  #69  #70  #71
+[    5.421006] .... node   #9, CPUs:    #72  #73  #74  #75  #76  #77  #78  #79
+[    6.032005] .... node  #10, CPUs:    #80  #81  #82  #83  #84  #85  #86  #87
+[    6.648006] .... node  #11, CPUs:    #88  #89  #90  #91  #92  #93  #94  #95
+[    7.262005] .... node  #12, CPUs:    #96  #97  #98  #99 #100 #101 #102 #103
+[    7.865005] .... node  #13, CPUs:   #104 #105 #106 #107 #108 #109 #110 #111
+[    8.466005] .... node  #14, CPUs:   #112 #113 #114 #115 #116 #117 #118 #119
+[    9.073006] .... node  #15, CPUs:   #120 #121 #122 #123 #124 #125 #126 #127
+[    9.679901] x86: Booted up 16 nodes, 128 CPUs
+
+and drop useless elements.
+
+Change num_digits() to hpa's division-avoiding, cell-phone-typed version
+which he went at great lengths and pains to submit on a Saturday
+evening.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/smpboot.c | 24 +++++++++++++++++++-----
+ arch/x86/lib/misc.c       | 18 +++++++++++++-----
+ kernel/smp.c              |  7 ++++++-
+ 3 files changed, 38 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index d41f3ba26ced..2a165580fa16 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -647,22 +647,38 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 	return (send_status | accept_status);
+ }
+ 
++void smp_announce(void)
++{
++	int num_nodes = num_online_nodes();
++
++	printk(KERN_INFO "x86: Booted up %d node%s, %d CPUs\n",
++	       num_nodes, (num_nodes > 1 ? "s" : ""), num_online_cpus());
++}
++
+ /* reduce the number of lines printed when booting a large cpu count system */
+ static void announce_cpu(int cpu, int apicid)
+ {
+ 	static int current_node = -1;
+ 	int node = early_cpu_to_node(cpu);
+-	static int width;
++	static int width, node_width;
+ 
+ 	if (!width)
+ 		width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
+ 
++	if (!node_width)
++		node_width = num_digits(num_possible_nodes()) + 1; /* + '#' */
++
++	if (cpu == 1)
++		printk(KERN_INFO "x86: Booting SMP configuration:\n");
++
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		if (node != current_node) {
+ 			if (current_node > (-1))
+-				pr_cont(" OK\n");
++				pr_cont("\n");
+ 			current_node = node;
+-			pr_info("Booting Node %3d, Processors:", node);
++
++			printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
++			       node_width - num_digits(node), " ", node);
+ 		}
+ 
+ 		/* Add padding for the BSP */
+@@ -671,8 +687,6 @@ static void announce_cpu(int cpu, int apicid)
+ 
+ 		pr_cont("%*s#%d", width - num_digits(cpu), " ", cpu);
+ 
+-		if (cpu == num_present_cpus() - 1)
+-			pr_cont(" OK\n");
+ 	} else
+ 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
+ 			node, cpu, apicid);
+diff --git a/arch/x86/lib/misc.c b/arch/x86/lib/misc.c
+index bc35cde9769f..94f0c86ce7d0 100644
+--- a/arch/x86/lib/misc.c
++++ b/arch/x86/lib/misc.c
+@@ -1,11 +1,19 @@
++/*
++ * Count the digits of @val including a possible sign.
++ */
+ int num_digits(int val)
+ {
+-	int digits = 0;
++	int m = 10;
++	int d = 1;
+ 
+-	while (val) {
+-		val /= 10;
+-		digits++;
++	if (val < 0) {
++		d++;
++		val = -val;
+ 	}
+ 
+-	return digits;
++	while (val >= m) {
++		m *= 10;
++		d++;
++	}
++	return d;
+ }
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 0564571dcdf7..f5768b0c816a 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -524,6 +524,11 @@ void __init setup_nr_cpu_ids(void)
+ 	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
+ }
+ 
++void __weak smp_announce(void)
++{
++	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
++}
++
+ /* Called by boot processor to activate the rest. */
+ void __init smp_init(void)
+ {
+@@ -540,7 +545,7 @@ void __init smp_init(void)
+ 	}
+ 
+ 	/* Any cleanup work */
+-	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
++	smp_announce();
+ 	smp_cpus_done(setup_max_cpus);
+ }
+ 
+-- 
+1.8.4
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
