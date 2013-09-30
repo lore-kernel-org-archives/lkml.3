@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab3I3KU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:20:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43724 "EHLO
+	id S1756260Ab3I3KVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:21:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43714 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab3I3KNO (ORCPT
+	with ESMTP id S1755688Ab3I3KNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:14 -0400
+	Mon, 30 Sep 2013 06:13:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        David Lamparter <equinox@diac24.net>,
-        <boutier@pps.univ-paris-diderot.fr>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jiri Kosina <jkosina@suse.cz>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 046/104] ipv6: don't stop backtracking in fib6_lookup_1 if subtree does not match
-Date: Mon, 30 Sep 2013 11:10:23 +0100
-Message-Id: <1380535881-9239-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 073/104] HID: input: return ENODATA if reading battery attrs fails
+Date: Mon, 30 Sep 2013 11:10:50 +0100
+Message-Id: <1380535881-9239-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -31,61 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit 3e3be275851bc6fc90bfdcd732cd95563acd982b upstream.
+commit d0a934b764c67b4bf626f5b7cf725a6e3066afd2 upstream.
 
-In case a subtree did not match we currently stop backtracking and return
-NULL (root table from fib_lookup). This could yield in invalid routing
-table lookups when using subtrees.
+power_supply core has the bad habit of calling our battery callbacks
+from within power_supply_register(). Furthermore, if the callbacks
+fail with an unhandled error code, it will skip any uevent that it
+might currently process.
+So if HID-core registers battery devices, an "add" uevent is generated
+and the battery callbacks are called. These will gracefully fail due
+to timeouts as they might still hold locks on event processing. One
+could argue that this should be fixed in power_supply core, but the
+least we can do is to signal ENODATA so power_supply core will just
+skip the property and continue with the uevent.
 
-Instead continue to backtrack until a valid subtree or node is found
-and return this match.
+This fixes a bug where "add" and "remove" uevents are skipped for
+battery devices. upower is unable to track these devices and currently
+needs to ignore them.
 
-Also remove unneeded NULL check.
+This patch also overwrites any other error code. I cannot see any reason
+why we should forward protocol- or I/O-errors to the power_supply core.
+We handle these errors in hid_ll_driver later, anyway, so just skip
+them. power_supply core cannot do anything useful with them, anyway,
+and we avoid skipping important uevents and confusing user-space.
 
-Reported-by: Teco Boot <teco@inf-net.nl>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Cc: David Lamparter <equinox@diac24.net>
-Cc: <boutier@pps.univ-paris-diderot.fr>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Thanks a lot to Daniel Nicoletti for pushing and investigating
+on this.
+
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Reported-by: Daniel Nicoletti <dantti12@gmail.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[ luis: 3.5.y-prereq for:
+  6c2794a HID: battery: don't do DMA from stack ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_fib.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/hid/hid-input.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-index 0907191..3c30320 100644
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -949,14 +949,22 @@ static struct fib6_node * fib6_lookup_1(struct fib6_node *root,
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 5301006..73f2f7c 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -339,10 +339,10 @@ static int hidinput_get_battery_property(struct power_supply *psy,
+ 					      dev->battery_report_type);
  
- 			if (ipv6_prefix_equal(&key->addr, args->addr, key->plen)) {
- #ifdef CONFIG_IPV6_SUBTREES
--				if (fn->subtree)
--					fn = fib6_lookup_1(fn->subtree, args + 1);
-+				if (fn->subtree) {
-+					struct fib6_node *sfn;
-+					sfn = fib6_lookup_1(fn->subtree,
-+							    args + 1);
-+					if (!sfn)
-+						goto backtrack;
-+					fn = sfn;
-+				}
- #endif
--				if (!fn || fn->fn_flags & RTN_RTINFO)
-+				if (fn->fn_flags & RTN_RTINFO)
- 					return fn;
- 			}
- 		}
--
-+#ifdef CONFIG_IPV6_SUBTREES
-+backtrack:
-+#endif
- 		if (fn->fn_flags & RTN_ROOT)
+ 		if (ret != 2) {
+-			if (ret >= 0)
+-				ret = -EINVAL;
++			ret = -ENODATA;
  			break;
+ 		}
++		ret = 0;
  
+ 		if (dev->battery_min < dev->battery_max &&
+ 		    buf[1] >= dev->battery_min &&
 -- 
 1.8.3.2
 
