@@ -1,62 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab3I3SPC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:15:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48308 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464Ab3I3SPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:15:00 -0400
-Date: Mon, 30 Sep 2013 20:14:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
-Message-ID: <20130930181411.GO15690@laptop.programming.kicks-ass.net>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <20130928193739.GA8642@gmail.com>
- <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>
- <20130928195207.GA31245@gmail.com>
- <1380561027.3467.196.camel@schen9-DESK>
+	id S1755866Ab3I3SQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:16:58 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51174 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755422Ab3I3SQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 14:16:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: tixy@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [PATCH 2/2] cpufreq: make return type of lock_policy_rwsem_{read|write}() as void
+Date: Mon, 30 Sep 2013 20:28:21 +0200
+Message-ID: <2382588.IckWbq3JRN@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <a257808b511a83f210ed699149ce87fef5db6236.1379344038.git.viresh.kumar@linaro.org>
+References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org> <a257808b511a83f210ed699149ce87fef5db6236.1379344038.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380561027.3467.196.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 10:10:27AM -0700, Tim Chen wrote:
-> Here's the exim workload data:
+On Monday, September 16, 2013 08:40:17 PM Viresh Kumar wrote:
+> lock_policy_rwsem_{read|write}() currently has return type of int but it always
+> return zero and hence its return type must be void instead. This patch makes its
+> return type void and fixes all users of it as well.
 > 
-> rwsem improvment:
-> Waimain's patch:        +2.0%
-> Alex+Tim's patchset:    +4.8%
-> Waiman+Alex+Tim:        +5.3%
-> 
-> convert rwsem to rwlock_t for root anon_vma lock
-> Ingo's patch		+11.7%
-> 
+> Reported-by: Jon Medhurst<tixy@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-What happens if you stuff Waiman's qrwlock patches on top of that?
-admittedly and oft mentioned in this thread, our current rwlock_t is
-somewhat suboptimal under a number of conditions.
+This doesn't apply to bleeding-edge for me any more after I have applied your
+series of 44 patches to it.  Care to resend?
+
+Rafael
+
