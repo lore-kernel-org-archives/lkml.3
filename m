@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab3I3Ubh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:31:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33002 "EHLO mga02.intel.com"
+	id S1756689Ab3I3Ubu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:31:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8648 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504Ab3I3U3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756502Ab3I3U3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Sep 2013 16:29:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
-   d="scan'208";a="412029766"
+   d="scan'208";a="412029771"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, tglx@linutronix.de
-Subject: [PATCH 03/11] posix-timers: Initialize timer value to 0 for invalid timers.
-Date: Mon, 30 Sep 2013 13:29:04 -0700
-Message-Id: <1380572952-30729-4-git-send-email-andi@firstfloor.org>
+Cc: Andi Kleen <ak@linux.intel.com>, jeffrey.t.kirsher@intel.com,
+        netdev@vger.kernel.org
+Subject: [PATCH 07/11] igb: Avoid uninitialized advertised variable in eee_set_cur
+Date: Mon, 30 Sep 2013 13:29:08 -0700
+Message-Id: <1380572952-30729-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
 References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
@@ -24,45 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-cpu_clock_sample et.al. can fail with an invalid timer type.
-For most callers this cannot happen because the timer has been
-successfully initialized earlier, so they don't check
-the return value, but still use the val output.
+eee_get_cur assumes that the output data is already zeroed. It can
+read-modify-write the advertised field:
 
-Unfortunately static checkers for uninitialied variables
-don't understand this and always throw a warning in this case.
+              if (ipcnfg & E1000_IPCNFG_EEE_100M_AN)
+2594			edata->advertised |= ADVERTISED_100baseT_Full;
 
-Initialize the timer value to 0 for the error case to
-shut it up.
+This is ok for the normal ethtool eee_get call, which always
+zeroes the input data before.
 
-This doesn't fix any real bug, just reduces warning noise.
+But eee_set_cur also calls eee_get_cur and it did not zero the input
+field. Later on it then compares agsinst the field, which can contain partial
+stack garbage.
 
-Cc: tglx@linutronix.de
+Zero the input field in eee_set_cur() too.
+
+Cc: jeffrey.t.kirsher@intel.com
+Cc: netdev@vger.kernel.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- kernel/posix-cpu-timers.c | 2 ++
+ drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index c7f31aa..cc3c3f2 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -182,6 +182,7 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
- {
- 	switch (CPUCLOCK_WHICH(which_clock)) {
- 	default:
-+		*sample = 0;
- 		return -EINVAL;
- 	case CPUCLOCK_PROF:
- 		*sample = prof_ticks(p);
-@@ -243,6 +244,7 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+index 48cbc83..41e37ff 100644
+--- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
++++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+@@ -2652,6 +2652,8 @@ static int igb_set_eee(struct net_device *netdev,
+ 	    (hw->phy.media_type != e1000_media_type_copper))
+ 		return -EOPNOTSUPP;
  
- 	switch (CPUCLOCK_WHICH(which_clock)) {
- 	default:
-+		*sample = 0;
- 		return -EINVAL;
- 	case CPUCLOCK_PROF:
- 		thread_group_cputime(p, &cputime);
++	memset(&eee_curr, 0, sizeof(struct ethtool_eee));
++
+ 	ret_val = igb_get_eee(netdev, &eee_curr);
+ 	if (ret_val)
+ 		return ret_val;
 -- 
 1.8.3.1
 
