@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3I3QTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:19:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55725 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab3I3QTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:19:04 -0400
-Date: Mon, 30 Sep 2013 18:18:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Eduardo Habkost <ehabkost@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Andre Przywara <andre@andrep.de>,
-        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
-        KVM <kvm@vger.kernel.org>, qemu-devel@nongnu.org,
-        libvir-list@redhat.com, Jiri Denemark <jdenemar@redhat.com>
-Subject: Re: [PATCH 1/6] kvm: Add KVM_GET_EMULATED_CPUID
-Message-ID: <20130930161856.GC16383@pd.tnic>
-References: <20130923162856.GC7264@otherpad.lan.raisama.net>
- <2f5d83d4d90ba9c5930f099d6f73e61b.squirrel@www.skyhub.de>
- <20130924100414.GE17294@redhat.com>
- <20130926141915.GV2840@otherpad.lan.raisama.net>
- <20130926185524.GA10123@pd.tnic>
- <20130926192059.GD10924@otherpad.lan.raisama.net>
- <20130926203206.GB10123@pd.tnic>
- <20130927142100.GB2840@otherpad.lan.raisama.net>
- <20130928104903.GB5956@pd.tnic>
- <20130930161334.GA5831@otherpad.lan.raisama.net>
+	id S1755434Ab3I3QUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:20:50 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:35570 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3I3QUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 12:20:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130930161334.GA5831@otherpad.lan.raisama.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379375332.7083.3.camel@joe-AO722>
+References: <20130916233720.GA3967@www.outflux.net>
+	<1379375332.7083.3.camel@joe-AO722>
+Date: Mon, 30 Sep 2013 12:20:48 -0400
+X-Google-Sender-Auth: cG10lurgdQSwVleIzZasybvKXJU
+Message-ID: <CAOcJUbxhwQQJudR1sz5rcEQb6V+AdcB0HUBAdsHZWoSZ2CBXmw@mail.gmail.com>
+Subject: Re: [PATCH] dvb: fix potential format string leak
+From: Michael Krufky <mkrufky@linuxtv.org>
+To: Joe Perches <joe@perches.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 01:13:34PM -0300, Eduardo Habkost wrote:
-> I have added it to my TODO-list.  :-)
+On Mon, Sep 16, 2013 at 7:48 PM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2013-09-16 at 16:37 -0700, Kees Cook wrote:
+>> Make sure that a format string cannot accidentally leak into the printk
+>> buffer.
+> []
+>> diff --git a/drivers/media/dvb-frontends/dib9000.c b/drivers/media/dvb-frontends/dib9000.c
+> []
+>> @@ -649,7 +649,7 @@ static int dib9000_risc_debug_buf(struct dib9000_state *state, u16 * data, u8 si
+>>       b[2 * (size - 2) - 1] = '\0';   /* Bullet proof the buffer */
+>>       if (*b == '~') {
+>>               b++;
+>> -             dprintk(b);
+>> +             dprintk("%s", b);
+>>       } else
+>>               dprintk("RISC%d: %d.%04d %s", state->fe_id, ts / 10000, ts % 10000, *b ? b : "<emtpy>");
+>>       return 1;
+>
+> This looks odd.
+>
+> Perhaps this should be:
+>
+>         if (*b == '~')
+>                 b++;
+>         dprintk("etc...);
+>
+> It'd be nice to fix the <empty> typo too.
 
-Cool, thanks. Let me know if I can test stuff and help out somehow.
+This *does* look odd, I agree.  Meanwhile, I do believe this patch
+leaves things better than before.  I'm going to merge Kees' patch for
+now, but it would be nice to see a better cleanup for that code block.
 
-> > 
-> > Also, there's another aspect, while we're here: now that QEMU emulates
-> > MOVBE with TCG too, how do we specify on the command line, which
-> > emulation should be used - kvm.ko or QEMU?
-> 
-> You can use accel={tcg,kvm} option on the "-machine" argument, e.g.
-> "-machine pc,accel=kvm". Or the "-enable-kvm" option.
-
-Ah, ok.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Mike Krufky
