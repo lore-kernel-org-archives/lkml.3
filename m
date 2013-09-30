@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab3I3PNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:13:30 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:35858 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3I3PN0 (ORCPT
+	id S1755937Ab3I3PNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:13:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43393 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab3I3PNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:13:26 -0400
+	Mon, 30 Sep 2013 11:13:45 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>
+CC: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:OMAP DEVICE TREE..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/9] omap4: dts: Add node for AES
+Date: Mon, 30 Sep 2013 10:12:58 -0500
+Message-ID: <1380553986-15910-2-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1380553986-15910-1-git-send-email-joelf@ti.com>
+References: <1380553986-15910-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUUOfFdd34CZfGpX+_ezuaPyeakZSGGvfmw8K1cguUbmxg@mail.gmail.com>
-References: <CA+icZUUOfFdd34CZfGpX+_ezuaPyeakZSGGvfmw8K1cguUbmxg@mail.gmail.com>
-Date: Mon, 30 Sep 2013 08:13:25 -0700
-X-Google-Sender-Auth: BWDl74FAfqAsr1ELT73x5omdG0s
-Message-ID: <CA+55aFzuZp094CB-FG2Ku32m3ZR5DC6FKGSfnLVdy3w9Aju2Bg@mail.gmail.com>
-Subject: Re: fuse-3.12-fixes?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Maxim Patlasov <MPatlasov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 12:20 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
-> any reasons why these fuse-3.12-fixes did not went into -rc3?
+OMAP4 has an AES module that uses the omap-aes crypto driver.
+Add DT entries for the same.
 
-Perhaps because they were never sent to me?
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ arch/arm/boot/dts/omap4.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Searching my email archives I see that a pull request went to Al and
-the mailing lists, but not actually to me. I do have a pending pull
-request from Al (which came in after -rc3) but that doesn't contain
-them either. And the "for-linus" branch implies that perhaps somebody
-_iindended_ to send them to me, but somehow missed.
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 45708e1..16a44d6 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -663,5 +663,14 @@
+ 			ram-bits = <12>;
+ 			ti,has-mailbox;
+ 		};
++
++		aes: aes@4b501000 {
++			compatible = "ti,omap4-aes";
++			ti,hwmods = "aes";
++			reg = <0x4b501000 0xa0>;
++			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
++			dmas = <&sdma 111>, <&sdma 110>;
++			dma-names = "tx", "rx";
++		};
+ 	};
+ };
+-- 
+1.8.1.2
 
-               Linus
