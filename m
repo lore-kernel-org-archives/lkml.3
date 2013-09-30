@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3I3Ps4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:48:56 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:20529 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448Ab3I3Psy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:48:54 -0400
-Message-ID: <52499D66.9070203@atmel.com>
-Date: Mon, 30 Sep 2013 17:48:54 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755866Ab3I3Pth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:49:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40226 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755073Ab3I3Ptg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 11:49:36 -0400
+Message-ID: <52498F68.8050200@redhat.com>
+Date: Mon, 30 Sep 2013 09:49:12 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Andrew Victor <linux@maxim.org.za>, <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2] ARM: at91: cam60: fix incorrect placement of __initdata
- tag
-References: <4748525.slmbI8ubRr@amdc1032>
-In-Reply-To: <4748525.slmbI8ubRr@amdc1032>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+References: <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926185508.GO30372@lenny.home.zabbo.net> <5244A68F.906@redhat.com> <20130927200550.GA22640@fieldses.org> <20130927205013.GZ30372@lenny.home.zabbo.net> <CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com> <52474839.2080201@redhat.com> <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com> <20130930143432.GG16579@fieldses.org> <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com> <52499026.3090802@redhat.com> <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com> <52498AA8.2090204@redhat.com> <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com> <52498DB6.7060901@redhat.com> <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+In-Reply-To: <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/2013 17:38, Bartlomiej Zolnierkiewicz :
-> __initdata tag should be placed between the variable name and equal
-> sign for the variable to be placed in the intended .init.data section.
-
-Yes, okay. But please do not mix the removal of white lines with your 
-modification.
-
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-
-Anyway, no need to resend it:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
-> v2:
-> - use __initdata as it is OK to do it
+On 09/30/2013 10:46 AM, Miklos Szeredi wrote:
+> On Mon, Sep 30, 2013 at 4:41 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+>> The way the array based offload (and some software side reflink works) is
+>> not a byte by byte copy. We cannot assume that a valid count can be returned
+>> or that such a count would be an indication of a sequential segment of good
+>> data.  The whole thing would normally have to be reissued.
+>>
+>> To make that a true assumption, you would have to mandate that in each of
+>> the specifications (and sw targets)...
+> You're missing my point.
 >
->   arch/arm/mach-at91/board-cam60.c | 4 +---
->   1 file changed, 1 insertion(+), 3 deletions(-)
+>   - user issues SIZE_MAX splice request
+>   - fs issues *64M* (or whatever) request to offload
+>   - when that completes *fully* then we return 64M to userspace
+>   - if it completes partially, then we return an error to userspace
 >
-> diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
-> index ade948b..ecabbed 100644
-> --- a/arch/arm/mach-at91/board-cam60.c
-> +++ b/arch/arm/mach-at91/board-cam60.c
-> @@ -108,16 +108,14 @@ static struct spi_board_info cam60_spi_devices[] __initdata = {
->   #endif
->   };
+> Again, wouldn't that work?
 >
-> -
->   /*
->    * MACB Ethernet device
->    */
-> -static struct __initdata macb_platform_data cam60_macb_data = {
-> +static struct macb_platform_data cam60_macb_data __initdata = {
->   	.phy_irq_pin	= AT91_PIN_PB5,
->   	.is_rmii	= 0,
->   };
->
-> -
->   /*
->    * NAND Flash
->    */
->
+> Thanks,
+> Miklos
 
+Yes, if you send a copy offload command and it works, you can assume that it 
+worked fully. It would be pretty interesting if that were not true :)
 
--- 
-Nicolas Ferre
+If it fails, we cannot assume anything about partial completion.
+
+Ric
+
