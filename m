@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab3I3KVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:21:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43714 "EHLO
+	id S1755680Ab3I3KNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:13:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43688 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688Ab3I3KNL (ORCPT
+	with ESMTP id S1755639Ab3I3KNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:11 -0400
+	Mon, 30 Sep 2013 06:13:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Kosina <jkosina@suse.cz>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 073/104] HID: input: return ENODATA if reading battery attrs fails
-Date: Mon, 30 Sep 2013 11:10:50 +0100
-Message-Id: <1380535881-9239-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 070/104] drm/radeon: fix handling of variable sized arrays for router objects
+Date: Mon, 30 Sep 2013 11:10:47 +0100
+Message-Id: <1380535881-9239-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -29,64 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit d0a934b764c67b4bf626f5b7cf725a6e3066afd2 upstream.
+commit fb93df1c2d8b3b1fb16d6ee9e32554e0c038815d upstream.
 
-power_supply core has the bad habit of calling our battery callbacks
-from within power_supply_register(). Furthermore, if the callbacks
-fail with an unhandled error code, it will skip any uevent that it
-might currently process.
-So if HID-core registers battery devices, an "add" uevent is generated
-and the battery callbacks are called. These will gracefully fail due
-to timeouts as they might still hold locks on event processing. One
-could argue that this should be fixed in power_supply core, but the
-least we can do is to signal ENODATA so power_supply core will just
-skip the property and continue with the uevent.
+The table has the following format:
 
-This fixes a bug where "add" and "remove" uevents are skipped for
-battery devices. upower is unable to track these devices and currently
-needs to ignore them.
+typedef struct _ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT         //usSrcDstTableOffset pointing to this structure
+{
+  UCHAR               ucNumberOfSrc;
+  USHORT              usSrcObjectID[1];
+  UCHAR               ucNumberOfDst;
+  USHORT              usDstObjectID[1];
+}ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT;
 
-This patch also overwrites any other error code. I cannot see any reason
-why we should forward protocol- or I/O-errors to the power_supply core.
-We handle these errors in hid_ll_driver later, anyway, so just skip
-them. power_supply core cannot do anything useful with them, anyway,
-and we avoid skipping important uevents and confusing user-space.
+usSrcObjectID[] and usDstObjectID[] are variably sized, so we
+can't access them directly.  Use pointers and update the offset
+appropriately when accessing the Dst members.
 
-Thanks a lot to Daniel Nicoletti for pushing and investigating
-on this.
-
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Anton Vorontsov <cbou@mail.ru>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Reported-by: Daniel Nicoletti <dantti12@gmail.com>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[ luis: 3.5.y-prereq for:
-  6c2794a HID: battery: don't do DMA from stack ]
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-input.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 5301006..73f2f7c 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -339,10 +339,10 @@ static int hidinput_get_battery_property(struct power_supply *psy,
- 					      dev->battery_report_type);
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index fa9b022..c54d295 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -715,13 +715,16 @@ bool radeon_get_atom_connector_info_from_object_table(struct drm_device *dev)
+ 								(ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT *)
+ 								(ctx->bios + data_offset +
+ 								 le16_to_cpu(router_obj->asObjects[k].usSrcDstTableOffset));
++							u8 *num_dst_objs = (u8 *)
++								((u8 *)router_src_dst_table + 1 +
++								 (router_src_dst_table->ucNumberOfSrc * 2));
++							u16 *dst_objs = (u16 *)(num_dst_objs + 1);
+ 							int enum_id;
  
- 		if (ret != 2) {
--			if (ret >= 0)
--				ret = -EINVAL;
-+			ret = -ENODATA;
- 			break;
- 		}
-+		ret = 0;
+ 							router.router_id = router_obj_id;
+-							for (enum_id = 0; enum_id < router_src_dst_table->ucNumberOfDst;
+-							     enum_id++) {
++							for (enum_id = 0; enum_id < (*num_dst_objs); enum_id++) {
+ 								if (le16_to_cpu(path->usConnObjectId) ==
+-								    le16_to_cpu(router_src_dst_table->usDstObjectID[enum_id]))
++								    le16_to_cpu(dst_objs[enum_id]))
+ 									break;
+ 							}
  
- 		if (dev->battery_min < dev->battery_max &&
- 		    buf[1] >= dev->battery_min &&
 -- 
 1.8.3.2
 
