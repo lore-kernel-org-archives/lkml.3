@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3I3TPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 15:15:50 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:48764 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755201Ab3I3TPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 15:15:48 -0400
-Date: Mon, 30 Sep 2013 21:15:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1756137Ab3I3TQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 15:16:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755272Ab3I3TQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 15:16:57 -0400
+Date: Mon, 30 Sep 2013 21:16:00 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
- in parallel
-Message-ID: <20130930191544.GD3427@gmail.com>
-References: <20130912204313.GA3259@gmail.com>
- <20130915091029.GA21465@gmail.com>
- <20130930164210.GA22342@gmail.com>
- <20130930171220.GC10293@ghostprotocols.net>
- <20130930172741.GD10293@ghostprotocols.net>
- <20130930173052.GE10293@ghostprotocols.net>
- <20130930173627.GF10293@ghostprotocols.net>
- <20130930173914.GG10293@ghostprotocols.net>
- <20130930174639.GH10293@ghostprotocols.net>
- <20130930180247.GJ10293@ghostprotocols.net>
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Haggai Eran <haggaie@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Jerome Glisse <jglisse@redhat.com>
+Subject: Re: [PATCH] anon_vmas: Convert the rwsem to an rwlock_t
+Message-ID: <20130930191600.GL29230@redhat.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+ <20130928074144.GA17773@gmail.com>
+ <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+ <20130928192123.GA8228@gmail.com>
+ <20130928193739.GA8642@gmail.com>
+ <20130930085243.GA25685@redhat.com>
+ <CA+55aFxG3hK0CiZJh1XORv+tiNWXVxh8rzr37Vmu=ASWj1s4PQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130930180247.GJ10293@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFxG3hK0CiZJh1XORv+tiNWXVxh8rzr37Vmu=ASWj1s4PQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-
-> In fact this is why I thought those messages had been missing in your 
-> patchset, they don't appear when I remove perl-devel, i.e. 'perl' 
-> supporty is correctly detected as not possible to build due to missing 
-> deps, but no message is emitted for this case.
+On Mon, Sep 30, 2013 at 09:26:21AM -0700, Linus Torvalds wrote:
+> On Mon, Sep 30, 2013 at 1:52 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> >
+> > Sorry having to break the party but the sleepable locks for anon_vma
+> > and i_mmap_mutex are now requirement for the "pageable RDMA" effort
+> > recently achieved upstream by mellanox with the MMU notifier.
 > 
-> And the bug is that the feature test for perl support passes, but since 
-> it doesn't try to use EXTERN.h, like something that is enabled when the 
-> feature test passes (util/scripting-engines/trace-event-perl.c), the 
-> build fails.
+> I'll happily break that.
 
-Hm, I probably messed up the lib-perl testcase - it was one of the more 
-complex ones. I assumed that this:
+Unless a solution is found that could allow to invalidate secondary
+MMUs with a spinlock/rwlock for anon_vma->lock/i_mmap_lock, would it
+be acceptable to switch between spinlock/rwlock mutex/rwsem through a
+config option? option CONFIG_SLEEPABLE_RMAP, implicitly selected by
+CONFIG_SLEEPABLE_MMU_NOTIFIER, in turn selected by the RDMA and nvidia
+drivers if they're built (ideally nvidia drivers will figure out how
+to avoid scheduling).
 
-...                       libperl: [ OFF ]
+I mean it only requires a wrapping header file, aside from the header
+file it wouldn't be a much bigger patch than the one posted already.
 
-meant that I didn't have the dependencies installed - but it's the 
-testcase that is wrong most likely.
-
-Thanks,
-
-	Ingo
+It would be much easier to switch between spinning and sleeping locks
+to keep benchmarking different scenarios too.
