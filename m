@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3I3OXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:23:30 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:54577 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab3I3OX2 (ORCPT
+	id S1755709Ab3I3OY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:24:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42455 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab3I3OYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:23:28 -0400
-Message-ID: <52498952.9040604@linaro.org>
-Date: Mon, 30 Sep 2013 22:23:14 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 30 Sep 2013 10:24:25 -0400
+Date: Mon, 30 Sep 2013 16:24:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] introduce synchronize_sched_{enter,exit}()
+Message-ID: <20130930142400.GK26785@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130929183634.GA15563@redhat.com>
+ <20130930125942.GB12926@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Libo Chen <libo.chen@huawei.com>, linux-i2c@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 1/4] driver core: introduce helper macro initcall_driver()
-References: <1380518035-5319-1-git-send-email-hanjun.guo@linaro.org> <1380518035-5319-2-git-send-email-hanjun.guo@linaro.org> <20130930091622.GW19304@sirena.org.uk>
-In-Reply-To: <20130930091622.GW19304@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930125942.GB12926@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年09月30日 17:16, Mark Brown wrote:
-> On Mon, Sep 30, 2013 at 01:13:52PM +0800, Hanjun Guo wrote:
->> For some devices especially on platform/I2C/SPI bus, they want to
->> be initialized earlier than other devices, so the driver use initcall
->> such as subsys_initcall to make this device initialize earlier.
-> We're trying to move away from needing to do this and to using deferred
-> probing to resolve init ordering issues.  Should we not be able to
-> convert the drivers to module_X_driver()?
-Hi Mark,
+On Mon, Sep 30, 2013 at 02:59:42PM +0200, Peter Zijlstra wrote:
 
-Thanks for your comments.
+> > 
+> > static void cb_rcu_func(struct rcu_head *rcu)
+> > {
+> > 	struct xxx_struct *xxx = container_of(rcu, struct xxx_struct, cb_head);
+> > 	long flags;
+> > 
+> > 	BUG_ON(xxx->gp_state != GP_PASSED);
+> > 	BUG_ON(xxx->cb_state == CB_IDLE);
+> > 
+> > 	spin_lock_irqsave(&xxx->xxx_lock, flags);
+> > 	if (xxx->gp_count) {
+> > 		xxx->cb_state = CB_IDLE;
+> 
+> This seems to be when a new xxx_begin() has happened after our last
+> xxx_end() and the sync_sched() from xxx_begin() merges with the
+> xxx_end() one and we're done.
+> 
+> > 	} else if (xxx->cb_state == CB_REPLAY) {
+> > 		xxx->cb_state = CB_PENDING;
+> > 		call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+> 
+> A later xxx_exit() has happened, and we need to requeue to catch a later
+> GP.
+> 
+> > 	} else {
+> > 		xxx->cb_state = CB_IDLE;
+> > 		xxx->gp_state = GP_IDLE;
+> 
+> Nothing fancy happened and we're done.
+> 
+> > 	}
+> > 	spin_unlock_irqrestore(&xxx->xxx_lock, flags);
+> > }
+> > 
+> > void xxx_exit(struct xxx_struct *xxx)
+> > {
+> > 	spin_lock_irq(&xxx->xxx_lock);
+> > 	if (!--xxx->gp_count) {
+> > 		if (xxx->cb_state == CB_IDLE) {
+> > 			xxx->cb_state = CB_PENDING;
+> > 			call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+> > 		} else if (xxx->cb_state == CB_PENDING) {
+> > 			xxx->cb_state = CB_REPLAY;
+> > 		}
+> > 	}
+> > 	spin_unlock_irq(&xxx->xxx_lock);
+> > }
+> 
+> So I don't immediately see the point of the concurrent write side;
+> percpu_rwsem wouldn't allow this and afaict neither would
+> freeze_super().
+> 
+> Other than that; yes this makes sense if you care about write side
+> performance and I think its solid.
 
-That would be great to move away *_initcall in module driver, and
-this patch set is not necessary if we can use deferred probe to solve
-all the init order issues.
+Hmm, wait. I don't see how this is equivalent to:
 
-Thanks
-Hanjun
+xxx_end()
+{
+	synchronize_sched();
+	atomic_dec(&xxx->counter);
+}
+
+For that we'd have to decrement xxx->gp_count from cb_rcu_func(),
+wouldn't we?
+
+Without that there's no guarantee the fast path readers will have a MB
+to observe the write critical section, unless I'm completely missing
+something obviuos here.
