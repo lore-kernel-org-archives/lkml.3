@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab3I3Nye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 09:54:34 -0400
-Received: from vex.ruff.mobi ([46.167.245.136]:55788 "EHLO vex.ruff.mobi"
+	id S1755209Ab3I3N7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:59:34 -0400
+Received: from rere.qmqm.pl ([89.167.52.164]:39446 "EHLO rere.qmqm.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754343Ab3I3Nyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 09:54:33 -0400
-Date: Mon, 30 Sep 2013 15:54:27 +0200
-From: "Ruslan N. Marchenko" <me@ruff.mobi>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Regression in 2fdac010
- drivers/net/ethernet/via/via-velocity.c: update napi implementation
-Message-ID: <20130930135427.GA19660@ruff.mobi>
-Mail-Followup-To: Julia Lawall <julia.lawall@lip6.fr>,
-	linux-kernel@vger.kernel.org
-References: <20130930071531.GA13037@ruff.mobi>
- <alpine.DEB.2.02.1309301353150.2036@localhost6.localdomain6>
+	id S1754441Ab3I3N7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 09:59:31 -0400
+Date: Mon, 30 Sep 2013 15:59:29 +0200
+From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: cb710: drop free_irq for devm_request_irq
+ allocated irq
+Message-ID: <20130930135929.GA24928@rere.qmqm.pl>
+References: <CAPgLHd-C0o3QsJ0TBfn4aE1foWFrwjUy3iSJCkAhgZrfs=e5CQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309301353150.2036@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPgLHd-C0o3QsJ0TBfn4aE1foWFrwjUy3iSJCkAhgZrfs=e5CQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 01:54:06PM +0200, Julia Lawall wrote:
-> On Mon, 30 Sep 2013, Ruslan N. Marchenko wrote:
+On Tue, Sep 24, 2013 at 10:40:57AM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> > Hi Julia et al.,
-> > 
-> > With this commit VIA NANO board get CPU lockup in random places on any network activity.
-> > The error is random, most of the times dead locked CPU on boot.
-> > 
-> > After loading via-velocity module it hangs for a while and then spits kernel mesages
-> > about hanged tasks from varios places - like ata, rcu_preempt or network stack.
-> > Also, if you boot the box with network disconnected - it works, until you plug the network cable.
-> > 
-> > On some kernel builds (like ubuntu stock) behaviour varies, sometimes the box itself works,
-> > but network stack dies after multiple ICMPv6 skb errors, so box ends up with network disconnected.
-> > Reloading network susbsys helps to recover for some time (depending on how fast eth led is blinking).
-> > 
-> > Reverting the patch allows me to boot without problems even from latest Linus trunk and send this mail.
+> irq allocated with devm_request_irq should not be freed using
+> free_irq, because doing so causes a dangling pointer, and a
+> subsequent double free.
 > 
-> You can find the discussion and improved patch in this thread:
-> 
-> http://www.spinics.net/lists/netdev/msg251287.html
-> Bug - regression - Via velocity interface coming up freezes kernel
-> From: Dirk Kraft <dirk.kraft@xxxxxxxxx>
-> Date: Sun, 22 Sep 2013 19:28:52 +0200
-> 
-> julia
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Oops, sorry, somehow I missed it even though 've been searching for via-velocity regression.
-Will give a try to new proposed patch as well.
-
-Thanks,
-Ruslan 
+Acked-by: Micha³ Miros³aw <mirq-linux@rere.qmqm.pl>
