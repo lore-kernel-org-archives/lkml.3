@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab3I3Poo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:44:44 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45815 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab3I3Pom (ORCPT
+	id S1755594Ab3I3Pqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:46:43 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:39950 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754790Ab3I3Pqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:44:42 -0400
+	Mon, 30 Sep 2013 11:46:39 -0400
 MIME-Version: 1.0
-Date: Mon, 30 Sep 2013 17:44:41 +0200
-Message-ID: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
-Subject: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <52498DB6.7060901@redhat.com>
+References: <20130925210742.GG30372@lenny.home.zabbo.net>
+	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	<20130926185508.GO30372@lenny.home.zabbo.net>
+	<5244A68F.906@redhat.com>
+	<20130927200550.GA22640@fieldses.org>
+	<20130927205013.GZ30372@lenny.home.zabbo.net>
+	<CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
+	<52474839.2080201@redhat.com>
+	<CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
+	<20130930143432.GG16579@fieldses.org>
+	<CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+	<52499026.3090802@redhat.com>
+	<CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+	<52498AA8.2090204@redhat.com>
+	<CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
+	<52498DB6.7060901@redhat.com>
+Date: Mon, 30 Sep 2013 17:46:38 +0200
+Message-ID: <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 30, 2013 at 4:41 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+> The way the array based offload (and some software side reflink works) is
+> not a byte by byte copy. We cannot assume that a valid count can be returned
+> or that such a count would be an indication of a sequential segment of good
+> data.  The whole thing would normally have to be reissued.
+>
+> To make that a true assumption, you would have to mandate that in each of
+> the specifications (and sw targets)...
 
-I was alerted by people trying to use the PERF_RECORD_MMAP2
-record to disambiguate virtual address mappings that there is a case
-where the record does not contain enough information.
+You're missing my point.
 
-As you know, the MMAP2 record adds the major, minor, ino number,
-inode generation numbers to a mapping. But it does that only for
-file or pseudo -file backed mappings. That covers file mmaps and also
-SYSV shared memory segments.
+ - user issues SIZE_MAX splice request
+ - fs issues *64M* (or whatever) request to offload
+ - when that completes *fully* then we return 64M to userspace
+ - if it completes partially, then we return an error to userspace
 
-However there is a another kind of situation that arises in some
-multi-process benchmarks where a region of memory is cloned
-using VM_CLONE. As such, the virtual addresses match between
-the processes but the major, minor, inode, inode generation  fields
-are all zeroes because there is no inode associated with the mapping.
-Yet, it is important for the tool to know the mappings between the
-processes are pointing to the same physical data.
+Again, wouldn't that work?
 
-We need to cover this case and I am seeking for advice on how to
-best address this need given that we discarded using the plain physical
-address for disambiguation.
-
-Thanks.
+Thanks,
+Miklos
