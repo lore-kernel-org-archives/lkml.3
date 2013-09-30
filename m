@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab3I3UEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:04:36 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:63496 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755490Ab3I3UEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:04:35 -0400
+	id S1756213Ab3I3UJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:09:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43995 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755674Ab3I3UJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:09:25 -0400
+Message-ID: <5249DA50.5060105@redhat.com>
+Date: Mon, 30 Sep 2013 16:08:48 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5249D897.1010109@hp.com>
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
-	<5249D897.1010109@hp.com>
-Date: Mon, 30 Sep 2013 13:04:34 -0700
-X-Google-Sender-Auth: 8VCm-YFVx3DUNJgWB06WM_3my7w
-Message-ID: <CA+55aFw6tOVMw=pKE_knj4BOwTi_JAX=4N=-5_WduykNPotdww@mail.gmail.com>
-Subject: Re: Avoiding the dentry d_lock on final dput(), part deux:
- transactional memory
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+References: <20130930143432.GG16579@fieldses.org>			 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>			 <52499026.3090802@redhat.com>			 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>			 <52498AA8.2090204@redhat.com>			 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>			 <52498DB6.7060901@redhat.com>			 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>			 <52498F68.8050200@redhat.com>			 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>			 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>			 <5249B21E.70603@itwm.fraunhofer.de>		 <1380563050.6501.15.camel@leira.trondhjem.org>		 <5249B987.8020807@itwm.fraunhofer.de>	 <1380564126.6501.23.camel@leira.trondhjem.org>	 <5249C7C7.7020207@itwm.fraunhofer.de> <1380569663.6501.63.camel@leira.trondhjem.org> <5249D86A.7080603@itwm.fraunhofer.de>
+In-Reply-To: <5249D86A.7080603@itwm.fraunhofer.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 1:01 PM, Waiman Long <waiman.long@hp.com> wrote:
->
-> I think this patch is worth a trial if relevant hardware is more widely
-> available. The TSX code certainly need to be moved to an architecture
-> specific area and should be runtime enabled using a static key. We also need
-> more TSX support infrastructure in place first.
+On 09/30/2013 04:00 PM, Bernd Schubert wrote:
+> pNFS, FhGFS, Lustre, Ceph, etc., all of them shall implement their own 
+> interface? And userspace needs to address all of them differently? 
 
-I think we can pick that up from Andi's patches, he should have that.
-Although that did have very x86-specific naming (ie "xbegin"). And I
-don't think he used "asm goto" to quite the same advantage as this -
-and I think we do want to make sure that the overhead is minimal.
+The NFS and SCSI groups have each defined a standard which Zach's proposal 
+abstracts into a common user API.
 
-                  Linus
+Distributed file systems tend to be rather unique and do not have similar 
+standard bodies, but a lot of them could hide server specific implementations 
+under the current proposed interfaces.
+
+What is not a good idea is to drag out the core, simple copy offload discussion 
+for another 5 years to pull in every odd use case :)
+
+ric
+
