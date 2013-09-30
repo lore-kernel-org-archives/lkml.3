@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab3I3IwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 04:52:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53188 "EHLO mx2.suse.de"
+	id S1754099Ab3I3IxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 04:53:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53216 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab3I3IwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 04:52:06 -0400
-Date: Mon, 30 Sep 2013 10:52:00 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Fix "cannot create duplicate filename"
- problems
-In-Reply-To: <20130928040257.GA21630@kroah.com>
-Message-ID: <alpine.LNX.2.00.1309301051430.28935@pobox.suse.cz>
-References: <1380340666.2451.4.camel@neuromancer.tessier-ashpool> <20130928040257.GA21630@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752848Ab3I3IxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 04:53:03 -0400
+Date: Mon, 30 Sep 2013 09:52:59 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/63] mm: Close races between THP migration and PMD numa
+ clearing
+Message-ID: <20130930084735.GA2425@suse.de>
+References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
+ <1380288468-5551-12-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1380288468-5551-12-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep 2013, Greg KH wrote:
+On Fri, Sep 27, 2013 at 02:26:56PM +0100, Mel Gorman wrote:
+> @@ -1732,9 +1732,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+>  	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+>  	entry = pmd_mkhuge(entry);
+>  
+> -	page_add_new_anon_rmap(new_page, vma, haddr);
+> -
+> +	pmdp_clear_flush(vma, address, pmd);
+>  	set_pmd_at(mm, haddr, pmd, entry);
+> +	page_add_new_anon_rmap(new_page, vma, haddr);
+>  	update_mmu_cache_pmd(vma, address, &entry);
+>  	page_remove_rmap(page);
+>  	/*
 
-> > Fixing some wrong macro stringification/concatenation.
-> > 
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> > ---
-> >  drivers/hid/hid-roccat-kone.c     |    2 +-
-> >  drivers/hid/hid-roccat-koneplus.c |    4 ++--
-> >  drivers/hid/hid-roccat-kovaplus.c |    4 ++--
-> >  drivers/hid/hid-roccat-pyra.c     |    4 ++--
-> >  4 files changed, 7 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-> > index 602c188..6101816 100644
-> > --- a/drivers/hid/hid-roccat-kone.c
-> > +++ b/drivers/hid/hid-roccat-kone.c
-> > @@ -382,7 +382,7 @@ static ssize_t kone_sysfs_write_profilex(struct file *fp,
-> >  }
-> >  #define PROFILE_ATTR(number)					\
-> >  static struct bin_attribute bin_attr_profile##number = {	\
-> > -	.attr = { .name = "profile##number", .mode = 0660 },	\
-> > +	.attr = { .name = "profile" #number, .mode = 0660 },	\
-> 
-> Ugh, very sorry about that, I hate macros in C at times :)
-> 
-> Jiri, can you take this through your tree, or I can if you want, it
-> needs to go in for 3.12-final.
-> 
-> If yours, feel free to add:
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> Stefan, thanks for fixing my bugs, it's much appreciated.
-
-Thanks, queued, will go to Linus for 3.12 still.
+pmdp_clear_flush should have used haddr
 
 -- 
-Jiri Kosina
+Mel Gorman
 SUSE Labs
