@@ -1,127 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3I3Pdx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:33:53 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:47727 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab3I3Pdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:33:49 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1008,1371106800"; 
-   d="scan'208";a="54891448"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Ric Wheeler <rwheeler@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
-        Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: RE: [RFC] extending splice for copy offloading
-Thread-Topic: [RFC] extending splice for copy offloading
-Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgD//5wNcA==
-Date: Mon, 30 Sep 2013 15:33:46 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9467F3C78@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20130925210742.GG30372@lenny.home.zabbo.net>
- <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
- <20130926185508.GO30372@lenny.home.zabbo.net> <5244A68F.906@redhat.com>
- <20130927200550.GA22640@fieldses.org>
- <20130927205013.GZ30372@lenny.home.zabbo.net>
- <CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
- <52474839.2080201@redhat.com>
- <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
- <20130930143432.GG16579@fieldses.org>
- <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
- <52499026.3090802@redhat.com>
- <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
- <52498AA8.2090204@redhat.com>
-In-Reply-To: <52498AA8.2090204@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1756437Ab3I3PeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:34:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44562 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755421Ab3I3Pce (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 11:32:34 -0400
+Message-Id: <20130930152625.131613711@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 30 Sep 2013 17:22:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 6/6] sched, wait: Make the __wait_event*() interface more friendly
+References: <20130930152242.207382649@infradead.org>
+Content-Disposition: inline; filename=peterz-wait-___wait_event-ret.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UFY33S010835
 
-> -----Original Message-----
-> From: Ric Wheeler [mailto:rwheeler@redhat.com]
-> Sent: Monday, September 30, 2013 10:29 AM
-> To: Miklos Szeredi
-> Cc: J. Bruce Fields; Myklebust, Trond; Zach Brown; Anna Schumaker; Kernel
-> Mailing List; Linux-Fsdevel; linux-nfs@vger.kernel.org; Schumaker, Bryan;
-> Martin K. Petersen; Jens Axboe; Mark Fasheh; Joel Becker; Eric Wong
-> Subject: Re: [RFC] extending splice for copy offloading
-> 
-> On 09/30/2013 10:24 AM, Miklos Szeredi wrote:
-> > On Mon, Sep 30, 2013 at 4:52 PM, Ric Wheeler <rwheeler@redhat.com>
-> wrote:
-> >> On 09/30/2013 10:51 AM, Miklos Szeredi wrote:
-> >>> On Mon, Sep 30, 2013 at 4:34 PM, J. Bruce Fields
-> >>> <bfields@fieldses.org>
-> >>> wrote:
-> >>>>> My other worry is about interruptibility/restartability.  Ideas?
-> >>>>>
-> >>>>> What happens on splice(from, to, 4G) and it's a non-reflink copy?
-> >>>>> Can the page cache copy be made restartable?   Or should splice() be
-> >>>>> allowed to return a short count?  What happens on (non-reflink)
-> >>>>> remote copies and huge request sizes?
-> >>>> If I were writing an application that required copies to be
-> >>>> restartable, I'd probably use the largest possible range in the
-> >>>> reflink case but break the copy into smaller chunks in the splice case.
-> >>>>
-> >>> The app really doesn't want to care about that.  And it doesn't want
-> >>> to care about restartability, etc..  It's something the *kernel* has
-> >>> to care about.   You just can't have uninterruptible syscalls that
-> >>> sleep for a "long" time, otherwise first you'll just have annoyed
-> >>> users pressing ^C in vain; then, if the sleep is even longer,
-> >>> warnings about task sleeping too long.
-> >>>
-> >>> One idea is letting splice() return a short count, and so the app
-> >>> can safely issue SIZE_MAX requests and the kernel can decide if it
-> >>> can copy the whole file in one go or if it wants to do it in smaller
-> >>> chunks.
-> >>>
-> >> You cannot rely on a short count. That implies that an offloaded copy
-> >> starts at byte 0 and the short count first bytes are all valid.
-> > Huh?
-> >
-> > - app calls splice(from, 0, to, 0, SIZE_MAX)
-> >   1) VFS calls ->direct_splice(from, 0,  to, 0, SIZE_MAX)
-> >      1.a) fs reflinks the whole file in a jiffy and returns the size of the file
-> >      1 b) fs does copy offload of, say, 64MB and returns 64M
-> >   2) VFS does page copy of, say, 1MB and returns 1MB
-> > - app calls splice(from, X, to, X, SIZE_MAX) where X is the new offset
-> > ...
-> >
-> > The point is: the app is always doing the same (incrementing offset
-> > with the return value from splice) and the kernel can decide what is
-> > the best size it can service within a single uninterruptible syscall.
-> >
-> > Wouldn't that work?
-> >
-> > Thanks,
-> > Miklos
-> 
-> No.
-> 
-> Keep in mind that the offload operation in (1) might fail partially. The target
-> file (the copy) is allocated, the question is what ranges have valid data.
-> 
-> I don't see that (2) is interesting or really needed to be done in the kernel.
-> If nothing else, it tends to confuse the discussion....
-> 
+Change all __wait_event*() implementations to match the corresponding
+wait_event*() signature for convenience.
 
-Anna's figures, that were presented at Plumber's, show that (2) is still worth doing on the _server_ for the case of NFS.
+In particular this does away with the weird 'ret' logic. Since there
+are __wait_event*() users this requires we update them too.
 
-Cheers
-  Trond
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/mips/kernel/rtlx.c         |   19 +++---
+ include/linux/tty.h             |   10 +--
+ include/linux/wait.h            |  113 +++++++++++++++++++---------------------
+ net/irda/af_irda.c              |    5 -
+ net/netfilter/ipvs/ip_vs_sync.c |    7 --
+ 5 files changed, 73 insertions(+), 81 deletions(-)
+
+--- a/arch/mips/kernel/rtlx.c
++++ b/arch/mips/kernel/rtlx.c
+@@ -172,8 +172,9 @@ int rtlx_open(int index, int can_sleep)
+ 	if (rtlx == NULL) {
+ 		if( (p = vpe_get_shared(tclimit)) == NULL) {
+ 		    if (can_sleep) {
+-			__wait_event_interruptible(channel_wqs[index].lx_queue,
+-				(p = vpe_get_shared(tclimit)), ret);
++			ret = __wait_event_interruptible(
++					channel_wqs[index].lx_queue,
++					(p = vpe_get_shared(tclimit)));
+ 			if (ret)
+ 				goto out_fail;
+ 		    } else {
+@@ -263,11 +264,10 @@ unsigned int rtlx_read_poll(int index, i
+ 	/* data available to read? */
+ 	if (chan->lx_read == chan->lx_write) {
+ 		if (can_sleep) {
+-			int ret = 0;
+-
+-			__wait_event_interruptible(channel_wqs[index].lx_queue,
++			int ret = __wait_event_interruptible(
++				channel_wqs[index].lx_queue,
+ 				(chan->lx_read != chan->lx_write) ||
+-				sp_stopping, ret);
++				sp_stopping);
+ 			if (ret)
+ 				return ret;
+ 
+@@ -440,14 +440,13 @@ static ssize_t file_write(struct file *f
+ 
+ 	/* any space left... */
+ 	if (!rtlx_write_poll(minor)) {
+-		int ret = 0;
++		int ret;
+ 
+ 		if (file->f_flags & O_NONBLOCK)
+ 			return -EAGAIN;
+ 
+-		__wait_event_interruptible(channel_wqs[minor].rt_queue,
+-					   rtlx_write_poll(minor),
+-					   ret);
++		ret = __wait_event_interruptible(channel_wqs[minor].rt_queue,
++					   rtlx_write_poll(minor));
+ 		if (ret)
+ 			return ret;
+ 	}
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -672,14 +672,14 @@ static inline void tty_wait_until_sent_f
+ #define wait_event_interruptible_tty(tty, wq, condition)		\
+ ({									\
+ 	int __ret = 0;							\
+-	if (!(condition)) {						\
+-		__wait_event_interruptible_tty(tty, wq, condition, __ret);	\
+-	}								\
++	if (!(condition))						\
++		__ret = __wait_event_interruptible_tty(tty, wq,		\
++						       condition);	\
+ 	__ret;								\
+ })
+ 
+-#define __wait_event_interruptible_tty(tty, wq, condition, ret)		\
+-	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, ret,	\
++#define __wait_event_interruptible_tty(tty, wq, condition)		\
++	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,		\
+ 			tty_unlock(tty);				\
+ 			schedule();					\
+ 			tty_lock(tty))
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -179,24 +179,23 @@ wait_queue_head_t *bit_waitqueue(void *,
+ #define wake_up_interruptible_sync_poll(x, m)				\
+ 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
+ 
+-#define ___wait_cond_timeout(condition, ret)				\
++#define ___wait_cond_timeout(condition)					\
+ ({									\
+  	bool __cond = (condition);					\
+- 	if (__cond && !ret)						\
+- 		ret = 1;						\
+- 	__cond || !ret;							\
++ 	if (__cond && !__ret)						\
++ 		__ret = 1;						\
++ 	__cond || !__ret;						\
+ })
+ 
+ #define ___wait_signal_pending(state)					\
+ 	((state == TASK_INTERRUPTIBLE && signal_pending(current)) ||	\
+ 	 (state == TASK_KILLABLE && fatal_signal_pending(current)))
+ 
+-#define ___wait_nop_ret		int ret __always_unused
+-
+ #define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
+-do {									\
++({									\
+ 	__label__ __out;						\
+ 	DEFINE_WAIT(__wait);						\
++	long __ret = ret;						\
+ 									\
+ 	for (;;) {							\
+ 		if (exclusive)						\
+@@ -208,7 +207,7 @@ do {									\
+ 			break;						\
+ 									\
+ 		if (___wait_signal_pending(state)) {			\
+-			ret = -ERESTARTSYS;				\
++			__ret = -ERESTARTSYS;				\
+ 			if (exclusive) {				\
+ 				abort_exclusive_wait(&wq, &__wait, 	\
+ 						     state, NULL); 	\
+@@ -220,12 +219,12 @@ do {									\
+ 		cmd;							\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+-__out:	;								\
+-} while (0)
++__out:	__ret;								\
++})
+ 
+ #define __wait_event(wq, condition) 					\
+-	___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0,		\
+-		      ___wait_nop_ret, schedule())
++	(void)___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0, 0,	\
++			    schedule())
+ 
+ /**
+  * wait_event - sleep until a condition gets true
+@@ -246,10 +245,10 @@ do {									\
+ 	__wait_event(wq, condition);					\
+ } while (0)
+ 
+-#define __wait_event_timeout(wq, condition, ret)			\
+-	___wait_event(wq, ___wait_cond_timeout(condition, ret), 	\
+-		      TASK_UNINTERRUPTIBLE, 0, ret,			\
+-		      ret = schedule_timeout(ret))
++#define __wait_event_timeout(wq, condition, timeout)			\
++	___wait_event(wq, ___wait_cond_timeout(condition),		\
++		      TASK_UNINTERRUPTIBLE, 0, timeout,			\
++		      __ret = schedule_timeout(__ret))
+ 
+ /**
+  * wait_event_timeout - sleep until a condition gets true or a timeout elapses
+@@ -272,12 +271,12 @@ do {									\
+ ({									\
+ 	long __ret = timeout;						\
+ 	if (!(condition)) 						\
+-		__wait_event_timeout(wq, condition, __ret);		\
++		__ret = __wait_event_timeout(wq, condition, timeout);	\
+ 	__ret;								\
+ })
+ 
+-#define __wait_event_interruptible(wq, condition, ret)			\
+-	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, ret,	\
++#define __wait_event_interruptible(wq, condition)			\
++	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,		\
+ 		      schedule())
+ 
+ /**
+@@ -299,14 +298,14 @@ do {									\
+ ({									\
+ 	int __ret = 0;							\
+ 	if (!(condition))						\
+-		__wait_event_interruptible(wq, condition, __ret);	\
++		__ret = __wait_event_interruptible(wq, condition);	\
+ 	__ret;								\
+ })
+ 
+-#define __wait_event_interruptible_timeout(wq, condition, ret)		\
+-	___wait_event(wq, ___wait_cond_timeout(condition, ret),		\
+-		      TASK_INTERRUPTIBLE, 0, ret,			\
+-		      ret = schedule_timeout(ret))
++#define __wait_event_interruptible_timeout(wq, condition, timeout)	\
++	___wait_event(wq, ___wait_cond_timeout(condition),		\
++		      TASK_INTERRUPTIBLE, 0, timeout,			\
++		      __ret = schedule_timeout(__ret))
+ 
+ /**
+  * wait_event_interruptible_timeout - sleep until a condition gets true or a timeout elapses
+@@ -330,7 +329,8 @@ do {									\
+ ({									\
+ 	long __ret = timeout;						\
+ 	if (!(condition))						\
+-		__wait_event_interruptible_timeout(wq, condition, __ret); \
++		__ret = __wait_event_interruptible_timeout(wq, 		\
++						condition, timeout);	\
+ 	__ret;								\
+ })
+ 
+@@ -347,7 +347,7 @@ do {									\
+ 				       current->timer_slack_ns,		\
+ 				       HRTIMER_MODE_REL);		\
+ 									\
+-	___wait_event(wq, condition, state, 0, __ret,			\
++	__ret = ___wait_event(wq, condition, state, 0, 0,		\
+ 		if (!__t.task) {					\
+ 			__ret = -ETIME;					\
+ 			break;						\
+@@ -409,15 +409,15 @@ do {									\
+ 	__ret;								\
+ })
+ 
+-#define __wait_event_interruptible_exclusive(wq, condition, ret)	\
+-	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 1, ret,	\
++#define __wait_event_interruptible_exclusive(wq, condition)		\
++	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 1, 0,		\
+ 		      schedule())
+ 
+ #define wait_event_interruptible_exclusive(wq, condition)		\
+ ({									\
+ 	int __ret = 0;							\
+ 	if (!(condition))						\
+-		__wait_event_interruptible_exclusive(wq, condition, __ret);\
++		__ret = __wait_event_interruptible_exclusive(wq, condition);\
+ 	__ret;								\
+ })
+ 
+@@ -570,8 +570,8 @@ do {									\
+ 
+ 
+ 
+-#define __wait_event_killable(wq, condition, ret)			\
+-	___wait_event(wq, condition, TASK_KILLABLE, 0, ret, schedule())
++#define __wait_event_killable(wq, condition)				\
++	___wait_event(wq, condition, TASK_KILLABLE, 0, 0, schedule())
+ 
+ /**
+  * wait_event_killable - sleep until a condition gets true
+@@ -592,18 +592,17 @@ do {									\
+ ({									\
+ 	int __ret = 0;							\
+ 	if (!(condition))						\
+-		__wait_event_killable(wq, condition, __ret);		\
++		__ret = __wait_event_killable(wq, condition);		\
+ 	__ret;								\
+ })
+ 
+ 
+ #define __wait_event_lock_irq(wq, condition, lock, cmd)			\
+-	___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0,		\
+-		      ___wait_nop_ret,					\
+-		      spin_unlock_irq(&lock);				\
+-		      cmd;						\
+-		      schedule();					\
+-		      spin_lock_irq(&lock))
++	(void)___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0, 0,	\
++			    spin_unlock_irq(&lock);			\
++			    cmd;					\
++			    schedule();					\
++			    spin_lock_irq(&lock))
+ 
+ /**
+  * wait_event_lock_irq_cmd - sleep until a condition gets true. The
+@@ -663,11 +662,11 @@ do {									\
+ } while (0)
+ 
+ 
+-#define __wait_event_interruptible_lock_irq(wq, condition, lock, ret, cmd) \
+-	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, ret,	   \
+-		      spin_unlock_irq(&lock);				   \
+-		      cmd;						   \
+-		      schedule();					   \
++#define __wait_event_interruptible_lock_irq(wq, condition, lock, cmd)	\
++	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,	   	\
++		      spin_unlock_irq(&lock);				\
++		      cmd;						\
++		      schedule();					\
+ 		      spin_lock_irq(&lock))
+ 
+ /**
+@@ -698,10 +697,9 @@ do {									\
+ #define wait_event_interruptible_lock_irq_cmd(wq, condition, lock, cmd)	\
+ ({									\
+ 	int __ret = 0;							\
+-									\
+ 	if (!(condition))						\
+-		__wait_event_interruptible_lock_irq(wq, condition,	\
+-						    lock, __ret, cmd);	\
++		__ret = __wait_event_interruptible_lock_irq(wq, 	\
++						condition, lock, cmd);	\
+ 	__ret;								\
+ })
+ 
+@@ -730,18 +728,18 @@ do {									\
+ #define wait_event_interruptible_lock_irq(wq, condition, lock)		\
+ ({									\
+ 	int __ret = 0;							\
+-									\
+ 	if (!(condition))						\
+-		__wait_event_interruptible_lock_irq(wq, condition,	\
+-						    lock, __ret, );	\
++		__ret = __wait_event_interruptible_lock_irq(wq,		\
++						condition, lock,)	\
+ 	__ret;								\
+ })
+ 
+-#define __wait_event_interruptible_lock_irq_timeout(wq, condition, lock, ret) \
+-	___wait_event(wq, ___wait_cond_timeout(condition, ret),		      \
+-		      TASK_INTERRUPTIBLE, 0, ret,	      		      \
+-		      spin_unlock_irq(&lock);				      \
+-		      ret = schedule_timeout(ret);			      \
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition, 	\
++						    lock, timeout) 	\
++	___wait_event(wq, ___wait_cond_timeout(condition),		\
++		      TASK_INTERRUPTIBLE, 0, ret,	      		\
++		      spin_unlock_irq(&lock);				\
++		      __ret = schedule_timeout(__ret);			\
+ 		      spin_lock_irq(&lock));
+ 
+ /**
+@@ -771,11 +769,10 @@ do {									\
+ #define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
+ 						  timeout)		\
+ ({									\
+-	int __ret = timeout;						\
+-									\
++	long __ret = timeout;						\
+ 	if (!(condition))						\
+-		__wait_event_interruptible_lock_irq_timeout(		\
+-					wq, condition, lock, __ret);	\
++		__ret = __wait_event_interruptible_lock_irq_timeout(	\
++					wq, condition, lock, timeout);	\
+ 	__ret;								\
+ })
+ 
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -2563,9 +2563,8 @@ static int irda_getsockopt(struct socket
+ 				  jiffies + msecs_to_jiffies(val));
+ 
+ 			/* Wait for IR-LMP to call us back */
+-			__wait_event_interruptible(self->query_wait,
+-			      (self->cachedaddr != 0 || self->errno == -ETIME),
+-						   err);
++			err = __wait_event_interruptible(self->query_wait,
++			      (self->cachedaddr != 0 || self->errno == -ETIME));
+ 
+ 			/* If watchdog is still activated, kill it! */
+ 			del_timer(&(self->watchdog));
+--- a/net/netfilter/ipvs/ip_vs_sync.c
++++ b/net/netfilter/ipvs/ip_vs_sync.c
+@@ -1637,12 +1637,9 @@ static int sync_thread_master(void *data
+ 			continue;
+ 		}
+ 		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
+-			int ret = 0;
+-
+-			__wait_event_interruptible(*sk_sleep(sk),
++			int ret = __wait_event_interruptible(*sk_sleep(sk),
+ 						   sock_writeable(sk) ||
+-						   kthread_should_stop(),
+-						   ret);
++						   kthread_should_stop());
+ 			if (unlikely(kthread_should_stop()))
+ 				goto done;
+ 		}
+
+
