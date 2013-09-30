@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3I3Sto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:49:44 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:44050 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab3I3Stm (ORCPT
+	id S1755952Ab3I3Stv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:49:51 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:33323 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab3I3Sts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:49:42 -0400
+	Mon, 30 Sep 2013 14:49:48 -0400
+Message-ID: <5249C7C7.7020207@itwm.fraunhofer.de>
+Date: Mon, 30 Sep 2013 20:49:43 +0200
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CAC24_3tuw2Ejcg_TLB0kd2XumhS8UDdBd_3YAmY9hh0G8y9kKQ@mail.gmail.com>
-References: <CAC24_3tuw2Ejcg_TLB0kd2XumhS8UDdBd_3YAmY9hh0G8y9kKQ@mail.gmail.com>
-Date: Mon, 30 Sep 2013 20:49:42 +0200
-Message-ID: <CANq1E4QhpY1TdE2sXhwpY4RAHErAJs_Pek4-EKoRXCeGh_0j6A@mail.gmail.com>
-Subject: Re: xpad input driver: Xbox 360 Wireless Adapter
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Zachary Lund <admin@computerquip.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Christoph Fritz <chf.fritz@googlemail.com>,
-        Marko Friedemann <mfr@bmx-chemnitz.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+References: <20130930143432.GG16579@fieldses.org>		 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>		 <52499026.3090802@redhat.com>		 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>		 <52498AA8.2090204@redhat.com>		 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>		 <52498DB6.7060901@redhat.com>		 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>		 <52498F68.8050200@redhat.com>		 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>		 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>		 <5249B21E.70603@itwm.fraunhofer.de>	 <1380563050.6501.15.camel@leira.trondhjem.org>	 <5249B987.8020807@itwm.fraunhofer.de> <1380564126.6501.23.camel@leira.trondhjem.org>
+In-Reply-To: <1380564126.6501.23.camel@leira.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 09/30/2013 08:02 PM, Myklebust, Trond wrote:
+> On Mon, 2013-09-30 at 19:48 +0200, Bernd Schubert wrote:
+>> On 09/30/2013 07:44 PM, Myklebust, Trond wrote:
+>>> On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
+>>>> It would be nice if there would be way if the file system would get a
+>>>> hint that the target file is supposed to be copy of another file. That
+>>>> way distributed file systems could also create the target-file with the
+>>>> correct meta-information (same storage targets as in-file has).
+>>>> Well, if we cannot agree on that, file system with a custom protocol at
+>>>> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not
+>>>> sure if this would work for pNFS, though.
+>>>
+>>> splice() does not create new files. What you appear to be asking for
+>>> lies way outside the scope of that system call interface.
+>>>
+>>
+>> Sorry I know, definitely outside the scope of splice, but in the context
+>> of offloaded file copies. So the question is, what is the best way to
+>> address/discuss that?
+>
+> Why does it need to be addressed in the first place?
 
-I'm not very familiar with the xbox-gamepad driver, but please see
-below for some comments:
+An offloaded copy is still not efficient if different storage 
+servers/targets used by from-file and to-file.
 
-On Mon, Sep 23, 2013 at 2:34 AM, Zachary Lund <admin@computerquip.com> wrote:
-> I'm apologize ahead of time if this thread isn't appropriate, I'm not
-> very familiar with mailing lists, especially lkml. I'm also very new
-> to kernel/module development (as of literally yesterday).
+>
+> What is preventing an application from retrieving and setting this
+> information using standard libc functions such as fstat()+open(), and
+> supplemented with libattr attr_setf/getf(), and libacl acl_get_fd/set_fd
+> where appropriate?
+>
 
-Input-drivers are discussed on <linux-input@vger.kernel.org> (now
-CC'ed). I recommend subscribing to that list. I also put some driver
-developers on CC as they are probably more qualified to answer your
-questions.
+At a minimum this requires network and metadata overhead. And while I'm 
+working on FhGFS now, I still wonder what other file system need to do - 
+for example Lustre pre-allocates storage-target files on creating a 
+file, so file layout changes mean even more overhead there.
+Anyway, if we could agree on to use libattr or libacl to teach the file 
+system about the upcoming splice call I would be fine. Metadata overhead 
+is probably negligible for large files.
 
-Note that LKML is a high-traffic list mostly used in CC. Please always
-CC the driver authors or maintainers.
 
-> I was looking into getting the LED working properly for the Xbox 360
-> controllers and learning about the basics of a kernel module at the
-> same time. There were a few things that confused me. I will reference
-> functions by name and all functions are from the current 3.12 branch.
 
-It might be useful to mention the driver in question (it's
-drivers/input/joystick/xpad.c I guess?).
 
-> First, xpad_send_led_command seems to be geared only towards the
-> "Microsoft X-Box 360 pad". Using xboxdrv as a reference, they use a
-> completely different packet structure to set the LED status on the
-> wireless controller which can be seen here:
-> https://github.com/Grumbel/xboxdrv/blob/master/src/controller/xbox360_wireless_controller.cpp#L66
+Thanks,
+Bernd
 
-I don't think the kernel driver supports wireless pads, so it might
-have a different "wireless optimized" wire-protocol. The driver is
-USB-only, isn't it?
-
-> Second, the driver acts strangely when setting the LED. It calls
-> xpad_send_led_command during xpad_led_probe during xpad_probe but
-> there's a chance that a controller might not even be connected if
-> using the wireless adapter during that time!
-
-What? During xpad_probe() a device must be fully functional. What
-adapter are your talking about?
-
-> The only way to seemingly
-> tell if a controller is connected is by receiving the correct
-> connection packets. If I use the correct packet structure (which I
-> ripped almost directly from xboxdrv) and set the led after parsing a
-> connection packet, the LED seemingly works fine!
-
-Sounds reasonable. Do all devices send the connection-packets? If yes,
-feel free to send a patch which moves LED initialization after receipt
-of this package.
-
-> Third, I'm incredibly new to really low level development. Whenever
-> loading the module, it finds my wireless adapter but then creates 4
-> devices (which seems to mean only 4 controllers are allowed per
-> wireless adapter), each of which cause a call to xpad_probe. I
-> couldn't figure out how to tell if other wireless controllers were
-> already connected to the wireless adapter so I could light up the
-> correct LED. How would I go about this properly?
-
-Ugh? Sorry, but I don't understand what kind of wireless adapter this
-is? Please give us a bit more information here. If the device is a
-Bluetooth-device, why use an adapter at all?
-
-Cheers
-David
