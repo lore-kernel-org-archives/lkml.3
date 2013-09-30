@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab3I3U1V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:27:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41342 "EHLO mx1.redhat.com"
+	id S1756413Ab3I3U1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:27:37 -0400
+Received: from mx11.netapp.com ([216.240.18.76]:54057 "EHLO mx11.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755854Ab3I3U1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:27:20 -0400
-Date: Mon, 30 Sep 2013 22:26:39 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, acme@infradead.org, mingo@kernel.org,
-        peterz@infradead.org, eranian@google.com
-Subject: Re: perf, x86: Add last TSX PMU code for Haswell v2
-Message-ID: <20130930202639.GC1079@krava>
-References: <1379688044-14173-1-git-send-email-andi@firstfloor.org>
- <20130930201721.GA1079@krava>
+	id S1756318Ab3I3U1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:27:32 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1010,1371106800"; 
+   d="scan'208";a="54974929"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+CC: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        "Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Thread-Topic: [RFC] extending splice for copy offloading
+Thread-Index: AQHOrxGOvZ3ZUuiTzUm2hJZkKwekYZnO5LsAgAhvVACAAAa2gIAAARMAgAANuACAABQxAIAAxnuAgACm0ACAACpVgIABe8EAgAAMZoCAAJbAAIAAJwQAgADdJ4CAAo2qAIAAJXMAgAAEpQCAAABWAIAACPYA///wfgCAABN0gP//8DAAgAASEgD//+/0AAACZFGAAAEyqoAAAZUqAAAA8DUAAAAqeIAAAHXeAAABqbqAAAGPWoAAAOtKAAAASGsAAACmv4A=
+Date: Mon, 30 Sep 2013 20:27:30 +0000
+Message-ID: <1380572847.6501.81.camel@leira.trondhjem.org>
+References: <20130930143432.GG16579@fieldses.org>
+				 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+				 <52499026.3090802@redhat.com>
+				 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+				 <52498AA8.2090204@redhat.com>
+				 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
+				 <52498DB6.7060901@redhat.com>
+				 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+				 <52498F68.8050200@redhat.com>
+				 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
+				 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
+				 <5249B21E.70603@itwm.fraunhofer.de>
+			 <1380563050.6501.15.camel@leira.trondhjem.org>
+			 <5249B987.8020807@itwm.fraunhofer.de>
+		 <1380564126.6501.23.camel@leira.trondhjem.org>
+		 <5249C7C7.7020207@itwm.fraunhofer.de>
+	 <1380569663.6501.63.camel@leira.trondhjem.org>
+	 <5249D86A.7080603@itwm.fraunhofer.de> <5249DA50.5060105@redhat.com>
+In-Reply-To: <5249DA50.5060105@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4722E5C74CC75A45B195640398A61BA0@hq.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930201721.GA1079@krava>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8UKRpbA012551
 
-On Mon, Sep 30, 2013 at 10:17:21PM +0200, Jiri Olsa wrote:
-> On Fri, Sep 20, 2013 at 07:40:38AM -0700, Andi Kleen wrote:
-> > [This has kernel and user parts, so will need
-> > review/ack/merges from both perf kernel and user land maintainers]
-> > [v2: Address Peter's feedback for the kernel parts]
-> > 
-> > This is currently the last part of the TSX PMU code,
-> > just adding the left over bits:
-> > 
-> > This adds some changes to the user interfaces.
-> > I'll send patches for the manpage separately.
-> > 
-> > - Report the transaction abort flags to user space
-> > using a new field, and add the code to display them.
-> > This is used to classify abort types, also fairly
-> > important for tuning as it guides the tuning process,
-> > together with the abort weight that was added earleir.
-> > 
-> > [3 patches, generic, x86, user tools]
-> > 
-> > - Add support for reporting the two new TSX LBR flags: in_tx
-> > and abort_tx. The code to handle the LBRs was already
-> > added earlier, this just adds the code to report,
-> > filter and display them.
+On Mon, 2013-09-30 at 16:08 -0400, Ric Wheeler wrote:
+> On 09/30/2013 04:00 PM, Bernd Schubert wrote:
+> > pNFS, FhGFS, Lustre, Ceph, etc., all of them shall implement their own 
+> > interface? And userspace needs to address all of them differently? 
 > 
-> perf tool changes look ok
+> The NFS and SCSI groups have each defined a standard which Zach's proposal 
+> abstracts into a common user API.
 > 
-> Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+> Distributed file systems tend to be rather unique and do not have similar 
+> standard bodies, but a lot of them could hide server specific implementations 
+> under the current proposed interfaces.
 > 
-> btw, kernel changes didn't apply cleanly on tip tree for me
-> last week.. I couldn't test on Haswel, but I at least tried
-> your changes with no data and all seem ok ;-)
+> What is not a good idea is to drag out the core, simple copy offload discussion 
+> for another 5 years to pull in every odd use case :)
 
-I knew I've already sent this out! heh, even acked ;-)
-http://marc.info/?l=linux-kernel&m=138021331913851&w=2
+Agreed. The whole idea of a common system call interface should be to
+allow us to abstract away the underlying storage and filesystem
+architectures. If filesystem developers also want a way to expose that
+underlying architecture to applications in order to enable further
+optimisations, then that belongs in a separate discussion.
 
-got confused by your new PING^2
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-jirka
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
