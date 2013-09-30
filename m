@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab3I3Khz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:37:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43391 "EHLO
+	id S1756884Ab3I3KiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:38:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43389 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902Ab3I3KLs (ORCPT
+	with ESMTP id S1754891Ab3I3KLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Sep 2013 06:11:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 014/104] xhci-plat: Don't enable legacy PCI interrupts.
-Date: Mon, 30 Sep 2013 11:09:51 +0100
-Message-Id: <1380535881-9239-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 013/104] USB: handle LPM errors during device suspend correctly
+Date: Mon, 30 Sep 2013 11:09:50 +0100
+Message-Id: <1380535881-9239-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,89 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25 upstream.
+commit aa5ceae24bf8dff1d6fe87c6c4b08e69c6d33550 upstream.
 
-The xHCI platform driver calls into usb_add_hcd to register the irq for
-its platform device.  It does not want the xHCI generic driver to
-register an interrupt for it at all.  The original code did that by
-setting the XHCI_BROKEN_MSI quirk, which tells the xHCI driver to not
-enable MSI or MSI-X for a PCI host.
+The hub driver's usb_port_suspend() routine doesn't handle errors
+related to Link Power Management properly.  It always returns failure,
+it doesn't try to clean up the wakeup setting, (in the case of system
+sleep) it doesn't try to go ahead with the port suspend regardless,
+and it doesn't try to apply the new power-off mechanism.
 
-Unfortunately, if CONFIG_PCI is enabled, and CONFIG_USB_DW3 is enabled,
-the xHCI generic driver will attempt to register a legacy PCI interrupt
-for the xHCI platform device in xhci_try_enable_msi().  This will result
-in a bogus irq being registered, since the underlying device is a
-platform_device, not a pci_device, and thus the pci_device->irq pointer
-will be bogus.
+This patch fixes these problems.
 
-Add a new quirk, XHCI_PLAT, so that the xHCI generic driver can
-distinguish between a PCI device that can't handle MSI or MSI-X, and a
-platform device that should not have its interrupts touched at all.
-This quirk may be useful in the future, in case other corner cases like
-this arise.
+Note: Sarah fixed this patch to apply against 3.11, since the original
+commit (4fae6f0fa86f92e6bc7429371b1e177ad0aaac66 "USB: handle LPM errors
+during device suspend correctly") called usb_disable_remote_wakeup,
+which won't be added until 3.12.
 
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 00eed9c814cb8f281be6f0f5d8f45025dc0a97eb "USB: xhci:
-correctly enable interrupts".
+This patch should be backported to kernels as old as 3.5, that
+contain the commit 8306095fd2c1100e8244c09bf560f97aca5a311d "USB:
+Disable USB 3.0 LPM in critical sections.".  There will be merge
+conflicts, since LTM wasn't added until 3.6.
 
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Yu Y Wang <yu.y.wang@intel.com>
-Tested-by: Yu Y Wang <yu.y.wang@intel.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+[ luis: backported to 3.5:
+  - dropped LTM-related code
+  - dropped code related with PM QoS ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-plat.c | 2 +-
- drivers/usb/host/xhci.c      | 7 ++++++-
- drivers/usb/host/xhci.h      | 1 +
- 3 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c | 43 +++++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 93ad67e..6e70ce9 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -24,7 +24,7 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
- 	 * here that the generic code does not try to make a pci_dev from our
- 	 * dev struct in order to setup MSI
- 	 */
--	xhci->quirks |= XHCI_BROKEN_MSI;
-+	xhci->quirks |= XHCI_PLAT;
- }
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 8deaeb5..7be4e11 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2798,7 +2798,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
+ 					status);
+ 			/* bail if autosuspend is requested */
+ 			if (PMSG_IS_AUTO(msg))
+-				return status;
++				goto err_wakeup;
+ 		}
+ 	}
  
- /* called during probe() after chip reset completes */
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 585bd6c..5fcd576 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -342,9 +342,14 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- static int xhci_try_enable_msi(struct usb_hcd *hcd)
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
--	struct pci_dev  *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
-+	struct pci_dev  *pdev;
- 	int ret;
+@@ -2807,9 +2807,10 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
+ 		usb_set_usb2_hardware_lpm(udev, 0);
  
-+	/* The xhci platform device has set up IRQs through usb_add_hcd. */
-+	if (xhci->quirks & XHCI_PLAT)
-+		return 0;
-+
-+	pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
- 	/*
- 	 * Some Fresco Logic host controllers advertise MSI, but fail to
- 	 * generate interrupts.  Don't even try to enable MSI.
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 3e8bf2d..30c3a1d 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1516,6 +1516,7 @@ struct xhci_hcd {
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
- #define XHCI_AVOID_BEI		(1 << 15)
-+#define XHCI_PLAT		(1 << 16)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ 	if (usb_unlocked_disable_lpm(udev)) {
+-		dev_err(&udev->dev, "%s Failed to disable LPM before suspend\n.",
+-				__func__);
+-		return -ENOMEM;
++		dev_err(&udev->dev, "Failed to disable LPM before suspend\n.");
++		status = -ENOMEM;
++		if (PMSG_IS_AUTO(msg))
++			goto err_lpm3;
+ 	}
+ 
+ 	/* see 7.1.7.6 */
+@@ -2823,27 +2824,29 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
+ 	if (status) {
+ 		dev_dbg(hub->intfdev, "can't suspend port %d, status %d\n",
+ 				port1, status);
+-		/* paranoia:  "should not happen" */
+-		if (udev->do_remote_wakeup) {
+-			if (!hub_is_superspeed(hub->hdev)) {
+-				(void) usb_control_msg(udev,
+-						usb_sndctrlpipe(udev, 0),
+-						USB_REQ_CLEAR_FEATURE,
+-						USB_RECIP_DEVICE,
+-						USB_DEVICE_REMOTE_WAKEUP, 0,
+-						NULL, 0,
+-						USB_CTRL_SET_TIMEOUT);
+-			} else
+-				(void) usb_disable_function_remotewakeup(udev);
+-
+-		}
+ 
++		/* Try to enable USB3 LPM and LTM again */
++		usb_unlocked_enable_lpm(udev);
++ err_lpm3:
+ 		/* Try to enable USB2 hardware LPM again */
+ 		if (udev->usb2_hw_lpm_capable == 1)
+ 			usb_set_usb2_hardware_lpm(udev, 1);
+ 
+-		/* Try to enable USB3 LPM again */
+-		usb_unlocked_enable_lpm(udev);
++		if (udev->do_remote_wakeup) {
++			if (udev->speed < USB_SPEED_SUPER)
++				usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
++						USB_REQ_CLEAR_FEATURE,
++						USB_RECIP_DEVICE,
++						USB_DEVICE_REMOTE_WAKEUP, 0,
++						NULL, 0, USB_CTRL_SET_TIMEOUT);
++			else
++				usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
++						USB_REQ_CLEAR_FEATURE,
++						USB_RECIP_INTERFACE,
++						USB_INTRF_FUNC_SUSPEND, 0,
++						NULL, 0, USB_CTRL_SET_TIMEOUT);
++		}
++ err_wakeup:
+ 
+ 		/* System sleep transitions should never fail */
+ 		if (!PMSG_IS_AUTO(msg))
 -- 
 1.8.3.2
 
