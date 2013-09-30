@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab3I3KNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:13:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43735 "EHLO
+	id S1756150Ab3I3KTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:19:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43763 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab3I3KNQ (ORCPT
+	with ESMTP id S1755753Ab3I3KNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:16 -0400
+	Mon, 30 Sep 2013 06:13:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 078/104] DocBook: upgrade media_api DocBook version to 4.2
-Date: Mon, 30 Sep 2013 11:10:55 +0100
-Message-Id: <1380535881-9239-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 084/104] HID: pantherlord: validate output report details
+Date: Mon, 30 Sep 2013 11:11:01 +0100
+Message-Id: <1380535881-9239-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,39 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Hajda <a.hajda@samsung.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 8bfd4a68ecc003c1a142f35551be846d6b13e822 upstream.
+commit 412f30105ec6735224535791eed5cdc02888ecb4 upstream.
 
-Fixes the last three errors of media_api DocBook validatation:
-(...)
-media_api.xml:414: element imagedata: validity error : Value "SVG" for attribute format of imagedata is not among the enumerated set
-media_api.xml:432: element imagedata: validity error : Value "SVG" for attribute format of imagedata is not among the enumerated set
-media_api.xml:452: element imagedata: validity error : Value "SVG" for attribute format of imagedata is not among the enumerated set
-(...)
+A HID device could send a malicious output report that would cause the
+pantherlord HID driver to write beyond the output report allocation
+during initialization, causing a heap overflow:
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[  310.939483] usb 1-1: New USB device found, idVendor=0e8f, idProduct=0003
+...
+[  315.980774] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+
+CVE-2013-2892
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/DocBook/media_api.tmpl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/hid-pl.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/DocBook/media_api.tmpl b/Documentation/DocBook/media_api.tmpl
-index 4e8e898..541f22d 100644
---- a/Documentation/DocBook/media_api.tmpl
-+++ b/Documentation/DocBook/media_api.tmpl
-@@ -1,6 +1,6 @@
- <?xml version="1.0"?>
--<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
--	"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
-+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
- <!ENTITY % media-entities SYSTEM "./media-entities.tmpl"> %media-entities;
- <!ENTITY media-indices SYSTEM "./media-indices.tmpl">
- 
+diff --git a/drivers/hid/hid-pl.c b/drivers/hid/hid-pl.c
+index 47ed74c..00cd2f8 100644
+--- a/drivers/hid/hid-pl.c
++++ b/drivers/hid/hid-pl.c
+@@ -129,8 +129,14 @@ static int plff_init(struct hid_device *hid)
+ 			strong = &report->field[0]->value[2];
+ 			weak = &report->field[0]->value[3];
+ 			debug("detected single-field device");
+-		} else if (report->maxfield >= 4 && report->field[0]->maxusage == 1 &&
+-				report->field[0]->usage[0].hid == (HID_UP_LED | 0x43)) {
++		} else if (report->field[0]->maxusage == 1 &&
++			   report->field[0]->usage[0].hid ==
++				(HID_UP_LED | 0x43) &&
++			   report->maxfield >= 4 &&
++			   report->field[0]->report_count >= 1 &&
++			   report->field[1]->report_count >= 1 &&
++			   report->field[2]->report_count >= 1 &&
++			   report->field[3]->report_count >= 1) {
+ 			report->field[0]->value[0] = 0x00;
+ 			report->field[1]->value[0] = 0x00;
+ 			strong = &report->field[2]->value[0];
 -- 
 1.8.3.2
 
