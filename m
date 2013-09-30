@@ -1,48 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab3I3Uf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:35:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755734Ab3I3Uf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:35:27 -0400
-Date: Mon, 30 Sep 2013 16:35:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20130930203505.GA6116@redhat.com>
-References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
- <52422A6A.8080305@zytor.com>
- <20130926031242.GA4487@dhcp-16-126.nay.redhat.com>
- <20130930201730.GD16383@pd.tnic>
+	id S1756426Ab3I3Uhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:37:45 -0400
+Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:57857 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756062Ab3I3Uho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:37:44 -0400
+X-TM-IMSS-Message-ID: <2e34c0c10001c291@nsa.gov>
+Message-ID: <5249E0CB.2070106@tycho.nsa.gov>
+Date: Mon, 30 Sep 2013 16:36:27 -0400
+From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930201730.GD16383@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs
+ into tpm-sysfs.c
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com> <52408E5D.4020904@tycho.nsa.gov> <20130923193633.GA9194@obsidianresearch.com> <5240A2A3.4040102@tycho.nsa.gov> <20130923204232.GB16345@obsidianresearch.com> <5240BA0E.3000304@tycho.nsa.gov> <20130923222324.GA9533@obsidianresearch.com> <5241A199.1080505@tycho.nsa.gov> <20130930181005.GG28898@obsidianresearch.com>
+In-Reply-To: <20130930181005.GG28898@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 10:17:30PM +0200, Borislav Petkov wrote:
-> On Thu, Sep 26, 2013 at 11:12:42AM +0800, Dave Young wrote:
-> > If we choose this approach, can we save not only the efi_mapping, but
-> > also the fields which will be converted to virt addr, like fw_vendor,
-> > runtime, tables? During my test on a HP workstation, the config table
-> > item (SMBIOS) also is converted to virt addr though spec only mention
-> > fw_vendor/runtime/tables.
-> 
-> Btw, I was about to ask: how do you pass boot_params to the kexec
-> kernel?
+On 09/30/2013 02:10 PM, Jason Gunthorpe wrote:
+> On Tue, Sep 24, 2013 at 10:28:41AM -0400, Daniel De Graaf wrote:
+>> On 09/23/2013 06:23 PM, Jason Gunthorpe wrote:
+>>> On Mon, Sep 23, 2013 at 06:00:46PM -0400, Daniel De Graaf wrote:
+>>>
+>>>> In a PC client TPM, normal OS code (as opposed to firmware or microcode)
+>>>> is already restricted to locality 0-2. It may make sense to restrict
+>>>> locality 2 to the kernel, which would allow an in-kernel TPM seal
+>>>> command to be able to bind data so that userspace cannot unseal it.
+>>>> However, only allowing localities 0 and 1 to userspace may be too
+>>>> restrictive if userspace also wishes to use locality for separation,
+>>>> since locality 1 does not have the ability to reset any PCRs that
+>>>> locality 0 cannot also reset.
+>>>> The kernel could reserve only locality 1 for its own use, giving it the
+>>>> ability to seal data but not interfering with the ability to reset PCRs.
+>>>> This would be my preference, although it is less intuitive to allow code
+>>>> of lower privilege (userspace) to control the higher numbered locality
+>>>> 2.
+>>>
+>>> This matches my vague understanding (we don't use localities here)
+>>>
+>>>>> Perhaps a .config option would be useful to allow the system designer to
+>>>>> choose what, if any, locality to reserve for kernel use?
+>>>
+>>> A runtime sysfs seems reasonable..
+>>
+>> Allowing a userspace application to change which locality is kernel- and
+>> userspace-only will eliminate the primary benefit of having a locality
+>> restricted to the kernel.
+>
+> Right, I was sort of thinking these sysfs files would be write-once or
+> trapped doored to prevent going backwards (like how secure level
+> worked). Ideally the write would be in the initramfs, which is part of
+> the PCR computation, so it should have the same properties as CONFIG_?
+>
+> I think using CONFIG_ options would make this feature unavaiable to
+> distro kernel users...
 
-kexec-tools in user space prepares the boot_params and passes it to
-second kernel.
+This just moves the problem - now you need a custom initrd instead of
+a custom kernel. Other TPM options like IMA's PCR selection also must
+be changed at CONFIG_ time, although that seems to be more justified
+since IMA in TCB mode is not usable on any distro kernel that makes
+the TPM driver a module (i.e. most or all of them).
 
-Thanks
-Vivek
+>> At least "supported_localities" should be generated by the driver if it
+>> is generated at all. There are a few different proposals for handling
+>> localities over 4 in virtual TPMs; one is that locality numbers between
+>> 32-255 would be permitted and 5-31 made non-addressable. While this
+>> would work with a bitmask, I'm not sure that is the best solution.
+>
+> Hmm, a 256 bit wide mask isn't impossible, not sure what other
+> options are good. Do you think userspace needs to know what localities
+> are valid or is an ioctl scan sufficient?
+
+I don't think userspace needs to know this directly. The system designer
+will need know in order to create any kind of policy about what locality
+is being used (even if that's just setting the default), but they would
+also need to be aware of the hardware or virtual environment and could
+always enumerate them manually as a last resort.
+
+There is also the fact that the driver may not be able to tell if a
+locality is available without doing some kind of test command. The Xen
+TPM interface doesn't expose what localities are available, for example,
+and the TIS interface may need to test to see if locality 3 and 4 are
+actually blocked by the chipset - at least 3 might be available on some
+systems (the spec leaves this "implementation dependent").
+
+>> Perhaps:
+>> 	default_locality - default to CONFIG_USER_DEFAULT_LOCALITY
+>> 		sysfs node permissions 0644
+>> 	kernel_locality - default to #CONFIG_KERNEL_DEFAULT_LOCALITY
+>> 		0444 if CONFIG_KERNEL_ONLY_LOCALITY=y
+>> 		0644 if CONFIG_KERNEL_ONLY_LOCALITY=n
+>> 	ioctl TPM_{GET,SET}_LOCALITY on an open /dev/tpmX
+>>
+>> If CONFIG_KERNEL_ONLY_LOCALITY=y, the userspace locality is not
+>> permitted to be equal to kernel_locality (but may take any other valid
+>> value).  Drivers may reject locality values that they consider invalid
+>> (the default should be to only allow 0-4, which is all that is defined
+>> in the spec) or may fail on attempted use of the TPM by passing down an
+>> error from the hardware - I would expect the latter to be the case on
+>> attempts to use locality 4 in the tpm_tis driver.
+>
+> Seems resonable, CONFIG_KERNEL_ONLY_LOCALITY could be
+> CONFIG_TPM_ONE_TIME_LOCALITY (eg you get to set kernel_locality only
+> once)
+
+Hmm, how much trouble would it be to make this a menu selection? Even
+with the one-time-set option, you still need a default set either in
+the code or by CONFIG_ so that the TPM is not unavailable before the
+sysfs write. The options would be:
+
+  - CONFIG_TPM_KERNEL_DEFAULT_LOCALITY = [int]
+  - CONFIG_TPM_KERNEL_LOCALITY_FIXED - no changes from userspace
+  - CONFIG_TPM_KERNEL_LOCALITY_ONESHOT - only one change possible
+  - CONFIG_TPM_KERNEL_LOCALITY_ANY - may be changed freely
+
+The userspace locality is not allowed to use the kernel locality if
+the mode is either FIXED or ONESHOT, but may share locality if ANY
+is used.
+
+Or, for more flexibility (I actually like this one better):
+
+  - CONFIG_TPM_KERNEL_DEFAULT_LOCALITY = [int]
+  - CONFIG_TPM_KERNEL_LOCALITY_FIXED = [bool]
+
+And sysfs contains:
+  - kernel_locality [0644, int; 0444 if FIXED=y or when locked(?)]
+  - lock_kernel_locality [write-once; only exists if FIXED=n]
+
+Where kernel_locality may be changed until a write is made to
+local_kernel_locality, at which time the value of kernel_locality
+becomes read-only and no longer available via /dev/tpmX.
+
+>> The only one I see immediately is seal/unseal (security/keys/trusted.c).
+>> The invocation of the seal command would need to be changed to seal the
+>> trusted keys to the kernel-only locality in order to take advantage of
+>> the increased protection provided by a kernel-only locality.
+>
+> Right
+
+Actually, only the invocation needs to be changed - the PCR selection
+is passed in from userspace, which will just need to use PCR_INFO_LONG
+with the proper locality mask.
+
+>>> Do you know anyone on the userspace SW side who could look at this?
+>
+>> I should be able to find someone.
+>
+> Okay, let me know. I'd like to get a few more clean ups done before
+> mucking with the sysfs, but the way forward for locality looks pretty
+> clear..
+>
+> Thanks,
+> Jason
+
+So far, nobody I have talked to has offered any strong opinions on
+what locality should be used or how it should be set. I think finding
+a developer of trousers may be the most useful to talk about how the
+ioctl portion of this would need to be set up - if someone is actually
+needed.
+
+-- 
+Daniel De Graaf
+National Security Agency
