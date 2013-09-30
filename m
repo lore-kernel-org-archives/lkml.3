@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab3I3IOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 04:14:17 -0400
-Received: from relay.parallels.com ([195.214.232.42]:36229 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab3I3IOL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 04:14:11 -0400
-Message-ID: <524932CB.6040904@parallels.com>
-Date: Mon, 30 Sep 2013 12:14:03 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
+	id S1754074Ab3I3IPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 04:15:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880Ab3I3IPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 04:15:43 -0400
+Date: Mon, 30 Sep 2013 09:15:11 +0100
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Eduardo Habkost <ehabkost@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
+        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
+        qemu-devel@nongnu.org, libvir-list@redhat.com,
+        Jiri Denemark <jdenemar@redhat.com>
+Subject: Re: qemu, numa: non-contiguous cpusets
+Message-ID: <20130930081511.GB23756@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <20130929151044.GB5426@pd.tnic>
 MIME-Version: 1.0
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-CC: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <pjt@google.com>, <peterz@infradead.org>, <tglx@linutronix.de>,
-        <lkp@01.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>, <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/core] sched/balancing: Fix cfs_rq-> task_h_load calculation
-References: <1379173186-11944-1-git-send-email-vdavydov@parallels.com> <tip-7e3115ef5149fc502e3a2e80719dba54a8e7409d@git.kernel.org> <20130929094714.GM24743@yliu-dev.sh.intel.com>
-In-Reply-To: <20130929094714.GM24743@yliu-dev.sh.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.5.110.170]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130929151044.GB5426@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2013 01:47 PM, Yuanhan Liu wrote:
-> On Fri, Sep 20, 2013 at 06:46:59AM -0700, tip-bot for Vladimir Davydov wrote:
->> Commit-ID:  7e3115ef5149fc502e3a2e80719dba54a8e7409d
->> Gitweb:http://git.kernel.org/tip/7e3115ef5149fc502e3a2e80719dba54a8e7409d
->> Author:     Vladimir Davydov<vdavydov@parallels.com>
->> AuthorDate: Sat, 14 Sep 2013 19:39:46 +0400
->> Committer:  Ingo Molnar<mingo@kernel.org>
->> CommitDate: Fri, 20 Sep 2013 11:59:39 +0200
->>
->> sched/balancing: Fix cfs_rq->task_h_load calculation
->>
->> Patch a003a2 (sched: Consider runnable load average in move_tasks())
->> sets all top-level cfs_rqs' h_load to rq->avg.load_avg_contrib, which is
->> always 0. This mistype leads to all tasks having weight 0 when load
->> balancing in a cpu-cgroup enabled setup. There obviously should be sum
->> of weights of all runnable tasks there instead. Fix it.
-> Hi Vladimir,
->
-> FYI, Here we found a 17% netperf regression by this patch. Here are some
-> changed stats between this commit 7e3115ef5149fc502e3a2e80719dba54a8e7409d
-> and it's parent(3029ede39373c368f402a76896600d85a4f7121b)
+On Sun, Sep 29, 2013 at 05:10:44PM +0200, Borislav Petkov wrote:
+> Btw,
+> 
+> while I got your attention, on a not-really related topic: how do we
+> feel about adding support for specifying a non-contiguous set of cpus
+> for a numa node in qemu with the -numa option? I.e., like this, for
+> example:
+> 
+> x86_64-softmmu/qemu-system-x86_64 -smp 8 -numa node,nodeid=0,cpus=0\;2\;4-5 -numa node,nodeid=1,cpus=1\;3\;6-7
+> 
+> The ';' needs to be escaped from the shell but I'm open for better
+> suggestions.
 
-Hello,
+Use a ':' instead.
 
-Could you please report the following info:
-
-1) the test machine cpu topology (i.e. output of 
-/sys/devices/system/cpu/cpu*/{thread_siblings_list,core_siblings_list})
-2) kernel config you used during the test
-3) the output of /sys/kernel/debug/sched_features (debugfs mounted).
-4) netperf server/client options
-5) did you place netserver into a separate cpu cgroup?
-
-Thanks.
+Daniel
+-- 
+|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
+|: http://libvirt.org              -o-             http://virt-manager.org :|
+|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
+|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
