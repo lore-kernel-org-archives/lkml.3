@@ -1,76 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3I3UAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:00:22 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57990 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755265Ab3I3UAU (ORCPT
+	id S1756158Ab3I3UAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:00:49 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:36744 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab3I3UAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:00:20 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Date: Mon, 30 Sep 2013 22:11:47 +0200
-Message-ID: <7632387.20FXkuCITr@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130928163104.GA23352@redhat.com>
-References: <20130925175055.GA25914@redhat.com> <20130928144720.GL15690@laptop.programming.kicks-ass.net> <20130928163104.GA23352@redhat.com>
+	Mon, 30 Sep 2013 16:00:47 -0400
+Message-ID: <5249D86A.7080603@itwm.fraunhofer.de>
+Date: Mon, 30 Sep 2013 22:00:42 +0200
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+References: <20130930143432.GG16579@fieldses.org>			 <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>			 <52499026.3090802@redhat.com>			 <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>			 <52498AA8.2090204@redhat.com>			 <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>			 <52498DB6.7060901@redhat.com>			 <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>			 <52498F68.8050200@redhat.com>			 <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>			 <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>			 <5249B21E.70603@itwm.fraunhofer.de>		 <1380563050.6501.15.camel@leira.trondhjem.org>		 <5249B987.8020807@itwm.fraunhofer.de>	 <1380564126.6501.23.camel@leira.trondhjem.org>	 <5249C7C7.7020207@itwm.fraunhofer.de> <1380569663.6501.63.camel@leira.trondhjem.org>
+In-Reply-To: <1380569663.6501.63.camel@leira.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 28, 2013 06:31:04 PM Oleg Nesterov wrote:
-> On 09/28, Peter Zijlstra wrote:
-> >
-> > On Sat, Sep 28, 2013 at 02:48:59PM +0200, Oleg Nesterov wrote:
-> >
-> > > Please note that this wait_event() adds a problem... it doesn't allow
-> > > to "offload" the final synchronize_sched(). Suppose a 4k cpu machine
-> > > does disable_nonboot_cpus(), we do not want 2 * 4k * synchronize_sched's
-> > > in this case. We can solve this, but this wait_event() complicates
-> > > the problem.
-> >
-> > That seems like a particularly easy fix; something like so?
-> 
-> Yes, but...
-> 
-> > @@ -586,6 +603,11 @@ int disable_nonboot_cpus(void)
-> >
-> > +	cpu_hotplug_done();
-> > +
-> > +	for_each_cpu(cpu, frozen_cpus)
-> > +		cpu_notify_nofail(CPU_POST_DEAD_FROZEN, (void*)(long)cpu);
-> 
-> This changes the protocol, I simply do not know if it is fine in general
-> to do __cpu_down(another_cpu) without CPU_POST_DEAD(previous_cpu). Say,
-> currently it is possible that CPU_DOWN_PREPARE takes some global lock
-> released by CPU_DOWN_FAILED or CPU_POST_DEAD.
-> 
-> Hmm. Now that workqueues do not use CPU_POST_DEAD, it has only 2 users,
-> mce_cpu_callback() and cpufreq_cpu_callback() and the 1st one even ignores
-> this notification if FROZEN. So yes, probably this is fine, but needs an
-> ack from cpufreq maintainers (cc'ed), for example to ensure that it is
-> fine to call __cpufreq_remove_dev_prepare() twice without _finish().
+On 09/30/2013 09:34 PM, Myklebust, Trond wrote:
+> On Mon, 2013-09-30 at 20:49 +0200, Bernd Schubert wrote:
+>> On 09/30/2013 08:02 PM, Myklebust, Trond wrote:
+>>> On Mon, 2013-09-30 at 19:48 +0200, Bernd Schubert wrote:
+>>>> On 09/30/2013 07:44 PM, Myklebust, Trond wrote:
+>>>>> On Mon, 2013-09-30 at 19:17 +0200, Bernd Schubert wrote:
+>>>>>> It would be nice if there would be way if the file system would get a
+>>>>>> hint that the target file is supposed to be copy of another file. That
+>>>>>> way distributed file systems could also create the target-file with the
+>>>>>> correct meta-information (same storage targets as in-file has).
+>>>>>> Well, if we cannot agree on that, file system with a custom protocol at
+>>>>>> least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not
+>>>>>> sure if this would work for pNFS, though.
+>>>>>
+>>>>> splice() does not create new files. What you appear to be asking for
+>>>>> lies way outside the scope of that system call interface.
+>>>>>
+>>>>
+>>>> Sorry I know, definitely outside the scope of splice, but in the context
+>>>> of offloaded file copies. So the question is, what is the best way to
+>>>> address/discuss that?
+>>>
+>>> Why does it need to be addressed in the first place?
+>>
+>> An offloaded copy is still not efficient if different storage
+>> servers/targets used by from-file and to-file.
+>
+> So?
 
-To my eyes it will return -EBUSY when it tries to stop an already stopped
-governor, which will cause the entire chain to fail I guess.
+mds1: orig-file
+oss1/target1: orig-chunk1
 
-Srivatsa has touched that code most recently, so he should know better, though.
+mds1: target-file
+ossN/targetN: target-chunk1
+
+clientN: Performs the copy
+
+Ideally, orig-chunk1 and target-chunk1 are on the same server and same 
+target. Copy offload then even could done from the underlying fs, 
+similiar as local splice.
+If different ossN servers are used copies still have to be done over 
+network by these storage servers, although the client only would need to 
+initiate the copy. Still faster, but also not ideal.
+
+>
+>>>
+>>> What is preventing an application from retrieving and setting this
+>>> information using standard libc functions such as fstat()+open(), and
+>>> supplemented with libattr attr_setf/getf(), and libacl acl_get_fd/set_fd
+>>> where appropriate?
+>>>
+>>
+>> At a minimum this requires network and metadata overhead. And while I'm
+>> working on FhGFS now, I still wonder what other file system need to do -
+>> for example Lustre pre-allocates storage-target files on creating a
+>> file, so file layout changes mean even more overhead there.
+>
+> The problem you are describing is limited to a narrow set of storage
+> architectures. If copy offload using splice() doesn't make sense for
+> those architectures, then don't implement it for them.
+
+But it _does_ make sense. The file system just needs a hint that a 
+splice copy is going to come up.
+
+> You might be able to provide ioctls() to do these special hinted file
+> creations for those filesystems that need it, but the vast majority
+> don't, and you shouldn't enforce it on them.
+
+And exactly for that we need a standard - it does not make sense if each 
+and every distributed file system implements its own 
+ioctl/libattr/libacl interface for that.
+
+>
+>> Anyway, if we could agree on to use libattr or libacl to teach the file
+>> system about the upcoming splice call I would be fine.
+>
+> libattr and libacl are generic libraries that exist to manipulate xattrs
+> and acls. They do not need to contain Lustre-specific code.
+>
+
+pNFS, FhGFS, Lustre, Ceph, etc., all of them shall implement their own 
+interface? And userspace needs to address all of them differently?
+
+I'm just asking for something like a vfs ioctl SPLICE_META_COPY (sorry, 
+didn't find a better name yet), which would take in-file-path and 
+out-file-path and allow the file system to create out-file-path with the 
+same meta-layout as in-file-path. And it would need some flags, such as 
+AUTO (file system decides if it makes sense to do a local copy) and 
+FORCE (always try a local copy).
+
 
 Thanks,
-Rafael
-
+Bernd
