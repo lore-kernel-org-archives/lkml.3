@@ -1,154 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab3I3PPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:15:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59434 "EHLO comal.ext.ti.com"
+	id S1755662Ab3I3PSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:18:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42971 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab3I3POC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:14:02 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>
-CC: Paul Walmsley <paul@pwsan.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Mark A. Greer" <mgreer@animalcreek.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 4/9] ARM: dts: Add AES data and documentation for AM33XX
-Date: Mon, 30 Sep 2013 10:13:01 -0500
-Message-ID: <1380553986-15910-5-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1380553986-15910-1-git-send-email-joelf@ti.com>
-References: <1380553986-15910-1-git-send-email-joelf@ti.com>
+	id S1752775Ab3I3PSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 11:18:07 -0400
+Date: Mon, 30 Sep 2013 16:18:02 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, jstancek@redhat.com
+Subject: Re: [PATCH 11/63] mm: Close races between THP migration and PMD numa
+ clearing
+Message-ID: <20130930151802.GG2425@suse.de>
+References: <1380288468-5551-1-git-send-email-mgorman@suse.de>
+ <1380288468-5551-12-git-send-email-mgorman@suse.de>
+ <20130930084735.GA2425@suse.de>
+ <20130930101048.55fa2acd@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130930101048.55fa2acd@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Mark A. Greer" <mgreer@animalcreek.com>
+On Mon, Sep 30, 2013 at 10:10:48AM -0400, Rik van Riel wrote:
+> On Mon, 30 Sep 2013 09:52:59 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Fri, Sep 27, 2013 at 02:26:56PM +0100, Mel Gorman wrote:
+> > > @@ -1732,9 +1732,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+> > >  	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+> > >  	entry = pmd_mkhuge(entry);
+> > >  
+> > > -	page_add_new_anon_rmap(new_page, vma, haddr);
+> > > -
+> > > +	pmdp_clear_flush(vma, address, pmd);
+> > >  	set_pmd_at(mm, haddr, pmd, entry);
+> > > +	page_add_new_anon_rmap(new_page, vma, haddr);
+> > >  	update_mmu_cache_pmd(vma, address, &entry);
+> > >  	page_remove_rmap(page);
+> > >  	/*
+> > 
+> > pmdp_clear_flush should have used haddr
+> 
+> Dang, we both discovered this over the weekend? :)
+> 
 
-Add the generic AM33XX AES module's device tree data and
-enable it for the am335x-evm, am335x-evmsk, and am335x-bone
-platforms.  Also add Documentation file describing the data
-for the AES module.
+Saw it this morning running a debugging build.
 
-[joelf@ti.com: Dropped interrupt-parent propert]
+> In related news, it looks like update_mmu_cache_pmd should
+> probably use haddr, too...
+> 
 
-CC: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
----
- .../devicetree/bindings/crypto/omap-aes.txt        | 34 ++++++++++++++++++++++
- arch/arm/boot/dts/am335x-bone.dts                  |  4 +++
- arch/arm/boot/dts/am335x-evm.dts                   |  4 +++
- arch/arm/boot/dts/am335x-evmsk.dts                 |  4 +++
- arch/arm/boot/dts/am33xx.dtsi                      | 10 +++++++
- 5 files changed, 56 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/crypto/omap-aes.txt
+Does anything care? Other calls to update_mmu_cache_pmd are using address
+and not haddr so if this is a problem, it's a problem in a few places. Of
+the arches that support THP, only sparc appears to do anything useful and
+it shifts the address HPAGE_SHIFT so it does not matter if the address
+was aligned or not.
 
-diff --git a/Documentation/devicetree/bindings/crypto/omap-aes.txt b/Documentation/devicetree/bindings/crypto/omap-aes.txt
-new file mode 100644
-index 0000000..4bb1e27
---- /dev/null
-+++ b/Documentation/devicetree/bindings/crypto/omap-aes.txt
-@@ -0,0 +1,34 @@
-+OMAP SoC AES crypto Module
-+
-+Required properties:
-+
-+- compatible : Should contain entries for this and backward compatible
-+  AES versions:
-+  - "ti,omap2-aes" for OMAP2.
-+  - "ti,omap3-aes" for OMAP3.
-+  - "ti,omap4-aes" for OMAP4 and AM33XX.
-+  Note that the OMAP2 and 3 versions are compatible (OMAP3 supports
-+  more algorithms) but they are incompatible with OMAP4.
-+- ti,hwmods: Name of the hwmod associated with the AES odule
-+- reg : Offset and length of the register set for the module
-+- interrupt-parent : the phandle for the interrupt controller that
-+  services interrupts for this module.
-+- interrupts : the interrupt number for the AES odule.
-+
-+Optional properties:
-+- dmas: DMA specifier for tx and rx dma. See the DMA client binding,
-+	Documentation/devicetree/bindings/dma/dma.txt
-+- dma-names: DMA request names. Should be '"tx", "rx"' if dma is present.
-+
-+Example:
-+	/* AM335x */
-+	aes: aes@53500000 {
-+		compatible = "ti,omap4-aes";
-+		ti,hwmods = "aes";
-+		reg = <0x53500000 0xa0>;
-+		interrupt-parent = <&intc>;
-+		interrupts = <102>;
-+		dmas = <&edma 6
-+			&edma 5>;
-+		dma-names = "tx", "rx";
-+	};
-diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-index 8a9802e..94ee427 100644
---- a/arch/arm/boot/dts/am335x-bone.dts
-+++ b/arch/arm/boot/dts/am335x-bone.dts
-@@ -23,3 +23,7 @@
- &sham {
- 	status = "okay";
- };
-+
-+&aes {
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-index d59e51c..86463fa 100644
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -526,3 +526,7 @@
- &sham {
- 	status = "okay";
- };
-+
-+&aes {
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
-index d45a330..f577e65 100644
---- a/arch/arm/boot/dts/am335x-evmsk.dts
-+++ b/arch/arm/boot/dts/am335x-evmsk.dts
-@@ -428,3 +428,7 @@
- &sham {
- 	status = "okay";
- };
-+
-+&aes {
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 299710b..0daa1b2 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -719,5 +719,15 @@
- 			dmas = <&edma 36>;
- 			dma-names = "rx";
- 		};
-+
-+		aes: aes@53500000 {
-+			compatible = "ti,omap4-aes";
-+			ti,hwmods = "aes";
-+			reg = <0x53500000 0xa0>;
-+			interrupts = <102>;
-+			dmas = <&edma 6
-+				&edma 5>;
-+			dma-names = "tx", "rx";
-+		};
- 	};
- };
 -- 
-1.8.1.2
-
+Mel Gorman
+SUSE Labs
