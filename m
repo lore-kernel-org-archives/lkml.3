@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab3I3UL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:11:27 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:33224 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756386Ab3I3ULZ (ORCPT
+	id S932076Ab3I3UMO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:12:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46788 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756320Ab3I3UMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:11:25 -0400
-Message-ID: <5249DAEC.2090106@tilera.com>
-Date: Mon, 30 Sep 2013 16:11:24 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH v3 3/3] tile: enable VIRTIO support for KVM
-References: <20130826120445.GD8218@redhat.com> <54dadfbf688618a900310d10363b9c395fa3d322.1377736306.git.cmetcalf@tilera.com> <522F14F8.2000101@redhat.com>
-In-Reply-To: <522F14F8.2000101@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Sep 2013 16:12:12 -0400
+Message-ID: <1380571922.15513.29.camel@fourier>
+Subject: Re: [PATCH 1/1] Input: cypress_ps2 - Return zero finger count if
+ palm is detected.
+From: Kamal Mostafa <kamal@canonical.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
+        rydberg@euromail.se, dudl@cypress.com, git@status.e4ward.com,
+        tim.gardner@canonical.com, linux-input@vger.kernel.org
+Date: Mon, 30 Sep 2013 13:12:02 -0700
+In-Reply-To: <007c09ae4ef7f72ffb657de0fb3854fcbc6d88f0.1379968154.git.joseph.salisbury@canonical.com>
+References: <cover.1379968154.git.joseph.salisbury@canonical.com>
+	 <007c09ae4ef7f72ffb657de0fb3854fcbc6d88f0.1379968154.git.joseph.salisbury@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-XkCwOR5f5Oya2NtwqQvz"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I said to Gleb in the previous email - sorry for the delay in
-replying to your thoughtful comments!
+
+--=-XkCwOR5f5Oya2NtwqQvz
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, 2013-09-24 at 11:44 -0400, Joseph Salisbury wrote:
+> BugLink: http://bugs.launchpad.net/bugs/1229361
+>=20
+> This patch sets the finger count to 0 in the case of palm contact.
+>=20
+> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com> (maintainer:INPUT (KEYBOA=
+RD,...,commit_signer:2/2=3D100%)
+> Cc: Henrik Rydberg <rydberg@euromail.se> (maintainer:INPUT MULTITOUCH...)
+> Cc: Kamal Mostafa <kamal@canonical.com> (commit_signer:2/2=3D100%)
+> Cc: Dudley Du <dudl@cypress.com> (commit_signer:2/2=3D100%)
+> Cc: Kyle Fazzari <git@status.e4ward.com> (commit_signer:1/2=3D50%)
+> Cc: Tim Gardner <tim.gardner@canonical.com> (commit_signer:1/2=3D50%)
+> Cc: linux-input@vger.kernel.org (open list:INPUT (KEYBOARD,...)
+> Cc: linux-kernel@vger.kernel.org (open list)
+> Cc: stable@vger.kernel.org
+
+This patch works fine: eliminates stream of junk driver messages with no
+ill effects.
+
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+
+ -Kamal
 
 
-On 9/10/2013 8:47 AM, Paolo Bonzini wrote:
-> Il 28/08/2013 22:58, Chris Metcalf ha scritto:
->> This change enables support for a virtio-based console,
->> network support, and block driver support.
->>
->> We remove some debug code in relocate_kernel_64.S that made raw
->> calls to the hv_console_putc Tilera hypervisor API, since everything
->> now should funnel through the early_hv_write() API.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> Why couldn't this use the "regular" virtio-mmio interface?
+> ---
+>  drivers/input/mouse/cypress_ps2.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypr=
+ess_ps2.c
+> index 45b3eda..95b2c40 100644
+> --- a/drivers/input/mouse/cypress_ps2.c
+> +++ b/drivers/input/mouse/cypress_ps2.c
+> @@ -441,7 +441,7 @@ static int cypress_get_finger_count(unsigned char hea=
+der_byte)
+>  			case 2: return 5;
+>  			default:
+>  				/* Invalid contact (e.g. palm). Ignore it. */
+> -				return -1;
+> +				return 0;
+>  		}
+>  	}
+> =20
+> @@ -460,7 +460,7 @@ static int cypress_parse_packet(struct psmouse *psmou=
+se,
+> =20
+>  	contact_cnt =3D cypress_get_finger_count(header_byte);
+> =20
+> -	if (contact_cnt < 0) /* e.g. palm detect */
+> +	if (contact_cnt < 0)
+>  		return -EINVAL;
+> =20
+>  	report_data->contact_cnt =3D contact_cnt;
 
-We probably should!  We were working with a CentOS 6 style distribution,
-which has an older version of qemu; we upgraded slightly to 0.13 in
-the thought that minimizing version skew would help distribution compatibility.
-That version doesn't have the virtio-mmio stuff.  But you're right, we probably
-should return the virtio-mmio stuff to the community instead, even if we're
-going to keep something like this patch in our local copy of KVM.
 
->>  static void early_hv_write(struct console *con, const char *s, unsigned n)
->>  {
->> +#ifdef CONFIG_KVM_GUEST
->> +     char buf[512];
->> +
->> +     if (n > sizeof(buf) - 1)
->> +             n = sizeof(buf) - 1;
->> +     memcpy(buf, s, n);
->> +     buf[n] = '\0';
->> +
->> +     hcall_virtio(KVM_VIRTIO_NOTIFY, __pa(buf));
-> How can userspace know the difference between KVM_VIRTIO_NOTIFY with a
-> string buffer, and KVM_VIRTIO_NOTIFY with a config space pointer?
->
-> In fact, this looks like a completely separate hypercall, why not keep
-> hv_console_putc?
+--=-XkCwOR5f5Oya2NtwqQvz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Good point.  Right now in qemu the virtio hypercall with a KVM_VIRTIO_NOTIFY
-reason either does a virtio_queue_notify(), if the address is not in RAM,
-or a print, if it is.  It does seem we could just have separate calls;
-the reason we grouped it in with the KVM_VIRTIO stuff instead of implementing
-it with the hv_console_write() API is just that it uses the virtio_console
-API to do the work.  But we probably could do it the other way too, and
-that might arguably make more sense.  We'll think about it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks!
+iQIcBAABCAAGBQJSSdsSAAoJEHqwmdxYrXhZonMP/0TqT97FU6VkspADyhuKMdgz
+dJL0s67l1l+0G60LjweY4itv57N1oM9JU4xTi9zLhC/bm0aOz0SahopJbO5Tu89q
+63gkDJIWiCsE4ieYp0QzNqeSw/RYsFMGP7A3cw4ulSJlfz4azyUx8chunRBN27/s
+QDwxeJvppFUjuh+2W5CBF1xfs4FehfPP7hceap3BfvcaHE1UPQNdLmJpMkFtAFc8
+ojzNn2J8Hxp4RopmI3p7geAUgb8yqHLd1ncc2L3QzZV2eMTW2ivBP1iayN6bAAo4
+n3ATOpUdADYRv4JW+pUkqgTGGmf7VJVJ0uiekrw4+INrJcTducTOwoTv7dr/YuM1
+lUPcRpjSyzC5BsTV9KbTYkEsD6nfxiDPJvLS0arxy3+MoOiRstSGUrSLpqrmk0Jy
+8QdR8BUajB5g3wWXeGDmTFepSriGSM9exZmVg6KlvaF/hk1a+/kM4gjyxru5t3Az
+5g4YQgi4s3UmPFdex5YLuedv5BU22eONU+4jvCcYT/v+sAXxmTRF5ehFV3GgGzn6
+nGWgCv0Dl46C+6qc9olQfg6HLAxeWcKgTu9Sw3mRfIY0EY5f0aAVNJuBHgzePHI9
+dT9YNipJMRWw6qRzy3jCtvpA9Ila1TsZ8R7DJ+FKmrR4/AaQuYbk3g2QBCmAQEWU
+qAL00zNOcQ8UgvP+nLfI
+=MJNC
+-----END PGP SIGNATURE-----
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+--=-XkCwOR5f5Oya2NtwqQvz--
 
