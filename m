@@ -1,72 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab3I3NON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 09:14:13 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:54792 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab3I3NOL (ORCPT
+	id S1755113Ab3I3NOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:14:40 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:44994 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab3I3NOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 09:14:11 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-34-52497922c8eb
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Vitaly Bordug <vitb@kernel.crashing.org>
-Cc: Marcelo Tosatti <marcelo@kvack.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] powerpc/8xx: tqm8xx: fix incorrect placement of __initdata tag
-Date: Mon, 30 Sep 2013 15:13:55 +0200
-Message-id: <1589399.KSlGuZSdd2@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jQV2lSs8gg6vThC3ONr1ht7i8aw6b
-	xe/v/1gtdn/qZ7KYufkfkwOrR8+bFlaPTZ8msXucn7GQ0aNvyypGj8+b5AJYo7hsUlJzMstS
-	i/TtErgydl48wljwlbNiZcNq9gbGFRxdjJwcEgImEgfvHWeEsMUkLtxbzwZiCwlMZ5Q4Mtew
-	i5ELyG5hkmg98JEFJMEmYCUxsX0VUAMHh4iAjsSZfckgNcwCExkl9n6azQxSIyzgLzHr6iMw
-	m0VAVaJpUQPYUF4BTYnN2+eB2aICnhKfJi1lhogLSvyYfA9sPrOAvMS+/VNZIWwtifU7jzNN
-	YOSbhaRsFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIDtBnUjsYVzZYHGIU
-	4GBU4uGdsNwjSIg1say4MvcQowQHs5IIr3iZZ5AQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt
-	1oFCAumJJanZqakFqUUwWSYOTqkGxoObJLqX3j8m0uY2XW3Sg5Nrp/lN3fjKTHOL3GFBZufW
-	LRpN7s9s+hY/k3XLU2SsPPT99JPj8pKqz0L8P2s1/pz7z3nlwwbD4IXHwuOm9Zs8U3++SXij
-	XsLafPU/W+VkNd2OaRZdfMy9QfLl+fsTXJN13aX0Upoeq389Vf5AZcLENR9O6ukf8VNiKc5I
-	NNRiLipOBABzm6l4TAIAAA==
+	Mon, 30 Sep 2013 09:14:36 -0400
+Message-ID: <5249794C.5050204@profitbricks.com>
+Date: Mon, 30 Sep 2013 15:14:52 +0200
+From: Jack Wang <jinpu.wang@profitbricks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Khalid Aziz <khalid.aziz@oracle.com>,
+        Pravin B Shelar <pshelar@nicira.com>, Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 092/104] mm: fix aio performance regression for database
+ caused by THP
+References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com> <1380535881-9239-93-git-send-email-luis.henriques@canonical.com>
+In-Reply-To: <1380535881-9239-93-git-send-email-luis.henriques@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__initdata tag should be placed between the variable name and equal
-sign for the variable to be placed in the intended .init.data section.
+On 09/30/2013 12:11 PM, Luis Henriques wrote:
+> 3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Khalid Aziz <khalid.aziz@oracle.com>
+> 
+> commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
+> 
+> I am working with a tool that simulates oracle database I/O workload.
+> This tool (orion to be specific -
+> <http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+> allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
+> does aio into these pages from flash disks using various common block
+> sizes used by database.  I am looking at performance with two of the most
+> common block sizes - 1M and 64K.  aio performance with these two block
+> sizes plunged after Transparent HugePages was introduced in the kernel.
+> Here are performance numbers:
+> 
+> 		pre-THP		2.6.39		3.11-rc5
+> 1M read		8384 MB/s	5629 MB/s	6501 MB/s
+> 64K read	7867 MB/s	4576 MB/s	4251 MB/s
+> 
+> I have narrowed the performance impact down to the overheads introduced by
+> THP in __get_page_tail() and put_compound_page() routines.  perf top shows
+>> 40% of cycles being spent in these two routines.  Every time direct I/O
+> to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
+> the pages and calls put_page() when I/O completes to put the reference
+> away.  THP introduced significant amount of locking overhead to get_page()
+> and put_page() when dealing with compound pages because hugepages can be
+> split underneath get_page() and put_page().  It added this overhead
+> irrespective of whether it is dealing with hugetlbfs pages or transparent
+> hugepages.  This resulted in 20%-45% drop in aio performance when using
+> hugetlbfs pages.
+> 
+> Since hugetlbfs pages can not be split, there is no reason to go through
+> all the locking overhead for these pages from what I can see.  I added
+> code to __get_page_tail() and put_compound_page() to bypass all the
+> locking code when working with hugetlbfs pages.  This improved performance
+> significantly.  Performance numbers with this patch:
+> 
+> 		pre-THP		3.11-rc5	3.11-rc5 + Patch
+> 1M read		8384 MB/s	6501 MB/s	8371 MB/s
+> 64K read	7867 MB/s	4251 MB/s	6510 MB/s
+> 
+> Performance with 64K read is still lower than what it was before THP, but
+> still a 53% improvement.  It does mean there is more work to be done but I
+> will take a 53% improvement for now.
+> 
+> Please take a look at the following patch and let me know if it looks
+> reasonable.
+> 
+> [akpm@linux-foundation.org: tweak comments]
+> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+> Cc: Pravin B Shelar <pshelar@nicira.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> [ luis: backported to 3.5: adjusted context ]
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Hi Greg,
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/powerpc/platforms/8xx/tqm8xx_setup.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I suppose this patch also needed for 3.4, right?
 
-diff --git a/arch/powerpc/platforms/8xx/tqm8xx_setup.c b/arch/powerpc/platforms/8xx/tqm8xx_setup.c
-index 8d21ab7..ef0778a 100644
---- a/arch/powerpc/platforms/8xx/tqm8xx_setup.c
-+++ b/arch/powerpc/platforms/8xx/tqm8xx_setup.c
-@@ -48,7 +48,7 @@ struct cpm_pin {
- 	int port, pin, flags;
- };
- 
--static struct __initdata cpm_pin tqm8xx_pins[] = {
-+static struct cpm_pin tqm8xx_pins[] __initdata = {
- 	/* SMC1 */
- 	{CPM_PORTB, 24, CPM_PIN_INPUT}, /* RX */
- 	{CPM_PORTB, 25, CPM_PIN_INPUT | CPM_PIN_SECONDARY}, /* TX */
-@@ -63,7 +63,7 @@ static struct __initdata cpm_pin tqm8xx_pins[] = {
- 	{CPM_PORTC, 11, CPM_PIN_INPUT | CPM_PIN_SECONDARY | CPM_PIN_GPIO},
- };
- 
--static struct __initdata cpm_pin tqm8xx_fec_pins[] = {
-+static struct cpm_pin tqm8xx_fec_pins[] __initdata = {
- 	/* MII */
- 	{CPM_PORTD, 3, CPM_PIN_OUTPUT},
- 	{CPM_PORTD, 4, CPM_PIN_OUTPUT},
--- 
-1.8.2.3
+Regards,
+Jack
 
+
+> ---
+>  mm/swap.c | 77 ++++++++++++++++++++++++++++++++++++++++++---------------------
+>  1 file changed, 52 insertions(+), 25 deletions(-)
+> 
+> diff --git a/mm/swap.c b/mm/swap.c
+> index 4e7e2ec..0c833e8 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/backing-dev.h>
+>  #include <linux/memcontrol.h>
+>  #include <linux/gfp.h>
+> +#include <linux/hugetlb.h>
+>  
+>  #include "internal.h"
+>  
+> @@ -77,6 +78,19 @@ static void __put_compound_page(struct page *page)
+>  
+>  static void put_compound_page(struct page *page)
+>  {
+> +	/*
+> +	 * hugetlbfs pages cannot be split from under us.  If this is a
+> +	 * hugetlbfs page, check refcount on head page and release the page if
+> +	 * the refcount becomes zero.
+> +	 */
+> +	if (PageHuge(page)) {
+> +		page = compound_head(page);
+> +		if (put_page_testzero(page))
+> +			__put_compound_page(page);
+> +
+> +		return;
+> +	}
+> +
+>  	if (unlikely(PageTail(page))) {
+>  		/* __split_huge_page_refcount can run under us */
+>  		struct page *page_head = compound_trans_head(page);
+> @@ -180,38 +194,51 @@ bool __get_page_tail(struct page *page)
+>  	 * proper PT lock that already serializes against
+>  	 * split_huge_page().
+>  	 */
+> -	unsigned long flags;
+>  	bool got = false;
+> -	struct page *page_head = compound_trans_head(page);
+> +	struct page *page_head;
+>  
+> -	if (likely(page != page_head && get_page_unless_zero(page_head))) {
+> +	/*
+> +	 * If this is a hugetlbfs page it cannot be split under us.  Simply
+> +	 * increment refcount for the head page.
+> +	 */
+> +	if (PageHuge(page)) {
+> +		page_head = compound_head(page);
+> +		atomic_inc(&page_head->_count);
+> +		got = true;
+> +	} else {
+> +		unsigned long flags;
+> +
+> +		page_head = compound_trans_head(page);
+> +		if (likely(page != page_head &&
+> +					get_page_unless_zero(page_head))) {
+> +
+> +			/* Ref to put_compound_page() comment. */
+> +			if (PageSlab(page_head)) {
+> +				if (likely(PageTail(page))) {
+> +					__get_page_tail_foll(page, false);
+> +					return true;
+> +				} else {
+> +					put_page(page_head);
+> +					return false;
+> +				}
+> +			}
+>  
+> -		/* Ref to put_compound_page() comment. */
+> -		if (PageSlab(page_head)) {
+> +			/*
+> +			 * page_head wasn't a dangling pointer but it
+> +			 * may not be a head page anymore by the time
+> +			 * we obtain the lock. That is ok as long as it
+> +			 * can't be freed from under us.
+> +			 */
+> +			flags = compound_lock_irqsave(page_head);
+> +			/* here __split_huge_page_refcount won't run anymore */
+>  			if (likely(PageTail(page))) {
+>  				__get_page_tail_foll(page, false);
+> -				return true;
+> -			} else {
+> -				put_page(page_head);
+> -				return false;
+> +				got = true;
+>  			}
+> +			compound_unlock_irqrestore(page_head, flags);
+> +			if (unlikely(!got))
+> +				put_page(page_head);
+>  		}
+> -
+> -		/*
+> -		 * page_head wasn't a dangling pointer but it
+> -		 * may not be a head page anymore by the time
+> -		 * we obtain the lock. That is ok as long as it
+> -		 * can't be freed from under us.
+> -		 */
+> -		flags = compound_lock_irqsave(page_head);
+> -		/* here __split_huge_page_refcount won't run anymore */
+> -		if (likely(PageTail(page))) {
+> -			__get_page_tail_foll(page, false);
+> -			got = true;
+> -		}
+> -		compound_unlock_irqrestore(page_head, flags);
+> -		if (unlikely(!got))
+> -			put_page(page_head);
+>  	}
+>  	return got;
+>  }
+> 
 
