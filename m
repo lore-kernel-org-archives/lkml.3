@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab3I3B24 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 21:28:56 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60117 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab3I3B2y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 21:28:54 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5248D3D3.50904@roeck-us.net>
-Date: Sun, 29 Sep 2013 18:28:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
+	id S1754563Ab3I3BbO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 21:31:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37532 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753213Ab3I3BbM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 21:31:12 -0400
+Message-ID: <1380504668.14493.22.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] sysrq: Allow access to sensitive keys to be restricted by
+ default
+From: Ben Hutchings <ben@decadent.org.uk>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 00/71] 3.11.3-stable review
-References: <20130929192643.539596256@linuxfoundation.org>
-In-Reply-To: <20130929192643.539596256@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Bastian Blank <waldi@debian.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 30 Sep 2013 02:31:08 +0100
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2013 12:27 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.11.3 release.
-> There are 71 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Tue Oct  1 19:26:27 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.3-rc1.gz
-> and the diffstat can be found below.
->
+From: Bastian Blank <waldi@debian.org>
 
-Build test results:
-	total: 110 pass: 108 skipped: 2 fail: 0
+Add a Kconfig variable to set the initial value of the Magic SysRq mask
+(sysctl: kernel.sysrq).
 
-Same as with 3.11.2.
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+This has been in Debian for a while, but should probably be signed-off
+by Bastian as well.
 
-qemu:
-	arm, microblaze, mips, mips64, ppc, sparc, sparc64, x86, x86_64 pass.
-	sh passed with warning (same as with 3.11.2).
+Debian sets this to 0x01b6, which excludes.
 
-Guenter
+          8 - enable debugging dumps of processes etc.
+         64 - enable signalling of processes (term, kill, oom-kill)
 
+Ben.
+
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -18,7 +18,7 @@
+ #include <linux/types.h>
+ 
+ /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
+-#define SYSRQ_DEFAULT_ENABLE	1
++#define SYSRQ_DEFAULT_ENABLE	CONFIG_MAGIC_SYSRQ_DEFAULT_MASK
+ 
+ /* Possible values of bitmask for enabling sysrq functions */
+ /* 0x0001 is reserved for enable everything */
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -312,6 +312,14 @@ config MAGIC_SYSRQ
+ 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
+ 	  unless you really know what this hack does.
+ 
++config MAGIC_SYSRQ_DEFAULT_MASK
++	hex "Default mask for Magic SysRq keys on the console"
++	depends on MAGIC_SYSRQ
++	default 1
++	help
++	  Specifies the default mask for the allowed SysRq keys.  This can be
++	  used to disable several sensitive keys by default.
++
+ config DEBUG_KERNEL
+ 	bool "Kernel debugging"
+ 	help
+
+-- 
+Ben Hutchings
+Life is like a sewer:
+what you get out of it depends on what you put into it.
