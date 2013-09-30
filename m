@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3I3QJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:09:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755885Ab3I3QJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:09:23 -0400
-Date: Mon, 30 Sep 2013 12:08:44 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1380557324-v44mpchd-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130930160450.GA20030@pd.tnic>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1376025702-14818-5-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130928172602.GA6191@pd.tnic>
- <1380553263-lqp3ggll-mutt-n-horiguchi@ah.jp.nec.com>
- <20130930160450.GA20030@pd.tnic>
-Subject: Re: [PATCH 4/9] migrate: add hugepage migration code to move_pages()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1755995Ab3I3QKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:10:50 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:17257 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755171Ab3I3QKt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 12:10:49 -0400
+Message-ID: <1380557440.14213.6.camel@j-VirtualBox>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Date: Mon, 30 Sep 2013 09:10:40 -0700
+In-Reply-To: <52499E13.8050109@hp.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <20130927152953.GA4464@linux.vnet.ibm.com>
+	 <1380310733.3467.118.camel@schen9-DESK>
+	 <20130927203858.GB9093@linux.vnet.ibm.com>
+	 <1380322005.3467.186.camel@schen9-DESK>
+	 <20130927230137.GE9093@linux.vnet.ibm.com>
+	 <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>
+	 <20130928021947.GF9093@linux.vnet.ibm.com>
+	 <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>
+	 <52499E13.8050109@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130930160450.GA20030@pd.tnic>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 06:04:50PM +0200, Borislav Petkov wrote:
-> On Mon, Sep 30, 2013 at 11:01:03AM -0400, Naoya Horiguchi wrote:
-> > Thanks for reporting. The patch should fix this.
-> > 
-> > Naoya Horiguchi
-> > ---
-> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Date: Mon, 30 Sep 2013 10:22:26 -0400
-> > Subject: [PATCH] mm/migrate.c: take returned value of isolate_huge_page()
-> > 
-> > Introduces a cosmetic substitution of the returned value of isolate_huge_page()
-> > to suppress a build warning when !CONFIG_HUGETLBFS. No behavioral change.
-> > 
-> > Reported-by: Borislav Petkov <bp@alien8.de>
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On Mon, 2013-09-30 at 11:51 -0400, Waiman Long wrote:
+> On 09/28/2013 12:34 AM, Jason Low wrote:
+> >> Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
+> >> functions would look like after applying the proposed changes.
+> >>
+> >> static noinline
+> >> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> >> {
+> >>          struct mcs_spin_node *prev;
+> >>
+> >>          /* Init node */
+> >>          node->locked = 0;
+> >>          node->next   = NULL;
+> >>
+> >>          prev = xchg(lock, node);
+> >>          if (likely(prev == NULL)) {
+> >>                  /* Lock acquired. No need to set node->locked since it
+> >> won't be used */
+> >>                  return;
+> >>          }
+> >>          ACCESS_ONCE(prev->next) = node;
+> >>          /* Wait until the lock holder passes the lock down */
+> >>          while (!ACCESS_ONCE(node->locked))
+> >>                  arch_mutex_cpu_relax();
+> >>          smp_mb();
 > 
-> Thanks for this. Unfortunately, I cannot trigger it anymore. :\ Maybe it
-> is because I pulled latest git and this was triggering only on a older
-> repo state, hmmm.
-> 
-> The patch looks obviously correct though so you could send it up or hold
-> on to it until someone else reports it.
-> 
-> Anyway, sorry for the trouble.
+> I wonder if a memory barrier is really needed here.
 
-OK, no problem :)
+If the compiler can reorder the while (!ACCESS_ONCE(node->locked)) check
+so that the check occurs after an instruction in the critical section,
+then the barrier may be necessary.
 
-Thanks,
-Naoya
