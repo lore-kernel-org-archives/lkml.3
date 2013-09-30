@@ -1,59 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3I3Rx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:53:58 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:52170 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab3I3Rx5 (ORCPT
+	id S1755525Ab3I3Ryo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:54:44 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:17127 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab3I3Ryn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:53:57 -0400
-Date: Mon, 30 Sep 2013 14:53:42 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Mon, 30 Sep 2013 13:54:43 -0400
+Message-ID: <1380563681.2431.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc/sem.c: synchronize semop and semctl with IPC_RMID
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
- in parallel
-Message-ID: <20130930175342.GI10293@ghostprotocols.net>
-References: <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
- <20130912184341.GA11400@ghostprotocols.net>
- <52321CE4.1080804@gmail.com>
- <20130912200236.GC11400@ghostprotocols.net>
- <20130912203116.GD32644@gmail.com>
- <20130912204313.GA3259@gmail.com>
- <20130915091029.GA21465@gmail.com>
- <20130930164210.GA22342@gmail.com>
- <20130930171220.GC10293@ghostprotocols.net>
- <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Mike Galbraith <efault@gmx.de>
+Date: Mon, 30 Sep 2013 10:54:41 -0700
+In-Reply-To: <1380532423-19613-1-git-send-email-manfred@colorfullife.com>
+References: <1380532423-19613-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 30, 2013 at 10:34:27AM -0700, Linus Torvalds escreveu:
-> On Mon, Sep 30, 2013 at 10:12 AM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> >
-> > Checking why that strlcpy failed...
+Hi Manfred,
+
+On Mon, 2013-09-30 at 11:13 +0200, Manfred Spraul wrote:
+> After acquiring the semlock spinlock, the operations must test that the
+> array is still valid.
 > 
-> I don't think glibc does strlcpy. It's not a standard C function, and
+> - semctl() and exit_sem() would walk stale linked lists (ugly, but should
+>   be ok: all lists are empty)
+> 
+> - semtimedop() would sleep forever - and if woken up due to a signal -
+>   access memory after free.
 
-My concern was more about the thinking: ``Is this red "OFF" thing a
-problem?  I feel so much more confortable when all entries have nice
-green "on" lights...''
+Yep, that was next on my list - I had a patch for semtimedop() but was
+waiting to rebase it on top of your previous changes. Anyway thanks for
+sending this.
 
-> it's somewhat controversial (although I dislike strncpy more with the
-> crazy zero-padding, ugh).
+> 
+> The patch standardizes the tests for .deleted, so that all tests in one
+> function leave the function with the same approach.
+> 
+> Right now, it's a mixture of "goto cleanup", some cleanup and then
+> "goto further_cleanup" and all cleanup+"return -EIDRM" - that makes the
+> review much harder.
+> 
+> Davidlohr: Could you please review the patch?
+> I did some stress test, but probably I didn't hit exactly the modified
+> lines.
 
-:-)
+This shouldn't affect performance, if that's what you mean. One more
+read in the critical region won't make any difference. The patch looks
+good, just one doubt below.
 
-- Arnaldo
+
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+> ---
+>  ipc/sem.c | 43 ++++++++++++++++++++++++++++++-------------
+>  1 file changed, 30 insertions(+), 13 deletions(-)
+> 
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index 19c8b98..a2fa795 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -1229,6 +1229,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
+>  
+>  	sem_lock(sma, NULL, -1);
+>  
+> +	if (sma->sem_perm.deleted) {
+> +		sem_unlock(sma, -1);
+> +		rcu_read_unlock();
+> +		return -EIDRM;
+> +	}
+> +
+>  	curr = &sma->sem_base[semnum];
+>  
+>  	ipc_assert_locked_object(&sma->sem_perm);
+> @@ -1285,10 +1291,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		sem_lock(sma, NULL, -1);
+>  		if(nsems > SEMMSL_FAST) {
+>  			if (!ipc_rcu_getref(sma)) {
+> -				sem_unlock(sma, -1);
+> -				rcu_read_unlock();
+>  				err = -EIDRM;
+> -				goto out_free;
+> +				goto out_unlock;
+>  			}
+>  			sem_unlock(sma, -1);
+>  			rcu_read_unlock();
+> @@ -1301,10 +1305,13 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  			rcu_read_lock();
+>  			sem_lock_and_putref(sma);
+>  			if (sma->sem_perm.deleted) {
+> -				sem_unlock(sma, -1);
+> -				rcu_read_unlock();
+>  				err = -EIDRM;
+> -				goto out_free;
+> +				goto out_unlock;
+> +			}
+> +		} else {
+> +			if (sma->sem_perm.deleted) {
+> +				err = -EIDRM;
+> +				goto out_unlock;
+>  			}
+
+I'm a bit lost here. Why should we only check the existence of the sem
+if nsems <= SEMMSL_FAST? Shouldn't the same should apply either way? 
+
+Thanks,
+Davidlohr
+
