@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3I3KOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:14:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43856 "EHLO
+	id S1755911Ab3I3KN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:13:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43871 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab3I3KNr (ORCPT
+	with ESMTP id S1755894Ab3I3KNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:47 -0400
+	Mon, 30 Sep 2013 06:13:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mark Brown <broonie@linaro.org>,
+Cc: Daniel Santos <daniel.santos@pobox.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 101/104] ASoC: mc13783: add spi errata fix
-Date: Mon, 30 Sep 2013 11:11:18 +0100
-Message-Id: <1380535881-9239-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 104/104] kernel-doc: bugfix - multi-line macros
+Date: Mon, 30 Sep 2013 11:11:21 +0100
+Message-Id: <1380535881-9239-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+From: Daniel Santos <daniel.santos@pobox.com>
 
-commit 9f6f0afbb9fdabf6dcac642dfec457f28981e3f8 upstream.
+commit 654784284430bf2739985914b65e09c7c35a7273 upstream.
 
-The MC13783 Chip Errata, Rev. 4 says, that depending on SPI clock
-and main audio clock speed, the Audio Codec or Stereo DAC do sometimes
-not start when programmed to do so. This is due to an internal clock
-timing issue related to the loading of the SPI bits into the audio block.
+Prior to this patch the following code breaks:
 
-On an i.MX27 based system, this issue lead to switched audio channels under
-certain circumstances: RTC + Touch + Audio are used and loaded at startup.
+/**
+ * multiline_example - this breaks kernel-doc
+ */
+ #define multiline_example( \
+myparam)
 
-The mentioned workaround of writing registers 40 and 41 two times is implemented
-here.
+Producing this error:
 
-Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Error(somefile.h:983): cannot understand prototype: 'multiline_example( \ '
+
+This patch fixes the issue by appending all lines ending in a blackslash
+(optionally followed by whitespace), removing the backslash and any
+whitespace after it prior to appending (just like the C pre-processor
+would).
+
+This fixes a break in kerel-doc introduced by the additions to rbtree.h.
+
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/mc13783.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ scripts/kernel-doc | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/sound/soc/codecs/mc13783.c b/sound/soc/codecs/mc13783.c
-index 6276e35..3086194 100644
---- a/sound/soc/codecs/mc13783.c
-+++ b/sound/soc/codecs/mc13783.c
-@@ -126,6 +126,10 @@ static int mc13783_write(struct snd_soc_codec *codec,
+diff --git a/scripts/kernel-doc b/scripts/kernel-doc
+index 9b0c0b8..55ab5e4 100755
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -2045,6 +2045,9 @@ sub process_file($) {
  
- 	ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
- 
-+	/* include errata fix for spi audio problems */
-+	if (reg == MC13783_AUDIO_CODEC || reg == MC13783_AUDIO_DAC)
-+		ret = mc13xxx_reg_write(priv->mc13xxx, reg, value);
-+
- 	mc13xxx_unlock(priv->mc13xxx);
- 
- 	return ret;
+     $section_counter = 0;
+     while (<IN>) {
++	while (s/\\\s*$//) {
++	    $_ .= <IN>;
++	}
+ 	if ($state == 0) {
+ 	    if (/$doc_start/o) {
+ 		$state = 1;		# next line is always the function name
 -- 
 1.8.3.2
 
