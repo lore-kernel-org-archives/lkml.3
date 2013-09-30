@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab3I3Kie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:38:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43380 "EHLO
+	id S1754565Ab3I3KLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:11:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43334 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab3I3KLp (ORCPT
+	with ESMTP id S1754381Ab3I3KLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:11:45 -0400
+	Mon, 30 Sep 2013 06:11:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 012/104] USB: cdc-wdm: fix race between interrupt handler and tasklet
-Date: Mon, 30 Sep 2013 11:09:49 +0100
-Message-Id: <1380535881-9239-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 003/104] ALSA: opti9xx: Fix conflicting driver object name
+Date: Mon, 30 Sep 2013 11:09:40 +0100
+Message-Id: <1380535881-9239-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,66 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 6dd433e6cf2475ce8abec1b467720858c24450eb upstream.
+commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
 
-Both could want to submit the same URB. Some checks of the flag
-intended to prevent that were missing.
+The recent commit to delay the release of kobject triggered NULL
+dereferences of opti9xx drivers.  The cause is that all
+snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
+register the PnP card driver with the very same name, and also
+snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
+the same name, too.  When these drivers are built in, quick
+"register-release-and-re-register" actions occur, and this results in
+Oops because of the same name is assigned to the kobject.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The fix is simply to assign individual names.  As a bonus, by using
+KBUILD_MODNAME, the patch reduces more lines than it adds.
+
+The fix is based on the suggestion by Russell King.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/class/cdc-wdm.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ sound/isa/opti9xx/opti92x-ad1848.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
-index 97c1d8e..7c25710 100644
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -233,6 +233,7 @@ skip_error:
- static void wdm_int_callback(struct urb *urb)
- {
- 	int rv = 0;
-+	int responding;
- 	int status = urb->status;
- 	struct wdm_device *desc;
- 	struct usb_cdc_notification *dr;
-@@ -286,8 +287,8 @@ static void wdm_int_callback(struct urb *urb)
+diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
+index d7ccf28..4589acd 100644
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9xx_pnpids);
  
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_READ, &desc->flags);
--	set_bit(WDM_RESPONDING, &desc->flags);
--	if (!test_bit(WDM_DISCONNECTING, &desc->flags)
-+	responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
-+	if (!responding && !test_bit(WDM_DISCONNECTING, &desc->flags)
- 		&& !test_bit(WDM_SUSPENDING, &desc->flags)) {
- 		rv = usb_submit_urb(desc->response, GFP_ATOMIC);
- 		dev_dbg(&desc->intf->dev, "%s: usb_submit_urb %d",
-@@ -691,16 +692,20 @@ static void wdm_rxwork(struct work_struct *work)
- {
- 	struct wdm_device *desc = container_of(work, struct wdm_device, rxwork);
- 	unsigned long flags;
--	int rv;
-+	int rv = 0;
-+	int responding;
+ #endif	/* CONFIG_PNP */
  
- 	spin_lock_irqsave(&desc->iuspin, flags);
- 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
- 	} else {
-+		responding = test_and_set_bit(WDM_RESPONDING, &desc->flags);
- 		spin_unlock_irqrestore(&desc->iuspin, flags);
--		rv = usb_submit_urb(desc->response, GFP_KERNEL);
-+		if (!responding)
-+			rv = usb_submit_urb(desc->response, GFP_KERNEL);
- 		if (rv < 0 && rv != -EPERM) {
- 			spin_lock_irqsave(&desc->iuspin, flags);
-+			clear_bit(WDM_RESPONDING, &desc->flags);
- 			if (!test_bit(WDM_DISCONNECTING, &desc->flags))
- 				schedule_work(&desc->rxwork);
- 			spin_unlock_irqrestore(&desc->iuspin, flags);
+-#ifdef OPTi93X
+-#define DEV_NAME "opti93x"
+-#else
+-#define DEV_NAME "opti92x"
+-#endif
++#define DEV_NAME KBUILD_MODNAME
+ 
+ static char * snd_opti9xx_names[] = {
+ 	"unknown",
+@@ -1126,7 +1122,7 @@ static void __devexit snd_opti9xx_pnp_remove(struct pnp_card_link * pcard)
+ 
+ static struct pnp_card_driver opti9xx_pnpc_driver = {
+ 	.flags		= PNP_DRIVER_RES_DISABLE,
+-	.name		= "opti9xx",
++	.name		= DEV_NAME,
+ 	.id_table	= snd_opti9xx_pnpids,
+ 	.probe		= snd_opti9xx_pnp_probe,
+ 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
 -- 
 1.8.3.2
 
