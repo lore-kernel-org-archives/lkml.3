@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab3I3QsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:48:10 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:30182 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab3I3QsJ (ORCPT
+	id S1755604Ab3I3Qs5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:48:57 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:40995 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab3I3Qs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:48:09 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: <b.brezillon@overkiz.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.12 #2
-Date: Mon, 30 Sep 2013 18:48:06 +0200
-Message-ID: <1380559686-2605-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Mon, 30 Sep 2013 12:48:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130930161546.GG3081@twins.programming.kicks-ass.net>
+References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+	<20130930161546.GG3081@twins.programming.kicks-ass.net>
+Date: Mon, 30 Sep 2013 18:48:55 +0200
+Message-ID: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Mon, Sep 30, 2013 at 6:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Sep 30, 2013 at 05:44:41PM +0200, Stephane Eranian wrote:
+>> Hi,
+>>
+>> I was alerted by people trying to use the PERF_RECORD_MMAP2
+>> record to disambiguate virtual address mappings that there is a case
+>> where the record does not contain enough information.
+>>
+>> As you know, the MMAP2 record adds the major, minor, ino number,
+>> inode generation numbers to a mapping. But it does that only for
+>> file or pseudo -file backed mappings. That covers file mmaps and also
+>> SYSV shared memory segments.
+>>
+>> However there is a another kind of situation that arises in some
+>> multi-process benchmarks where a region of memory is cloned
+>> using VM_CLONE. As such, the virtual addresses match between
+>> the processes but the major, minor, inode, inode generation  fields
+>> are all zeroes because there is no inode associated with the mapping.
+>> Yet, it is important for the tool to know the mappings between the
+>> processes are pointing to the same physical data.
+>>
+>> We need to cover this case and I am seeking for advice on how to
+>> best address this need given that we discarded using the plain physical
+>> address for disambiguation.
+>
+> Urgh.. who in his bloody mind is playing VM_CLNOE games that is not
+> pthread_creatE() ?
 
-Second batch of fixes for AT91. Two little patches but that can be important
-for AT91.
-One is finishing the conversion to clk_xxx_[un]prepare() routines. That will
-allow us to begin the move to common clock framework with help from Boris and
-his big patch series. I tried to push it through Thomas and John's git tree but
-without success.
-The other one is important for sam9g45 when the second DDR conrtoller is in
-use. The DDR / EBI lines are not properly reseted after a shutdown and could
-prevent the use of whatever is connected to this EBI. It is not a configuration
-that we are using on the Evaluation Kit and this explains why we face this isue
-just now...
-
-Thanks, best regards,
-
-The following changes since commit 9ceb389dddbcdb87830f01fcf84d94b2da581dae:
-
-  ARM: at91: remove IRQF_DISABLED (2013-09-19 15:36:35 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 93f6319386b1bd57c9937c818bf1de0b81f03271:
-
-  ARM: at91: sam9g45: shutdown ddr1 too when rebooting (2013-09-30 18:24:52 +0200)
-
-----------------------------------------------------------------
-2nd fixes series for 3.12
-- one TC clocksource enhancement that is the remaining patch that moves to
-  clk_xxx_[un]prepare()
-- management of second DDR controller for the sam9g45 shutdown. This routine
-  also applies to most of other sam9s.
-
-----------------------------------------------------------------
-Boris BREZILLON (1):
-      ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: sam9g45: shutdown ddr1 too when rebooting
-
- arch/arm/mach-at91/at91sam9g45_reset.S |  8 ++++++++
- drivers/clocksource/tcb_clksrc.c       | 10 +++++-----
- 2 files changed, 13 insertions(+), 5 deletions(-)
-
--- 
-Nicolas Ferre
+Some matrix multiply benchmark, I guess.
