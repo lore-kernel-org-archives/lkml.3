@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab3I3DHG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 23:07:06 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53464 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab3I3DHC (ORCPT
+	id S1755018Ab3I3DMk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 23:12:40 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:42400 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab3I3DMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 23:07:02 -0400
-Date: Mon, 30 Sep 2013 04:06:55 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Jones <davej@redhat.com>, x86@kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Fix apparent cut-n-paste mistake in Dell reboot workaround.
-Message-ID: <20130930030655.GB21361@srcf.ucam.org>
-References: <20130925001344.GA13554@redhat.com>
- <5245E7B1.2000408@zytor.com>
- <20130930025733.GA21361@srcf.ucam.org>
- <5248E8C2.2000108@zytor.com>
+	Sun, 29 Sep 2013 23:12:37 -0400
+Date: Mon, 30 Sep 2013 03:12:36 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Suman Anna <s-anna@ti.com>
+cc: Ohad Ben-Cohen <ohad@wizery.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCHv2 0/9] omap hwspinlock dt support
+In-Reply-To: <5245A8CA.4020805@ti.com>
+Message-ID: <alpine.DEB.2.02.1309300309530.17980@utopia.booyaka.com>
+References: <cover.1379445653.git.s-anna@ti.com> <5245A8CA.4020805@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5248E8C2.2000108@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 29, 2013 at 07:58:10PM -0700, H. Peter Anvin wrote:
-> On 09/29/2013 07:57 PM, Matthew Garrett wrote:
-> > On Fri, Sep 27, 2013 at 03:16:49PM -0500, H. Peter Anvin wrote:
-> >>
-> >> It really is starting to feel like *ALL* Dell machines need reboot=pci?
-> > 
-> > Now that ACPI is default, I'd be surprised if any of them do.
-> > 
-> 
-> Look at the stream of Dell machines we're still getting reboot bug
-> reports for...
+Hi
 
-Likely indicates that our ACPI reboot handling still isn't bug 
-compatible with Windows. We'd do better fixing that than adding more DMI 
-entries.
+On Fri, 27 Sep 2013, Suman Anna wrote:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> Paul,
+> The hwmod data patches needs to be merged only after the respective DT
+> node patches are merged, without which the hwmod entry will not have a
+> base address while enabling and idling (using sysc) the hwmod during
+> hwmod initialization.
+
+Hmm, ideally there shouldn't be a merge dependency here. Could you please 
+send a patch to the hwmod core that logs a warning and skips the operation 
+in these circumstances?  Or maybe just skips the registration of the 
+device?
+
+
+- Paul
