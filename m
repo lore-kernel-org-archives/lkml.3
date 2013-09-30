@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab3I3PC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:02:56 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:43653 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3I3PCx (ORCPT
+	id S1755802Ab3I3PFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:05:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:30698 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211Ab3I3PFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:02:53 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Mackerras <paulus@au1.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "#3.9.." <stable@vger.kernel.org>
-Subject: [GIT PULL] irq: updates for 3.13
-Date: Mon, 30 Sep 2013 17:02:47 +0200
-Message-Id: <1380553367-9631-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 30 Sep 2013 11:05:18 -0400
+Date: Mon, 30 Sep 2013 17:59:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>, list@osuosl.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        devel@linuxdriverproject.org, thomas@m3y3r.de
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
+Message-ID: <20130930145939.GK6192@mwanda>
+References: <20130916203824.GP25896@mwanda>
+ <52376ED9.5080208@canonical.com>
+ <20130916210503.GQ25896@mwanda>
+ <5237A5D5.8010006@canonical.com>
+ <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
+ <52432152.3030100@canonical.com>
+ <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
+ <52459942.3020600@canonical.com>
+ <20130927152412.GF6192@mwanda>
+ <alpine.LNX.2.00.1309301634260.28935@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1309301634260.28935@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, Thomas,
+On Mon, Sep 30, 2013 at 04:35:47PM +0200, Jiri Kosina wrote:
+> On Fri, 27 Sep 2013, Dan Carpenter wrote:
+> 
+> > It looks like magicmouse_raw_event() returns 1 on success and 0 on
+> > failure.
+> 
+> Good catch indeed.
+> 
+> I am not completely sure whether we are going to fix an oops or not by 
+> this, as I haven't seen the actual oops anywhere in this thread :) But 
+> definitely this looks like a good fix.
+> 
+> Joseph, could you please test with that? Thanks.
 
-Please pull the irq/core-v5 branch that can be found at:
+In the new code both 0 and 1 are treated the same so this can't fix the
+bug.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	irq/core-v5
-
-HEAD: f6f626fa877c96974fadc595ddd72543d8c6106b
-
-It's the same as the series posted at:
-	http://lkml.kernel.org/r/1380212686-25897-1-git-send-email-fweisbec@gmail.com
-
-with Linus and Benjamin's ack added and a rebase against rc3.
-
-It also contains the regression fix (with the same commit id) from my
-other pull request.
-
-Thanks,
-	Frederic
----
-
-Frederic Weisbecker (8):
-      irq: Force hardirq exit's softirq processing on its own stack
-      irq: Consolidate do_softirq() arch overriden implementations
-      irq: Optimize call to softirq on hardirq exit
-      irq: Improve a bit softirq debugging
-      irq: Justify the various softirq stack choices
-      irq: Optimize softirq stack selection in irq exit
-      x86: Tell about irq stack coverage
-      powerpc: Tell about irq stack coverage
-
-
- arch/Kconfig               | 10 ++++++++
- arch/metag/kernel/irq.c    | 52 ++++++++++++++++--------------------------
- arch/parisc/kernel/irq.c   | 17 ++------------
- arch/powerpc/Kconfig       |  1 +
- arch/powerpc/kernel/irq.c  | 17 +-------------
- arch/s390/kernel/irq.c     | 52 +++++++++++++++++-------------------------
- arch/sh/kernel/irq.c       | 57 +++++++++++++++++-----------------------------
- arch/sparc/kernel/irq_64.c | 31 ++++++++-----------------
- arch/x86/Kconfig           |  1 +
- arch/x86/kernel/entry_64.S |  4 ++--
- arch/x86/kernel/irq_32.c   | 30 +++++++-----------------
- arch/x86/kernel/irq_64.c   | 21 -----------------
- include/linux/interrupt.h  | 11 +++++++++
- kernel/softirq.c           | 40 ++++++++++++++++++++++++--------
- 14 files changed, 138 insertions(+), 206 deletions(-)
+regards,
+dan carpenter
