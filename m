@@ -1,95 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab3I3MnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 08:43:25 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26964 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab3I3MnW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 08:43:22 -0400
-Date: Mon, 30 Sep 2013 15:42:16 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dominik Paulus <dominik.paulus@fau.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de, linux-kernel@vger.kernel.org,
-        tobias.polzer@fau.de, Ilija Hadzic <ihadzic@research.bell-labs.com>
-Subject: Re: [PATCHv3  13/16] staging: usbip: Wrap kernel_sendmsg()/recvmsg()
-Message-ID: <20130930124216.GJ6192@mwanda>
-References: <20130925233638.GA21396@kroah.com>
- <1380390173-3746-1-git-send-email-dominik.paulus@fau.de>
- <1380390173-3746-13-git-send-email-dominik.paulus@fau.de>
+	id S1754739Ab3I3Mtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 08:49:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31242 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431Ab3I3Mtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 08:49:39 -0400
+Date: Mon, 30 Sep 2013 14:42:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] introduce synchronize_sched_{enter,exit}()
+Message-ID: <20130930124214.GA19560@redhat.com>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130929183634.GA15563@redhat.com> <20130929200114.GC19582@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380390173-3746-13-git-send-email-dominik.paulus@fau.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130929200114.GC19582@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 07:42:50PM +0200, Dominik Paulus wrote:
-> @@ -352,34 +352,29 @@ int usbip_recv(struct socket *sock, void *buf, int size)
->  
->  	usbip_dbg_xmit("enter\n");
->  
-> -	if (!sock || !buf || !size) {
-> -		pr_err("invalid arg, sock %p buff %p size %d\n", sock, buf,
-> +	if (!ud || !buf || !size) {
-> +		pr_err("invalid arg, ud %p buff %p size %d\n", ud, buf,
->  		       size);
+On 09/29, Paul E. McKenney wrote:
+>
+> On Sun, Sep 29, 2013 at 08:36:34PM +0200, Oleg Nesterov wrote:
+> >
+> > 	struct xxx_struct {
+> > 		atomic_t counter;
+> > 	};
+> >
+> > 	static inline bool xxx_is_idle(struct xxx_struct *xxx)
+> > 	{
+> > 		return atomic_read(&xxx->counter) == 0;
+> > 	}
+> >
+> > 	static inline void xxx_enter(struct xxx_struct *xxx)
+> > 	{
+> > 		atomic_inc(&xxx->counter);
+> > 		synchronize_sched();
+> > 	}
+> >
+> > 	static inline void xxx_enter(struct xxx_struct *xxx)
+> > 	{
+> > 		synchronize_sched();
+> > 		atomic_dec(&xxx->counter);
+> > 	}
+>
+> But there is nothing for synchronize_sched() to wait for in the above.
+> Presumably the caller of xxx_is_idle() is required to disable preemption
+> or be under rcu_read_lock_sched()?
 
-"size" can fit on the first line now.
+Yes, yes, sure, xxx_is_idle() should be called under preempt_disable().
+(or rcu_read_lock() if xxx_enter() uses synchronize_rcu()).
 
-		pr_err("invalid arg, ud %p buff %p size %d\n", ud, buf, size);
+> So you are trying to make something that abstracts the RCU-protected
+> state-change pattern?  Or perhaps more accurately, the RCU-protected
+> state-change-and-back pattern?
 
->  		return -EINVAL;
->  	}
->  
-> -	do {
-> -		sock->sk->sk_allocation = GFP_NOIO;
-> -		iov.iov_base    = buf;
-> -		iov.iov_len     = size;
-> -		msg.msg_name    = NULL;
-> -		msg.msg_namelen = 0;
-> -		msg.msg_control = NULL;
-> -		msg.msg_controllen = 0;
-> -		msg.msg_namelen    = 0;
-> -		msg.msg_flags      = MSG_NOSIGNAL;
-> -
-> -		result = kernel_recvmsg(sock, &msg, &iov, 1, size, MSG_WAITALL);
-> -		if (result <= 0) {
-> -			pr_debug("receive sock %p buf %p size %u ret %d total %d\n",
-> -				 sock, buf, size, result, total);
-> -			goto err;
-> -		}
-> -
-> -		size -= result;
-> -		buf += result;
-> -		total += result;
-> -	} while (size > 0);
-> +	ud->tcp_socket->sk->sk_allocation = GFP_NOIO;
-> +	iov.iov_base    = buf;
-> +	iov.iov_len     = size;
-> +	msg.msg_name    = NULL;
-> +	msg.msg_namelen = 0;
-> +	msg.msg_control = NULL;
-> +	msg.msg_controllen = 0;
-> +	msg.msg_namelen    = 0;
-> +	msg.msg_flags      = MSG_NOSIGNAL;
-> +
-> +	result = usbip_recvmsg(ud, &msg, &iov, 1, size, MSG_WAITALL);
-> +
+Yes, exactly.
 
-Don't put a blank line here.
+> > struct xxx_struct {
+> > 	int			gp_state;
+> >
+> > 	int			gp_count;
+> > 	wait_queue_head_t	gp_waitq;
+> >
+> > 	int			cb_state;
+> > 	struct rcu_head		cb_head;
+>
+> 	spinlock_t		xxx_lock;  /* ? */
 
-> +	if (result < 0) {
-> +		pr_debug("receive sock %p buf %p size %u ret %d total %d\n",
-> +			 ud->tcp_socket, buf, size, result, total);
-> +		return result;
-> +	}
->  
+See
 
-regards,
-dan carpenter
+	#define xxx_lock	gp_waitq.lock
+	
+in .c below, but we can add another spinlock.
+
+> This spinlock might not make the big-system guys happy, but it appears to
+> be needed below.
+
+Only the writers use this spinlock, and they should synchronize with each
+other anyway. I don't think this can really penalize, say, percpu_down_write
+or cpu_hotplug_begin.
+
+> > // .c	-----------------------------------------------------------------------
+> >
+> > enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
+> >
+> > enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
+> >
+> > #define xxx_lock	gp_waitq.lock
+> >
+> > void xxx_enter(struct xxx_struct *xxx)
+> > {
+> > 	bool need_wait, need_sync;
+> >
+> > 	spin_lock_irq(&xxx->xxx_lock);
+> > 	need_wait = xxx->gp_count++;
+> > 	need_sync = xxx->gp_state == GP_IDLE;
+>
+> Suppose ->gp_state is GP_PASSED.  It could transition to GP_IDLE at any
+> time, right?
+
+As you already pointed below - no.
+
+Once we incremented ->nr_writers, nobody can set GP_IDLE. And if the
+caller is the "first" writer (need_sync == T) nobody else can change
+->gp_state, so xxx_enter() sets GP_PASSED lockless.
+
+> > 	if (need_sync)
+> > 		xxx->gp_state = GP_PENDING;
+> > 	spin_unlock_irq(&xxx->xxx_lock);
+> >
+> > 	BUG_ON(need_wait && need_sync);
+> >
+> > 	} if (need_sync) {
+> > 		synchronize_sched();
+> > 		xxx->gp_state = GP_PASSED;
+> > 		wake_up_all(&xxx->gp_waitq);
+> > 	} else if (need_wait) {
+> > 		wait_event(&xxx->gp_waitq, xxx->gp_state == GP_PASSED);
+>
+> Suppose the wakeup is delayed until after the state has been updated
+> back to GP_IDLE?  Ah, presumably the non-zero ->gp_count prevents this.
+
+Yes, exactly.
+
+> > static void cb_rcu_func(struct rcu_head *rcu)
+> > {
+> > 	struct xxx_struct *xxx = container_of(rcu, struct xxx_struct, cb_head);
+> > 	long flags;
+> >
+> > 	BUG_ON(xxx->gp_state != GP_PASSED);
+> > 	BUG_ON(xxx->cb_state == CB_IDLE);
+> >
+> > 	spin_lock_irqsave(&xxx->xxx_lock, flags);
+> > 	if (xxx->gp_count) {
+> > 		xxx->cb_state = CB_IDLE;
+> > 	} else if (xxx->cb_state == CB_REPLAY) {
+> > 		xxx->cb_state = CB_PENDING;
+> > 		call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+> > 	} else {
+> > 		xxx->cb_state = CB_IDLE;
+> > 		xxx->gp_state = GP_IDLE;
+> > 	}
+>
+> It took me a bit to work out the above.  It looks like the intent is
+> to have the last xxx_exit() put the state back to GP_IDLE, which appears
+> to be the state in which readers can use a fastpath.
+
+Yes, and we we offload this work to rcu callback so xxx_exit() doesn't
+block.
+
+The only complication is the next writer which does xxx_enter() after
+xxx_exit(). If there are no other writers, the next xxx_exit() should do
+
+	rcu_cancel(&xxx->cb_head);
+	call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+
+to "extend" the gp, but since we do not have rcu_cancel() it simply sets
+CB_REPLAY to instruct cb_rcu_func() to reschedule itself.
+
+> This works because if ->gp_count is non-zero and ->cb_state is CB_IDLE,
+> there must be an xxx_exit() in our future.
+
+Yes, but ->cb_state doesn't really matter if ->gp_count != 0 in xxx_exit()
+or cb_rcu_func() (except it can't be CB_IDLE in cb_rcu_func).
+
+> > void xxx_exit(struct xxx_struct *xxx)
+> > {
+> > 	spin_lock_irq(&xxx->xxx_lock);
+> > 	if (!--xxx->gp_count) {
+> > 		if (xxx->cb_state == CB_IDLE) {
+> > 			xxx->cb_state = CB_PENDING;
+> > 			call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+> > 		} else if (xxx->cb_state == CB_PENDING) {
+> > 			xxx->cb_state = CB_REPLAY;
+> > 		}
+> > 	}
+> > 	spin_unlock_irq(&xxx->xxx_lock);
+> > }
+>
+> Then we also have something like this?
+>
+> bool xxx_readers_fastpath_ok(struct xxx_struct *xxx)
+> {
+> 	BUG_ON(!rcu_read_lock_sched_held());
+> 	return xxx->gp_state == GP_IDLE;
+> }
+
+Yes, this is what xxx_is_idle() does (ignoring BUG_ON). It actually
+checks xxx->gp_state == 0, this is just to avoid the unnecessary export
+of GP_* enum.
+
+Oleg.
+
