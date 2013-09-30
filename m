@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab3I3VKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 17:10:37 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:37951 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab3I3VKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 17:10:36 -0400
-Date: Mon, 30 Sep 2013 23:10:35 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Subject: [PATCH] [IA64] aliasing-test: fix mem leaks
-Message-ID: <alpine.LNX.2.00.1309302309200.4992@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756040Ab3I3VN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 17:13:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755739Ab3I3VN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 17:13:57 -0400
+Date: Mon, 30 Sep 2013 17:13:42 -0400
+From: Dave Jones <davej@redhat.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
+        james.l.morris@oracle.com, Paul Moore <paul@paul-moore.com>
+Subject: Re: [PATCH] conditionally reschedule while loading selinux policy.
+Message-ID: <20130930211342.GA24001@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Stephen Smalley <sds@tycho.nsa.gov>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
+	james.l.morris@oracle.com, Paul Moore <paul@paul-moore.com>
+References: <20130916173036.GA17950@redhat.com>
+ <52374350.1090403@tycho.nsa.gov>
+ <20130916184030.GA15800@redhat.com>
+ <20130930172447.GA10562@redhat.com>
+ <5249B6F1.4050507@tycho.nsa.gov>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5249B6F1.4050507@tycho.nsa.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a few trivial mem leaks when returning from scan_tree/scan_rom.
+On Mon, Sep 30, 2013 at 01:37:53PM -0400, Stephen Smalley wrote:
+ 
+ > > With that patch applied, the problem seems to have moved elsewhere..
+ > > 
+ > > BUG: soft lockup - CPU#3 stuck for 22s! [load_policy:8119]
+ > >  irq event stamp: 1590886
+ > >  hardirqs last  enabled at (1590885): [<ffffffff8152c3dd>] __slab_alloc.constprop.78+0x4c0/0x4d7
+ > >  hardirqs last disabled at (1590886): [<ffffffff8153e06a>] apic_timer_interrupt+0x6a/0x80
+ > >  softirqs last  enabled at (1590336): [<ffffffff810480d9>] __do_softirq+0x169/0x200
+ > >  softirqs last disabled at (1590331): [<ffffffff8104839d>] irq_exit+0x11d/0x140
+ > >  RIP: 0010:[<ffffffff81223182>]  [<ffffffff81223182>] hashtab_insert+0x62/0x110
+ > > 
+ > > Call Trace:
+ > >  [<ffffffff812283b5>] policydb_read+0xc25/0x1200
+ > ...
+ > > We're holding a bunch of locks here, so we can't just cond_resched.  Thoughts ?
+ > 
+ > Sorry, what locks are we holding there?  You ought to be able to do a
+ > cond_resched() anywhere during policydb_read() AFAIK; it is loading the
+ > policy into a new structure that isn't being accessed by anything else
+ > yet and the policy_rwlock is only held by security_load_policy after
+ > calling policydb_read and only to switch it into place as the active
+ > policydb.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- Documentation/ia64/aliasing-test.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Hmm, I thought I had tried this already, and got a lot of spew, but it turns out
+for some reason I had previously patched hashtab_search instead.
 
-diff --git a/Documentation/ia64/aliasing-test.c b/Documentation/ia64/aliasing-test.c
-index 62a190d..33ed7a7 100644
---- a/Documentation/ia64/aliasing-test.c
-+++ b/Documentation/ia64/aliasing-test.c
-@@ -96,6 +96,7 @@ static int scan_tree(char *path, char *file, off_t offset, size_t length, int to
- 				fprintf(stderr, "PASS: %s 0x%lx-0x%lx not mappable\n", path2, offset, offset + length);
- 			else {
- 				fprintf(stderr, "FAIL: %s 0x%lx-0x%lx not accessible\n", path2, offset, offset + length);
-+				free(path2);
- 				return rc;
- 			}
- 		} else {
-@@ -185,6 +186,7 @@ static int scan_rom(char *path, char *file)
- 				fprintf(stderr, "PASS: %s read %d bytes\n", path2, rc);
- 			else {
- 				fprintf(stderr, "PASS: %s not readable\n", path2);
-+				free(path2);
- 				return rc;
- 			}
- 		} else {
--- 
-1.7.1
+I'll try running with this for a while..
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+	Dave
 
+
+diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
+index 933e735..2cc4961 100644
+--- a/security/selinux/ss/hashtab.c
++++ b/security/selinux/ss/hashtab.c
+@@ -6,6 +6,7 @@
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/errno.h>
++#include <linux/sched.h>
+ #include "hashtab.h"
+ 
+ struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const void *key),
+@@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void *key, void *datum)
+ 	u32 hvalue;
+ 	struct hashtab_node *prev, *cur, *newnode;
+ 
++	cond_resched();
++
+ 	if (!h || h->nel == HASHTAB_MAX_NODES)
+ 		return -EINVAL;
+ 
