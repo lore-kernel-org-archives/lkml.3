@@ -1,60 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab3I3KDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:03:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56279 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab3I3KC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:02:58 -0400
-Date: Mon, 30 Sep 2013 11:02:49 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
- but mmap()
-Message-ID: <20130930100249.GB2425@suse.de>
-References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753560Ab3I3KEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:04:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50164 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372Ab3I3KEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 06:04:06 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1007,1371052800"; 
+   d="scan'208";a="8660868"
+From: chai wen <chaiw.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, chaiwen_0825@hotmail.com
+Cc: gleb@redhat.com, pbonzini@redhat.com, chaiwen <chaiw.fnst@cn.fujitsu.com>
+Subject: [RFC/query] kvm async_pf anon pined pages migration
+Date: Mon, 30 Sep 2013 18:03:07 +0800
+Message-Id: <1380535387-26237-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/30 18:02:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/30 18:02:03,
+	Serialize complete at 2013/09/30 18:02:03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 04:37:40PM -0700, Andrew Morton wrote:
-> On Mon, 23 Sep 2013 15:05:28 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > It brings thp support for ramfs, but without mmap() -- it will be posted
-> > separately.
-> 
-> We were never going to do this :(
-> 
-> Has anyone reviewed these patches much yet?
-> 
 
-I am afraid I never looked too closely once I learned that the primary
-motivation for this was relieving iTLB pressure in a very specific
-case. AFAIK, this is not a problem in the vast majority of modern CPUs
-and I found it very hard to be motivated to review the series as a result.
-I suspected that in many cases that the cost of IO would continue to dominate
-performance instead of TLB pressure. I also found it unlikely that there
-was a workload that was tmpfs based that used enough memory to be hurt
-by TLB pressure. My feedback was that a much more compelling case for the
-series was needed but this discussion all happened on IRC unfortunately.
+Hi all
 
+Async page fault in kvm currently pin user pages via get_user_pages.
+when doing page migration,the method can be found via
+page->mmapping->a_ops->migratepage to offline old pages and migrate to
+new pages. As to anonymous page there is no file mapping but a anon_vma.So
+the migration will fall back to some *default* migration method.Anon pages
+that have been pined in memory by some reasons could be failed in the migration
+processing because of some reasons like ref-count checking.
+(or I misunderstand some thing?)
+
+Now we want to make these anon pages in async_pf can be migrated, I try some
+ways.But there are still many problems. The following is one that replaceing
+the mapping of anon page arbitrarily and doing some thing based on it.
+Kvm-based virtual machine can works on this patch,but have no experience of
+offline pages because of the limitaion of resouces.I'll check it later.
+
+I don't know weather it is a right direction of this issue.
+All comments/criticize are welcomed. 
+Thanks.
+
+what the following patch doing is :
+1.after async_pf pin page via GUP. change the page mapping
+to a given maping, and there is a designed page migrate method can be
+found via the mapping.
+2.when doing check/clear async_pf work recover the mapping of these pages.
+3.when doing *offline page* the designed page migrate methon can be called
+by the *migrate page* subsystem call sequence via page->mapping->migratepage.
+it will handle the refcount issue and recover the page original mapping then 
+do things like other page migrate method.
+
+There will be some problems:
+1.the page->mapping is replaced arbitrarily and the occasions to
+recover it is only async_pf check/clear/page offline. For anonymous pages,
+this will lead problems in page managemenet.
+2.changing the page mapping arbitrarily will mislead the unmap processing in the
+early path of page offline processing.
+
+
+Signed-off-by: chaiwen <chaiw.fnst@cn.fujitsu.com>
+---
+ mm/migrate.c        |    2 +
+ virt/kvm/async_pf.c |   88 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 87 insertions(+), 3 deletions(-)
+
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 9c8d5f5..1dee7d4 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -394,6 +394,7 @@ int migrate_page_move_mapping(struct address_space *mapping,
+ 
+ 	return MIGRATEPAGE_SUCCESS;
+ }
++EXPORT_SYMBOL(migrate_page_move_mapping);
+ 
+ /*
+  * The expected number of remaining references is the same as that
+@@ -496,6 +497,7 @@ void migrate_page_copy(struct page *newpage, struct page *page)
+ 	if (PageWriteback(newpage))
+ 		end_page_writeback(newpage);
+ }
++EXPORT_SYMBOL(migrate_page_copy);
+ 
+ /************************************************************
+  *                    Migration functions
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 8a39dda..c458305 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -25,9 +25,58 @@
+ #include <linux/module.h>
+ #include <linux/mmu_context.h>
+ 
++#ifdef CONFIG_MIGRATION
++#include <linux/migrate.h>
++#endif
++
+ #include "async_pf.h"
+ #include <trace/events/kvm.h>
+ 
++#ifdef CONFIG_MIGRATION
++struct kvm_apf_ctx {
++	struct address_space *ori_mapping;
++	void *context;
++};
++
++static int async_pf_migratepage( struct address_space *mapping,
++				 struct page *new, struct page *old,
++				 enum migrate_mode mode )
++{
++	int ret;
++	struct kvm_apf_ctx *async_pf_ctx =
++				(struct kvm_apf_ctx *)page_private(old);
++	struct kvm_async_pf *apf =
++				(struct kvm_async_pf *)async_pf_ctx->context;
++	unsigned long flags;
++
++	BUG_ON( PageWriteback(old) );
++	put_page( old );
++	mapping = async_pf_ctx->ori_mapping;
++	ret = migrate_page_move_mapping( mapping, new, old, NULL, mode );
++	if( MIGRATEPAGE_SUCCESS != ret ) {
++		get_page( old );
++		return ret;
++	}
++
++	get_page( new );
++	spin_lock_irqsave( &apf->vcpu->async_pf.lock, flags );
++	migrate_page_copy( new, old );
++	new->mapping = async_pf_ctx->ori_mapping;
++	apf->page = new;
++	spin_unlock_irqrestore( &apf->vcpu->async_pf.lock, flags );
++
++	return ret;
++}
++
++static const struct address_space_operations apf_ctx_aops = {
++	.migratepage = async_pf_migratepage,
++};
++
++static const struct address_space apf_mapping = {
++	.a_ops = &apf_ctx_aops,
++};
++#endif
++
+ static struct kmem_cache *async_pf_cache;
+ 
+ int kvm_async_pf_init(void)
+@@ -63,12 +112,27 @@ static void async_pf_execute(struct work_struct *work)
+ 	struct kvm_vcpu *vcpu = apf->vcpu;
+ 	unsigned long addr = apf->addr;
+ 	gva_t gva = apf->gva;
++	long nrpages;
++#ifdef CONFIG_MIGRATION
++	struct kvm_apf_ctx *apf_ctx;
++	apf_ctx = kzalloc( sizeof(*apf_ctx), GFP_KERNEL );
++	if( !apf_ctx )
++		return;
++#endif
+ 
+ 	might_sleep();
+ 
+ 	use_mm(mm);
+ 	down_read(&mm->mmap_sem);
+-	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
++	nrpages = get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
++#ifdef CONFIG_MIGRATION
++	if( (1==nrpages) && PageAnon(page) ) {
++		apf_ctx->ori_mapping = page->mapping;
++		apf_ctx->context = apf;
++		set_page_private( page, (unsigned long)apf_ctx );
++		page->mapping = &apf_mapping;
++	}
++#endif
+ 	up_read(&mm->mmap_sem);
+ 	unuse_mm(mm);
+ 
+@@ -114,8 +178,17 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 			list_entry(vcpu->async_pf.done.next,
+ 				   typeof(*work), link);
+ 		list_del(&work->link);
+-		if (!is_error_page(work->page))
++		if (!is_error_page(work->page)) {
++#ifdef CONFIG_MIGRATION
++			if( work->page->mapping == &apf_mapping ) {
++				struct kvm_apf_ctx *apf_ctx =
++				(struct kvm_apf_ctx *)page_private(work->page);
++				work->page->mapping = apf_ctx->ori_mapping;
++				kfree( apf_ctx );
++			}
++#endif
+ 			kvm_release_page_clean(work->page);
++		}
+ 		kmem_cache_free(async_pf_cache, work);
+ 	}
+ 	spin_unlock(&vcpu->async_pf.lock);
+@@ -141,8 +214,17 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+ 
+ 		list_del(&work->queue);
+ 		vcpu->async_pf.queued--;
+-		if (!is_error_page(work->page))
++		if (!is_error_page(work->page)) {
++#ifdef CONFIG_MIGRATION
++			if( work->page->mapping == &apf_mapping ) {
++				struct kvm_apf_ctx *apf_ctx =
++				(struct kvm_apf_ctx *)page_private(work->page);
++				work->page->mapping = apf_ctx->ori_mapping;
++				kfree( apf_ctx );
++			}
++#endif
+ 			kvm_release_page_clean(work->page);
++		}
+ 		kmem_cache_free(async_pf_cache, work);
+ 	}
+ }
 -- 
-Mel Gorman
-SUSE Labs
+1.7.1
+
