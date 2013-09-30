@@ -1,140 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab3I3M4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 08:56:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:11367 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3I3M4O (ORCPT
+	id S1755050Ab3I3NAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:00:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40488 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab3I3NAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 08:56:14 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-d5-524974ed9506
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@denx.de>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] usb: gadget: s3c-hsotg: fix CodingStyle issues
-Date: Mon, 30 Sep 2013 14:56:02 +0200
-Message-id: <2690897.Tjz9zsoiZQ@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t9jAd23JZ5BBr+ma1ocvF9vcbbpDbvF
-	5V1z2CwWLWtltji6wcXizKpb7A5sHg+m/mfymDfrBItH35ZVjB7Hb2xn8vi8SS6ANYrLJiU1
-	J7MstUjfLoEr49mxwoJOyYpXF7cxNzBOFuli5OSQEDCR6NnawQRhi0lcuLeerYuRi0NIYBGj
-	xOeLH5khnBYmiblNE9hAqtgErCQmtq9iBLFFBOQlJv1ZyApSxCxwgFGi9dcidpCEsIC9xKap
-	K1hAbBYBVYlZrd+YQWxeAU2Jp+tWgtWICnhKfJq0FCouKPFj8j2wemagofv2T2WFsLUk1u88
-	zjSBkW8WkrJZSMpmISlbwMi8ilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4UJ9J7WBc2WBx
-	iFGAg1GJh3fCco8gIdbEsuLK3EOMEhzMSiK8E7I8g4R4UxIrq1KL8uOLSnNSiw8xSnOwKInz
-	Hmi1DhQSSE8sSc1OTS1ILYLJMnFwSjUwVvH/YBWUs/i84lPhRY/LhgyVPbdtOB6v4N6Yd8pB
-	7eGJJ1tZqq5yeNzb4GbX5ckoUxg0MX51uJGGc8GU2oz1DqHpO7z62YqFD688nqhlUr6qLPBV
-	15HbWZmq2f92ncyYq7vnwN+9hUFTfuwSdIye4bu1N3tjxkH521e3uy0qNeF6NvGZyNZ9SizF
-	GYmGWsxFxYkA1Gi1WVACAAA=
+	Mon, 30 Sep 2013 09:00:13 -0400
+Date: Mon, 30 Sep 2013 14:59:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] introduce synchronize_sched_{enter,exit}()
+Message-ID: <20130930125942.GB12926@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
+ <20130917143003.GA29354@twins.programming.kicks-ass.net>
+ <20130929183634.GA15563@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130929183634.GA15563@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Machek <pavel@denx.de>
+On Sun, Sep 29, 2013 at 08:36:34PM +0200, Oleg Nesterov wrote:
+> Why? Say, percpu_rw_semaphore, or upcoming changes in get_online_cpus(),
+> (Peter, I think they should be unified anyway, but lets ignore this for
+> now). 
 
-checkpatch.pl has some valid complaints about style in s3c-hsotg.c:
-- macro with 'if' should be really enclosed in 'do {} while (0)'
-- seq_puts() is going to be slightly faster than seq_printf()
-- pr_err() is shorter than printk(KERN_ERR ...)
+If you think the percpu_rwsem users can benefit sure.. So far its good I
+didn't go the percpu_rwsem route for it looks like we got something
+better at the end of it ;-)
 
-Signed-off-by: Pavel Machek <pavel@denx.de>
-[bzolnier: minor fixes]
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/usb/gadget/s3c-hsotg.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+> Or freeze_super() (which currently looks buggy), perhaps something
+> else. This pattern
+> 
+> 	writer:
+> 		state = SLOW_MODE;
+> 		synchronize_rcu/sched();
+> 
+> 	reader:
+> 		preempt_disable();	// or rcu_read_lock();
+> 		if (state != SLOW_MODE)
+> 			...
+> 
+> is quite common.
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 6bddf1a..24973d7 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -2092,12 +2092,14 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
- }
- 
- #define call_gadget(_hs, _entry) \
-+do { \
- 	if ((_hs)->gadget.speed != USB_SPEED_UNKNOWN &&	\
- 	    (_hs)->driver && (_hs)->driver->_entry) { \
- 		spin_unlock(&_hs->lock); \
- 		(_hs)->driver->_entry(&(_hs)->gadget); \
- 		spin_lock(&_hs->lock); \
--		}
-+	} \
-+} while (0)
- 
- /**
-  * s3c_hsotg_disconnect - disconnect service
-@@ -2903,7 +2905,7 @@ static int s3c_hsotg_udc_start(struct usb_gadget *gadget,
- 	int ret;
- 
- 	if (!hsotg) {
--		printk(KERN_ERR "%s: called with no device\n", __func__);
-+		pr_err("%s: called with no device\n", __func__);
- 		return -ENODEV;
- 	}
- 
-@@ -3200,7 +3202,7 @@ static int state_show(struct seq_file *seq, void *v)
- 		   readl(regs + GNPTXSTS),
- 		   readl(regs + GRXSTSR));
- 
--	seq_printf(seq, "\nEndpoint status:\n");
-+	seq_puts(seq, "\nEndpoint status:\n");
- 
- 	for (idx = 0; idx < 15; idx++) {
- 		u32 in, out;
-@@ -3217,7 +3219,7 @@ static int state_show(struct seq_file *seq, void *v)
- 		seq_printf(seq, ", DIEPTSIZ=0x%08x, DOEPTSIZ=0x%08x",
- 			   in, out);
- 
--		seq_printf(seq, "\n");
-+		seq_puts(seq, "\n");
- 	}
- 
- 	return 0;
-@@ -3251,7 +3253,7 @@ static int fifo_show(struct seq_file *seq, void *v)
- 	u32 val;
- 	int idx;
- 
--	seq_printf(seq, "Non-periodic FIFOs:\n");
-+	seq_puts(seq, "Non-periodic FIFOs:\n");
- 	seq_printf(seq, "RXFIFO: Size %d\n", readl(regs + GRXFSIZ));
- 
- 	val = readl(regs + GNPTXFSIZ);
-@@ -3259,7 +3261,7 @@ static int fifo_show(struct seq_file *seq, void *v)
- 		   val >> GNPTXFSIZ_NPTxFDep_SHIFT,
- 		   val & GNPTXFSIZ_NPTxFStAddr_MASK);
- 
--	seq_printf(seq, "\nPeriodic TXFIFOs:\n");
-+	seq_puts(seq, "\nPeriodic TXFIFOs:\n");
- 
- 	for (idx = 1; idx <= 15; idx++) {
- 		val = readl(regs + DPTXFSIZn(idx));
-@@ -3330,7 +3332,7 @@ static int ep_show(struct seq_file *seq, void *v)
- 		   readl(regs + DIEPTSIZ(index)),
- 		   readl(regs + DOEPTSIZ(index)));
- 
--	seq_printf(seq, "\n");
-+	seq_puts(seq, "\n");
- 	seq_printf(seq, "mps %d\n", ep->ep.maxpacket);
- 	seq_printf(seq, "total_data=%ld\n", ep->total_data);
- 
-@@ -3341,7 +3343,7 @@ static int ep_show(struct seq_file *seq, void *v)
- 
- 	list_for_each_entry(req, &ep->queue, queue) {
- 		if (--show_limit < 0) {
--			seq_printf(seq, "not showing more requests...\n");
-+			seq_puts(seq, "not showing more requests...\n");
- 			break;
- 		}
- 
--- 
-1.8.2.3
+Well, if we make percpu_rwsem the defacto container of the pattern and
+use that throughout, we'd have only a single implementation and don't
+need the abstraction.
 
+That said; we could still use the idea proposed; so let me take a look.
 
+> // .h	-----------------------------------------------------------------------
+> 
+> struct xxx_struct {
+> 	int			gp_state;
+> 
+> 	int			gp_count;
+> 	wait_queue_head_t	gp_waitq;
+> 
+> 	int			cb_state;
+> 	struct rcu_head		cb_head;
+> };
+> 
+> static inline bool xxx_is_idle(struct xxx_struct *xxx)
+> {
+> 	return !xxx->gp_state; /* GP_IDLE */
+> }
+> 
+> extern void xxx_enter(struct xxx_struct *xxx);
+> extern void xxx_exit(struct xxx_struct *xxx);
+> 
+> // .c	-----------------------------------------------------------------------
+> 
+> enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
+> 
+> enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
+> 
+> #define xxx_lock	gp_waitq.lock
+> 
+> void xxx_enter(struct xxx_struct *xxx)
+> {
+> 	bool need_wait, need_sync;
+> 
+> 	spin_lock_irq(&xxx->xxx_lock);
+> 	need_wait = xxx->gp_count++;
+> 	need_sync = xxx->gp_state == GP_IDLE;
+> 	if (need_sync)
+> 		xxx->gp_state = GP_PENDING;
+> 	spin_unlock_irq(&xxx->xxx_lock);
+> 
+> 	BUG_ON(need_wait && need_sync);
+> 
+> 	} if (need_sync) {
+> 		synchronize_sched();
+> 		xxx->gp_state = GP_PASSED;
+> 		wake_up_all(&xxx->gp_waitq);
+> 	} else if (need_wait) {
+> 		wait_event(&xxx->gp_waitq, xxx->gp_state == GP_PASSED);
+> 	} else {
+> 		BUG_ON(xxx->gp_state != GP_PASSED);
+> 	}
+> }
+> 
+> static void cb_rcu_func(struct rcu_head *rcu)
+> {
+> 	struct xxx_struct *xxx = container_of(rcu, struct xxx_struct, cb_head);
+> 	long flags;
+> 
+> 	BUG_ON(xxx->gp_state != GP_PASSED);
+> 	BUG_ON(xxx->cb_state == CB_IDLE);
+> 
+> 	spin_lock_irqsave(&xxx->xxx_lock, flags);
+> 	if (xxx->gp_count) {
+> 		xxx->cb_state = CB_IDLE;
+
+This seems to be when a new xxx_begin() has happened after our last
+xxx_end() and the sync_sched() from xxx_begin() merges with the
+xxx_end() one and we're done.
+
+> 	} else if (xxx->cb_state == CB_REPLAY) {
+> 		xxx->cb_state = CB_PENDING;
+> 		call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+
+A later xxx_exit() has happened, and we need to requeue to catch a later
+GP.
+
+> 	} else {
+> 		xxx->cb_state = CB_IDLE;
+> 		xxx->gp_state = GP_IDLE;
+
+Nothing fancy happened and we're done.
+
+> 	}
+> 	spin_unlock_irqrestore(&xxx->xxx_lock, flags);
+> }
+> 
+> void xxx_exit(struct xxx_struct *xxx)
+> {
+> 	spin_lock_irq(&xxx->xxx_lock);
+> 	if (!--xxx->gp_count) {
+> 		if (xxx->cb_state == CB_IDLE) {
+> 			xxx->cb_state = CB_PENDING;
+> 			call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+> 		} else if (xxx->cb_state == CB_PENDING) {
+> 			xxx->cb_state = CB_REPLAY;
+> 		}
+> 	}
+> 	spin_unlock_irq(&xxx->xxx_lock);
+> }
+
+So I don't immediately see the point of the concurrent write side;
+percpu_rwsem wouldn't allow this and afaict neither would
+freeze_super().
+
+Other than that; yes this makes sense if you care about write side
+performance and I think its solid.
