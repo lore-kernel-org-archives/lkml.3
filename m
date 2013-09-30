@@ -1,38 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3I3SQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 14:16:58 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51174 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755422Ab3I3SQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 14:16:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: tixy@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [PATCH 2/2] cpufreq: make return type of lock_policy_rwsem_{read|write}() as void
-Date: Mon, 30 Sep 2013 20:28:21 +0200
-Message-ID: <2382588.IckWbq3JRN@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <a257808b511a83f210ed699149ce87fef5db6236.1379344038.git.viresh.kumar@linaro.org>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org> <a257808b511a83f210ed699149ce87fef5db6236.1379344038.git.viresh.kumar@linaro.org>
+	id S1755995Ab3I3SSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 14:18:10 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63398 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab3I3SSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 14:18:09 -0400
+Message-ID: <5249C05D.5050606@linaro.org>
+Date: Mon, 30 Sep 2013 11:18:05 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, mlichvar@redhat.com, prarit@redhat.com,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        zoran markovic <zoran.markovic@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL]: clocksource: new material for 3.13
+References: <5249B7E2.5060201@linaro.org> <5249B9AC.8050209@linaro.org> <5249BE42.90605@linaro.org>
+In-Reply-To: <5249BE42.90605@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 16, 2013 08:40:17 PM Viresh Kumar wrote:
-> lock_policy_rwsem_{read|write}() currently has return type of int but it always
-> return zero and hence its return type must be void instead. This patch makes its
-> return type void and fixes all users of it as well.
-> 
-> Reported-by: Jon Medhurst<tixy@linaro.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On 09/30/2013 11:09 AM, Daniel Lezcano wrote:
+> On 09/30/2013 07:49 PM, John Stultz wrote:
+>> On 09/30/2013 10:41 AM, Daniel Lezcano wrote:
+>>>
+>>> Hi Thomas,
+>>>
+>>> this pull request is based on 3.12-rc3 with the following content:
+>>>
+>>>   - Miroslav improved the RTC update by increasing the interval
+>>> acceptable for an update in the sync_cmos_clock workqueue callback
+>>>
+>>>   - Prarit added a missing function declaration to fix a compilation
+>>> issue on x86. Please *note*, this patch is coming from a pull from
+>>> John's tree, it would make sense to cherry-pick this fix into
+>>> timers/urgent
+>>>
+>>>   - Soren added FEAT_PERCPU to a clock device when it is local per cpu.
+>>> This feature prevents the clock framework to choose a per cpu timer as
+>>> a broadcast timer. This problem arised when the ARM global timer is
+>>> used which is the case now on Xillinx.
+>>>
+>>>   - Stephen extended the generic sched_clock code to support 64bit
+>>> counters and removes the setup_sched_clock deprecation, as that causes
+>>> lots of warnings since there's still users in the arch/arm tree.
+>>>
+>>>   - Will and Sudeep implemented the event stream for architected timer.
+>>> The event streams can be used to impose a timeout on a wfe, to
+>>> safeguard against any programming error in case an expected event is
+>>> not generated or even to implement wfe-based timeouts for userspace
+>>> locking implementations.
+>>>
+>>>   - Zoran prevents to enter suspend mode if there are pending RTC
+>>> timers to be handled, avoiding these ones to be delayed as well as the
+>>> subsequent possible time critical code tied with them.
+>>>
+>>
+>>
+>> Hey Daniel,
+>>      So this looks like a strange pull request. You based it on 3.12-rc3
+>> instead of the current tip/timers/core (which is what your submitting
+>> this to). Unfortunately since the branch you pulled from me was based on
+>> tip/timers/core, this pull request seems to be submitting items that are
+>> already in tip/timers/core (like the changes from Prarit, Miroslav and
+>> Zoran).
+>
+> Aah right !
+>
+>> Does any of the changes here actually depend on 3.12-rc3? If not you
+>> might just re-generate the branch against tip/timers/core, and you'll
+>> end up with a much cleaner pull request.
+>
+> Ok, I think I misunderstood Thomas's email [1] :s
+>
 
-This doesn't apply to bleeding-edge for me any more after I have applied your
-series of 44 patches to it.  Care to resend?
+Right, so you want to avoid rebasing other's work, but you also want to
+avoid unnecssary merges.
 
-Rafael
+Its requires a change in thinking, since so often we're preeoccupied
+with "keeping up" with Linus' HEAD. But when it comes to submitting
+branches for others to pull, we want to preserve the history of the
+patches, and submit them as they were applied to the git tree
+originally. Thus submitting "old" branches isn't really problematic.
+
+Thus you only want to do merges if you know there will be complex
+collisions with future work (which you can easily test in a private
+temporary branch), or you are adding new work that depends on recent
+changes. Otherwise leave it to the person pulling your branch to do the
+merge with their tree.
+
+
+> No changes depend on 3.12-rc3, I will generate a pull request against
+> tip/timers/core. 
+
+No problem.
+
+thanks
+-john
 
