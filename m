@@ -1,76 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab3I3PiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:38:20 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:64841 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab3I3PiS (ORCPT
+	id S1755507Ab3I3Pih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:38:37 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:57086 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab3I3Pie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:38:18 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-d4-52499ae98272
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v2] ARM: at91: cam60: fix incorrect placement of __initdata tag
-Date: Mon, 30 Sep 2013 17:38:06 +0200
-Message-id: <4748525.slmbI8ubRr@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQd2XszyDDObN5bA42/SG3WLT42us
-	Fpd3zWGzWL7iKbPFt8vN7BbrHr5gcmDzWPBrK4vHqwt3WDw2L6n3mHh7GotH35ZVjB6fN8kF
-	sEVx2aSk5mSWpRbp2yVwZdy8tpy94B57xf7uN8wNjCvZuhg5OSQETCSWLtzGCGGLSVy4tx4o
-	zsUhJDCdUeLlu0XsEE4Lk8TkF8eZQarYBKwkJravAurg4BARUJM43lEJEmYWuMUoMe+LNYgt
-	LOAv0Xb5KAtICYuAqsTmXl+QMK+ApsSCyz/B9ooKeEp8mrSUGSIuKPFj8j0WiDHyEvv2T2WF
-	sLUk1u88zjSBkW8WkrJZSMpmISlbwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4YJ9J
-	72Bc1WBxiFGAg1GJh9eg3jNIiDWxrLgy9xCjBAezkgjv6wlAId6UxMqq1KL8+KLSnNTiQ4zS
-	HCxK4rwHW60DhQTSE0tSs1NTC1KLYLJMHJxSDYxijgdOGbtkZytWP3m2x8Z0/oYI/6tXLXPE
-	LwZVrhH9defJS5MjZtsTxUuNF14JuLtoztaj/XVtz754FqcZl6UHz9V/aa71h+v8Pc9Xx6Zp
-	zVs/7fVqf7dnHCsXXeqsY7F6c5274HJs2x6t2vAlDr1uwUfeswZd4l1xrENl56l52Xkbg0Qv
-	vctTYinOSDTUYi4qTgQA9fut9FQCAAA=
+	Mon, 30 Sep 2013 11:38:34 -0400
+MIME-Version: 1.0
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <52498AA8.2090204@redhat.com>
+References: <20130925210742.GG30372@lenny.home.zabbo.net>
+	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	<20130926185508.GO30372@lenny.home.zabbo.net>
+	<5244A68F.906@redhat.com>
+	<20130927200550.GA22640@fieldses.org>
+	<20130927205013.GZ30372@lenny.home.zabbo.net>
+	<CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
+	<52474839.2080201@redhat.com>
+	<CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
+	<20130930143432.GG16579@fieldses.org>
+	<CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+	<52499026.3090802@redhat.com>
+	<CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+	<52498AA8.2090204@redhat.com>
+Date: Mon, 30 Sep 2013 17:38:33 +0200
+Message-ID: <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
+Subject: Re: [RFC] extending splice for copy offloading
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__initdata tag should be placed between the variable name and equal
-sign for the variable to be placed in the intended .init.data section.
+On Mon, Sep 30, 2013 at 4:28 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+> On 09/30/2013 10:24 AM, Miklos Szeredi wrote:
+>>
+>> On Mon, Sep 30, 2013 at 4:52 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+>>>
+>>> On 09/30/2013 10:51 AM, Miklos Szeredi wrote:
+>>>>
+>>>> On Mon, Sep 30, 2013 at 4:34 PM, J. Bruce Fields <bfields@fieldses.org>
+>>>> wrote:
+>>>>>>
+>>>>>> My other worry is about interruptibility/restartability.  Ideas?
+>>>>>>
+>>>>>> What happens on splice(from, to, 4G) and it's a non-reflink copy?
+>>>>>> Can the page cache copy be made restartable?   Or should splice() be
+>>>>>> allowed to return a short count?  What happens on (non-reflink) remote
+>>>>>> copies and huge request sizes?
+>>>>>
+>>>>> If I were writing an application that required copies to be
+>>>>> restartable,
+>>>>> I'd probably use the largest possible range in the reflink case but
+>>>>> break the copy into smaller chunks in the splice case.
+>>>>>
+>>>> The app really doesn't want to care about that.  And it doesn't want
+>>>> to care about restartability, etc..  It's something the *kernel* has
+>>>> to care about.   You just can't have uninterruptible syscalls that
+>>>> sleep for a "long" time, otherwise first you'll just have annoyed
+>>>> users pressing ^C in vain; then, if the sleep is even longer, warnings
+>>>> about task sleeping too long.
+>>>>
+>>>> One idea is letting splice() return a short count, and so the app can
+>>>> safely issue SIZE_MAX requests and the kernel can decide if it can
+>>>> copy the whole file in one go or if it wants to do it in smaller
+>>>> chunks.
+>>>>
+>>> You cannot rely on a short count. That implies that an offloaded copy
+>>> starts
+>>> at byte 0 and the short count first bytes are all valid.
+>>
+>> Huh?
+>>
+>> - app calls splice(from, 0, to, 0, SIZE_MAX)
+>>   1) VFS calls ->direct_splice(from, 0,  to, 0, SIZE_MAX)
+>>      1.a) fs reflinks the whole file in a jiffy and returns the size of
+>> the file
+>>      1 b) fs does copy offload of, say, 64MB and returns 64M
+>>   2) VFS does page copy of, say, 1MB and returns 1MB
+>> - app calls splice(from, X, to, X, SIZE_MAX) where X is the new offset
+>> ...
+>>
+>> The point is: the app is always doing the same (incrementing offset
+>> with the return value from splice) and the kernel can decide what is
+>> the best size it can service within a single uninterruptible syscall.
+>>
+>> Wouldn't that work?
+>>
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-v2:
-- use __initdata as it is OK to do it
+>
+> No.
+>
+> Keep in mind that the offload operation in (1) might fail partially. The
+> target file (the copy) is allocated, the question is what ranges have valid
+> data.
 
- arch/arm/mach-at91/board-cam60.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+You are talking about case 1.a, right?  So if the offload copy 0-64MB
+fails partially, we return failure from splice, yet some of the copy
+did succeed.  Is that the problem?  Why?
 
-diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
-index ade948b..ecabbed 100644
---- a/arch/arm/mach-at91/board-cam60.c
-+++ b/arch/arm/mach-at91/board-cam60.c
-@@ -108,16 +108,14 @@ static struct spi_board_info cam60_spi_devices[] __initdata = {
- #endif
- };
- 
--
- /*
-  * MACB Ethernet device
-  */
--static struct __initdata macb_platform_data cam60_macb_data = {
-+static struct macb_platform_data cam60_macb_data __initdata = {
- 	.phy_irq_pin	= AT91_PIN_PB5,
- 	.is_rmii	= 0,
- };
- 
--
- /*
-  * NAND Flash
-  */
--- 
-1.8.2.3
-
-
+Thanks,
+Miklos
