@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab3I3P2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:28:20 -0400
-Received: from www.sr71.net ([198.145.64.142]:36741 "EHLO blackbird.sr71.net"
+	id S1756185Ab3I3P30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:29:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6929 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755347Ab3I3P2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:28:18 -0400
-Message-ID: <52499875.4060101@sr71.net>
-Date: Mon, 30 Sep 2013 08:27:49 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755307Ab3I3P3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 11:29:21 -0400
+Message-ID: <52498AA8.2090204@redhat.com>
+Date: Mon, 30 Sep 2013 09:28:56 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ning Qu <quning@google.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
- but mmap()
-References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com> <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org> <20130930100249.GB2425@suse.de>
-In-Reply-To: <20130930100249.GB2425@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+References: <20130925210742.GG30372@lenny.home.zabbo.net> <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com> <20130926185508.GO30372@lenny.home.zabbo.net> <5244A68F.906@redhat.com> <20130927200550.GA22640@fieldses.org> <20130927205013.GZ30372@lenny.home.zabbo.net> <CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com> <52474839.2080201@redhat.com> <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com> <20130930143432.GG16579@fieldses.org> <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com> <52499026.3090802@redhat.com> <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+In-Reply-To: <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 03:02 AM, Mel Gorman wrote:
-> I am afraid I never looked too closely once I learned that the primary
-> motivation for this was relieving iTLB pressure in a very specific
-> case. AFAIK, this is not a problem in the vast majority of modern CPUs
-> and I found it very hard to be motivated to review the series as a result.
-> I suspected that in many cases that the cost of IO would continue to dominate
-> performance instead of TLB pressure. I also found it unlikely that there
-> was a workload that was tmpfs based that used enough memory to be hurt
-> by TLB pressure. My feedback was that a much more compelling case for the
-> series was needed but this discussion all happened on IRC unfortunately.
+On 09/30/2013 10:24 AM, Miklos Szeredi wrote:
+> On Mon, Sep 30, 2013 at 4:52 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+>> On 09/30/2013 10:51 AM, Miklos Szeredi wrote:
+>>> On Mon, Sep 30, 2013 at 4:34 PM, J. Bruce Fields <bfields@fieldses.org>
+>>> wrote:
+>>>>> My other worry is about interruptibility/restartability.  Ideas?
+>>>>>
+>>>>> What happens on splice(from, to, 4G) and it's a non-reflink copy?
+>>>>> Can the page cache copy be made restartable?   Or should splice() be
+>>>>> allowed to return a short count?  What happens on (non-reflink) remote
+>>>>> copies and huge request sizes?
+>>>> If I were writing an application that required copies to be restartable,
+>>>> I'd probably use the largest possible range in the reflink case but
+>>>> break the copy into smaller chunks in the splice case.
+>>>>
+>>> The app really doesn't want to care about that.  And it doesn't want
+>>> to care about restartability, etc..  It's something the *kernel* has
+>>> to care about.   You just can't have uninterruptible syscalls that
+>>> sleep for a "long" time, otherwise first you'll just have annoyed
+>>> users pressing ^C in vain; then, if the sleep is even longer, warnings
+>>> about task sleeping too long.
+>>>
+>>> One idea is letting splice() return a short count, and so the app can
+>>> safely issue SIZE_MAX requests and the kernel can decide if it can
+>>> copy the whole file in one go or if it wants to do it in smaller
+>>> chunks.
+>>>
+>> You cannot rely on a short count. That implies that an offloaded copy starts
+>> at byte 0 and the short count first bytes are all valid.
+> Huh?
+>
+> - app calls splice(from, 0, to, 0, SIZE_MAX)
+>   1) VFS calls ->direct_splice(from, 0,  to, 0, SIZE_MAX)
+>      1.a) fs reflinks the whole file in a jiffy and returns the size of the file
+>      1 b) fs does copy offload of, say, 64MB and returns 64M
+>   2) VFS does page copy of, say, 1MB and returns 1MB
+> - app calls splice(from, X, to, X, SIZE_MAX) where X is the new offset
+> ...
+>
+> The point is: the app is always doing the same (incrementing offset
+> with the return value from splice) and the kernel can decide what is
+> the best size it can service within a single uninterruptible syscall.
+>
+> Wouldn't that work?
+>
+> Thanks,
+> Miklos
 
-FWIW, I'm mostly intrigued by the possibilities of how this can speed up
-_software_, and I'm rather uninterested in what it can do for the TLB.
-Page cache is particularly painful today, precisely because hugetlbfs
-and anonymous-thp aren't available there.  If you have an app with
-hundreds of GB of files that it wants to mmap(), even if it's in the
-page cache, it takes _minutes_ to just fault in.  One example:
+No.
 
-	https://lkml.org/lkml/2013/6/27/698
+Keep in mind that the offload operation in (1) might fail partially. The target 
+file (the copy) is allocated, the question is what ranges have valid data.
+
+I don't see that (2) is interesting or really needed to be done in the kernel. 
+If nothing else, it tends to confuse the discussion....
+
+ric
+
