@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3I3CsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 22:48:13 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:39451 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab3I3CsL (ORCPT
+	id S1755258Ab3I3Cs4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 22:48:56 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:46321 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3I3CsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 22:48:11 -0400
+	Sun, 29 Sep 2013 22:48:20 -0400
 From: Enrico Mioso <mrkiko.rs@gmail.com>
 To: Oliver Neukum <oliver@neukum.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,62 +21,43 @@ To: Oliver Neukum <oliver@neukum.org>,
         netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
         ModemManager-devel@lists.freedesktop.org
 Cc: Enrico Mioso <mrkiko.rs@gmail.com>
-Subject: [PATCH V5 net-next 0/3] The huawei_cdc_ncm driver
-Date: Mon, 30 Sep 2013 04:50:06 +0000
-Message-Id: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com>
+Subject: [PATCH V5 net-next 3/3] net: cdc_ncm: remove non-standard NCM device IDs
+Date: Mon, 30 Sep 2013 04:50:09 +0000
+Message-Id: <1380516609-31242-4-git-send-email-mrkiko.rs@gmail.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com>
+References: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So this is a new, revised, edition of the huawei_cdc_ncm.c driver, which 
-supports devices resembling the NCM standard, but using it also as a mean 
-to encapsulate other protocols, as is the case for the Huawei E3131 and
-E3251 modem devices.
-Some precisations are needed however - and I encourage discussion on this: and 
-that's why I'm sending this message with a broader CC.
-Merging those patches might change:
-- the way Modem Manager interacts with those devices
-- some regressions might be possible if there are some unknown firmware 
-  variants around (Franko?)
+Remove device IDs of NCM-like (but not NCM-conformant) devices, that are
+handled by the huawwei_cdc_ncm driver now.
 
-First of all: I observed the behaviours of two devices.
-Huawei E3131: this device doesn't accept NDIS setup requests unless they're 
-sent via the embedded AT channel exposed by this driver.
-So actually we gain funcionality in this case!
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 
-The second case, is the Huawei E3251: which works with standard NCM driver, 
-still exposing an AT embedded channel. Whith this patch set applied, you gain 
-some funcionality, loosing the ability to catch standard NCM events for now.
-The device will work in both ways with no problems, but this has to be 
-acknowledged and discussed. Might be we can develop this driver further to 
-change this, when more devices are tested.
-
-We where thinking Huawei changed their interfaces on new devices - but probably 
-this driver only works around a nice firmware bug present in E3131, which 
-prevented the modem from being used in NDIS mode.
-
-I think committing this is definitely wortth-while, since it will allow for 
-more Huawei devices to be used without serial connection. Some devices like the 
-E3251 also, reports some status information only via the embedded AT channel, 
-at least in my case.
-Note: I'm not subscribed to any list except the Modem Manager's one, so please 
-CC me, thanks!!
-
-
-Enrico Mioso (3):
-  net: cdc_ncm: Export cdc_ncm_{tx,rx}_fixup functions for re-use
-  net: huawei_cdc_ncm: Introduce the huawei_cdc_ncm driver
-  net: cdc_ncm: remove non-standard NCM device IDs
-
- drivers/net/usb/Kconfig          |  15 +++
- drivers/net/usb/Makefile         |   1 +
- drivers/net/usb/cdc_ncm.c        |  17 +--
- drivers/net/usb/huawei_cdc_ncm.c | 228 +++++++++++++++++++++++++++++++++++++++
- include/linux/usb/cdc_ncm.h      |   3 +
- 5 files changed, 251 insertions(+), 13 deletions(-)
- create mode 100644 drivers/net/usb/huawei_cdc_ncm.c
-
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index 62686be..31f43f7 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -1236,17 +1236,6 @@ static const struct usb_device_id cdc_devs[] = {
+ 	  .driver_info = (unsigned long)&wwan_info,
+ 	},
+ 
+-	/* Huawei NCM devices disguised as vendor specific */
+-	{ USB_VENDOR_AND_INTERFACE_INFO(0x12d1, 0xff, 0x02, 0x16),
+-	  .driver_info = (unsigned long)&wwan_info,
+-	},
+-	{ USB_VENDOR_AND_INTERFACE_INFO(0x12d1, 0xff, 0x02, 0x46),
+-	  .driver_info = (unsigned long)&wwan_info,
+-	},
+-	{ USB_VENDOR_AND_INTERFACE_INFO(0x12d1, 0xff, 0x02, 0x76),
+-	  .driver_info = (unsigned long)&wwan_info,
+-	},
+-
+ 	/* Infineon(now Intel) HSPA Modem platform */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1519, 0x0443,
+ 		USB_CLASS_COMM,
 -- 
 1.8.4
 
