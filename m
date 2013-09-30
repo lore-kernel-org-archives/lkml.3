@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab3I3QDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:03:30 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:6035 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab3I3QD3 (ORCPT
+	id S1756080Ab3I3QDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:03:43 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:1837 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755742Ab3I3QDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:03:29 -0400
-Message-ID: <5249A0C4.7050306@hp.com>
-Date: Mon, 30 Sep 2013 12:03:16 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 30 Sep 2013 12:03:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 30 Sep 2013 08:59:51 -0700
+Message-ID: <5249A0DC.9030206@nvidia.com>
+Date: Mon, 30 Sep 2013 12:03:40 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com> <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com> <20130928074144.GA17773@gmail.com> <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com> <CANN689GLde8ZY5yLadbgGrC3eagrY_quQRnTdD_nywP8m1McjA@mail.gmail.com> <20130930070551.GC13584@gmail.com>
-In-Reply-To: <20130930070551.GC13584@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "anton@enomsg.org" <anton@enomsg.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH] tps65090-charger: Use "IS_ENABLED(CONFIG_OF)" for DT
+ code.
+References: <1380342744-4227-1-git-send-email-badarkhe.manish@gmail.com>
+In-Reply-To: <1380342744-4227-1-git-send-email-badarkhe.manish@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 03:05 AM, Ingo Molnar wrote:
-> * Michel Lespinasse<walken@google.com>  wrote:
->
->> That said, I am very scared of using rwlock_t here, and I would much
->> prefer we choose a fair lock (either spinlock or a new rwlock
->> implementation which guarantees not to starve any locker thread)
-> Given how few users rwlock_t has today we could attempt to make it
-> reader-writer fair, as long as the usecase of a hardirq or softirq
-> context always getting nested read access on the same CPU is preserved.
->
-> (but that can be done - if nothing else then with an explicit context
-> check.)
->
-> Thanks,
->
-> 	Ingo
+On 9/28/2013 12:32 AM, Manish Badarkhe wrote:
+> Instead of "#if defined(CONFIG_OF)" use "IS_ENABLED(CONFIG_OF)" option
+> for DT code to avoid if-deffery in code.
+> Also, arranged header files in alphabetically.
+> 
+> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+> ---
+> :100644 100644 bdd7b9b... 8b9c406... M	drivers/power/tps65090-charger.c
+>  drivers/power/tps65090-charger.c |   19 +++++--------------
+>  1 file changed, 5 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+> index bdd7b9b..8b9c406 100644
+> --- a/drivers/power/tps65090-charger.c
+> +++ b/drivers/power/tps65090-charger.c
+> @@ -15,15 +15,17 @@
+>   * You should have received a copy of the GNU General Public License
+>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>   */
+> +#include <linux/delay.h>
+>  #include <linux/err.h>
+>  #include <linux/init.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+> -#include <linux/slab.h>
+> -#include <linux/delay.h>
+> +#include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/power_supply.h>
+> +#include <linux/slab.h>
+> +
+>  #include <linux/mfd/tps65090.h>
+>  
+>  #define TPS65090_REG_INTR_STS	0x00
+> @@ -185,10 +187,6 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> -#if defined(CONFIG_OF)
+> -
+> -#include <linux/of_device.h>
+> -
+>  static struct tps65090_platform_data *
+>  		tps65090_parse_dt_charger_data(struct platform_device *pdev)
+>  {
+> @@ -210,13 +208,6 @@ static struct tps65090_platform_data *
+>  	return pdata;
+>  
+>  }
+> -#else
+> -static struct tps65090_platform_data *
+> -		tps65090_parse_dt_charger_data(struct platform_device *pdev)
+> -{
+> -	return NULL;
+> -}
+> -#endif
+>  
+>  static int tps65090_charger_probe(struct platform_device *pdev)
+>  {
+> @@ -228,7 +219,7 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+>  
+>  	pdata = dev_get_platdata(pdev->dev.parent);
+>  
+> -	if (!pdata && pdev->dev.of_node)
+> +	if (IS_ENABLED(CONFIG_OF) && !pdata && pdev->dev.of_node)
+>  		pdata = tps65090_parse_dt_charger_data(pdev);
+>  
+>  	if (!pdata) {
+> 
 
-My queue rwlock patch is able to handle the use case of a hardirq and 
-softirq context and can be made almost as fair as the ticket spinlock.
+LGTM
+Acked-by: Rhyland Klein <rklein@nvidia.com>
 
--Longman
+-- 
+nvpublic
