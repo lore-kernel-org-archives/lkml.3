@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3I3HFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:05:11 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:56239 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab3I3HFJ (ORCPT
+	id S1754044Ab3I3HF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:05:58 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:42102 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3I3HFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:05:09 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org, monstr@monstr.eu
-Cc: vinod.koul@intel.com, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: amba: Extend number of IRQS
-Date: Mon, 30 Sep 2013 09:05:05 +0200
-Message-Id: <0a5b86b1a90ff48133a1f0d43e342bec9da8fa57.1380524685.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-17048-1380524705-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 30 Sep 2013 03:05:55 -0400
+Date: Mon, 30 Sep 2013 09:05:51 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+Message-ID: <20130930070551.GC13584@gmail.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+ <20130928074144.GA17773@gmail.com>
+ <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+ <CANN689GLde8ZY5yLadbgGrC3eagrY_quQRnTdD_nywP8m1McjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689GLde8ZY5yLadbgGrC3eagrY_quQRnTdD_nywP8m1McjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-17048-1380524705-0001
+* Michel Lespinasse <walken@google.com> wrote:
 
-Xilinx Zynq pl330 dma driver has 9 irqs which all have to
-be used by the driver to get it work properly.
+> That said, I am very scared of using rwlock_t here, and I would much 
+> prefer we choose a fair lock (either spinlock or a new rwlock 
+> implementation which guarantees not to starve any locker thread)
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Not sure if there are others IP with more than 9 irqs.
----
- include/linux/amba/bus.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Given how few users rwlock_t has today we could attempt to make it 
+reader-writer fair, as long as the usecase of a hardirq or softirq
+context always getting nested read access on the same CPU is preserved. 
 
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index 43ec7e2..b327a1b 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -21,7 +21,7 @@
- #include <linux/resource.h>
- #include <linux/regulator/consumer.h>
+(but that can be done - if nothing else then with an explicit context 
+check.)
 
--#define AMBA_NR_IRQS	2
-+#define AMBA_NR_IRQS	9
- #define AMBA_CID	0xb105f00d
+Thanks,
 
- struct clk;
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-17048-1380524705-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlJJIqEACgkQykllyylKDCFatACfTf/RMFzrMuCk5D7POHJSL8Ez
-RC8An2VZFwHg/0jFpS4dapc378jx39CC
-=Kanj
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-17048-1380524705-0001--
+	Ingo
