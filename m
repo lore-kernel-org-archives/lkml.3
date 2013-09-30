@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab3I3GvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 02:51:10 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:57907 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3I3GvI (ORCPT
+	id S1752238Ab3I3G5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 02:57:10 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:51164 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3I3G5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 02:51:08 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu, vinod.koul@intel.com
-Cc: Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH] dma: pl330: Support per channel irq allocation
-Date: Mon, 30 Sep 2013 08:50:48 +0200
-Message-Id: <08a752258a021feb91eba25eafd28ea2bacf72e4.1380523844.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-15625-1380523848-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 30 Sep 2013 02:57:08 -0400
+Date: Mon, 30 Sep 2013 08:57:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+Message-ID: <20130930065703.GB13584@gmail.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+ <20130928074144.GA17773@gmail.com>
+ <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+ <1380495986.2174.10.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFx1PErQQ8eR6JgQzmM0RZwyUtyc6CFfnvzzKz2RJa2GFw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx1PErQQ8eR6JgQzmM0RZwyUtyc6CFfnvzzKz2RJa2GFw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-15625-1380523848-0001
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Some pl330 have per channel irq and it is necessary
-to allocate all of them. Loop over irq assigned for this
-device to support these pl330 IPs.
+> [...]
+> 
+> And your numbers for Ingo's patch:
+> 
+> > After testing Ingo's anon-vma rwlock_t conversion (v2) on a 8 socket, 
+> > 80 core system with aim7, I am quite surprised about the numbers - 
+> > considering the lack of queuing in rwlocks. A lot of the tests didn't 
+> > show hardly any difference, but those that really contend this lock 
+> > (with high amounts of users) benefited quite nicely:
+> >
+> > Alltests: +28% throughput after 1000 users and runtime was reduced from
+> > 7.2 to 6.6 secs.
+> >
+> > Custom: +61% throughput after 100 users and runtime was reduced from 7
+> > to 4.9 secs.
+> >
+> > High_systime: +40% throughput after 1000 users and runtime was reduced
+> > from 19 to 15.5 secs.
+> >
+> > Shared: +30.5% throughput after 100 users and runtime was reduced from
+> > 6.5 to 5.1 secs.
+> >
+> > Short: Lots of variance in the numbers, but avg of +29% throughput - 
+> > no particular performance degradation either.
+> 
+> Are just overwhelming, in my opinion. The conversion *from* a spinlock 
+> never had this kind of support behind it.
 
-For example this IP is available on Xilinx Zynq platform.
+Agreed. Especially given how primitive rwlock_t is especially on 80 cores, 
+this is really a no-brainer conversion.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Hi Vinod,
+I have to say I am surprised by the numbers - after so many years it's 
+still amazing how powerful the "get work done and don't interrupt it" 
+batching concept is in computing...
 
-this is the patch I told you about it. I have tested it
-just on Zynq(8 dma channels) but it shouldn't break
-any other pl330 clones.
-One more change has to be done to support all 8 dma channels
-which is to extend AMBA_NR_IRQS which is still 2.
-But I will send separate patch for it directly to Russell.
+> Btw, did anybody run Ingo's patch with lockdep and the spinlock sleep 
+> debugging code to verify that we haven't introduced any problems wrt 
+> sleeping since the lock was converted into a rw-semaphore?
+> 
+> Because quite frankly, considering these kinds of numbers, I really 
+> don't see how we could possibly make excuses for keeping that 
+> rw-semaphore unless there is some absolutely _horrible_ latency issue?
+
+Given that there's only about a dozen critical sections that this lock 
+covers I simply cannot imagine any latency problem that couldn't be fixed 
+in some other fashion. (shrinking the critical section, breaking up a bad 
+loop, etc.)
+
+[ Btw., if PREEMPT_RT goes upstream we might not even need to break
+  latencies all that much: people whose usecase values scheduling latency
+  above throughput would run such a critical section preemptible anyway. ]
 
 Thanks,
-Michal
 
----
- drivers/dma/pl330.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 58623dc..96de393 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2922,11 +2922,18 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
-
- 	amba_set_drvdata(adev, pdmac);
-
--	irq = adev->irq[0];
--	ret = devm_request_irq(&adev->dev, irq, pl330_irq_handler, 0,
--			dev_name(&adev->dev), pi);
--	if (ret)
--		return ret;
-+	for (i = 0; i <= AMBA_NR_IRQS; i++) {
-+		irq = adev->irq[i];
-+		if (irq) {
-+			ret = devm_request_irq(&adev->dev, irq,
-+					       pl330_irq_handler, 0,
-+					       dev_name(&adev->dev), pi);
-+			if (ret)
-+				return ret;
-+		} else {
-+			break;
-+		}
-+	}
-
- 	pi->pcfg.periph_id = adev->periphid;
- 	ret = pl330_add(pi);
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-15625-1380523848-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlJJH0kACgkQykllyylKDCGjBgCcCTcWpXT70TCgzEnbZqsLj0Ab
-hvMAn2TS5ko3HRRYct+Ac1jo88SZlo/o
-=XXvS
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-15625-1380523848-0001--
+	Ingo
