@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab3I3KVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:21:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43706 "EHLO
+	id S1756343Ab3I3KWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:22:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43693 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab3I3KNJ (ORCPT
+	with ESMTP id S1755654Ab3I3KNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:09 -0400
+	Mon, 30 Sep 2013 06:13:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Kosina <jkosina@suse.cz>,
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 074/104] HID: battery: don't do DMA from stack
-Date: Mon, 30 Sep 2013 11:10:51 +0100
-Message-Id: <1380535881-9239-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 071/104] radeon kms: fix uninitialised hotplug work usage in r100_irq_process()
+Date: Mon, 30 Sep 2013 11:10:48 +0100
+Message-Id: <1380535881-9239-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-commit 6c2794a2984f4c17a58117a68703cc7640f01c5a upstream.
+commit 27c505ca84e164ec66ad55dcf3f5befaac83f10a upstream.
 
-Instead of using data from stack for DMA in hidinput_get_battery_property(),
-allocate the buffer dynamically.
+Commit a01c34f72e7cd2624570818f579b5ab464f93de2 (radeon kms: do not
+flush uninitialized hotplug work) moved work initialisation phase to
+the last step of radeon_irq_kms_init(). Meelis Roos reported that this
+causes problems on his machine because drm_irq_install() uses hotplug
+work on r100.
 
-Reported-by: Richard Ryniker <ryniker@alum.mit.edu>
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+hotplug work flushed in radeon_irq_kms_fini(), with two possible cases:
+-- radeon_irq_kms_fini() call after successful radeon_irq_kms_init()
+-- radeon_irq_kms_fini() call after unsuccessful (or not called at all)
+   radeon_irq_kms_init()
+
+The latter one causes flush work on uninitialised hotplug work. Move
+work initialisation before drm_irq_install(), but keep existing agreement
+to flush hotplug work in radeon_irq_kms_fini() only for `irq.installed'
+(successful radeon_irq_kms_init()) case.
+
+WARNING: CPU: 0 PID: 243 at kernel/workqueue.c:1378 __queue_work+0x132/0x16d()
+Call Trace:
+[<c12319b3>] ? dump_stack+0xa/0x13
+[<c1022600>] ? warn_slowpath_common+0x75/0x8a
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c102269e>] ? warn_slowpath_null+0x1b/0x1f
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c103107b>] ? queue_work_on+0x30/0x40
+[<f8aed3f3>] ? r100_irq_process+0x16d/0x1e6 [radeon]
+[<f8ae77cf>] ? radeon_driver_irq_preinstall_kms+0xc2/0xc5 [radeon]
+[<f8974d77>] ? drm_irq_install+0xb2/0x1ac [drm]
+[<f897604d>] ? drm_vblank_init+0x196/0x1d2 [drm]
+[<f8ae78d3>] ? radeon_irq_kms_init+0x33/0xc6 [radeon]
+[<f8aef35a>] ? r100_startup+0x1a3/0x1d6 [radeon]
+[<f8ad77c8>] ? radeon_ttm_init+0x26e/0x287 [radeon]
+[<f8aef752>] ? r100_init+0x2b3/0x309 [radeon]
+[<c118082e>] ? vga_client_register+0x39/0x40
+[<f8ac535f>] ? radeon_device_init+0x54b/0x61b [radeon]
+[<f8ac40fd>] ? cail_mc_write+0x13/0x13 [radeon]
+[<f8ac6864>] ? radeon_driver_load_kms+0x82/0xda [radeon]
+[<f8978bbd>] ? drm_get_pci_dev+0x136/0x22d [drm]
+[<f8ac409b>] ? radeon_pci_probe+0x6c/0x86 [radeon]
+[<c112acf6>] ? pci_device_probe+0x4c/0x83
+[<c11846c7>] ? driver_probe_device+0x80/0x184
+[<c112a848>] ? pci_match_id+0x18/0x36
+[<c1184837>] ? __driver_attach+0x44/0x5f
+[<c11833f4>] ? bus_for_each_dev+0x50/0x5a
+[<c118433e>] ? driver_attach+0x14/0x16
+[<c11847f3>] ? __device_attach+0x28/0x28
+[<c1184045>] ? bus_add_driver+0xd6/0x1bf
+[<c1184c22>] ? driver_register+0x78/0xcf
+[<f8ba8000>] ? 0xf8ba7fff
+[<c10003bf>] ? do_one_initcall+0x8b/0x121
+[<c101e668>] ? change_page_attr_clear+0x2e/0x33
+[<f8ba8000>] ? 0xf8ba7fff
+[<c101e689>] ? set_memory_ro+0x1c/0x20
+[<c104de94>] ? set_page_attributes+0x11/0x12
+[<c104f6e1>] ? load_module+0x12fa/0x17e8
+[<c107483b>] ? map_vm_area+0x22/0x31
+[<c104fc36>] ? SyS_init_module+0x67/0x7d
+[<c1234245>] ? sysenter_do_call+0x12/0x26
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.5:
+  - dropped initialisation of reset_work handler ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-input.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 73f2f7c..c460b74 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -325,7 +325,7 @@ static int hidinput_get_battery_property(struct power_supply *psy,
- {
- 	struct hid_device *dev = container_of(psy, struct hid_device, battery);
- 	int ret = 0;
--	__u8 buf[2] = {};
-+	__u8 *buf;
- 
- 	switch (prop) {
- 	case POWER_SUPPLY_PROP_PRESENT:
-@@ -334,12 +334,19 @@ static int hidinput_get_battery_property(struct power_supply *psy,
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CAPACITY:
-+
-+		buf = kmalloc(2 * sizeof(__u8), GFP_KERNEL);
-+		if (!buf) {
-+			ret = -ENOMEM;
-+			break;
-+		}
- 		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
--					      buf, sizeof(buf),
-+					      buf, 2,
- 					      dev->battery_report_type);
- 
- 		if (ret != 2) {
- 			ret = -ENODATA;
-+			kfree(buf);
- 			break;
+diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+index 30003b6..6169e1b 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -198,16 +198,18 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
+ 			dev_info(rdev->dev, "radeon: using MSI.\n");
  		}
- 		ret = 0;
-@@ -349,6 +356,7 @@ static int hidinput_get_battery_property(struct power_supply *psy,
- 		    buf[1] <= dev->battery_max)
- 			val->intval = (100 * (buf[1] - dev->battery_min)) /
- 				(dev->battery_max - dev->battery_min);
-+		kfree(buf);
- 		break;
+ 	}
++
++	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
++	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
++
+ 	rdev->irq.installed = true;
+ 	r = drm_irq_install(rdev->ddev);
+ 	if (r) {
+ 		rdev->irq.installed = false;
++		flush_work(&rdev->hotplug_work);
+ 		return r;
+ 	}
  
- 	case POWER_SUPPLY_PROP_MODEL_NAME:
+-	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+-	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+-
+ 	DRM_INFO("radeon: irq initialized.\n");
+ 	return 0;
+ }
 -- 
 1.8.3.2
 
