@@ -1,50 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab3I3DPH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 23:15:07 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:47416 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab3I3DPF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 23:15:05 -0400
+	id S1755141Ab3I3DUU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 23:20:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753594Ab3I3DUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 23:20:18 -0400
+Message-ID: <5248EDE0.2050006@redhat.com>
+Date: Mon, 30 Sep 2013 11:20:00 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20130930030655.GB21361@srcf.ucam.org>
-References: <20130925001344.GA13554@redhat.com>
-	<5245E7B1.2000408@zytor.com>
-	<20130930025733.GA21361@srcf.ucam.org>
-	<5248E8C2.2000108@zytor.com>
-	<20130930030655.GB21361@srcf.ucam.org>
-Date: Mon, 30 Sep 2013 13:15:02 +1000
-Message-ID: <CAPM=9txNWRKPzE=FNz63fi-7mwQq5DvNkVHik4gNodD9WBP9mw@mail.gmail.com>
-Subject: Re: Fix apparent cut-n-paste mistake in Dell reboot workaround.
-From: Dave Airlie <airlied@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+CC: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH net-next] virtio-net: switch to use XPS to choose txq
+References: <1380261444-40918-1-git-send-email-jasowang@redhat.com> <874n932obk.fsf@rustcorp.com.au>
+In-Reply-To: <874n932obk.fsf@rustcorp.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 1:06 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Sun, Sep 29, 2013 at 07:58:10PM -0700, H. Peter Anvin wrote:
->> On 09/29/2013 07:57 PM, Matthew Garrett wrote:
->> > On Fri, Sep 27, 2013 at 03:16:49PM -0500, H. Peter Anvin wrote:
->> >>
->> >> It really is starting to feel like *ALL* Dell machines need reboot=pci?
->> >
->> > Now that ACPI is default, I'd be surprised if any of them do.
->> >
+On 09/30/2013 07:35 AM, Rusty Russell wrote:
+> Jason Wang <jasowang@redhat.com> writes:
+>> We used to use a percpu structure vq_index to record the cpu to queue
+>> mapping, this is suboptimal since it duplicates the work of XPS and
+>> loses all other XPS functionality such as allowing use to configure
+>> their own transmission steering strategy.
 >>
->> Look at the stream of Dell machines we're still getting reboot bug
->> reports for...
+>> So this patch switches to use XPS and suggest a default mapping when
+>> the number of cpus is equal to the number of queues. With XPS support,
+>> there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
+>> so they were removed also.
+>>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/net/virtio_net.c |   55 +++++++--------------------------------------
+>>  1 files changed, 9 insertions(+), 46 deletions(-)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index defec2b..4102c1b 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -127,9 +127,6 @@ struct virtnet_info {
+>>  	/* Does the affinity hint is set for virtqueues? */
+>>  	bool affinity_hint_set;
+>>  
+>> -	/* Per-cpu variable to show the mapping from CPU to virtqueue */
+>> -	int __percpu *vq_index;
+>> -
+>>  	/* CPU hot plug notifier */
+>>  	struct notifier_block nb;
+>>  };
+>> @@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
+>>  static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>>  {
+>>  	int i;
+>> -	int cpu;
+>>  
+>>  	if (vi->affinity_hint_set) {
+>>  		for (i = 0; i < vi->max_queue_pairs; i++) {
+>> @@ -1073,20 +1069,11 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
+>>  
+>>  		vi->affinity_hint_set = false;
+>>  	}
+>> -
+>> -	i = 0;
+>> -	for_each_online_cpu(cpu) {
+>> -		if (cpu == hcpu) {
+>> -			*per_cpu_ptr(vi->vq_index, cpu) = -1;
+>> -		} else {
+>> -			*per_cpu_ptr(vi->vq_index, cpu) =
+>> -				++i % vi->curr_queue_pairs;
+>> -		}
+>> -	}
+>>  }
+>>  
+>>  static void virtnet_set_affinity(struct virtnet_info *vi)
+>>  {
+>> +	cpumask_var_t cpumask;
+>>  	int i;
+>>  	int cpu;
+>>  
+>> @@ -1100,15 +1087,21 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
+>>  		return;
+>>  	}
+>>  
+>> +	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
+>> +		return;
+>> +
+>>  	i = 0;
+>>  	for_each_online_cpu(cpu) {
+>>  		virtqueue_set_affinity(vi->rq[i].vq, cpu);
+>>  		virtqueue_set_affinity(vi->sq[i].vq, cpu);
+>> -		*per_cpu_ptr(vi->vq_index, cpu) = i;
+>> +		cpumask_clear(cpumask);
+>> +		cpumask_set_cpu(cpu, cpumask);
+>> +		netif_set_xps_queue(vi->dev, cpumask, i);
+>>  		i++;
+>>  	}
+>>  
+>>  	vi->affinity_hint_set = true;
+>> +	free_cpumask_var(cpumask);
+>>  }
+> Um, isn't this just cpumask_of(cpu)?
+
+True, I thought it should be somewhat more easier.
+
+Will post V2.
 >
-> Likely indicates that our ACPI reboot handling still isn't bug
-> compatible with Windows. We'd do better fixing that than adding more DMI
-> entries.
+> Cheers,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-are these only with VTd enabled? I have some Dells that won't reboot
-with VTd turned on, I remember you though it was an acpi bug we
-couldn't do much with.
-
-Dave.
