@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab3I3PVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:21:14 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:34953 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab3I3PVJ (ORCPT
+	id S1755944Ab3I3PWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:22:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54600 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753743Ab3I3PWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:21:09 -0400
-MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <CA+55aFzuZp094CB-FG2Ku32m3ZR5DC6FKGSfnLVdy3w9Aju2Bg@mail.gmail.com>
-References: <CA+icZUUOfFdd34CZfGpX+_ezuaPyeakZSGGvfmw8K1cguUbmxg@mail.gmail.com>
-	<CA+55aFzuZp094CB-FG2Ku32m3ZR5DC6FKGSfnLVdy3w9Aju2Bg@mail.gmail.com>
-Date: Mon, 30 Sep 2013 17:21:07 +0200
-Message-ID: <CAJfpegvddcZMFLMOikx5vKa8v_o5b+QjupKZNRTj8uGuOLiHtA@mail.gmail.com>
-Subject: Re: fuse-3.12-fixes?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Maxim Patlasov <MPatlasov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 30 Sep 2013 11:22:53 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-pwm@vger.kernel.org, voice.shen@atmel.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH v2] PWM: atmel-pwm: use request/free instead of enable/disable
+Date: Mon, 30 Sep 2013 17:22:33 +0200
+Message-Id: <1380554553-25676-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 5:13 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Sep 30, 2013 at 12:20 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>
->> any reasons why these fuse-3.12-fixes did not went into -rc3?
->
-> Perhaps because they were never sent to me?
->
-> Searching my email archives I see that a pull request went to Al and
-> the mailing lists, but not actually to me. I do have a pending pull
-> request from Al (which came in after -rc3) but that doesn't contain
-> them either. And the "for-linus" branch implies that perhaps somebody
-> _iindended_ to send them to me, but somehow missed.
+I found that disabling a pwm while it is at a low level will actually put it
+back at a high level. The main symptom is that leds-pwm is calling pwm_disable()
+after setting the duty cycle to 0. Hence, instead of getting a switched off LED,
+you get an LED lit up at full brightness.
 
-Mea culpa.  I sent it to Al, but didn't create a for_al branch for it,
-and Al didn't pull.  I'll send a new pull request after testing the
-fuse_dentry_revalidate fixes.
+Solve that by using the request and free callbacks to enable and disable the
+pwm channels and the clock.
 
-Thanks,
-Miklos
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+Applies on [PATCH v5] PWM: atmel-pwm: add PWM controller driver
+
+Changes in v2:
+  - add dummies pwm_enable and pwm_disable to be able to register the pwm chip.
+
+ drivers/pwm/pwm-atmel.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+index b4df36c..732312c 100644
+--- a/drivers/pwm/pwm-atmel.c
++++ b/drivers/pwm/pwm-atmel.c
+@@ -206,7 +206,7 @@ static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	return 0;
+ }
+ 
+-static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++static int atmel_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+ 	int ret;
+@@ -222,7 +222,7 @@ static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	return 0;
+ }
+ 
+-static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++static void atmel_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+ 
+@@ -231,9 +231,28 @@ static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	clk_disable(atmel_pwm->clk);
+ }
+ 
++static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	/*
++	 * This is a dummy function, required to be able to register the pwm
++	 * chip, see pwmadd_chip() in pwm/core.c
++	 */
++	return 0;
++}
++
++static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	/*
++	 * This is a dummy function, required to be able to register the pwm
++	 * chip, see pwmadd_chip() in pwm/core.c
++	 */
++}
++
+ static const struct pwm_ops atmel_pwm_ops = {
+ 	.config = atmel_pwm_config,
+ 	.set_polarity = atmel_pwm_set_polarity,
++	.request = atmel_pwm_request,
++	.free = atmel_pwm_free,
+ 	.enable = atmel_pwm_enable,
+ 	.disable = atmel_pwm_disable,
+ 	.owner = THIS_MODULE,
+-- 
+1.8.1.2
+
