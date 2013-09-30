@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab3I3Bkf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 21:40:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab3I3Bke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 21:40:34 -0400
-Date: Sun, 29 Sep 2013 21:40:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Bastian Blank <waldi@debian.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysrq: Allow access to sensitive keys to be restricted
- by default
-Message-ID: <20130930014009.GA30635@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ben Hutchings <ben@decadent.org.uk>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jiri Slaby <jslaby@suse.cz>, Bastian Blank <waldi@debian.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1380504668.14493.22.camel@deadeye.wl.decadent.org.uk>
+	id S1754325Ab3I3BuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 21:50:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33435 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab3I3BuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Sep 2013 21:50:05 -0400
+Date: Sun, 29 Sep 2013 18:50:07 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/17] 3.0.98-stable review
+Message-ID: <20130930015007.GA13344@kroah.com>
+References: <20130929190757.138351117@linuxfoundation.org>
+ <5248D2E4.10206@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380504668.14493.22.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <5248D2E4.10206@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 02:31:08AM +0100, Ben Hutchings wrote:
- > From: Bastian Blank <waldi@debian.org>
- > 
- > Add a Kconfig variable to set the initial value of the Magic SysRq mask
- > (sysctl: kernel.sysrq).
- > 
- > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
- > ---
- > This has been in Debian for a while, but should probably be signed-off
- > by Bastian as well.
- > 
- > Debian sets this to 0x01b6, which excludes.
- > 
- >           8 - enable debugging dumps of processes etc.
- >          64 - enable signalling of processes (term, kill, oom-kill)
- > ...
- >  
- > +config MAGIC_SYSRQ_DEFAULT_MASK
- > +	hex "Default mask for Magic SysRq keys on the console"
- > +	depends on MAGIC_SYSRQ
- > +	default 1
- > +	help
- > +	  Specifies the default mask for the allowed SysRq keys.  This can be
- > +	  used to disable several sensitive keys by default.
+On Sun, Sep 29, 2013 at 06:24:52PM -0700, Guenter Roeck wrote:
+> On 09/29/2013 12:26 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.0.98 release.
+> > There are 17 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Tue Oct  1 19:07:47 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.98-rc1.gz
+> > and the diffstat can be found below.
+> >
+> 
+> 
+> Build test results:
+> 	total: 98 pass: 71 skipped: 16 fail: 11
+> 
+> qemu:
+> 	ppc, sh, sparc, x86, x86_64 passed
+> 	arm, microblaze, mips, mips64, sparc64 skipped
+> 
+> Same results as with 3.0.97.
 
-Might be nice to have the mask values duplicated here to save having to
-go grepping through code ?
+Nice, thanks for testing and letting me know.
 
-	Dave
-
+greg k-h
