@@ -1,165 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3I3Htc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:49:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45762 "EHLO mx1.redhat.com"
+	id S1753979Ab3I3HwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:52:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51198 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753394Ab3I3Htb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:49:31 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [net-next PATCH V2] virtio-net: switch to use XPS to choose txq
-Date: Mon, 30 Sep 2013 15:37:17 +0800
-Message-Id: <1380526637-35524-1-git-send-email-jasowang@redhat.com>
+	id S1752181Ab3I3HwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 03:52:10 -0400
+Message-ID: <52492DA0.90903@ti.com>
+Date: Mon, 30 Sep 2013 10:52:00 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Hanjun Guo <hanjun.guo@linaro.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <patches@linaro.org>, <linaro-kernel@lists.linaro.org>,
+        <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH 00/10] Convert to module_platform_driver() in video driver
+References: <1380432730-7263-1-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1380432730-7263-1-git-send-email-hanjun.guo@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="xtBIB3NK8EeJJqIJHJWChCXLu5qKcJQmO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to use a percpu structure vq_index to record the cpu to queue
-mapping, this is suboptimal since it duplicates the work of XPS and
-loses all other XPS functionality such as allowing use to configure
-their own transmission steering strategy.
+--xtBIB3NK8EeJJqIJHJWChCXLu5qKcJQmO
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-So this patch switches to use XPS and suggest a default mapping when
-the number of cpus is equal to the number of queues. With XPS support,
-there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
-so they were removed also.
+On 29/09/13 08:32, Hanjun Guo wrote:
+> This patch set just did one simple thing: convert to module_platform_dr=
+iver()
+> in video driver to simplify the code.
+>=20
+> Hanjun Guo (10):
+>   Video / hecubafb: Use module_platform_driver() to simplify code
+>   Video / bfin-t350mcqb-fb: Use module_platform_driver() to simplify
+>     code
+>   Video / metronomefb: Use module_platform_driver() to simplify code
+>   Video / jz4740_fb: Use module_platform_driver() to simplify code
+>   Video / da8xx-fb: Use module_platform_driver() to simplify code
+>   Video / cobalt_lcdfb: Use module_platform_driver() to simplify code
+>   Video / broadsheetfb: Use module_platform_driver() to simplify code
+>   Video / bf54x-lq043fb: Use module_platform_driver() to simplify code
+>   Video / au1200fb: Use module_platform_driver() to simplify code
+>   Video / au1100fb: Use module_platform_driver() to simplify code
+>=20
+>  drivers/video/au1100fb.c         |   14 +-------------
+>  drivers/video/au1200fb.c         |   16 +---------------
+>  drivers/video/bf54x-lq043fb.c    |   14 +-------------
+>  drivers/video/bfin-t350mcqb-fb.c |   14 +-------------
+>  drivers/video/broadsheetfb.c     |   14 +-------------
+>  drivers/video/cobalt_lcdfb.c     |   14 +-------------
+>  drivers/video/da8xx-fb.c         |   14 +-------------
+>  drivers/video/hecubafb.c         |   14 +-------------
+>  drivers/video/jz4740_fb.c        |   13 +------------
+>  drivers/video/metronomefb.c      |   14 +-------------
+>  10 files changed, 10 insertions(+), 131 deletions(-)
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from V1:
-- use cpumask_of() instead of allocate dynamically
+Thanks, queuing for 3.13.
 
- drivers/net/virtio_net.c |   48 +--------------------------------------------
- 1 files changed, 2 insertions(+), 46 deletions(-)
+ Tomi
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index defec2b..4eca652 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -127,9 +127,6 @@ struct virtnet_info {
- 	/* Does the affinity hint is set for virtqueues? */
- 	bool affinity_hint_set;
- 
--	/* Per-cpu variable to show the mapping from CPU to virtqueue */
--	int __percpu *vq_index;
--
- 	/* CPU hot plug notifier */
- 	struct notifier_block nb;
- };
-@@ -1063,7 +1060,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
- static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- {
- 	int i;
--	int cpu;
- 
- 	if (vi->affinity_hint_set) {
- 		for (i = 0; i < vi->max_queue_pairs; i++) {
-@@ -1073,16 +1069,6 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- 
- 		vi->affinity_hint_set = false;
- 	}
--
--	i = 0;
--	for_each_online_cpu(cpu) {
--		if (cpu == hcpu) {
--			*per_cpu_ptr(vi->vq_index, cpu) = -1;
--		} else {
--			*per_cpu_ptr(vi->vq_index, cpu) =
--				++i % vi->curr_queue_pairs;
--		}
--	}
- }
- 
- static void virtnet_set_affinity(struct virtnet_info *vi)
-@@ -1104,7 +1090,7 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
- 	for_each_online_cpu(cpu) {
- 		virtqueue_set_affinity(vi->rq[i].vq, cpu);
- 		virtqueue_set_affinity(vi->sq[i].vq, cpu);
--		*per_cpu_ptr(vi->vq_index, cpu) = i;
-+		netif_set_xps_queue(vi->dev, cpumask_of(cpu), i);
- 		i++;
- 	}
- 
-@@ -1217,28 +1203,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
- 	return 0;
- }
- 
--/* To avoid contending a lock hold by a vcpu who would exit to host, select the
-- * txq based on the processor id.
-- */
--static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
--{
--	int txq;
--	struct virtnet_info *vi = netdev_priv(dev);
--
--	if (skb_rx_queue_recorded(skb)) {
--		txq = skb_get_rx_queue(skb);
--	} else {
--		txq = *__this_cpu_ptr(vi->vq_index);
--		if (txq == -1)
--			txq = 0;
--	}
--
--	while (unlikely(txq >= dev->real_num_tx_queues))
--		txq -= dev->real_num_tx_queues;
--
--	return txq;
--}
--
- static const struct net_device_ops virtnet_netdev = {
- 	.ndo_open            = virtnet_open,
- 	.ndo_stop   	     = virtnet_close,
-@@ -1250,7 +1214,6 @@ static const struct net_device_ops virtnet_netdev = {
- 	.ndo_get_stats64     = virtnet_stats,
- 	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
--	.ndo_select_queue     = virtnet_select_queue,
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller = virtnet_netpoll,
- #endif
-@@ -1559,10 +1522,6 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (vi->stats == NULL)
- 		goto free;
- 
--	vi->vq_index = alloc_percpu(int);
--	if (vi->vq_index == NULL)
--		goto free_stats;
--
- 	mutex_init(&vi->config_lock);
- 	vi->config_enable = true;
- 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-@@ -1589,7 +1548,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
- 	err = init_vqs(vi);
- 	if (err)
--		goto free_index;
-+		goto free_stats;
- 
- 	netif_set_real_num_tx_queues(dev, 1);
- 	netif_set_real_num_rx_queues(dev, 1);
-@@ -1640,8 +1599,6 @@ free_recv_bufs:
- free_vqs:
- 	cancel_delayed_work_sync(&vi->refill);
- 	virtnet_del_vqs(vi);
--free_index:
--	free_percpu(vi->vq_index);
- free_stats:
- 	free_percpu(vi->stats);
- free:
-@@ -1678,7 +1635,6 @@ static void virtnet_remove(struct virtio_device *vdev)
- 
- 	flush_work(&vi->config_work);
- 
--	free_percpu(vi->vq_index);
- 	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
- }
--- 
-1.7.1
 
+
+
+--xtBIB3NK8EeJJqIJHJWChCXLu5qKcJQmO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSSS2jAAoJEPo9qoy8lh71CZIQAKyaXyrMz4quQcXi6rIb7OH+
+ZBirTFOYbzHJkAOS0FE5tAjPqx3v2oO87VHS37/Wh2ZUosNij0/7XJoA9w4qHvXS
+FlW1UpUUtz/9mgQhEzO+ykNiMsyCq+iqz1YrYr+AQp2MdiNdAiFXEDcNPsMvXwhZ
+KGixdxBhRyOJ+GuCET5RUZlkdGL4PsP1ApzgiMr1QjAFB8mZ07tOfCrk0xukTJ2n
+3J859KKwEk8VLZqmaEAUAwokcFo3tUc1PPsC/fxufqRsRDyifIg+hK7ew8D6A5Uf
+gaVwR4HaHKYbhoxfHCyFWpfdNspcqkKRtbwbZxhbAICrGWWMECgnz/cyrUtP6ouP
+nJUqysA37ixSsNh6BGR90xmEw2zdvgu4bdGdWhk8kzEh0OjvnMbsQpQZiu4rS2t1
+YUofr8Yo5b1yqUFKUGQPLnOe4B4H6YhU/Mf1N6EcAQbdqt88Gmy8Q4zKwFw0+4Z/
+DhpyfftW0KqLJCv/NEnEo3IHrvoFX86SDFpna+HXr1Ysnpj5o9ejfiQ7n+fVgUHy
+ZUUIny2K2TAE8pUizrOW8s201vJZd1DKY65yR2O0qi0/DQ0jlkge7LQX2h0fpO89
+FFzkcjlYwFv+UppW1b3HLcutaxaU9cTF13sCx9qbP58vrwMqp8f6hvFlgX6UbbSj
+v3YyCCjg+y8h1hHVjXTG
+=qVA9
+-----END PGP SIGNATURE-----
+
+--xtBIB3NK8EeJJqIJHJWChCXLu5qKcJQmO--
