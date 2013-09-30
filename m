@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3I3KLf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:11:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43334 "EHLO
+	id S1756567Ab3I3KkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:40:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43336 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381Ab3I3KLd (ORCPT
+	with ESMTP id S1751840Ab3I3KLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Sep 2013 06:11:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
+        Marc Kleine-Budde <mkl@blackshift.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 003/104] ALSA: opti9xx: Fix conflicting driver object name
-Date: Mon, 30 Sep 2013 11:09:40 +0100
-Message-Id: <1380535881-9239-4-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 002/104] ath9k_htc: Restore skb headroom when returning skb to mac80211
+Date: Mon, 30 Sep 2013 11:09:39 +0100
+Message-Id: <1380535881-9239-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
-commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
+commit d2e9fc141e2aa21f4b35ee27072d84e9aa6e2ba0 upstream.
 
-The recent commit to delay the release of kobject triggered NULL
-dereferences of opti9xx drivers.  The cause is that all
-snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
-register the PnP card driver with the very same name, and also
-snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
-the same name, too.  When these drivers are built in, quick
-"register-release-and-re-register" actions occur, and this results in
-Oops because of the same name is assigned to the kobject.
+ath9k_htc adds padding between the 802.11 header and the payload during
+TX by moving the header. When handing the frame back to mac80211 for TX
+status handling the header is not moved back into its original position.
+This can result in a too small skb headroom when entering ath9k_htc
+again (due to a soft retransmission for example) causing an
+skb_under_panic oops.
 
-The fix is simply to assign individual names.  As a bonus, by using
-KBUILD_MODNAME, the patch reduces more lines than it adds.
+Fix this by moving the 802.11 header back into its original position
+before returning the frame to mac80211 as other drivers like rt2x00
+or ath5k do.
 
-The fix is based on the suggestion by Russell King.
-
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Marc Kleine-Budde <mkl@blackshift.org>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Tested-by: Marc Kleine-Budde <mkl@blackshift.org>
+Signed-off-by: Marc Kleine-Budde <mkl@blackshift.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/isa/opti9xx/opti92x-ad1848.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
-index d7ccf28..4589acd 100644
---- a/sound/isa/opti9xx/opti92x-ad1848.c
-+++ b/sound/isa/opti9xx/opti92x-ad1848.c
-@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9xx_pnpids);
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+index 9cbbb6a..43b8aba 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -448,6 +448,7 @@ static void ath9k_htc_tx_process(struct ath9k_htc_priv *priv,
+ 	struct ieee80211_conf *cur_conf = &priv->hw->conf;
+ 	bool txok;
+ 	int slot;
++	int hdrlen, padsize;
  
- #endif	/* CONFIG_PNP */
+ 	slot = strip_drv_header(priv, skb);
+ 	if (slot < 0) {
+@@ -504,6 +505,15 @@ send_mac80211:
  
--#ifdef OPTi93X
--#define DEV_NAME "opti93x"
--#else
--#define DEV_NAME "opti92x"
--#endif
-+#define DEV_NAME KBUILD_MODNAME
+ 	ath9k_htc_tx_clear_slot(priv, slot);
  
- static char * snd_opti9xx_names[] = {
- 	"unknown",
-@@ -1126,7 +1122,7 @@ static void __devexit snd_opti9xx_pnp_remove(struct pnp_card_link * pcard)
- 
- static struct pnp_card_driver opti9xx_pnpc_driver = {
- 	.flags		= PNP_DRIVER_RES_DISABLE,
--	.name		= "opti9xx",
-+	.name		= DEV_NAME,
- 	.id_table	= snd_opti9xx_pnpids,
- 	.probe		= snd_opti9xx_pnp_probe,
- 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
++	/* Remove padding before handing frame back to mac80211 */
++	hdrlen = ieee80211_get_hdrlen_from_skb(skb);
++
++	padsize = hdrlen & 3;
++	if (padsize && skb->len > hdrlen + padsize) {
++		memmove(skb->data + padsize, skb->data, hdrlen);
++		skb_pull(skb, padsize);
++	}
++
+ 	/* Send status to mac80211 */
+ 	ieee80211_tx_status(priv->hw, skb);
+ }
 -- 
 1.8.3.2
 
