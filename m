@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab3I3QpW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 12:45:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43110 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab3I3QpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 12:45:21 -0400
-Date: Mon, 30 Sep 2013 18:38:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] introduce synchronize_sched_{enter,exit}()
-Message-ID: <20130930163810.GA25642@redhat.com>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de> <1378805550-29949-38-git-send-email-mgorman@suse.de> <20130917143003.GA29354@twins.programming.kicks-ass.net> <20130929183634.GA15563@redhat.com> <20130930125942.GB12926@twins.programming.kicks-ass.net>
+	id S1755406Ab3I3QrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 12:47:10 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:41207 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab3I3QrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 12:47:08 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arm Linux <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] nohz full: drop 64-bit requirement, enable ARM support v2
+References: <1380550012-7321-1-git-send-email-fweisbec@gmail.com>
+Date: Mon, 30 Sep 2013 09:47:04 -0700
+In-Reply-To: <1380550012-7321-1-git-send-email-fweisbec@gmail.com> (Frederic
+	Weisbecker's message of "Mon, 30 Sep 2013 16:06:49 +0200")
+Message-ID: <87li2ejlyv.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930125942.GB12926@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30, Peter Zijlstra wrote:
+Frederic Weisbecker <fweisbec@gmail.com> writes:
+
+> Hi Kevin,
 >
-> On Sun, Sep 29, 2013 at 08:36:34PM +0200, Oleg Nesterov wrote:
-> > Why? Say, percpu_rw_semaphore, or upcoming changes in get_online_cpus(),
-> > (Peter, I think they should be unified anyway, but lets ignore this for
-> > now).
+> Your patchset was fine but I just did a second round. Namely I did the following changes:
 >
-> If you think the percpu_rwsem users can benefit sure.. So far its good I
-> didn't go the percpu_rwsem route for it looks like we got something
-> better at the end of it ;-)
-
-I think you could simply improve percpu_rwsem instead. Once we add
-task_struct->cpuhp_ctr percpu_rwsem and get_online_cpus/hotplug_begin
-becomes absolutely congruent.
-
-OTOH, it would be simpler to change hotplug first, then copy-and-paste
-the improvents into percpu_rwsem, then see if we can simply convert
-cpu_hotplug_begin/end into percpu_down/up_write.
-
-> Well, if we make percpu_rwsem the defacto container of the pattern and
-> use that throughout, we'd have only a single implementation
-
-Not sure. I think it can have other users. But even if not, please look
-at "struct sb_writers". Yes, I believe it makes sense to use percpu_rwsem
-here, but note that it is actually array of semaphores. I do not think
-each element needs its own xxx_struct.
-
-> and don't
-> need the abstraction.
-
-And even if struct percpu_rw_semaphore will be the only container of
-xxx_struct, I think the code looks better and more understandable this
-way, exactly because it adds the new abstraction layer. Performance-wise
-this should be free.
-
-> > static void cb_rcu_func(struct rcu_head *rcu)
-> > {
-> > 	struct xxx_struct *xxx = container_of(rcu, struct xxx_struct, cb_head);
-> > 	long flags;
-> >
-> > 	BUG_ON(xxx->gp_state != GP_PASSED);
-> > 	BUG_ON(xxx->cb_state == CB_IDLE);
-> >
-> > 	spin_lock_irqsave(&xxx->xxx_lock, flags);
-> > 	if (xxx->gp_count) {
-> > 		xxx->cb_state = CB_IDLE;
+> * Drop the 64 bits dependency after we settle the new dependency on HAVE_VIRT_CPU_ACCOUNTING_GEN
+> and not before. This way we don't have a middle state that loose the dependency in the middle of
+> the patchset. Probablyt no big deal but it looks more natural this way.
 >
-> This seems to be when a new xxx_begin() has happened after our last
-> xxx_end() and the sync_sched() from xxx_begin() merges with the
-> xxx_end() one and we're done.
-
-Yes,
-
-> > 	} else if (xxx->cb_state == CB_REPLAY) {
-> > 		xxx->cb_state = CB_PENDING;
-> > 		call_rcu_sched(&xxx->cb_head, cb_rcu_func);
+> * Refined a few changelogs.
 >
-> A later xxx_exit() has happened, and we need to requeue to catch a later
-> GP.
+> If you're ok I'll send a pull request to Ingo.
 
-Exactly.
+Looks good to me, thanks.
 
-> So I don't immediately see the point of the concurrent write side;
-> percpu_rwsem wouldn't allow this and afaict neither would
-> freeze_super().
+Kevin
 
-Oh I disagree. Even ignoring the fact I believe xxx_struct itself
-can have more users (I can be wrong of course), I do think that
-percpu_down_write_nonexclusive() makes sense (except "exclusive"
-should be the argument of percpu_init_rwsem). And in fact the
-initial implementation I sent didn't even has the "exclusive" mode.
-
-Please look at uprobes (currently the only user). We do not really
-need the global write-lock, we can do the per-uprobe locking. However,
-every caller needs to block the percpu_down_read() callers (dup_mmap).
-
-> Other than that; yes this makes sense if you care about write side
-> performance and I think its solid.
-
-Great ;)
-
-Oleg.
-
+> Kevin Hilman (3):
+>   vtime: Add HAVE_VIRT_CPU_ACCOUNTING_GEN Kconfig
+>   nohz: Drop generic vtime obsolete dependency on CONFIG_64BIT
+>   ARM: Kconfig: allow full nohz CPU accounting
+>
+>  arch/Kconfig        | 12 ++++++++++++
+>  arch/arm/Kconfig    |  1 +
+>  init/Kconfig        |  3 ++-
+>  kernel/time/Kconfig |  2 +-
+>  4 files changed, 16 insertions(+), 2 deletions(-)
