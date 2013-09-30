@@ -1,41 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3I3Ha4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:30:56 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:41882 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3I3Hay (ORCPT
+	id S1752369Ab3I3Hqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:46:54 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:58156 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3I3Hqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:30:54 -0400
-Date: Mon, 30 Sep 2013 09:30:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: x86 force enabling perf events
-Message-ID: <20130930073040.GB13967@gmail.com>
-References: <20130929053852.GS18242@two.firstfloor.org>
+	Mon, 30 Sep 2013 03:46:52 -0400
+X-AuditID: 9c93017d-b7c2dae000000ea6-e7-52492c6a7526
+Date: Mon, 30 Sep 2013 16:47:44 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+Message-ID: <20130930074744.GA15351@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130905011553.GA10158@voom.redhat.com>
+ <20130905054357.GA23597@lge.com>
+ <20130916120909.GA2706@voom.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130929053852.GS18242@two.firstfloor.org>
+In-Reply-To: <20130916120909.GA2706@voom.fritz.box>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <andi@firstfloor.org> wrote:
-
+On Mon, Sep 16, 2013 at 10:09:09PM +1000, David Gibson wrote:
+> > > 
+> > > > +		*do_dequeue = false;
+> > > >  		spin_unlock(&hugetlb_lock);
+> > > >  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> > > >  		if (!page) {
+> > > 
+> > > I think the counter also needs to be incremented in the case where we
+> > > call alloc_buddy_huge_page() from alloc_huge_page().  Even though it's
+> > > new, it gets added to the hugepage pool at this point and could still
+> > > be a contended page for the last allocation, unless I'm missing
+> > > something.
+> > 
+> > Your comment has reasonable point to me, but I have a different opinion.
+> > 
+> > As I already mentioned, the point is that we want to avoid the race
+> > which kill the legitimate users of hugepages by out of resources.
+> > I increase 'h->nr_dequeue_users' when the hugepage allocated by
+> > administrator is dequeued. It is because what the hugepage I want to
+> > protect from the race is the one allocated by administrator via
+> > kernel param or /proc interface. Administrator may already know how many
+> > hugepages are needed for their application so that he may set nr_hugepage
+> > to reasonable value. I want to guarantee that these hugepages can be used
+> > for his application without any race, since he assume that the application
+> > would work fine with these hugepages.
+> > 
+> > To protect hugepages returned from alloc_buddy_huge_page() from the race
+> > is different for me. Although it will be added to the hugepage pool, this
+> > doesn't guarantee certain application's success more. If certain
+> > application's success depends on the race of this new hugepage, it's death
+> > by the race doesn't matter, since nobody assume that it works fine.
 > 
-> Frederic,
+> Hrm.  I still think this path should be included.  Although I'll agree
+> that failing in this case is less bad.
 > 
-> I noticed that an allnoconfig x86 build builds perf events.
+> However, it can still lead to a situation where with two processes or
+> threads, faulting on exactly the same shared page we have one succeed
+> and the other fail.  That's a strange behaviour and I think we want to
+> avoid it in this case too.
 
-The most straightforward way to support stripped-down kernels disabling 
-perf events would be to allow hardware breakpoint support to be 
-disable-able, under CONFIG_EXPERT=y or so.
+Hello, David.
 
-Thanks,
+I don't think it is a strange behaviour. Similar situation can occur
+even though we use the mutex. Hugepage allocation can be failed when
+the first process try to allocate the hugepage while second process is blocked
+by the mutex. And then, second process will go into the fault handler. And
+at this time, it can succeed. So result is that we have one succeed and
+the other fail.
 
-	Ingo
+It is slightly different from the case you mentioned, but I think that
+effect for user is same. We cannot avoid this kind of race completely and
+I think that avoiding the race for administrator managed hugepage pool is
+good enough to use.
+
+Thanks.
