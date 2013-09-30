@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab3I3KWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:22:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43693 "EHLO
+	id S1756327Ab3I3KWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:22:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43697 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755654Ab3I3KNF (ORCPT
+	with ESMTP id S1755657Ab3I3KNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:05 -0400
+	Mon, 30 Sep 2013 06:13:07 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 071/104] radeon kms: fix uninitialised hotplug work usage in r100_irq_process()
-Date: Mon, 30 Sep 2013 11:10:48 +0100
-Message-Id: <1380535881-9239-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 072/104] drm/radeon: fix init ordering for r600+
+Date: Mon, 30 Sep 2013 11:10:49 +0100
+Message-Id: <1380535881-9239-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,106 +27,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 27c505ca84e164ec66ad55dcf3f5befaac83f10a upstream.
+commit e5903d399a7b0e5c14673c1206f4aeec2859c730 upstream.
 
-Commit a01c34f72e7cd2624570818f579b5ab464f93de2 (radeon kms: do not
-flush uninitialized hotplug work) moved work initialisation phase to
-the last step of radeon_irq_kms_init(). Meelis Roos reported that this
-causes problems on his machine because drm_irq_install() uses hotplug
-work on r100.
+The vram scratch buffer needs to be initialized
+before the mc is programmed otherwise we program
+0 as the GPU address of the default GPU fault
+page.  In most cases we put vram at zero anyway and
+reserve a page for the legacy vga buffer so in practice
+this shouldn't cause any problems, but better to make
+it correct.
 
-hotplug work flushed in radeon_irq_kms_fini(), with two possible cases:
--- radeon_irq_kms_fini() call after successful radeon_irq_kms_init()
--- radeon_irq_kms_fini() call after unsuccessful (or not called at all)
-   radeon_irq_kms_init()
+Was changed in:
+6fab3febf6d949b0a12b1e4e73db38e4a177a79e
 
-The latter one causes flush work on uninitialised hotplug work. Move
-work initialisation before drm_irq_install(), but keep existing agreement
-to flush hotplug work in radeon_irq_kms_fini() only for `irq.installed'
-(successful radeon_irq_kms_init()) case.
-
-WARNING: CPU: 0 PID: 243 at kernel/workqueue.c:1378 __queue_work+0x132/0x16d()
-Call Trace:
-[<c12319b3>] ? dump_stack+0xa/0x13
-[<c1022600>] ? warn_slowpath_common+0x75/0x8a
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c102269e>] ? warn_slowpath_null+0x1b/0x1f
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c103107b>] ? queue_work_on+0x30/0x40
-[<f8aed3f3>] ? r100_irq_process+0x16d/0x1e6 [radeon]
-[<f8ae77cf>] ? radeon_driver_irq_preinstall_kms+0xc2/0xc5 [radeon]
-[<f8974d77>] ? drm_irq_install+0xb2/0x1ac [drm]
-[<f897604d>] ? drm_vblank_init+0x196/0x1d2 [drm]
-[<f8ae78d3>] ? radeon_irq_kms_init+0x33/0xc6 [radeon]
-[<f8aef35a>] ? r100_startup+0x1a3/0x1d6 [radeon]
-[<f8ad77c8>] ? radeon_ttm_init+0x26e/0x287 [radeon]
-[<f8aef752>] ? r100_init+0x2b3/0x309 [radeon]
-[<c118082e>] ? vga_client_register+0x39/0x40
-[<f8ac535f>] ? radeon_device_init+0x54b/0x61b [radeon]
-[<f8ac40fd>] ? cail_mc_write+0x13/0x13 [radeon]
-[<f8ac6864>] ? radeon_driver_load_kms+0x82/0xda [radeon]
-[<f8978bbd>] ? drm_get_pci_dev+0x136/0x22d [drm]
-[<f8ac409b>] ? radeon_pci_probe+0x6c/0x86 [radeon]
-[<c112acf6>] ? pci_device_probe+0x4c/0x83
-[<c11846c7>] ? driver_probe_device+0x80/0x184
-[<c112a848>] ? pci_match_id+0x18/0x36
-[<c1184837>] ? __driver_attach+0x44/0x5f
-[<c11833f4>] ? bus_for_each_dev+0x50/0x5a
-[<c118433e>] ? driver_attach+0x14/0x16
-[<c11847f3>] ? __device_attach+0x28/0x28
-[<c1184045>] ? bus_add_driver+0xd6/0x1bf
-[<c1184c22>] ? driver_register+0x78/0xcf
-[<f8ba8000>] ? 0xf8ba7fff
-[<c10003bf>] ? do_one_initcall+0x8b/0x121
-[<c101e668>] ? change_page_attr_clear+0x2e/0x33
-[<f8ba8000>] ? 0xf8ba7fff
-[<c101e689>] ? set_memory_ro+0x1c/0x20
-[<c104de94>] ? set_page_attributes+0x11/0x12
-[<c104f6e1>] ? load_module+0x12fa/0x17e8
-[<c107483b>] ? map_vm_area+0x22/0x31
-[<c104fc36>] ? SyS_init_module+0x67/0x7d
-[<c1234245>] ? sysenter_do_call+0x12/0x26
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reported-by: FrankR Huang <FrankR.Huang@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 [ luis: backported to 3.5:
-  - dropped initialisation of reset_work handler ]
+  - adjusted context
+  -dropped changes to drivers/gpu/drm/radeon/cik.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c | 9 +++++----
+ drivers/gpu/drm/radeon/ni.c        | 9 +++++----
+ drivers/gpu/drm/radeon/r600.c      | 9 +++++----
+ drivers/gpu/drm/radeon/rv770.c     | 9 +++++----
+ drivers/gpu/drm/radeon/si.c        | 9 +++++----
+ 5 files changed, 25 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index 30003b6..6169e1b 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -198,16 +198,18 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
- 			dev_info(rdev->dev, "radeon: using MSI.\n");
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 269fa76..650e2d7 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3081,6 +3081,11 @@ static int evergreen_startup(struct radeon_device *rdev)
+ 	/* enable pcie gen2 link */
+ 	evergreen_pcie_gen2_enable(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	evergreen_mc_program(rdev);
+ 
+ 	if (ASIC_IS_DCE5(rdev)) {
+@@ -3106,10 +3111,6 @@ static int evergreen_startup(struct radeon_device *rdev)
  		}
  	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		evergreen_agp_enable(rdev);
+ 	} else {
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index ba9ae56..fcd7335 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1239,6 +1239,11 @@ static int cayman_startup(struct radeon_device *rdev)
+ 	/* enable pcie gen2 link */
+ 	evergreen_pcie_gen2_enable(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
 +
-+	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
-+	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+ 	evergreen_mc_program(rdev);
+ 
+ 	if (rdev->flags & RADEON_IS_IGP) {
+@@ -1265,10 +1270,6 @@ static int cayman_startup(struct radeon_device *rdev)
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	r = cayman_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index 0e431c0..3458d4a 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2361,6 +2361,11 @@ int r600_startup(struct radeon_device *rdev)
+ 	/* enable pcie gen2 link */
+ 	r600_pcie_gen2_enable(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
 +
- 	rdev->irq.installed = true;
- 	r = drm_irq_install(rdev->ddev);
- 	if (r) {
- 		rdev->irq.installed = false;
-+		flush_work(&rdev->hotplug_work);
+ 	r600_mc_program(rdev);
+ 
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+@@ -2371,10 +2376,6 @@ int r600_startup(struct radeon_device *rdev)
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		r600_agp_enable(rdev);
+ 	} else {
+diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
+index d6fa2b5..186d019 100644
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -890,6 +890,11 @@ static int rv770_startup(struct radeon_device *rdev)
+ 	/* enable pcie gen2 link */
+ 	rv770_pcie_gen2_enable(rdev);
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	rv770_mc_program(rdev);
+ 
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+@@ -900,10 +905,6 @@ static int rv770_startup(struct radeon_device *rdev)
+ 		}
+ 	}
+ 
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		rv770_agp_enable(rdev);
+ 	} else {
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index d3454a0..9987345 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -3698,6 +3698,11 @@ static int si_startup(struct radeon_device *rdev)
+ 	struct radeon_ring *ring;
+ 	int r;
+ 
++	/* scratch needs to be initialized before MC */
++	r = r600_vram_scratch_init(rdev);
++	if (r)
++		return r;
++
+ 	si_mc_program(rdev);
+ 
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
+@@ -3715,10 +3720,6 @@ static int si_startup(struct radeon_device *rdev)
  		return r;
  	}
  
--	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
--	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+-	r = r600_vram_scratch_init(rdev);
+-	if (r)
+-		return r;
 -
- 	DRM_INFO("radeon: irq initialized.\n");
- 	return 0;
- }
+ 	r = si_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
 -- 
 1.8.3.2
 
