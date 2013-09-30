@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3I3LiB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 07:38:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44290 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3I3Lh6 (ORCPT
+	id S1754945Ab3I3Lnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 07:43:39 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:36011 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753413Ab3I3Lni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 07:37:58 -0400
-Message-ID: <52496294.80403@canonical.com>
-Date: Mon, 30 Sep 2013 13:37:56 +0200
-From: David Henningsson <david.henningsson@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 30 Sep 2013 07:43:38 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1007,1371074400"; 
+   d="scan'208";a="34894455"
+Date: Mon, 30 Sep 2013 13:43:35 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Ruslan N. Marchenko" <me@ruff.mobi>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Regression in 2fdac010 drivers/net/ethernet/via/via-velocity.c:
+ update napi implementation
+In-Reply-To: <20130930071531.GA13037@ruff.mobi>
+Message-ID: <alpine.DEB.2.02.1309301342530.2036@localhost6.localdomain6>
+References: <20130930071531.GA13037@ruff.mobi>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Luis Henriques <luis.henriques@canonical.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 026/104] ALSA: hda - hdmi: Refactor hdmi_eld into parsed_hdmi_eld
-References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>	<1380535881-9239-27-git-send-email-luis.henriques@canonical.com>	<52495273.8050308@canonical.com> <87r4c61s5h.fsf@canonical.com>
-In-Reply-To: <87r4c61s5h.fsf@canonical.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 01:10 PM, Luis Henriques wrote:
-> Hi David,
-> 
-> David Henningsson <david.henningsson@canonical.com> writes:
-> 
->> On 09/30/2013 12:10 PM, Luis Henriques wrote:
->>> 3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
->>>
->>> ------------------
->>>
->>> From: David Henningsson <david.henningsson@canonical.com>
->>>
->>> commit 1613d6b46b433f07f1d2703e4bd102802dcd75a4 upstream.
->>>
->>> For better readability, the information that is parsed out of the
->>> ELD data is now put into a separate parsed_hdmi_eld struct.
->>>
->>> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
->>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>> [ luis: 3.5.y-prereq for:
->>>   18e3918 ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA ]
->>
->> I don't think this is really a prereq. Sorting out the fuzz in
->> hdmi_channel_allocation seems quite trivial to me, so I would suggest
->> doing so instead.
->>
->> If you do go ahead and backport this patch, a bit of testing wouldn't
->> hurt: this patch was part of a bigger patch set, and I don't think
->> anyone tested just this one without the bigger set.
-> 
-> Ok, I agree with you and I'm dropping this patch from the 3.5 kernel.
-> Also, I'm replacing
-> 
->  [PATCH 027/104] ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA
-> 
-> with the patch below.  Are you Ok with this?
+On Mon, 30 Sep 2013, Ruslan N. Marchenko wrote:
 
-Yes, I think it looks good.
+> Hi Julia et al.,
+> 
+> With this commit VIA NANO board get CPU lockup in random places on any network activity.
+> The error is random, most of the times dead locked CPU on boot.
+> 
+> After loading via-velocity module it hangs for a while and then spits kernel mesages
+> about hanged tasks from varios places - like ata, rcu_preempt or network stack.
+> Also, if you boot the box with network disconnected - it works, until you plug the network cable.
+> 
+> On some kernel builds (like ubuntu stock) behaviour varies, sometimes the box itself works,
+> but network stack dies after multiple ICMPv6 skb errors, so box ends up with network disconnected.
+> Reloading network susbsys helps to recover for some time (depending on how fast eth led is blinking).
+> 
+> Reverting the patch allows me to boot without problems even from latest Linus trunk and send this mail.
 
-> (btw, thank you for your review!)
+There has already been a discussion about this, and a patch has already 
+been proposed.  It has to do with lock managament.  I will look for the 
+email.
 
-Thanks for the stable backport :-)
-
-
--- 
-David Henningsson, Canonical Ltd.
-https://launchpad.net/~diwic
+julia
