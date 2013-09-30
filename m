@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3I3NVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 09:21:31 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:13732 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab3I3NV2 (ORCPT
+	id S1755215Ab3I3NXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 09:23:31 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:13609 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab3I3NXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 09:21:28 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-5f-52497ad7399e
+	Mon, 30 Sep 2013 09:23:30 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-5b-52497b509171
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] x86/geode: fix incorrect placement of __initdata tag
-Date: Mon, 30 Sep 2013 15:21:15 +0200
-Message-id: <18427893.G5JGWn465D@amdc1032>
+Subject: [PATCH] checkpatch: warn about incorrect __initdata placement
+Date: Mon, 30 Sep 2013 15:23:11 +0200
+Message-id: <1534354.yq7QTJSTju@amdc1032>
 User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
 MIME-version: 1.0
 Content-transfer-encoding: 7Bit
 Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQd3rVZ5BBpP7TSymbRS3ONv0ht3i
-	8q45bBaXDixgsti8aSqzxY8Nj1kd2Dw2repk83h37hy7x/t9V9k8+rasYvT4vEnO40TLF9YA
-	tigum5TUnMyy1CJ9uwSujE2bGpgLPvFVnG3xb2C8w9PFyMkhIWAisWnGDCYIW0ziwr31bF2M
-	XBxCAtMZJT49ewzltDBJfJ6xkRWkik3ASmJi+ypGEFtEQENi46VbzCBFzAILGSWObdzNDpIQ
-	FnCVmL74LlA3BweLgKpE5/UiEJNXQEvidKMYSIWogKfEp0lLmUFsXgFBiR+T77GA2MwC8hL7
-	9k9lhbC1JNbvPM40gZFvFpKyWUjKZiEpW8DIvIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMj
-	OGCfSe1gXNlgcYhRgINRiYd3wnKPICHWxLLiytxDjBIczEoivOJlnkFCvCmJlVWpRfnxRaU5
-	qcWHGKU5WJTEeQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGGs0vjx4Y8V4bSPHdZkPz968zvku
-	5htyzLdr1iW1Jc/FZh7c/iZ5YWHj57tT0rYVT/7AvoXniQmz6NQ+Md9Wqy8bSyNtrCu2t13b
-	ufI3y3yDjXlz+HxrWs48OB330FM7N9hXd94dD+XqMx2BAT8X63Ezrzh+T8SxvHdR8Rvu5oDw
-	/VbXrwZbv1ViKc5INNRiLipOBACIPrNnVAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jQd2Aas8gg+lTNC0+rNWwmH3/MYvF
+	2aY37BaXd81hc2DxmNXQy+bxZdU1Zo++LasYPT5vkgtgieKySUnNySxLLdK3S+DK+PdyClNB
+	A0fFjRXNrA2Me9m6GDk5JARMJF4/egtli0lcuLceyObiEBKYziix93g7O4TTwiQxrWsfM0gV
+	m4CVxMT2VYwgtoiAmsTdM91gcWaBHInXP9eDTRIWcJP413SHHcRmEVCV6JxzCayGV0BT4vrb
+	SWC2qICnxKdJS6HighI/Jt9jgZgjL7Fv/1RWCFtLYv3O40wTGPlmISmbhaRsFpKyBYzMqxhF
+	UwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCg/GZ1A7GlQ0WhxgFOBiVeHgnLPcIEmJNLCuuzD3E
+	KMHBrCTCK17mGSTEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomD
+	U6qBMcb/YsSnIIUjH91ifrr/3/MoNW9lJ/M0Sda1DYc311Wy2Mgaa1lVHfY7adn50kS9lGf3
+	3T/Xj++9v+JOqsLVez/Y6nw+L7qUaLDlGtNVr94WRY2qPdpfvx28efXRm4VrV8nOrLslWyvP
+	FjjLgKkhWvqS4Z2wJ1ybfl/guvC6wmJPVlvrnfsn+pVYijMSDbWYi4oTARZffXRCAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,50 +39,26 @@ sign for the variable to be placed in the intended .init.data section.
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/x86/platform/geode/alix.c    | 2 +-
- arch/x86/platform/geode/geos.c    | 2 +-
- arch/x86/platform/geode/net5501.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ scripts/checkpatch.pl | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/platform/geode/alix.c b/arch/x86/platform/geode/alix.c
-index 90e23e7..76b6632 100644
---- a/arch/x86/platform/geode/alix.c
-+++ b/arch/x86/platform/geode/alix.c
-@@ -98,7 +98,7 @@ static struct platform_device alix_leds_dev = {
- 	.dev.platform_data = &alix_leds_data,
- };
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 23d55bf..88d07a6 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4275,6 +4275,12 @@ sub process {
+ 			WARN("EXPORTED_WORLD_WRITABLE",
+ 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+ 		}
++
++# check for incorrect __initdata placement
++		if ($line =~ /\bstruct\s+__initdata.*\=/) {
++			WARN("INITDATA_PLACEMENT",
++			     "__initdata tag should be placed between the variable name and equal sign\n" . $herecurr);
++		}
+ 	}
  
--static struct __initdata platform_device *alix_devs[] = {
-+static struct platform_device *alix_devs[] __initdata = {
- 	&alix_buttons_dev,
- 	&alix_leds_dev,
- };
-diff --git a/arch/x86/platform/geode/geos.c b/arch/x86/platform/geode/geos.c
-index c2e6d53..aa733fb 100644
---- a/arch/x86/platform/geode/geos.c
-+++ b/arch/x86/platform/geode/geos.c
-@@ -87,7 +87,7 @@ static struct platform_device geos_leds_dev = {
- 	.dev.platform_data = &geos_leds_data,
- };
- 
--static struct __initdata platform_device *geos_devs[] = {
-+static struct platform_device *geos_devs[] __initdata = {
- 	&geos_buttons_dev,
- 	&geos_leds_dev,
- };
-diff --git a/arch/x86/platform/geode/net5501.c b/arch/x86/platform/geode/net5501.c
-index 646e3b5..927e38c 100644
---- a/arch/x86/platform/geode/net5501.c
-+++ b/arch/x86/platform/geode/net5501.c
-@@ -78,7 +78,7 @@ static struct platform_device net5501_leds_dev = {
- 	.dev.platform_data = &net5501_leds_data,
- };
- 
--static struct __initdata platform_device *net5501_devs[] = {
-+static struct platform_device *net5501_devs[] __initdata = {
- 	&net5501_buttons_dev,
- 	&net5501_leds_dev,
- };
+ 	# If we have no input at all, then there is nothing to report on
 -- 
 1.8.2.3
 
