@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab3I3Uoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 16:44:39 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:40687 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab3I3Uoi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 16:44:38 -0400
-Date: Mon, 30 Sep 2013 22:44:37 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Nikita Danilov <nikita@clusterfs.com>
-Subject: [PATCH] staging: lustre: Don't leak 'buffer' in cfs_get_environ()
-Message-ID: <alpine.LNX.2.00.1309302243050.4992@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756571Ab3I3UrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 16:47:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756243Ab3I3UrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 16:47:09 -0400
+Date: Mon, 30 Sep 2013 16:46:42 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
+        X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20130930204642.GB6116@redhat.com>
+References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
+ <52422A6A.8080305@zytor.com>
+ <20130926031242.GA4487@dhcp-16-126.nay.redhat.com>
+ <20130930201730.GD16383@pd.tnic>
+ <20130930203505.GA6116@redhat.com>
+ <20130930204154.GE19411@pd.tnic>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930204154.GE19411@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If 'down_read_trylock' fails we'll curently leak the memory allocated to 'buffer'.
-Fix the leak by simply kfree'ing 'buffer' before returning '-EDEADLK'.
+On Mon, Sep 30, 2013 at 10:41:54PM +0200, Borislav Petkov wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- .../lustre/lustre/libcfs/linux/linux-curproc.c     |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+[..]
+> hpa, so, for the struct efi_mapping thing to work, I will have to grep
+> dmesg of the first kernel to get an output like the one below, filter
+> the runtime regions so that I can build the struct efi_mapping array of
+> mem regions which I pass on to the second, kexec kernel with setup_data.
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c
-index ea9e949..ecd031f 100644
---- a/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c
-+++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-curproc.c
-@@ -227,8 +227,10 @@ int cfs_get_environ(const char *key, char *value, int *val_len)
- 	 * which is already holding mmap_sem for writes.  If some other
- 	 * thread gets the write lock in the meantime, this thread will
- 	 * block, but at least it won't deadlock on itself.  LU-1735 */
--	if (down_read_trylock(&mm->mmap_sem) == 0)
-+	if (down_read_trylock(&mm->mmap_sem) == 0) {
-+		kfree(buffer);
- 		return -EDEADLK;
-+	}
- 	up_read(&mm->mmap_sem);
- 
- 	addr = mm->env_start;
--- 
-1.7.1
+Any data you need to pass to second kernel will have to be exported to
+user space either using /sys or /proc so that kexec-tools can parse it.
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thanks
+Vivek
