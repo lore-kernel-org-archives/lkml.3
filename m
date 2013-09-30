@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab3I3KTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:19:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43763 "EHLO
+	id S1756169Ab3I3KTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:19:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43754 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab3I3KNX (ORCPT
+	with ESMTP id S1755701Ab3I3KNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:23 -0400
+	Mon, 30 Sep 2013 06:13:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 084/104] HID: pantherlord: validate output report details
-Date: Mon, 30 Sep 2013 11:11:01 +0100
-Message-Id: <1380535881-9239-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 082/104] exynos4-is: Fix entity unregistration on error path
+Date: Mon, 30 Sep 2013 11:10:59 +0100
+Message-Id: <1380535881-9239-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-commit 412f30105ec6735224535791eed5cdc02888ecb4 upstream.
+commit d2b903b4427e417a73863cef36ad0796ea6b7404 upstream.
 
-A HID device could send a malicious output report that would cause the
-pantherlord HID driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+This patch corrects media entities unregistration order to make sure
+the fimc.N.capture and fimc-lite video nodes are unregistered with
+fimc->lock mutex held. This prevents races between video device open()
+and defered probing and NULL pointer dereference in open() callback
+as follows:
+[   77.645000] Unable to handle kernel NULL pointer dereference at virtual address 00000290t
+[   77.655000] pgd = ee7a8000
+[   77.660000] [00000290] *pgd=6e13c831, *pte=00000000, *ppte=00000000
+[   77.665000] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+[   77.670000] Modules linked in: s5p_fimc ipv6 exynos_fimc_is exynos_fimc_lite
+ s5p_csis v4l2_mem2mem videobuf2_dma_contig videobuf2_memops exynos4_is_common videobuf2_core [last unloaded: s5p_fimc]
+[   77.685000] CPU: 0 PID : 2998 Comm: v4l_id Tainted: G        W   3.10.0-next-20130709-00039-g39f491b-dirty #1548
+[   77.695000] task: ee084000 ti: ee46e000 task.ti: ee46e000
+[   77.700000] PC is at __mutex_lock_slowpath+0x54/0x368
+[   77.705000] LR is at __mutex_lock_slowpath+0x24/0x368
+[   77.710000] pc : [<c038dc10>]    lr : [<c038dbe0>]    psr: 60000093
+[   77.710000] sp : ee46fd70  ip : 000008c8  fp : c054e34c
+[   77.725000] r10: ee084000  r9 : 00000000  r8 : ee439480
+[   77.730000] r7 : ee46e000  r6 : 60000013  r5 : 00000290  r4 : 0000028c
+[   77.735000] r3 : 00000000  r2 : 00000000  r1 : 20000093  r0 : 00000001
+[   77.740000] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segment user
+[   77.750000] Control: 10c5387d  Table: 6e7a804a  DAC: 00000015
+[   77.755000] Process v4l_id (pid: 2998, stack limit = 0xee46e238)
+[   77.760000] Stack: (0xee46fd70 to 0xee470000)
+    	       ...
+[   77.935000] [<c038dc10>] (__mutex_lock_slowpath+0x54/0x368) from [<c038df30>] (mutex_lock+0xc/0x24)
+[   77.945000] [<c038df30>] (mutex_lock+0xc/0x24) from [<bf03fa90>] (fimc_lite_open+0x12c/0x2bc [exynos_fimc_lite])
+[   77.955000] [<bf03fa90>] (fimc_lite_open+0x12c/0x2bc [exynos_fimc_lite]) from [<c02ab11c>] (v4l2_open+0xa0/0xe0)
+[   77.965000] [<c02ab11c>] (v4l2_open+0xa0/0xe0) from [<c00b1de4>] (chrdev_open+0x88/0x170)
+[   77.975000] [<c00b1de4>] (chrdev_open+0x88/0x170) from [<c00ac710>] (do_dentry_open.isra.14+0x1d8/0x258)
+[   77.985000] [<c00ac710>] (do_dentry_open.isra.14+0x1d8/0x258) from [<c00ac860>] (finish_open+0x20/0x38)
+[   77.995000] [<c00ac860>] (finish_open+0x20/0x38) from [<c00ba658>] (do_last.isra.43+0x538/0xb1c)
+[   78.000000] [<c00ba658>] (do_last.isra.43+0x538/0xb1c) from [<c00bacf0>] (path_openat+0xb4/0x5c4)
+[   78.010000] [<c00bacf0>] (path_openat+0xb4/0x5c4) from [<c00bb4b4>] (do_filp_open+0x2c/0x80)
+[   78.020000] [<c00bb4b4>] (do_filp_open+0x2c/0x80) from [<c00ad744>] (do_sys_open+0xf4/0x1a8)
+[   78.025000] [<c00ad744>] (do_sys_open+0xf4/0x1a8) from [<c000e320>] (ret_fast_syscall+0x0/0x30)
+[   78.035000] Code: 1a000093 e10f6000 f10c0080 e2845004 (e1953f9f)
 
-[  310.939483] usb 1-1: New USB device found, idVendor=0e8f, idProduct=0003
-...
-[  315.980774] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
-
-CVE-2013-2892
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Andrzej Hajda <a.hajda@samsung.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[ luis: backported to 3.5:
+  - file rename drivers/media/platform/exynos4-is/media-dev.c ->
+    drivers/media/video/s5p-fimc/fimc-mdevice.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-pl.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/media/video/s5p-fimc/fimc-mdevice.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-pl.c b/drivers/hid/hid-pl.c
-index 47ed74c..00cd2f8 100644
---- a/drivers/hid/hid-pl.c
-+++ b/drivers/hid/hid-pl.c
-@@ -129,8 +129,14 @@ static int plff_init(struct hid_device *hid)
- 			strong = &report->field[0]->value[2];
- 			weak = &report->field[0]->value[3];
- 			debug("detected single-field device");
--		} else if (report->maxfield >= 4 && report->field[0]->maxusage == 1 &&
--				report->field[0]->usage[0].hid == (HID_UP_LED | 0x43)) {
-+		} else if (report->field[0]->maxusage == 1 &&
-+			   report->field[0]->usage[0].hid ==
-+				(HID_UP_LED | 0x43) &&
-+			   report->maxfield >= 4 &&
-+			   report->field[0]->report_count >= 1 &&
-+			   report->field[1]->report_count >= 1 &&
-+			   report->field[2]->report_count >= 1 &&
-+			   report->field[3]->report_count >= 1) {
- 			report->field[0]->value[0] = 0x00;
- 			report->field[1]->value[0] = 0x00;
- 			strong = &report->field[2]->value[0];
+diff --git a/drivers/media/video/s5p-fimc/fimc-mdevice.c b/drivers/media/video/s5p-fimc/fimc-mdevice.c
+index 52cef48..8a3ec6f 100644
+--- a/drivers/media/video/s5p-fimc/fimc-mdevice.c
++++ b/drivers/media/video/s5p-fimc/fimc-mdevice.c
+@@ -980,9 +980,9 @@ static int fimc_md_probe(struct platform_device *pdev)
+ err_unlock:
+ 	mutex_unlock(&fmd->media_dev.graph_mutex);
+ err_clk:
+-	media_device_unregister(&fmd->media_dev);
+ 	fimc_md_put_clocks(fmd);
+ 	fimc_md_unregister_entities(fmd);
++	media_device_unregister(&fmd->media_dev);
+ err_md:
+ 	v4l2_device_unregister(&fmd->v4l2_dev);
+ 	return ret;
 -- 
 1.8.3.2
 
