@@ -1,138 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab3I3Joq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:44:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:33446 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab3I3Jom (ORCPT
+	id S1755177Ab3I3JpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:45:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37642 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755101Ab3I3JpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:44:42 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-3a-52494808a207
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, andrzej.p@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2] USB: gadget: epautoconf: fix ep maxpacket check
-Date: Mon, 30 Sep 2013 11:44:20 +0200
-Message-id: <1380534260-24162-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t9jQV0OD88gg9v3LSxmvWxnsdg4Yz2r
-	xcH79RbNi9ezWVzeNYfNYtGyVmaLtUfusls8OLyT3YHDY//cNewefVtWMXocv7GdyePzJrkA
-	ligum5TUnMyy1CJ9uwSujL3vjrIVtIlXLLzTz9TAuFawi5GTQ0LARGLKqyesELaYxIV769m6
-	GLk4hASmM0r8P3WCFcJpZ5J4faoVrIpNQEdiy/cJjCC2iICAxPoXl9hBipgFLjBKvF+wjh0k
-	ISzgLLF8yR5mEJtFQFVi39H9bCA2r4CrxLJJn4EGcQCtU5CYM8lmAiP3AkaGVYyiqQXJBcVJ
-	6blGesWJucWleel6yfm5mxjBQfJMegfjqgaLQ4wCHIxKPLwWSz2ChFgTy4orcw8xSnAwK4nw
-	TnDzDBLiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2xJDU7NbUgtQgmy8TBKdXAuIVD
-	6Xhv3/2PB10SRKf1fmaYwBbb4eQZltd2rvbBZNlVLa8usC8tvbb59V2dngnPdOpuirzVl5av
-	WRbi92X9sqkHy65fWX1l/ct9Uxd8id75g+NObF9H+/ww8cu+q1uf/FDc5Jy77FVt8X1b5zVS
-	8jqLj7/1s1l2aJ1qR8e6w8Uf/rzNdc/y+KPEUpyRaKjFXFScCAAlbGZSDgIAAA==
+	Mon, 30 Sep 2013 05:45:20 -0400
+Date: Mon, 30 Sep 2013 10:45:00 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] tile: use a more conservative __my_cpu_offset in
+ CONFIG_PREEMPT
+Message-ID: <20130930094459.GC26036@mudshark.cambridge.arm.com>
+References: <201309261738.r8QHcGZX007708@farm-0012.internal.tilera.com>
+ <20130926175754.GD7146@mudshark.cambridge.arm.com>
+ <5245E6DB.4000401@tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5245E6DB.4000401@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-This is update for my patch fixing maxpacket check in epautoconfig. Now code
-is better arranged for clearity and take into account super speed devices,
-as Alan Stern suggested.
+On Fri, Sep 27, 2013 at 09:13:15PM +0100, Chris Metcalf wrote:
+> On 9/26/2013 1:57 PM, Will Deacon wrote:
+> > Hi Chris,
+> >
+> > On Thu, Sep 26, 2013 at 06:24:53PM +0100, Chris Metcalf wrote:
+> >> [...]
+> >> +static inline unsigned long __my_cpu_offset(void)
+> >> +{
+> >> +	unsigned long tp;
+> >> +	register unsigned long *sp asm("sp");
+> >> +	asm("move %0, tp" : "=r" (tp) : "m" (*sp));
+> >> +	return tp;
+> >> +}
+> > Hehe, nice to see this hack working out for you too. One thing to check is
+> > whether you have any funky addressing modes (things like writeback or
+> > post-increment), since the "m" constraint can bite you if you don't actually
+> > use it in the asm.
+> 
+> Well, we do have post increments, though I don't see why this is a problem here.
+> We define a target specific constraint "U" that excludes post-increments, but
+> again I don't see why "m" would cause trouble here.  What was your experience?
 
-This patch fixes validation of maxpacket value given in endpoint descriptor.
-Added check of maxpacket for bulk endpoints.
+GCC assumes that each "m" operand is used *exactly once* in the asm, so if
+it decided to generate a post-increment/writeback addressing mode, you can
+end up with pointers off by a word if you didn't make use of the constraint
+in the code. You can try using "o", but GCC sometimes decides that's
+impossible during reload, so we end up combining it with the (undocumented,
+ARM-specific) "Q" constraint which is simply a [rN] addressing mode.
 
-Correct maxpacket value is:
-
-             FULL-SPEED  HIGH-SPEED  SUPER-SPEED
-BULK         64          512         1024
-INTERRUPT    64          1024        1024
-ISOCHRONOUS  1023        1024        1024
-
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-
-Changelog:
-
-v2:
-- arrange code for clearity
-- fix support for super speed devices
-
-v1: https://lkml.org/lkml/2013/9/27/127
----
- drivers/usb/gadget/epautoconf.c |   54 +++++++++++++++++++++++++++++++--------
- 1 file changed, 43 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
-index a777f7b..2daf3ba 100644
---- a/drivers/usb/gadget/epautoconf.c
-+++ b/drivers/usb/gadget/epautoconf.c
-@@ -136,25 +136,57 @@ ep_matches (
- 	 * the usb spec fixes high speed bulk maxpacket at 512 bytes.
- 	 */
- 	max = 0x7ff & usb_endpoint_maxp(desc);
-+
-+	if (ep->maxpacket < max)
-+		return 0;
-+
- 	switch (type) {
--	case USB_ENDPOINT_XFER_INT:
--		/* INT:  limit 64 bytes full speed, 1024 high/super speed */
-+	case USB_ENDPOINT_XFER_BULK:
-+		/*
-+		 * LIMITS:
-+		 * full speed:    64 bytes
-+		 * high speed:   512 bytes
-+		 * super speed: 1024 bytes
-+		 */
-+		if (max > 1024)
-+			return 0;
-+		if (!gadget_is_superspeed(gadget) && max > 512)
-+			return 0;
- 		if (!gadget_is_dualspeed(gadget) && max > 64)
- 			return 0;
--		/* FALLTHROUGH */
-+		break;
- 
--	case USB_ENDPOINT_XFER_ISOC:
--		/* ISO:  limit 1023 bytes full speed, 1024 high/super speed */
--		if (ep->maxpacket < max)
-+	case USB_ENDPOINT_XFER_INT:
-+		/*
-+		 * LIMITS:
-+		 * full speed:		64 bytes
-+		 * high/super speed:  1024 bytes
-+		 * multiple transactions per microframe only for super speed
-+		 */
-+		 if (max > 1024)
- 			return 0;
--		if (!gadget_is_dualspeed(gadget) && max > 1023)
-+		 if (!gadget_is_superspeed(gadget)) {
-+			if ((desc->wMaxPacketSize & cpu_to_le16(3<<11)))
-+				return 0;
-+		}
-+		if (!gadget_is_dualspeed(gadget) && max > 64)
- 			return 0;
-+		break;
- 
--		/* BOTH:  "high bandwidth" works only at high speed */
--		if ((desc->wMaxPacketSize & cpu_to_le16(3<<11))) {
--			if (!gadget_is_dualspeed(gadget))
-+	case USB_ENDPOINT_XFER_ISOC:
-+		/*
-+		 * LIMITS:
-+		 * full speed:	     1023 bytes
-+		 * high/super speed: 1024 bytes
-+		 * multiple transactions per microframe for high/super speed
-+		 */
-+		if (max > 1024)
-+			return 0;
-+		if (!gadget_is_dualspeed(gadget)) {
-+			if (max > 1023)
-+				return 0;
-+			if ((desc->wMaxPacketSize & cpu_to_le16(3<<11)))
- 				return 0;
--			/* configure your hardware with enough buffering!! */
- 		}
- 		break;
- 	}
--- 
-1.7.9.5
-
+Will
