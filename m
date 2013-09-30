@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab3I3HwV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 03:52:21 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63840 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab3I3HwT (ORCPT
+	id S1753302Ab3I3HzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 03:55:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48613 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab3I3HzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 03:52:19 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yong Zhang <yong.zhang@windriver.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] sched:rt: don't try to pull a running task
-Date: Mon, 30 Sep 2013 15:52:09 +0800
-Message-Id: <1380527529-31272-1-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 30 Sep 2013 03:55:08 -0400
+Message-ID: <52492E4F.2020701@pengutronix.de>
+Date: Mon, 30 Sep 2013 09:54:55 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 01/21] drivers: remove unnecessary prom.h includes
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com> <1380221456-11192-2-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1380221456-11192-2-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="xktXMclENS0wfIOadoWo9wEvOknUc3Ljc"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we happen to pull a running task on other cpu, a WARNING
-will happen. But the very task will be pulled to this cpu
-finally. This pulling is dangerous since the task's private
-data could be broken. Fix it by skipping this kind of task.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--xktXMclENS0wfIOadoWo9wEvOknUc3Ljc
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Yong Zhang <yong.zhang@windriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/rt.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+On 09/26/2013 08:50 PM, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+>=20
+> Remove unnecessary prom.h includes in preparation to remove implicit
+> includes of prom.h.
+>=20
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Wolfgang Grandegger <wg@grandegger.com>
+> Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+> Cc: linux-can@vger.kernel.org
+> Cc: netdev@vger.kernel.org
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..e76d278 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1665,7 +1665,15 @@ static int pull_rt_task(struct rq *this_rq)
- 		 * the to-be-scheduled task?
- 		 */
- 		if (p && (p->prio < this_rq->rt.highest_prio.curr)) {
--			WARN_ON(p == src_rq->curr);
-+			/*
-+			 * if we happen to choose a running task on other
-+			 * cpu, skip it and find another one.
-+			 */
-+			if (unlikely(p == src_rq->curr)) {
-+				WARN_ON_ONCE(1);
-+				goto skip;
-+			}
-+
- 			WARN_ON(!p->on_rq);
- 
- 			/*
--- 
-1.7.9.5
+Applied to linux-can-next/testing, it will be included in my next pull
+request to David Miller.
 
+tnx,
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--xktXMclENS0wfIOadoWo9wEvOknUc3Ljc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlJJLk8ACgkQjTAFq1RaXHMeJACeK9HZUEC1VQZeq2GzjerfTgrG
+ckcAniqhgxJhqm/Ho/b7PXMpVeEW1pRc
+=ixWT
+-----END PGP SIGNATURE-----
+
+--xktXMclENS0wfIOadoWo9wEvOknUc3Ljc--
