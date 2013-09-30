@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab3I3KOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:14:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43864 "EHLO
+	id S1755947Ab3I3KOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:14:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43861 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab3I3KNs (ORCPT
+	with ESMTP id S1755879Ab3I3KNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Sep 2013 06:13:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 103/104] Revert "zram: use zram->lock to protect zram_free_page() in swap free notify path"
-Date: Mon, 30 Sep 2013 11:11:20 +0100
-Message-Id: <1380535881-9239-104-git-send-email-luis.henriques@canonical.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 102/104] [SCSI] sd: Fix potential out-of-bounds access
+Date: Mon, 30 Sep 2013 11:11:19 +0100
+Message-Id: <1380535881-9239-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -26,52 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis Henriques <luis.henriques@canonical.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-This reverts commit 9e443904906ca2b5b3ae71f34ac4a4fa6905623e, which
-was commit 57ab048532c0d975538cebd4456491b5c34248f4 upstream.
+commit 984f1733fcee3fbc78d47e26c5096921c5d9946a upstream.
 
-This commit was identified as provoking system lockups when under high
-memory pressure, as noted in the following bug report:
+This patch fixes an out-of-bounds error in sd_read_cache_type(), found
+by Google's AddressSanitizer tool.  When the loop ends, we know that
+"offset" lies beyond the end of the data in the buffer, so no Caching
+mode page was found.  In theory it may be present, but the buffer size
+is limited to 512 bytes.
 
-BugLink: https://bugs.launchpad.net/bugs/1215513
-
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 2 --
- drivers/staging/zram/zram_drv.h | 5 ++---
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/scsi/sd.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 2e88a68..60ffc8c 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -697,9 +697,7 @@ static void zram_slot_free_notify(struct block_device *bdev,
- 	struct zram *zram;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 8e18431..68eb46e 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2226,14 +2226,9 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 			}
+ 		}
  
- 	zram = bdev->bd_disk->private_data;
--	down_write(&zram->lock);
- 	zram_free_page(zram, index);
--	up_write(&zram->lock);
- 	zram_stat64_inc(zram, &zram->stats.notify_free);
- }
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 1047e82..fbe8ac9 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -107,9 +107,8 @@ struct zram {
- 	void *compress_buffer;
- 	struct table *table;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
--	struct rw_semaphore lock; /* protect compression buffers, table,
--				   * 32bit stat counters against concurrent
--				   * notifications, reads and writes */
-+	struct rw_semaphore lock; /* protect compression buffers and table
-+				   * against concurrent read and writes */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
+-		if (modepage == 0x3F) {
+-			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
+-				  "present\n");
+-			goto defaults;
+-		} else if ((buffer[offset] & 0x3f) != modepage) {
+-			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+-			goto defaults;
+-		}
++		sd_printk(KERN_ERR, sdkp, "No Caching mode page found\n");
++		goto defaults;
++
+ 	Page_found:
+ 		if (modepage == 8) {
+ 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
 -- 
 1.8.3.2
 
