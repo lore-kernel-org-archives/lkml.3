@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab3I3Khh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:37:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43396 "EHLO
+	id S1756869Ab3I3Khz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:37:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43391 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab3I3KLt (ORCPT
+	with ESMTP id S1754902Ab3I3KLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:11:49 -0400
+	Mon, 30 Sep 2013 06:11:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Dyer <mike.dyer@md-soft.co.uk>, Mark Brown <broonie@linaro.org>,
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 015/104] ASoC: wm8960: Fix PLL register writes
-Date: Mon, 30 Sep 2013 11:09:52 +0100
-Message-Id: <1380535881-9239-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 014/104] xhci-plat: Don't enable legacy PCI interrupts.
+Date: Mon, 30 Sep 2013 11:09:51 +0100
+Message-Id: <1380535881-9239-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
 References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Dyer <mike.dyer@md-soft.co.uk>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 85fa532b6ef920b32598df86b194571a7059a77c upstream.
+commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25 upstream.
 
-Bit 9 of PLL2,3 and 4 is reserved as '0'. The 24bit fractional part
-should be split across each register in 8bit chunks.
+The xHCI platform driver calls into usb_add_hcd to register the irq for
+its platform device.  It does not want the xHCI generic driver to
+register an interrupt for it at all.  The original code did that by
+setting the XHCI_BROKEN_MSI quirk, which tells the xHCI driver to not
+enable MSI or MSI-X for a PCI host.
 
-Signed-off-by: Mike Dyer <mike.dyer@md-soft.co.uk>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Unfortunately, if CONFIG_PCI is enabled, and CONFIG_USB_DW3 is enabled,
+the xHCI generic driver will attempt to register a legacy PCI interrupt
+for the xHCI platform device in xhci_try_enable_msi().  This will result
+in a bogus irq being registered, since the underlying device is a
+platform_device, not a pci_device, and thus the pci_device->irq pointer
+will be bogus.
+
+Add a new quirk, XHCI_PLAT, so that the xHCI generic driver can
+distinguish between a PCI device that can't handle MSI or MSI-X, and a
+platform device that should not have its interrupts touched at all.
+This quirk may be useful in the future, in case other corner cases like
+this arise.
+
+This patch should be backported to kernels as old as 3.9, that
+contain the commit 00eed9c814cb8f281be6f0f5d8f45025dc0a97eb "USB: xhci:
+correctly enable interrupts".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Yu Y Wang <yu.y.wang@intel.com>
+Tested-by: Yu Y Wang <yu.y.wang@intel.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm8960.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci-plat.c | 2 +-
+ drivers/usb/host/xhci.c      | 7 ++++++-
+ drivers/usb/host/xhci.h      | 1 +
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
-index 8bc659d..f27448b 100644
---- a/sound/soc/codecs/wm8960.c
-+++ b/sound/soc/codecs/wm8960.c
-@@ -789,9 +789,9 @@ static int wm8960_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
- 	if (pll_div.k) {
- 		reg |= 0x20;
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 93ad67e..6e70ce9 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -24,7 +24,7 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 	 * here that the generic code does not try to make a pci_dev from our
+ 	 * dev struct in order to setup MSI
+ 	 */
+-	xhci->quirks |= XHCI_BROKEN_MSI;
++	xhci->quirks |= XHCI_PLAT;
+ }
  
--		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
--		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
--		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
-+		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
-+		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
-+		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
- 	}
- 	snd_soc_write(codec, WM8960_PLL1, reg);
+ /* called during probe() after chip reset completes */
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 585bd6c..5fcd576 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -342,9 +342,14 @@ static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+ static int xhci_try_enable_msi(struct usb_hcd *hcd)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+-	struct pci_dev  *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
++	struct pci_dev  *pdev;
+ 	int ret;
  
++	/* The xhci platform device has set up IRQs through usb_add_hcd. */
++	if (xhci->quirks & XHCI_PLAT)
++		return 0;
++
++	pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
+ 	/*
+ 	 * Some Fresco Logic host controllers advertise MSI, but fail to
+ 	 * generate interrupts.  Don't even try to enable MSI.
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 3e8bf2d..30c3a1d 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1516,6 +1516,7 @@ struct xhci_hcd {
+ #define XHCI_SPURIOUS_REBOOT	(1 << 13)
+ #define XHCI_COMP_MODE_QUIRK	(1 << 14)
+ #define XHCI_AVOID_BEI		(1 << 15)
++#define XHCI_PLAT		(1 << 16)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
 -- 
 1.8.3.2
 
