@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3I3Oen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:34:43 -0400
-Received: from fieldses.org ([174.143.236.118]:46369 "EHLO fieldses.org"
+	id S1755508Ab3I3Of4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:35:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40845 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab3I3Oei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:34:38 -0400
-Date: Mon, 30 Sep 2013 10:34:32 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Ric Wheeler <rwheeler@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20130930143432.GG16579@fieldses.org>
-References: <20130925210742.GG30372@lenny.home.zabbo.net>
- <CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
- <20130926185508.GO30372@lenny.home.zabbo.net>
- <5244A68F.906@redhat.com>
- <20130927200550.GA22640@fieldses.org>
- <20130927205013.GZ30372@lenny.home.zabbo.net>
- <CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
- <52474839.2080201@redhat.com>
- <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
+	id S1752788Ab3I3Ofw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 10:35:52 -0400
+Date: Mon, 30 Sep 2013 16:35:47 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: list@osuosl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        devel@linuxdriverproject.org, thomas@m3y3r.de
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
+ memdup
+In-Reply-To: <20130927152412.GF6192@mwanda>
+Message-ID: <alpine.LNX.2.00.1309301634260.28935@pobox.suse.cz>
+References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz> <52432152.3030100@canonical.com>
+ <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz> <52459942.3020600@canonical.com> <20130927152412.GF6192@mwanda>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 02:20:30PM +0200, Miklos Szeredi wrote:
-> On Sat, Sep 28, 2013 at 11:20 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
-> 
-> >>> I don't see the safety argument very compelling either.  There are real
-> >>> semantic differences, however: ENOSPC on a write to a
-> >>> (apparentlíy) already allocated block.  That could be a bit unexpected.
-> >>> Do we
-> >>> need a fallocate extension to deal with shared blocks?
-> >>
-> >> The above has been the case for all enterprise storage arrays ever since
-> >> the invention of snapshots. The NFSv4.2 spec does allow you to set a
-> >> per-file attribute that causes the storage server to always preallocate
-> >> enough buffers to guarantee that you can rewrite the entire file, however
-> >> the fact that we've lived without it for said 20 years leads me to believe
-> >> that demand for it is going to be limited. I haven't put it top of the list
-> >> of features we care to implement...
-> >>
-> >> Cheers,
-> >>     Trond
-> >
-> >
-> > I agree - this has been common behaviour for a very long time in the array
-> > space. Even without an array,  this is the same as overwriting a block in
-> > btrfs or any file system with a read-write LVM snapshot.
-> 
-> Okay, I'm convinced.
-> 
-> So I suggest
-> 
->  - mount(..., MNT_REFLINK): *allow* splice to reflink.  If this is not
-> set, fall back to page cache copy.
->  - splice(... SPLICE_REFLINK):  fail non-reflink copy.  With this app
-> can force reflink.
-> 
-> Both are trivial to implement and make sure that no backward
-> incompatibility surprises happen.
-> 
-> My other worry is about interruptibility/restartability.  Ideas?
-> 
-> What happens on splice(from, to, 4G) and it's a non-reflink copy?
-> Can the page cache copy be made restartable?   Or should splice() be
-> allowed to return a short count?  What happens on (non-reflink) remote
-> copies and huge request sizes?
+On Fri, 27 Sep 2013, Dan Carpenter wrote:
 
-If I were writing an application that required copies to be restartable,
-I'd probably use the largest possible range in the reflink case but
-break the copy into smaller chunks in the splice case.
+> It looks like magicmouse_raw_event() returns 1 on success and 0 on
+> failure.
 
-For that reason I don't like the idea of a mount option--the choice is
-something that the application probably wants to make (or at least to
-know about).
+Good catch indeed.
 
-The NFS COPY operation, as specified in current drafts, allows for
-asynchronous copies but leaves the state of the file undefined in the
-case of an aborted COPY.  I worry that agreeing on standard behavior in
-the case of an abort might be difficult.
+I am not completely sure whether we are going to fix an oops or not by 
+this, as I haven't seen the actual oops anywhere in this thread :) But 
+definitely this looks like a good fix.
 
---b.
+Joseph, could you please test with that? Thanks.
+
+
+
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 3b43d1c..c211eb9 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -334,7 +334,7 @@ static int magicmouse_raw_event(struct hid_device *hdev,
+ 			size - 2 - data[1]);
+ 		break;
+ 	default:
+-		return 0;
++		return 1;
+ 	}
+ 
+ 	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
+@@ -347,7 +347,7 @@ static int magicmouse_raw_event(struct hid_device *hdev,
+ 	}
+ 
+ 	input_sync(input);
+-	return 1;
++	return 0;
+ }
+ 
+ static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
+
+-- 
+Jiri Kosina
+SUSE Labs
