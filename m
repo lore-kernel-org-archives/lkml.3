@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3I3OPb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:15:31 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:65316 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab3I3OP2 (ORCPT
+	id S1755530Ab3I3OPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:15:47 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:50976 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab3I3OPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:15:28 -0400
+	Mon, 30 Sep 2013 10:15:30 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de
 Cc: Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
         Kedareswara rao Appana <appanad@xilinx.com>,
         Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
         linux-i2c@vger.kernel.org
-Subject: [PATCH v2 2/3] i2c: xilinx: Set tx direction in write operation
-Date: Mon, 30 Sep 2013 16:15:14 +0200
-Message-Id: <57a4f5352ce6f03bde7aafe8b880f91b52994379.1380550490.git.michal.simek@xilinx.com>
+Subject: [PATCH v2 3/3] i2c: xilinx: Use devm_* functions
+Date: Mon, 30 Sep 2013 16:15:15 +0200
+Message-Id: <83ec9558211389896f21d9682e9824cd7979466c.1380550490.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
 References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
 In-Reply-To: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
 References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-15296-1380550525-0001";
+    boundary="=_mimegpg-monstr-desktop-15323-1380550527-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,63 +34,158 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-15296-1380550525-0001
+--=_mimegpg-monstr-desktop-15323-1380550527-0001
 
 From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
 
-The patch fixes the problem with i2c eeprom memories
-where controller is not properly setup to transmit mode.
-
-This problem is fixed in write operation, after filling
-address byte to tx fifo, set the direction of transfer
-to tx using control register.
+Simplified the probe and remove functions using devm_* functions
 
 Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
-Changes in v2:
-- Extend patch description as Wolfram asked for.
+Changes in v2: None
 
- drivers/i2c/busses/i2c-xiic.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/i2c/busses/i2c-xiic.c | 69 +++++++++++--------------------------------
+ 1 file changed, 18 insertions(+), 51 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index 5eb0a8b..44e6ae7 100644
+index 44e6ae7..6dd3212 100644
 --- a/drivers/i2c/busses/i2c-xiic.c
 +++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -536,6 +536,7 @@ static void xiic_start_recv(struct xiic_i2c *i2c)
- static void xiic_start_send(struct xiic_i2c *i2c)
- {
- 	struct i2c_msg *msg = i2c->tx_msg;
-+	u32 cr;
+@@ -32,6 +32,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/errno.h>
++#include <linux/err.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+ #include <linux/i2c.h>
+@@ -698,32 +699,28 @@ static int xiic_i2c_probe(struct platform_device *pdev)
+ 	int ret, irq;
+ 	u8 i;
 
- 	xiic_irq_clr(i2c, XIIC_INTR_TX_ERROR_MASK);
++	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
++	if (!i2c)
++		return -ENOMEM;
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		goto resource_missing;
++	i2c->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(i2c->base)) {
++		dev_err(&pdev->dev, "Could not allocate iomem\n");
++		return PTR_ERR(i2c->base);
++	}
 
-@@ -556,6 +557,10 @@ static void xiic_start_send(struct xiic_i2c *i2c)
- 		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+-		goto resource_missing;
+-
+-	pdata = (struct xiic_i2c_platform_data *)dev_get_platdata(&pdev->dev);
++		return irq;
+
+-	i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
+-	if (!i2c)
+-		return -ENOMEM;
+-
+-	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+-		dev_err(&pdev->dev, "Memory region busy\n");
+-		ret = -EBUSY;
+-		goto request_mem_failed;
++	ret = devm_request_irq(&pdev->dev, irq, xiic_isr, 0, pdev->name, i2c);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Cannot claim IRQ\n");
++		return ret;
  	}
 
-+	cr = xiic_getreg32(i2c, XIIC_CR_REG_OFFSET);
-+	cr |= XIIC_CR_DIR_IS_TX_MASK;
-+	xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, cr);
-+
- 	xiic_fill_tx_fifo(i2c);
+-	i2c->base = ioremap(res->start, resource_size(res));
+-	if (!i2c->base) {
+-		dev_err(&pdev->dev, "Unable to map registers\n");
+-		ret = -EIO;
+-		goto map_failed;
+-	}
++	pdata = (struct xiic_i2c_platform_data *)dev_get_platdata(&pdev->dev);
 
- 	/* Clear any pending Tx empty, Tx Error and then enable them. */
+ 	/* hook up driver to tree */
+ 	platform_set_drvdata(pdev, i2c);
+@@ -736,17 +733,13 @@ static int xiic_i2c_probe(struct platform_device *pdev)
+
+ 	spin_lock_init(&i2c->lock);
+ 	init_waitqueue_head(&i2c->wait);
+-	ret = request_irq(irq, xiic_isr, 0, pdev->name, i2c);
+-	if (ret) {
+-		dev_err(&pdev->dev, "Cannot claim IRQ\n");
+-		goto request_irq_failed;
+-	}
+
+ 	/* add i2c adapter to i2c tree */
+ 	ret = i2c_add_adapter(&i2c->adap);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to add adapter\n");
+-		goto add_adapter_failed;
++		xiic_deinit(i2c);
++		return ret;
+ 	}
+
+ 	if (pdata) {
+@@ -756,43 +749,17 @@ static int xiic_i2c_probe(struct platform_device *pdev)
+ 	}
+
+ 	return 0;
+-
+-add_adapter_failed:
+-	free_irq(irq, i2c);
+-request_irq_failed:
+-	xiic_deinit(i2c);
+-	iounmap(i2c->base);
+-map_failed:
+-	release_mem_region(res->start, resource_size(res));
+-request_mem_failed:
+-	kfree(i2c);
+-
+-	return ret;
+-resource_missing:
+-	dev_err(&pdev->dev, "IRQ or Memory resource is missing\n");
+-	return -ENOENT;
+ }
+
+ static int xiic_i2c_remove(struct platform_device *pdev)
+ {
+ 	struct xiic_i2c *i2c = platform_get_drvdata(pdev);
+-	struct resource *res;
+
+ 	/* remove adapter & data */
+ 	i2c_del_adapter(&i2c->adap);
+
+ 	xiic_deinit(i2c);
+
+-	free_irq(platform_get_irq(pdev, 0), i2c);
+-
+-	iounmap(i2c->base);
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res)
+-		release_mem_region(res->start, resource_size(res));
+-
+-	kfree(i2c);
+-
+ 	return 0;
+ }
+
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-15296-1380550525-0001
+--=_mimegpg-monstr-desktop-15323-1380550527-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlJJh30ACgkQykllyylKDCHKKQCeOLeJ+FHVL0AE25SEtM9VSx2E
-JAMAn3X48FylPGeTJToRwveVq6+xtsM/
-=BPSB
+iEYEABECAAYFAlJJh38ACgkQykllyylKDCGSDwCfZe7StlBA21Q9Ekgx4blboEc+
+RigAnRNr6nqK2D70bxgpc0Z0S4/9GFVs
+=9G/X
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-15296-1380550525-0001--
+--=_mimegpg-monstr-desktop-15323-1380550527-0001--
