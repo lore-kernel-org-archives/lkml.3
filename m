@@ -1,196 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab3I3KWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 06:22:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43697 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657Ab3I3KNH (ORCPT
+	id S1756379Ab3I3KWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 06:22:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53292 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756312Ab3I3KWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 06:13:07 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 072/104] drm/radeon: fix init ordering for r600+
-Date: Mon, 30 Sep 2013 11:10:49 +0100
-Message-Id: <1380535881-9239-73-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
-References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 30 Sep 2013 06:22:17 -0400
+Date: Mon, 30 Sep 2013 12:20:34 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>
+Subject: linux-next: Tree for Sep 30
+Message-ID: <20130930102033.GA9251@ulmo.nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Alex Deucher <alexander.deucher@amd.com>
+Hi all,
 
-commit e5903d399a7b0e5c14673c1206f4aeec2859c730 upstream.
+As I'm sure is the case for many of us, I've become very dependent upon
+the linux-next tree. So everytime Stephen goes on vacation I break out
+in a cold sweat.
 
-The vram scratch buffer needs to be initialized
-before the mc is programmed otherwise we program
-0 as the GPU address of the default GPU fault
-page.  In most cases we put vram at zero anyway and
-reserve a page for the legacy vga buffer so in practice
-this shouldn't cause any problems, but better to make
-it correct.
+Here's my attempt at providing temporary service until Stephen is back.
+The result is likely a lot worse than what you're used to. Going through
+this made me appreciate what Stephen does even more.
 
-Was changed in:
-6fab3febf6d949b0a12b1e4e73db38e4a177a79e
+I've uploaded today's tree to a git repository here:
 
-Reported-by: FrankR Huang <FrankR.Huang@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.5:
-  - adjusted context
-  -dropped changes to drivers/gpu/drm/radeon/cik.c ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/evergreen.c | 9 +++++----
- drivers/gpu/drm/radeon/ni.c        | 9 +++++----
- drivers/gpu/drm/radeon/r600.c      | 9 +++++----
- drivers/gpu/drm/radeon/rv770.c     | 9 +++++----
- drivers/gpu/drm/radeon/si.c        | 9 +++++----
- 5 files changed, 25 insertions(+), 20 deletions(-)
+	git://gitorious.org/thierryreding/linux-next.git
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 269fa76..650e2d7 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -3081,6 +3081,11 @@ static int evergreen_startup(struct radeon_device *rdev)
- 	/* enable pcie gen2 link */
- 	evergreen_pcie_gen2_enable(rdev);
- 
-+	/* scratch needs to be initialized before MC */
-+	r = r600_vram_scratch_init(rdev);
-+	if (r)
-+		return r;
-+
- 	evergreen_mc_program(rdev);
- 
- 	if (ASIC_IS_DCE5(rdev)) {
-@@ -3106,10 +3111,6 @@ static int evergreen_startup(struct radeon_device *rdev)
- 		}
- 	}
- 
--	r = r600_vram_scratch_init(rdev);
--	if (r)
--		return r;
--
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		evergreen_agp_enable(rdev);
- 	} else {
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index ba9ae56..fcd7335 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -1239,6 +1239,11 @@ static int cayman_startup(struct radeon_device *rdev)
- 	/* enable pcie gen2 link */
- 	evergreen_pcie_gen2_enable(rdev);
- 
-+	/* scratch needs to be initialized before MC */
-+	r = r600_vram_scratch_init(rdev);
-+	if (r)
-+		return r;
-+
- 	evergreen_mc_program(rdev);
- 
- 	if (rdev->flags & RADEON_IS_IGP) {
-@@ -1265,10 +1270,6 @@ static int cayman_startup(struct radeon_device *rdev)
- 		}
- 	}
- 
--	r = r600_vram_scratch_init(rdev);
--	if (r)
--		return r;
--
- 	r = cayman_pcie_gart_enable(rdev);
- 	if (r)
- 		return r;
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 0e431c0..3458d4a 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2361,6 +2361,11 @@ int r600_startup(struct radeon_device *rdev)
- 	/* enable pcie gen2 link */
- 	r600_pcie_gen2_enable(rdev);
- 
-+	/* scratch needs to be initialized before MC */
-+	r = r600_vram_scratch_init(rdev);
-+	if (r)
-+		return r;
-+
- 	r600_mc_program(rdev);
- 
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
-@@ -2371,10 +2376,6 @@ int r600_startup(struct radeon_device *rdev)
- 		}
- 	}
- 
--	r = r600_vram_scratch_init(rdev);
--	if (r)
--		return r;
--
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		r600_agp_enable(rdev);
- 	} else {
-diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-index d6fa2b5..186d019 100644
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -890,6 +890,11 @@ static int rv770_startup(struct radeon_device *rdev)
- 	/* enable pcie gen2 link */
- 	rv770_pcie_gen2_enable(rdev);
- 
-+	/* scratch needs to be initialized before MC */
-+	r = r600_vram_scratch_init(rdev);
-+	if (r)
-+		return r;
-+
- 	rv770_mc_program(rdev);
- 
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
-@@ -900,10 +905,6 @@ static int rv770_startup(struct radeon_device *rdev)
- 		}
- 	}
- 
--	r = r600_vram_scratch_init(rdev);
--	if (r)
--		return r;
--
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		rv770_agp_enable(rdev);
- 	} else {
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index d3454a0..9987345 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -3698,6 +3698,11 @@ static int si_startup(struct radeon_device *rdev)
- 	struct radeon_ring *ring;
- 	int r;
- 
-+	/* scratch needs to be initialized before MC */
-+	r = r600_vram_scratch_init(rdev);
-+	if (r)
-+		return r;
-+
- 	si_mc_program(rdev);
- 
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
-@@ -3715,10 +3720,6 @@ static int si_startup(struct radeon_device *rdev)
- 		return r;
- 	}
- 
--	r = r600_vram_scratch_init(rdev);
--	if (r)
--		return r;
--
- 	r = si_pcie_gart_enable(rdev);
- 	if (r)
- 		return r;
--- 
-1.8.3.2
+There's a master branch with today's tree and a next-20130930 tag as
+usual. One notable difference to Stephen's linux-next trees is the
+omission of the mmotm patches because I haven't had the time to come up
+with the proper scripting for that.
 
+I took some notes about conflicts, but I lack any contact information
+for the trees so unless I can scrape some useful information from the
+MAINTAINERS file I will just have to send them out to LKML and hope that
+the right people look at them.
+
+Test builds of the i386 and x86_64 default configurations don't show any
+breakage so far. Provided there's time I may run a test build for ARM
+default configurations, but I don't have the resources to do much more
+than that. It'd be great if others could help out with the testing. Note
+that I haven't run any build tests in between merges, only on the final
+tree.
+
+To keep expectations reasonably low, I will not be able to do this every
+day, but I'll try to do the linux-next tree as often as I can. If anyone
+is interested in helping out, I've included various scripts that I used
+in the Next directory:
+
+	- setup: creates remotes for all trees listed in Next/Trees
+	- fetch: fetches from all the trees listed in Next/Trees
+	- merge: merges all trees in Next/Trees
+
+The fetch and merge scripts assume that the setup script has already
+been run. If a merge conflict happens, the merge script will drop you to
+a subshell. Once any issues are resolved and the result committed, you
+can exit the subshell and the merge will continue where it left off.
+
+In case anyone is interested in doing one of the trees, please let me
+know so there's no duplication of work. Mark Brown volunteered to share
+the load, but I'm sure we could use more volunteers to make it easier on
+all of us.
+
+Hosting of the repository may be a problem. I've requested an account on
+kernel.org on Friday, which is obviously somewhat on short notice, and
+not everyone might have an account on gitorious. I guess we'll just have
+to work with what we have and see how it goes. Unfortunately this
+implies that the URL of the tree may change between daily trees.
+
+Thierry
+
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSSVBxAAoJEN0jrNd/PrOhGNMP/137BvWjso7UgRT9fCm7TgWf
+I2z70kGVJ1SVcjTnaEGc+K//UsozpPcArmSTtNTsQonw2G0hn6/vfEvCaZDs4KUl
+AyInjxnpjCkpkC2adS1ry3lG7GarSPzGN7ggVarwhkTWybULNVqPz2RpwEKWVb8O
+uP1o2DZv9aoX1bNaRkJBIOYc6q1Z/7Q23baITJS38Gjp0armPBTWDjJv4zqiPE+h
+8Kb7tsEUDUik2iSb6JHm++V+9ct/0IEF1+iWawONz0XLbG+LgyOdQr+jI3BXdM4k
+A84hTQenu3ToFIHPFolBlvmTtww5CUqNy5leVGKIbzVWhGjmkEYjhn+YMPEEqso/
+7lmpUQ7xJS0Ck4lvufhi+SaVeHvieUjlj0eO3ZUGur1r2lx7GqDyL3vsihUzRVAC
+wXMTcbgKnT3UrRWZ23p7CDNOvloRe57d87Idk9bfZGJCPW558WWw4AVjE5muiMBp
+jNv91GnYNHfEYPRCUhHG54beQtVoVMcAPnBa/vp05M2PlBZH/SruzEG0m3mrBjCN
+XtlyEpf9AJe6rVT+pzZ441I7X5AMlh1VDA0rGiCEMIs671mEqGckzz8Y/RixTdl1
+gXMF+blqUKD6W1RJZ6bvY8jhiMdAVACa7HZ2QaKydWkDmQpRGrKfZsXeniK91R6p
+WkQF7sulk1q7JCQHbeOB
+=XxQZ
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
