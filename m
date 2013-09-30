@@ -1,121 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3I3JID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 05:08:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53799 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754447Ab3I3JIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 05:08:00 -0400
-Message-ID: <1380532073.1484.15.camel@linux-fkkt.site>
-Subject: Re: [PATCH V5 net-next 2/3] net: huawei_cdc_ncm: Introduce the
- huawei_cdc_ncm driver
-From: Oliver Neukum <oneukum@suse.de>
-To: Enrico Mioso <mrkiko.rs@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Robert de Vries <rhdv@xs4all.nl>, Hayes Wang <hayeswang@realtek.com>,
-        Freddy Xin <freddy@asix.com.tw>,
-        =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Liu Junliang <liujunliang_ljl@163.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:USB NETWORKING DR..." <linux-usb@vger.kernel.org>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        ModemManager-devel@lists.freedesktop.org
-Date: Mon, 30 Sep 2013 11:07:53 +0200
-In-Reply-To: <1380516609-31242-3-git-send-email-mrkiko.rs@gmail.com>
-References: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com>
-	 <1380516609-31242-3-git-send-email-mrkiko.rs@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.9.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755095Ab3I3JJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 05:09:09 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:41079 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab3I3JJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 05:09:06 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Kedareswara rao Appana <appanad@xilinx.com>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org
+Subject: [PATCH 1/3] i2c: xilinx: Fix i2c sparse warnings
+Date: Mon, 30 Sep 2013 11:08:50 +0200
+Message-Id: <c122ad49b27406ee495ef0d6cac191968d64f09f.1380532113.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-3882-1380532132-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-30 at 04:50 +0000, Enrico Mioso wrote:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> +static int huawei_cdc_ncm_manage_power(struct usbnet *usbnet_dev, int on)
-> +{
-> +	struct huawei_cdc_ncm_state *drvstate = (void *)&usbnet_dev->data;
-> +	int rv = 0;
-> +
-> +	if ((on && atomic_add_return(1, &drvstate->pmcount) == 1) ||
-> +			(!on && atomic_dec_and_test(&drvstate->pmcount))) {
-> +		rv = usb_autopm_get_interface(usbnet_dev->intf);
-> +		if (rv < 0)
-> +			goto err;
+--=_mimegpg-monstr-desktop-3882-1380532132-0001
 
-The error case corrupts drvstate->pmcount
+From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
 
-> +		usbnet_dev->intf->needs_remote_wakeup = on;
-> +		usb_autopm_put_interface(usbnet_dev->intf);
-> +	}
-> +err:
-> +	return rv;
-> +}
+code changes to fix sparse warnings
 
+Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/i2c/busses/i2c-xiic.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-> +static int huawei_cdc_ncm_suspend(struct usb_interface *intf, pm_message_t message)
-> +{
-> +	int ret = 0;
-> +	struct usbnet *usbnet_dev = usb_get_intfdata(intf);
-> +	struct huawei_cdc_ncm_state *drvstate = (void *)&usbnet_dev->data;
-> +	struct cdc_ncm_ctx *ctx = drvstate->ctx;
-> +
-> +	if (ctx == NULL) {
-> +		ret = -1;
+diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+index 4c8b368..5eb0a8b 100644
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -68,7 +68,7 @@ struct xiic_i2c {
+ 	struct i2c_adapter	adap;
+ 	struct i2c_msg		*tx_msg;
+ 	spinlock_t		lock;
+-	unsigned int 		tx_pos;
++	unsigned int		tx_pos;
+ 	unsigned int		nmsgs;
+ 	enum xilinx_i2c_state	state;
+ 	struct i2c_msg		*rx_msg;
+@@ -271,11 +271,8 @@ static void xiic_read_rx(struct xiic_i2c *i2c)
 
-That is not a valid way to indicate an error.
+ 	bytes_in_fifo = xiic_getreg8(i2c, XIIC_RFO_REG_OFFSET) + 1;
 
-> +		goto error;
-> +	}
-> +
-> +	ret = usbnet_suspend(intf, message);
-> +	if (ret < 0)
-> +		goto error;
-> +
-> +	if (intf == ctx->control &&
-> +		drvstate->subdriver &&
-> +		drvstate->subdriver->suspend)
-> +		ret = drvstate->subdriver->suspend(intf, message);
-> +	if (ret < 0)
-> +		usbnet_resume(intf);
-> +
-> +error:
-> +	return ret;
-> +}
-> +
-> +static int huawei_cdc_ncm_resume(struct usb_interface *intf)
-> +{
-> +	int ret = 0;
-> +	struct usbnet *usbnet_dev = usb_get_intfdata(intf);
-> +	struct huawei_cdc_ncm_state *drvstate = (void *)&usbnet_dev->data;
-> +	bool callsub;
-> +	struct cdc_ncm_ctx *ctx = drvstate->ctx;
-> +
-> +	/* should we call subdriver's resume function? */
-> +	callsub =
-> +		(intf == ctx->control &&
-> +		drvstate->subdriver &&
-> +		drvstate->subdriver->resume);
-> +
-> +	if (callsub)
-> +		ret = drvstate->subdriver->resume(intf);
-> +	if (ret < 0)
-> +		goto err;
-> +	ret = usbnet_resume(intf);
-> +	if (ret < 0 && callsub && drvstate->subdriver->suspend)
+-	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d"
+-		", SR: 0x%x, CR: 0x%x\n",
+-		__func__, bytes_in_fifo, xiic_rx_space(i2c),
+-		xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+-		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
++	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d",
++		__func__, bytes_in_fifo, xiic_rx_space(i2c));
 
-You really want drivers with a resume() but no suspend() method?
+ 	if (bytes_in_fifo > xiic_rx_space(i2c))
+ 		bytes_in_fifo = xiic_rx_space(i2c);
+@@ -339,9 +336,10 @@ static void xiic_process(struct xiic_i2c *i2c)
+ 	ier = xiic_getreg32(i2c, XIIC_IIER_OFFSET);
+ 	pend = isr & ier;
 
-> +		drvstate->subdriver->suspend(intf, PMSG_SUSPEND);
-> +err:
-> +	return ret;
-> +}
+-	dev_dbg(i2c->adap.dev.parent, "%s entry, IER: 0x%x, ISR: 0x%x, "
+-		"pend: 0x%x, SR: 0x%x, msg: %p, nmsgs: %d\n",
+-		__func__, ier, isr, pend, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
++	dev_dbg(i2c->adap.dev.parent, "%s: IER: 0x%x, ISR: 0x%x, pend: 0x%x\n",
++		__func__, ier, isr, pend);
++	dev_dbg(i2c->adap.dev.parent, "%s: SR: 0x%x, msg: %p, nmsgs: %d\n",
++		__func__, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+ 		i2c->tx_msg, i2c->nmsgs);
 
-	Regards
-		Oliver
+ 	/* Do not processes a devices interrupts if the device has no
+@@ -541,9 +539,10 @@ static void xiic_start_send(struct xiic_i2c *i2c)
+
+ 	xiic_irq_clr(i2c, XIIC_INTR_TX_ERROR_MASK);
+
+-	dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d, "
+-		"ISR: 0x%x, CR: 0x%x\n",
+-		__func__, msg, msg->len, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
++	dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d",
++		__func__, msg, msg->len);
++	dev_dbg(i2c->adap.dev.parent, "%s entry, ISR: 0x%x, CR: 0x%x\n",
++		__func__, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
+ 		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
+
+ 	if (!(msg->flags & I2C_M_NOSTART)) {
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-3882-1380532132-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlJJP6UACgkQykllyylKDCGZ+QCeP84sG4qVHRgThO6QXGUsgHdY
+IZ4AoIComSltUmzfaWyt4E1QsTlBHxt2
+=Pb49
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-3882-1380532132-0001--
