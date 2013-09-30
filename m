@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab3I3OY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 10:24:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42455 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab3I3OYZ (ORCPT
+	id S1755748Ab3I3OYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 10:24:44 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43732 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755719Ab3I3OYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 10:24:25 -0400
-Date: Mon, 30 Sep 2013 16:24:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] introduce synchronize_sched_{enter,exit}()
-Message-ID: <20130930142400.GK26785@twins.programming.kicks-ass.net>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-38-git-send-email-mgorman@suse.de>
- <20130917143003.GA29354@twins.programming.kicks-ass.net>
- <20130929183634.GA15563@redhat.com>
- <20130930125942.GB12926@twins.programming.kicks-ass.net>
+	Mon, 30 Sep 2013 10:24:42 -0400
+Date: Mon, 30 Sep 2013 10:24:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] x86/acpi: fix incorrect placement of __initdata tag
+In-Reply-To: <12346908.30tngvOZuc@amdc1032>
+Message-ID: <Pine.LNX.4.44L0.1309301023040.1352-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930125942.GB12926@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 02:59:42PM +0200, Peter Zijlstra wrote:
+On Mon, 30 Sep 2013, Bartlomiej Zolnierkiewicz wrote:
 
-> > 
-> > static void cb_rcu_func(struct rcu_head *rcu)
-> > {
-> > 	struct xxx_struct *xxx = container_of(rcu, struct xxx_struct, cb_head);
-> > 	long flags;
-> > 
-> > 	BUG_ON(xxx->gp_state != GP_PASSED);
-> > 	BUG_ON(xxx->cb_state == CB_IDLE);
-> > 
-> > 	spin_lock_irqsave(&xxx->xxx_lock, flags);
-> > 	if (xxx->gp_count) {
-> > 		xxx->cb_state = CB_IDLE;
-> 
-> This seems to be when a new xxx_begin() has happened after our last
-> xxx_end() and the sync_sched() from xxx_begin() merges with the
-> xxx_end() one and we're done.
-> 
-> > 	} else if (xxx->cb_state == CB_REPLAY) {
-> > 		xxx->cb_state = CB_PENDING;
-> > 		call_rcu_sched(&xxx->cb_head, cb_rcu_func);
-> 
-> A later xxx_exit() has happened, and we need to requeue to catch a later
-> GP.
-> 
-> > 	} else {
-> > 		xxx->cb_state = CB_IDLE;
-> > 		xxx->gp_state = GP_IDLE;
-> 
-> Nothing fancy happened and we're done.
-> 
-> > 	}
-> > 	spin_unlock_irqrestore(&xxx->xxx_lock, flags);
-> > }
-> > 
-> > void xxx_exit(struct xxx_struct *xxx)
-> > {
-> > 	spin_lock_irq(&xxx->xxx_lock);
-> > 	if (!--xxx->gp_count) {
-> > 		if (xxx->cb_state == CB_IDLE) {
-> > 			xxx->cb_state = CB_PENDING;
-> > 			call_rcu_sched(&xxx->cb_head, cb_rcu_func);
-> > 		} else if (xxx->cb_state == CB_PENDING) {
-> > 			xxx->cb_state = CB_REPLAY;
-> > 		}
-> > 	}
-> > 	spin_unlock_irq(&xxx->xxx_lock);
-> > }
-> 
-> So I don't immediately see the point of the concurrent write side;
-> percpu_rwsem wouldn't allow this and afaict neither would
-> freeze_super().
-> 
-> Other than that; yes this makes sense if you care about write side
-> performance and I think its solid.
+> __initdata tag should be placed between the variable name and equal
+> sign for the variable to be placed in the intended .init.data section.
 
-Hmm, wait. I don't see how this is equivalent to:
+The line you are changing does not have an equals sign.  Therefore, 
+according to your own patch description, the patch is incorrect.  :-)
 
-xxx_end()
-{
-	synchronize_sched();
-	atomic_dec(&xxx->counter);
-}
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/x86/kernel/acpi/boot.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index 1f7c074..6c0b43b 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -695,7 +695,7 @@ static int __init acpi_parse_sbf(struct acpi_table_header *table)
+>  #ifdef CONFIG_HPET_TIMER
+>  #include <asm/hpet.h>
+>  
+> -static struct __initdata resource *hpet_res;
+> +static struct resource *hpet_res __initdata;
+>  
+>  static int __init acpi_parse_hpet(struct acpi_table_header *table)
+>  {
 
-For that we'd have to decrement xxx->gp_count from cb_rcu_func(),
-wouldn't we?
+Alan Stern
 
-Without that there's no guarantee the fast path readers will have a MB
-to observe the write critical section, unless I'm completely missing
-something obviuos here.
