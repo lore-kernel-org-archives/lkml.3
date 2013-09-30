@@ -1,101 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab3I3RZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:25:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51344 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755776Ab3I3RZk (ORCPT
+	id S1755355Ab3I3R1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:27:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22982 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab3I3R1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:25:40 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: Ronald <ronald645@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] PM / hibernate: Fix user space driven resume regression
-Date: Mon, 30 Sep 2013 19:37:07 +0200
-Message-ID: <1904990.pSWyZTIzEi@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <7570724.v5QLmkRO38@vostro.rjw.lan>
-References: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com> <CAF1_xX1DO1V-cZyDWsDyrbCfG7uWnPeKP5w0H7Bz=oSpRMXTvQ@mail.gmail.com> <7570724.v5QLmkRO38@vostro.rjw.lan>
+	Mon, 30 Sep 2013 13:27:54 -0400
+Date: Mon, 30 Sep 2013 13:27:18 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
+Subject: Re: [PATCH v6 18/19] swiotlb-xen: introduce a rbtree to track phys
+ to bus mappings
+Message-ID: <20130930172718.GY3106@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
+ <1380298207-29151-18-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380298207-29151-18-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, Sep 27, 2013 at 05:10:06PM +0100, Stefano Stabellini wrote:
+> Introduce a second red-back tree to track phys to bus mappings created after
+> the initialization of the swiotlb buffer.
 
-Recent commit 8fd37a4 (PM / hibernate: Create memory bitmaps after
-freezing user space) broke the resume part of the user space driven
-hibernation (s2disk), because I forgot that the resume utility
-loaded the image into memory without freezing user space (it still
-freezes tasks after loading the image).  This means that during user
-space driven resume we need to create the memory bitmaps at the
-"device open" time rather than at the "freeze tasks" time, so make
-that happen (that's a special case anyway, so it needs to be treated
-in a special way).
+Could you explain the use case a bit more please?
 
-Reported-and-tested-by: Ronald <ronald645@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- kernel/power/snapshot.c |    5 ++++-
- kernel/power/user.c     |    8 ++++++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+As in:
+ a) why is this needed
+ b) why are we using the rb tree instead of something else (say FIFO queue)
+ c) how long are these in usage?
+ d) do we need locking now?
 
-Index: linux-pm/kernel/power/snapshot.c
-===================================================================
---- linux-pm.orig/kernel/power/snapshot.c
-+++ linux-pm/kernel/power/snapshot.c
-@@ -743,7 +743,10 @@ int create_basic_memory_bitmaps(void)
- 	struct memory_bitmap *bm1, *bm2;
- 	int error = 0;
- 
--	BUG_ON(forbidden_pages_map || free_pages_map);
-+	if (forbidden_pages_map && free_pages_map)
-+		return 0;
-+	else
-+		BUG_ON(forbidden_pages_map || free_pages_map);
- 
- 	bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
- 	if (!bm1)
-Index: linux-pm/kernel/power/user.c
-===================================================================
---- linux-pm.orig/kernel/power/user.c
-+++ linux-pm/kernel/power/user.c
-@@ -39,6 +39,7 @@ static struct snapshot_data {
- 	char frozen;
- 	char ready;
- 	char platform_support;
-+	bool free_bitmaps;
- } snapshot_state;
- 
- atomic_t snapshot_device_available = ATOMIC_INIT(1);
-@@ -82,6 +83,10 @@ static int snapshot_open(struct inode *i
- 		data->swap = -1;
- 		data->mode = O_WRONLY;
- 		error = pm_notifier_call_chain(PM_RESTORE_PREPARE);
-+		if (!error) {
-+			error = create_basic_memory_bitmaps();
-+			data->free_bitmaps = !error;
-+		}
- 		if (error)
- 			pm_notifier_call_chain(PM_POST_RESTORE);
- 	}
-@@ -111,6 +116,8 @@ static int snapshot_release(struct inode
- 		pm_restore_gfp_mask();
- 		free_basic_memory_bitmaps();
- 		thaw_processes();
-+	} else if (data->free_bitmaps) {
-+		free_basic_memory_bitmaps();
- 	}
- 	pm_notifier_call_chain(data->mode == O_RDONLY ?
- 			PM_POST_HIBERNATION : PM_POST_RESTORE);
-@@ -231,6 +238,7 @@ static long snapshot_ioctl(struct file *
- 			break;
- 		pm_restore_gfp_mask();
- 		free_basic_memory_bitmaps();
-+		data->free_bitmaps = false;
- 		thaw_processes();
- 		data->frozen = 0;
- 		break;
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  drivers/xen/swiotlb-xen.c |   99 +++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 83 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index 3011736..022bcaf 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -79,7 +79,8 @@ struct xen_dma_info {
+>  	dma_addr_t dma_addr;
+>  	phys_addr_t phys_addr;
+>  	size_t size;
+> -	struct rb_node rbnode;
+> +	struct rb_node rbnode_dma;
+> +	struct rb_node rbnode_phys;
+>  };
+>  
+>  /*
+> @@ -96,8 +97,13 @@ static struct xen_dma_info *xen_dma_seg;
+>   * mappings.
+>   */
+>  static struct rb_root bus_to_phys = RB_ROOT;
+> +/*
+> + * This tree keeps track of physical address to bus address
+> + * mappings apart from the ones belonging to the initial swiotlb buffer.
+> + */
+> +static struct rb_root phys_to_bus = RB_ROOT;
+>  
+> -static int xen_dma_add_entry(struct xen_dma_info *new)
+> +static int xen_dma_add_entry_bus(struct xen_dma_info *new)
+>  {
+>  	struct rb_node **link = &bus_to_phys.rb_node;
+>  	struct rb_node *parent = NULL;
+> @@ -106,7 +112,7 @@ static int xen_dma_add_entry(struct xen_dma_info *new)
+>  
+>  	while (*link) {
+>  		parent = *link;
+> -		entry = rb_entry(parent, struct xen_dma_info, rbnode);
+> +		entry = rb_entry(parent, struct xen_dma_info, rbnode_dma);
+>  
+>  		if (new->dma_addr == entry->dma_addr)
+>  			goto err_out;
+> @@ -118,8 +124,41 @@ static int xen_dma_add_entry(struct xen_dma_info *new)
+>  		else
+>  			link = &(*link)->rb_right;
+>  	}
+> -	rb_link_node(&new->rbnode, parent, link);
+> -	rb_insert_color(&new->rbnode, &bus_to_phys);
+> +	rb_link_node(&new->rbnode_dma, parent, link);
+> +	rb_insert_color(&new->rbnode_dma, &bus_to_phys);
+> +	goto out;
+> +
+> +err_out:
+> +	rc = -EINVAL;
+> +	pr_warn("%s: cannot add phys=%pa -> dma=%pa: phys=%pa -> dma=%pa already exists\n",
+> +			__func__, &new->phys_addr, &new->dma_addr, &entry->phys_addr, &entry->dma_addr);
+> +out:
+> +	return rc;
+> +}
+> +
+> +static int xen_dma_add_entry_phys(struct xen_dma_info *new)
+> +{
+> +	struct rb_node **link = &phys_to_bus.rb_node;
+> +	struct rb_node *parent = NULL;
+> +	struct xen_dma_info *entry;
+> +	int rc = 0;
+> +
+> +	while (*link) {
+> +		parent = *link;
+> +		entry = rb_entry(parent, struct xen_dma_info, rbnode_phys);
+> +
+> +		if (new->dma_addr == entry->dma_addr)
+> +			goto err_out;
+> +		if (new->phys_addr == entry->phys_addr)
+> +			goto err_out;
+> +
+> +		if (new->phys_addr < entry->phys_addr)
+> +			link = &(*link)->rb_left;
+> +		else
+> +			link = &(*link)->rb_right;
+> +	}
+> +	rb_link_node(&new->rbnode_phys, parent, link);
+> +	rb_insert_color(&new->rbnode_phys, &phys_to_bus);
+>  	goto out;
+>  
+>  err_out:
+> @@ -130,13 +169,22 @@ out:
+>  	return rc;
+>  }
+>  
+> +static int xen_dma_add_entry(struct xen_dma_info *new)
+> +{
+> +	int rc;
+> +	if ((rc = xen_dma_add_entry_bus(new) < 0) ||
+> +		(rc = xen_dma_add_entry_phys(new) < 0))
 
+Please don't do that. Just do
+
+	rc = xen_dma_add_entry(bus);
+	if (rc)
+		return rc;
+	rc = xen_dma_add_entry_phys(new);
+	if (rc) {
+		// unwind it somehow? <<== This is important :-)
+	}
+	return rc;
+
+
+> +		return rc;
+> +	return 0;
+> +}
+> +
+>  static struct xen_dma_info *xen_get_dma_info_from_dma(dma_addr_t dma_addr)
+>  {
+>  	struct rb_node *n = bus_to_phys.rb_node;
+>  	struct xen_dma_info *entry;
+>  
+>  	while (n) {
+> -		entry = rb_entry(n, struct xen_dma_info, rbnode);
+> +		entry = rb_entry(n, struct xen_dma_info, rbnode_dma);
+>  		if (entry->dma_addr <= dma_addr &&
+>  				entry->dma_addr + entry->size > dma_addr) {
+>  			return entry;
+> @@ -150,11 +198,30 @@ static struct xen_dma_info *xen_get_dma_info_from_dma(dma_addr_t dma_addr)
+>  	return NULL;
+>  }
+>  
+> -static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+> +static struct xen_dma_info *xen_get_dma_info_from_phys(phys_addr_t phys)
+>  {
+> -	int nr_seg;
+> -	unsigned long offset;
+> -	char *vaddr;
+> +	struct rb_node *n = phys_to_bus.rb_node;
+> +	struct xen_dma_info *entry;
+> +
+> +	while (n) {
+> +		entry = rb_entry(n, struct xen_dma_info, rbnode_phys);
+> +		if (entry->phys_addr <= phys &&
+> +				entry->phys_addr + entry->size > phys) {
+> +			return entry;
+> +		}
+> +		if (phys < entry->phys_addr)
+> +			n = n->rb_left;
+> +		else
+> +			n = n->rb_right;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +/* Only looks into the initial buffer allocation in case of
+> + * XENFEAT_auto_translated_physmap guests. */
+> +static dma_addr_t xen_phys_to_bus_quick(phys_addr_t paddr) { int nr_seg;
+> +	unsigned long offset; char *vaddr;
+>  
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap))
+>  		return phys_to_machine(XPADDR(paddr)).maddr;
+> @@ -184,7 +251,7 @@ static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+>  
+>  static dma_addr_t xen_virt_to_bus(void *address)
+>  {
+> -	return xen_phys_to_bus(virt_to_phys(address));
+> +	return xen_phys_to_bus_quick(virt_to_phys(address));
+>  }
+>  
+>  static int check_pages_physically_contiguous(unsigned long pfn,
+> @@ -424,7 +491,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+>  	 * Do not use virt_to_phys(ret) because on ARM it doesn't correspond
+>  	 * to *dma_handle. */
+>  	phys = *dma_handle;
+> -	dev_addr = xen_phys_to_bus(phys);
+> +	dev_addr = xen_phys_to_bus_quick(phys);
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
+>  	    ((dev_addr + size - 1 <= dma_mask)) &&
+>  	    !range_straddles_page_boundary(phys, size))
+> @@ -503,7 +570,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+>  				struct dma_attrs *attrs)
+>  {
+>  	phys_addr_t map, phys = page_to_phys(page) + offset;
+> -	dma_addr_t dev_addr = xen_phys_to_bus(phys);
+> +	dma_addr_t dev_addr = xen_phys_to_bus_quick(phys);
+>  
+>  	BUG_ON(dir == DMA_NONE);
+>  	/*
+> @@ -527,7 +594,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+>  	if (map == SWIOTLB_MAP_ERROR)
+>  		return DMA_ERROR_CODE;
+>  
+> -	dev_addr = xen_phys_to_bus(map);
+> +	dev_addr = xen_phys_to_bus_quick(map);
+>  
+>  	/*
+>  	 * Ensure that the address returned is DMA'ble
+> @@ -656,7 +723,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+>  
+>  	for_each_sg(sgl, sg, nelems, i) {
+>  		phys_addr_t paddr = sg_phys(sg);
+> -		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
+> +		dma_addr_t dev_addr = xen_phys_to_bus_quick(paddr);
+>  
+>  		if (swiotlb_force ||
+>  		    xen_feature(XENFEAT_auto_translated_physmap) ||
+> @@ -682,7 +749,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+>  				sg_dma_len(sgl) = 0;
+>  				return DMA_ERROR_CODE;
+>  			}
+> -			sg->dma_address = xen_phys_to_bus(map);
+> +			sg->dma_address = xen_phys_to_bus_quick(map);
+>  		} else
+>  			sg->dma_address = dev_addr;
+>  		sg_dma_len(sg) = sg->length;
+> -- 
+> 1.7.2.5
+> 
