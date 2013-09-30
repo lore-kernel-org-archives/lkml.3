@@ -1,82 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab3I3WI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 18:08:29 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:44364 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab3I3WI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 18:08:28 -0400
-Date: Mon, 30 Sep 2013 15:08:25 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sergey Dyasly <dserrg@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to
- exit
-In-Reply-To: <20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
-Message-ID: <alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com>
-References: <1378740624-2456-1-git-send-email-dserrg@gmail.com> <alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com> <20130911190605.5528ee4563272dbea1ed56a6@gmail.com> <alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
- <20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756495Ab3I3WKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 18:10:00 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48018 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756014Ab3I3WJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 18:09:59 -0400
+Message-ID: <5249F6AF.7050608@linux.vnet.ibm.com>
+Date: Mon, 30 Sep 2013 17:09:51 -0500
+From: Joel Schopp <jschopp@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Rajiv Andrade <mail@srajiv.net>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Sirrix AG <tpmdd@sirrix.com>,
+        Richard Maciel Costa <richardm@br.ibm.com>,
+        "trousers-tech@lists.sourceforge.net" 
+	<trousers-tech@lists.sourceforge.net>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs
+ into tpm-sysfs.c
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-10-git-send-email-jgunthorpe@obsidianresearch.com> <52408E5D.4020904@tycho.nsa.gov>	<20130923193633.GA9194@obsidianresearch.com> <5240A2A3.4040102@tycho.nsa.gov> <20130923204232.GB16345@obsidianresearch.com> <5240BA0E.3000304@tycho.nsa.gov>	<20130923222324.GA9533@obsidianresearch.com> <5241A199.1080505@tycho.nsa.gov> <20130930181005.GG28898@obsidianresearch.com> <5249E0CB.2070106@tycho.nsa.gov>
+In-Reply-To: <5249E0CB.2070106@tycho.nsa.gov>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13093022-5806-0000-0000-000022E80787
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep 2013, Sergey Dyasly wrote:
+<snip>
 
-> What you are saying contradicts current OOMk code the way I read it. Comment in
-> oom_kill_process() says:
+> There is also the fact that the driver may not be able to tell if a
+> locality is available without doing some kind of test command. The Xen
+> TPM interface doesn't expose what localities are available, for example,
+> and the TIS interface may need to test to see if locality 3 and 4 are
+> actually blocked by the chipset - at least 3 might be available on some
+> systems (the spec leaves this "implementation dependent").
 > 
-> "If the task is already exiting ... set TIF_MEMDIE so it can die quickly"
+>>> Perhaps:
+>>> 	default_locality - default to CONFIG_USER_DEFAULT_LOCALITY
+>>> 		sysfs node permissions 0644
+>>> 	kernel_locality - default to #CONFIG_KERNEL_DEFAULT_LOCALITY
+>>> 		0444 if CONFIG_KERNEL_ONLY_LOCALITY=y
+>>> 		0644 if CONFIG_KERNEL_ONLY_LOCALITY=n
+>>> 	ioctl TPM_{GET,SET}_LOCALITY on an open /dev/tpmX
+>>>
+>>> If CONFIG_KERNEL_ONLY_LOCALITY=y, the userspace locality is not
+>>> permitted to be equal to kernel_locality (but may take any other valid
+>>> value).  Drivers may reject locality values that they consider invalid
+>>> (the default should be to only allow 0-4, which is all that is defined
+>>> in the spec) or may fail on attempted use of the TPM by passing down an
+>>> error from the hardware - I would expect the latter to be the case on
+>>> attempts to use locality 4 in the tpm_tis driver.
+>>
+>> Seems resonable, CONFIG_KERNEL_ONLY_LOCALITY could be
+>> CONFIG_TPM_ONE_TIME_LOCALITY (eg you get to set kernel_locality only
+>> once)
 > 
-> I just want to know the right solution.
+> Hmm, how much trouble would it be to make this a menu selection? Even
+> with the one-time-set option, you still need a default set either in
+> the code or by CONFIG_ so that the TPM is not unavailable before the
+> sysfs write. The options would be:
+> 
+>   - CONFIG_TPM_KERNEL_DEFAULT_LOCALITY = [int]
+>   - CONFIG_TPM_KERNEL_LOCALITY_FIXED - no changes from userspace
+>   - CONFIG_TPM_KERNEL_LOCALITY_ONESHOT - only one change possible
+>   - CONFIG_TPM_KERNEL_LOCALITY_ANY - may be changed freely
+> 
+> The userspace locality is not allowed to use the kernel locality if
+> the mode is either FIXED or ONESHOT, but may share locality if ANY
+> is used.
+> 
+> Or, for more flexibility (I actually like this one better):
+> 
+>   - CONFIG_TPM_KERNEL_DEFAULT_LOCALITY = [int]
+>   - CONFIG_TPM_KERNEL_LOCALITY_FIXED = [bool]
+
+This seems best of the options discussed to me.
+
+> 
+> And sysfs contains:
+>   - kernel_locality [0644, int; 0444 if FIXED=y or when locked(?)]
+>   - lock_kernel_locality [write-once; only exists if FIXED=n]
+> 
+> Where kernel_locality may be changed until a write is made to
+> local_kernel_locality, at which time the value of kernel_locality
+> becomes read-only and no longer available via /dev/tpmX.
+> 
+>>> The only one I see immediately is seal/unseal (security/keys/trusted.c).
+>>> The invocation of the seal command would need to be changed to seal the
+>>> trusted keys to the kernel-only locality in order to take advantage of
+>>> the increased protection provided by a kernel-only locality.
+>>
+>> Right
+> 
+> Actually, only the invocation needs to be changed - the PCR selection
+> is passed in from userspace, which will just need to use PCR_INFO_LONG
+> with the proper locality mask.
+> 
+>>>> Do you know anyone on the userspace SW side who could look at this?
+>>
+>>> I should be able to find someone.
+>>
+>> Okay, let me know. I'd like to get a few more clean ups done before
+>> mucking with the sysfs, but the way forward for locality looks pretty
+>> clear..
+>>
+>> Thanks,
+>> Jason
+> 
+> So far, nobody I have talked to has offered any strong opinions on
+> what locality should be used or how it should be set. I think finding
+> a developer of trousers may be the most useful to talk about how the
+> ioctl portion of this would need to be set up - if someone is actually
+> needed.
 > 
 
-That's a comment, not code.  The point of the PF_EXITING special handling 
-in oom_kill_process() is to avoid telling sysadmins that a process has 
-been killed to free memory when it has already called exit() and to avoid 
-sacrificing one of its children for the exiting process.
+I am a TrouSerS developer and am ccing Richard, another TrouSerS
+developer, and ccing the trousers-tech list.  It would be good if you
+could elaborate on the question and context for those not following the
+entire thread, myself included.
 
-It may or may not need access to memory reserves to actually exit after 
-PF_EXITING depending on whether it needs to allocate memory for 
-coredumping or anything else.  So instead of waiting for it to recall the 
-oom killer, TIF_MEMDIE is set anyway.  The point is that PF_EXITING 
-processes can already get TIF_MEMDIE immediately when their memory 
-allocation fails so there's no reason not to set it now as an 
-optimization.
-
-But we definitely want to avoid printing anything to the kernel log when 
-the process has already called exit() and issuing the SIGKILL at that 
-point would be pointless.
-
-> You are mistaken, oom_kill_process() is only called from out_of_memory()
-> and mem_cgroup_out_of_memory().
-> 
-
-out_of_memory() calls oom_kill_process() in two places, plus the call from 
-mem_cgroup_out_of_memory(), making three calls in the tree.  Not that this 
-matters in the slightest, though.
-
-> > Read the comment about why we don't emit anything to the kernel log in 
-> > this case; the process is already exiting, there's no need to kill it or 
-> > make anyone believe that it was killed.
-> 
-> Yes, but there is already the PF_EXITING check in oom_scan_process_thread(),
-> and in this case oom_kill_process() won't be even called. That's why it's
-> redundant.
-> 
-
-You apparently have no idea how long select_bad_process() runs on a large 
-system with thousands of processes.  Keep in mind that SGI requested the 
-addition of the oom_kill_allocating_task sysctl specifically because of 
-how long select_bad_process() runs.  The PF_EXITING check in 
-oom_kill_process() is simply an optimization to return early and with 
-access to memory reserves so it can exit as quickly as possible and 
-without the kernel stating it's killing something that has already called 
-exit().
