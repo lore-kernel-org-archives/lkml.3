@@ -1,52 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab3I3R32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 13:29:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19018 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755244Ab3I3R31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 13:29:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1009,1371106800"; 
-   d="scan'208";a="411945653"
-Message-ID: <1380562166.32071.172.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: GPIO: Performance sensitive applications, gpiochip-level locking
-From: Darren Hart <dvhart@linux.intel.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Mon, 30 Sep 2013 10:29:26 -0700
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1755928Ab3I3R3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 13:29:47 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:57507 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755426Ab3I3R3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 13:29:46 -0400
+X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Sep 2013 13:29:46 EDT
+Message-ID: <5249B21E.70603@itwm.fraunhofer.de>
+Date: Mon, 30 Sep 2013 19:17:18 +0200
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+References: <20130930143432.GG16579@fieldses.org> <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com> <52499026.3090802@redhat.com> <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com> <52498AA8.2090204@redhat.com> <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com> <52498DB6.7060901@redhat.com> <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com> <52498F68.8050200@redhat.com> <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com> <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130930163159.GA14242@tucsk.piliscsaba.szeredi.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm currently working with a graphics driver that makes use of 2 GPIO
-pins for EDID communication (clock and data). In order to coexist
-peacefully with the driver for the GPIO chip, it must use gpiolib to
-request the lines, set direction, and set values. This results in a
-spinlock/unlock for every operation with this particular gpio driver.
+On 09/30/2013 06:31 PM, Miklos Szeredi wrote:
+> Here's an example "cp" app using direct splice (and without fallback to
+> non-splice, which is obviously required unless the kernel is known to support
+> direct splice).
+>
+> Untested, but trivial enough...
+>
+> The important part is, I think, that the app must not assume that the kernel can
+> complete the request in one go.
+>
+> Thanks,
+> Miklos
+>
+> ----
+> #define _GNU_SOURCE
+>
+> #include <stdio.h>
+> #include <fcntl.h>
+> #include <unistd.h>
+> #include <limits.h>
+> #include <sys/stat.h>
+> #include <err.h>
+>
+> #ifndef SPLICE_F_DIRECT
+> #define SPLICE_F_DIRECT        (0x10)  /* neither splice fd is a pipe */
+> #endif
+>
+> int main(int argc, char *argv[])
+> {
+> 	struct stat stbuf;
+> 	int in_fd;
+> 	int out_fd;
+> 	int res;
+> 	off_t off;
 
-It would be preferable to lock the resources once, perform the EDID
-communication, then unlock the resources. The resources in this case are
-the value and direction registers off the PCI GPIO base address register
-which is shared with the other lines provided by the GPIO chip.
+off_t off = 0;
 
-Is there a best practice for dealing with this kind of configuration?
+>
+> 	if (argc != 3)
+> 		errx(1, "usage: %s from to", argv[0]);
+>
+> 	in_fd = open(argv[1], O_RDONLY);
+> 	if (in_fd == -1)
+> 		err(1, "opening %s", argv[1]);
+>
+> 	res = fstat(in_fd, &stbuf);
+> 	if (res == -1)
+> 		err(1, "fstat");
+>
+> 	out_fd = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC, stbuf.st_mode);
+> 	if (out_fd == -1)
+> 		err(1, "opening %s", argv[2]);
+>
+> 	do {
+> 		off_t in_off = off, out_off = off;
+> 		ssize_t rres;
+>
+> 		rres = splice(in_fd, &in_off, out_fd, &out_off, SSIZE_MAX,
+> 			     SPLICE_F_DIRECT);
+> 		if (rres == -1)
+> 			err(1, "splice");
+> 		if (rres == 0)
+> 			break;
+>
+> 		off += rres;
+> 	} while (off < stbuf.st_size);
+>
+> 	res = close(in_fd);
+> 	if (res == -1)
+> 		err(1, "close");
+>
+> 	res = fsync(out_fd);
+> 	if (res == -1)
+> 		err(1, "fsync");
+>
+> 	res = close(out_fd);
+> 	if (res == -1)
+> 		err(1, "close");
+>
+> 	return 0;
+> }
 
-If not, would it make sense to add optional gpiochip-level lock/unlock
-and lockless direction and value operations to the gpiochip function
-block?
 
-Thanks,
+It would be nice if there would be way if the file system would get a 
+hint that the target file is supposed to be copy of another file. That 
+way distributed file systems could also create the target-file with the 
+correct meta-information (same storage targets as in-file has).
+Well, if we cannot agree on that, file system with a custom protocol at 
+least can detect from 0 to SSIZE_MAX and then reset metadata. I'm not 
+sure if this would work for pNFS, though.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+
+Bernd
+
 
 
