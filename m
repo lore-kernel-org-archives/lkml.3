@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab3I3AuV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Sep 2013 20:50:21 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16792 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426Ab3I3AuQ (ORCPT
+	id S1754631Ab3I3Av5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Sep 2013 20:51:57 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:54215 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab3I3Avz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Sep 2013 20:50:16 -0400
-X-AuditID: cbfee690-b7f3b6d000007a15-ea-5248cac63298
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
-Subject: [PATCH V4 01/14] regulator: ab3100: use devm_regulator_register()
-Date: Mon, 30 Sep 2013 09:50:14 +0900
-Message-id: <007401cebd77$0652a340$12f7e9c0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac69dwY7qCw/SuPGSmKRawAumfnevw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ91jpzyCDH4/sLCY+vAJm8XlhZdY
-	Lb5d6WCymPJnOZPF5V1z2BxYPXbOusvusWlVJ5vHnWt72Dz6tqxi9Pi8SS6ANYrLJiU1J7Ms
-	tUjfLoEr48ONr2wFszgqPk7uZGpgfMXWxcjJISFgInFn0XQoW0ziwr31QDYXh5DAMkaJxY2z
-	WWCKms8eYIFILGKUWPfoNzuE8wvIaVrDCFLFJqAm8eXLYaAEB4eIgKrE/1fuIDXMAjMZJXb2
-	72ACiQsLeEl0PTICKWcBKtn+ZhlYK6+ArcTh5QdZIWxBiR+T74EtZhbQkli/8zgThC0vsXnN
-	W2aQMRIC6hKP/uqChEUE9CSap19ghSgRkdj34h0jyFoJgUPsEovePmaD2CUg8W3yIRaIXlmJ
-	TQeYIf6SlDi44gbLBEaxWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yESvODG3uDQvXS85
-	P3cTIyTyJuxgvHfA+hBjMtD6icxSosn5wMjNK4k3NDYzsjA1MTU2Mrc0I01YSZxXvcU6UEgg
-	PbEkNTs1tSC1KL6oNCe1+BAjEwenVANj/Pa4n3djvGQf86tOCvt1sLia0fZrVTNr0jLd/i8l
-	MkI9X443rVSRU29tP77zzb+sSJlL/D1Lvh78lvWKj+XEDtYlIlMMyj/F8l2unmGlvi2y1T6s
-	Ttvm5NGFiVzbFHbk8jV6Kgt3HTu2gEF9Gl+Z/DTdNetM0rYtU+KUPn7L+u/M0pkpnz8osRRn
-	JBpqMRcVJwIAq2Ja3tICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAd1jpzyCDJ78MrGY+vAJm8XlhZdY
-	Lb5d6WCymPJnOZPF5V1z2BxYPXbOusvusWlVJ5vHnWt72Dz6tqxi9Pi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePDja9sBbM4Kj5O7mRqYHzF1sXIySEhYCLR
-	fPYAC4QtJnHh3nqgOBeHkMAiRol1j36zQzi/gJymNYwgVWwCahJfvhwGSnBwiAioSvx/5Q5S
-	wywwk1FiZ/8OJpC4sICXRNcjI5ByFqCS7W+WgbXyCthKHF5+kBXCFpT4Mfke2GJmAS2J9TuP
-	M0HY8hKb17xlBhkjIaAu8eivLkhYREBPonn6BVaIEhGJfS/eMU5gFJiFZNIsJJNmIZk0C0nL
-	AkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBcf1MegfjqgaLQ4wCHIxKPLwWSz2ChFgT
-	y4orcw8xSnAwK4nwLk8CCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MOXklcQbGpuYGVka
-	mVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAOjjoyJ1+2kgq7uy5WKB2vLEz/w
-	C2l7d2ewy0w5bvtqSXdo+mv30GMtb2YbzX3L8fb6j8h7fi0/V9dXlFslP43ICFA1tnedXn44
-	cDXfsRm3rr7eyvJBmH2Ompj1mbhO1iKR53xOtle9cl47pOfz7FjSmfbRs5Jr0eNvzet6n58V
-	eMQy8cS5J9uVWIozEg21mIuKEwFF8ZOhLwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 29 Sep 2013 20:51:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380501626.2174.17.camel@buesod1.americas.hpqcorp.net>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+	<20130928074144.GA17773@gmail.com>
+	<CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+	<1380495986.2174.10.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFx1PErQQ8eR6JgQzmM0RZwyUtyc6CFfnvzzKz2RJa2GFw@mail.gmail.com>
+	<1380501626.2174.17.camel@buesod1.americas.hpqcorp.net>
+Date: Sun, 29 Sep 2013 17:51:53 -0700
+X-Google-Sender-Auth: D5v9gS17g1ORSsZkIn_C1QwpGvI
+Message-ID: <CA+55aFymh9PP12Tt40HZB-JMv6Tan2aNJvnCScXpx3XrmddTAw@mail.gmail.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_regulator_register() to make cleanup paths simpler.
+On Sun, Sep 29, 2013 at 5:40 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>
+> Hmm, I'm getting the following at bootup:
+>
+>  May be due to missing lock nesting notation
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/regulator/ab3100.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Yes it is. And that reminds me of a problem I think we had with this
+code: we had a possible case of the preemption counter nesting too
+deeply. I forget the details, but it was something people worried
+about.
 
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index 7d5eaa8..77b46d0 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -535,7 +535,7 @@ static int ab3100_regulator_register(struct platform_device *pdev,
- 	config.dev = &pdev->dev;
- 	config.driver_data = reg;
- 
--	rdev = regulator_register(desc, &config);
-+	rdev = devm_regulator_register(&pdev->dev, desc, &config);
- 	if (IS_ERR(rdev)) {
- 		err = PTR_ERR(rdev);
- 		dev_err(&pdev->dev,
-@@ -616,7 +616,6 @@ static int ab3100_regulators_remove(struct platform_device *pdev)
- 	for (i = 0; i < AB3100_NUM_REGULATORS; i++) {
- 		struct ab3100_regulator *reg = &ab3100_regulators[i];
- 
--		regulator_unregister(reg->rdev);
- 		reg->rdev = NULL;
- 	}
- 	return 0;
--- 
-1.7.10.4
+That mm_take_all_locks() thing is really special, and I suspect that
+if we go down this way we should just do a single preempt-disable and
+then use the arch_write_lock() to avoid both the lockdep splat _and_
+the preemption counter overflow.
 
-
+                 Linus
