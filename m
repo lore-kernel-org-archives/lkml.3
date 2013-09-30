@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab3I3P5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:57:51 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:39143 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab3I3P5o (ORCPT
+	id S1756056Ab3I3P6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:58:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44587 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab3I3P6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:57:44 -0400
+	Mon, 30 Sep 2013 11:58:43 -0400
+Date: Mon, 30 Sep 2013 11:58:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
+Subject: Re: [PATCH v6 14/19] swiotlb: print a warning when the swiotlb is
+ full
+Message-ID: <20130930155808.GT3106@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
+ <1380298207-29151-14-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <52498F68.8050200@redhat.com>
-References: <20130925210742.GG30372@lenny.home.zabbo.net>
-	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
-	<20130926185508.GO30372@lenny.home.zabbo.net>
-	<5244A68F.906@redhat.com>
-	<20130927200550.GA22640@fieldses.org>
-	<20130927205013.GZ30372@lenny.home.zabbo.net>
-	<CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
-	<52474839.2080201@redhat.com>
-	<CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
-	<20130930143432.GG16579@fieldses.org>
-	<CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
-	<52499026.3090802@redhat.com>
-	<CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
-	<52498AA8.2090204@redhat.com>
-	<CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
-	<52498DB6.7060901@redhat.com>
-	<CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-	<52498F68.8050200@redhat.com>
-Date: Mon, 30 Sep 2013 17:57:41 +0200
-Message-ID: <CAJfpegvvN_5c5oMv8UoODXQHc-DQnijhOtPDXmNamVpQLDoWMQ@mail.gmail.com>
-Subject: Re: [RFC] extending splice for copy offloading
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380298207-29151-14-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 4:49 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
-> On 09/30/2013 10:46 AM, Miklos Szeredi wrote:
->>
->> On Mon, Sep 30, 2013 at 4:41 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
->>>
->>> The way the array based offload (and some software side reflink works) is
->>> not a byte by byte copy. We cannot assume that a valid count can be
->>> returned
->>> or that such a count would be an indication of a sequential segment of
->>> good
->>> data.  The whole thing would normally have to be reissued.
->>>
->>> To make that a true assumption, you would have to mandate that in each of
->>> the specifications (and sw targets)...
->>
->> You're missing my point.
->>
->>   - user issues SIZE_MAX splice request
->>   - fs issues *64M* (or whatever) request to offload
->>   - when that completes *fully* then we return 64M to userspace
->>   - if it completes partially, then we return an error to userspace
->>
->> Again, wouldn't that work?
->>
->> Thanks,
->> Miklos
->
->
-> Yes, if you send a copy offload command and it works, you can assume that it
-> worked fully. It would be pretty interesting if that were not true :)
->
-> If it fails, we cannot assume anything about partial completion.
+On Fri, Sep 27, 2013 at 05:10:02PM +0100, Stefano Stabellini wrote:
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  drivers/xen/swiotlb-xen.c |    1 +
+>  lib/swiotlb.c             |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index 96ad316..790c2eb 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -674,6 +674,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+>  								 sg->length,
+>  								 dir);
+>  			if (map == SWIOTLB_MAP_ERROR) {
+> +				pr_warn("swiotlb buffer is full\n");
 
-Sure, that was my understanding from the start.  Maybe I wasn't
-precise enough in my explanation.
+It would be beneficial to use dev_warn instead.
 
-Thanks,
-Miklos
+And perhaps even call debug_dma_dump_mappings to help in diagnosing
+a problem?
+
+>  				/* Don't panic here, we expect map_sg users
+>  				   to do proper error handling. */
+>  				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index eb45d17..f06da0d 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -502,6 +502,7 @@ phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
+>  
+>  not_found:
+>  	spin_unlock_irqrestore(&io_tlb_lock, flags);
+> +	pr_warn("swiotlb buffer is full\n");
+>  	return SWIOTLB_MAP_ERROR;
+>  found:
+>  	spin_unlock_irqrestore(&io_tlb_lock, flags);
+> -- 
+> 1.7.2.5
+> 
