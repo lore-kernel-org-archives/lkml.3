@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3I3PZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 11:25:57 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52752 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab3I3PZl (ORCPT
+	id S1755821Ab3I3P1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 11:27:35 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37196 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754797Ab3I3P1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 11:25:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: takasi-y@ops.dti.ne.jp
-Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
-        ben.dooks@codethink.co.uk,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] clocksource: em_sti: convert to clk_prepare/unprepare
-Date: Mon, 30 Sep 2013 17:25:41 +0200
-Message-ID: <1504961.3u9y73MgII@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130924130924.61d4ecedf3d4fca5952d55fc@ops.dti.ne.jp>
-References: <52410F86.4040301@renesas.com> <20130924130924.61d4ecedf3d4fca5952d55fc@ops.dti.ne.jp>
+	Mon, 30 Sep 2013 11:27:32 -0400
+Message-ID: <5249985A.1030400@gmail.com>
+Date: Mon, 30 Sep 2013 23:27:22 +0800
+From: Lennox Wu <lennox.wu@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+CC: lennox.wu@gmail.com
+Subject: [git pull] Score: Fix compiling errors and update the information
+ of maintainers (Fixed format 2)
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yoshii-san,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for the patch.
+Hi Linus,
+Please pull these updates for S+core architecture. These updates include
+updating information of maintainers, fix some trivial errors, and add
+a necessary function for supporting ipv6. We fix the format of the link
+and use a tag.
 
-On Tuesday 24 September 2013 13:09:24 takasi-y@ops.dti.ne.jp wrote:
-> From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
-> 
-> Add calls to clk_prepare and unprepare so that EMMA Mobile EV2 can
-> migrate to the common clock framework.
-> 
-> Signed-off-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+The following changes since commit 22356f447ceb8d97a4885792e7d9e4607f712e=
+1b
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+mm: Place preemption point in do_mlockall() loop (2013-9-24 18:29:11 -070=
+0)
 
-> ---
->  drivers/clocksource/em_sti.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clocksource/em_sti.c b/drivers/clocksource/em_sti.c
-> index 3a5909c..9d17083 100644
-> --- a/drivers/clocksource/em_sti.c
-> +++ b/drivers/clocksource/em_sti.c
-> @@ -78,7 +78,7 @@ static int em_sti_enable(struct em_sti_priv *p)
->  	int ret;
-> 
->  	/* enable clock */
-> -	ret = clk_enable(p->clk);
-> +	ret = clk_prepare_enable(p->clk);
->  	if (ret) {
->  		dev_err(&p->pdev->dev, "cannot enable clock\n");
->  		return ret;
-> @@ -107,7 +107,7 @@ static void em_sti_disable(struct em_sti_priv *p)
->  	em_sti_write(p, STI_INTENCLR, 3);
-> 
->  	/* stop clock */
-> -	clk_disable(p->clk);
-> +	clk_disable_unprepare(p->clk);
->  }
-> 
->  static cycle_t em_sti_count(struct em_sti_priv *p)
--- 
-Regards,
+are available in the git repository at:
 
-Laurent Pinchart
+git://github.com/sctscore/official-linux.git tags/for-linus-20130929
 
+For you to fetch changes up to ed38665eb50ef7ad530f9b2db531a09b8520ed32
+
+Score: Update the information of Score maintaners (2013-9-26 01:41:22 +08=
+00)
+
+Thanks for your patience.
+
+Best,
+Lennox Wu
+
+-----------------------------------------------
+Summary these commits:
+1. Fix some trivial errors for successfully compiling the latest
+version Linux kernel.
+2. Provide necessary function for support IPV6.
+3. Update the information of maintainers.
+
+Signed-off-by: Lennox Wu <lennox.wu@gmail.com>
+
+------------------------------------------------
+ MAINTAINERS                       |    4 +-
+ arch/score/Kconfig                |    4 ++
+ arch/score/Makefile               |    4 +-
+ arch/score/include/asm/checksum.h |   93
+++++++++++++++++++++-----------------
+ arch/score/include/asm/io.h       |    1 -
+ arch/score/include/asm/pgalloc.h  |    2 +-
+ arch/score/kernel/entry.S         |    4 +-
+ arch/score/kernel/process.c       |    4 +-
+ 8 files changed, 64 insertions(+), 52 deletions(-)
+
+
+--G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEVAwUBUkmYXRIBnItolwGVAQLw8Qf+OTqOGeyorw2mm0HkFGaexoCkUxIIC0px
+Gqh3+76wTZdX0BfYTIUOTThjlu9npDwsQSyMB3sbgYsQFQRSIgYgpTZqi//kWEEZ
+ogMDqQb1h57Fgt6iddYtn64K9njGE5vy73HkpIxY+U7gldnrhaIwfE43ywUpDDoI
+yhwJdeMNMU/qs4evLT2xLbLYDIV4p6gW+bEkWXjmQFTFgfT68aHNYJOwUQ677cWr
+BGGECwAPjULpuR5ASDOLJEjPD55D7/A4T1fZ97eUhh36+IpekQs9TAYPZsViouOQ
+QtFVpn+ve81Wb408igv1urAxRfF1B6saGWBeEfg77Dc/Ys+6AFpfgQ==
+=QskS
+-----END PGP SIGNATURE-----
+
+--G4cSkbRovRWNSQvrp4pQPWlJ6kCB9a3lB--
