@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab3JAPXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:23:06 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:53648 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752979Ab3JAPW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:22:58 -0400
-Date: Tue, 1 Oct 2013 10:22:54 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Mark Tinguely <tinguely@sgi.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Alex Elder <elder@kernel.org>,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: Use kmem_free() instead of free()
-Message-ID: <20131001152254.GM10553@sgi.com>
-References: <1380638873-5181-1-git-send-email-treding@nvidia.com>
- <524AE39B.3040505@sgi.com>
+	id S1753855Ab3JAPXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:23:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752979Ab3JAPXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:23:36 -0400
+Date: Tue, 1 Oct 2013 17:16:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] sched, wait: Collapse __wait_event macros -v4
+Message-ID: <20131001151638.GA2246@redhat.com>
+References: <20130930152242.207382649@infradead.org> <20130930174054.GA28129@redhat.com> <20130930180939.GN15690@laptop.programming.kicks-ass.net> <20130930181358.GA29544@redhat.com> <20131001140940.GA32328@redhat.com> <20131001143921.GO3657@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524AE39B.3040505@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131001143921.GO3657@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 10:00:43AM -0500, Mark Tinguely wrote:
-> On 10/01/13 09:47, Thierry Reding wrote:
-> >This fixes a build failure caused by calling the free() function which
-> >does not exist in the Linux kernel.
-> >
-> >Signed-off-by: Thierry Reding<treding@nvidia.com>
-> >---
-> >  fs/xfs/xfs_log_recover.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> >diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
-> >index 4324058..3979749 100644
-> >--- a/fs/xfs/xfs_log_recover.c
-> >+++ b/fs/xfs/xfs_log_recover.c
-> >@@ -1585,7 +1585,7 @@ xlog_recover_add_to_trans(
-> >  		"bad number of regions (%d) in inode log format",
-> >  				  in_f->ilf_size);
-> >  			ASSERT(0);
-> >-			free(ptr);
-> >+			kmem_free(ptr);
-> >  			return XFS_ERROR(EIO);
-> >  		}
-> >
-> 
-> Looks good. I will remove the other list items in another patch.
-> 
-> Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+On 10/01, Peter Zijlstra wrote:
+>
+> On Tue, Oct 01, 2013 at 04:09:40PM +0200, Oleg Nesterov wrote:
+> > But somehow I didn't realize that ___wait_cond_timeout() can be used
+> > as is, so the simple patch below should work?
+>
+> Yeah, should work.. But how often do people use timeout=0?
 
-Gah.  Build Fail.  Apparently things were getting a little punchy over here.
+I do not know. Perhaps never.
 
-Applied, and thanks Thierry.
+> Should we
+> really care about that case to the effect of adding more code.
 
--Ben
+Again, I do not really know. But imo it would be better to fix
+this anyway, even if the problem is really minor. If nothing
+else, wait_event_timeout() and __wait_event_timeout() should have
+the same semantics.
+
+And suppose that we ha a helper(timeout) which calls wait_event_timeout(),
+and checks the non-trivial condition inside. Now suppose that someone
+does
+
+	timeout = DEFAULT_TIMEOUT;
+
+	if (option_nonblock)
+		timeout = 0;
+
+	ok = helper(timeout);
+
+So do you think we should ignore this or I should send 7/6 with the
+changelog ?
+
+(In fact I am going to send another patch on top of this series later.
+ At least, try to send for discussion because I know you dislike the
+ idea to move the signal-pending checks out of line).
+
+Oleg.
+
