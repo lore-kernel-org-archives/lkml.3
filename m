@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab3JAUMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:12:41 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:34481 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3JAUMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:12:35 -0400
-Message-ID: <524B3ADE.9060602@kernel.org>
-Date: Tue, 01 Oct 2013 22:13:02 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, jic23@cam.ac.uk
-CC: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 07/20] Documentation: dt: iio: Add binding for LPS001WP
-References: <1379347346-823-1-git-send-email-lee.jones@linaro.org> <1379347346-823-8-git-send-email-lee.jones@linaro.org> <524B3A19.9050509@kernel.org>
-In-Reply-To: <524B3A19.9050509@kernel.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753347Ab3JAUOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:14:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8203 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751360Ab3JAUON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 16:14:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1015,1371106800"; 
+   d="scan'208";a="412602638"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: cjb@laptop.org, bhelgaas@google.com, adrian.hunter@intel.com,
+        wfp5p@virginia.edu, gregkh@linuxfoundation.org, g.liakhovetski@gmx.de
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH v2] mmc: sdhci-pci: add Intel Merrifield support
+Date: Tue,  1 Oct 2013 13:18:15 -0700
+Message-Id: <1380658695-20047-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/13 22:09, Jonathan Cameron wrote:
-> On 09/16/13 17:02, Lee Jones wrote:
->> LPS001WP is a Pressure and Temperature sensor.
->>
->> Cc: devicetree@vger.kernel.org
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Hi Lee,
-> 
-> I'm planning to drop this set of bindings in favour of the unified ones
-> proposed by Lukasz Czerwinski.
-Sorry, I just realised this is unclear.  I'm proposing to drop the
-documentation added in this patch in favour of the other version
-in which a file per type of sensor is used rather than one per
-individual sensor chip.
-> 
-> Could you take a look at those and perhaps propose the additional bits and pieces
-> needed to ensure everything is covered by the resulting files?
-> 
-> Thanks,
-> 
-> Jonathan
->> ---
->>  .../devicetree/bindings/iio/pressure/lps001wp.txt   | 21 +++++++++++++++++++++
->>  1 file changed, 21 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
->>
->> diff --git a/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
->> new file mode 100644
->> index 0000000..45cb45c
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
->> @@ -0,0 +1,21 @@
->> +* STMicroelectronics Pressure Sensor
->> +
->> +Required properties:
->> +  - compatible: Should be "st,lps001wp"
->> +  - reg: The I2C address of the sensor
->> +
->> +Optional properties:
->> +  - vdd-supply: Phandle to the Vdd supply regulator
->> +  - vddio-supply: Phandle to the Vdd-IO supply regulator
->> +
->> +Example:
->> +
->> +i2c@80128000 {
->> +        lps001wp@5c {
->> +                compatible = "st,lps001wp";
->> +                reg = <0x5c>;
->> +
->> +                vdd-supply = <&ab8500_ldo_aux1_reg>;
->> +                vddio-supply = <&db8500_vsmps2_reg>;
->> +        };
->> +};
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Implement initial SDHCI Intel Merrifield support.
+This patch is based on previous one from Yunpeng Gao <yunpeng.gao@intel.com>
+
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ drivers/mmc/host/sdhci-pci.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index d7d6bc8..06f026a 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -37,6 +37,7 @@
+ #define PCI_DEVICE_ID_INTEL_BYT_SDIO	0x0f15
+ #define PCI_DEVICE_ID_INTEL_BYT_SD	0x0f16
+ #define PCI_DEVICE_ID_INTEL_BYT_EMMC2	0x0f50
++#define PCI_DEVICE_ID_INTEL_MRFL_MMC	0x1190
+ 
+ /*
+  * PCI registers
+@@ -356,6 +357,28 @@ static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
+ 	.allow_runtime_pm = true,
+ };
+ 
++/* Define Host controllers for Intel Merrifield platform */
++#define INTEL_MRFL_EMMC_0	0
++#define INTEL_MRFL_EMMC_1	1
++
++static int intel_mrfl_mmc_probe_slot(struct sdhci_pci_slot *slot)
++{
++	if ((PCI_FUNC(slot->chip->pdev->devfn) != INTEL_MRFL_EMMC_0) &&
++	    (PCI_FUNC(slot->chip->pdev->devfn) != INTEL_MRFL_EMMC_1))
++		/* SD support is not ready yet */
++		return -ENODEV;
++
++	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_NONREMOVABLE |
++				 MMC_CAP_1_8V_DDR;
++
++	return 0;
++}
++
++static const struct sdhci_pci_fixes sdhci_intel_mrfl_mmc = {
++	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
++	.probe_slot	= intel_mrfl_mmc_probe_slot,
++};
++
+ /* O2Micro extra registers */
+ #define O2_SD_LOCK_WP		0xD3
+ #define O2_SD_MULTI_VCC3V	0xEE
+@@ -940,6 +963,13 @@ static const struct pci_device_id pci_ids[] = {
+ 	},
+ 
+ 	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_MRFL_MMC,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_intel_mrfl_mmc,
++	},
++	{
+ 		.vendor		= PCI_VENDOR_ID_O2,
+ 		.device		= PCI_DEVICE_ID_O2_8120,
+ 		.subvendor	= PCI_ANY_ID,
+-- 
+1.8.4.rc3
+
