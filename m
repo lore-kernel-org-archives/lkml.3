@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab3JAUKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:10:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3064 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab3JAUKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:10:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1015,1371106800"; 
-   d="scan'208";a="386391362"
-Message-ID: <524B2D36.3040803@linux.intel.com>
-Date: Tue, 01 Oct 2013 13:14:46 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	id S1753020Ab3JAUMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:12:41 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:34481 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3JAUMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 16:12:35 -0400
+Message-ID: <524B3ADE.9060602@kernel.org>
+Date: Tue, 01 Oct 2013 22:13:02 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: cjb@laptop.org, bhelgaas@google.com, adrian.hunter@intel.com,
-        wfp5p@virginia.edu, g.liakhovetski@gmx.de, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 1/2] pci_id: add Intel Merrifield mmc pci id
-References: <1380657633-19543-1-git-send-email-david.a.cohen@linux.intel.com> <20131001200755.GA28165@kroah.com>
-In-Reply-To: <20131001200755.GA28165@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk
+CC: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 07/20] Documentation: dt: iio: Add binding for LPS001WP
+References: <1379347346-823-1-git-send-email-lee.jones@linaro.org> <1379347346-823-8-git-send-email-lee.jones@linaro.org> <524B3A19.9050509@kernel.org>
+In-Reply-To: <524B3A19.9050509@kernel.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 01:07 PM, Greg KH wrote:
-> On Tue, Oct 01, 2013 at 01:00:32PM -0700, David Cohen wrote:
->> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
->> ---
->>   include/linux/pci_ids.h | 1 +
->>   1 file changed, 1 insertion(+)
+On 10/01/13 22:09, Jonathan Cameron wrote:
+> On 09/16/13 17:02, Lee Jones wrote:
+>> LPS001WP is a Pressure and Temperature sensor.
 >>
->> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
->> index 97fbecd..2a89103 100644
->> --- a/include/linux/pci_ids.h
->> +++ b/include/linux/pci_ids.h
->> @@ -2551,6 +2551,7 @@
->>   #define PCI_DEVICE_ID_INTEL_MFD_EMMC0	0x0823
->>   #define PCI_DEVICE_ID_INTEL_MFD_EMMC1	0x0824
->>   #define PCI_DEVICE_ID_INTEL_MRST_SD2	0x084F
->> +#define PCI_DEVICE_ID_INTEL_MRFL_MMC	0x1190
->
-> Please read the top of this file for why you shouldn't be adding new
-> device ids to it.
-
-Thanks for the reply. I am sending new patch.
-
-Br, David
-
->
-> thanks,
->
-> greg k-h
->
-
+>> Cc: devicetree@vger.kernel.org
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Hi Lee,
+> 
+> I'm planning to drop this set of bindings in favour of the unified ones
+> proposed by Lukasz Czerwinski.
+Sorry, I just realised this is unclear.  I'm proposing to drop the
+documentation added in this patch in favour of the other version
+in which a file per type of sensor is used rather than one per
+individual sensor chip.
+> 
+> Could you take a look at those and perhaps propose the additional bits and pieces
+> needed to ensure everything is covered by the resulting files?
+> 
+> Thanks,
+> 
+> Jonathan
+>> ---
+>>  .../devicetree/bindings/iio/pressure/lps001wp.txt   | 21 +++++++++++++++++++++
+>>  1 file changed, 21 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+>> new file mode 100644
+>> index 0000000..45cb45c
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+>> @@ -0,0 +1,21 @@
+>> +* STMicroelectronics Pressure Sensor
+>> +
+>> +Required properties:
+>> +  - compatible: Should be "st,lps001wp"
+>> +  - reg: The I2C address of the sensor
+>> +
+>> +Optional properties:
+>> +  - vdd-supply: Phandle to the Vdd supply regulator
+>> +  - vddio-supply: Phandle to the Vdd-IO supply regulator
+>> +
+>> +Example:
+>> +
+>> +i2c@80128000 {
+>> +        lps001wp@5c {
+>> +                compatible = "st,lps001wp";
+>> +                reg = <0x5c>;
+>> +
+>> +                vdd-supply = <&ab8500_ldo_aux1_reg>;
+>> +                vddio-supply = <&db8500_vsmps2_reg>;
+>> +        };
+>> +};
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
