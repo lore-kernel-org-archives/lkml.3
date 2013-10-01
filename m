@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab3JASTO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:19:14 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:39540 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab3JASTM (ORCPT
+	id S1752262Ab3JASZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:25:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35329 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab3JASZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:19:12 -0400
-Message-ID: <524B111F.9060003@linux.vnet.ibm.com>
-Date: Tue, 01 Oct 2013 23:44:55 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 1 Oct 2013 14:25:14 -0400
+Message-ID: <524B11AA.30400@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 12:17:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-References: <20130925175055.GA25914@redhat.com> <20130928144720.GL15690@laptop.programming.kicks-ass.net> <20130928163104.GA23352@redhat.com> <7632387.20FXkuCITr@vostro.rjw.lan> <524B0233.8070203@linux.vnet.ibm.com> <20131001173615.GW3657@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131001173615.GW3657@laptop.programming.kicks-ass.net>
+To: Arto Merilainen <amerilainen@nvidia.com>
+CC: tbergstrom@nvidia.com, treding@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mkulkarni@nvidia.com
+Subject: Re: [PATCHv3 4/4] gpu: host1x: Add runtime pm support for host1x
+References: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com> <1380024325-18280-5-git-send-email-amerilainen@nvidia.com>
+In-Reply-To: <1380024325-18280-5-git-send-email-amerilainen@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100118-5816-0000-0000-00000A2AC90B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 11:06 PM, Peter Zijlstra wrote:
-> On Tue, Oct 01, 2013 at 10:41:15PM +0530, Srivatsa S. Bhat wrote:
->> However, as Oleg said, its definitely worth considering whether this proposed
->> change in semantics is going to hurt us in the future. CPU_POST_DEAD has certainly
->> proved to be very useful in certain challenging situations (commit 1aee40ac9c
->> explains one such example), so IMHO we should be very careful not to undermine
->> its utility.
+On 09/24/2013 06:05 AM, Arto Merilainen wrote:
+> From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
 > 
-> Urgh.. crazy things. I've always understood POST_DEAD to mean 'will be
-> called at some time after the unplug' with no further guarantees. And my
-> patch preserves that.
-> 
-> Its not at all clear to me why cpufreq needs more; 1aee40ac9c certainly
-> doesn't explain it.
->
+> This patch adds runtime pm support for host1x hardware unit. This
+> allows host1x clock to be turned off when it is idle. If pm runtime
+> is not configured, we enable host1x clock in device probe and disable
+> it in remove.
 
-Sorry if I was unclear - I didn't mean to say that cpufreq needs more guarantees
-than that. I was just saying that the cpufreq code would need certain additional
-changes/restructuring to accommodate the change in the semantics brought about
-by this patch. IOW, it won't work as it is, but it can certainly be fixed.
+> diff --git a/drivers/gpu/host1x/dev.c b/drivers/gpu/host1x/dev.c
 
-My other point (unrelated to cpufreq) was this: POST_DEAD of course means
-that it will be called after unplug, with hotplug lock dropped. But it also
-provides the guarantee (in the existing code), that a *new* hotplug operation
-won't start until the POST_DEAD stage is also completed. This patch doesn't seem
-to honor that part. The concern I have is in cases like those mentioned by
-Oleg - say you take a lock at DOWN_PREPARE and want to drop it at POST_DEAD;
-or some other requirement that makes it important to finish a full hotplug cycle
-before moving on to the next one. I don't really have such a requirement in mind
-at present, but I was just trying to think what we would be losing with this
-change...
+> +static int host1x_runtime_suspend(struct device *dev);
+> +static int host1x_runtime_resume(struct device *dev);
 
-But to reiterate, I believe cpufreq can be reworked so that it doesn't depend
-on things such as the above. But I wonder if dropping that latter guarantee
-is going to be OK, going forward.
-
-Regards,
-Srivatsa S. Bhat
- 
-> What's wrong with leaving a cleanup handle in percpu storage and
-> effectively doing:
-> 
-> struct cpu_destroy {
-> 	void (*destroy)(void *);
-> 	void *args;
-> };
-> 
-> DEFINE_PER_CPU(struct cpu_destroy, cpu_destroy);
-> 
-> 	POST_DEAD:
-> 	{
-> 		struct cpu_destroy x = per_cpu(cpu_destroy, cpu);
-> 		if (x.destroy)
-> 			x.destroy(x.arg);
-> 	}
-> 
-> POST_DEAD cannot fail; so CPU_DEAD/CPU_DOWN_PREPARE can simply assume it
-> will succeed; it has to.
-> 
-> The cpufreq situation simply doesn't make any kind of sense to me.
-> 
-> 
-
+You could avoid having these prototypes by simply putting the function
+bodies earlier on in the file, somewhere before they're used. I don't
+care much either way, but I've certainly seen some people care about
+this and ask for them to be moved.
