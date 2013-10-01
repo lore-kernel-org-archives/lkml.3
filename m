@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab3JAIgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 04:36:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:35695 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891Ab3JAIgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 04:36:19 -0400
-Date: Tue, 1 Oct 2013 18:36:15 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tytso@mit.edu, herbert@gondor.hengli.com.au,
-        gleb@redhat.com, agraf@suse.de, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, mpm@selenic.com, pbonzini@redhat.com
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
- some powernv systems
-Message-ID: <20131001083615.GC27484@concordia>
-References: <1380177066-3835-1-git-send-email-michael@ellerman.id.au>
- <1380177066-3835-3-git-send-email-michael@ellerman.id.au>
- <52459311.4010104@linux.vnet.ibm.com>
+	id S1752987Ab3JAIiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 04:38:15 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:41915 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3JAIiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 04:38:12 -0400
+Date: Tue, 1 Oct 2013 10:38:07 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
+ in parallel
+Message-ID: <20131001083807.GD21793@gmail.com>
+References: <20130912184341.GA11400@ghostprotocols.net>
+ <52321CE4.1080804@gmail.com>
+ <20130912200236.GC11400@ghostprotocols.net>
+ <20130912203116.GD32644@gmail.com>
+ <20130912204313.GA3259@gmail.com>
+ <20130915091029.GA21465@gmail.com>
+ <20130930164210.GA22342@gmail.com>
+ <20130930171220.GC10293@ghostprotocols.net>
+ <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
+ <CAMuHMdUe3nLFcsZL+soHC7hsjURT+3uO-PMuboSV_eGEO=XPxQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52459311.4010104@linux.vnet.ibm.com>
+In-Reply-To: <CAMuHMdUe3nLFcsZL+soHC7hsjURT+3uO-PMuboSV_eGEO=XPxQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 07:45:45PM +0530, Anshuman Khandual wrote:
-> On 09/26/2013 12:01 PM, Michael Ellerman wrote:
-> > +int powernv_hwrng_present(void)
-> > +{
-> > +	return __raw_get_cpu_var(powernv_rng) != NULL;
-> > +}
-> > +
-> >  static unsigned long rng_whiten(struct powernv_rng *rng, unsigned long val)
-> >  {
-> >  	unsigned long parity;
-> > @@ -42,6 +48,17 @@ static unsigned long rng_whiten(struct powernv_rng *rng, unsigned long val)
-> >  	return val;
-> >  }
-> > 
-> > +int powernv_get_random_real_mode(unsigned long *v)
-> > +{
-> > +	struct powernv_rng *rng;
-> > +
-> > +	rng = __raw_get_cpu_var(powernv_rng);
-> > +
-> > +	*v = rng_whiten(rng, in_rm64(rng->regs_real));
-> > +
+
+* Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+
+> On Mon, Sep 30, 2013 at 7:34 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Mon, Sep 30, 2013 at 10:12 AM, Arnaldo Carvalho de Melo
+> > <acme@ghostprotocols.net> wrote:
+> >>
+> >> Checking why that strlcpy failed...
+> >
+> > I don't think glibc does strlcpy. It's not a standard C function, and
+> > it's somewhat controversial (although I dislike strncpy more with the
+> > crazy zero-padding, ugh).
 > 
-> Will it be in_be64() instead of in_rm64() ? Its failing the build here. Except this
-> all individual patches build correctly.
+> Indeed, e.g. on Ubuntu it's in libbsd, so you also need to #include
+> <bsd/string.h> and link with -lbsd.
 
-No it's definitely not in_be64() - that will checkstop your machine :)
+Well, the point of the feature test is not to pick up an external 
+definition of strlcpy(), but to keep working on systems where strcpy() has 
+been patched into _glibc_, where we cannot avoid linking to it. (ARCH 
+Linux is such a distribution for example.)
 
-I added in_rm64() in a previous patch, "Add real mode cache inhibited
-IO accessors" - I just didn't want to spam the KVM guys with those
-patches as well.
+So it's a quirk in essence - and I think marking our implementation as 
+__weak ought to solve that.
 
-Thanks for the review & testing.
+Thanks,
 
-cheers
+	Ingo
