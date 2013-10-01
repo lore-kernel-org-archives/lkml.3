@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3JAJ57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 05:57:59 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36845 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3JAJ55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 05:57:57 -0400
-Message-ID: <524A9CB3.6030103@redhat.com>
-Date: Tue, 01 Oct 2013 11:58:11 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, gleb@redhat.com, agraf@suse.de,
+	id S1753492Ab3JAJ72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 05:59:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29619 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752799Ab3JAJ7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 05:59:25 -0400
+Date: Tue, 1 Oct 2013 12:57:59 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, agraf@suse.de,
         mpm@selenic.com, herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
         kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
 Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
  some powernv systems
-References: <1380177066-3835-1-git-send-email-michael@ellerman.id.au> <1380177066-3835-3-git-send-email-michael@ellerman.id.au> <5243F933.7000907@redhat.com> <20131001083426.GB27484@concordia>
-In-Reply-To: <20131001083426.GB27484@concordia>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20131001095759.GA1308@redhat.com>
+References: <1380177066-3835-1-git-send-email-michael@ellerman.id.au>
+ <1380177066-3835-3-git-send-email-michael@ellerman.id.au>
+ <5243F933.7000907@redhat.com>
+ <20131001083426.GB27484@concordia>
+ <20131001083908.GA17294@redhat.com>
+ <20131001092320.GA2000@iris.ozlabs.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001092320.GA2000@iris.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 01/10/2013 10:34, Michael Ellerman ha scritto:
->> If you really want to have the hypercall, implementing it in QEMU means
->> that you can support it on all systems, in fact even when running
->> without KVM.  
+On Tue, Oct 01, 2013 at 07:23:20PM +1000, Paul Mackerras wrote:
+> On Tue, Oct 01, 2013 at 11:39:08AM +0300, Gleb Natapov wrote:
+> > On Tue, Oct 01, 2013 at 06:34:26PM +1000, Michael Ellerman wrote:
+> > > On Thu, Sep 26, 2013 at 11:06:59AM +0200, Paolo Bonzini wrote:
+> > > > Il 26/09/2013 08:31, Michael Ellerman ha scritto:
+> > > > > Some powernv systems include a hwrng. Guests can access it via the
+> > > > > H_RANDOM hcall.
+> > > > 
+> > > > Is there any reason to do this in the kernel?  
+> > > 
+> > > It's less code, and it's faster :)
+> > > 
+> > > > It does not have to be a particularly fast path;
+> > > 
+> > > Sure, but do we have to make it slow on purpose?
+> > > 
+> > We do not put non performance critical devices into the kernel.
 > 
-> Sure, I can add a fallback to /dev/hwrng for full emulation.
+> It's not a device, it's a single hypercall, specified by PAPR, which
+> is the moral equivalent of x86's RDRAND.
 > 
->> The QEMU command line would be something like "-object
->> rng-random,filename=/dev/random,id=rng0 -device spapr-rng,rng=rng0".
-> 
-> We can't use /dev/random like that. The PAPR specification, which is
-> what we're implementing, implies that H_RANDOM provides data from a
-> hardware source.
+OK. A couple of general questions. How guest knows when this hypercall
+is available? Is QEMU enable it when KVM_CAP_PPC_HWRNG is available (I
+haven't seen userspace patch that uses KVM_CAP_PPC_HWRNG)? What about
+QEMU TCG does it implement this hypercall or it emulates hwrng directly?
 
-Then use /dev/hwrng.
-
-I don't have POWER machines, but I still want to be able to test as much
-as possible using emulation.
-
-Paolo
+--
+			Gleb.
