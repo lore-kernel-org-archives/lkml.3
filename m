@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab3JAPBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:01:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51681 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3JAPBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:01:02 -0400
-Date: Tue, 1 Oct 2013 17:00:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+	id S1752458Ab3JAPHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:07:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab3JAPHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:07:38 -0400
+Date: Tue, 1 Oct 2013 17:00:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20131001150037.GQ3657@laptop.programming.kicks-ass.net>
-References: <20130820160146.GG3258@twins.programming.kicks-ass.net>
- <20130820163312.GA17957@redhat.com>
- <20130820175429.GI3258@twins.programming.kicks-ass.net>
- <20130820182553.GB22287@redhat.com>
- <20130821083130.GM3258@twins.programming.kicks-ass.net>
- <20130821113551.GA1472@redhat.com>
- <20130821123311.GA31370@twins.programming.kicks-ass.net>
- <20130821142356.GC31370@twins.programming.kicks-ass.net>
- <20130821164146.GA15194@redhat.com>
- <20131001140525.GE24825@localhost.localdomain>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131001150030.GA1801@redhat.com>
+References: <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net> <20130926165840.GA863@redhat.com> <20130926175016.GI3657@laptop.programming.kicks-ass.net> <20130927181532.GA8401@redhat.com> <20130927204116.GJ15690@laptop.programming.kicks-ass.net> <20131001035604.GW19582@linux.vnet.ibm.com> <20131001141429.GA32423@redhat.com> <20131001144537.GC5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131001140525.GE24825@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131001144537.GC5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 04:05:27PM +0200, Frederic Weisbecker wrote:
- 
-> struct cpu_idletime {
->        nr_iowait,
->        seqlock,
->        idle_start,
->        idle_time,
->        iowait_time,
-> } __cacheline_aligned_in_smp;
-> 
-> DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
->        
-> io_schedule()
-> {
->         int prev_cpu;
-> 	
->         preempt_disable();
->         prev_cpu_idletime = __this_cpu_ptr(&cpu_idletime);
->         atomic_inc(prev_cpu_idletime->nr_iowait);
->         WARN_ON_ONCE(is_idle_task(current));
->         preempt_enable_no_resched();
-> 
->         schedule();
-> 
->         write_seqlock(prev_cpu_idletime->seqlock)
-> 	if (!atomic_dec_return(prev_cpu_idletime->nr_iowait))
->            flush_cpu_idle_time(prev_cpu_idletime, 1)
->         write_sequnlock(prev_cpu_idletime->seqlock)
-> 
-> }
+On 10/01, Paul E. McKenney wrote:
+>
+> On Tue, Oct 01, 2013 at 04:14:29PM +0200, Oleg Nesterov wrote:
+> >
+> > But please note another email, it seems to me we can simply kill
+> > cpuhp_seq and all the barriers in cpuhp_readers_active_check().
+>
+> If you don't have cpuhp_seq, you need some other way to avoid
+> counter overflow.
 
-This is at least 3 atomic ops and a whole bunch of branches extra. It
-used to be 2 atomics and no branches.
+I don't think so. Overflows (espicially "unsigned") should be fine and
+in fact we can't avoid them.
 
-What again are we solving any why?
+Say, a task does get() on CPU_0 and put() on CPU_1, after that we have
+
+	CTR[0] == 1, CTR[1] = (unsigned)-1
+
+iow, the counter was already overflowed (underflowed). But this is fine,
+all we care about is  CTR[0] + CTR[1] == 0, and this is only true because
+of another overflow.
+
+But probably you meant another thing,
+
+> Which might be provided by limited number of
+> tasks, or, on 64-bit systems, 64-bit counters.
+
+perhaps you meant that max_threads * max_depth can overflow the counter?
+I don't think so... but OK, perhaps this counter should be u_long.
+
+But how cpuhp_seq can help?
+
+Oleg.
+
