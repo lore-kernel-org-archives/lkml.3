@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3JAPdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:33:21 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:58631 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3JAPdO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:33:14 -0400
-Date: Tue, 1 Oct 2013 17:33:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
-Message-ID: <20131001153309.GA1287@gmail.com>
-References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
- <20131001071646.GA20023@gmail.com>
- <524ACD2A.7040902@gmail.com>
- <20131001142154.GA31298@gmail.com>
- <524ADF84.4080801@gmail.com>
-MIME-Version: 1.0
+	id S1753706Ab3JAPdj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:33:39 -0400
+Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:8517 "EHLO
+	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752920Ab3JAPdd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:33:33 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524ADF84.4080801@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: applesmc oops in 3.10/3.11
+From: Chris Murphy <bugzilla@colorremedies.com>
+In-Reply-To: <20131001151954.GB14887@roeck-us.net>
+Date: Tue, 1 Oct 2013 09:33:13 -0600
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com>
+References: <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131001105526.GA481@polaris.bitmath.org> <20131001151954.GB14887@roeck-us.net>
+To: Guenter Roeck <linux@roeck-us.net>
+X-Mailer: Apple Mail (2.1510)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - colorremedies.com
+X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Ahern <dsahern@gmail.com> wrote:
+On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-> On 10/1/13 8:21 AM, Ingo Molnar wrote:
-> >But if I understood it correctly this particular message could trigger for
-> >regular users of perf as well, of the perf record is terminated in some
-> >unusual fashion. Regular users might not have the perf code handy (and
-> >might not know about git grep either).
+> On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
+>>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
+>>>> 
+>>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
+>>>> 
+>>> 
+>>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
+>>> Which I guess explains the subsequent memory allocation error in the log.
+>>> 
+>>> Henrik, any idea what might be going on ? Is it possible that the previous
+>>> command failure leaves some state machine in a bad state ?
+>> 
+>> I seem to recall a report on another similar state problem on newer
+>> machines, so maybe, yes. Older machines seem fine, I have never
+>> encountered the problem myself. Here is a patch to test that
+>> theory. It has been tested to be pretty harmless on two different
+>> generations.
+>> 
+>> I really really do not want to add an 'if (value is insane)' check ;-)
+>> 
+> Chris,
 > 
-> This is the case I was referring to -- normal users don't care about
-> the code reference, hence the more specific question about how the
-> perf-record session ended.
+> any chance you can load this patch on an affected machine so we can get
+> test feedback ? This one is too experimental to submit upstream without
+> knowing that it really fixes the problem.
 
-Hm, what do you call 'code reference'?
+Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
 
-The message I suggested is:
-
-  WARNING: perf/header: Data size is 0. Was the 'perf record' command properly terminated?
-
-I didn't intend 'perf/header' to be a code reference - it wanted to refer 
-to the perf.data header. Maybe that should be formulated in a less 
-confusing manner? Something like:
-
-  WARNING: The perf.data file's data size field is 0 which is unexpected.
-           Was the 'perf record' command properly terminated?
-
-Thanks,
-
-	Ingo
+Chris
