@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab3JASGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:06:14 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:37269 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3JASGM (ORCPT
+	id S1751638Ab3JASON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:14:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50410 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3JASOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:06:12 -0400
-Date: Tue, 1 Oct 2013 20:06:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
-Message-ID: <20131001180609.GB8998@gmail.com>
-References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
- <20131001071646.GA20023@gmail.com>
- <524ACD2A.7040902@gmail.com>
- <20131001142154.GA31298@gmail.com>
- <524ADF84.4080801@gmail.com>
- <20131001153309.GA1287@gmail.com>
- <20131001165437.GF2920@ghostprotocols.net>
+	Tue, 1 Oct 2013 14:14:12 -0400
+Message-ID: <524B10F0.7000301@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 12:14:08 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001165437.GF2920@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arto Merilainen <amerilainen@nvidia.com>
+CC: tbergstrom@nvidia.com, treding@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mkulkarni@nvidia.com
+Subject: Re: [PATCHv3 2/4] drm/tegra: Add runtime pm support for gr2d
+References: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com> <1380024325-18280-3-git-send-email-amerilainen@nvidia.com>
+In-Reply-To: <1380024325-18280-3-git-send-email-amerilainen@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/24/2013 06:05 AM, Arto Merilainen wrote:
+> From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
+> 
+> This far we have enabled gr2d clock on device probe and disabled
+> it on device deinitialisation. This patch adds runtime pm support
+> for the hardware unit allowing dynamic power management. If pm
+> runtime is not enabled, gr2d clock is enabled in device probe and
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
 
-> Em Tue, Oct 01, 2013 at 05:33:09PM +0200, Ingo Molnar escreveu:
-> > 
-> > * David Ahern <dsahern@gmail.com> wrote:
-> > 
-> > > On 10/1/13 8:21 AM, Ingo Molnar wrote:
-> > > >But if I understood it correctly this particular message could trigger for
-> > > >regular users of perf as well, of the perf record is terminated in some
-> > > >unusual fashion. Regular users might not have the perf code handy (and
-> > > >might not know about git grep either).
-> > > 
-> > > This is the case I was referring to -- normal users don't care about
-> > > the code reference, hence the more specific question about how the
-> > > perf-record session ended.
-> > 
-> > Hm, what do you call 'code reference'?
-> > 
-> > The message I suggested is:
-> > 
-> >   WARNING: perf/header: Data size is 0. Was the 'perf record' command properly terminated?
-> > 
-> > I didn't intend 'perf/header' to be a code reference - it wanted to refer 
-> > to the perf.data header. Maybe that should be formulated in a less 
-> > confusing manner? Something like:
+> @@ -327,11 +336,48 @@ static int __exit gr2d_remove(struct platform_device *pdev)
+>  		host1x_syncpt_free(gr2d->client.syncpts[i]);
 >  
-> I liked this last one:
-> 
-> >   WARNING: The perf.data file's data size field is 0 which is unexpected.
-> >            Was the 'perf record' command properly terminated?
-> 
-> Can I patch that up into Namhyung's latest patch?
+>  	host1x_channel_free(gr2d->channel);
+> +
+> +	if (pm_runtime_enabled(&pdev->dev))
+> +		pm_runtime_disable(&pdev->dev);
+> +	else
+> +		gr2d_runtime_suspend(&pdev->dev);
 
-Sure, feel free!
+This code is slightly different to the code in e.g.
+sound/soc/tegra/tegra20_i2s.c:remove(), whereas the code in probe() is
+identical. I'm not sure whether there's some advantage in this version?
+If so, perhaps the sound drivers should be updated to be consistent. If
+not, perhaps this driver should do the same thing as the I2S driver, so
+we keep the drivers consistent, and provide the same "example" code
+everywhere.
 
-Thanks,
+> +static int gr2d_runtime_suspend(struct device *dev)
+> +{
+> +	struct gr2d *gr2d;
+> +
+> +	gr2d = dev_get_drvdata(dev);
+> +	if (!gr2d)
+> +		return -EINVAL;
 
-	Ingo
+Presumably, gr2d will never be NULL here, unless there's some chronic
+bug. Can't we re-write those last 5 lines as simply:
+
+	struct gr2d *grd2 = dev_get_drvdata(dev);
+
+If that's not valid, we should probably update the audio drivers (and
+perhaps others) too.
