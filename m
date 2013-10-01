@@ -1,262 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab3JANz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:55:27 -0400
-Received: from svenfoo.org ([82.94.215.22]:51072 "EHLO mail.zonque.de"
+	id S1753557Ab3JAN4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:56:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56125 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148Ab3JANzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:55:25 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-gpio@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, broonie@kernel.org,
-        gregkh@linuxfoundation.org, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH] drivers: misc: add gpio wakeup driver
-Date: Tue,  1 Oct 2013 15:55:19 +0200
-Message-Id: <1380635719-31171-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1753126Ab3JAN4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 09:56:40 -0400
+Date: Tue, 1 Oct 2013 08:56:30 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <b.zolnierkie@samsung.com>,
+        <m.szyprowski@samsung.com>, <andrzej.p@samsung.com>
+Subject: Re: [PATCH] USB: gadget: s3c-hsotg: fix maxpacket size
+Message-ID: <20131001135630.GN1476@radagast>
+Reply-To: <balbi@ti.com>
+References: <1380277869-17855-1-git-send-email-r.baldyga@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eLe8FOcWSbbyMVJD"
+Content-Disposition: inline
+In-Reply-To: <1380277869-17855-1-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a very simple driver that enables GPIO lines as wakeup
-sources. It only operates on information passed in via DT, and depends
-on CONFIG_OF && CONFIG_PM_SLEEP. It can for example be used to connect
-wake-on-LAN (WOL) signals or other electric wakeup networks.
+--eLe8FOcWSbbyMVJD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The driver accepts a list of GPIO nodes and claims them along with their
-interrupt line. During suspend, the interrupts will be enabled and
-selected as wakeup source. The driver doesn't do anything else with the
-GPIO lines, and will ignore occured interrupts silently.
+Hi,
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
----
- .../devicetree/bindings/misc/gpio-wakeup.txt       |  16 ++
- drivers/misc/Kconfig                               |   8 +
- drivers/misc/Makefile                              |   1 +
- drivers/misc/gpio-wakeup.c                         | 162 +++++++++++++++++++++
- 4 files changed, 187 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/gpio-wakeup.txt
- create mode 100644 drivers/misc/gpio-wakeup.c
+On Fri, Sep 27, 2013 at 12:31:09PM +0200, Robert Baldyga wrote:
+> This patch changes ep maxpacket value from 512 to 1024, becouse it's need=
+ed
 
-diff --git a/Documentation/devicetree/bindings/misc/gpio-wakeup.txt b/Documentation/devicetree/bindings/misc/gpio-wakeup.txt
-new file mode 100644
-index 0000000..6aacd0f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/gpio-wakeup.txt
-@@ -0,0 +1,16 @@
-+GPIO WAKEUP DRIVER BINDINGS
-+
-+Required:
-+
-+	compatible:	Must be "gpio-wakeup"
-+	gpios:		At list of GPIO nodes that are enabled as wakeup
-+			sources.
-+
-+
-+Example:
-+
-+	wake_up {
-+		compatible = "gpio-wakeup";
-+		gpios = <&gpio0 19 0>;
-+	};
-+
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 8dacd4c..c089280 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -528,6 +528,14 @@ config SRAM
- 	  the genalloc API. It is supposed to be used for small on-chip SRAM
- 	  areas found on many SoCs.
- 
-+config GPIO_WAKEUP
-+	tristate "GPIO wakeup driver"
-+	depends on PM_SLEEP && OF
-+	help
-+	  Say Y to build a driver that can wake up a system from GPIO
-+	  lines. See Documentation/devicetree/bindings/gpio-wakeup.txt
-+	  for binding details.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index c235d5b..ee4df84 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -53,3 +53,4 @@ obj-$(CONFIG_INTEL_MEI)		+= mei/
- obj-$(CONFIG_VMWARE_VMCI)	+= vmw_vmci/
- obj-$(CONFIG_LATTICE_ECP3_CONFIG)	+= lattice-ecp3-config.o
- obj-$(CONFIG_SRAM)		+= sram.o
-+obj-$(CONFIG_GPIO_WAKEUP)	+= gpio-wakeup.o
-diff --git a/drivers/misc/gpio-wakeup.c b/drivers/misc/gpio-wakeup.c
-new file mode 100644
-index 0000000..3c1ef88
---- /dev/null
-+++ b/drivers/misc/gpio-wakeup.c
-@@ -0,0 +1,162 @@
-+/*
-+ * Driver to select GPIO lines as wakeup sources from DT.
-+ *
-+ * Copyright 2013 Daniel Mack
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/pm.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
-+
-+struct gpio_wakeup_priv {
-+	unsigned int count;
-+	unsigned int irq[0];
-+};
-+
-+static irqreturn_t gpio_wakeup_isr(int irq, void *dev_id)
-+{
-+	return IRQ_HANDLED;
-+}
-+
-+static int gpio_wakeup_probe(struct platform_device *pdev)
-+{
-+	int ret, count, i;
-+	struct gpio_wakeup_priv *priv;
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	count = of_gpio_count(np);
-+	if (count == 0)
-+		return -EINVAL;
-+
-+	priv = devm_kzalloc(dev, sizeof(*priv) +
-+				 sizeof(int) * count, GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < count; i++) {
-+		unsigned int gpio, irq;
-+
-+		priv->irq[i] = -EINVAL;
-+
-+		gpio = of_get_gpio(np, i);
-+		if (gpio < 0) {
-+			dev_warn(dev, "Unable to get gpio #%d\n", i);
-+			continue;
-+		}
-+
-+		irq = gpio_to_irq(gpio);
-+		if (irq < 0) {
-+			dev_warn(dev, "Can't map GPIO %d to an IRQ\n", gpio);
-+			continue;
-+		}
-+
-+		ret = devm_gpio_request_one(dev, gpio, GPIOF_IN, pdev->name);
-+		if (ret < 0) {
-+			dev_warn(dev, "Unable to request GPIO %d: %d\n",
-+				 gpio, ret);
-+			continue;
-+		}
-+
-+		ret = devm_request_irq(dev, irq, gpio_wakeup_isr,
-+				       IRQF_TRIGGER_RISING |
-+				       IRQF_TRIGGER_FALLING,
-+				       pdev->name, NULL);
-+		if (ret < 0) {
-+			dev_warn(dev, "Unable to request IRQ %d\n", irq);
-+			continue;
-+		}
-+
-+		disable_irq(irq);
-+		priv->irq[i] = irq;
-+
-+		dev_info(dev, "Adding GPIO %d (IRQ %d) to wakeup sources\n",
-+			 gpio, irq);
-+	}
-+
-+	priv->count = count;
-+	device_init_wakeup(dev, 1);
-+	platform_set_drvdata(pdev, priv);
-+
-+	return 0;
-+}
-+
-+static int gpio_wakeup_suspend(struct device *dev)
-+{
-+	struct gpio_wakeup_priv *priv = dev_get_drvdata(dev);
-+	int i;
-+
-+	for (i = 0; i < priv->count; i++)
-+		if (priv->irq[i] >= 0) {
-+			enable_irq(priv->irq[i]);
-+			enable_irq_wake(priv->irq[i]);
-+		}
-+
-+	return 0;
-+}
-+
-+static int gpio_wakeup_resume(struct device *dev)
-+{
-+	struct gpio_wakeup_priv *priv = dev_get_drvdata(dev);
-+	int i;
-+
-+	for (i = 0; i < priv->count; i++)
-+		if (priv->irq[i] >= 0) {
-+			disable_irq_wake(priv->irq[i]);
-+			disable_irq(priv->irq[i]);
-+		}
-+
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(gpio_wakeup_pm_ops,
-+			 gpio_wakeup_suspend, gpio_wakeup_resume);
-+
-+static struct of_device_id gpio_wakeup_of_match[] = {
-+	{ .compatible = "gpio-wakeup", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpio_wakeup_of_match);
-+
-+static struct platform_driver gpio_wakeup_driver = {
-+	.probe	= gpio_wakeup_probe,
-+	.driver	= {
-+		.name	= "gpio-wakeup",
-+		.owner	= THIS_MODULE,
-+		.pm	= &gpio_wakeup_pm_ops,
-+		.of_match_table = of_match_ptr(gpio_wakeup_of_match),
-+	}
-+};
-+
-+static int __init gpio_wakeup_init(void)
-+{
-+	return platform_driver_register(&gpio_wakeup_driver);
-+}
-+
-+static void __exit gpio_wakeup_exit(void)
-+{
-+	platform_driver_unregister(&gpio_wakeup_driver);
-+}
-+
-+late_initcall(gpio_wakeup_init);
-+module_exit(gpio_wakeup_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Daniel Mack <zonque@gmail.com>");
-+MODULE_DESCRIPTION("Driver to wake up systems from GPIOs");
-+MODULE_ALIAS("platform:gpio-wakeup");
--- 
-1.8.3.1
+shouldn't you use 3072 instead to cope with high bandwidth ISO
+endpoints ?
 
+> to handle interupt and isochronous endpoints in high-speed mode. This cha=
+nge
+> doesn't affect on driver functioning, becouse fifo size (3072) is still e=
+nough
+
+s/becouse/because.
+
+> for the maximum transaction payload (3*1024 for high-speed high-bandwidtch
+> endpoints).
+>=20
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> ---
+>  drivers/usb/gadget/s3c-hsotg.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsot=
+g.c
+> index 8a9e2c6..0d1dcbd 100644
+> --- a/drivers/usb/gadget/s3c-hsotg.c
+> +++ b/drivers/usb/gadget/s3c-hsotg.c
+> @@ -3146,7 +3146,7 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsot=
+g,
+> =20
+>  	hs_ep->parent =3D hsotg;
+>  	hs_ep->ep.name =3D hs_ep->name;
+> -	hs_ep->ep.maxpacket =3D epnum ? 512 : EP0_MPS_LIMIT;
+> +	hs_ep->ep.maxpacket =3D epnum ? 1024 : EP0_MPS_LIMIT;
+>  	hs_ep->ep.ops =3D &s3c_hsotg_ep_ops;
+> =20
+>  	/*
+> --=20
+> 1.7.9.5
+>=20
+
+--=20
+balbi
+
+--eLe8FOcWSbbyMVJD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSStSOAAoJEIaOsuA1yqRELqEP/2QCb3uUiQknFKtcXbhoFhKN
+QrSXMAPD2m0xuWHVl0TNP/2OHNdtreXNdpxKsKQ7LZS9BGwvcAUAS5m+7mqLVi6z
+rtSuaQbJRXAviHAew0iI3ifuJ15TBwwQB9HsthSe18LkG7nuhprERmJD2GTeEo95
+S2JPqU3bnBBqBkQUMBQIosvMfiUj4jlkNsKcRx4jMuR4iCajq0nSiKDddM37oSB5
+hrDe1Zz483TVK8qPSvHMkZAR3kVbsHbaJKqPK/bskl/LyYUoxXP2+/jc2+EJ7e/4
+4KQRYf1Scoz8P0QPKXMBWZkLQqcR6/yorccOqj8TZpEUUIrLFPb4QiDIr+GpYP/v
+MiTIpHTisOxu3xkd45uCYt7N1eerqwX8L/XnjHEiYnRhJFR8EVawAC49ldZE1+lP
+UNqBLwgofATpGa+4mWHbRCq2Li5odTvUKG7rsFtENllaxBKYVcy0WOmEfqGLkfNw
+uxC9Bxywyld46Z90ozgpfa4cH7WCze/qAgSBbTrOtDJKzAjUxYPchLqjXVmIBAgu
+YF8ex/v5kUpzikHcOExNqw2HFN4wMfUuOGlBue4xgcSq1J4FSW5+Bxf4uvxpQ/pP
+7Y2zguWrwh9RRi2mCHmZp7xx9l3XR97jst0WwGCLrjbDvHNO9F2FfblgDPH61pRt
+o2BS4RAhZGwSEYBWS5rY
+=EncT
+-----END PGP SIGNATURE-----
+
+--eLe8FOcWSbbyMVJD--
