@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3JAWVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:21:06 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55601 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab3JAWVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:21:04 -0400
-Message-ID: <1380666060.19002.53.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: spinlock contention of files->file_lock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Date: Tue, 01 Oct 2013 15:21:00 -0700
-In-Reply-To: <20131001220453.GY13318@ZenIV.linux.org.uk>
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
-	 <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
-	 <CA+55aFwWi-RveiuFEManbED3DcA76Cf3CKVXrrs5d5FvNgedOg@mail.gmail.com>
-	 <1380663718.19002.49.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131001220453.GY13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752945Ab3JAWV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:21:28 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:44237 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798Ab3JAWVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:21:25 -0400
+Date: Tue, 1 Oct 2013 16:21:13 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Peter H?we <PeterHuewe@gmx.de>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [PATCH 07/13] tpm: Remove tpm_show_caps_1_2
+Message-ID: <20131001222113.GA22778@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1379960083-8942-8-git-send-email-jgunthorpe@obsidianresearch.com>
+ <201310020009.22952.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201310020009.22952.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-01 at 23:04 +0100, Al Viro wrote:
-> On Tue, Oct 01, 2013 at 02:41:58PM -0700, Eric Dumazet wrote:
-> > Maybe I am missing something obvious ?
-> 
-> Yes.  do_execve_common() starts with unshare_files(); there can be
-> no other thread capable of modifying that descriptor table.
+On Wed, Oct 02, 2013 at 12:09:22AM +0200, Peter H?we wrote:
 
-Hmm, then what's the point of using spin_lock() here ?
+>    Since the tpm_spi_stm_st33, tpm_i2c_nuvoton and tpm_i2c_atmel drivers
+>    are not yet merged and were heavily improved by you anyway, please
+>    include this improvement directly in the new drivers.
 
-This gives wrong hints ;)
+Okay, it is easy enough to invert the patch order and put the drivers
+last. I am not submitting the st33 driver, but when things are done I
+will send Mathias a patch with the changes from this series that are
+needed and he can deal with re-submitting his driver.
 
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f98..cdbca0d 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -615,11 +615,10 @@ void do_close_on_exec(struct files_struct *files)
- 	struct fdtable *fdt;
- 
- 	/* exec unshares first */
--	spin_lock(&files->file_lock);
-+	fdt = files_fdtable(files);
- 	for (i = 0; ; i++) {
- 		unsigned long set;
- 		unsigned fd = i * BITS_PER_LONG;
--		fdt = files_fdtable(files);
- 		if (fd >= fdt->max_fds)
- 			break;
- 		set = fdt->close_on_exec[i];
-@@ -635,14 +634,11 @@ void do_close_on_exec(struct files_struct *files)
- 				continue;
- 			rcu_assign_pointer(fdt->fd[fd], NULL);
- 			__put_unused_fd(files, fd);
--			spin_unlock(&files->file_lock);
- 			filp_close(file, files);
- 			cond_resched();
--			spin_lock(&files->file_lock);
- 		}
- 
- 	}
--	spin_unlock(&files->file_lock);
- }
- 
- struct file *fget(unsigned int fd)
+FWIW, I needed the drivers first to keep my world sane when testing
+this thing, so the patches are all as-tested from my perspective.
 
-
+Jason
