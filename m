@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3JAN5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:57:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48610 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3JAN5x (ORCPT
+	id S1753734Ab3JAN6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:58:21 -0400
+Received: from mailout-1.websupport.sk ([37.9.172.130]:24046 "EHLO
+	mailout-1.websupport.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab3JAN6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:57:53 -0400
-Message-ID: <524AD4B7.7040700@ti.com>
-Date: Tue, 1 Oct 2013 09:57:11 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 1 Oct 2013 09:58:20 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Oct 2013 09:58:20 EDT
+Date: Tue, 1 Oct 2013 15:50:11 +0200
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+From: "The-Science.com" <info@goalresearch.com>
+Reply-to: "The-Science.com" <info@the-science.com>
+Subject: You are invited to Virtual Scientific Conference
+Message-ID: <f62cfb40fa58981598f440ee8d070906@www.my-conf.com>
+X-Priority: 3
+X-Mailer: PHPMailer 5.1 (phpmailer.sourceforge.net)
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>, <tglx@linutronix.de>
-CC: Sricharan R <r.sricharan@ti.com>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
-        <tony@atomide.com>, <rnayak@ti.com>, <marc.zyngier@arm.com>,
-        <grant.likely@linaro.org>, <mark.rutland@arm.com>
-Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com> <524AAE69.8060703@ti.com> <524AD290.207@gmail.com>
-In-Reply-To: <524AD290.207@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+X-Virus-Checked: Checked by ClamAV on lb2.websupport.sk
+X-ESET-AntiSpam: OK;50;calc;2013-10-01 15:50:12;1310011550123682;5075
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 October 2013 09:48 AM, Rob Herring wrote:
-> On 10/01/2013 06:13 AM, Sricharan R wrote:
->> Hi,
->>
->> On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
->>> On 09/30/2013 08:59 AM, Sricharan R wrote:
->>>> Some socs have a large number of interrupts requests to service
->>>> the needs of its many peripherals and subsystems. All of the interrupt
->>>> requests lines from the subsystems are not needed at the same
->>>> time, so they have to be muxed to the controllers appropriately.
->>>> In such places a interrupt controllers are preceded by an
->>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->>>> requests to the controller inputs.
->>>>
->>>> This series models the peripheral interrupts that can be routed through
->>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->>>> in a separate linear domain inside the GIC. The registered routable domain's
->>>> callback are invoked as a part of the GIC's callback, which in turn should
->>>> allocate a free irq line and configure the IP accordingly. So every peripheral
->>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
->>>> gic line for that gets allocated and configured when the peripheral's interrupt
->>>> is mapped.
->>>>
->>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
->>>> crossbar is added here, along with the DT bindings.
->>> Seems like interrupt-map property is what you need here.
->>>
->>> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
->>>
->>> Versatile Express also has an example.
->>    OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
->>    DTS level, but to assign it dynamically during runtime. This was one of the
->>   comments that came up with first crossbar support patches, which was assigning a
->>   interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
-> 
-> Is there an actual usecase on a single h/w design that you run out of
-> interrupts and it is a user decision which interrupts to use?
->
-Yes. There are 240 peripheral interrupts connected out of which 160 can
-be used in this specific case. 
- 
-> You could fill in the interrupt-map at run-time. It would have to be
-> early (bootloader or early kernel init) and can't be at request_irq time.
->
-Well all options are tried before coming up to the $subject solution.
-It was suggested by Thomas in the last review.
- 
->>     https://lkml.org/lkml/2013/7/18/416
->>
->>    Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
->>    that did not go as well. Finally was asked to handle this as a part of GIC driver with
->>    a separate domain.
->>    
->>   http://www.spinics.net/lists/linux-omap/msg97085.html
-> 
-> This has nothing to do with the GIC, so it does not belong there.
-> 
-Well the router makes connections from peripheral to GIC. Thomas can
-better explain it but I think since its doing irq routing for GIC on
-a given hardware, I don't see any issue having some generic map/unmap
-function in GIC. The actual implementation is still outside of GIC.
 
-Regards,
-Sasntosh
+This email contains presentation materials for Virtual Conferences organized 
+at the end of this year. We do not want to bother you with many mails, so 
+please if you are interested in our virtual conferences, you can specify your 
+preferences in the following link: 
+http://www.the-science.com/subscribe/mail_linux-kernel@vger.kernel.org/key_e10a6164f0bc200e9e9e6a735cc6a0f4  
+
+If you do not want to receive information about our conferences, 
+please unsubscribe from our list
+http://www.my-conf.com/unsubscribe.php?c=AhmHKgwNSgwj0qWmitAuQNJ9REgiSpAQInPEjRSfy3w= 
+
+ABOUT our Virtual Conferences 
+All Virtual Conferences are organized based on experiences of many researchers,
+with support of universities. The scientific quality is ensured by Reviewers, 
+Scientific committee and partnership with universities. Technical and formal 
+quality are maintained by Thomson, Ltd, Zilina, Slovakia.
+
+List of prepared events:
+*******************************************
+Humanities Sciences at the Common Conference (HASSACC 2013)
+www.hassacc.com Registration & Submission Deadline: October 18, 2013
+*******************************************
+International Virtual Research Conference In Technical Disciplines (RCITD 2013) 
+www.rcitd.com Registration & Submission Deadline: October 18, 2013
+*******************************************
+Advanced Research in Scientific Areas (ARSA 2013) 
+www.arsa-conf.com Registration & Submission Deadline: November 4, 2013
+*******************************************
+The 1st Virtual Multidisciplinary Conference (QUAESTI 2013) 
+www.quaesti.com Registration & Submission Deadline: November 18, 2013
+*******************************************
+
+Proposal for the conferences:
+* Everything is managed online (paper submission, reviewing, conference etc.).
+* We ensure two-tier blind reviewing (scientific and formal check).
+* Selected papers are invited for Scientific Journal
+* Conference materials will be indexed in - GScholar, MS academic and will be 
+sent for evaluation into SCOPUS and other major indexing databases.
+
+More about Virtual Conferences can be found at: www.the-science.com
+We are also looking for reviewers and Scientific committee members, if you are 
+interested in this position, please contact us at: info@the-science.com
+
+Thank you if you resend this information to your colleagues.
+
+With best Regards
+Technical Committee
+Thomson Ltd
+Univerzitna 8498/25
+Zilina, Slovakia
+
+email: info@the-science.com
+
+Virtual Conference portals:
+www.hassacc.com
+www.rcitd.com
+www.arsa-conf.com
+www.quaesti.com
+
 
