@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab3JAOjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:39:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51210 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3JAOja (ORCPT
+	id S1752650Ab3JAOnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:43:31 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:47528 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab3JAOnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:39:30 -0400
-Date: Tue, 1 Oct 2013 16:39:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] sched, wait: Collapse __wait_event macros -v4
-Message-ID: <20131001143921.GO3657@laptop.programming.kicks-ass.net>
-References: <20130930152242.207382649@infradead.org>
- <20130930174054.GA28129@redhat.com>
- <20130930180939.GN15690@laptop.programming.kicks-ass.net>
- <20130930181358.GA29544@redhat.com>
- <20131001140940.GA32328@redhat.com>
+	Tue, 1 Oct 2013 10:43:24 -0400
+Message-ID: <524ADF84.4080801@gmail.com>
+Date: Tue, 01 Oct 2013 08:43:16 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001140940.GA32328@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data
+ file
+References: <1380529188-27193-1-git-send-email-namhyung@kernel.org> <20131001071646.GA20023@gmail.com> <524ACD2A.7040902@gmail.com> <20131001142154.GA31298@gmail.com>
+In-Reply-To: <20131001142154.GA31298@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 04:09:40PM +0200, Oleg Nesterov wrote:
-> But somehow I didn't realize that ___wait_cond_timeout() can be used
-> as is, so the simple patch below should work?
+On 10/1/13 8:21 AM, Ingo Molnar wrote:
+> But if I understood it correctly this particular message could trigger for
+> regular users of perf as well, of the perf record is terminated in some
+> unusual fashion. Regular users might not have the perf code handy (and
+> might not know about git grep either).
 
-Yeah, should work.. But how often do people use timeout=0? Should we
-really care about that case to the effect of adding more code.
+This is the case I was referring to -- normal users don't care about the 
+code reference, hence the more specific question about how the 
+perf-record session ended.
+
