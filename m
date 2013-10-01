@@ -1,215 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab3JAGzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:55:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42516 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3JAGzM (ORCPT
+	id S1751786Ab3JAGz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 02:55:27 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:53523 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3JAGzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:55:12 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-70-524a71ce4a03
-Date: Tue, 01 Oct 2013 08:55:02 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: amit daniel kachhap <amit.daniel@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 3/6] thermal: exynos: Provide initial setting for TMU's
- test MUX address at Exynos4412
-Message-id: <20131001085502.187f54ab@amdc308.digital.local>
-In-reply-to: <CADGdYn6a1jSR17v0N6kVFZFsn71FUbXJHjeSya-xy_wX9GtYpg@mail.gmail.com>
-References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
- <1380010102-25817-4-git-send-email-l.majewski@samsung.com>
- <CADGdYn6a1jSR17v0N6kVFZFsn71FUbXJHjeSya-xy_wX9GtYpg@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xgO65Qq8gg9kHOC0aroZYbJyxntVi
-	/pFzrBZr9v9ksug8+4TZ4s0jbovLu+awWXzuPcJoMeP8PiaL240r2Cz6F/YyWTx52MdmsX7G
-	axYHXo/Fe14yeayb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wAWxSXTUpqTmZZapG+XQJXxq5J
-	z9gK5hpXHJl3j72B8YVGFyMnh4SAicSWqXtZIGwxiQv31rN1MXJxCAksYpTYeP8ZlNPOJLFu
-	dxcrSBWLgKpEc/97ZhCbTUBP4vPdp0xdjBwcIgKGErO+i4PUMwtMZJHY+XIHWI2wQI7Es/1f
-	wGxeAWuJl5d3soPUcwoES0y9FwMx/xSjxKv9u8Dm8wtISrT/+8EMcZGdxLlPG9ghegUlfky+
-	B3Yps4CWxOZtTawQtrzE5jVvmScwCs5CUjYLSdksJGULGJlXMYqmFiQXFCel5xrqFSfmFpfm
-	pesl5+duYgRH0DOpHYwrGywOMQpwMCrx8BrUewYJsSaWFVfmHmKU4GBWEuFlivMKEuJNSays
-	Si3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cC4IOPu1g/dcW9uqxV+
-	2hX+7Ghe0ceXQvc2dzGnnX33/+uRI0deOFUUvF9xRpjNc1XlO8Ha/94JD/8v9jlatIrv5ZKt
-	unG1K1fwC9avuDlRqMwvZ3H1CTuJvg9z+Ze9vKvtsDi47zFHsteFQB29D1xqWit32T/nyA7q
-	rkvgfPClRH3r4wlSs5KvK7EUZyQaajEXFScCAFf+UPmcAgAA
+	Tue, 1 Oct 2013 02:55:21 -0400
+Date: Tue, 1 Oct 2013 08:55:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "#3.9.." <stable@vger.kernel.org>, Paul Mackerras <paulus@au1.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] irq fix for 3.12-rc
+Message-ID: <20131001065516.GA19718@gmail.com>
+References: <1380552959-9396-1-git-send-email-fweisbec@gmail.com>
+ <CA+55aFy5YJkchyfCjbCKLGQMo34wcba9AVr2JMNPXZa5vKNT3g@mail.gmail.com>
+ <20130930165059.GA9889@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930165059.GA9889@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amit,
 
-> Hi,
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Mon, Sep 30, 2013 at 09:07:19AM -0700, Linus Torvalds wrote:
+> > On Mon, Sep 30, 2013 at 7:55 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > ...
+> > >     the chances for a stack overrun as reported in powerpc for example:
+> > >
+> > >     [ 1002.364577] do_IRQ: stack overflow: 1920
+> > >     [ 1002.364653] CPU: 0 PID: 1602 Comm: qemu-system-ppc Not tainted 3.10.4-300.1.fc19.ppc64p7 #1
+> > >     [ 1002.364734] Call Trace:
+> > >     [ 1002.364770] [c0000000050a8740] [c0000000000157c0] .show_stack+0x130/0x200 (unreliable)
+> > >     [ 1002.364872] [c0000000050a8810] [c00000000082f6d0] .dump_stack+0x28/0x3c
+> > >     [ 1002.364955] [c0000000050a8880] [c000000000010b98] .do_IRQ+0x2b8/0x2c0
+> > >     [ 1002.365039] [c0000000050a8930] [c0000000000026d4] hardware_interrupt_common+0x154/0x180
+> > >     [ 1002.365148] --- Exception: 501 at .cp_start_xmit+0x3a4/0x820 [8139cp]
+> > >     [ 1002.365148]     LR = .cp_start_xmit+0x390/0x820 [8139cp]
+> > >     [ 1002.365359] [c0000000050a8d40] [c0000000006d7f14] .dev_hard_start_xmit+0x394/0x640
+> > >  ...
+> > 
+> > Btw, I'd really wish people edited things like this when putting them
+> > in the commit logs. I try to do it when I get them (usually though
+> > Andrew's patch-bombs), just because there's just a ton of detail there
+> > that just isn't relevant for the actual issue at hand.
+> > 
+> > The kernel oops messages try to contain all kinds of possibly-relevant
+> > data, which makes them useful for a wide range of situations ("oh, it
+> > looks like a single-bit flip"), but at the same time means that once
+> > you know what the problem is, 90% of the data printed out is just pure
+> > noise and at that point no longer helpful, but just makes it harder to
+> > see what's actually the issue.
+> > 
+> > So please, after you've analyzed an oops, don't use the raw oops data
+> > any more. Usually what remains relevant is the actual oops message
+> > itself, and the backtrace.I try to generally edit out the hex
+> > representation of the symbol information, and obviously stale entries
+> > from the backtrace. I'm not consistent, see for example commit
+> > 6f6b8951897e (register info remains) vs commit d6394b590029 (mainly
+> > just call trace) vs commit 3e6b11df2451 (where I just truncated it
+> > mercilessly). And no, I don't always clean things up (it can be a
+> > bother), but I generally try, so now I'm just trying to spread the
+> > word..
+> > 
+> > Because at some point the excess verbiage really goes from "that's
+> > useful" to being a blob of noise that actually takes away from the
+> > message.
 > 
-> On Tue, Sep 24, 2013 at 1:38 PM, Lukasz Majewski
-> <l.majewski@samsung.com> wrote:
-> > The commit d0a0ce3e77c795258d47f9163e92d5031d0c5221 ("thermal:
-> > exynos: Add missing definations and code cleanup") has removed
-> > setting of test MUX address value at TMU configuration setting.
-> >
-> > This field is not present on Exynos4210 and Exynos5 SoCs. However
-> > on Exynos4412 SoC it is required to set this field after reset
-> > because without it TMU shows maximal available temperature, which
-> > causes immediate platform shutdown.
-> Right In 5250 this field is not defined so didn't catch this. The
-> changes looks fine but I have a minor comment that if this field is
-> defined in 4412 in detail then you can add a field entry in
-> exynos_tmu_registers with proper name and populate this field. 
-
-It seems, that only at Exynos4412 (and Exynos4212) this field is valid.
-When I extent exynos_tmu_registers structure, then all other Samsung
-SoCs will be aware of it.
-Define with explicit EXYNOS4412 seems more readable. 
-
-
-Also at exynos_tmu_control() function we use constructs like:
-data->base + EXYNOS_TMU_REG_CONTROL, not data->base + regs->tmu_ctrl.
-
-> The
-> good thing is that in 5250 also this field is reserved and the default
-> value is 0x6 so same TMU_DATA can be used for 5250 and 4412.
-
-I'm not keen to this kind of hacks. This field is only valid on
-Exynos4x12. And for Exynos5250 is reserved, which means that we shall
-not touch it.
-
-> The main
-> idea of this suggestion is to reduce the soc checks in the driver.
-
-Correct me if I'm wrong, but this MUX_ADDR initialization is performed
-at exynos_tmu_control() which is called at probe and thermal power
-management functions. Therefore, it seems that checking if SoC ==
-Exynos4412 there is not an overkill.
-
-If you don't mind I would leave those patches as they are and kindly
-ask thermal maintainers for pulling them to v3.12.
-
+> Yeah, I did such things sporadically before. Well, it summed up to 
+> simply remove the timestamps from backtraces but yeah, then I've become 
+> less patient about that and now I simply paste the raw thing.
 > 
-> Thanks,
-> Amit Daniel
-> >
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> > ---
-> >  drivers/thermal/samsung/exynos_tmu.c      |    3 +++
-> >  drivers/thermal/samsung/exynos_tmu_data.h |    4 ++++
-> >  2 files changed, 7 insertions(+)
-> >
-> > diff --git a/drivers/thermal/samsung/exynos_tmu.c
-> > b/drivers/thermal/samsung/exynos_tmu.c index a858cc4..21b89e4 100644
-> > --- a/drivers/thermal/samsung/exynos_tmu.c
-> > +++ b/drivers/thermal/samsung/exynos_tmu.c
-> > @@ -317,6 +317,9 @@ static void exynos_tmu_control(struct
-> > platform_device *pdev, bool on)
-> >
-> >         con = readl(data->base + reg->tmu_ctrl);
-> >
-> > +       if (pdata->type == SOC_ARCH_EXYNOS4412)
-> > +               con |= (EXYNOS4412_MUX_ADDR_VALUE <<
-> > EXYNOS4412_MUX_ADDR_SHIFT); +
-> >         if (pdata->reference_voltage) {
-> >                 con &= ~(reg->buf_vref_sel_mask <<
-> > reg->buf_vref_sel_shift); con |= pdata->reference_voltage <<
-> > reg->buf_vref_sel_shift; diff --git
-> > a/drivers/thermal/samsung/exynos_tmu_data.h
-> > b/drivers/thermal/samsung/exynos_tmu_data.h index b130b1e..a1ea19d
-> > 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.h +++
-> > b/drivers/thermal/samsung/exynos_tmu_data.h @@ -95,6 +95,10 @@
-> >
-> >  #define EXYNOS_MAX_TRIGGER_PER_REG     4
-> >
-> > +/* Exynos4412 specific */
-> > +#define EXYNOS4412_MUX_ADDR_VALUE          6
-> > +#define EXYNOS4412_MUX_ADDR_SHIFT          20
-> > +
-> >  /*exynos5440 specific registers*/
-> >  #define EXYNOS5440_TMU_S0_7_TRIM               0x000
-> >  #define EXYNOS5440_TMU_S0_7_CTRL               0x020
-> > --
-> > 1.7.10.4
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> On Tue, Sep 24, 2013 at 1:38 PM, Lukasz Majewski
-> <l.majewski@samsung.com> wrote:
-> > The commit d0a0ce3e77c795258d47f9163e92d5031d0c5221 ("thermal:
-> > exynos: Add missing definations and code cleanup") has removed
-> > setting of test MUX address value at TMU configuration setting.
-> >
-> > This field is not present on Exynos4210 and Exynos5 SoCs. However
-> > on Exynos4412 SoC it is required to set this field after reset
-> > because without it TMU shows maximal available temperature, which
-> > causes immediate platform shutdown.
-> >
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> > ---
-> >  drivers/thermal/samsung/exynos_tmu.c      |    3 +++
-> >  drivers/thermal/samsung/exynos_tmu_data.h |    4 ++++
-> >  2 files changed, 7 insertions(+)
-> >
-> > diff --git a/drivers/thermal/samsung/exynos_tmu.c
-> > b/drivers/thermal/samsung/exynos_tmu.c index a858cc4..21b89e4 100644
-> > --- a/drivers/thermal/samsung/exynos_tmu.c
-> > +++ b/drivers/thermal/samsung/exynos_tmu.c
-> > @@ -317,6 +317,9 @@ static void exynos_tmu_control(struct
-> > platform_device *pdev, bool on)
-> >
-> >         con = readl(data->base + reg->tmu_ctrl);
-> >
-> > +       if (pdata->type == SOC_ARCH_EXYNOS4412)
-> > +               con |= (EXYNOS4412_MUX_ADDR_VALUE <<
-> > EXYNOS4412_MUX_ADDR_SHIFT); +
-> >         if (pdata->reference_voltage) {
-> >                 con &= ~(reg->buf_vref_sel_mask <<
-> > reg->buf_vref_sel_shift); con |= pdata->reference_voltage <<
-> > reg->buf_vref_sel_shift; diff --git
-> > a/drivers/thermal/samsung/exynos_tmu_data.h
-> > b/drivers/thermal/samsung/exynos_tmu_data.h index b130b1e..a1ea19d
-> > 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.h +++
-> > b/drivers/thermal/samsung/exynos_tmu_data.h @@ -95,6 +95,10 @@
-> >
-> >  #define EXYNOS_MAX_TRIGGER_PER_REG     4
-> >
-> > +/* Exynos4412 specific */
-> > +#define EXYNOS4412_MUX_ADDR_VALUE          6
-> > +#define EXYNOS4412_MUX_ADDR_SHIFT          20
-> > +
-> >  /*exynos5440 specific registers*/
-> >  #define EXYNOS5440_TMU_S0_7_TRIM               0x000
-> >  #define EXYNOS5440_TMU_S0_7_CTRL               0x020
-> > --
-> > 1.7.10.4
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I'll take care of that and prune these things on my future patches.
 
+Mind fixing your commit log in this tree? The raw oops really dominates 
+the changelog unnecessarily.
 
+Thanks,
 
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+	Ingo
