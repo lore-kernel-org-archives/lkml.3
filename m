@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab3JASed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:34:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44449 "EHLO bear.ext.ti.com"
+	id S1753185Ab3JASen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:34:43 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33593 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab3JASe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:34:29 -0400
+	id S1753103Ab3JASei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 14:34:38 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -13,9 +13,9 @@ To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
 CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 3/7] arm: dts: dra7: add bandgap entry
-Date: Tue, 1 Oct 2013 14:32:20 -0400
-Message-ID: <1380652344-18819-4-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 6/7] arm: dts: add tmp102 i2c sensor node on dra7-evm
+Date: Tue, 1 Oct 2013 14:32:23 -0400
+Message-ID: <1380652344-18819-7-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
 References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
@@ -25,36 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds bandgap IP entry on DRA7 dtsi device tree file.
+On dra7-evm there is an tmp102 temperature sensor on i2c bus 1.
+This patch adds its device tree node.
 
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/dra7.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/dra7-evm.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 3a746c2..4e9b159 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -53,6 +53,18 @@
- 		};
- 	};
+diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+index 21fe16b..3b6c16a 100644
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -7,6 +7,8 @@
+  */
+ /dts-v1/;
  
-+	bandgap: bandgap {
-+		reg = <0x4a0021e0 0xc
-+			0x4a00232c 0xc
-+			0x4a002380 0x2c
-+			0x4a0023C0 0x3c
-+			0x4a002564 0x8
-+			0x4a002574 0x50>;
-+		compatible = "ti,dra752-bandgap";
-+		interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_HIGH>;
-+		#thermal-sensor-cells = <1>;
-+	};
++#include <dt-bindings/thermal/thermal.h>
 +
- 	gic: interrupt-controller@48211000 {
- 		compatible = "arm,cortex-a15-gic";
- 		interrupt-controller;
+ #include "dra7.dtsi"
+ 
+ / {
+@@ -93,6 +95,12 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&i2c1_pins>;
+ 	clock-frequency = <400000>;
++	tmp102: tmp102@48{
++		compatible = "ti,tmp102";
++		reg = <0x48>;
++
++		#thermal-sensor-cells = <0>;
++	};
+ };
+ 
+ &i2c2 {
 -- 
 1.8.2.1.342.gfa7285d
 
