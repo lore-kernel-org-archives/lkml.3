@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab3JAIil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 04:38:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44010 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab3JAIij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 04:38:39 -0400
-Date: Tue, 1 Oct 2013 09:38:28 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-mm@kvack.org, Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
- but mmap()
-Message-ID: <20131001083828.GA8093@suse.de>
-References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
- <20130930100249.GB2425@suse.de>
- <20130930101029.GC2425@suse.de>
- <20130930185106.GD2125@tassilo.jf.intel.com>
+	id S1752017Ab3JAIk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 04:40:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63517 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751616Ab3JAIkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 04:40:23 -0400
+Date: Tue, 1 Oct 2013 09:40:16 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Suman Anna <s-anna@ti.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
+Message-ID: <20131001084015.GH22259@e106331-lin.cambridge.arm.com>
+References: <cover.1379445653.git.s-anna@ti.com>
+ <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com>
+ <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130930185106.GD2125@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 11:51:06AM -0700, Andi Kleen wrote:
-> > AFAIK, this is not a problem in the vast majority of modern CPUs
+Hi Suman,
+
+On Fri, Sep 27, 2013 at 05:06:38PM +0100, Kumar Gala wrote:
 > 
-> Let's do some simple math: e.g. a Sandy Bridge system has 512 4K iTLB L2 entries.
-> That's around 2MB. There's more and more code whose footprint exceeds
-> that.
+> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
 > 
+> > HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+> > which are all device-tree boot only. This patch adds the
+> > base support for parsing the DT nodes, and removes the code
+> > dealing with the traditional platform device instantiation.
+> > 
+> > Signed-off-by: Suman Anna <s-anna@ti.com>
+> > ---
+> > .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
+> > arch/arm/mach-omap2/Makefile                       |  3 --
+> > arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+> > drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
+> > 4 files changed, 50 insertions(+), 67 deletions(-)
+> > create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> > delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+> > 
+> > diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> > new file mode 100644
+> > index 0000000..235b7c5
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> > @@ -0,0 +1,31 @@
+> > +OMAP4+ HwSpinlock Driver
+> > +========================
+> > +
+> > +Required properties:
+> > +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+> > +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
 
-With an expectation that it is read-mostly data, replicated between the
-caches accessing it and TLB refills taking very little time. This is not
-universally true and there are exceptions but even recent papers on TLB
-behaviour have tended to dismiss the iTLB refill overhead as a negligible
-portion of the overall workload of interest.
+"Currently supports" is not something I expect to see in a binding
+document. That sounds like a description of the driver rather than the
+binding.
 
-> Besides iTLB is not the only target. It is also useful for 
-> data of course.
-> 
+How similar are these hardware modules? What are the differences?
 
-True, but how useful? I have not seen an example of a workload showing that
-dTLB pressure on file-backed data was a major component of the workload. I
-would expect that sysV shared memory is an exception but does that require
-generic support for all filesystems or can tmpfs be special cased when
-it's used for shared memory?
+> > +- reg:			Contains the hwspinlock register address range (base
+> > +			address and length)
 
-For normal data, if it's read-only data then there would be some benefit to
-using huge pages once the data is in page cache. How common are workloads
-that mmap() large amounts of read-only data? Possibly some databases
-depending on the workload although there I would expect that the data is
-placed in shared memory.
+Is there only one register bank for the hwlock module?
 
-If the mmap()s data is being written then the cost of IO is likely to
-dominate, not TLB pressure. For write-mostly workloads there are greater
-concerns because dirty tracking can only be done at the huge page boundary
-potentially leading to greater amounts of IO and degraded performance
-overall.
+> > +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+> > +
+> > +Common hwlock properties:
+> > +The following describes the usage of the common hwlock properties (defined in
+> > +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
+> > +
+> > +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
+> > +			hwspinlock devices. The OMAP driver uses a default
+> > +			base id value of 0 for the locks present within the
+> > +			single hwspinlock device on all SoCs.
 
-I could be completely wrong here but these were the concerns I had when
-I first glanced through the patches. The changelogs had no information
-to convince me otherwise so I never dedicated the time to reviewing the
-patches in detail. I raised my concerns and then dropped it.
 
-> > > and I found it very hard to be motivated to review the series as a result.
-> > > I suspected that in many cases that the cost of IO would continue to dominate
-> > > performance instead of TLB pressure
-> 
-> The trend is to larger and larger memories, keeping things in memory.
-> 
+Driver details should not leak into bindngs...
 
-Yes, but using huge pages is not *necessarily* the answer. For fault
-scalability it probably would be a lot easier to batch handle faults if
-readahead indicates accesses are sequential. Background zeroing of pages
-could be revisited for fault intensive workloads. A potential alternative
-is that a contiguous page is allocated, zerod as one lump, split the pages
-and put onto a local per-task list although the details get messy. Reclaim
-scanning could be heavily modified to use collections of pages instead of
-single pages (although I'm not aware of the proper design of such a thing).
+As mentioned in the other patch, I don't think this is the way to handle
+this. I think we need a phandle + args representation.
 
-Again, this could be completely off the mark but if it was me that was
-working on this problem, I would have some profile data from some workloads
-to make sure the part I'm optimising was a noticable percentage of the
-workload and included that in the patch leader. I would hope that the data
-was compelling enough to convince reviewers to pay close attention to the
-series as the complexity would then be justified. Based on how complex THP
-was for anonymous pages, I would be tempted to treat THP for file-backed
-data as a last resort.
+> > +- hwlock-num-locks:	This property is not required on OMAP SoCs, since the
+> > +			number of locks present within a device can be deduced
+> > +			from the SPINLOCK_SYSSTATUS device register.
 
-> In fact there's a good argument that memory sizes are growing faster
-> than TLB capacities. And without large TLBs we're even further off
-> the curve.
-> 
+Huh? Why define this property at all here if we don't need it and don't
+use it?
 
-I'll admit this is also true. It was considered to be true in the 90's
-when huge pages were first being thrown around as a possible solution to
-the problem. One paper recently suggested using segmentation for large
-memory segments but the workloads they examined looked like they would
-be dominated by anonymous access, not file-backed data with one exception
-where the workload frequently accessed compile-time constants.
+The common document should state that specific bindings may use it and
+should explicitly state if they do, rather than stating they don't...
 
--- 
-Mel Gorman
-SUSE Labs
+Cheers,
+Mark.
