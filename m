@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab3JAOpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:45:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39093 "EHLO comal.ext.ti.com"
+	id S1752948Ab3JAOqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:46:00 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39892 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463Ab3JAOpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:45:38 -0400
-Date: Tue, 1 Oct 2013 09:45:27 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <b.zolnierkie@samsung.com>,
-        <m.szyprowski@samsung.com>, <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2] USB: gadget: s3c-hsotg: add isochronous transfers
- support
-Message-ID: <20131001144527.GX1476@radagast>
-Reply-To: <balbi@ti.com>
-References: <1380016036-20983-1-git-send-email-r.baldyga@samsung.com>
+	id S1752247Ab3JAOpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:45:46 -0400
+Date: Tue, 1 Oct 2013 07:45:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131001144537.GC5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925175055.GA25914@redhat.com>
+ <20130925184015.GC3657@laptop.programming.kicks-ass.net>
+ <20130925212200.GA7959@linux.vnet.ibm.com>
+ <20130926111042.GS3081@twins.programming.kicks-ass.net>
+ <20130926165840.GA863@redhat.com>
+ <20130926175016.GI3657@laptop.programming.kicks-ass.net>
+ <20130927181532.GA8401@redhat.com>
+ <20130927204116.GJ15690@laptop.programming.kicks-ass.net>
+ <20131001035604.GW19582@linux.vnet.ibm.com>
+ <20131001141429.GA32423@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SBYWXwvsCkEY5LOm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380016036-20983-1-git-send-email-r.baldyga@samsung.com>
+In-Reply-To: <20131001141429.GA32423@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100114-0320-0000-0000-00000131CF34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SBYWXwvsCkEY5LOm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 01, 2013 at 04:14:29PM +0200, Oleg Nesterov wrote:
+> On 09/30, Paul E. McKenney wrote:
+> >
+> > On Fri, Sep 27, 2013 at 10:41:16PM +0200, Peter Zijlstra wrote:
+> > > On Fri, Sep 27, 2013 at 08:15:32PM +0200, Oleg Nesterov wrote:
+> > > > On 09/26, Peter Zijlstra wrote:
+> >
+> > [ . . . ]
+> >
+> > > > > +static bool cpuhp_readers_active_check(void)
+> > > > >  {
+> > > > > +	unsigned int seq = per_cpu_sum(cpuhp_seq);
+> > > > > +
+> > > > > +	smp_mb(); /* B matches A */
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * In other words, if we see __get_online_cpus() cpuhp_seq increment,
+> > > > > +	 * we are guaranteed to also see its __cpuhp_refcount increment.
+> > > > > +	 */
+> > > > >
+> > > > > +	if (per_cpu_sum(__cpuhp_refcount) != 0)
+> > > > > +		return false;
+> > > > >
+> > > > > +	smp_mb(); /* D matches C */
+> > > >
+> > > > It seems that both barries could be smp_rmb() ? I am not sure the comments
+> > > > from srcu_readers_active_idx_check() can explain mb(), note that
+> > > > __srcu_read_lock() always succeeds unlike get_cpus_online().
+> > >
+> > > I see what you mean; cpuhp_readers_active_check() is all purely reads;
+> > > there are no writes to order.
+> > >
+> > > Paul; is there any argument for the MB here as opposed to RMB; and if
+> > > not should we change both these and SRCU?
+> >
+> > Given that these memory barriers execute only on the semi-slow path,
+> > why add the complexity of moving from smp_mb() to either smp_rmb()
+> > or smp_wmb()?  Straight smp_mb() is easier to reason about and more
+> > robust against future changes.
+> 
+> But otoh this looks misleading, and the comments add more confusion.
+> 
+> But please note another email, it seems to me we can simply kill
+> cpuhp_seq and all the barriers in cpuhp_readers_active_check().
 
-Hi,
+If you don't have cpuhp_seq, you need some other way to avoid
+counter overflow.  Which might be provided by limited number of
+tasks, or, on 64-bit systems, 64-bit counters.
 
-On Tue, Sep 24, 2013 at 11:47:16AM +0200, Robert Baldyga wrote:
-> Hello,
->=20
-> This is update for my proposal for isochronous transfers support in s3c-h=
-sotg
-> driver. I've fixed issuses pointed by Bartlomiej Zolnierkiewicz. For more
-> information, please check the change log at the end of the mail.
+							Thanx, Paul
 
-this shouldn't be part of commit log.
-
-> This patch adds isochronous transfer support. It adds few modifications:
-> - Modify s3c_hsotg_write_fifo() function. It actually calculates transfer
->   size, taking into account Multi Count value, which indicates number of
->   transactions per microframe.
-> - Fix s3c_hsotg_start_req() function by setting number of packets to Multi
->   Count field in DIEPTSIZ register for isochronous endpoints.
-> - Fix s3c_hsotg_set_ep_maxpacket() function. Field wMaxPacketSize of endp=
-oint
->   descriptor is now splitted into maximum packet size value and number of
->   additional transaction per microframe.
-> - Modify s3c_hsotg_epint() function. Some interrupts are ignored for
->   isochronous endpoints, (e.g. INTknTXFEmpMsk) becouse isochronous reques=
-t is
->   always transfered in single transaction, which ends with XferCompl inte=
-rrupt.
->   Add Odd/Even microframe toggle to allow data transfering in each microf=
-rame.
-> - Fix s3c_hsotg_ep_enable() function by supporting isochronous endpoint t=
-ype.
-
-you're doing way too many things in a single patch.
-
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->=20
-> Changelog:
->=20
-> v2:
-> - moved bugfix affecting to the other features to separated patch
-> - changed conditions order in request length checking in s3c_hsotg_start_=
-req
->   function, as Bartlomiej Zolnierkiewicz suggested
-> - fixed typos
->=20
-> v1: https://lkml.org/lkml/2013/9/23/72
-> - initial proposal
-
-changelog sould be after tearline (---) below.
-
---=20
-balbi
-
---SBYWXwvsCkEY5LOm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSSuAHAAoJEIaOsuA1yqRER14P/A+B7jOMq7L5KPfyPQ8HzNyt
-jcLzTs2zMnAQUoT920jhOE8sd5rTd7tH0JWg8E2+VnaOrL/erLPiTs/Ocwh5z1cr
-dyDwEvXWlRG5wDvoQtxsn5SpQFE+3r+Nh+HZ3TZ3zlVds/mzTJmkXZ4xy6FlvVqR
-ZeWpSVsRxQ+8Khuqjch5Yls9JSoV9rbpDCgGM+pCj2VvqxALgCA129IAHXtA2zPO
-Zc1D+2fHcNr7KiEe8+N96ffajynzdjuw/g8diVl9i48qOPOiNsjLTuR2SfSjYkBR
-Tc4d1RJsZRD66exBWqL/mG9ddTUOHZQfIDJo33tDDHDhJr3h8W5qtL8OVgamm3qF
-GWp1U5CXcpLj5n3NYAigQZNod4yOUxEhpruSW7UoTa2EYngVnCMBN0luKUx6/ob1
-TVSnhY+HR6U73GYoUF+PYQbxcewrzV2by3iWsgfuVPzjfa9wbiIVZhDkXT/s7eV6
-lzuom20arQ1TxylxjTJ45uSf2g1deZc5HkJJEZyoW6Mlxg/Fia+mkDpgmuObEk6H
-cU/D4tiOM7tPZ2CvQ/vyEw+lO8h9FcJxhGlQqmPyNfELlh6ZQWFkU78Sr4XKD+kv
-TrALmIQJj2t3aQWI1+RNjuaQbfGlb2kKm/4KHJXjXeAQ/c+nsxEPVIy3VmF5yf3O
-qOFGJXCA6Z7XITJ4cJt8
-=XgkU
------END PGP SIGNATURE-----
-
---SBYWXwvsCkEY5LOm--
