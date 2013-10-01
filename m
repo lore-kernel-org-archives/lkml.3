@@ -1,94 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab3JAHfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 03:35:03 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:36422 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab3JAHfA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 03:35:00 -0400
-Message-ID: <524A7B00.4010001@collabora.co.uk>
-Date: Tue, 01 Oct 2013 09:34:24 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	id S1752318Ab3JAHfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:35:54 -0400
+Received: from ozlabs.org ([203.10.76.45]:55183 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508Ab3JAHfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 03:35:51 -0400
+Date: Tue, 1 Oct 2013 17:35:48 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20131001073548.GI17966@concordia>
+References: <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
+ <20130905200608.GA3846@htj.dyndns.org>
+ <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
+ <20130906160621.GF22763@mtj.dyndns.org>
+ <20130906233205.GF12956@google.com>
+ <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
+ <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
+ <20130917143022.GA7707@concordia>
+ <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
+ <20130918142231.GA21650@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de
-Subject: Re: [PATCH 1/2] gpio/omap: maintain GPIO and IRQ usage separately
-References: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk> <87r4cajfx0.fsf@linaro.org>
-In-Reply-To: <87r4cajfx0.fsf@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130918142231.GA21650@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 08:08 PM, Kevin Hilman wrote:
-> Javier Martinez Canillas <javier.martinez@collabora.co.uk> writes:
+On Wed, Sep 18, 2013 at 09:22:31AM -0500, Tejun Heo wrote:
+> Hello,
 > 
->> The GPIO OMAP controller pins can be used as IRQ and GPIO
->> independently so is necessary to keep track GPIO pins and
->> IRQ lines usage separately to make sure that the bank will
->> always be enabled while being used.
->>
->> Also move gpio_is_input() definition in preparation for the
->> next patch that setups the controller's irq_chip driver when
->> a caller requests an interrupt line.
->>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> On Wed, Sep 18, 2013 at 11:48:00AM +0200, Alexander Gordeev wrote:
+> > On Wed, Sep 18, 2013 at 12:30:23AM +1000, Michael Ellerman wrote:
+> > > How about no?
+> > > 
+> > > We have a small number of MSIs available, limited by hardware &
+> > > firmware, if we don't impose a quota then the first device that probes
+> > > will get most/all of the MSIs and other devices miss out.
+> > 
+> > Out of curiosity - how pSeries has had done it without quotas before
+> > 448e2ca ("powerpc/pseries: Implement a quota system for MSIs")?
 > 
-> I'm fine with this appproach.  For both patches:
+> Hmmm... do we need to treat this any differently?  If the platform
+> can't allocate full range of requested MSIs, just failing should be
+> enough regardless of why such allocation can't be met, no?
 > 
-> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> > > Anyway I don't see what problem you're trying to solve? I agree the
+> > > -ve/0/+ve return value pattern is ugly, but it's hardly the end of the
+> > > world.
+> > 
+> > Well, the interface recently has been re-classified from "ugly" to
+> > "unnecessarily complex and actively harmful" in Tejun's words ;)
 > 
-> Also, I gave it a spin across a handful of OMAP boards using v3.12-rc2 +
-> these 2 patches.
+> LOL. :)
 > 
-> Boot tested successfully with DT boot:
+> > Indeed, I checked most of the drivers and it is incredible how people
+> > are creative in misusing the interface: from innocent pci_disable_msix()
+> > calls when if pci_enable_msix() failed to assuming MSI-Xs were enabled
+> > if pci_enable_msix() returned a positive value (apparently untested).
+> > 
+> > Roughly third of the drivers just do not care and bail out once
+> > pci_enable_msix() has not succeeded. Not sure how many of these are
+> > mandated by the hardware.
 > 
-> omap3530/beagle
-> omap3730/beagle-xm
-> omap3530/overo (Tobi w/GPIO IRQ networking)
-> omap3730/overo STORM (w/GPIO IRQ for networking)
-> am335x/beaglebone
-> am335x/beaglebone black
-> omap4430/panda
-> omap4460/panda-es
-> omap5912/OSK (omap1)
-> 
-> I also verified non-DT boot on the OMAP3 platforms that still support
-> legacy boot.
-> 
-> So feel free to also add
-> 
-> Tested-by: Kevin Hilman <khilman@linaro.org>
-> 
-> Thanks for your persistence in getting a fix for this upstream.
-> 
-> Kevin
-> 
+> Yeah, I mean, this type of interface is a trap.  People have to
+> actively resist to avoid doing silly stuff which is a lot to ask.
 
-Thanks a lot Kevin for testing on so many boards.
+I really think you're overstating the complexity here.
 
-Linus,
+Functions typically return a boolean   -> nothing to see here
+This function returns a tristate value -> brain explosion!
 
-Since this patch-set doesn't cause any regression and fix a long standing issue
-on OMAP, do you think that it would be possible to include on the -rc series as
-a bugfix or do you prefer to wait until 3.13?
 
-Thanks a lot and best regards,
-Javier
+> > 	/*
+> > 	 * Retrieving 'nvec' by means other than pci_msix_table_size()
+> > 	 */
+> > 
+> > 	rc = pci_get_msix_limit(pdev);
+> > 	if (rc < 0)
+> > 		return rc;
+> > 
+> > 	/*
+> > 	 * nvec = min(rc, nvec);
+> > 	 */
+> > 
+> > 	for (i = 0; i < nvec; i++)
+> > 		msix_entry[i].entry = i;
+> > 
+> > 	rc = pci_enable_msix(pdev, msix_entry, nvec);
+> > 	if (rc)
+> > 		return rc;
+> 
+> I really think what we should do is
+> 
+> * Determine the number of MSIs the controller wants.  Don't worry
+>   about quotas or limits or anything.  Just determine the number
+>   necessary to enable enhanced interrupt handling.
+> 	
+> * Try allocating that number of MSIs.  If it fails, then just revert
+>   to single interrupt mode.  It's not the end of the world and mostly
+>   guaranteed to work.  Let's please not even try to do partial
+>   multiple interrupts.  I really don't think it's worth the risk or
+>   complexity.
+
+It will potentially break existing setups on our hardware.
+
+Can I make that any clearer?
+
+cheers
