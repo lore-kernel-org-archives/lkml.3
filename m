@@ -1,204 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3JAUgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:36:05 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:40376 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3JAUgE (ORCPT
+	id S1753007Ab3JAUg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:36:26 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:51511 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab3JAUgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:36:04 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH v2 9/9] procfs: improve permission checks on /proc/*/syscall
-Date: Tue,  1 Oct 2013 21:26:18 +0100
-Message-Id: <1380659178-28605-10-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+	Tue, 1 Oct 2013 16:36:20 -0400
+Date: Tue, 1 Oct 2013 22:34:34 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] pwm-backlight: Refactor backlight power on/off
+Message-ID: <20131001203430.GA9201@ulmo.nvidia.com>
+References: <1379972467-11243-1-git-send-email-treding@nvidia.com>
+ <1379972467-11243-2-git-send-email-treding@nvidia.com>
+ <524B13BF.7080902@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <524B13BF.7080902@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Permission checks need to happen during each system call. Therefore we
-need to convert the /proc/*/syscall entry from an INF node to a REG
-node. Doing this will make /proc/*/syscall have its own file operations
-to implement appropriate checks and avoid breaking shared INF file
-operations.
 
-Add the syscall_open() to check if the file's opener has enough
-permission to ptrace the task during ->open().
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add the syscall_read() to check permissions and to read task syscall
-information. If the classic ptrace_may_access() check is passed, then
-check if current's cred have changed between ->open() and ->read(), if
-so, call proc_allow_access() to check if the original file's opener had
-enough permissions to read the task syscall info. This will block
-passing the file descriptor to a more privileged process.
+On Tue, Oct 01, 2013 at 12:26:07PM -0600, Stephen Warren wrote:
+> On 09/23/2013 03:40 PM, Thierry Reding wrote:
+> > In preparation for adding an optional regulator and enable GPIO to the
+> > driver, split the power on and power off sequences into separate
+> > functions to reduce code duplication at the multiple call sites.
+>=20
+> > diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight=
+/pwm_bl.c
+>=20
+> > +static void pwm_backlight_power_off(struct pwm_bl_data *pb)
+> > +{
+> > +	pwm_disable(pb->pwm);
+>=20
+> Both the call-sites you're replacing do the following before pwm_disable(=
+):
+>=20
+> 		pwm_config(pb->pwm, 0, pb->period);
+>=20
+> While I agree that probably shouldn't be necessary, I think it's at
+> least worth mentioning that in the commit description just to make it
+> obvious that it was a deliberate change. Splitting that change into a
+> separate patch might be reasonable in order to keep refactoring and
+> functional changes separate, although perhaps it's not worth it.
 
-For readability split code into another task_syscall_read() function
-which is used to get the syscall entries of the task.
+Actually I'll add that back. I'm not sure exactly why I dropped it (it
+may just have been oversight) and there have been reports that some HW
+actually requires pwm_config(..., 0, ...) before pwm_disable() to turn
+off properly.
 
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/proc/base.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 84 insertions(+), 9 deletions(-)
+> There are also a couple unrelated whitespace changes thrown in here.
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index b80588a..f98889d 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -150,6 +150,9 @@ struct pid_entry {
- 		NULL, &proc_single_file_operations,	\
- 		{ .proc_show = show } )
- 
-+/* 4K page size but our output routines use some slack for overruns */
-+#define PROC_BLOCK_SIZE        (3*1024)
-+
- /**
-  * proc_same_open_cred - Check if the file's opener cred matches the
-  * current cred.
-@@ -678,13 +681,32 @@ static int proc_pid_limits(struct task_struct *task, char *buffer)
- }
- 
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
--static int proc_pid_syscall(struct task_struct *task, char *buffer)
-+static int syscall_open(struct inode *inode, struct file *filp)
-+{
-+	int err = -ESRCH;
-+	struct task_struct *task = get_proc_task(file_inode(filp));
-+
-+	if (!task)
-+		return err;
-+
-+	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
-+	if (err)
-+		goto out;
-+
-+	if (!ptrace_may_access(task, PTRACE_MODE_ATTACH))
-+		err = -EPERM;
-+
-+	mutex_unlock(&task->signal->cred_guard_mutex);
-+out:
-+	put_task_struct(task);
-+	return err;
-+}
-+
-+static int task_syscall_read(struct task_struct *task, char *buffer)
- {
-+	int res;
- 	long nr;
- 	unsigned long args[6], sp, pc;
--	int res = lock_trace(task);
--	if (res)
--		return res;
- 
- 	if (task_current_syscall(task, &nr, args, 6, &sp, &pc))
- 		res = sprintf(buffer, "running\n");
-@@ -696,9 +718,64 @@ static int proc_pid_syscall(struct task_struct *task, char *buffer)
- 		       nr,
- 		       args[0], args[1], args[2], args[3], args[4], args[5],
- 		       sp, pc);
--	unlock_trace(task);
-+
- 	return res;
- }
-+
-+static ssize_t syscall_read(struct file *file, char __user *buf,
-+			    size_t count, loff_t *ppos)
-+{
-+	int same_cred;
-+	ssize_t length;
-+	unsigned long page;
-+	const struct cred *fcred = file->f_cred;
-+	struct inode *inode = file_inode(file);
-+	struct task_struct *task = get_proc_task(inode);
-+
-+	length = -ESRCH;
-+	if (!task)
-+		return length;
-+
-+	if (count > PROC_BLOCK_SIZE)
-+		count = PROC_BLOCK_SIZE;
-+
-+	length = -ENOMEM;
-+	page = __get_free_page(GFP_TEMPORARY);
-+	if (!page)
-+		goto out;
-+
-+	same_cred = proc_same_open_cred(fcred);
-+
-+	length = lock_trace(task);
-+	if (length)
-+		goto out_free;
-+
-+	if (!same_cred &&
-+	    !proc_allow_access(fcred, task, PTRACE_MODE_ATTACH)) {
-+		length = -EPERM;
-+		unlock_trace(task);
-+		goto out_free;
-+	}
-+
-+	length = task_syscall_read(task, (char *)page);
-+	unlock_trace(task);
-+
-+	if (length >= 0)
-+		length = simple_read_from_buffer(buf, count, ppos,
-+						 (char *)page, length);
-+
-+out_free:
-+	free_page(page);
-+out:
-+	put_task_struct(task);
-+	return length;
-+}
-+
-+static const struct file_operations proc_pid_syscall_operations = {
-+	.open           = syscall_open,
-+	.read           = syscall_read,
-+	.llseek         = generic_file_llseek,
-+};
- #endif /* CONFIG_HAVE_ARCH_TRACEHOOK */
- 
- /************************************************************************/
-@@ -789,8 +866,6 @@ static const struct inode_operations proc_def_inode_operations = {
- 	.setattr	= proc_setattr,
- };
- 
--#define PROC_BLOCK_SIZE	(3*1024)		/* 4K page size but our output routines use some slack for overruns */
--
- static ssize_t proc_info_read(struct file * file, char __user * buf,
- 			  size_t count, loff_t *ppos)
- {
-@@ -2760,7 +2835,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- #endif
- 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
--	INF("syscall",    S_IRUSR, proc_pid_syscall),
-+	REG("syscall",    S_IRUSR, proc_pid_syscall_operations),
- #endif
- 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
-@@ -3096,7 +3171,7 @@ static const struct pid_entry tid_base_stuff[] = {
- #endif
- 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
--	INF("syscall",   S_IRUSR, proc_pid_syscall),
-+	REG("syscall",   S_IRUSR, proc_pid_syscall_operations),
- #endif
- 	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
--- 
-1.7.11.7
+I think they increase readability, but I can certainly move them into a
+separate patch.
 
+Thierry
+
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSSzHWAAoJEN0jrNd/PrOhc4IP/A/8tzxD8ELDkkCzKhqGuLAZ
+TkfYFhVRUEccTBx1sn/ROmqYx5jcMwEeTuKb1QvrTozzwLW6dW7tVvz2QWr0Nxpk
+eFx99F2kmNvWNrf2in0wtmGRxBFJUydUWwKcagiVO+C4wl36tCWUaP5hMrlDbEte
+j7k6ydMQDZDxZuVcN/qZ+vOeIN5zdI7KeQtS/CbLAXpJtLCJr6W8dIm/+sJmt+MU
+VpkF/DxnK2VhEwNbxRS/irOnoIs9Kgh1PRPQFciNUq2ab7uy9ADUSlosUEp2Jhvw
+ZLNGsDeUm1zD4XYgBDVMJuU9hSeMneEUkdEQmJwih5gEDUs3NhyDzxZ00pM6IwQf
+g/Dw2ewFx9l7+qHEvxxnOYWdeSfal+M+rjfAkSz7jriypXDJgvYIToSQMj3rRxVV
+6G8AFe/+VaH/oKsKixk0d3aPhZQtNHVjQaShbJ8C7EvpowhkLFVQQ7MVMTQ7lWpS
+Rm3MVeP7tN39RtIC0svt66Vuq/OjxOW8xQEKS68USzWZVcSrgYSL6AEOc5e/nf73
+/IUabT+3ng/s9MmWcYNx01OEKAdDhegt5vcfAweX4ntcezcXgxkTXXHIH4emuymb
+ZS+0RIZ5QFWS0aUeAQ3CxjoEp4a660oA46LbG13viblpQw0ZB0xL17chLUwRCeYj
+UIuGk6yoOioDeG8g0A2J
+=zpgL
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
