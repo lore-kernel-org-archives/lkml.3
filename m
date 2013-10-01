@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3JANnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:43:00 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:54575 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab3JANm6 (ORCPT
+	id S1753397Ab3JANsG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:48:06 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62523 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab3JANsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:42:58 -0400
-Date: Tue, 1 Oct 2013 06:42:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: Avoiding the dentry d_lock on final dput(), part deux:
- transactional memory
-Message-ID: <20131001134251.GA5534@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
- <1380581522.6396.20.camel@pasglop>
- <23118.1380587771@ale.ozlabs.ibm.com>
- <CA+55aFwi5sZK4mFxs3PT1wU4_vNzsLOFiocqi3g14fPamKXYsw@mail.gmail.com>
- <1380593103.6396.38.camel@pasglop>
- <20131001031356.GP19582@linux.vnet.ibm.com>
- <CAEjGV6xuscOh=t6BhbdRKAPcZ1DOJkD6ZcB1wgTf9-AedKSaxA@mail.gmail.com>
- <20131001121654.GX19582@linux.vnet.ibm.com>
+	Tue, 1 Oct 2013 09:48:04 -0400
+Message-ID: <524AD290.207@gmail.com>
+Date: Tue, 01 Oct 2013 08:48:00 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001121654.GX19582@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100113-1542-0000-0000-000001E69C93
+To: Sricharan R <r.sricharan@ti.com>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, tglx@linutronix.de,
+        linus.walleij@linaro.org, santosh.shilimkar@ti.com,
+        linux@arm.linux.org.uk, tony@atomide.com, rnayak@ti.com,
+        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com
+Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
+References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com> <524AAE69.8060703@ti.com>
+In-Reply-To: <524AAE69.8060703@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 05:16:54AM -0700, Paul E. McKenney wrote:
-> On Tue, Oct 01, 2013 at 02:52:28PM +1000, Michael Neuling wrote:
-> > >> Well we don't have to, I think Mikey wasn't totally clear about that
-> > >> "making all registers volatile" business :-) This is just something we
-> > >> need to handle in assembly if we are going to reclaim the suspended
-> > >> transaction.
-> > 
-> > Yeah, sorry.  The slow path with all registers as volatile is only
-> > needed if we get pre-empted during the transaction.
-> > 
-> > >>
-> > >> So basically, what we need is something along the lines of
-> > >> enable_kernel_tm() which checks if there's a suspended user transaction
-> > >> and if yes, kills/reclaims it.
-> > >>
-> > >> Then we also need to handle in our interrupt handlers that we have an
-> > >> active/suspended transaction from a kernel state, which we don't deal
-> > >> with at this point, and do whatever has to be done to kill it... we
-> > >> might get away with something simple if we can state that we only allow
-> > >> kernel transactions at task level and not from interrupt/softirq
-> > >> contexts, at least initially.
-> > >
-> > > Call me a coward, but this is starting to sound a bit scary.  ;-)
-> > 
-> > We are just wanting to prototype it for now to see if we could make it
-> > go faster.  If it's worth it, then we'd consider the additional
-> > complexity this would bring.
-> > 
-> > I don't think it'll be that bad, but I'd certainly want to make sure
-> > it's worth it before trying :-)
+On 10/01/2013 06:13 AM, Sricharan R wrote:
+> Hi,
 > 
-> OK, fair point.  ;-)
+> On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
+>> On 09/30/2013 08:59 AM, Sricharan R wrote:
+>>> Some socs have a large number of interrupts requests to service
+>>> the needs of its many peripherals and subsystems. All of the interrupt
+>>> requests lines from the subsystems are not needed at the same
+>>> time, so they have to be muxed to the controllers appropriately.
+>>> In such places a interrupt controllers are preceded by an
+>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+>>> requests to the controller inputs.
+>>>
+>>> This series models the peripheral interrupts that can be routed through
+>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
+>>> in a separate linear domain inside the GIC. The registered routable domain's
+>>> callback are invoked as a part of the GIC's callback, which in turn should
+>>> allocate a free irq line and configure the IP accordingly. So every peripheral
+>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
+>>> gic line for that gets allocated and configured when the peripheral's interrupt
+>>> is mapped.
+>>>
+>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
+>>> crossbar is added here, along with the DT bindings.
+>> Seems like interrupt-map property is what you need here.
+>>
+>> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
+>>
+>> Versatile Express also has an example.
+>    OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
+>    DTS level, but to assign it dynamically during runtime. This was one of the
+>   comments that came up with first crossbar support patches, which was assigning a
+>   interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
 
-That is, a fair point -assuming- that we also try the memory-barrier-free
-cmpxchg that Linus suggested...
+Is there an actual usecase on a single h/w design that you run out of
+interrupts and it is a user decision which interrupts to use?
 
-							Thanx, Paul
+You could fill in the interrupt-map at run-time. It would have to be
+early (bootloader or early kernel init) and can't be at request_irq time.
+
+>     https://lkml.org/lkml/2013/7/18/416
+> 
+>    Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
+>    that did not go as well. Finally was asked to handle this as a part of GIC driver with
+>    a separate domain.
+>    
+>   http://www.spinics.net/lists/linux-omap/msg97085.html
+
+This has nothing to do with the GIC, so it does not belong there.
+
+Rob
 
