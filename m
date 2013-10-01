@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3JAQpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 12:45:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43639 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab3JAQpg (ORCPT
+	id S1752568Ab3JAQrR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:47:17 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:59717 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab3JAQrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 12:45:36 -0400
+	Tue, 1 Oct 2013 12:47:14 -0400
+Date: Tue, 1 Oct 2013 18:47:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20131001164708.GG24825@localhost.localdomain>
+References: <20130820163312.GA17957@redhat.com>
+ <20130820175429.GI3258@twins.programming.kicks-ass.net>
+ <20130820182553.GB22287@redhat.com>
+ <20130821083130.GM3258@twins.programming.kicks-ass.net>
+ <20130821113551.GA1472@redhat.com>
+ <20130821123311.GA31370@twins.programming.kicks-ass.net>
+ <20130821142356.GC31370@twins.programming.kicks-ass.net>
+ <20130821164146.GA15194@redhat.com>
+ <20131001140525.GE24825@localhost.localdomain>
+ <20131001155633.GR3657@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-X-Originating-IP: [89.2.206.189]
-In-Reply-To: <1378562915-893-1-git-send-email-teg@jklm.no>
-References: <CAMuHMdXDAA3PgbgNrccStUZGByDXuSsMG_yJMwwUWXwMvyOfsA@mail.gmail.com>
- <1378562915-893-1-git-send-email-teg@jklm.no>
-From: Tom Gundersen <teg@jklm.no>
-Date: Tue, 1 Oct 2013 18:45:14 +0200
-Message-ID: <CAG-2HqVvm6b5pnS_o4b7=PR_xt6YjVabEfqoxjuj6zUJbn3dNQ@mail.gmail.com>
-Subject: Re: [PATCH v3] simplefb: print some info about the registered fb
-To: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, tomi.valkeinen@ti.com,
-        plagnioj@jcrosoft.com, Tom Gundersen <teg@jklm.no>,
-        David Herrmann <dh.herrmann@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001155633.GR3657@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 7, 2013 at 4:08 PM, Tom Gundersen <teg@jklm.no> wrote:
-> This is similar to the output printed by efifb.
->
-> Signed-off-by: Tom Gundersen <teg@jklm.no>
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: David Herrmann <dh.herrmann@gmail.com>
-> ---
-> v2: also print smem_len, as requested by David
-> v3: don't cast, as requested by Geert
+On Tue, Oct 01, 2013 at 05:56:33PM +0200, Peter Zijlstra wrote:
+> 
+> So what's wrong with something like:
+> 
+> struct cpu_idletime {
+>        seqlock_t seqlock;
+>        unsigned long nr_iowait;
+>        u64 start;
+>        u64 idle_time,
+>        u64 iowait_time,
+> } __cacheline_aligned_in_smp;
+> 
+> DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
+> 
+> void io_schedule(void)
+> {
+> 	struct cpu_idletime *it = __raw_get_cpu_var(cpu_idletime);
+> 
+> 	write_seqlock(&it->seqlock);
+> 	if (!it->nr_iowait++)
+> 		it->start = local_clock();
+> 	write_sequnlock(&it->seqlock);
+> 
+> 	current->in_iowait = 1;
+> 	schedule();
+> 	current->in_iowait = 0;
+> 
+> 	write_seqlock(&it->seqlock);
+> 	if (!--it->nr_iowait)
+> 		it->iowait_time += local_clock() - it->start;
+> 	write_sequnlock(&it->seqlock);
+> }
+> 
+> Afaict you don't need the preempt disable and atomic muck at all.
 
-Jean-Christophe and Tomi,
+Yeah thinking more about it, the preempt disable was probably not
+necessary. Now that's trading 2 atomics + 1 Lock/Unlock with 2 Lock/Unlock.
 
-What's the status of this, did either of you pick it up for 3.12 or 3.13?
+OTOH it computes iowait time seperately from idle time, so we probably don't
+need to lock the idle time anymore.
 
-Cheers,
+Plus this solution is much much more simple. So if nobody sees a flaw there,
+I'll try this.
 
-Tom
+Thanks.
+
+> 
+> It will all get a little more complicated to deal with overlapping idle
+> and iowait times, but the idea is the same.
+
+Probably no big deal.
