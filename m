@@ -1,297 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3JAJsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 05:48:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:31093 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab3JAJsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 05:48:17 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1013,1371052800"; 
-   d="scan'208";a="8662828"
-Message-ID: <524A9A28.2070704@cn.fujitsu.com>
-Date: Tue, 01 Oct 2013 17:47:20 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1753319Ab3JAJts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 05:49:48 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53338 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752017Ab3JAJtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 05:49:46 -0400
+Message-ID: <524A9AB8.4010407@ti.com>
+Date: Tue, 1 Oct 2013 12:49:44 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: robert.moore@intel.com, lv.zheng@intel.com,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        "mina86@mina86.com" <mina86@mina86.com>, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, Rik van Riel <riel@redhat.com>,
-        prarit@redhat.com, Toshi Kani <toshi.kani@hp.com>
-CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>, imtangchen@gmail.com,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Subject: [PATCH -mm 2/8] memblock, numa: Introduce flag into memblock
-References: <524A991D.3050005@cn.fujitsu.com>
-In-Reply-To: <524A991D.3050005@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/01 17:46:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/01 17:46:22,
-	Serialize complete at 2013/10/01 17:46:22
+To: Arend van Spriel <arend@broadcom.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: using mmc2 on panda [was: Regression 3.11-rc1: omap4panda: no
+ usb and consequently no ethernet]
+References: <51E7AA24.6080600@broadcom.com> <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com> <51E919CA.8060805@ti.com> <51E91B80.1050609@broadcom.com> <524A823F.6070209@broadcom.com>
+In-Reply-To: <524A823F.6070209@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+Hi Arend,
 
-There is no flag in memblock to describe what type the memory is.
-Sometimes, we may use memblock to reserve some memory for special usage.
-And we want to know what kind of memory it is. So we need a way to
-differentiate memory for different usage.
+On 10/01/2013 11:05 AM, Arend van Spriel wrote:
+> On 07/19/2013 12:57 PM, Arend van Spriel wrote:
+>> On 07/19/2013 12:49 PM, Roger Quadros wrote:
+>>> On 07/19/2013 01:36 PM, Arend van Spriel wrote:
+>>>> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
+>>>>> Then for the SDIO with device tree, take a look at the following
+>>>>> patches:
+>>>>>
+>>>>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
+>>>>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
+>>>>
+>>>> I have been looking at the pandaboard patch in the series above and I
+>>>> do have a question. Among other things the patch adds these dt entries.
+>>>>
+>>>> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP |
+>>>> MODE0 */
+>>>> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP |
+>>>> MODE0 */
+>>>>
+>>>> If I look at the similar names in the deceased board-omap4panda.c:
+>>>>
+>>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 |
+>>>> OMAP_PIN_INPUT_PULLUP),
+>>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 |
+>>>> OMAP_PIN_INPUT_PULLUP),
+>>>>
+>>>> and in mux44xx.h:
+>>>>
+>>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
+>>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
+>>>>
+>>>> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is
+>>>> probably an explanation to it and it would help my understanding to
+>>>> know where this difference comes from. Hope you can help me out here.
+>>>>
+>>>
+>>> If you see omap4.dtsi, omap4_pmx_core starts at register address
+>>> 0x4a100040.
+>>>
+>>> So, you need to subtract 0x40 from the offsets defined in mux44xx.h
+>>> for pmx_core registers.
+>>
+>> That was what I was looking for. Thanks!
+> 
+> Hi Roger,
+> 
+> It has been a while, but I would like to pickup this thread. We have a couple of pandaboards used as test setup. These have an SDIO adapter hooked up to expansion connector A using MMC2. I have attached the patch file (just ignore platform_data stuff). Now on one board it works, but not for the other. I suspect a board issue so listing the two types that we use:
+> 
+> PandaBoard rev A2 (dmesg: OMAP4430 ES2.1): works
+> PandaBoardES rev B1 (dmesg: OMAP4460 ES1.1): nope
+> 
+> Any hints for me.
 
-In hotplug environment, we want to reserve hotpluggable memory so the
-kernel won't be able to use it. And when the system is up, we have to
-free these hotpluggable memory to buddy. So we need to mark these memory
-first.
+Does your PandaboardES have the WLAN chip (U4) mounted? If yes, how do you isolate
+it from your external SDIO adapter?
 
-In order to do so, we need to mark out these special memory in memblock.
-In this patch, we introduce a new "flags" member into memblock_region:
-   struct memblock_region {
-           phys_addr_t base;
-           phys_addr_t size;
-           unsigned long flags;		/* This is new. */
-   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-           int nid;
-   #endif
-   };
+Most likely your Pandaboard (A2) doesn't have the WLAN chip (U3) on board so there is no problem there.
 
-This patch does the following things:
-1) Add "flags" member to memblock_region.
-2) Modify the following APIs' prototype:
-	memblock_add_region()
-	memblock_insert_region()
-3) Add memblock_reserve_region() to support reserve memory with flags, and keep
-   memblock_reserve()'s prototype unmodified.
-4) Modify other APIs to support flags, but keep their prototype unmodified.
-
-The idea is from Wen Congyang <wency@cn.fujitsu.com> and Liu Jiang <jiang.liu@huawei.com>.
-
-v1 -> v2:
-As tj suggested, a zero flag MEMBLK_DEFAULT will make users confused. If
-we want to specify any other flag, such MEMBLK_HOTPLUG, users don't know
-to use MEMBLK_DEFAULT | MEMBLK_HOTPLUG or just MEMBLK_HOTPLUG. So remove
-MEMBLK_DEFAULT (which is 0), and just use 0 by default to avoid confusions
-to users.
-
-Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
-Suggested-by: Liu Jiang <jiang.liu@huawei.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/linux/memblock.h |    1 +
- mm/memblock.c            |   53 +++++++++++++++++++++++++++++++++-------------
- 2 files changed, 39 insertions(+), 15 deletions(-)
-
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index c1e2633..894d59e 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -22,6 +22,7 @@
- struct memblock_region {
- 	phys_addr_t base;
- 	phys_addr_t size;
-+	unsigned long flags;
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	int nid;
- #endif
-diff --git a/mm/memblock.c b/mm/memblock.c
-index a8e81c3..3ec8aef 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -255,6 +255,7 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 		type->cnt = 1;
- 		type->regions[0].base = 0;
- 		type->regions[0].size = 0;
-+		type->regions[0].flags = 0;
- 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
- 	}
- }
-@@ -405,7 +406,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
- 
- 		if (this->base + this->size != next->base ||
- 		    memblock_get_region_node(this) !=
--		    memblock_get_region_node(next)) {
-+		    memblock_get_region_node(next) ||
-+		    this->flags != next->flags) {
- 			BUG_ON(this->base + this->size > next->base);
- 			i++;
- 			continue;
-@@ -425,13 +427,15 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
-  * @base:	base address of the new region
-  * @size:	size of the new region
-  * @nid:	node id of the new region
-+ * @flags:	flags of the new region
-  *
-  * Insert new memblock region [@base,@base+@size) into @type at @idx.
-  * @type must already have extra room to accomodate the new region.
-  */
- static void __init_memblock memblock_insert_region(struct memblock_type *type,
- 						   int idx, phys_addr_t base,
--						   phys_addr_t size, int nid)
-+						   phys_addr_t size,
-+						   int nid, unsigned long flags)
- {
- 	struct memblock_region *rgn = &type->regions[idx];
- 
-@@ -439,6 +443,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
- 	memmove(rgn + 1, rgn, (type->cnt - idx) * sizeof(*rgn));
- 	rgn->base = base;
- 	rgn->size = size;
-+	rgn->flags = flags;
- 	memblock_set_region_node(rgn, nid);
- 	type->cnt++;
- 	type->total_size += size;
-@@ -450,6 +455,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
-  * @base: base address of the new region
-  * @size: size of the new region
-  * @nid: nid of the new region
-+ * @flags: flags of the new region
-  *
-  * Add new memblock region [@base,@base+@size) into @type.  The new region
-  * is allowed to overlap with existing ones - overlaps don't affect already
-@@ -460,7 +466,8 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
-  * 0 on success, -errno on failure.
-  */
- static int __init_memblock memblock_add_region(struct memblock_type *type,
--				phys_addr_t base, phys_addr_t size, int nid)
-+				phys_addr_t base, phys_addr_t size,
-+				int nid, unsigned long flags)
- {
- 	bool insert = false;
- 	phys_addr_t obase = base;
-@@ -475,6 +482,7 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
- 		WARN_ON(type->cnt != 1 || type->total_size);
- 		type->regions[0].base = base;
- 		type->regions[0].size = size;
-+		type->regions[0].flags = flags;
- 		memblock_set_region_node(&type->regions[0], nid);
- 		type->total_size = size;
- 		return 0;
-@@ -505,7 +513,8 @@ repeat:
- 			nr_new++;
- 			if (insert)
- 				memblock_insert_region(type, i++, base,
--						       rbase - base, nid);
-+						       rbase - base, nid,
-+						       flags);
- 		}
- 		/* area below @rend is dealt with, forget about it */
- 		base = min(rend, end);
-@@ -515,7 +524,8 @@ repeat:
- 	if (base < end) {
- 		nr_new++;
- 		if (insert)
--			memblock_insert_region(type, i, base, end - base, nid);
-+			memblock_insert_region(type, i, base, end - base,
-+					       nid, flags);
- 	}
- 
- 	/*
-@@ -537,12 +547,13 @@ repeat:
- int __init_memblock memblock_add_node(phys_addr_t base, phys_addr_t size,
- 				       int nid)
- {
--	return memblock_add_region(&memblock.memory, base, size, nid);
-+	return memblock_add_region(&memblock.memory, base, size, nid, 0);
- }
- 
- int __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
- {
--	return memblock_add_region(&memblock.memory, base, size, MAX_NUMNODES);
-+	return memblock_add_region(&memblock.memory, base, size,
-+				   MAX_NUMNODES, 0);
- }
- 
- /**
-@@ -597,7 +608,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 			rgn->size -= base - rbase;
- 			type->total_size -= base - rbase;
- 			memblock_insert_region(type, i, rbase, base - rbase,
--					       memblock_get_region_node(rgn));
-+					       memblock_get_region_node(rgn),
-+					       rgn->flags);
- 		} else if (rend > end) {
- 			/*
- 			 * @rgn intersects from above.  Split and redo the
-@@ -607,7 +619,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 			rgn->size -= end - rbase;
- 			type->total_size -= end - rbase;
- 			memblock_insert_region(type, i--, rbase, end - rbase,
--					       memblock_get_region_node(rgn));
-+					       memblock_get_region_node(rgn),
-+					       rgn->flags);
- 		} else {
- 			/* @rgn is fully contained, record it */
- 			if (!*end_rgn)
-@@ -649,16 +662,24 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
- 	return __memblock_remove(&memblock.reserved, base, size);
- }
- 
--int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
-+static int __init_memblock memblock_reserve_region(phys_addr_t base,
-+						   phys_addr_t size,
-+						   int nid,
-+						   unsigned long flags)
- {
- 	struct memblock_type *_rgn = &memblock.reserved;
- 
--	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
-+	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
- 		     (unsigned long long)base,
- 		     (unsigned long long)base + size,
--		     (void *)_RET_IP_);
-+		     flags, (void *)_RET_IP_);
-+
-+	return memblock_add_region(_rgn, base, size, nid, flags);
-+}
- 
--	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
-+int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
-+{
-+	return memblock_reserve_region(base, size, MAX_NUMNODES, 0);
- }
- 
- /**
-@@ -1101,6 +1122,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
- static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
- {
- 	unsigned long long base, size;
-+	unsigned long flags;
- 	int i;
- 
- 	pr_info(" %s.cnt  = 0x%lx\n", name, type->cnt);
-@@ -1111,13 +1133,14 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
- 
- 		base = rgn->base;
- 		size = rgn->size;
-+		flags = rgn->flags;
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 		if (memblock_get_region_node(rgn) != MAX_NUMNODES)
- 			snprintf(nid_buf, sizeof(nid_buf), " on node %d",
- 				 memblock_get_region_node(rgn));
- #endif
--		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s\n",
--			name, i, base, base + size - 1, size, nid_buf);
-+		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s flags: %#lx\n",
-+			name, i, base, base + size - 1, size, nid_buf, flags);
- 	}
- }
- 
--- 
-1.7.1
-
+cheers,
+-roger
