@@ -1,82 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3JAUBW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:01:22 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:47272 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3JAUBU (ORCPT
+	id S1753046Ab3JAUBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:01:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56101 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab3JAUBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:01:20 -0400
-Message-ID: <524B2A01.4080403@hp.com>
-Date: Tue, 01 Oct 2013 16:01:05 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 1 Oct 2013 16:01:40 -0400
+Date: Tue, 1 Oct 2013 13:01:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.98
+Message-ID: <20131001200147.GA27750@kroah.com>
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Jason Low <jason.low2@hp.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>  <1380147049.3467.67.camel@schen9-DESK>  <20130927152953.GA4464@linux.vnet.ibm.com>  <1380310733.3467.118.camel@schen9-DESK>  <20130927203858.GB9093@linux.vnet.ibm.com>  <1380322005.3467.186.camel@schen9-DESK>  <20130927230137.GE9093@linux.vnet.ibm.com>  <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>  <20130928021947.GF9093@linux.vnet.ibm.com>  <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>  <52499E13.8050109@hp.com> <1380557440.14213.6.camel@j-VirtualBox>  <5249A8A4.9060400@hp.com> <1380646092.11046.6.camel@schen9-DESK>
-In-Reply-To: <1380646092.11046.6.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 12:48 PM, Tim Chen wrote:
-> On Mon, 2013-09-30 at 12:36 -0400, Waiman Long wrote:
->> On 09/30/2013 12:10 PM, Jason Low wrote:
->>> On Mon, 2013-09-30 at 11:51 -0400, Waiman Long wrote:
->>>> On 09/28/2013 12:34 AM, Jason Low wrote:
->>>>>> Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
->>>>>> functions would look like after applying the proposed changes.
->>>>>>
->>>>>> static noinline
->>>>>> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
->>>>>> {
->>>>>>            struct mcs_spin_node *prev;
->>>>>>
->>>>>>            /* Init node */
->>>>>>            node->locked = 0;
->>>>>>            node->next   = NULL;
->>>>>>
->>>>>>            prev = xchg(lock, node);
->>>>>>            if (likely(prev == NULL)) {
->>>>>>                    /* Lock acquired. No need to set node->locked since it
->>>>>> won't be used */
->>>>>>                    return;
->>>>>>            }
->>>>>>            ACCESS_ONCE(prev->next) = node;
->>>>>>            /* Wait until the lock holder passes the lock down */
->>>>>>            while (!ACCESS_ONCE(node->locked))
->>>>>>                    arch_mutex_cpu_relax();
->>>>>>            smp_mb();
->>>> I wonder if a memory barrier is really needed here.
->>> If the compiler can reorder the while (!ACCESS_ONCE(node->locked)) check
->>> so that the check occurs after an instruction in the critical section,
->>> then the barrier may be necessary.
->>>
->> In that case, just a barrier() call should be enough.
-> The cpu could still be executing out of order load instruction from the
-> critical section before checking node->locked?  Probably smp_mb() is
-> still needed.
->
-> Tim
 
-But this is the lock function, a barrier() call should be enough to 
-prevent the critical section from creeping up there. We certainly need 
-some kind of memory barrier at the end of the unlock function.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--Longman
+I'm announcing the release of the 3.0.98 kernel.
+
+All users of the 3.0 kernel series must upgrade.
+
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                 |    2 -
+ drivers/gpu/drm/radeon/evergreen.c       |   25 +++++++++++--
+ drivers/gpu/drm/radeon/evergreend.h      |    4 ++
+ drivers/gpu/drm/radeon/radeon_atombios.c |   13 ++++--
+ drivers/gpu/drm/radeon/rs400.c           |    9 +++-
+ drivers/hid/hid-core.c                   |   58 ++++++++++++++++++++++++++=
++++++
+ drivers/hid/hid-zpff.c                   |   18 ++-------
+ drivers/net/sfc/rx.c                     |    3 +
+ drivers/net/usb/cdc_ether.c              |    5 ++
+ drivers/net/wireless/rt2x00/rt2800lib.c  |    7 +++
+ drivers/scsi/scsi_transport_iscsi.c      |    2 -
+ fs/notify/fanotify/fanotify.c            |    6 +++
+ include/linux/hid.h                      |    4 ++
+ include/linux/perf_event.h               |    2 -
+ kernel/cgroup.c                          |   11 +++++
+ kernel/events/core.c                     |   21 ++++++-----
+ net/sctp/sm_sideeffect.c                 |    3 -
+ scripts/kernel-doc                       |    3 +
+ tools/perf/util/map.c                    |    1=20
+ 19 files changed, 158 insertions(+), 39 deletions(-)
+
+Alex Deucher (4):
+      drm/radeon: fix LCD record parsing
+      drm/radeon: update line buffer allocation for dce4.1/5
+      drm/radeon: fix resume on some rs4xx boards (v2)
+      drm/radeon: fix handling of variable sized arrays for router objects
+
+Andi Kleen (1):
+      perf tools: Handle JITed code in shared memory
+
+Ben Hutchings (1):
+      sfc: Fix efx_rx_buf_offset() for recycled pages
+
+Daniel Santos (1):
+      kernel-doc: bugfix - multi-line macros
+
+Fabio Porcedda (1):
+      net: usb: cdc_ether: Use wwan interface for Telit modules
+
+Greg Kroah-Hartman (2):
+      Revert "sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpret=
+er()"
+      Linux 3.0.98
+
+Kees Cook (2):
+      HID: provide a helper for validating hid reports
+      HID: zeroplus: validate output report details
+
+Li Zefan (1):
+      cgroup: fail if monitored file and event_control are in different cgr=
+oup
+
+Lino Sanfilippo (1):
+      fanotify: dont merge permission events
+
+Peter Zijlstra (2):
+      perf: Clarify perf_cpu_context::active_pmu usage by renaming it to ::=
+unique_pmu
+      perf: Fix perf_cgroup_switch for sw-events
+
+Sasha Levin (1):
+      SCSI: iscsi: don't hang in endless loop if no targets present
+
+Stanislaw Gruszka (1):
+      rt2800: fix wrong TX power compensation
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSSyorAAoJEDjbvchgkmk+XvgQAKzsggwM7Ti7wFf6xde/h7Vm
+fjROhU/hvYkdMqGZEYiV1JTtncFJd32YP+B13I0Hvys1uc4WO1Q2WbfAOtom4PVc
+th5MBDUzisyPqfkPstFFd8prtw5qLQO0YtvpJkiUEpv6hxfO3KTXcnKg/T0PVIqv
+HwKBosTF3yXq0nqttrc+7vzBKMl0RJpNF0CTatE6YuAvm6p5X0VvzSsYxAzUd+gg
+hKZjqOq7ZBeKRN8ttxPmGT3LjI54IwJpXGwKW30GNUmvf5djmjpU4fAxt6aXYYKo
+eEobtSWdw54i68T0NRd8S96Z5eR7pk9WAxjxRR8IsBrBFfMg6PuAiZuUIUch6Pc9
+dCeF9w/hyEIGk9wyRmeL5HAh+LL9sUxUFBwmN1Rt1pLacdVlHvlIr9IA3bjfvjPa
+o89Z6ojgxq/+kA0XFnn1x45596ZbNr+9tYDAvPQhCiIa8KfipqTvJ1dNCI2gtyUs
+sJAEMpktPj1GXupCr5LJ9HisZ3xt4PWHRyvEdtf4uTSWHFYdynzD3Pbotm6OBm28
+8RAqY5ZutkKPevxJ4hwjqtNqV0CE3eJGp2X9xxkqGOPl5pdEa1sYvyvE/nKc/OL8
+OhtNoiQZBAfj17x7OozXyUx3CihP/ihbRfP3gMPiXz8aIgcMFNvh7i3M8ps9FShp
+SGFf825YiIVJI+PVl0xM
+=Y5gE
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
