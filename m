@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638Ab3JASON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:14:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50410 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3JASOM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:14:12 -0400
-Message-ID: <524B10F0.7000301@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 12:14:08 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752159Ab3JASPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:15:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751860Ab3JASPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 14:15:22 -0400
+Date: Tue, 1 Oct 2013 20:07:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131001180750.GA18261@redhat.com>
+References: <20130925175055.GA25914@redhat.com> <20130928144720.GL15690@laptop.programming.kicks-ass.net> <20130928163104.GA23352@redhat.com> <7632387.20FXkuCITr@vostro.rjw.lan> <524B0233.8070203@linux.vnet.ibm.com> <20131001173615.GW3657@laptop.programming.kicks-ass.net> <20131001174508.GA17411@redhat.com> <20131001175640.GQ15690@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Arto Merilainen <amerilainen@nvidia.com>
-CC: tbergstrom@nvidia.com, treding@nvidia.com, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mkulkarni@nvidia.com
-Subject: Re: [PATCHv3 2/4] drm/tegra: Add runtime pm support for gr2d
-References: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com> <1380024325-18280-3-git-send-email-amerilainen@nvidia.com>
-In-Reply-To: <1380024325-18280-3-git-send-email-amerilainen@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001175640.GQ15690@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 06:05 AM, Arto Merilainen wrote:
-> From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
-> 
-> This far we have enabled gr2d clock on device probe and disabled
-> it on device deinitialisation. This patch adds runtime pm support
-> for the hardware unit allowing dynamic power management. If pm
-> runtime is not enabled, gr2d clock is enabled in device probe and
+On 10/01, Peter Zijlstra wrote:
+>
+> On Tue, Oct 01, 2013 at 07:45:08PM +0200, Oleg Nesterov wrote:
+> >
+> > I tend to agree with Srivatsa... Without a strong reason it would be better
+> > to preserve the current logic: "some time after" should not be after the
+> > next CPU_DOWN/UP*. But I won't argue too much.
+>
+> Nah, I think breaking it is the right thing :-)
 
-> diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
+I don't really agree but I won't argue ;)
 
-> @@ -327,11 +336,48 @@ static int __exit gr2d_remove(struct platform_device *pdev)
->  		host1x_syncpt_free(gr2d->client.syncpts[i]);
->  
->  	host1x_channel_free(gr2d->channel);
-> +
-> +	if (pm_runtime_enabled(&pdev->dev))
-> +		pm_runtime_disable(&pdev->dev);
-> +	else
-> +		gr2d_runtime_suspend(&pdev->dev);
+> > But note that you do not strictly need this change. Just kill cpuhp_waitcount,
+> > then we can change cpu_hotplug_begin/end to use xxx_enter/exit we discuss in
+> > another thread, this should likely "join" all synchronize_sched's.
+>
+> That would still be 4k * sync_sched() == terribly long.
 
-This code is slightly different to the code in e.g.
-sound/soc/tegra/tegra20_i2s.c:remove(), whereas the code in probe() is
-identical. I'm not sure whether there's some advantage in this version?
-If so, perhaps the sound drivers should be updated to be consistent. If
-not, perhaps this driver should do the same thing as the I2S driver, so
-we keep the drivers consistent, and provide the same "example" code
-everywhere.
+No? the next xxx_enter() avoids sync_sched() if rcu callback is still
+pending. Unless __cpufreq_remove_dev_finish() is "too slow" of course.
 
-> +static int gr2d_runtime_suspend(struct device *dev)
-> +{
-> +	struct gr2d *gr2d;
-> +
-> +	gr2d = dev_get_drvdata(dev);
-> +	if (!gr2d)
-> +		return -EINVAL;
+> > Or split cpu_hotplug_begin() into 2 helpers which handle FAST -> SLOW and
+> > SLOW -> BLOCK transitions, then move the first "FAST -> SLOW" handler outside
+> > of for_each_online_cpu().
+>
+> Right, that's more messy but would work if we cannot teach cpufreq (and
+> possibly others) to not rely on state you shouldn't rely on anyway.
 
-Presumably, gr2d will never be NULL here, unless there's some chronic
-bug. Can't we re-write those last 5 lines as simply:
+Yes,
 
-	struct gr2d *grd2 = dev_get_drvdata(dev);
+> I tihnk the only guarnatee POST_DEAD should have is that it should be
+> called before UP_PREPARE of the same cpu ;-) Nothing more, nothing less.
 
-If that's not valid, we should probably update the audio drivers (and
-perhaps others) too.
+See above... This makes POST_DEAD really "special" compared to other
+CPU_* events.
+
+And again. Something like a global lock taken by CPU_DOWN_PREPARE and
+released by POST_DEAD or DOWN_FAILED does not look "too wrong" to me.
+
+But I leave this to you and Srivatsa.
+
+Oleg.
+
