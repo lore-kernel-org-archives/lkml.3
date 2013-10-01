@@ -1,37 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab3JAQPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 12:15:06 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:46444 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3JAQPD (ORCPT
+	id S1751878Ab3JAQQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:16:48 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:49508 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab3JAQQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 12:15:03 -0400
-Date: Tue, 1 Oct 2013 09:14:55 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?utf-8?q?Heiko_St=C3=BCbner_=3Cheiko=40sntech=2Ede=3E?=@roeck-us.net
-Cc: Wim Van Sebroeck <wim@iguana.be>, Jamie Iles <jamie@jamieiles.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [2/3] watchdog: dw_wdt: use clk_prepare_enable and
- clk_disable_unprepare
-Message-ID: <20131001161455.GA10237@roeck-us.net>
-References: <201306262004.31808.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201306262004.31808.heiko@sntech.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Oct 2013 12:16:46 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v3] x86: simplefb: avoid overflow
+Date: Tue,  1 Oct 2013 18:18:40 +0200
+Message-Id: <1380644320-1026-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 02:04:31AM -0000, =?utf-8?q?Heiko_St=C3=BCbner_=3Cheiko=40sntech=2Ede=3E?= wrote:
-> This is necessary to make the driver work with platforms using the
-> common clock framework.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+On my MacBook Air lfb_size is 4M, which makes the bitshit overflow, meaning we
+fall back to efifb unnecessarily.
+
+Cast to u64 to avoid the overflow.
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+v2: use (__u64) rather than (unsigned long). This is strictly speaking not
+    necessary, but as David poited out it makes it more obvious that we
+    we won't have problems on 32bit.
+v3: remove superfluous parens and use (u64) rather than (__64) as this is not
+    shared by userspace.
+
+ arch/x86/kernel/sysfb_simplefb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+index 22513e9..4ebd636 100644
+--- a/arch/x86/kernel/sysfb_simplefb.c
++++ b/arch/x86/kernel/sysfb_simplefb.c
+@@ -72,7 +72,7 @@ __init int create_simplefb(const struct screen_info *si,
+ 	 * the part that is occupied by the framebuffer */
+ 	len = mode->height * mode->stride;
+ 	len = PAGE_ALIGN(len);
+-	if (len > si->lfb_size << 16) {
++	if (len > (u64)si->lfb_size << 16) {
+ 		printk(KERN_WARNING "sysfb: VRAM smaller than advertised\n");
+ 		return -EINVAL;
+ 	}
+-- 
+1.8.4
+
