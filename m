@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab3JASmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:42:19 -0400
-Received: from fieldses.org ([174.143.236.118]:55343 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab3JASmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:42:16 -0400
-Date: Tue, 1 Oct 2013 14:42:10 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Ric Wheeler <rwheeler@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20131001184210.GM26382@fieldses.org>
-References: <52474839.2080201@redhat.com>
- <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
- <20130930143432.GG16579@fieldses.org>
- <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
- <52499026.3090802@redhat.com>
- <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
- <52498AA8.2090204@redhat.com>
- <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
- <52498DB6.7060901@redhat.com>
- <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752806Ab3JASng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:43:36 -0400
+Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:55093 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751557Ab3JASnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 14:43:33 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:4250:4321:5007:6642:7576:7652:9545:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: meat46_173bf65ba654
+X-Filterd-Recvd-Size: 2052
+Message-ID: <1380653008.1924.10.camel@joe-AO722>
+Subject: Re: [PATCH 2/2] skd: Restricted pr_debug() lines to 80 characters
+From: Joe Perches <joe@perches.com>
+To: OS Engineering <osengineering@stec-inc.com>
+Cc: "axboe@kernel.dk" <axboe@kernel.dk>,
+        Akhil Bhansali <Akhil.Bhansali@hgst.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Phansalkar <Amit.Phansalkar@hgst.com>,
+        Ramprasad Chinthekindi <Ramprasad.Chinthekindi@hgst.com>
+Date: Tue, 01 Oct 2013 11:43:28 -0700
+In-Reply-To: <26D762E250385C4D8E9D6EC3C8E47DC11E70588B@sambx4.stec-inc.ad>
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E70588B@sambx4.stec-inc.ad>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 05:46:38PM +0200, Miklos Szeredi wrote:
-> On Mon, Sep 30, 2013 at 4:41 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
-> > The way the array based offload (and some software side reflink works) is
-> > not a byte by byte copy. We cannot assume that a valid count can be returned
-> > or that such a count would be an indication of a sequential segment of good
-> > data.  The whole thing would normally have to be reissued.
-> >
-> > To make that a true assumption, you would have to mandate that in each of
-> > the specifications (and sw targets)...
+On Tue, 2013-10-01 at 12:29 +0000, OS Engineering wrote:
+> From 6ff5102b3cd8047bb4bfb4d0165f289249e23bbe Mon Sep 17 00:00:00 2001
+> From: rchinthekindi <rchinthekindi@stec-inc.com>
+> Date: Tue, 1 Oct 2013 17:49:58 +0530
+> Subject: [PATCH 2/2] skd: Restricted pr_debug() lines to 80 characters
 > 
-> You're missing my point.
-> 
->  - user issues SIZE_MAX splice request
->  - fs issues *64M* (or whatever) request to offload
->  - when that completes *fully* then we return 64M to userspace
->  - if it completes partially, then we return an error to userspace
-> 
-> Again, wouldn't that work?
+> Restricted pr_debug() lines to 80 characters
 
-So if implementations fall into two categories:
+Please don't split formats across multiple lines.
 
-	- "instant": latency is on the order of a single IO.
+> diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
 
-	- "slow": latency is seconds or minutes, but still faster than a
-	  normal copy.  (See Anna's NFS server implementation that does
-	  an ordinary copy internally.)
 
-Then to me it still seems simplest to design only for the "instant"
-case.
+> @@ -2370,9 +2372,10 @@ static void skd_complete_internal(struct skd_device *skdev,
+>  			skd_send_internal_skspcl(skdev, skspcl, WRITE_BUFFER);
+>  		else {
+>  			if (skdev->state == SKD_DRVR_STATE_STOPPING) {
+> -				pr_debug("%s:%s:%d TUR failed, don't send anymore"
+> -					 "state 0x%x\n",
+> -					 skdev->name, __func__, __LINE__, skdev->state);
+> +				pr_debug("%s:%s:%d TUR failed, don't send"
+> +					 " anymore state 0x%x\n",
+> +					 skdev->name, __func__, __LINE__,
+> +					 skdev->state);
 
-But if we want to add some minimal help for the "slow" case then
-Miklos's proposal looks fine: the application doesn't have to know which
-case it's dealing with ahead of time--it always just submits the largest
-range it knows about--but a "slow" implementation isn't forced to leave
-the application waiting in one syscall for minutes with no indication
-what's going on.
+etc...
 
---b.
+
