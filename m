@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3JAELb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 00:11:31 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:58135 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab3JAEL3 (ORCPT
+	id S1750934Ab3JAEOt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 00:14:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41919 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab3JAEOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 00:11:29 -0400
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, rmk+kernel@arm.linux.org.uk,
-        badarkhe.manish@gmail.com
-Subject: [PATCH] regulator: tps65090: remove usage of IS_ERR_OR_NULL
-Date: Tue,  1 Oct 2013 09:41:04 +0530
-Message-Id: <1380600664-20649-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 1 Oct 2013 00:14:48 -0400
+Date: Mon, 30 Sep 2013 21:21:53 -0700 (PDT)
+Message-Id: <20130930.212153.531876068589922786.davem@davemloft.net>
+To: ricardo.ribalda@gmail.com
+Cc: joe@perches.com, jg1.han@samsung.com, gregkh@linuxfoundation.org,
+        wfp5p@virginia.edu, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ll_temac: Reset dma descriptors on ndo_open
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 30 Sep 2013 21:14:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the driver to avoid the usage of IS_ERR_OR_NULL()
-macro.
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Fri, 27 Sep 2013 13:24:28 +0200
 
-The case present in this patch simply translates to normal check for pointer,
-wheather it is NULL or has an error code.
+> The dma descriptors are only initialized on the probe function.
+> 
+> If a packet is on the buffer when temac_stop is called, the dma
+> descriptors can be left on a incorrect status where no other package can
+> be sent.
+> 
+> So an interface could be left in an usable state after ifdow/ifup.
+> 
+> This patch makes sure that the descriptors are in a proper status when
+> the device is started.
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 bd611cdf.. ad3d4d4... M	drivers/regulator/tps65090-regulator.c
- drivers/regulator/tps65090-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This analysis is not correct.
 
-diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
-index bd611cdf..ad3d4d4 100644
---- a/drivers/regulator/tps65090-regulator.c
-+++ b/drivers/regulator/tps65090-regulator.c
-@@ -245,7 +245,7 @@ static int tps65090_regulator_probe(struct platform_device *pdev)
- 	if (!tps65090_pdata && tps65090_mfd->dev->of_node)
- 		tps65090_pdata = tps65090_parse_dt_reg_data(pdev,
- 					&tps65090_reg_matches);
--	if (IS_ERR_OR_NULL(tps65090_pdata)) {
-+	if (!tps65090_pdata || IS_ERR(tps65090_pdata)) {
- 		dev_err(&pdev->dev, "Platform data missing\n");
- 		return tps65090_pdata ? PTR_ERR(tps65090_pdata) : -EINVAL;
- 	}
--- 
-1.7.10.4
+In the current driver, the descriptors are allocated and initialized
+in the open function, not the probe function.
 
+I'm not applying this patch.
