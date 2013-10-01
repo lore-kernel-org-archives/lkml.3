@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3JAPpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:45:55 -0400
-Received: from longford.logfs.org ([213.229.74.203]:57986 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab3JAPpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:45:53 -0400
-Date: Tue, 1 Oct 2013 10:26:55 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the bcon tree
-Message-ID: <20131001142655.GA29919@logfs.org>
-References: <20131001110344.GA20249@ulmo.nvidia.com>
- <1380625644-11331-1-git-send-email-treding@nvidia.com>
+	id S1753976Ab3JAPrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:47:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16494 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803Ab3JAPrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:47:08 -0400
+Date: Tue, 1 Oct 2013 17:40:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131001154006.GA3848@redhat.com>
+References: <20130925174307.GA3220@laptop.programming.kicks-ass.net> <20130925175055.GA25914@redhat.com> <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net> <20130926165840.GA863@redhat.com> <20130926175016.GI3657@laptop.programming.kicks-ass.net> <20130927181532.GA8401@redhat.com> <20130929135646.GA3743@redhat.com> <20131001153829.GE5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1380625644-11331-1-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131001153829.GE5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 October 2013 13:07:17 +0200, Thierry Reding wrote:
-> 
-> Today's linux-next merge of the bcon tree got conflicts in:
-> 
-> 	drivers/block/Kconfig
-> 	kernel/printk.c
-> 
-> I fixed them up (see below). Please check if the resolution looks correct.
+On 10/01, Paul E. McKenney wrote:
+>
+> On Sun, Sep 29, 2013 at 03:56:46PM +0200, Oleg Nesterov wrote:
+> > On 09/27, Oleg Nesterov wrote:
+> > >
+> > > I tried hard to find any hole in this version but failed, I believe it
+> > > is correct.
+> >
+> > And I still believe it is. But now I am starting to think that we
+> > don't need cpuhp_seq. (and imo cpuhp_waitcount, but this is minor).
+>
+> Here is one scenario that I believe requires cpuhp_seq:
+>
+> 1.	Task 0 on CPU 0 increments its counter on entry.
+>
+> 2.	Task 1 on CPU 1 starts summing the counters and gets to
+> 	CPU 4.  The sum thus far is 1 (Task 0).
+>
+> 3.	Task 2 on CPU 2 increments its counter on entry.
+> 	Upon completing its entry code, it re-enables preemption.
 
-I think for the moment you can drop the bcon tree.  I have plans to
-get it merged into mainline eventually, but currently lack time to
-spend on it.  In other words, it isn't really -next material.
+afaics at this stage it should notice state = BLOCK and decrement
+the same counter on the same CPU before it does preempt_enable().
 
-Jörn
+Because:
 
---
-Doubt is not a pleasant condition, but certainty is an absurd one.
--- Voltaire
+> > 	2. It is the reader which tries to take this lock and
+> > 	   noticed state == BLOCK. We could miss the result of
+> > 	   its inc(), but we do not care, this reader is going
+> > 	   to block.
+> >
+> > 	   _If_ the reader could migrate between inc/dec, then
+> > 	   yes, we have a problem. Because that dec() could make
+> > 	   the result of per_cpu_sum() = 0. IOW, we could miss
+> > 	   inc() but notice dec(). But given that it does this
+> > 	   on the same CPU this is not possible.
+> >
+> > So why do we need cpuhp_seq?
+>
+> Good question, I will look again.
+
+Thanks! much appreciated.
+
+Oleg.
+
