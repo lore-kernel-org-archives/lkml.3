@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3JATiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 15:38:00 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58701 "EHLO smtp.outflux.net"
+	id S1752784Ab3JATiD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 15:38:03 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38509 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab3JAThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751518Ab3JAThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Oct 2013 15:37:53 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -13,9 +13,9 @@ Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
         Mathias Krause <minipli@googlemail.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
-Subject: [PATCH 3/7] x86, kaslr: find minimum safe relocation position
-Date: Tue,  1 Oct 2013 12:37:21 -0700
-Message-Id: <1380656245-29975-4-git-send-email-keescook@chromium.org>
+Subject: [PATCH 6/7] x86, kaslr: report kernel offset on panic
+Date: Tue,  1 Oct 2013 12:37:24 -0700
+Message-Id: <1380656245-29975-7-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380656245-29975-1-git-send-email-keescook@chromium.org>
 References: <1380656245-29975-1-git-send-email-keescook@chromium.org>
@@ -24,125 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Examine all the known unsafe areas and avoid them by just raising the
-minimum relocation position to be past them.
+When the system panics, include the kernel offset in the report to assist
+in debugging.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/x86/boot/compressed/aslr.c |   50 +++++++++++++++++++++++++++++++++++++++
- arch/x86/boot/compressed/misc.c |   10 ++------
- arch/x86/boot/compressed/misc.h |    8 +++++++
- 3 files changed, 60 insertions(+), 8 deletions(-)
+ arch/x86/kernel/setup.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index b73cc66..ed7e9f0 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -2,6 +2,53 @@
- 
- #ifdef CONFIG_RANDOMIZE_BASE
- 
-+static unsigned long find_minimum_location(unsigned long input,
-+					   unsigned long input_size,
-+					   unsigned long output,
-+					   unsigned long output_size)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f0de629..1708862 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -824,6 +824,20 @@ static void __init trim_low_memory_range(void)
+ }
+ 	
+ /*
++ * Dump out kernel offset information on panic.
++ */
++static int
++dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
 +{
-+	u64 initrd_start, initrd_size;
-+	u64 cmd_line, cmd_line_size;
-+	unsigned long unsafe, unsafe_len;
-+	char *ptr;
++	pr_emerg("Kernel Offset: 0x%lx from 0x%lx "
++		 "(relocation range: 0x%lx-0x%lx)\n",
++		 (unsigned long)&_text - __START_KERNEL, __START_KERNEL,
++		 __START_KERNEL_map, MODULES_VADDR-1);
 +
-+	/*
-+	 * Mark off the region that is unsafe to overlap during
-+	 * decompression (see calculations at top of misc.c).
-+	 */
-+	unsafe_len = (output_size >> 12) + 32768 + 18;
-+	unsafe = (unsigned long)input + input_size - unsafe_len;
-+
-+	/*
-+	 * Locate other regions that cannot be over-written during
-+	 * decompression: initrd, cmd_line.
-+	 */
-+	initrd_start  = (u64)real_mode->ext_ramdisk_image << 32;
-+	initrd_start |= real_mode->hdr.ramdisk_image;
-+	initrd_size  = (u64)real_mode->ext_ramdisk_size << 32;
-+	initrd_size |= real_mode->hdr.ramdisk_size;
-+	cmd_line  = (u64)real_mode->ext_cmd_line_ptr << 32;
-+	cmd_line |= real_mode->hdr.cmd_line_ptr;
-+	/* Calculate size of cmd_line. */
-+	ptr = (char *)(unsigned long)cmd_line;
-+	for (cmd_line_size = 0; ptr[cmd_line_size++]; )
-+		;
-+
-+	/* Minimum location must be above all these regions: */
-+	output = max(output, unsafe + unsafe_len);
-+	output = max(output, (unsigned long)free_mem_ptr + BOOT_HEAP_SIZE);
-+	output = max(output, (unsigned long)free_mem_end_ptr + BOOT_STACK_SIZE);
-+	output = max(output, (unsigned long)initrd_start
-+			     + (unsigned long)initrd_size);
-+	output = max(output, (unsigned long)cmd_line
-+			     + (unsigned long)cmd_line_size);
-+
-+	/* Make sure the location is still aligned. */
-+	output = ALIGN(output, CONFIG_PHYSICAL_ALIGN);
-+
-+	return output;
++	return 0;
 +}
 +
- unsigned char *choose_kernel_location(unsigned char *input,
- 				      unsigned long input_size,
- 				      unsigned char *output,
-@@ -14,6 +61,9 @@ unsigned char *choose_kernel_location(unsigned char *input,
- 		goto out;
- 	}
++/*
+  * Determine if we were loaded by an EFI loader.  If so, then we have also been
+  * passed the efi memmap, systab, etc., so we should use these data structures
+  * for initialization.  Note, the efi init code path is determined by the
+@@ -1242,3 +1256,15 @@ void __init i386_reserve_resources(void)
+ }
  
-+	choice = find_minimum_location((unsigned long)input, input_size,
-+				       (unsigned long)output, output_size);
+ #endif /* CONFIG_X86_32 */
 +
- 	/* XXX: choose random location. */
- 
- out:
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 7138768..196eaf3 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -112,14 +112,8 @@ struct boot_params *real_mode;		/* Pointer to real-mode data */
- void *memset(void *s, int c, size_t n);
- void *memcpy(void *dest, const void *src, size_t n);
- 
--#ifdef CONFIG_X86_64
--#define memptr long
--#else
--#define memptr unsigned
--#endif
--
--static memptr free_mem_ptr;
--static memptr free_mem_end_ptr;
-+memptr free_mem_ptr;
-+memptr free_mem_end_ptr;
- 
- static char *vidmem;
- static int vidport;
-diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-index 9077af7..42f71bb 100644
---- a/arch/x86/boot/compressed/misc.h
-+++ b/arch/x86/boot/compressed/misc.h
-@@ -23,7 +23,15 @@
- #define BOOT_BOOT_H
- #include "../ctype.h"
- 
-+#ifdef CONFIG_X86_64
-+#define memptr long
-+#else
-+#define memptr unsigned
-+#endif
++static struct notifier_block kernel_offset_notifier = {
++	.notifier_call = dump_kernel_offset
++};
 +
- /* misc.c */
-+extern memptr free_mem_ptr;
-+extern memptr free_mem_end_ptr;
- extern struct boot_params *real_mode;		/* Pointer to real-mode data */
- void __putstr(const char *s);
- #define error_putstr(__x)  __putstr(__x)
++static int __init register_kernel_offset_dumper(void)
++{
++	atomic_notifier_chain_register(&panic_notifier_list,
++					&kernel_offset_notifier);
++	return 0;
++}
++__initcall(register_kernel_offset_dumper);
 -- 
 1.7.9.5
 
