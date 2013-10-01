@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab3JAIZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 04:25:55 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:55979 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab3JAIZv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 04:25:51 -0400
-Date: Tue, 1 Oct 2013 10:25:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-Message-ID: <20131001082547.GB21793@gmail.com>
-References: <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
- <20130930104408.GW3081@twins.programming.kicks-ass.net>
- <CA+55aFwTCCXaD4S4OPGmwf=fhOwWdxr8NU9uFvdf_nRx0Nk0_w@mail.gmail.com>
- <20130930164141.GH3081@twins.programming.kicks-ass.net>
- <20131001072815.GA20261@gmail.com>
- <20131001080921.GL3081@twins.programming.kicks-ass.net>
+	id S1752718Ab3JAI1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 04:27:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46521 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752482Ab3JAI1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 04:27:10 -0400
+Date: Tue, 1 Oct 2013 09:26:54 +0100
+From: Joe Thornber <thornber@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Akira Hayakawa <ruby.wktk@gmail.com>, snitzer@redhat.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, cesarb@cesarb.net,
+        joe@perches.com, akpm@linux-foundation.org, agk@redhat.com,
+        m.chehab@samsung.com, ejt@redhat.com, dan.carpenter@oracle.com
+Subject: Re: Reworking dm-writeboost [was: Re: staging: Add dm-writeboost]
+Message-ID: <20131001082654.GA10326@debian>
+Mail-Followup-To: Dave Chinner <david@fromorbit.com>,
+	Akira Hayakawa <ruby.wktk@gmail.com>, snitzer@redhat.com,
+	gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+	cesarb@cesarb.net, joe@perches.com, akpm@linux-foundation.org,
+	agk@redhat.com, m.chehab@samsung.com, ejt@redhat.com,
+	dan.carpenter@oracle.com
+References: <5223208D.4000008@gmail.com>
+ <20130916215357.GA5015@redhat.com>
+ <52384E66.6050101@gmail.com>
+ <20130917205936.GB12001@redhat.com>
+ <523E3522.2060607@gmail.com>
+ <524183A2.9050301@gmail.com>
+ <20130926034325.GO26872@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131001080921.GL3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20130926034325.GO26872@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 26, 2013 at 01:43:25PM +1000, Dave Chinner wrote:
+> On Tue, Sep 24, 2013 at 09:20:50PM +0900, Akira Hayakawa wrote:
+> > * Deferring ACK for barrier writes
+> > Barrier flags such as REQ_FUA and REQ_FLUSH are handled lazily.
+> > Immediately handling these bios badly slows down writeboost.
+> > It surveils the bios with these flags and forcefully flushes them
+> > at worst case within `barrier_deadline_ms` period.
+> 
+> That rings alarm bells.
+> 
+> If the filesystem is using REQ_FUA/REQ_FLUSH for ordering reasons,
+> delaying them to allow other IOs to be submitted and dispatched may
+> very well violate the IO ordering constraints the filesystem is
+> trying to acheive.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+If the fs is using REQ_FUA for ordering they need to wait for
+completion of that bio before issuing any subsequent bio that needs to
+be strictly ordered.  So I don't think there is any issue here.
 
-> On Tue, Oct 01, 2013 at 09:28:15AM +0200, Ingo Molnar wrote:
->
-> > That I mostly agree with, except that without a serious usecase do we 
-> > have a guarantee that bugs in fancies queueing in rwsems gets ironed 
-> > out?
-> 
-> Methinks mmap_sem is still a big enough lock to work out a locking 
-> primitive :-)
+> Alternatively, delaying them will stall the filesystem because it's
+> waiting for said REQ_FUA IO to complete. For example, journal writes
+> in XFS are extremely IO latency sensitive in workloads that have a
+> signifincant number of ordering constraints (e.g. O_SYNC writes,
+> fsync, etc) and delaying even one REQ_FUA/REQ_FLUSH can stall the
+> filesystem for the majority of that barrier_deadline_ms.
 
-I mean the AIM7 usecase probably falls away - we need to find another one 
-that shows the inefficiencies.
+Yes, this is a valid concern, but I assume Akira has benchmarked.
+With dm-thin, I delay the REQ_FUA/REQ_FLUSH for a tiny amount, just to
+see if there are any other FUA requests on my queue that can be
+aggregated into a single flush.  I agree with you that the target
+should never delay waiting for new io; that's asking for trouble.
 
-> In fact, try something like this from userspace:
-> 
-> n-threads:
-> 
->   pthread_mutex_lock(&mutex);
->   foo = mmap();
->   pthread_mutex_lock(&mutex);
-> 
->   /* work */
-> 
->   pthread_mutex_unlock(&mutex);
->   munma(foo);
->   pthread_mutex_unlock(&mutex);
-> 
-> vs
-> 
-> n-threads:
-> 
->   foo = mmap();
->   /* work */
->   munmap(foo);
-> 
-> 
-> I've had reports that the former was significantly faster than the
-> latter.
-
-That looks like a legitimate pattern that ought to trigger in many apps. 
-Would be nice to turn this into a:
-
-	perf bench mm thread-create
-
-testcase or so.
-
-Thanks,
-
-	Ingo
+- Joe
