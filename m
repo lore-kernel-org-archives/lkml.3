@@ -1,224 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3JALfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 07:35:03 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:34562 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab3JALfA (ORCPT
+	id S1753216Ab3JALgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 07:36:31 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58817 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab3JALg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 07:35:00 -0400
-Date: Tue, 1 Oct 2013 13:34:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Ahern <dsahern@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Subject: [PATCH] perf autodep: Remove strlcpy feature check, add __weak
- strlcpy implementation
-Message-ID: <20131001113456.GA31331@gmail.com>
-References: <52321CE4.1080804@gmail.com>
- <20130912200236.GC11400@ghostprotocols.net>
- <20130912203116.GD32644@gmail.com>
- <20130912204313.GA3259@gmail.com>
- <20130915091029.GA21465@gmail.com>
- <20130930164210.GA22342@gmail.com>
- <20130930171220.GC10293@ghostprotocols.net>
- <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
- <20130930175342.GI10293@ghostprotocols.net>
- <20130930190434.GA3427@gmail.com>
+	Tue, 1 Oct 2013 07:36:29 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] ARM: shmobile: emev2: Define SMU clock DT bindings
+Date: Tue, 01 Oct 2013 13:36:33 +0200
+Message-ID: <21574726.tiJa6Opb1k@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130924045215.GE3619@verge.net.au>
+References: <52410F86.4040301@renesas.com> <20130924131331.0e9a5f830f531655b2ea0ebe@ops.dti.ne.jp> <20130924045215.GE3619@verge.net.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930190434.GA3427@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yoshii-san and Simon,
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+On Tuesday 24 September 2013 13:52:15 Simon Horman wrote:
+> [ Cc Laurent ]
+> 
+> On Tue, Sep 24, 2013 at 01:13:31PM +0900, takasi-y@ops.dti.ne.jp wrote:
+> > Device tree clock binding document for EMMA Mobile EV2 SMU.
+> > Following nodes are defined to describe clock tree.
+> > - renesas,emev2-smu
+> > - renesas,emev2-smu-clkdiv
+> > - renesas,emev2-smu-gclk
+> 
+> I realise this has been entirely consistent in the past and
+> even as recently as Linus' pre v3.12-rc2 master branch.
+> However, after some recent discussion we are now trying to make our
+> compatibility strings consistently of the form renesas,<unit>-<soc>.
+> 
+> With this in mind I believe the strings should be:
+> 
+> - renesas,smu-emev2
+> - renesas,smu-clkdiv-emev2
+> - renesas,smu-gclk-emev2
+> 
+> To be honest I am not quite sure about the "-clkdiv" and "-gclk"
+> bits and I would appreciate some review from others.
 
-> > > > Checking why that strlcpy failed...
-> > > 
-> > > I don't think glibc does strlcpy. It's not a standard C function, 
-> > > and
+I don't have access to the EMEV2 datasheet so my ability to comment on this is 
+somehow limited. However, given that the clock hardware is very SoC-specific, 
+it might make sense to keep the names proposed by Yoshii-san. This would be 
+consistent with the other clock bindings.
+
+> I have CCed Laurent as he may have some advice to offer here.
+> 
+> > These bindings are designed manually based on
 > > 
-> > My concern was more about the thinking: ``Is this red "OFF" thing a 
-> > problem?  I feel so much more confortable when all entries have nice 
-> > green "on" lights...''
-> 
-> Yeah, so I think we should add our internal implementation of strlcpy() 
-> as a __weak function instead - if the libc does not provide then we 
-> provide a fallback.
-> 
-> That should get rid of another ~50 msecs of build overhead, as failed 
-> feature tests are the most expensive ones.
+> >  19UH0037EJ1000_SMU : System Management Unit User's Manual
+> > 
+> > Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
+> > ---
+> > 
+> >  .../devicetree/bindings/clock/emev2-clock.txt      | 99 +++++++++++++++++
+> >  1 file changed, 99 insertions(+)
+> >  create mode 100644
+> >  Documentation/devicetree/bindings/clock/emev2-clock.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/clock/emev2-clock.txt
+> > b/Documentation/devicetree/bindings/clock/emev2-clock.txt new file mode
+> > 100644
+> > index 0000000..f8649eb
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/clock/emev2-clock.txt
+> > @@ -0,0 +1,99 @@
+> > +Device tree Clock bindings for Renesas EMMA Mobile EV2
+> > +
+> > +This binding uses the common clock binding.
+> > +
+> > +* SMU
+> > +System Management Unit described in user's manual R19UH0037EJ1000_SMU.
+> > +This is not a clock provider, but clocks under SMU depend on it.
+> > +
+> > +Required properties:
+> > +- compatible: Should be "renesas,emev2-smu"
+> > +- reg: Address and Size of SMU registers
+> > +
+> > +* SMU_CLKDIV
+> > +Function block with an input mux and a divider, which corresponds to
+> > +"Serial clock generator" in fig."Clock System Overview" of the manual,
+> > +and "xxx frequency division setting register" (XXXCLKDIV) registers.
+> > +This makes internal (neither input nor output) clock that is provided
+> > +to input of xxxGCLK block.
+> > +
+> > +Required properties:
+> > +- compatible: Should be "renesas,emev2-smu-clkdiv"
+> > +- reg: Byte offset from SMU base and Bit position in the register
+> > +- clocks: Parent clocks. Input clocks as described in clock-bindings.txt
+> > +- #clock-cells: Should be <0>
+> > +
+> > +* SMU_GCLK
+> > +Clock gating node shown as "Clock stop processing block" in the
+> > +fig."Clock System Overview" of the manual.
+> > +Registers are "xxx clock gate control register" (XXXGCLKCTRL).
+> > +
+> > +Required properties:
+> > +- compatible: Should be "renesas,emev2-smu-gclk"
+> > +- reg: Byte offset from SMU base and Bit position in the register
+> > +- clocks: Input clock as described in clock-bindings.txt
+> > +- #clock-cells: Should be <0>
+> > +
+> > +Example of provider:
+> > +
+> > +usia_u0_sclkdiv: usia_u0_sclkdiv {
+> > +	compatible = "renesas,emev2-smu-clkdiv";
+> > +	reg = <0x610 0>;
 
-The patch below implements that. I haven't actually tested it on a system 
-with a in-libc strlcpy implementation, but it Should Just Work (tm) ;-)
+Is the registers space really 0 bytes long ?
 
-Overhead is down from 0.600 secs to 0.540 secs. The only remaining thing 
-is the libperl bug, I'll have a look at that next.
+> > +	clocks = <&pll3_fo>, <&pll4_fo>, <&pll1_fo>, <&osc1_fo>;
+> > +	#clock-cells = <0>;
+> > +};
+> > +
+> > +usia_u0_sclk: usia_u0_sclk {
+> > +	compatible = "renesas,emev2-smu-gclk";
+> > +	reg = <0x4a0 1>;
+> > +	clocks = <&usia_u0_sclkdiv>;
+> > +	#clock-cells = <0>;
+> > +};
+> > +
+> > +Example of consumer:
+> > +
+> > +uart@e1020000 {
+> > +	compatible = "renesas,em-uart";
+> > +	reg = <0xe1020000 0x38>;
+> > +	interrupts = <0 8 0>;
+> > +	clocks = <&usia_u0_sclk>;
+> > +	clock-names = "sclk";
+> > +};
+> > +
+> > +Example of clock-tree description:
+> > +
+> > + This describes a clock path in the clock tree
+> > +  c32ki -> pll3_fo -> usia_u0_sclkdiv -> usia_u0_sclk
+> > +
+> > +smu {
+> > +	compatible = "renesas,emev2-smu";
+> > +	reg = <0xe0110000 0x10000>;
+> > +	#address-cells = <2>;
+> > +	#size-cells = <0>;
+> > +
+> > +	c32ki: c32ki {
+> > +		compatible = "fixed-clock";
+> > +		clock-frequency = <32768>;
+> > +		#clock-cells = <0>;
+> > +	};
+> > +	pll3_fo: pll3_fo {
+> > +		compatible = "fixed-factor-clock";
+> > +		clocks = <&c32ki>;
+> > +		clock-div = <1>;
+> > +		clock-mult = <7000>;
+> > +		#clock-cells = <0>;
+> > +	};
+> > +	usia_u0_sclkdiv: usia_u0_sclkdiv {
+> > +		compatible = "renesas,emev2-smu-clkdiv";
+> > +		reg = <0x610 0>;
+> > +		clocks = <&pll3_fo>;
+> > +		#clock-cells = <0>;
+> > +	};
+> > +	usia_u0_sclk: usia_u0_sclk {
+> > +		compatible = "renesas,emev2-smu-gclk";
+> > +		reg = <0x4a0 1>;
+> > +		clocks = <&usia_u0_sclkdiv>;
+> > +		#clock-cells = <0>;
+> > +	};
+> > +};
+> > +
 
-( I also couldn't resist fixing up perf's version of compiler.h a bit, 
-  will split that out into a separate patch later on. )
+There's an extra blank line at the end of the file.
 
-Thanks,
+-- 
+Regards,
 
-	Ingo
+Laurent Pinchart
 
-=====================>
-Subject: perf autodep: Remove strlcpy feature check, add __weak strlcpy implementation
-From: Ingo Molnar <mingo@kernel.org>
-Date: Tue Oct 1 13:26:13 CEST 2013
-
----
- tools/perf/config/Makefile                      |    8 +-------
- tools/perf/config/feature-checks/Makefile       |    3 ---
- tools/perf/config/feature-checks/test-strlcpy.c |    8 --------
- tools/perf/util/cache.h                         |    3 +--
- tools/perf/util/include/linux/compiler.h        |   19 ++++++++++++++-----
- tools/perf/util/path.c                          |   10 +++++++---
- 6 files changed, 23 insertions(+), 28 deletions(-)
-
-Index: tip/tools/perf/config/Makefile
-===================================================================
---- tip.orig/tools/perf/config/Makefile
-+++ tip/tools/perf/config/Makefile
-@@ -101,7 +101,7 @@ $(info )
- $(info Auto-detecting system features:)
- $(shell make -i -j -C config/feature-checks >/dev/null 2>&1)
- 
--FEATURE_TESTS = stackprotector-all volatile-register-var fortify-source libelf libelf-mmap glibc dwarf libelf-getphdrnum libunwind libaudit libslang gtk2 gtk2-infobar libperl libpython libpython-version libbfd strlcpy on-exit backtrace libnuma
-+FEATURE_TESTS = stackprotector-all volatile-register-var fortify-source libelf libelf-mmap glibc dwarf libelf-getphdrnum libunwind libaudit libslang gtk2 gtk2-infobar libperl libpython libpython-version libbfd on-exit backtrace libnuma
- 
- $(foreach feat,$(FEATURE_TESTS),$(call feature_check,$(feat)))
- 
-@@ -421,12 +421,6 @@ else
-   endif
- endif
- 
--ifndef NO_STRLCPY
--  ifeq ($(feature-strlcpy), 1)
--    CFLAGS += -DHAVE_STRLCPY_SUPPORT
--  endif
--endif
--
- ifndef NO_ON_EXIT
-   ifeq ($(feature-on-exit), 1)
-     CFLAGS += -DHAVE_ON_EXIT_SUPPORT
-Index: tip/tools/perf/config/feature-checks/Makefile
-===================================================================
---- tip.orig/tools/perf/config/feature-checks/Makefile
-+++ tip/tools/perf/config/feature-checks/Makefile
-@@ -93,9 +93,6 @@ test-libpython-version: test-libpython-v
- test-libbfd: test-libbfd.c
- 	$(CC) -o $@ $@.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
- 
--test-strlcpy: test-strlcpy.c
--	$(CC) -o $@ $@.c
--
- test-on-exit: test-on-exit.c
- 	$(CC) -o $@ $@.c
- 
-Index: tip/tools/perf/config/feature-checks/test-strlcpy.c
-===================================================================
---- tip.orig/tools/perf/config/feature-checks/test-strlcpy.c
-+++ /dev/null
-@@ -1,8 +0,0 @@
--#include <stdlib.h>
--extern size_t strlcpy(char *dest, const char *src, size_t size);
--
--int main(void)
--{
--	strlcpy(NULL, NULL, 0);
--	return 0;
--}
-Index: tip/tools/perf/util/cache.h
-===================================================================
---- tip.orig/tools/perf/util/cache.h
-+++ tip/tools/perf/util/cache.h
-@@ -70,8 +70,7 @@ extern char *perf_path(const char *fmt,
- extern char *perf_pathdup(const char *fmt, ...)
- 	__attribute__((format (printf, 1, 2)));
- 
--#ifndef HAVE_STRLCPY_SUPPORT
-+/* Matches the libc/libbsd function attribute so we declare this unconditionally: */
- extern size_t strlcpy(char *dest, const char *src, size_t size);
--#endif
- 
- #endif /* __PERF_CACHE_H */
-Index: tip/tools/perf/util/include/linux/compiler.h
-===================================================================
---- tip.orig/tools/perf/util/include/linux/compiler.h
-+++ tip/tools/perf/util/include/linux/compiler.h
-@@ -2,20 +2,29 @@
- #define _PERF_LINUX_COMPILER_H_
- 
- #ifndef __always_inline
--#define __always_inline	inline
-+# define __always_inline	inline __attribute__((always_inline))
- #endif
-+
- #define __user
-+
- #ifndef __attribute_const__
--#define __attribute_const__
-+# define __attribute_const__
- #endif
- 
- #ifndef __maybe_unused
--#define __maybe_unused		__attribute__((unused))
-+# define __maybe_unused		__attribute__((unused))
-+#endif
-+
-+#ifndef __packed
-+# define __packed		__attribute__((__packed__))
- #endif
--#define __packed	__attribute__((__packed__))
- 
- #ifndef __force
--#define __force
-+# define __force
-+#endif
-+
-+#ifndef __weak
-+# define __weak			__attribute__((weak))
- #endif
- 
- #endif
-Index: tip/tools/perf/util/path.c
-===================================================================
---- tip.orig/tools/perf/util/path.c
-+++ tip/tools/perf/util/path.c
-@@ -22,19 +22,23 @@ static const char *get_perf_dir(void)
- 	return ".";
- }
- 
--#ifndef HAVE_STRLCPY_SUPPORT
--size_t strlcpy(char *dest, const char *src, size_t size)
-+/*
-+ * If libc has strlcpy() then that version will override this
-+ * implementation:
-+ */
-+size_t __weak strlcpy(char *dest, const char *src, size_t size)
- {
- 	size_t ret = strlen(src);
- 
- 	if (size) {
- 		size_t len = (ret >= size) ? size - 1 : ret;
-+
- 		memcpy(dest, src, len);
- 		dest[len] = '\0';
- 	}
-+
- 	return ret;
- }
--#endif
- 
- static char *get_pathname(void)
- {
