@@ -1,88 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab3JAJts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 05:49:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53338 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab3JAJtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 05:49:46 -0400
-Message-ID: <524A9AB8.4010407@ti.com>
-Date: Tue, 1 Oct 2013 12:49:44 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1753288Ab3JAJtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 05:49:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29821 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752017Ab3JAJtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 05:49:42 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1013,1371052800"; 
+   d="scan'208";a="8662831"
+Message-ID: <524A9A7D.6000900@cn.fujitsu.com>
+Date: Tue, 01 Oct 2013 17:48:45 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: using mmc2 on panda [was: Regression 3.11-rc1: omap4panda: no
- usb and consequently no ethernet]
-References: <51E7AA24.6080600@broadcom.com> <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com> <51E919CA.8060805@ti.com> <51E91B80.1050609@broadcom.com> <524A823F.6070209@broadcom.com>
-In-Reply-To: <524A823F.6070209@broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: robert.moore@intel.com, lv.zheng@intel.com,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        "mina86@mina86.com" <mina86@mina86.com>, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, Rik van Riel <riel@redhat.com>,
+        prarit@redhat.com, Toshi Kani <toshi.kani@hp.com>
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        Tang Chen <tangchen@cn.fujitsu.com>, imtangchen@gmail.com,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Subject: [PATCH -mm 3/8] memblock, mem_hotplug: Introduce MEMBLOCK_HOTPLUG
+ flag to mark hotpluggable regions
+References: <524A991D.3050005@cn.fujitsu.com>
+In-Reply-To: <524A991D.3050005@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/01 17:47:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/01 17:47:47,
+	Serialize complete at 2013/10/01 17:47:47
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arend,
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-On 10/01/2013 11:05 AM, Arend van Spriel wrote:
-> On 07/19/2013 12:57 PM, Arend van Spriel wrote:
->> On 07/19/2013 12:49 PM, Roger Quadros wrote:
->>> On 07/19/2013 01:36 PM, Arend van Spriel wrote:
->>>> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
->>>>> Then for the SDIO with device tree, take a look at the following
->>>>> patches:
->>>>>
->>>>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
->>>>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
->>>>
->>>> I have been looking at the pandaboard patch in the series above and I
->>>> do have a question. Among other things the patch adds these dt entries.
->>>>
->>>> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP |
->>>> MODE0 */
->>>> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP |
->>>> MODE0 */
->>>>
->>>> If I look at the similar names in the deceased board-omap4panda.c:
->>>>
->>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 |
->>>> OMAP_PIN_INPUT_PULLUP),
->>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 |
->>>> OMAP_PIN_INPUT_PULLUP),
->>>>
->>>> and in mux44xx.h:
->>>>
->>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
->>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
->>>>
->>>> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is
->>>> probably an explanation to it and it would help my understanding to
->>>> know where this difference comes from. Hope you can help me out here.
->>>>
->>>
->>> If you see omap4.dtsi, omap4_pmx_core starts at register address
->>> 0x4a100040.
->>>
->>> So, you need to subtract 0x40 from the offsets defined in mux44xx.h
->>> for pmx_core registers.
->>
->> That was what I was looking for. Thanks!
-> 
-> Hi Roger,
-> 
-> It has been a while, but I would like to pickup this thread. We have a couple of pandaboards used as test setup. These have an SDIO adapter hooked up to expansion connector A using MMC2. I have attached the patch file (just ignore platform_data stuff). Now on one board it works, but not for the other. I suspect a board issue so listing the two types that we use:
-> 
-> PandaBoard rev A2 (dmesg: OMAP4430 ES2.1): works
-> PandaBoardES rev B1 (dmesg: OMAP4460 ES1.1): nope
-> 
-> Any hints for me.
+In find_hotpluggable_memory, once we find out a memory region which is
+hotpluggable, we want to mark them in memblock.memory. So that we could
+control memblock allocator not to allocte hotpluggable memory for the kernel
+later.
 
-Does your PandaboardES have the WLAN chip (U4) mounted? If yes, how do you isolate
-it from your external SDIO adapter?
+To achieve this goal, we introduce MEMBLOCK_HOTPLUG flag to indicate the
+hotpluggable memory regions in memblock and a function memblock_mark_hotplug()
+to mark hotpluggable memory if we find one.
 
-Most likely your Pandaboard (A2) doesn't have the WLAN chip (U3) on board so there is no problem there.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ include/linux/memblock.h |   17 +++++++++++++++
+ mm/memblock.c            |   52 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+), 0 deletions(-)
 
-cheers,
--roger
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 894d59e..10fa75b 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -19,6 +19,9 @@
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
+ 
++/* Definition of memblock flags. */
++#define MEMBLOCK_HOTPLUG	0x1	/* hotpluggable region */
++
+ struct memblock_region {
+ 	phys_addr_t base;
+ 	phys_addr_t size;
+@@ -60,6 +63,8 @@ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ void memblock_trim_memory(phys_addr_t align);
++int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
++int memblock_clear_hotplug(phys_addr_t base, phys_addr_t size);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ int memblock_search_pfn_nid(unsigned long pfn, unsigned long *start_pfn,
+@@ -122,6 +127,18 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+ 	     i != (u64)ULLONG_MAX;					\
+ 	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
+ 
++static inline void memblock_set_region_flags(struct memblock_region *r,
++					     unsigned long flags)
++{
++	r->flags |= flags;
++}
++
++static inline void memblock_clear_region_flags(struct memblock_region *r,
++					       unsigned long flags)
++{
++	r->flags &= ~flags;
++}
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 3ec8aef..bd26ce8 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -683,6 +683,58 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ }
+ 
+ /**
++ * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
++ * @base: the base phys addr of the region
++ * @size: the size of the region
++ *
++ * This function isolates region [@base, @base + @size), and mark it with flag
++ * MEMBLOCK_HOTPLUG.
++ *
++ * Return 0 on succees, -errno on failure.
++ */
++int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
++{
++	struct memblock_type *type = &memblock.memory;
++	int i, ret, start_rgn, end_rgn;
++
++	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
++	if (ret)
++		return ret;
++
++	for (i = start_rgn; i < end_rgn; i++)
++		memblock_set_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
++
++	memblock_merge_regions(type);
++	return 0;
++}
++
++/**
++ * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
++ * @base: the base phys addr of the region
++ * @size: the size of the region
++ *
++ * This function isolates region [@base, @base + @size), and clear flag
++ * MEMBLOCK_HOTPLUG for the isolated regions.
++ *
++ * Return 0 on succees, -errno on failure.
++ */
++int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
++{
++	struct memblock_type *type = &memblock.memory;
++	int i, ret, start_rgn, end_rgn;
++
++	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
++	if (ret)
++		return ret;
++
++	for (i = start_rgn; i < end_rgn; i++)
++		memblock_clear_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
++
++	memblock_merge_regions(type);
++	return 0;
++}
++
++/**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+  * @nid: node selector, %MAX_NUMNODES for all nodes
+-- 
+1.7.1
