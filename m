@@ -1,169 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3JANKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:10:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3347 "EHLO mga09.intel.com"
+	id S1753382Ab3JANKi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:10:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39132 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab3JANKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:10:03 -0400
+	id S1753281Ab3JANKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 09:10:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1013,1371106800"; 
-   d="scan'208";a="403641975"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, rjw@rjwysocki.net,
-        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Mark Brown <broonie@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-acpi@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v4] i2c: enable runtime PM for I2C adapter devices enumerated from ACPI
-Date: Tue,  1 Oct 2013 16:09:42 +0300
-Message-Id: <1380632982-10709-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1380552228-23329-2-git-send-email-mika.westerberg@linux.intel.com>
-References: <1380552228-23329-2-git-send-email-mika.westerberg@linux.intel.com>
+   d="scan'208";a="368222928"
+From: Durgadoss R <durgadoss.r@intel.com>
+To: rui.zhang@intel.com, eduardo.valentin@ti.com, linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com, wni@nvidia.com,
+        Durgadoss R <durgadoss.r@intel.com>
+Subject: [PATCHv4 0/9] Thermal Framework Enhancements
+Date: Wed,  2 Oct 2013 00:07:59 +0530
+Message-Id: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI specification requires the parent device to be powered on before
-any of its children. It can be only powered off when all the children are
-already off.
+This patch set is a v4 of the previous versions submitted here:
+[v3]: https://lkml.org/lkml/2013/2/5/228 
+[v2]: http://lwn.net/Articles/531720/
+[v1]: https://lkml.org/lkml/2012/12/18/108 
+[RFC]:https://patchwork.kernel.org/patch/1758921/
 
-Currently whenever there is no I2C traffic going on, the I2C controller
-driver can put the device into low power state transparently to its
-children (the I2C client devices). This violates the ACPI specification
-because now the parent device is in lower power state than its children.
+This patch set is based on Rui's -next tree, on top
+of commit 'f61d5b4d52e077756ce9dbc47ce737da898ad01d'
+This is tested on a Core-i5 and an Atom netbook,
+running ubuntu 12.04.
 
-In order to keep ACPI happy we enable runtime PM for the I2C adapter device
-if we find out that the I2C controller was in fact an ACPI device. In
-addition to that we attach the I2C client devices to the ACPI power domain
-and make sure that they are powered on when the driver ->probe() is called.
+Changes since v3:
+ * Added a patch to conditionally do kfree(cdev) in
+   thermal_release function.
+ * Reworked all sysfs attributes to have one value per file
+   This includes sensor_trip_* and map_weight* attributes.
+ * Added 'lock' variable in thermal_zone structure to
+   protect its members.
+ * Added Documentation to all functions in thermal_core.c
+ * Changes all strcpy() to strlcpy()
+ * Used devm_kzalloc() in places where applicable
+ * Address some buffer overflow conditions and contentions
+   in tz->sensors[] and tz->cdevs[].
+Changes since v2:
+ * Reworked the map sysfs attributes in patch [5/8]
+ * Dropped configuration for maximum sensors and
+   cooling devices, through Kconfig.
+ * Added __remove_trip_attr method
+ * Renamed __clean_map_entry to __remove_map_entry
+   for consistency in naming.
+Changes Since v1:
+ * Removed kobject creation for thermal_trip and thermal_map
+   nodes as per Greg-KH's comments.
+ * Added ABI Documentation under 'testing'.
+ * Modified the GET_INDEX macro to be more linux-like, thanks
+   to Joe Perches.
+ * Added get_[sensor/cdev]_by_name APIs to thermal.h
 
-Non-ACPI devices are not affected by this change.
+This series contains 9 patches:
+Patch 1/9: Fixes a kfree issue. This is required so that the new sensor
+	   and zone devices are not freed accidently.
+	   We can do two things here:
+	   1) Conditionally free every device
+	   2) Remove this _release function, and free the memory
+              in corresponding _unregister functions.
+	   I prefer 2) and we can have this as a separate patch
+	   outside this series; but would like to see the opinion
+	   of maintainers'.
+Patch 2/9: Creates new sensor level APIs
+Patch 3/9: Creates new zone level APIs. The existing tzd structure is
+           kept as such for clarity and compatibility purposes.
+Patch 4/9: Creates functions to add/remove a cdev to/from a zone. The
+           existing tcd structure need not be modified.
+Patch 5/9: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
+	   under /sys/class/thermal/zoneY/. This exposes various trip
+           points for sensorX present in zoneY.
+Patch 6/9: Adds mapY_* sysfs node. These attributes represent
+Patch 7/9: Creates Documentation for the new APIs. A new file is
+           created for clarity. Final goal is to merge with the existing
+           file or refactor the files, as whatever seems appropriate.
+Patch 8/9: Add ABI documentation for sysfs interfaces introduced in this patch.
+Patch 9/9: A dummy driver that can be used for testing. This is not for merge.
 
-This patch is based on the work by Aaron Lu and Lv Zheng.
+Sorry for the long delay in resubmitting this patch set.
+Thanks to Eduardo, Wei Ni, for their comments on v3.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-Changes to v3:
- * Check only client ACPI_HANDLE().
- * Fixed bug where we attach the device to ACPI power domain multiple
-   times.
- * Functions are renamed to _get_attach/_put_attach to make it clear that
-   we do attach/detach as well.
+Durgadoss R (9):
+  Thermal: Check for validity before doing kfree
+  Thermal: Create sensor level APIs
+  Thermal: Create zone level APIs
+  Thermal: Add APIs to bind cdev to new zone structure
+  Thermal: Add trip point sysfs nodes for sensor
+  Thermal: Create Thermal map sysfs attributes for a zone
+  Thermal: Add Documentation to new APIs
+  Thermal: Add ABI Documentation for sysfs interfaces
+  Thermal: Dummy driver used for testing
 
- drivers/i2c/i2c-core.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 46 insertions(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-class-thermal |  137 +++
+ Documentation/thermal/sysfs-api2.txt          |  248 +++++
+ drivers/thermal/Kconfig                       |    5 +
+ drivers/thermal/Makefile                      |    3 +
+ drivers/thermal/thermal_core.c                | 1406 +++++++++++++++++++++++--
+ drivers/thermal/thermal_test.c                |  322 ++++++
+ include/linux/thermal.h                       |  127 ++-
+ 7 files changed, 2180 insertions(+), 68 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
+ create mode 100644 Documentation/thermal/sysfs-api2.txt
+ create mode 100644 drivers/thermal/thermal_test.c
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 29d3f04..e289b1d 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -236,6 +236,27 @@ int i2c_recover_bus(struct i2c_adapter *adap)
- 	return adap->bus_recovery_info->recover_bus(adap);
- }
- 
-+static void acpi_i2c_device_pm_get_attach(struct i2c_client *client,
-+					  bool attach)
-+{
-+	if (ACPI_HANDLE(&client->dev)) {
-+		/* Make sure the adapter is active */
-+		pm_runtime_get_sync(&client->adapter->dev);
-+		if (attach)
-+			acpi_dev_pm_attach(&client->dev, true);
-+	}
-+}
-+
-+static void acpi_i2c_device_pm_put_detach(struct i2c_client *client,
-+					  bool detach)
-+{
-+	if (ACPI_HANDLE(&client->dev)) {
-+		if (detach)
-+			acpi_dev_pm_detach(&client->dev, true);
-+		pm_runtime_put(&client->adapter->dev);
-+	}
-+}
-+
- static int i2c_device_probe(struct device *dev)
- {
- 	struct i2c_client	*client = i2c_verify_client(dev);
-@@ -254,11 +275,15 @@ static int i2c_device_probe(struct device *dev)
- 					client->flags & I2C_CLIENT_WAKE);
- 	dev_dbg(dev, "probe\n");
- 
-+	acpi_i2c_device_pm_get_attach(client, true);
-+
- 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
- 	if (status) {
- 		client->driver = NULL;
- 		i2c_set_clientdata(client, NULL);
- 	}
-+
-+	acpi_i2c_device_pm_put_detach(client, !!status);
- 	return status;
- }
- 
-@@ -271,6 +296,8 @@ static int i2c_device_remove(struct device *dev)
- 	if (!client || !dev->driver)
- 		return 0;
- 
-+	acpi_i2c_device_pm_get_attach(client, false);
-+
- 	driver = to_i2c_driver(dev->driver);
- 	if (driver->remove) {
- 		dev_dbg(dev, "remove\n");
-@@ -283,6 +310,8 @@ static int i2c_device_remove(struct device *dev)
- 		client->driver = NULL;
- 		i2c_set_clientdata(client, NULL);
- 	}
-+
-+	acpi_i2c_device_pm_put_detach(client, true);
- 	return status;
- }
- 
-@@ -294,8 +323,11 @@ static void i2c_device_shutdown(struct device *dev)
- 	if (!client || !dev->driver)
- 		return;
- 	driver = to_i2c_driver(dev->driver);
--	if (driver->shutdown)
-+	if (driver->shutdown) {
-+		acpi_i2c_device_pm_get_attach(client, false);
- 		driver->shutdown(client);
-+		acpi_i2c_device_pm_put_detach(client, false);
-+	}
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -1263,6 +1295,16 @@ exit_recovery:
- 	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
- 	mutex_unlock(&core_lock);
- 
-+	/*
-+	 * For ACPI enumerated controllers we must make sure that the
-+	 * controller is powered on before its children. Runtime PM handles
-+	 * this for us once we have enabled it for the adapter device.
-+	 */
-+	if (ACPI_HANDLE(adap->dev.parent)) {
-+		pm_runtime_no_callbacks(&adap->dev);
-+		pm_runtime_enable(&adap->dev);
-+	}
-+
- 	return 0;
- 
- out_list:
-@@ -1427,6 +1469,9 @@ void i2c_del_adapter(struct i2c_adapter *adap)
- 		return;
- 	}
- 
-+	if (ACPI_HANDLE(adap->dev.parent))
-+		pm_runtime_disable(&adap->dev);
-+
- 	/* Tell drivers about this removal */
- 	mutex_lock(&core_lock);
- 	bus_for_each_drv(&i2c_bus_type, NULL, adap,
 -- 
-1.8.4.rc3
+1.7.9.5
 
