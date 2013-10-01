@@ -1,401 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab3JAUVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:21:51 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:58305 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3JAUVr (ORCPT
+	id S1752223Ab3JAUXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:23:47 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50783 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751539Ab3JAUXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:21:47 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jan Glauber <jan.glauber@gmail.com>
-Cc: Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
-Subject: [PATCHv2 1/2] mm: rearrange madvise code to allow for reuse
-Date: Tue,  1 Oct 2013 13:21:39 -0700
-Message-Id: <1380658901-11666-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.4
+	Tue, 1 Oct 2013 16:23:43 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ronald <ronald645@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: Fwd: [v3.12-rc1] [regression] PM / hibernate: Create memory bitmaps after freezing user space
+Date: Tue, 01 Oct 2013 22:35:11 +0200
+Message-ID: <1609889.2pSzhO4Dqr@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAF1_xX0veXd4AtPR43r50g8Tu4WeP0kVzqPihgSC-NCpW+nwkQ@mail.gmail.com>
+References: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com> <7570724.v5QLmkRO38@vostro.rjw.lan> <CAF1_xX0veXd4AtPR43r50g8Tu4WeP0kVzqPihgSC-NCpW+nwkQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch refactors the madvise syscall to allow for parts of it
-to be reused by a prctl syscall that affects vmas.
+On Tuesday, October 01, 2013 06:38:03 PM Ronald wrote:
+> This could be a coincidence, but I had a disk data corruption in /var
+> (LVM). Most other partitions are read-only during normal operation. So
+> I can safely keep testing this kernel. Just mentioning this, in case
+> you see this happening with other ppl testing this patch as well.
 
-Move the code that walks vmas in a virtual address range into a
-function that takes a function pointer as a parameter.  The only
-caller for now is sys_madvise, which uses it to call
-madvise_vma_behavior on each vma, but the next patch will add
-an additional caller.
+If you have a failing resume from hibernation a filesystem is perfectly
+possible, unfortunately.
 
-Move handling all vma behaviors inside madvise_behavior, and
-rename it to madvise_vma_behavior.
+The patch itself should't really cause any corruption to happen.
 
-Move the code that updates the flags on a vma, including splitting
-or merging the vma as necessary, into a new function called
-madvise_update_vma.  The next patch will add support for updating
-a new anon_name field as well.
+Thanks,
+Rafael
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- mm/madvise.c | 272 +++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 151 insertions(+), 121 deletions(-)
 
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 7055883..b8820fd 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -39,65 +39,20 @@ static int madvise_need_mmap_write(int behavior)
- }
- 
- /*
-- * We can potentially split a vm area into separate
-- * areas, each area with its own behavior.
-+ * Update the vm_flags on regiion of a vma, splitting it or merging it as
-+ * necessary.  Must be called with mmap_sem held for writing;
-  */
--static long madvise_behavior(struct vm_area_struct * vma,
--		     struct vm_area_struct **prev,
--		     unsigned long start, unsigned long end, int behavior)
-+static int madvise_update_vma(struct vm_area_struct *vma,
-+		     struct vm_area_struct **prev, unsigned long start,
-+		     unsigned long end, unsigned long new_flags)
- {
- 	struct mm_struct * mm = vma->vm_mm;
--	int error = 0;
- 	pgoff_t pgoff;
--	unsigned long new_flags = vma->vm_flags;
--
--	switch (behavior) {
--	case MADV_NORMAL:
--		new_flags = new_flags & ~VM_RAND_READ & ~VM_SEQ_READ;
--		break;
--	case MADV_SEQUENTIAL:
--		new_flags = (new_flags & ~VM_RAND_READ) | VM_SEQ_READ;
--		break;
--	case MADV_RANDOM:
--		new_flags = (new_flags & ~VM_SEQ_READ) | VM_RAND_READ;
--		break;
--	case MADV_DONTFORK:
--		new_flags |= VM_DONTCOPY;
--		break;
--	case MADV_DOFORK:
--		if (vma->vm_flags & VM_IO) {
--			error = -EINVAL;
--			goto out;
--		}
--		new_flags &= ~VM_DONTCOPY;
--		break;
--	case MADV_DONTDUMP:
--		new_flags |= VM_DONTDUMP;
--		break;
--	case MADV_DODUMP:
--		if (new_flags & VM_SPECIAL) {
--			error = -EINVAL;
--			goto out;
--		}
--		new_flags &= ~VM_DONTDUMP;
--		break;
--	case MADV_MERGEABLE:
--	case MADV_UNMERGEABLE:
--		error = ksm_madvise(vma, start, end, behavior, &new_flags);
--		if (error)
--			goto out;
--		break;
--	case MADV_HUGEPAGE:
--	case MADV_NOHUGEPAGE:
--		error = hugepage_madvise(vma, &new_flags, behavior);
--		if (error)
--			goto out;
--		break;
--	}
-+	int error;
- 
- 	if (new_flags == vma->vm_flags) {
- 		*prev = vma;
--		goto out;
-+		return 0;
- 	}
- 
- 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
-@@ -113,13 +68,13 @@ static long madvise_behavior(struct vm_area_struct * vma,
- 	if (start != vma->vm_start) {
- 		error = split_vma(mm, vma, start, 1);
- 		if (error)
--			goto out;
-+			return error;
- 	}
- 
- 	if (end != vma->vm_end) {
- 		error = split_vma(mm, vma, end, 0);
- 		if (error)
--			goto out;
-+			return error;
- 	}
- 
- success:
-@@ -128,10 +83,7 @@ success:
- 	 */
- 	vma->vm_flags = new_flags;
- 
--out:
--	if (error == -ENOMEM)
--		error = -EAGAIN;
--	return error;
-+	return 0;
- }
- 
- #ifdef CONFIG_SWAP
-@@ -337,6 +289,77 @@ static long madvise_remove(struct vm_area_struct *vma,
- 	return error;
- }
- 
-+/*
-+ * Apply an madvise behavior to a region of a vma.  madvise_update_vma
-+ * will handle splitting a vm area into separate areas, each area with its own
-+ * behavior.
-+ */
-+static int madvise_vma_behavior(struct vm_area_struct *vma,
-+		     struct vm_area_struct **prev,
-+		     unsigned long start, unsigned long end,
-+		     unsigned long behavior)
-+{
-+	int error = 0;
-+	unsigned long new_flags = vma->vm_flags;
-+
-+	switch (behavior) {
-+	case MADV_REMOVE:
-+		return madvise_remove(vma, prev, start, end);
-+	case MADV_WILLNEED:
-+		return madvise_willneed(vma, prev, start, end);
-+	case MADV_DONTNEED:
-+		return madvise_dontneed(vma, prev, start, end);
-+	case MADV_NORMAL:
-+		new_flags = new_flags & ~VM_RAND_READ & ~VM_SEQ_READ;
-+		break;
-+	case MADV_SEQUENTIAL:
-+		new_flags = (new_flags & ~VM_RAND_READ) | VM_SEQ_READ;
-+		break;
-+	case MADV_RANDOM:
-+		new_flags = (new_flags & ~VM_SEQ_READ) | VM_RAND_READ;
-+		break;
-+	case MADV_DONTFORK:
-+		new_flags |= VM_DONTCOPY;
-+		break;
-+	case MADV_DOFORK:
-+		if (vma->vm_flags & VM_IO) {
-+			error = -EINVAL;
-+			goto out;
-+		}
-+		new_flags &= ~VM_DONTCOPY;
-+		break;
-+	case MADV_DONTDUMP:
-+		new_flags |= VM_DONTDUMP;
-+		break;
-+	case MADV_DODUMP:
-+		if (new_flags & VM_SPECIAL) {
-+			error = -EINVAL;
-+			goto out;
-+		}
-+		new_flags &= ~VM_DONTDUMP;
-+		break;
-+	case MADV_MERGEABLE:
-+	case MADV_UNMERGEABLE:
-+		error = ksm_madvise(vma, start, end, behavior, &new_flags);
-+		if (error)
-+			goto out;
-+		break;
-+	case MADV_HUGEPAGE:
-+	case MADV_NOHUGEPAGE:
-+		error = hugepage_madvise(vma, &new_flags, behavior);
-+		if (error)
-+			goto out;
-+		break;
-+	}
-+
-+	error = madvise_update_vma(vma, prev, start, end, new_flags);
-+
-+out:
-+	if (error == -ENOMEM)
-+		error = -EAGAIN;
-+	return error;
-+}
-+
- #ifdef CONFIG_MEMORY_FAILURE
- /*
-  * Error injection support for memory error handling.
-@@ -369,22 +392,6 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
- }
- #endif
- 
--static long
--madvise_vma(struct vm_area_struct *vma, struct vm_area_struct **prev,
--		unsigned long start, unsigned long end, int behavior)
--{
--	switch (behavior) {
--	case MADV_REMOVE:
--		return madvise_remove(vma, prev, start, end);
--	case MADV_WILLNEED:
--		return madvise_willneed(vma, prev, start, end);
--	case MADV_DONTNEED:
--		return madvise_dontneed(vma, prev, start, end);
--	default:
--		return madvise_behavior(vma, prev, start, end, behavior);
--	}
--}
--
- static int
- madvise_behavior_valid(int behavior)
- {
-@@ -415,6 +422,73 @@ madvise_behavior_valid(int behavior)
- }
- 
- /*
-+ * Walk the vmas in range [start,end), and call the visit function on each one.
-+ * The visit function will get start and end parameters that cover the overlap
-+ * between the current vma and the original range.  Any unmapped regions in the
-+ * original range will result in this function returning -ENOMEM while still
-+ * calling the visit function on all of the existing vmas in the range.
-+ * Must be called with the mmap_sem held for reading or writing.
-+ */
-+static
-+int madvise_walk_vmas(unsigned long start, unsigned long end,
-+		unsigned long arg,
-+		int (*visit)(struct vm_area_struct *vma,
-+			struct vm_area_struct **prev, unsigned long start,
-+			unsigned long end, unsigned long arg))
-+{
-+	struct vm_area_struct *vma;
-+	struct vm_area_struct *prev;
-+	unsigned long tmp;
-+	int unmapped_error = 0;
-+
-+	/*
-+	 * If the interval [start,end) covers some unmapped address
-+	 * ranges, just ignore them, but return -ENOMEM at the end.
-+	 * - different from the way of handling in mlock etc.
-+	 */
-+	vma = find_vma_prev(current->mm, start, &prev);
-+	if (vma && start > vma->vm_start)
-+		prev = vma;
-+
-+	for (;;) {
-+		int error;
-+
-+		/* Still start < end. */
-+		if (!vma)
-+			return -ENOMEM;
-+
-+		/* Here start < (end|vma->vm_end). */
-+		if (start < vma->vm_start) {
-+			unmapped_error = -ENOMEM;
-+			start = vma->vm_start;
-+			if (start >= end)
-+				break;
-+		}
-+
-+		/* Here vma->vm_start <= start < (end|vma->vm_end) */
-+		tmp = vma->vm_end;
-+		if (end < tmp)
-+			tmp = end;
-+
-+		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
-+		error = visit(vma, &prev, start, tmp, arg);
-+		if (error)
-+			return error;
-+		start = tmp;
-+		if (prev && start < prev->vm_end)
-+			start = prev->vm_end;
-+		if (start >= end)
-+			break;
-+		if (prev)
-+			vma = prev->vm_next;
-+		else	/* madvise_remove dropped mmap_sem */
-+			vma = find_vma(current->mm, start);
-+	}
-+
-+	return unmapped_error;
-+}
-+
-+/*
-  * The madvise(2) system call.
-  *
-  * Applications can use madvise() to advise the kernel how it should
-@@ -458,9 +532,7 @@ madvise_behavior_valid(int behavior)
-  */
- SYSCALL_DEFINE3(madvise, unsigned long, start, size_t, len_in, int, behavior)
- {
--	unsigned long end, tmp;
--	struct vm_area_struct * vma, *prev;
--	int unmapped_error = 0;
-+	unsigned long end;
- 	int error = -EINVAL;
- 	int write;
- 	size_t len;
-@@ -495,52 +567,10 @@ SYSCALL_DEFINE3(madvise, unsigned long, start, size_t, len_in, int, behavior)
- 	else
- 		down_read(&current->mm->mmap_sem);
- 
--	/*
--	 * If the interval [start,end) covers some unmapped address
--	 * ranges, just ignore them, but return -ENOMEM at the end.
--	 * - different from the way of handling in mlock etc.
--	 */
--	vma = find_vma_prev(current->mm, start, &prev);
--	if (vma && start > vma->vm_start)
--		prev = vma;
--
- 	blk_start_plug(&plug);
--	for (;;) {
--		/* Still start < end. */
--		error = -ENOMEM;
--		if (!vma)
--			goto out;
--
--		/* Here start < (end|vma->vm_end). */
--		if (start < vma->vm_start) {
--			unmapped_error = -ENOMEM;
--			start = vma->vm_start;
--			if (start >= end)
--				goto out;
--		}
--
--		/* Here vma->vm_start <= start < (end|vma->vm_end) */
--		tmp = vma->vm_end;
--		if (end < tmp)
--			tmp = end;
--
--		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
--		error = madvise_vma(vma, &prev, start, tmp, behavior);
--		if (error)
--			goto out;
--		start = tmp;
--		if (prev && start < prev->vm_end)
--			start = prev->vm_end;
--		error = unmapped_error;
--		if (start >= end)
--			goto out;
--		if (prev)
--			vma = prev->vm_next;
--		else	/* madvise_remove dropped mmap_sem */
--			vma = find_vma(current->mm, start);
--	}
--out:
-+	error = madvise_walk_vmas(start, end, behavior, madvise_vma_behavior);
- 	blk_finish_plug(&plug);
-+
- 	if (write)
- 		up_write(&current->mm->mmap_sem);
- 	else
+> 2013/9/30 Rafael J. Wysocki <rjw@rjwysocki.net>:
+> > On Monday, September 30, 2013 07:45:54 AM Ronald wrote:
+> >> Yes, works as well. Just survived twe cycles with s2disk. I'm
+> >> surprised someone else did not report this earlier btw... Because it
+> >> looks pretty generic (i.e. not specific to a 64bit UP system).
+> >
+> > It is a generic bug, actually.  Well, this means the user space driven
+> > hibernation doesn't receive much testing coverage these days ...
+> >
+> > I'll resend the patch with a proper changelog and then push it for v3.12-rc4.
+> >
+> > Thanks,
+> > Rafael
+> >
+> >
+> >> 2013/9/30 Rafael J. Wysocki <rjw@rjwysocki.net>:
+> >> > On Sunday, September 29, 2013 09:22:45 AM Ronald wrote:
+> >> >> Attached patch fixes the issue. Both methods function as they did
+> >> >> before. Thanks for the superfast fix!
+> >> >
+> >> > You're welcome, it's not the final one, however.
+> >> >
+> >> > Can you please test the one below and report back?
+> >> >
+> >> > Rafael
+> >> >
+> >> >
+> >> > ---
+> >> >  kernel/power/snapshot.c |    5 ++++-
+> >> >  kernel/power/user.c     |    8 ++++++++
+> >> >  2 files changed, 12 insertions(+), 1 deletion(-)
+> >> >
+> >> > Index: linux-pm/kernel/power/snapshot.c
+> >> > ===================================================================
+> >> > --- linux-pm.orig/kernel/power/snapshot.c
+> >> > +++ linux-pm/kernel/power/snapshot.c
+> >> > @@ -743,7 +743,10 @@ int create_basic_memory_bitmaps(void)
+> >> >         struct memory_bitmap *bm1, *bm2;
+> >> >         int error = 0;
+> >> >
+> >> > -       BUG_ON(forbidden_pages_map || free_pages_map);
+> >> > +       if (forbidden_pages_map && free_pages_map)
+> >> > +               return 0;
+> >> > +       else
+> >> > +               BUG_ON(forbidden_pages_map || free_pages_map);
+> >> >
+> >> >         bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
+> >> >         if (!bm1)
+> >> > Index: linux-pm/kernel/power/user.c
+> >> > ===================================================================
+> >> > --- linux-pm.orig/kernel/power/user.c
+> >> > +++ linux-pm/kernel/power/user.c
+> >> > @@ -39,6 +39,7 @@ static struct snapshot_data {
+> >> >         char frozen;
+> >> >         char ready;
+> >> >         char platform_support;
+> >> > +       bool free_bitmaps;
+> >> >  } snapshot_state;
+> >> >
+> >> >  atomic_t snapshot_device_available = ATOMIC_INIT(1);
+> >> > @@ -82,6 +83,10 @@ static int snapshot_open(struct inode *i
+> >> >                 data->swap = -1;
+> >> >                 data->mode = O_WRONLY;
+> >> >                 error = pm_notifier_call_chain(PM_RESTORE_PREPARE);
+> >> > +               if (!error) {
+> >> > +                       error = create_basic_memory_bitmaps();
+> >> > +                       data->free_bitmaps = !error;
+> >> > +               }
+> >> >                 if (error)
+> >> >                         pm_notifier_call_chain(PM_POST_RESTORE);
+> >> >         }
+> >> > @@ -111,6 +116,8 @@ static int snapshot_release(struct inode
+> >> >                 pm_restore_gfp_mask();
+> >> >                 free_basic_memory_bitmaps();
+> >> >                 thaw_processes();
+> >> > +       } else if (data->free_bitmaps) {
+> >> > +               free_basic_memory_bitmaps();
+> >> >         }
+> >> >         pm_notifier_call_chain(data->mode == O_RDONLY ?
+> >> >                         PM_POST_HIBERNATION : PM_POST_RESTORE);
+> >> > @@ -231,6 +238,7 @@ static long snapshot_ioctl(struct file *
+> >> >                         break;
+> >> >                 pm_restore_gfp_mask();
+> >> >                 free_basic_memory_bitmaps();
+> >> > +               data->free_bitmaps = false;
+> >> >                 thaw_processes();
+> >> >                 data->frozen = 0;
+> >> >                 break;
+> >> >
+> > --
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
 -- 
-1.8.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
