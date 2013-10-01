@@ -1,29 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3JAPJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:09:12 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53575 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751898Ab3JAPJD (ORCPT
+	id S1753146Ab3JAPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:13:59 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24275 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751350Ab3JAPNx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:09:03 -0400
-Message-ID: <524AE58B.9060902@hurleysoftware.com>
-Date: Tue, 01 Oct 2013 11:08:59 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 1 Oct 2013 11:13:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1013,1371106800"; 
+   d="scan'208";a="368277533"
+From: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+To: "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [BUG] 3.12.0-rc2: cpufreq_get(0) crashes since commit 6eed9404a
+ (cpufreq: Use rwsem for protecting critical sections)
+Thread-Topic: [BUG] 3.12.0-rc2: cpufreq_get(0) crashes since commit
+ 6eed9404a (cpufreq: Use rwsem for protecting critical sections)
+Thread-Index: AQHOvrhDfDBFpiv4iE+xlA4JUrPWdpnf9CXC
+Date: Tue, 1 Oct 2013 15:13:32 +0000
+Message-ID: <dar7rckrq3w5r18opwepseky.1380640340764@email.android.com>
+References: <524AE58B.9060902@hurleysoftware.com>
+In-Reply-To: <524AE58B.9060902@hurleysoftware.com>
+Reply-To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: [BUG] 3.12.0-rc2: cpufreq_get(0) crashes since commit 6eed9404a (cpufreq:
- Use rwsem for protecting critical sections)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Have you tested -rc3?  This looks like the cpufreq_get() bug that was fixed there.
+
+
+
+
+Sent from a tablet, I apologize for formatting issues.
+
+Peter Hurley <peter@hurleysoftware.com> wrote:
 On 3.12.0-rc2 without a sub-driver loaded, the trivial module
 inlined below [1] BUGs.
 
@@ -66,8 +86,8 @@ On 3.11.0, cpufreq_get(0) returns 0.
 
 [1] trivial module
 
---- /dev/null	2013-10-01 10:01:46.782370182 -0400
-+++ /home/peter/src/drivers/cpufq/cpufq.c	2013-10-01 09:40:18.996316926 -0400
+--- /dev/null   2013-10-01 10:01:46.782370182 -0400
++++ /home/peter/src/drivers/cpufq/cpufq.c       2013-10-01 09:40:18.996316926 -0400
 @@ -0,0 +1,26 @@
 +
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -80,10 +100,10 @@ On 3.11.0, cpufreq_get(0) returns 0.
 +
 +static int cpufq_init(void)
 +{
-+	unsigned int freq = cpufreq_get(0);
++       unsigned int freq = cpufreq_get(0);
 +
-+	pr_info("cpu 0 frequency: %u\n", freq);
-+	return 0;
++       pr_info("cpu 0 frequency: %u\n", freq);
++       return 0;
 +}
 +
 +static void cpufq_exit(void)
@@ -95,3 +115,11 @@ On 3.11.0, cpufreq_get(0) returns 0.
 +
 +MODULE_LICENSE("GPL");
 +
+--------------------------------------------------------------------
+
+Intel Technology Poland sp. z o.o.
+ul. Slowackiego 173 | 80-298 Gdansk | Sad Rejonowy Gdansk Polnoc | VII Wydzial Gospodarczy Krajowego Rejestru Sadowego - KRS 101882 | NIP 957-07-52-316 | Kapital zakladowy 200.000 PLN.
+
+Ta wiadomosc wraz z zalacznikami jest przeznaczona dla okreslonego adresata i moze zawierac informacje poufne. W razie przypadkowego otrzymania tej wiadomosci, prosimy o powiadomienie nadawcy oraz trwale jej usuniecie; jakiekolwiek przegladanie lub rozpowszechnianie jest zabronione.
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). If you are not the intended recipient, please contact the sender and delete all copies; any review or distribution by others is strictly prohibited.
+
