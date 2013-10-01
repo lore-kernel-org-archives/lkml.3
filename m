@@ -1,115 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab3JAM1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 08:27:55 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59095 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab3JAM1x (ORCPT
+	id S1753272Ab3JAM3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 08:29:05 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:14022 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751816Ab3JAM3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 08:27:53 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 5/6] clk: emev2: Add support for emev2 SMU clocks with DT
-Date: Tue, 01 Oct 2013 14:27:51 +0200
-Message-ID: <690317658.gaTDz3TliP@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
-References: <52410F86.4040301@renesas.com> <20130924131542.f865fad4dec98e024c0d4676@ops.dti.ne.jp> <CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 1 Oct 2013 08:29:04 -0400
+Message-ID: <1380630531.16752.9.camel@pippen.local.home>
+Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 01 Oct 2013 08:28:51 -0400
+In-Reply-To: <20131001042025.GA7038@redhat.com>
+References: <20130828034627.GA30596@redhat.com>
+	 <20130828095408.37c3dd83@gandalf.local.home>
+	 <20130828095833.103ccdf0@gandalf.local.home>
+	 <20130828111746.35369b84@gandalf.local.home>
+	 <20130828182710.GA14103@redhat.com> <20130828182902.GB14103@redhat.com>
+	 <20130828152745.18a73c4e@gandalf.local.home>
+	 <20130930171201.GA10474@redhat.com>
+	 <1380599766.16752.6.camel@pippen.local.home>
+	 <20131001042025.GA7038@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yoshii-san,
+On Tue, 2013-10-01 at 00:20 -0400, Dave Jones wrote:
 
-Thank you for the patch.
+> It seems like trace-cmd needs to be run as root. all hell will break loose if trinity gets root privs.
 
-(CC'ing LAMK as a generic CCF question follows)
+Then run this:
 
-On Tuesday 01 October 2013 18:15:26 Magnus Damm wrote:
-> On Tue, Sep 24, 2013 at 1:15 PM,  <takasi-y@ops.dti.ne.jp> wrote:
-> > Common clock framework version of emev2 clock support.
-> > smu_clkdiv and smu_gclk are handled.
-> > So far, reparent is not implemented, and is fixed to index #0.
-> > SMU and small numbers of clocks are described in emev2.dtsi.
-> > 
-> > That function and numbers of clocks are equivalent to current
-> > sh-clkfwk version. It is just enough to run kzm9d-reference.
-> > 
-> > Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
-> > ---
-> > 
-> >  arch/arm/boot/dts/emev2.dtsi     |  84 +++++++++++++++++++++++++++++++
-> >  drivers/clk/Makefile             |   2 +
-> >  drivers/clk/shmobile/Makefile    |   5 ++
-> >  drivers/clk/shmobile/clk-emev2.c | 104 ++++++++++++++++++++++++++++++++++
-> >  4 files changed, 195 insertions(+)
-> >  create mode 100644 drivers/clk/shmobile/Makefile
-> >  create mode 100644 drivers/clk/shmobile/clk-emev2.c
-> 
-> Hi Yoshii-san,
-> 
-> Thanks for your efforts on this. I'm very pleased to see that you describe
-> the clock topology using DT.
+trace-cmd record -e syscalls -B trinity su davej -c 'trinity <args>'
 
-What is the generally accepted practice when an IP core provides a large 
-number of clocks, with either one register or one register bit dedicated to 
-each clock ? Should each clock be described as one DT node, or should the IP 
-core be described by a single DT node ?
+-- Steve
 
-I also see both platforms using CLK_OF_DECLARE and platforms calling a clock 
-init function provided by drivers/clk/<platform>.c in the SoC setup code in 
-arch/arm/. What is the preferred practice there ?
-
-> In general I think your patch looks fine, but I have some comment related to
-> the multiplatform integration, please see below.
-> 
-> > diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> > index 7b11106..3e64ac4 100644
-> > --- a/drivers/clk/Makefile
-> > +++ b/drivers/clk/Makefile
-> > @@ -32,6 +32,8 @@ obj-$(CONFIG_ARCH_VT8500)     += clk-vt8500.o
-> > 
-> >  obj-$(CONFIG_ARCH_ZYNQ)                += zynq/
-> >  obj-$(CONFIG_ARCH_TEGRA)       += tegra/
-> >  obj-$(CONFIG_PLAT_SAMSUNG)     += samsung/
-> > 
-> > +obj-$(CONFIG_ARCH_SHMOBILE)    += shmobile/
-> > +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += shmobile/
-> 
-> Here I believe it is enough that you only use
-> CONFIG_ARCH_SHMOBILE_MULTI. Building common clocks to coexist with the
-> old legacy board code does not make any sense IMO. If you think it
-> makes sense for some reason, please explain why. =)
-> 
-> > diff --git a/drivers/clk/shmobile/Makefile b/drivers/clk/shmobile/Makefile
-> > new file mode 100644
-> > index 0000000..6a26eb6
-> > --- /dev/null
-> > +++ b/drivers/clk/shmobile/Makefile
-> > @@ -0,0 +1,5 @@
-> > +ifeq ($(CONFIG_COMMON_CLK), y)
-> > +obj-$(CONFIG_ARCH_EMEV2)       += clk-emev2.o
-> > +endif
-> 
-> I don't think you would need the above ifeq/endif wrapper if you only
-> used CONFIG_ARCH_SHMOBILE_MULTI above.
-> 
-> Apart from that it looks good to me. And, yes, I have tested this on
-> my KZM9D board together with multiplatform and it works very well!
-
--- 
-Regards,
-
-Laurent Pinchart
 
