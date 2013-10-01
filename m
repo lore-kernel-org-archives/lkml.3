@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3JAHdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 03:33:08 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:52998 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3JAHdH (ORCPT
+	id S1752229Ab3JAHfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:35:03 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:36422 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab3JAHfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 03:33:07 -0400
-Date: Tue, 1 Oct 2013 09:33:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-Message-ID: <20131001073301.GA20889@gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
- <52499FA5.60701@hp.com>
+	Tue, 1 Oct 2013 03:35:00 -0400
+Message-ID: <524A7B00.4010001@collabora.co.uk>
+Date: Tue, 01 Oct 2013 09:34:24 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52499FA5.60701@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Kevin Hilman <khilman@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Jon Hunter <jgchunter@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, r.sricharan@ti.com, holler@ahsoftware.de
+Subject: Re: [PATCH 1/2] gpio/omap: maintain GPIO and IRQ usage separately
+References: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk> <87r4cajfx0.fsf@linaro.org>
+In-Reply-To: <87r4cajfx0.fsf@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Waiman Long <waiman.long@hp.com> wrote:
-
-> > I think Waiman's patches (even the later ones) made the queued rwlocks 
-> > be a side-by-side implementation with the old rwlocks, and I think 
-> > that was just being unnecessarily careful. It might be useful for 
-> > testing to have a config option to switch between the two, but we 
-> > might as well go all the way.
+On 09/27/2013 08:08 PM, Kevin Hilman wrote:
+> Javier Martinez Canillas <javier.martinez@collabora.co.uk> writes:
 > 
-> It is not actually a side-by-side implementation. A user can choose 
-> either regular rwlock or the queue one, but never both by setting a 
-> configuration parameter. However, I now think that maybe we should do it 
-> the lockref way by pre-determining it on a per-architecture level 
-> without user visible configuration option.
+>> The GPIO OMAP controller pins can be used as IRQ and GPIO
+>> independently so is necessary to keep track GPIO pins and
+>> IRQ lines usage separately to make sure that the bank will
+>> always be enabled while being used.
+>>
+>> Also move gpio_is_input() definition in preparation for the
+>> next patch that setups the controller's irq_chip driver when
+>> a caller requests an interrupt line.
+>>
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> 
+> I'm fine with this appproach.  For both patches:
+> 
+> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> 
+> Also, I gave it a spin across a handful of OMAP boards using v3.12-rc2 +
+> these 2 patches.
+> 
+> Boot tested successfully with DT boot:
+> 
+> omap3530/beagle
+> omap3730/beagle-xm
+> omap3530/overo (Tobi w/GPIO IRQ networking)
+> omap3730/overo STORM (w/GPIO IRQ for networking)
+> am335x/beaglebone
+> am335x/beaglebone black
+> omap4430/panda
+> omap4460/panda-es
+> omap5912/OSK (omap1)
+> 
+> I also verified non-DT boot on the OMAP3 platforms that still support
+> legacy boot.
+> 
+> So feel free to also add
+> 
+> Tested-by: Kevin Hilman <khilman@linaro.org>
+> 
+> Thanks for your persistence in getting a fix for this upstream.
+> 
+> Kevin
+> 
 
-Well, as I pointed it out to you during review, such a Kconfig driven 
-locking API choice is a no-go!
+Thanks a lot Kevin for testing on so many boards.
 
-What I suggested instead: there's absolutely no problem with providing a 
-better rwlock_t implementation, backed with numbers and all that.
+Linus,
 
-Thanks,
+Since this patch-set doesn't cause any regression and fix a long standing issue
+on OMAP, do you think that it would be possible to include on the -rc series as
+a bugfix or do you prefer to wait until 3.13?
 
-	Ingo
+Thanks a lot and best regards,
+Javier
