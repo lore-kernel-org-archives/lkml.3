@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab3JAWiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:38:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34893 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436Ab3JAWiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:38:03 -0400
-Date: Tue, 1 Oct 2013 17:37:03 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] arm: dts: add dra7 DSPEVE thermal data
-Message-ID: <20131001223703.GB11451@kahuna>
-References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
- <1380652344-18819-2-git-send-email-eduardo.valentin@ti.com>
+	id S1753330Ab3JAWka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:40:30 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:40280 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab3JAWk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:40:28 -0400
+Date: Tue, 1 Oct 2013 18:40:23 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Helge Deller <deller@gmx.de>
+Cc: Libin <huawei.libin@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] [workqueue] check values of pwq and wq in
+ print_worker_info() before use
+Message-ID: <20131001224023.GA28618@mtj.dyndns.org>
+References: <20131001203520.GA8248@p100.box>
+ <20131001204352.GA27149@mtj.dyndns.org>
+ <524B364B.3010405@gmx.de>
+ <20131001210348.GB27149@mtj.dyndns.org>
+ <20131001210735.GA27867@mtj.dyndns.org>
+ <524B4E0D.9050107@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380652344-18819-2-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <524B4E0D.9050107@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:32-20131001, Eduardo Valentin wrote:
-> This patch changes a dtsi file to contain the thermal data
-	     ^^ introduces?
-> for DSPEVE domain on DRA7 and later SoCs. This data will
-> enable a thermal shutdown at 125C.
+Hello,
+
+On Wed, Oct 02, 2013 at 12:34:53AM +0200, Helge Deller wrote:
+> Sure, probe_kernel_read() takes care that no segfaults will happen.
+> Nevertheless, if we know that "pwq" might become NULL, why access pwq->wq at all?
+>   struct pool_workqueue *pwq = NULL;
+>   probe_kernel_read(&wq, &pwq>wq, sizeof(wq));
 > 
-> This thermal data can be reused across TI SoC devices.
-> 
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  arch/arm/boot/dts/dra7-dspeve-thermal.dtsi | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->  create mode 100644 arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/dra7-dspeve-thermal.dtsi b/arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
-> new file mode 100644
-> index 0000000..f8b9051
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
-> @@ -0,0 +1,28 @@
-> +/*
-> + * Device Tree Source for DRA7 SoC DSPEVE thermal
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-> + * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public License
-> + * version 2.  This program is licensed "as is" without any warranty of any
-> + * kind, whether express or implied.
-> + */
-> +
-> +#include <dt-bindings/thermal/thermal.h>
-> +
-> +dspeve_thermal: dspeve_thermal {
-> +	polling-delay-passive = <250>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-^^
-> +	thermal-sensors = <&bandgap     3>;
-^^ tab control a bit? ;)
-> +
-> +	trips {
-> +		dspeve_crit: dspeve_crit {
-> +			temperature = <125000>; /* milliCelsius */
-> +			hysteresis = <2000>; /* milliCelsius */
-> +			type = THERMAL_TRIP_CRITICAL;
-> +		};
-> +	};
-> +};
+> If you wouldn't have used probe_kernel_read() you would never code it 
+> like that. That's what I meant when I wrote "clean coding" (aka "similar
+> to what you would have done without probe_kernel_read()").
+
+Because it is using probe_kernel_read() and such test wouldn't mean
+anything?  It may be NULL, it may be 1 or full Fs.  NULL is just one
+of many illegal pointers which may happen.  Why add code which doesn't
+achieve anything when you're explicitly trying to access pointers
+which you know could be invalid?  Why is that "clean"?  Is "if (p)
+kfree(p)" cleaner than "kfree(p)"?
+
+Thanks.
 
 -- 
-Regards,
-Nishanth Menon
+tejun
