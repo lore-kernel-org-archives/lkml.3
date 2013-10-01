@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab3JAOWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:22:00 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:33368 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab3JAOV7 (ORCPT
+	id S1753837Ab3JAOXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:23:50 -0400
+Received: from mail-ye0-f171.google.com ([209.85.213.171]:42219 "EHLO
+	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3JAOXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:21:59 -0400
-Date: Tue, 1 Oct 2013 16:21:54 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
-Message-ID: <20131001142154.GA31298@gmail.com>
-References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
- <20131001071646.GA20023@gmail.com>
- <524ACD2A.7040902@gmail.com>
+	Tue, 1 Oct 2013 10:23:48 -0400
+Date: Tue, 1 Oct 2013 10:23:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCHSET] sysfs: use seq_file and unify regular and bin file
+ handling
+Message-ID: <20131001142344.GA2736@htj.dyndns.org>
+References: <1380404984-31858-1-git-send-email-tj@kernel.org>
+ <20130928221513.GA20640@htj.dyndns.org>
+ <CAErSpo5gNQF+B1HngZzxEP3cST_s83=usK27UXmO8G0zXKsbvQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524ACD2A.7040902@gmail.com>
+In-Reply-To: <CAErSpo5gNQF+B1HngZzxEP3cST_s83=usK27UXmO8G0zXKsbvQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* David Ahern <dsahern@gmail.com> wrote:
+On Mon, Sep 30, 2013 at 11:03:50PM -0600, Bjorn Helgaas wrote:
+> I don't pretend to understand sysfs or the issue you tripped over with
+> PCI I/O BAR regions.  But we had a long discussion about those files
 
-> On 10/1/13 1:16 AM, Ingo Molnar wrote:
-> >Just a detail: it would be nice to make all the user facing messages in
-> >tools/perf/util/header.c more specific and more structured. For example
-> >prefixing it with 'perf header:' would be fine:
-> >
-> >	WARNING: perf/header: Data size is 0. Was the 'perf record' command properly terminated?
-> >
-> 
-> Why put code references in the messages? The message is all on one
-> line so grep finds it quickly for people working on the code.
+The issue is rather simple.  Let's say I do "dd if=SOME_IO_BAR skip=12
+bs=4 count=1", it should result in exactly 4 byte read from the ioport
+at BAR + 12 as io reads may have side effects; however, seq_file
+breaks that with buffering.  Pretty similar to using stdio on ioports.
 
-I'd agree if this was some internal error that should never really trigger 
-(so at most developers see it).
+> [1] last spring, and I'm pretty convinced that it was a mistake to add
+> them in their current form, and I would support an attempt to rework
+> them.  We had some ideas about how to do that, but I think everybody
+> lost interest before anything happened.
 
-But if I understood it correctly this particular message could trigger for 
-regular users of perf as well, of the perf record is terminated in some 
-unusual fashion. Regular users might not have the perf code handy (and 
-might not know about git grep either).
+Yeah, I was pretty weirded out after finding out that the BARs are
+directly accessible through sysfs.  People run all sorts of scripts
+over the sysfs hierarchy after all.  That said, I don't think sysfs
+can simply pull out bin file support at this point.  I'll keep the
+code path separate so that it can be easily separated out if we don't
+need it later.
 
-Thanks,
+Thanks!
 
-	Ingo
+-- 
+tejun
