@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab3JAPrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:47:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab3JAPrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:47:08 -0400
-Date: Tue, 1 Oct 2013 17:40:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20131001154006.GA3848@redhat.com>
-References: <20130925174307.GA3220@laptop.programming.kicks-ass.net> <20130925175055.GA25914@redhat.com> <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net> <20130926165840.GA863@redhat.com> <20130926175016.GI3657@laptop.programming.kicks-ass.net> <20130927181532.GA8401@redhat.com> <20130929135646.GA3743@redhat.com> <20131001153829.GE5790@linux.vnet.ibm.com>
+	id S1753414Ab3JAPtk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:49:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44591 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab3JAPti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:49:38 -0400
+Message-ID: <524AEF0E.6090207@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 09:49:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001153829.GE5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+CC: Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-tegra@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        rmk+kernel@arm.linux.org.uk
+Subject: Re: [PATCH] regulator: tps65090: remove usage of IS_ERR_OR_NULL
+References: <1380600664-20649-1-git-send-email-badarkhe.manish@gmail.com> <20131001092258.GJ19304@sirena.org.uk> <CAKDJKT6kBi_axtn+qDBkwueRGn_zzOAdSstRF=x1OqX-TrO2XQ@mail.gmail.com>
+In-Reply-To: <CAKDJKT6kBi_axtn+qDBkwueRGn_zzOAdSstRF=x1OqX-TrO2XQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01, Paul E. McKenney wrote:
->
-> On Sun, Sep 29, 2013 at 03:56:46PM +0200, Oleg Nesterov wrote:
-> > On 09/27, Oleg Nesterov wrote:
-> > >
-> > > I tried hard to find any hole in this version but failed, I believe it
-> > > is correct.
-> >
-> > And I still believe it is. But now I am starting to think that we
-> > don't need cpuhp_seq. (and imo cpuhp_waitcount, but this is minor).
->
-> Here is one scenario that I believe requires cpuhp_seq:
->
-> 1.	Task 0 on CPU 0 increments its counter on entry.
->
-> 2.	Task 1 on CPU 1 starts summing the counters and gets to
-> 	CPU 4.  The sum thus far is 1 (Task 0).
->
-> 3.	Task 2 on CPU 2 increments its counter on entry.
-> 	Upon completing its entry code, it re-enables preemption.
+On 10/01/2013 08:59 AM, Manish Badarkhe wrote:
+> Hi Mark,
+> 
+> Thank you for your reply.
+> 
+> On Tue, Oct 1, 2013 at 2:52 PM, Mark Brown <broonie@kernel.org> wrote:
+>> On Tue, Oct 01, 2013 at 09:41:04AM +0530, Manish Badarkhe wrote:
+>>> This patch changes the driver to avoid the usage of IS_ERR_OR_NULL()
+>>> macro.
+>>
+>> Why?
+> 
+> Code use "IS_ERR_OR_NULL()" properly as per current implementation. But
+> as per patches [1], [2] below, the use of "IS_ERR_OR_NULL()" has been
+> deprecated.
+> Hence done this change.
 
-afaics at this stage it should notice state = BLOCK and decrement
-the same counter on the same CPU before it does preempt_enable().
-
-Because:
-
-> > 	2. It is the reader which tries to take this lock and
-> > 	   noticed state == BLOCK. We could miss the result of
-> > 	   its inc(), but we do not care, this reader is going
-> > 	   to block.
-> >
-> > 	   _If_ the reader could migrate between inc/dec, then
-> > 	   yes, we have a problem. Because that dec() could make
-> > 	   the result of per_cpu_sum() = 0. IOW, we could miss
-> > 	   inc() but notice dec(). But given that it does this
-> > 	   on the same CPU this is not possible.
-> >
-> > So why do we need cpuhp_seq?
->
-> Good question, I will look again.
-
-Thanks! much appreciated.
-
-Oleg.
-
+The intent was to deprecate to *concept* of checking a return value for
+both NULL and an error. Simply removing usage of the macro and replacing
+it with the exact same code that was part of the macro doesn't fulfil
+the intent at all.
