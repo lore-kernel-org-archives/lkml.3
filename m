@@ -1,65 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121Ab3JAP5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:57:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43877 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3JAP5s (ORCPT
+	id S1751390Ab3JAQAC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:00:02 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:43773 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab3JAP77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:57:48 -0400
-Message-ID: <524AF0F8.3050008@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 09:57:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 1 Oct 2013 11:59:59 -0400
+Message-ID: <524AF17C.2040105@monstr.eu>
+Date: Tue, 01 Oct 2013 17:59:56 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
-References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de> <5242F434.7060702@linaro.org> <20131001080829.GJ2548@pengutronix.de>
-In-Reply-To: <20131001080829.GJ2548@pengutronix.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Brown <davidb@codeaurora.org>, Dom Cobley <popcornmix@gmail.com>
+Subject: Re: [RFC PATCH] fpga: Introduce new fpga subsystem
+References: <cover.1379519753.git.michal.simek@xilinx.com> <cb9a12ae95bc39626a745c2487ffd0e47e9c7b34.1379519753.git.michal.simek@xilinx.com> <20130918191517.GQ19937@titan.lakedaemon.net> <20130918203247.GA11181@obsidianresearch.com> <524588C9.1090600@monstr.eu> <20130930171256.GA28898@obsidianresearch.com>
+In-Reply-To: <20130930171256.GA28898@obsidianresearch.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="eWHE6me8wLHLJKFD5UaSrirfTkpIJh73o"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 02:08 AM, Uwe Kleine-König wrote:
-> On Wed, Sep 25, 2013 at 04:33:24PM +0200, Daniel Lezcano wrote:
->> On 09/16/2013 11:44 AM, Uwe Kleine-König wrote:
->>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->>> ---
->>> Hello,
->>>
->>> I'm not sure that the way I implemented if a given timer is used as
->>> clock_source or clock_event_device is robust. Does it need locking?
->>> The reason to create a timer device for each timer instead of a single
->>> device of all of them is that it makes it cleaner to specify irqs and
->>> clks which each timer has one of each respectively. I didn't find an
->>> example, but while looking I wondered if in zevio-timer.c a single timer
->>> can really support both clock_event and clocksource.
->>>
->>> I guess for inclusion I need to write a document describing the
->>> of-binding. I will include that in the next iteration.
->>
->> Right and a nice description of the timer would be valuable.
-> Where is the location to put a device tree binding document for a
-> clocksource/clock event device? I found
-> 
-> 	arm,armv7-timer-mem	| arm/arch_timer.txt
-> 	fsl,timrot		| N/A
-> 	nvidia,tegra20-rtc	| rtc/nvidia,tegra20-rtc.txt
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--eWHE6me8wLHLJKFD5UaSrirfTkpIJh73o
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The Tegra example isn't a good one here, since the Tegra HW block is
-primarily an RTC (hence the location of the binding file), which also
-happens to be able to act as the clocksource.
+On 09/30/2013 07:12 PM, Jason Gunthorpe wrote:
+> On Fri, Sep 27, 2013 at 03:31:53PM +0200, Michal Simek wrote:
+>=20
+>> I expect that you are detecting/specifying in the driver which
+>> fpga is connected and you also need to know size of this device.
+>> Then your driver allocate buffer with this size in the kernel
+>> and streming data to this buffer. When this is done you are
+>> using another sysfs files to control device programming.
+>=20
+> No, it just streams:
+>=20
+> static ssize_t fpga_config_write(struct file *filp,struct kobject *kobj=
+,
+>                                  struct bin_attribute *attr,
+>                                  char *buf, loff_t off, size_t len)
+> {
+>         struct device *dev =3D container_of(kobj, struct device, kobj);=
 
-> Should I introduce a "clocksource" directory below
-> Documentation/devicetree/bindings?
+>         struct platform_device *pdev =3D to_platform_device(dev);
+>         struct fpga_priv *priv =3D platform_get_drvdata(pdev);
+>         uint8_t *cur =3D buf;
+>         size_t total =3D len;
+>         unsigned int bit;
+>=20
+>         for (; len !=3D 0; len--, cur++) {
+>                 gpio_set_value(priv->gpio[GPIO_CCLK],0);
+>=20
+>                 for (bit =3D 0; bit !=3D 8; bit++)
+>                         gpio_set_value(priv->data_gpio[bit],
+>                                        (*cur & (1<<bit)) !=3D 0);
+>=20
+>                 gpio_set_value(priv->gpio[GPIO_CCLK],1);
+>=20
+>                 if (gpio_get_value(priv->gpio[GPIO_INIT_B]) =3D=3D 0)
+>                         return -EIO;
+>         }
+>         return total;
+> }
+>=20
+> static struct bin_attribute dev_attr_config_data =3D {
+>         .attr =3D {
+>                 .name =3D "config_data",
+>                 .mode =3D 0600,
+>         },
+>         .size =3D 0,
+>         .write =3D fpga_config_write,
+> };
+>=20
+> User space does as many writes as necessary to send the entire
+> bitstream, the sysfs layer chunks things into PAGE_SIZE blocks, so it
+> acts much like a socket with O_NONBLOCK set.
+>=20
+> We are controlling the other related GPIOs from userspace, but for
+> your purposes I would pair the data sysfs file with a control sysfs
+> file much like request firwmare does.
+>=20
+> Here is a suggestion.
+> - Two files fpga_config_state, fpga_config_data
+> - fpga_config_state is a one value text string values are like
+>    initializing, clearing, programming, operating, error_clear_failed,
+>    error_bistream_crc
+> - Userspace writes to fpga_config_state which causes the kernel FSM
+>   to move to that state. The normal progression would be initializing,
+>   clearing, programming and finally operating
+> - The kernel can move to an error_* state if it detects a problem
+> - The programming state data from fpga_config_data to the
+>   configuration bus and userspace writes 'operating' once the stream
+>   is done to perform the post-configuration actions.
 
-That seems reasonable for any HW block that is truly purely a
-clocksource. However, you'd want to also check with all the other DT
-bindings maintainers.
+yes, there is necessary to provide also any state to be able to control
+the flow. For your case above with streams this is not necessary.
+
+Thanks for this description I wanted to make sure that we are on the same=
+ page.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--eWHE6me8wLHLJKFD5UaSrirfTkpIJh73o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJK8XwACgkQykllyylKDCFX0ACfYbdRy7LsZbSLsGnqtOdEbUzQ
+Bi0AnibrmQHyKQr6FPRsk9QFyOam+VOJ
+=P450
+-----END PGP SIGNATURE-----
+
+--eWHE6me8wLHLJKFD5UaSrirfTkpIJh73o--
