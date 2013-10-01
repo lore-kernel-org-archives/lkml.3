@@ -1,66 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3JAJXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 05:23:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35048 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab3JAJX1 (ORCPT
+	id S1752961Ab3JAJXo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 05:23:44 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:44601 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab3JAJXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 05:23:27 -0400
-Date: Tue, 1 Oct 2013 10:22:58 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        lgirdwood@gmail.com, rmk+kernel@arm.linux.org.uk
-Message-ID: <20131001092258.GJ19304@sirena.org.uk>
-References: <1380600664-20649-1-git-send-email-badarkhe.manish@gmail.com>
+	Tue, 1 Oct 2013 05:23:40 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t1cwe7X0UXDc61Gr"
-Content-Disposition: inline
-In-Reply-To: <1380600664-20649-1-git-send-email-badarkhe.manish@gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: tps65090: remove usage of IS_ERR_OR_NULL
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130924131703.4834a055892285858338003c@ops.dti.ne.jp>
+References: <52410F86.4040301@renesas.com>
+	<20130924131703.4834a055892285858338003c@ops.dti.ne.jp>
+Date: Tue, 1 Oct 2013 18:23:38 +0900
+Message-ID: <CANqRtoQdwyjX8Mr8+NRah_F=yUM81xZmPQJ_1Z-xdzVqedbMGQ@mail.gmail.com>
+Subject: Re: [PATCH 6/6] ARM: shmobile: kzm9d-reference: Use common clock framework
+From: Magnus Damm <magnus.damm@gmail.com>
+To: takasi-y@ops.dti.ne.jp
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 24, 2013 at 1:17 PM,  <takasi-y@ops.dti.ne.jp> wrote:
+> Use common clock framework version of clock
+>  drivers/clk/shmobile/clk-emev2.c
+> instead of sh-clkfwk version
+>  arch/arm/mach-shmobile/clock-emev2.c
+>
+> kzm9d(without -reference) still uses sh-clkfwk version.
+>
+> Because two of that framework can not live in one kernel binary,
+> there will be SoCs and Boards that can not be in one binary as
+> multiplatform binary or so.
+> For example, kzm9d and kzm9d-reference is now exclusive.
+>
+> Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
+> ---
+>  arch/arm/mach-shmobile/Kconfig                 | 1 +
+>  arch/arm/mach-shmobile/board-kzm9d-reference.c | 5 ++---
+>  2 files changed, 3 insertions(+), 3 deletions(-)
 
---t1cwe7X0UXDc61Gr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Yoshii-san,
 
-On Tue, Oct 01, 2013 at 09:41:04AM +0530, Manish Badarkhe wrote:
-> This patch changes the driver to avoid the usage of IS_ERR_OR_NULL()
-> macro.
+Thanks for your patch. I have some comments on this portion to try to
+simplify things, please see below.
 
-Why?
+> diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+> index 50bab8d..d20d4ce 100644
+> --- a/arch/arm/mach-shmobile/Kconfig
+> +++ b/arch/arm/mach-shmobile/Kconfig
+> @@ -237,6 +237,7 @@ config MACH_KZM9D_REFERENCE
+>         depends on ARCH_EMEV2
+>         select REGULATOR_FIXED_VOLTAGE if REGULATOR
+>         select USE_OF
+> +       select COMMON_CLK
 
---t1cwe7X0UXDc61Gr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I don't think this hunk is needed. This is probably the
+ARCH_SHMOBILE_MULTI case, and if so then ARCH_MULTIPLATFORM in
+arch/arm/Kconfig already selects COMMON_CLK. And if it's the
+ARCH_SHMOBILE case you're aiming at then I recommend you to only focus
+on ARCH_SHMOBILE_MULTI instead.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+> diff --git a/arch/arm/mach-shmobile/board-kzm9d-reference.c b/arch/arm/mach-shmobile/board-kzm9d-reference.c
+> index 8f8bb2f..e0b8317 100644
+> --- a/arch/arm/mach-shmobile/board-kzm9d-reference.c
+> +++ b/arch/arm/mach-shmobile/board-kzm9d-reference.c
+> @@ -20,15 +20,14 @@
+>
+>  #include <linux/init.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/clk-provider.h>
+>  #include <mach/emev2.h>
+>  #include <mach/common.h>
+>  #include <asm/mach/arch.h>
+>
+>  static void __init kzm9d_add_standard_devices(void)
+>  {
+> -       if (!IS_ENABLED(CONFIG_COMMON_CLK))
+> -               emev2_clock_init();
+> -
+> +       of_clk_init(NULL);
+>         of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>  }
 
-iQIcBAEBAgAGBQJSSpRvAAoJELSic+t+oim9hjYP/i7SVX6VN20kcxecyEP0+m20
-caj6EFEWJTVOQ4JrQDnvhzaQARHZ0ZHdmiIOKJ6M9bG8v/LL5HMExNqCBdF7/EEX
-1PK42M7QtUpw7W5Paj+FCHgWJkjKNsfi0VOX4ooSxuyM8Grb94szulzy7NMeCXLa
-joHz1A8Y0WNpexKuIPwWOqih5VFoCoip9h6Mz38ZSOpw7pTX0+G56oILKPfvhipJ
-ZEnLW1guJfUbSqmw13shd+gqnUJ6u0z/vIF8upOx9BR2CuTRCgT6SNOuYyYpCUkc
-oW1di4zXjXPDaf6C0eZ1KmAdQ0yIWelr2Gb7qxWkI09jn8nErjuBqBe3hFEWpkd1
-+z/Q+ekDpVogMZObcssBVUI/GQ26l0gLlAB95ovwtBS23ranxDAAN31JBGr2MURt
-YQf2L6n9PAYfNFMyD10ayRv+5IiF11C+ewj6Ez7aXjFbwdojj6BSWdiXcXmXWTIF
-1fYuBtRbgg0/C/tOHn4uPvHlSzDdo3vF8vk2wIWsOiUAO7ezbW9gro3t/OqFInmS
-zfuAc2yu6+AfFpbsh6dyJc2GpAT8X09rVTpsxdEL7c+60eBkzmogu5HZx9fqIePC
-cSaX3RSSL3BELuTpJKEnZ9y0H1yb5/7QnfS808BuIft0FLyAPhDACrW7RpI3KAug
-Y1cB5+0fKT+OECMYPYNd
-=zrZI
------END PGP SIGNATURE-----
+To keep on allowing build of board-kzm9d-reference.c for both
+ARCH_SHMOBILE_MULTI and ARCH_SHMOBILE I recommend you to adjust your
+code into something liket this instead:
 
---t1cwe7X0UXDc61Gr--
+@@ -18,6 +18,7 @@
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  */
+
++#include <linux/clk-provider.h>
+ #include <linux/init.h>
+ #include <linux/of_platform.h>
+ #include <mach/emev2.h>
+@@ -26,9 +27,11 @@
+
+ static void __init kzm9d_add_standard_devices(void)
+ {
+-       if (!IS_ENABLED(CONFIG_COMMON_CLK))
+-               emev2_clock_init();
+-
++#ifdef CONFIG_COMMON_CLK
++       of_clk_init(NULL);
++#else
++       emev2_clock_init();
++#endif
+        of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+
+Cheers,
+
+/ magnus
