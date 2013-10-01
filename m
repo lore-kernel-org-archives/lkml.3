@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab3JAU6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:58:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46020 "EHLO
+	id S1751856Ab3JAU7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:59:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36671 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3JAU62 (ORCPT
+	with ESMTP id S1751230Ab3JAU7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:58:28 -0400
-Message-ID: <524B376E.6060507@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 14:58:22 -0600
+	Tue, 1 Oct 2013 16:59:48 -0400
+Message-ID: <524B37BF.2090300@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 14:59:43 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
@@ -25,10 +25,9 @@ CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/10] ARM: SAMSUNG: Initialize PWM backlight enable_gpio
- field
-References: <1379972467-11243-1-git-send-email-treding@nvidia.com> <1379972467-11243-6-git-send-email-treding@nvidia.com> <524B14E8.5040302@wwwdotorg.org> <20131001204335.GB9201@ulmo.nvidia.com>
-In-Reply-To: <20131001204335.GB9201@ulmo.nvidia.com>
+Subject: Re: [PATCH 09/10] pwm-backlight: Use an optional power supply
+References: <1379972467-11243-1-git-send-email-treding@nvidia.com> <1379972467-11243-10-git-send-email-treding@nvidia.com> <524B17ED.1080806@wwwdotorg.org> <20131001205310.GD9201@ulmo.nvidia.com>
+In-Reply-To: <20131001205310.GD9201@ulmo.nvidia.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -36,50 +35,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 02:43 PM, Thierry Reding wrote:
-> On Tue, Oct 01, 2013 at 12:31:04PM -0600, Stephen Warren wrote:
+On 10/01/2013 02:53 PM, Thierry Reding wrote:
+> On Tue, Oct 01, 2013 at 12:43:57PM -0600, Stephen Warren wrote:
 >> On 09/23/2013 03:41 PM, Thierry Reding wrote:
->>> The GPIO API defines 0 as being a valid GPIO number, so this
->>> field needs to be initialized explicitly.
+>>> Many backlights require a power supply to work properly. This
+>>> commit uses a power-supply regulator, if available, to power up
+>>> and power down the panel.
 >> 
->>> static void __init smdkv210_map_io(void)
->> 
->>> @@ -70,6 +70,7 @@ static struct samsung_bl_drvdata
->>> samsung_dfl_bl_data __initdata = { .max_brightness = 255, 
->>> .dft_brightness = 255, .pwm_period_ns  = 78770, +		.enable_gpio
->>> = -1, .init           = samsung_bl_init, .exit           =
->>> samsung_bl_exit, }, @@ -121,6 +122,10 @@ void __init
->>> samsung_bl_set(struct samsung_bl_gpio_info *gpio_info, 
->>> samsung_bl_data->lth_brightness = bl_data->lth_brightness; if
->>> (bl_data->pwm_period_ns) samsung_bl_data->pwm_period_ns =
->>> bl_data->pwm_period_ns; +	if (bl_data->enable_gpio) +
->>> samsung_bl_data->enable_gpio = bl_data->enable_gpio; +	if
->>> (bl_data->enable_gpio_flags) +
->>> samsung_bl_data->enable_gpio_flags =
->>> bl_data->enable_gpio_flags;
->> 
->> Won't this cause the core pwm_bl driver to request/manipulate the
->> GPIO, whereas this driver already does that inside the
->> samsung_bl_init/exit callbacks? I think you either need to adjust
->> those callbacks, or not set the new standard GPIO property in
->> samsung_bl_data.
+>> I think that all backlights require a power supply, albeit the
+>> supply may not be SW-controllable. Hence, shouldn't the regulator
+>> be mandatory in the binding, yet the driver be defensively coded
+>> such that if one isn't specified, the driver continues to work?
 > 
-> I don't think so. The samsung_bl_data is a copy of
-> samsung_dfl_bl_data augmented by board-specific settings. So in
-> fact copying these values here is essential to allow boards to
-> override the enable_gpio and flags fields. Currently no board sets
-> the enable_gpio to a valid GPIO so it's all still handled by the
-> callbacks only.
+> That has already changed in my local version of this patch.
+> 
+>>> diff --git a/drivers/video/backlight/pwm_bl.c
+>>> b/drivers/video/backlight/pwm_bl.c
+>> 
+>>> @@ -253,6 +264,16 @@ static int pwm_backlight_probe(struct
+>>> platform_device *pdev) } }
+>>> 
+>>> +	pb->power_supply = devm_regulator_get_optional(&pdev->dev,
+>>> "power");
+>> 
+>> ... so I think that should be devm_regulator_get(), since the
+>> regulator isn't really optional.
+>> 
+>>> +	if (IS_ERR(pb->power_supply)) { +		if
+>>> (PTR_ERR(pb->power_supply) != -ENODEV) { +			ret =
+>>> PTR_ERR(pb->power_supply); +			goto err_gpio; +		} + +
+>>> pb->power_supply = NULL;
+>> 
+>> If devm_regulator_get_optional() returns an error value or a
+>> valid value, then I don't think that this driver should transmute
+>> error values into NULL; NULL might be a perfectly valid regulator
+>> value. Related, I think the if (pb->power_supply) tests should be
+>> replaced with if (!IS_ERR(pb->power_supply)) instead.
+> 
+> All of that is already done in my local tree. This actually turns
+> out to work rather smoothly with the new support for optional
+> regulators. The regulator core will give you a dummy regulator
+> (assuming it's there physically but hasn't been wired up in
+> software) that's always on, so the driver doesn't even have to
+> special case it anymore.
 
-Oh yes, you're right. I was confusing the new enable_gpio field in
-pwm_bl's platform data with some other field in a custom data structure.
-
-One minor point though:
-
->>> +	if (bl_data->enable_gpio) +		samsung_bl_data->enable_gpio =
->>> bl_data->enable_gpio;
-
-That assumes that enable_gpio==0 means "none", whereas you've gone to
-great pains in the rest of the series to allow 0 to be a valid GPIO
-ID. right now, the default value of samsung_bl_data->enable_gpio is
--1, and if !bl_data->enable_gpio, that value won't be propagated across.
+OK, hopefully it (the regulator core) complains about the missing DT
+property though; I assume you're using regulator_get() not
+regulator_get_optional(), since the supply really is not optional.
