@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3JAWV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:21:28 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:44237 "EHLO quartz.orcorp.ca"
+	id S1752921Ab3JAWek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:34:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45231 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab3JAWVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:21:25 -0400
-Date: Tue, 1 Oct 2013 16:21:13 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Peter H?we <PeterHuewe@gmx.de>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [PATCH 07/13] tpm: Remove tpm_show_caps_1_2
-Message-ID: <20131001222113.GA22778@obsidianresearch.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
- <1379960083-8942-8-git-send-email-jgunthorpe@obsidianresearch.com>
- <201310020009.22952.PeterHuewe@gmx.de>
+	id S1752092Ab3JAWeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:34:37 -0400
+Date: Tue, 1 Oct 2013 17:33:37 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] arm: dts: add dra7 IVA thermal data
+Message-ID: <20131001223337.GA11451@kahuna>
+References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
+ <1380652344-18819-3-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <201310020009.22952.PeterHuewe@gmx.de>
+In-Reply-To: <1380652344-18819-3-git-send-email-eduardo.valentin@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:09:22AM +0200, Peter H?we wrote:
+On 14:32-20131001, Eduardo Valentin wrote:
+minor comments follow
+> This patch changes a dtsi file to contain the thermal data
+s/changes/introduces?
+> for IVA domain on DRA7 and later SoCs. This data will
+> enable a thermal shutdown at 125C.
+> 
+> This thermal data can be reused across TI SoC devices.
+is'nt it just DRA7 that reuses this - based on dtsi name?
+> 
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7-iva-thermal.dtsi | 28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/dra7-iva-thermal.dtsi b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
+> new file mode 100644
+> index 0000000..fea0cea
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
+> @@ -0,0 +1,28 @@
+> +/*
+> + * Device Tree Source for DRA7 SoC IVA thermal
+> + *
+> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
+> + * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public License
+> + * version 2.  This program is licensed "as is" without any warranty of any
+> + * kind, whether express or implied.
+> + */
+> +
+> +#include <dt-bindings/thermal/thermal.h>
+> +
+> +iva_thermal: iva_thermal {
+> +	polling-delay-passive = <250>; /* milliseconds */
+> +	polling-delay = <1000>; /* milliseconds */
+> +
+> +		/* sensor       ID */
+^^ double tab here?
+> +	thermal-sensors = <&bandgap     4>;
+space after bandgap is good enough?
+> +
+> +	trips {
+> +		iva_crit: iva_crit {
+> +			temperature = <125000>; /* milliCelsius */
+> +			hysteresis = <2000>; /* milliCelsius */
+> +			type = THERMAL_TRIP_CRITICAL;
+> +		};
+> +	};
+> +};
 
->    Since the tpm_spi_stm_st33, tpm_i2c_nuvoton and tpm_i2c_atmel drivers
->    are not yet merged and were heavily improved by you anyway, please
->    include this improvement directly in the new drivers.
-
-Okay, it is easy enough to invert the patch order and put the drivers
-last. I am not submitting the st33 driver, but when things are done I
-will send Mathias a patch with the changes from this series that are
-needed and he can deal with re-submitting his driver.
-
-FWIW, I needed the drivers first to keep my world sane when testing
-this thing, so the patches are all as-tested from my perspective.
-
-Jason
+-- 
+Regards,
+Nishanth Menon
