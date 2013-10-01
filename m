@@ -1,156 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3JAUvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:51:16 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:60058 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3JAUvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:51:13 -0400
-Date: Tue, 1 Oct 2013 22:49:26 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] pwm-backlight: Use new enable_gpio field
-Message-ID: <20131001204925.GC9201@ulmo.nvidia.com>
-References: <1379972467-11243-1-git-send-email-treding@nvidia.com>
- <1379972467-11243-9-git-send-email-treding@nvidia.com>
- <524B16E8.5080506@wwwdotorg.org>
+	id S1751769Ab3JAUxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:53:36 -0400
+Received: from mout.gmx.net ([212.227.17.22]:64716 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751239Ab3JAUxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 16:53:34 -0400
+Message-ID: <524B364B.3010405@gmx.de>
+Date: Tue, 01 Oct 2013 22:53:31 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RIYY1s2vRbPFwWeW"
-Content-Disposition: inline
-In-Reply-To: <524B16E8.5080506@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Libin <huawei.libin@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] [workqueue] check values of pwq and wq in print_worker_info()
+ before use
+References: <20131001203520.GA8248@p100.box> <20131001204352.GA27149@mtj.dyndns.org>
+In-Reply-To: <20131001204352.GA27149@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:fofqTY+cRsAyseVXYsniwZp0591jNOigZeyMLZR0Rtpj6wLneD4
+ G+Dx9Cq70QSeDT7b1ROv6+HRb3xcH9cDDwmWvz7rxxr5LfJ9+nbotGoDpRuG4YnCtyeXijs
+ ozmZmESgQVQTa2lUgD9rVUs8Q0FSd2IpB4NifdU4BAJfe3RLewjqxViprIniox0HuYp72Ta
+ GiZXax8P5LADhx4h/GVGA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/01/2013 10:43 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Oct 01, 2013 at 10:35:20PM +0200, Helge Deller wrote:
+>> print_worker_info() includes no validity check on the pwq and wq
+>> pointers before handing them over to the probe_kernel_read() functions.
+>>
+>> It seems that most architectures don't care about that, but at least on
+>> the parisc architecture this leads to a kernel crash since accesses to
+>> page zero are protected by the kernel for security reasons.
+>>
+>> Fix this problem by verifying the contents of pwq and wq before usage.
+>> Even if probe_kernel_read() usually prevents such crashes by disabling
+>> page faults, clean code should always include such checks. 
+>>
+>> Without this fix issuing "echo t > /proc/sysrq-trigger" will immediately
+>> crash the Linux kernel on the parisc architecture.
+> 
+> Hmm... um had similar problem but the root cause here is that the arch
+> isn't implementing probe_kernel_read() properly.  We really have no
+> idea what the pointer value may be at the dump point and that's why we
+> use probe_kernel_read().  If something like the above is necessary for
+> the time being, the correct place would be the arch
+> probe_kernel_read() implementation.  James, would it be difficult
+> implement proper probe_kernel_read() on parisc?
 
---RIYY1s2vRbPFwWeW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+No, it's not really complicated.
+That was my initial way to work around that problem.
 
-On Tue, Oct 01, 2013 at 12:39:36PM -0600, Stephen Warren wrote:
-> On 09/23/2013 03:41 PM, Thierry Reding wrote:
-> > Make use of the new enable_gpio field and allow it to be set from DT as
-> > well. Now that all legacy users of platform data have been converted to
-> > initialize this field to an invalid value, it is safe to use the field
-> > from the driver.
->=20
-> > diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-back=
-light.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight=
-=2Etxt
->=20
-> >  Optional properties:
->=20
-> > +  - enable-gpios: a list of GPIOs to enable and disable the backlight
->=20
-> That seems to imply that multiple GPIOs are legal. Was that intended? If
-> not, I would suggest:
->=20
-> - enable-gpios: contains a single GPIO specifier for the GPIO which
-> 		enables/disables the backlight. See [1] for the format.
->=20
-> > =20
-> >  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
-> + [1]: Documentation/devicetree/bindings/gpio/gpio.txt
+But is this really necessary? Isn't a pointer which points to mem zero most
+likely wrong on any architecture?
 
-Yes, that sounds better. Indeed only a single GPIO is supported. Adding
-more than one would require representing the timing between the two and
-that will take us back to where we left off with the power sequences.
+In addition I wrote another patch to work around that problem in the parisc
+page fault handler (which is needed anyway) too:
+https://patchwork.kernel.org/patch/2971701/
 
-> > diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight=
-/pwm_bl.c
->=20
-> > @@ -51,12 +55,27 @@ static void pwm_backlight_power_on(struct pwm_bl_da=
-ta *pb, int brightness,
-> >  		     pb->lth_brightness;
-> > =20
-> >  	pwm_config(pb->pwm, duty_cycle, pb->period);
-> > +
-> > +	if (gpio_is_valid(pb->enable_gpio)) {
-> > +		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
-> > +			gpio_set_value(pb->enable_gpio, 0);
-> > +		else
-> > +			gpio_set_value(pb->enable_gpio, 1);
-> > +	}
->=20
-> Feel completely free to ignore this, but when the difference in two
-> code-paths is solely in function parameters, I prefer to calculate the
-> parameter inside the if statement, then call the function outside the
-> conditional code, to highlight the common/different parts:
->=20
-> int value;
->=20
-> /* or an if statement for the next 1 line, if you don't like ?: */
-> value =3D (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW) ? 0 : 1;
-> gpio_set_value((pb->enable_gpio, value);
+So, in summary my patch here is not really necessary, but for the sake of
+clean code I think it doesn't hurt either and as such it would be nice if
+you could apply it.
 
-I actually tried that, but it looked cluttered, so I opted for the
-alternative. Not that this matters all that much, because beginning with
-3.13 the GPIO subsystem should be able to handle the active low flag
-internally using the new gpiod_*() API. I plan on converting the driver
-to use that during the next cycle.
-
-> > @@ -148,11 +168,10 @@ static int pwm_backlight_parse_dt(struct device *=
-dev,
->=20
-> > +	data->enable_gpio =3D of_get_named_gpio_flags(node, "enable-gpios", 0,
-> > +						    &flags);
-> > +	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
-> > +		data->enable_gpio_flags |=3D PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
->=20
-> This doesn't seem to handle deferred probe correctly; I would expect
-> something more like:
->=20
-> 	data->enable_gpio =3D of_get_named_gpio_flags(...);
-> 	if (data->enable_gpio =3D=3D -EPROBE_DEFERRED)
-> 		return data->enable_gpio;
-> 	if (gpio_is_valid(...))
-> 		...
-> 	return 0;
->=20
-> I suppose it's possible that the value filters down to
-> gpio_request_one() and this actually does work out OK, but that feels
-> very accidental/implicit to me.
-
-Yes, I think it does indeed propagate to gpio_request_one(), but you're
-right, it should be caught explicitly.
-
-Thierry
-
---RIYY1s2vRbPFwWeW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSSzVVAAoJEN0jrNd/PrOhNh0P/iIzsxuvFEo9B4ZEhLN7DYDh
-vX/9LIfVXFZIwrx8ID8HDPG2LbSnZ+Z4pxVvPdYS99Buci2Qb9q8CtoZW02E7SZd
-7cW++UrdnDShub81afs3M+39IwLfqdAIGjmlbCx19fVEeoZbm53K/bOQkNRGNPke
-N4akydvbuzA71RBIQd2oadwPezmVCo9RuVr1S299VgSp8zYPOGpmpqc9UWpxMnay
-xj20eCy+WHCslBs7AL6rI+lYtQT0sK1XrxuwnjXAsXD5XBRe7PRD+Qy36hJL/KzZ
-OuXeoZMOyE0wG/fDSTQpqn/lvYXvi0wSrf8SLhkU9gHFPHQ28pn91/vf4ow5oeW/
-oYdUNb28xJTDbzsUaemy0SzENRLNK2ri/b70pWNLs/hrQ3fIwenaQI/6rOvdQ1P8
-fGTrRB69fbQGpiUSTh5zWSpNmovhdU9SG98wQvGFswQ9CPYE/uCnofet106dDSQc
-81pho5bZWVuQ9LCITP03b9w6s4DrzEiFBcC6BKXUE19w+Z0/i3GAbTGkkztSyrCu
-y+0YSkXqvwmdComtBV5oIgkSI48+NAyYcpE7SaWdwI+arkru/c1aTvsfNvQyqsXA
-FWZuwO+oe3ArV32vM59i58gJwpkeJ1Hw1ZJeYelIWsFUBRQmNS7tSRRflCDB0uyw
-6UFVAxfserLZmKPQi2Vl
-=4zYP
------END PGP SIGNATURE-----
-
---RIYY1s2vRbPFwWeW--
+Helge
