@@ -1,36 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab3JAGNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:13:31 -0400
-Received: from ozlabs.org ([203.10.76.45]:43157 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab3JAGNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:13:30 -0400
-Date: Tue, 1 Oct 2013 16:13:25 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc/legacy_serial: fix incorrect placement of
- __initdata tag
-Message-ID: <20131001061325.GD17966@concordia>
-References: <35419229.o6Cv8JYbpg@amdc1032>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35419229.o6Cv8JYbpg@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751559Ab3JAGRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 02:17:23 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:34246 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab3JAGRW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 02:17:22 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH v2] ll_temac: Reset dma descriptors indexes on ndo_open
+Date: Tue,  1 Oct 2013 08:17:10 +0200
+Message-Id: <1380608230-29183-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 03:11:42PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> __initdata tag should be placed between the variable name and equal
-> sign for the variable to be placed in the intended .init.data section.
+The dma descriptors indexes are only initialized on the probe function.
 
-I see lots of other occurences of that in arch/powerpc. Why not send a
-single patch to update them all?
+If a packet is on the buffer when temac_stop is called, the dma
+descriptors indexes can be left on a incorrect state where no other
+package can be sent.
 
-cheers
+So an interface could be left in an usable state after ifdow/ifup.
+
+This patch makes sure that the descriptors indexes are in a proper
+status when the device is open.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+v2: As suggested by David Miller:
+
+- Remove unneded app0=0 on dma descriptors
+- Move all code to temac_dma_bd_init
+- Fix changelog
+
+ drivers/net/ethernet/xilinx/ll_temac_main.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index b88121f..0029148 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -297,6 +297,12 @@ static int temac_dma_bd_init(struct net_device *ndev)
+ 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
+ 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+ 
++	/* Init descriptor indexes */
++	lp->tx_bd_ci = 0;
++	lp->tx_bd_next = 0;
++	lp->tx_bd_tail = 0;
++	lp->rx_bd_ci = 0;
++
+ 	return 0;
+ 
+ out:
+-- 
+1.8.4.rc3
+
