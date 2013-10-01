@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751239Ab3JAE6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 00:58:19 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:65067 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3JAE6S (ORCPT
+	id S1751211Ab3JAFDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 01:03:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42553 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab3JAFDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 00:58:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131001031356.GP19582@linux.vnet.ibm.com>
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
-	<1380581522.6396.20.camel@pasglop>
-	<23118.1380587771@ale.ozlabs.ibm.com>
-	<CA+55aFwi5sZK4mFxs3PT1wU4_vNzsLOFiocqi3g14fPamKXYsw@mail.gmail.com>
-	<1380593103.6396.38.camel@pasglop>
-	<20131001031356.GP19582@linux.vnet.ibm.com>
-Date: Tue, 1 Oct 2013 14:52:28 +1000
-X-Google-Sender-Auth: A3VrjOOWBzfXSHxqTc59-oACXss
-Message-ID: <CAEjGV6xuscOh=t6BhbdRKAPcZ1DOJkD6ZcB1wgTf9-AedKSaxA@mail.gmail.com>
-Subject: Re: Avoiding the dentry d_lock on final dput(), part deux:
- transactional memory
-From: Michael Neuling <mikey@neuling.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Oct 2013 01:03:34 -0400
+Date: Mon, 30 Sep 2013 22:10:40 -0700 (PDT)
+Message-Id: <20130930.221040.543720988967287293.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net-next PATCH V2] virtio-net: switch to use XPS to choose txq
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1380526637-35524-1-git-send-email-jasowang@redhat.com>
+References: <1380526637-35524-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 30 Sep 2013 22:03:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9153whG014846
 
->> Well we don't have to, I think Mikey wasn't totally clear about that
->> "making all registers volatile" business :-) This is just something we
->> need to handle in assembly if we are going to reclaim the suspended
->> transaction.
+From: Jason Wang <jasowang@redhat.com>
+Date: Mon, 30 Sep 2013 15:37:17 +0800
 
-Yeah, sorry.  The slow path with all registers as volatile is only
-needed if we get pre-empted during the transaction.
+> We used to use a percpu structure vq_index to record the cpu to queue
+> mapping, this is suboptimal since it duplicates the work of XPS and
+> loses all other XPS functionality such as allowing use to configure
+> their own transmission steering strategy.
+> 
+> So this patch switches to use XPS and suggest a default mapping when
+> the number of cpus is equal to the number of queues. With XPS support,
+> there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
+> so they were removed also.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V1:
+> - use cpumask_of() instead of allocate dynamically
 
->>
->> So basically, what we need is something along the lines of
->> enable_kernel_tm() which checks if there's a suspended user transaction
->> and if yes, kills/reclaims it.
->>
->> Then we also need to handle in our interrupt handlers that we have an
->> active/suspended transaction from a kernel state, which we don't deal
->> with at this point, and do whatever has to be done to kill it... we
->> might get away with something simple if we can state that we only allow
->> kernel transactions at task level and not from interrupt/softirq
->> contexts, at least initially.
->
-> Call me a coward, but this is starting to sound a bit scary.  ;-)
+This generates build warnings:
 
-We are just wanting to prototype it for now to see if we could make it
-go faster.  If it's worth it, then we'd consider the additional
-complexity this would bring.
-
-I don't think it'll be that bad, but I'd certainly want to make sure
-it's worth it before trying :-)
-
-Mikey
+drivers/net/virtio_net.c: In function ¡virtnet_set_affinity¢:
+drivers/net/virtio_net.c:1093:3: warning: passing argument 2 of ¡netif_set_xps_queue¢ discards ¡const¢ qualifier from pointer target type [enabled by default]
+In file included from drivers/net/virtio_net.c:20:0:
+include/linux/netdevice.h:2275:5: note: expected ¡struct cpumask *¢ but argument is of type ¡const struct cpumask *¢
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
