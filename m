@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3JAOLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:11:19 -0400
-Received: from ihemail4.lucent.com ([135.245.0.39]:33409 "EHLO
-	ihemail4.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab3JAOLS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:11:18 -0400
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Oct 2013 10:11:17 EDT
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>, stable@vger.kernel.org
-Subject: [PATCH] devpts: plug the memory leak in kill_sb
-Date: Tue,  1 Oct 2013 10:05:27 -0400
-Message-Id: <1380636327-4452-1-git-send-email-ihadzic@research.bell-labs.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1753454Ab3JAOQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:16:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55060 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753270Ab3JAOQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:16:42 -0400
+Date: Tue, 1 Oct 2013 16:09:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] sched, wait: Collapse __wait_event macros -v4
+Message-ID: <20131001140940.GA32328@redhat.com>
+References: <20130930152242.207382649@infradead.org> <20130930174054.GA28129@redhat.com> <20130930180939.GN15690@laptop.programming.kicks-ass.net> <20130930181358.GA29544@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930181358.GA29544@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When devpts is unmounted, there may be a no-longer-used
-IDR tree hanging off the superblock we are about to kill.
-This needs to be cleaned up before destroying the SB.
+On 09/30, Oleg Nesterov wrote:
+>
+> On 09/30, Peter Zijlstra wrote:
+> >
+> > On Mon, Sep 30, 2013 at 07:40:54PM +0200, Oleg Nesterov wrote:
+> > > Once again, of course I do not blame this series, but
+> > > wait_event_timeout(wq, true, 0) still returns 0.
+> >
+> > So we have:
+> >
+> > [...snip...]
+>
+> > So wait_event_timeout(wq, true, 0) turns into:
+>
+> Not really, because of fast-path check,
+>
+> 	#define wait_event_timeout(wq, condition, timeout)			\
+> 	({									\
+> 		long __ret = timeout;						\
+> 		if (!(condition)) 						\
+> 			__ret = __wait_event_timeout(wq, condition, timeout);	\
+> 		__ret;								\
+> 	})
+>
+> we do not even call __wait_event_timeout() if "condition" is already
+> true at the start.
 
-The leak is usually not a big deal because unmounting
-devpts is typically done when shutting down the whole
-machine. However, shutting down an LXC container instead
-of a physical machine exposes the problem (the garbage is
-detectable with kmemleak).
+But somehow I didn't realize that ___wait_cond_timeout() can be used
+as is, so the simple patch below should work?
 
-Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
-Cc: stable@vger.kernel.org
----
- fs/devpts/inode.c | 1 +
- 1 file changed, 1 insertion(+)
+Oleg.
 
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 073d30b..a726b9f 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -498,6 +498,7 @@ static void devpts_kill_sb(struct super_block *sb)
- {
- 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
- 
-+	ida_destroy(&fsi->allocated_ptys);
- 	kfree(fsi);
- 	kill_litter_super(sb);
- }
--- 
-1.8.2.1
+--- x/include/linux/wait.h
++++ x/include/linux/wait.h
+@@ -270,7 +270,7 @@ do {									\
+ #define wait_event_timeout(wq, condition, timeout)			\
+ ({									\
+ 	long __ret = timeout;						\
+-	if (!(condition)) 						\
++	if (!___wait_cond_timeout(condition)) 				\
+ 		__ret = __wait_event_timeout(wq, condition, timeout);	\
+ 	__ret;								\
+ })
+@@ -328,7 +328,7 @@ do {									\
+ #define wait_event_interruptible_timeout(wq, condition, timeout)	\
+ ({									\
+ 	long __ret = timeout;						\
+-	if (!(condition))						\
++	if (!___wait_cond_timeout(condition))				\
+ 		__ret = __wait_event_interruptible_timeout(wq, 		\
+ 						condition, timeout);	\
+ 	__ret;								\
+@@ -770,7 +770,7 @@ do {									\
+ 						  timeout)		\
+ ({									\
+ 	long __ret = timeout;						\
+-	if (!(condition))						\
++	if (!___wait_cond_timeout(condition))				\
+ 		__ret = __wait_event_interruptible_lock_irq_timeout(	\
+ 					wq, condition, lock, timeout);	\
+ 	__ret;								\
 
