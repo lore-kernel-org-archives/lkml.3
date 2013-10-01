@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab3JAW7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:59:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35594 "EHLO comal.ext.ti.com"
+	id S1752572Ab3JAXKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 19:10:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35577 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab3JAW7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:59:49 -0400
-Date: Tue, 1 Oct 2013 17:58:48 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>, <linux-omap@vger.kernel.org>
-CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] DRA7: DT thermal support
-Message-ID: <20131001225848.GA12365@kahuna>
-References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751764Ab3JAXKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 19:10:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1015,1371106800"; 
+   d="asc'?scan'208";a="301962982"
+Message-ID: <1380669002.2075.3.camel@jtkirshe-mobl>
+Subject: Re: [PATCH 07/11] igb: Avoid uninitialized advertised variable in
+ eee_set_cur
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        netdev@vger.kernel.org
+Date: Tue, 01 Oct 2013 16:10:02 -0700
+In-Reply-To: <1380572952-30729-8-git-send-email-andi@firstfloor.org>
+References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
+	 <1380572952-30729-8-git-send-email-andi@firstfloor.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-jK6N35UU8v1y9b2fHgnT"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:32-20131001, Eduardo Valentin wrote:
-> Hello all,
-> 
-> This is a complementary patch series with themal DT support for DRA7.
-> 
-> Although this work depends on the thermal dt parser work [1], I decided
-> to share it before hand. It also depends on DRA7 DT base port support,
-> which I fetched from Rajendra's tree [2].
-> 
-> This patch series has been runtime tested on DRA7-evm.
-> 
-> All best,
-> 
-> [1] - https://lkml.org/lkml/2013/9/26/787
-> [2] - git://github.com/rrnayak/linux.git out-of-tree/dra-integrated-v3
-> 
-> Eduardo Valentin (7):
->   arm: dts: add dra7 DSPEVE thermal data
->   arm: dts: add dra7 IVA thermal data
->   arm: dts: dra7: add bandgap entry
->   arm: dts: add cooling properties on dra7 cpu node
->   arm: dts: dra7: add thermal data
->   arm: dts: add tmp102 i2c sensor node on dra7-evm
->   arm: dts: add thermal zones info on tmp102 for DRA7-EVM
-> 
->  arch/arm/boot/dts/dra7-dspeve-thermal.dtsi | 28 ++++++++++++++++++++++++++++
->  arch/arm/boot/dts/dra7-evm.dts             | 23 +++++++++++++++++++++++
->  arch/arm/boot/dts/dra7-iva-thermal.dtsi    | 28 ++++++++++++++++++++++++++++
->  arch/arm/boot/dts/dra7.dtsi                | 27 ++++++++++++++++++++++++++-
->  4 files changed, 105 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
->  create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
 
-+Benoit, Tony, Linux-omap.
-Ref: http://marc.info/?l=linux-pm&m=138065243027014&w=2
+--=-jK6N35UU8v1y9b2fHgnT
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Tony, Benoit,
-The following diff[1] is probably needed to ensure that right audience
-is addressed.
+On Mon, 2013-09-30 at 13:29 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>=20
+> eee_get_cur assumes that the output data is already zeroed. It can
+> read-modify-write the advertised field:
+>=20
+>               if (ipcnfg & E1000_IPCNFG_EEE_100M_AN)
+> 2594                    edata->advertised |=3D ADVERTISED_100baseT_Full;
+>=20
+> This is ok for the normal ethtool eee_get call, which always
+> zeroes the input data before.
+>=20
+> But eee_set_cur also calls eee_get_cur and it did not zero the input
+> field. Later on it then compares agsinst the field, which can contain
+> partial
+> stack garbage.
+>=20
+> Zero the input field in eee_set_cur() too.
+>=20
+> Cc: jeffrey.t.kirsher@intel.com
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 ++
+>  1 file changed, 2 insertions(+)
 
-Eduardo,
-could you send an updated series with Tony,
-Benoit and linux-omap in the loop?
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-[1]
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 284969f..3442671 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5969,6 +5969,7 @@ M:	Tony Lindgren <tony@atomide.com>
- L:	linux-omap@vger.kernel.org
- L:	devicetree@vger.kernel.org
- S:	Maintained
-+F:	arch/arm/boot/dts/*dra7*
- F:	arch/arm/boot/dts/*omap*
- F:	arch/arm/boot/dts/*am3*
- 
--- 
-Regards,
-Nishanth Menon
+--=-jK6N35UU8v1y9b2fHgnT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAABCgAGBQJSS1ZKAAoJEOVv75VaS+3OYyMQAIYkgc2xZA9RsFOGOt0xXl6X
+zO3C03G/0D3MqifW9lv9b9leroOZ46f+ZiQJBzNRGVeRIX7KwCivZZ3M4qH1ZoBW
+MPMD1W1IxL5kpTuPyUmnJL7pJTdcYhAJrU6YY5xtF68kT6W2L3ukW/sWYr6E2aYG
+ehtU3hgi930FgAAZdKFhkQf3udCO7CD77LiUmPA17qZC4wNaDHyadgkTJ2uJHmtd
+hwKpP92q56vsMQszc7WTxy+82baM6q/VRGAd4QXGS/RH85afw2hOliuhSBl10WEx
+dspL7+q2HMiwRr/I4Rhwf3e1hyG5oDYzArL3ygu1cHss6EBkJOBtaLluoZCIsryb
+5xLcdamre32fbTGUAzIelYdYHz37DEdAQsL9gaOlPvyZzC6uAmJ5ZCCTcBsgIDYn
+gyJal6zmVOND+TKihQ9vvzcEu+Rp+25uxueXsN8TSUW6rWmhGIFjWiOCWKkEQEed
+gPNPekiNGiv7SX0bBouj/KSxebCOxRET52dr+q3FwJ0lPY3ueX4qn6XPvmWGpbJV
+YQ4OV4w9mWSu5IEsFWAxfLgy4F3ZiAdtfFPVEi3pheFNqQE1EOc9qMNCCayg3lon
+vMwiYAOi3mU8iSznYTOj2Sf9d+AWeaqJ6MlFK1ZB7aYI6CjqEk/++efODIs44QDA
+QxweJXPFiEwPIU7UxIl8
+=rVEt
+-----END PGP SIGNATURE-----
+
+--=-jK6N35UU8v1y9b2fHgnT--
+
