@@ -1,115 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab3JANCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:02:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23427 "EHLO mx1.redhat.com"
+	id S1753212Ab3JANKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:10:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3347 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab3JANCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:02:52 -0400
-Date: Tue, 1 Oct 2013 15:00:46 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux.nics@intel.com,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: kobject_add_internal failed for msi_irqs with -EEXIST
-Message-ID: <20131001130046.GC6096@redhat.com>
-References: <5245896A.70705@redhat.com>
- <CAErSpo6L-Ud08=JPM7d=RYuPO=UFvq_9hZGbne0iQnCHiFbuHQ@mail.gmail.com>
- <20130927160125.GB14139@redhat.com>
- <5245D626.6090209@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <5245D626.6090209@redhat.com>
+	id S1752802Ab3JANKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 09:10:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1013,1371106800"; 
+   d="scan'208";a="403641975"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, rjw@rjwysocki.net,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        Mark Brown <broonie@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-acpi@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v4] i2c: enable runtime PM for I2C adapter devices enumerated from ACPI
+Date: Tue,  1 Oct 2013 16:09:42 +0300
+Message-Id: <1380632982-10709-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1380552228-23329-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1380552228-23329-2-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 09:01:58PM +0200, Zdenek Kabelac wrote:
->Dne 27.9.2013 18:01, Veaceslav Falico napsal(a):
->>On Fri, Sep 27, 2013 at 09:58:28AM -0600, Bjorn Helgaas wrote:
->>>[+cc Veaceslav, linux-pci]
->>>
->>>On Fri, Sep 27, 2013 at 7:34 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
->>>>Hi
->>>>
->>>>With recent build of 3.12-rc2 I'm getting this warning report from kernel:
->>>>(hw Lenovo T61, C2D, 4GB Ram)
->>>>(repost since linux-kernel@ rejected my gmail email....)
->>>
->>>This looks related to the MSI/kobject issues Veaceslav is working on.
->>>See
->>>http://lkml.kernel.org/r/1379382464-7920-2-git-send-email-vfalico@redhat.com
->>>and related messages.
->>>
->>>We don't have a resolution yet.  If you have
->>>CONFIG_DEBUG_KOBJECT_RELEASE=y, you could try turning that off.  I
->>>don't know if it would help, and it would only be a temporary
->>>workaround anyway.
->>
->>I've looked at the original post -
->>http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg510798.html
->>hope that's it - and it seems that it's disabling DEBUG_KOBJECT_RELEASE
->>won't help - the warning is about the re-registering, not about freeing it.
->>
->>As a workaround I'd suggest adding some kind of delay between removing and
->>adding the msi - as in - rmmod e1000e; sleep 1; modprobe e1000e; - or
->>something like that, so that there is enough time for the /msqi_irqs/ to go
->>away.
->>
->
->I'm not readding e1000e modules myself - however I've no idea what 
->NetworkManager does. Here are messages prior warning:
->
->NetworkManager[304]: <info> monitoring kernel firmware directory '/lib/firmware'.
->NetworkManager[304]: <info> rfkill1: found WiFi radio killswitch (at /sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/ieee80211/phy0/rfkill1) 
->(driver iwl3945)
->NetworkManager[304]: <info> WiFi hardware radio set enabled
->NetworkManager[304]: <info> WiFi enabled by radio killswitch; enabled 
->by state file
->NetworkManager[304]: <info> WWAN enabled by radio killswitch; 
->disabled by state file
->NetworkManager[304]: <info> WiMAX enabled by radio killswitch; 
->enabled by state file
->NetworkManager[304]: <info> Networking is enabled by state file
->NetworkManager[304]: <info> (eth0): carrier is OFF
->NetworkManager[304]: <info> (eth0): new Ethernet device (driver: 
->'e1000e' ifindex: 2)
->NetworkManager[304]: <info> (eth0): exported as 
->/org/freedesktop/NetworkManager/Devices/0
->NetworkManager[304]: <info> (eth0): device state change: unmanaged -> 
->unavailable (reason 'managed') [10 20 2]
->NetworkManager[304]: <info> (eth0): bringing up device.
->rpcbind: cannot create socket for udp6
->rpcbind: cannot create socket for tcp6
->kernel: [    5.727025] WARNING! power/level is deprecated; use 
->power/control instead
->
->
->So it looks like  'bringing up' causes recreation of msi_irqs ?
+The ACPI specification requires the parent device to be powered on before
+any of its children. It can be only powered off when all the children are
+already off.
 
-Yep, seems like that. .ndo_stop() (e1000_close(), which removes msi irqs
-and the /msi_irqs/ kset) instantly followed by .ndo_open() (e1000_open(),
-which enables the requested msi irqs via pci_enable_msi() - and,
-consequently, re-creates the /msi_irqs/ kset) triggers it - because the
-kset, in the meanwhile, isn't freed - maybe because of some readers, maybe
-because of the delay introduced by DEBUG_KOBJECT_RELEASE.
+Currently whenever there is no I2C traffic going on, the I2C controller
+driver can put the device into low power state transparently to its
+children (the I2C client devices). This violates the ACPI specification
+because now the parent device is in lower power state than its children.
 
-I'm now slowly fighting this (and adjacent) issues, will put you on CC if
-I'll come up with patches.
+In order to keep ACPI happy we enable runtime PM for the I2C adapter device
+if we find out that the I2C controller was in fact an ACPI device. In
+addition to that we attach the I2C client devices to the ACPI power domain
+and make sure that they are powered on when the driver ->probe() is called.
 
-In the meanwhile - can you please try disabling DEBUG_KOBJECT_RELEASE and
-test if you see the warning _constantly_?
+Non-ACPI devices are not affected by this change.
 
-Cause if you do - we might have another issue here...
+This patch is based on the work by Aaron Lu and Lv Zheng.
 
->
->Zdenek
->
->
->
->
->
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+Changes to v3:
+ * Check only client ACPI_HANDLE().
+ * Fixed bug where we attach the device to ACPI power domain multiple
+   times.
+ * Functions are renamed to _get_attach/_put_attach to make it clear that
+   we do attach/detach as well.
+
+ drivers/i2c/i2c-core.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 29d3f04..e289b1d 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -236,6 +236,27 @@ int i2c_recover_bus(struct i2c_adapter *adap)
+ 	return adap->bus_recovery_info->recover_bus(adap);
+ }
+ 
++static void acpi_i2c_device_pm_get_attach(struct i2c_client *client,
++					  bool attach)
++{
++	if (ACPI_HANDLE(&client->dev)) {
++		/* Make sure the adapter is active */
++		pm_runtime_get_sync(&client->adapter->dev);
++		if (attach)
++			acpi_dev_pm_attach(&client->dev, true);
++	}
++}
++
++static void acpi_i2c_device_pm_put_detach(struct i2c_client *client,
++					  bool detach)
++{
++	if (ACPI_HANDLE(&client->dev)) {
++		if (detach)
++			acpi_dev_pm_detach(&client->dev, true);
++		pm_runtime_put(&client->adapter->dev);
++	}
++}
++
+ static int i2c_device_probe(struct device *dev)
+ {
+ 	struct i2c_client	*client = i2c_verify_client(dev);
+@@ -254,11 +275,15 @@ static int i2c_device_probe(struct device *dev)
+ 					client->flags & I2C_CLIENT_WAKE);
+ 	dev_dbg(dev, "probe\n");
+ 
++	acpi_i2c_device_pm_get_attach(client, true);
++
+ 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
+ 	if (status) {
+ 		client->driver = NULL;
+ 		i2c_set_clientdata(client, NULL);
+ 	}
++
++	acpi_i2c_device_pm_put_detach(client, !!status);
+ 	return status;
+ }
+ 
+@@ -271,6 +296,8 @@ static int i2c_device_remove(struct device *dev)
+ 	if (!client || !dev->driver)
+ 		return 0;
+ 
++	acpi_i2c_device_pm_get_attach(client, false);
++
+ 	driver = to_i2c_driver(dev->driver);
+ 	if (driver->remove) {
+ 		dev_dbg(dev, "remove\n");
+@@ -283,6 +310,8 @@ static int i2c_device_remove(struct device *dev)
+ 		client->driver = NULL;
+ 		i2c_set_clientdata(client, NULL);
+ 	}
++
++	acpi_i2c_device_pm_put_detach(client, true);
+ 	return status;
+ }
+ 
+@@ -294,8 +323,11 @@ static void i2c_device_shutdown(struct device *dev)
+ 	if (!client || !dev->driver)
+ 		return;
+ 	driver = to_i2c_driver(dev->driver);
+-	if (driver->shutdown)
++	if (driver->shutdown) {
++		acpi_i2c_device_pm_get_attach(client, false);
+ 		driver->shutdown(client);
++		acpi_i2c_device_pm_put_detach(client, false);
++	}
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -1263,6 +1295,16 @@ exit_recovery:
+ 	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
+ 	mutex_unlock(&core_lock);
+ 
++	/*
++	 * For ACPI enumerated controllers we must make sure that the
++	 * controller is powered on before its children. Runtime PM handles
++	 * this for us once we have enabled it for the adapter device.
++	 */
++	if (ACPI_HANDLE(adap->dev.parent)) {
++		pm_runtime_no_callbacks(&adap->dev);
++		pm_runtime_enable(&adap->dev);
++	}
++
+ 	return 0;
+ 
+ out_list:
+@@ -1427,6 +1469,9 @@ void i2c_del_adapter(struct i2c_adapter *adap)
+ 		return;
+ 	}
+ 
++	if (ACPI_HANDLE(adap->dev.parent))
++		pm_runtime_disable(&adap->dev);
++
+ 	/* Tell drivers about this removal */
+ 	mutex_lock(&core_lock);
+ 	bus_for_each_drv(&i2c_bus_type, NULL, adap,
+-- 
+1.8.4.rc3
+
