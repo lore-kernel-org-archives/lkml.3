@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3JASjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:39:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35874 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3JASjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:39:43 -0400
-Message-ID: <524B16E8.5080506@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 12:39:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752331Ab3JASmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:42:19 -0400
+Received: from fieldses.org ([174.143.236.118]:55343 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab3JASmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 14:42:16 -0400
+Date: Tue, 1 Oct 2013 14:42:10 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Ric Wheeler <rwheeler@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Zach Brown <zab@redhat.com>, Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20131001184210.GM26382@fieldses.org>
+References: <52474839.2080201@redhat.com>
+ <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
+ <20130930143432.GG16579@fieldses.org>
+ <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+ <52499026.3090802@redhat.com>
+ <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+ <52498AA8.2090204@redhat.com>
+ <CAJfpegv_C6cLOuA-mNtgtf2QbmmmcHwjQVo8mAnhf_wbJ8iRhg@mail.gmail.com>
+ <52498DB6.7060901@redhat.com>
+ <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] pwm-backlight: Use new enable_gpio field
-References: <1379972467-11243-1-git-send-email-treding@nvidia.com> <1379972467-11243-9-git-send-email-treding@nvidia.com>
-In-Reply-To: <1379972467-11243-9-git-send-email-treding@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegsvrr7x3MbdpvxUmzq0ZfDHfZkzAar6Od2G7wg8DgPLYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 03:41 PM, Thierry Reding wrote:
-> Make use of the new enable_gpio field and allow it to be set from DT as
-> well. Now that all legacy users of platform data have been converted to
-> initialize this field to an invalid value, it is safe to use the field
-> from the driver.
+On Mon, Sep 30, 2013 at 05:46:38PM +0200, Miklos Szeredi wrote:
+> On Mon, Sep 30, 2013 at 4:41 PM, Ric Wheeler <rwheeler@redhat.com> wrote:
+> > The way the array based offload (and some software side reflink works) is
+> > not a byte by byte copy. We cannot assume that a valid count can be returned
+> > or that such a count would be an indication of a sequential segment of good
+> > data.  The whole thing would normally have to be reissued.
+> >
+> > To make that a true assumption, you would have to mandate that in each of
+> > the specifications (and sw targets)...
+> 
+> You're missing my point.
+> 
+>  - user issues SIZE_MAX splice request
+>  - fs issues *64M* (or whatever) request to offload
+>  - when that completes *fully* then we return 64M to userspace
+>  - if it completes partially, then we return an error to userspace
+> 
+> Again, wouldn't that work?
 
-> diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+So if implementations fall into two categories:
 
->  Optional properties:
+	- "instant": latency is on the order of a single IO.
 
-> +  - enable-gpios: a list of GPIOs to enable and disable the backlight
+	- "slow": latency is seconds or minutes, but still faster than a
+	  normal copy.  (See Anna's NFS server implementation that does
+	  an ordinary copy internally.)
 
-That seems to imply that multiple GPIOs are legal. Was that intended? If
-not, I would suggest:
+Then to me it still seems simplest to design only for the "instant"
+case.
 
-- enable-gpios: contains a single GPIO specifier for the GPIO which
-		enables/disables the backlight. See [1] for the format.
+But if we want to add some minimal help for the "slow" case then
+Miklos's proposal looks fine: the application doesn't have to know which
+case it's dealing with ahead of time--it always just submits the largest
+range it knows about--but a "slow" implementation isn't forced to leave
+the application waiting in one syscall for minutes with no indication
+what's going on.
 
->  
->  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
-+ [1]: Documentation/devicetree/bindings/gpio/gpio.txt
-
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-
-> @@ -51,12 +55,27 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness,
->  		     pb->lth_brightness;
->  
->  	pwm_config(pb->pwm, duty_cycle, pb->period);
-> +
-> +	if (gpio_is_valid(pb->enable_gpio)) {
-> +		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
-> +			gpio_set_value(pb->enable_gpio, 0);
-> +		else
-> +			gpio_set_value(pb->enable_gpio, 1);
-> +	}
-
-Feel completely free to ignore this, but when the difference in two
-code-paths is solely in function parameters, I prefer to calculate the
-parameter inside the if statement, then call the function outside the
-conditional code, to highlight the common/different parts:
-
-int value;
-
-/* or an if statement for the next 1 line, if you don't like ?: */
-value = (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW) ? 0 : 1;
-gpio_set_value((pb->enable_gpio, value);
-
-> @@ -148,11 +168,10 @@ static int pwm_backlight_parse_dt(struct device *dev,
-
-> +	data->enable_gpio = of_get_named_gpio_flags(node, "enable-gpios", 0,
-> +						    &flags);
-> +	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
-> +		data->enable_gpio_flags |= PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
-
-This doesn't seem to handle deferred probe correctly; I would expect
-something more like:
-
-	data->enable_gpio = of_get_named_gpio_flags(...);
-	if (data->enable_gpio == -EPROBE_DEFERRED)
-		return data->enable_gpio;
-	if (gpio_is_valid(...))
-		...
-	return 0;
-
-I suppose it's possible that the value filters down to
-gpio_request_one() and this actually does work out OK, but that feels
-very accidental/implicit to me.
+--b.
