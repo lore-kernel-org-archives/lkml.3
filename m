@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3JAUaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:30:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51204 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab3JAUab (ORCPT
+	id S1752945Ab3JAUbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:31:06 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:47455 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab3JAUbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:30:31 -0400
-Message-ID: <524B30E2.4000704@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 14:30:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: lee.jones@linaro.org, sameo@linux.intel.com, broonie@kernel.org,
-        linus.walleij@linaro.org, akpm@linux-foundation.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        rtc-linux@googlegroups.com, rob.herring@calxeda.com,
-        mark.rutland@arm.com, pawel.moll@arm.com, rob@landley.net,
-        ijc+devicetree@hellion.org.uk, grant.likely@linaro.org
-Subject: Re: [PATCH V4 2/3] pincntrl: add support for AMS AS3722 pin control
- driver
-References: <1380044845-7734-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1380044845-7734-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Oct 2013 16:31:00 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH v2 4/9] procfs: make /proc/*/{stack,syscall} 0400
+Date: Tue,  1 Oct 2013 21:26:13 +0100
+Message-Id: <1380659178-28605-5-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2013 11:47 AM, Laxman Dewangan wrote:
-> The AS3722 is a compact system PMU suitable for mobile phones, tablets etc.
-> 
-> Add a driver to support accessing the GPIO, pinmux and pin configuration
-> of 8 GPIO pins found on the AMS AS3722 through pin control driver and
-> gpiolib.
-> 
-> The driver will register itself as the pincontrol driver and gpio driver.
+The /proc/*/{stack,syscall} contain sensitive information and currently
+its mode is 0444. Change this to 0400 so the VFS will be able to block
+unprivileged processes from getting file descriptors on arbitrary
+privileged /proc/*/{stack,syscall} files.
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-as3722.txt
+This will also avoid doing extra unnecessary ptrace checks.
 
-> +AMS AS3722 Pincontrol
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/proc/base.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-This binding document doesn't appear to define any compatible value. I
-think there should be one binding document per compatible value, rather
-than splitting up the documentation of a particular binding into lots of
-different files. As such, shouldn't this documentation all be part of
-Documentation/devicetree/bindings/regulator/as3722-regulator.txt?
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 8d21316..54e926a 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2682,7 +2682,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ #endif
+ 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+-	INF("syscall",    S_IRUGO, proc_pid_syscall),
++	INF("syscall",    S_IRUSR, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+@@ -2710,7 +2710,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("wchan",      S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUGO, proc_pid_stack),
++	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat",  S_IRUGO, proc_pid_schedstat),
+@@ -3018,7 +3018,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ #endif
+ 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+-	INF("syscall",   S_IRUGO, proc_pid_syscall),
++	INF("syscall",   S_IRUSR, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",      S_IRUGO, proc_tid_stat),
+@@ -3048,7 +3048,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("wchan",     S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUGO, proc_pid_stack),
++	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat", S_IRUGO, proc_pid_schedstat),
+-- 
+1.7.11.7
 
-> +DT node contains the different subnode for pin control to represent
-
-Which "DT node"? This paragraph doesn't make much sense...
-
-> +different states. Each of these subnodes represents some desired
-> +configuration for a list of pins. This configuration can include the
-> +mux function to select on those pin(s), and various pin configuration
-> +parameters, such as pull-up, open drain.
-
-I think that paragraph is meant to say the following, as part of
-as3722-regulator.txt:
-
-==========
-Optional sub-nodes:
-
-- pinmux: Represents the pinmux configuration of the AS3722 GPIO pins.
-This node contains pin configuration nodes, as defined by
-pinctrl-bindings.txt
-==========
-
-(and then go on to describe the required/optional properties within the
-pin configuration nodes)
-
-> +Valid values for pin names are:
-
-I would say "pin property" rather than "pin names" here, to make it
-obvious where these values are used.
-
-> +	gpio0, gpio1, gpio2, gpio3, gpio4, gpio5, gpio6, gpio7
-> +
-> +Valid value of function names are:
-
-Similarly, "function property" here. (and values for not value of).
-
-Other than that, this binding looks reasonable.
