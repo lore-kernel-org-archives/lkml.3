@@ -1,109 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab3JAOx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:53:56 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57002 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479Ab3JAOxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:53:49 -0400
-Message-ID: <524AE1FA.2050104@gmail.com>
-Date: Tue, 01 Oct 2013 09:53:46 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753205Ab3JAO6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:58:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751729Ab3JAO6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:58:04 -0400
+Date: Tue, 1 Oct 2013 10:57:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: ebiederm@xmission.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: pipe/cred lockdep warning
+Message-ID: <20131001145755.GA22729@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, ebiederm@xmission.com,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: tglx@linutronix.de, Sricharan R <r.sricharan@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk, tony@atomide.com, rnayak@ti.com,
-        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com
-Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com> <524AAE69.8060703@ti.com> <524AD290.207@gmail.com> <524AD4B7.7040700@ti.com>
-In-Reply-To: <524AD4B7.7040700@ti.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 08:57 AM, Santosh Shilimkar wrote:
-> On Tuesday 01 October 2013 09:48 AM, Rob Herring wrote:
->> On 10/01/2013 06:13 AM, Sricharan R wrote:
->>> Hi,
->>>
->>> On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
->>>> On 09/30/2013 08:59 AM, Sricharan R wrote:
->>>>> Some socs have a large number of interrupts requests to service
->>>>> the needs of its many peripherals and subsystems. All of the interrupt
->>>>> requests lines from the subsystems are not needed at the same
->>>>> time, so they have to be muxed to the controllers appropriately.
->>>>> In such places a interrupt controllers are preceded by an
->>>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->>>>> requests to the controller inputs.
->>>>>
->>>>> This series models the peripheral interrupts that can be routed through
->>>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->>>>> in a separate linear domain inside the GIC. The registered routable domain's
->>>>> callback are invoked as a part of the GIC's callback, which in turn should
->>>>> allocate a free irq line and configure the IP accordingly. So every peripheral
->>>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
->>>>> gic line for that gets allocated and configured when the peripheral's interrupt
->>>>> is mapped.
->>>>>
->>>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
->>>>> crossbar is added here, along with the DT bindings.
->>>> Seems like interrupt-map property is what you need here.
->>>>
->>>> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
->>>>
->>>> Versatile Express also has an example.
->>>    OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
->>>    DTS level, but to assign it dynamically during runtime. This was one of the
->>>   comments that came up with first crossbar support patches, which was assigning a
->>>   interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
->>
->> Is there an actual usecase on a single h/w design that you run out of
->> interrupts and it is a user decision which interrupts to use?
->>
-> Yes. There are 240 peripheral interrupts connected out of which 160 can
-> be used in this specific case. 
+I seem to recall hitting this quite a while ago. Does it look familiar ?
+Either it didn't get fixed, or it's back..
 
-Yes, I understand the SOC connections. That does not answer my question.
-The 240 interrupts are likely to be limited to fewer by board design,
-pinmuxing, etc.
+	Dave
 
-How do you handle the 161st interrupt request? Will never happen? Just
-rely on the random driver probe ordering?
+[ 2836.628351] ======================================================
+[ 2836.628392] [ INFO: possible circular locking dependency detected ]
+[ 2836.628436] 3.12.0-rc3+ #90 Not tainted
+[ 2836.628464] -------------------------------------------------------
+[ 2836.628506] trinity-child0/30759 is trying to acquire lock:
+[ 2836.628544]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81239045>] proc_pid_attr_write+0xf5/0x140
+[ 2836.628624] 
+but task is already holding lock:
+[ 2836.628664]  (&pipe->mutex/1){+.+.+.}, at: [<ffffffff811ccf66>] pipe_lock+0x26/0x30
+[ 2836.628734] 
+which lock already depends on the new lock.
 
->> You could fill in the interrupt-map at run-time. It would have to be
->> early (bootloader or early kernel init) and can't be at request_irq time.
->>
-> Well all options are tried before coming up to the $subject solution.
-> It was suggested by Thomas in the last review.
->  
->>>     https://lkml.org/lkml/2013/7/18/416
->>>
->>>    Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
->>>    that did not go as well. Finally was asked to handle this as a part of GIC driver with
->>>    a separate domain.
->>>    
->>>   http://www.spinics.net/lists/linux-omap/msg97085.html
->>
->> This has nothing to do with the GIC, so it does not belong there.
->>
-> Well the router makes connections from peripheral to GIC. Thomas can
-> better explain it but I think since its doing irq routing for GIC on
-> a given hardware, I don't see any issue having some generic map/unmap
-> function in GIC. The actual implementation is still outside of GIC.
+[ 2836.628787] 
+the existing dependency chain (in reverse order) is:
+[ 2836.628837] 
+-> #2 (&pipe->mutex/1){+.+.+.}:
+[ 2836.628888]        [<ffffffff810cc1e3>] lock_acquire+0x93/0x200
+[ 2836.628933]        [<ffffffff8172de5c>] mutex_lock_nested+0x7c/0x420
+[ 2836.628981]        [<ffffffff811ccf66>] pipe_lock+0x26/0x30
+[ 2836.629023]        [<ffffffff811f6e94>] generic_file_splice_write+0x64/0x170
+[ 2836.629076]        [<ffffffffa02dc710>] xfs_file_splice_write+0xb0/0x230 [xfs]
+[ 2836.629152]        [<ffffffff811f8dca>] SyS_splice+0x24a/0x7e0
+[ 2836.629196]        [<ffffffff8173ce24>] tracesys+0xdd/0xe2
+[ 2836.629238] 
+-> #1 (&(&ip->i_iolock)->mr_lock){++++++}:
+[ 2836.629291]        [<ffffffff810cc1e3>] lock_acquire+0x93/0x200
+[ 2836.629335]        [<ffffffff81089562>] down_read_nested+0x52/0xa0
+[ 2836.630980]        [<ffffffffa033b7a0>] xfs_ilock+0x1d0/0x280 [xfs]
+[ 2836.632649]        [<ffffffffa02dc161>] xfs_file_aio_read+0x111/0x3e0 [xfs]
+[ 2836.634313]        [<ffffffff811c3f1a>] do_sync_read+0x5a/0x90
+[ 2836.635957]        [<ffffffff811c4551>] vfs_read+0xa1/0x170
+[ 2836.637581]        [<ffffffff811ca911>] kernel_read+0x41/0x60
+[ 2836.639184]        [<ffffffff811cab33>] prepare_binprm+0xb3/0x170
+[ 2836.640768]        [<ffffffff811cc733>] do_execve_common.isra.28+0x5a3/0x990
+[ 2836.642344]        [<ffffffff811cce06>] SyS_execve+0x36/0x50
+[ 2836.643904]        [<ffffffff8173d209>] stub_execve+0x69/0xa0
+[ 2836.645442] 
+-> #0 (&sig->cred_guard_mutex){+.+.+.}:
+[ 2836.648483]        [<ffffffff810cb76a>] __lock_acquire+0x191a/0x1be0
+[ 2836.650025]        [<ffffffff810cc1e3>] lock_acquire+0x93/0x200
+[ 2836.651559]        [<ffffffff8172eba7>] mutex_lock_interruptible_nested+0x77/0x510
+[ 2836.653110]        [<ffffffff81239045>] proc_pid_attr_write+0xf5/0x140
+[ 2836.654659]        [<ffffffff811c4f92>] __kernel_write+0x72/0x150
+[ 2836.656208]        [<ffffffff811f7269>] write_pipe_buf+0x49/0x70
+[ 2836.657750]        [<ffffffff811f6894>] splice_from_pipe_feed+0x84/0x140
+[ 2836.659310]        [<ffffffff811f6c3e>] __splice_from_pipe+0x6e/0x90
+[ 2836.660868]        [<ffffffff811f8731>] splice_from_pipe+0x51/0x70
+[ 2836.662423]        [<ffffffff811f8789>] default_file_splice_write+0x19/0x30
+[ 2836.663979]        [<ffffffff811f8dca>] SyS_splice+0x24a/0x7e0
+[ 2836.665518]        [<ffffffff8173ce24>] tracesys+0xdd/0xe2
+[ 2836.666999] 
+other info that might help us debug this:
 
-I read Thomas' reply as don't put this crap in his code.
+[ 2836.671264] Chain exists of:
+  &sig->cred_guard_mutex --> &(&ip->i_iolock)->mr_lock --> &pipe->mutex/1
 
-You can call it generic, but it is not. It is specific to the GIC and
-looks like an abuse of irqdomains to me. Look where the function
-declaration for register_routable_domain_ops is.
+[ 2836.675587]  Possible unsafe locking scenario:
 
-Rob
+[ 2836.678443]        CPU0                    CPU1
+[ 2836.679832]        ----                    ----
+[ 2836.681187]   lock(&pipe->mutex/1);
+[ 2836.682548]                                lock(&(&ip->i_iolock)->mr_lock);
+[ 2836.683938]                                lock(&pipe->mutex/1);
+[ 2836.685309]   lock(&sig->cred_guard_mutex);
+[ 2836.686670] 
+ *** DEADLOCK ***
+
+[ 2836.690616] 2 locks held by trinity-child0/30759:
+[ 2836.691921]  #0:  (sb_writers#4){.+.+.+}, at: [<ffffffff811f92b1>] SyS_splice+0x731/0x7e0
+[ 2836.693264]  #1:  (&pipe->mutex/1){+.+.+.}, at: [<ffffffff811ccf66>] pipe_lock+0x26/0x30
+[ 2836.694597] 
+stack backtrace:
+[ 2836.697165] CPU: 0 PID: 30759 Comm: trinity-child0 Not tainted 3.12.0-rc3+ #90
+[ 2836.699886]  ffffffff825329d0 ffff88009cb61b88 ffffffff81729d13 ffffffff82504b80
+[ 2836.701295]  ffff88009cb61bc8 ffffffff817260f1 ffff88009cb61c20 ffff88009caa5cb8
+[ 2836.702723]  ffff88009caa5580 0000000000000001 ffff88009caa5c80 ffff88009caa5cb8
+[ 2836.704149] Call Trace:
+[ 2836.705547]  [<ffffffff81729d13>] dump_stack+0x4e/0x82
+[ 2836.706958]  [<ffffffff817260f1>] print_circular_bug+0x200/0x20f
+[ 2836.708365]  [<ffffffff810cb76a>] __lock_acquire+0x191a/0x1be0
+[ 2836.709778]  [<ffffffff810cc1e3>] lock_acquire+0x93/0x200
+[ 2836.711184]  [<ffffffff81239045>] ? proc_pid_attr_write+0xf5/0x140
+[ 2836.712596]  [<ffffffff81239045>] ? proc_pid_attr_write+0xf5/0x140
+[ 2836.713983]  [<ffffffff8172eba7>] mutex_lock_interruptible_nested+0x77/0x510
+[ 2836.715382]  [<ffffffff81239045>] ? proc_pid_attr_write+0xf5/0x140
+[ 2836.716785]  [<ffffffff81239045>] ? proc_pid_attr_write+0xf5/0x140
+[ 2836.718171]  [<ffffffff811a5b99>] ? alloc_pages_current+0xa9/0x170
+[ 2836.719554]  [<ffffffff81239045>] proc_pid_attr_write+0xf5/0x140
+[ 2836.720926]  [<ffffffff811f7220>] ? splice_direct_to_actor+0x1f0/0x1f0
+[ 2836.722303]  [<ffffffff811c4f92>] __kernel_write+0x72/0x150
+[ 2836.723680]  [<ffffffff811f7220>] ? splice_direct_to_actor+0x1f0/0x1f0
+[ 2836.725052]  [<ffffffff811f7269>] write_pipe_buf+0x49/0x70
+[ 2836.726420]  [<ffffffff811f6894>] splice_from_pipe_feed+0x84/0x140
+[ 2836.727805]  [<ffffffff811f7220>] ? splice_direct_to_actor+0x1f0/0x1f0
+[ 2836.729199]  [<ffffffff811f6c3e>] __splice_from_pipe+0x6e/0x90
+[ 2836.730589]  [<ffffffff811f7220>] ? splice_direct_to_actor+0x1f0/0x1f0
+[ 2836.731983]  [<ffffffff811f8731>] splice_from_pipe+0x51/0x70
+[ 2836.733373]  [<ffffffff811f8789>] default_file_splice_write+0x19/0x30
+[ 2836.734771]  [<ffffffff811f8dca>] SyS_splice+0x24a/0x7e0
+[ 2836.736161]  [<ffffffff8173ce24>] tracesys+0xdd/0xe2
 
