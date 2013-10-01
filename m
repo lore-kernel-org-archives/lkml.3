@@ -1,71 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3JAMpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 08:45:45 -0400
-Received: from imap.thunk.org ([74.207.234.97]:40714 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab3JAMpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 08:45:43 -0400
-Date: Tue, 1 Oct 2013 08:45:41 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 08/11] ext4: Fix end of group handling in
- ext4_mb_init_cache
-Message-ID: <20131001124541.GB2097@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-	Andi Kleen <ak@linux.intel.com>, linux-ext4@vger.kernel.org
-References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
- <1380572952-30729-9-git-send-email-andi@firstfloor.org>
+	id S1753164Ab3JAMqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 08:46:13 -0400
+Received: from smtp2.stec-inc.com ([68.225.24.15]:48753 "EHLO
+	smtp2.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab3JAMqL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 08:46:11 -0400
+X-Greylist: delayed 1154 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Oct 2013 08:46:11 EDT
+X-ASG-Debug-ID: 1380631731-486f64f00001-xx1T2L
+X-Barracuda-Envelope-From: osengineering@stec-inc.com
+From: OS Engineering <osengineering@stec-inc.com>
+X-Barracuda-Apparent-Source-IP: fe80::30dd:fd5:3d97:5f13
+To: "axboe@kernel.dk" <axboe@kernel.dk>
+CC: Akhil Bhansali <Akhil.Bhansali@hgst.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Phansalkar <Amit.Phansalkar@hgst.com>,
+        Ramprasad Chinthekindi <Ramprasad.Chinthekindi@hgst.com>
+Subject: [PATCH 2/2] skd: Restricted pr_debug() lines to 80 characters
+Thread-Topic: [PATCH 2/2] skd: Restricted pr_debug() lines to 80 characters
+X-ASG-Orig-Subj: [PATCH 2/2] skd: Restricted pr_debug() lines to 80 characters
+Thread-Index: Ac6+odK2MHzWnSfoQY+RdUd0+7bKnA==
+Date: Tue, 1 Oct 2013 12:29:07 +0000
+Message-ID: <26D762E250385C4D8E9D6EC3C8E47DC11E70588B@sambx4.stec-inc.ad>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [14.140.125.250]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380572952-30729-9-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-Barracuda-Connect: sacas02.stec-inc.ad[172.17.3.1]
+X-Barracuda-Start-Time: 1380631731
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://saspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.141083
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 01:29:09PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> The first loop in ext4_mb_init_cache can bail out when the end of
-> all groups is reached. Unfortunately the later loops did not
-> have that check and could access uninitialized buffer pointers
-> in bh[]. Add the end of group check everywhere.
-> 
-> Cc: tytso@mit.edu
-> Cc: linux-ext4@vger.kernel.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  Makefile          | 6 +++---
->  fs/ext4/mballoc.c | 6 +++++-
->  2 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index 8d0668f..be3ef83 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -663,9 +663,9 @@ KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
->  KBUILD_ARFLAGS := $(call ar-option,D)
->  
->  # check for 'asm goto'
-> -ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
-> -	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
-> -endif
-> +#ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
-> +#	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
-> +#endif
->  
->  # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
->  KBUILD_CPPFLAGS += $(KCPPFLAGS)
 
-What's this change all about, and why is it included in this
-patch?
+>From 6ff5102b3cd8047bb4bfb4d0165f289249e23bbe Mon Sep 17 00:00:00 2001
+From: rchinthekindi <rchinthekindi@stec-inc.com>
+Date: Tue, 1 Oct 2013 17:49:58 +0530
+Subject: [PATCH 2/2] skd: Restricted pr_debug() lines to 80 characters
 
-						- Ted
+Restricted pr_debug() lines to 80 characters
+
+Signed-off-by: Ramprasad C <ramprasad.chinthekindi@hgst.com>
+
+---
+ drivers/block/skd_main.c |   29 ++++++++++++++++++-----------
+ 1 files changed, 18 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index 9646dcf..30bc45e 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -864,7 +864,8 @@ static void skd_request_fn(struct request_queue *q)
+ 			skmsg = skdev->skmsg_free_list;
+ 			if (skmsg == NULL) {
+ 				pr_debug("%s:%s:%d Out of msg skdev=%p\n",
+-					 skdev->name, __func__, __LINE__, skdev);
++					 skdev->name, __func__, __LINE__,
++					 skdev);
+ 				break;
+ 			}
+ 			SKD_ASSERT(skmsg->state == SKD_MSG_STATE_IDLE);
+@@ -1858,7 +1859,8 @@ static int skd_sg_io_obtain_skspcl(struct skd_device *skdev,
+ 			break;
+ 		}
+ 
+-		pr_debug("%s:%s:%d blocking\n", skdev->name, __func__, __LINE__);
++		pr_debug("%s:%s:%d blocking\n",
++			 skdev->name, __func__, __LINE__);
+ 
+ 		rc = wait_event_interruptible_timeout(
+ 				skdev->waitq,
+@@ -2370,9 +2372,10 @@ static void skd_complete_internal(struct skd_device *skdev,
+ 			skd_send_internal_skspcl(skdev, skspcl, WRITE_BUFFER);
+ 		else {
+ 			if (skdev->state == SKD_DRVR_STATE_STOPPING) {
+-				pr_debug("%s:%s:%d TUR failed, don't send anymore"
+-					 "state 0x%x\n",
+-					 skdev->name, __func__, __LINE__, skdev->state);
++				pr_debug("%s:%s:%d TUR failed, don't send"
++					 " anymore state 0x%x\n",
++					 skdev->name, __func__, __LINE__,
++					 skdev->state);
+ 				return;
+ 			}
+ 			pr_debug("%s:%s:%d **** TUR failed, retry skerr\n",
+@@ -2386,9 +2389,10 @@ static void skd_complete_internal(struct skd_device *skdev,
+ 			skd_send_internal_skspcl(skdev, skspcl, READ_BUFFER);
+ 		else {
+ 			if (skdev->state == SKD_DRVR_STATE_STOPPING) {
+-				pr_debug("%s:%s:%d write buffer failed, don't send"
+-					 " anymore state 0x%x\n",
+-					 skdev->name, __func__, __LINE__, skdev->state);
++				pr_debug("%s:%s:%d write buffer failed,"
++					 " don't send anymore state 0x%x\n",
++					 skdev->name, __func__, __LINE__,
++					 skdev->state);
+ 				return;
+ 			}
+ 			pr_debug("%s:%s:%d "
+@@ -3700,11 +3704,13 @@ static void skd_recover_requests(struct skd_device *skdev, int requeue)
+ 		if (skspcl->req.state == SKD_REQ_STATE_BUSY) {
+ 			if (skspcl->orphaned) {
+ 				pr_debug("%s:%s:%d orphaned %p\n",
+-					 skdev->name, __func__, __LINE__, skspcl);
++					 skdev->name, __func__, __LINE__,
++					 skspcl);
+ 				skd_release_special(skdev, skspcl);
+ 			} else {
+ 				pr_debug("%s:%s:%d not orphaned %p\n",
+-					 skdev->name, __func__, __LINE__, skspcl);
++					 skdev->name, __func__, __LINE__,
++					 skspcl);
+ 				skspcl->req.state = SKD_REQ_STATE_ABORTED;
+ 			}
+ 		}
+@@ -4615,7 +4621,8 @@ static struct skd_device *skd_construct(struct pci_dev *pdev)
+ 	return skdev;
+ 
+ err_out:
+-	pr_debug("%s:%s:%d construct failed\n", skdev->name, __func__, __LINE__);
++	pr_debug("%s:%s:%d construct failed\n",
++		 skdev->name, __func__, __LINE__);
+ 	skd_destruct(skdev);
+ 	return NULL;
+ }
+-- 
+1.7.5.4
