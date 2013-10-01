@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab3JANKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:10:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36060 "EHLO mga14.intel.com"
+	id S1753695Ab3JANLC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:11:02 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44191 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753392Ab3JANKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:10:50 -0400
+	id S1753658Ab3JANK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 09:10:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1013,1371106800"; 
-   d="scan'208";a="368223254"
+   d="scan'208";a="368223406"
 From: Durgadoss R <durgadoss.r@intel.com>
 To: rui.zhang@intel.com, eduardo.valentin@ti.com, linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com, wni@nvidia.com,
         Durgadoss R <durgadoss.r@intel.com>
-Subject: [PATCHv4 4/9] Thermal: Add APIs to bind cdev to new zone structure
-Date: Wed,  2 Oct 2013 00:08:03 +0530
-Message-Id: <1380652688-5787-5-git-send-email-durgadoss.r@intel.com>
+Subject: [PATCHv4 9/9] Thermal: Dummy driver used for testing
+Date: Wed,  2 Oct 2013 00:08:08 +0530
+Message-Id: <1380652688-5787-10-git-send-email-durgadoss.r@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
 References: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
@@ -23,253 +23,370 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates new APIs to add/remove a
-cdev to/from a zone. This patch does not change
-the old cooling device implementation.
+This patch has a dummy driver that can be used for
+testing purposes. This patch is not for merge.
 
 Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
 ---
- drivers/thermal/thermal_core.c |  136 ++++++++++++++++++++++++++++++++++++++++
- include/linux/thermal.h        |    9 +++
- 2 files changed, 145 insertions(+)
+ drivers/thermal/Kconfig        |    5 +
+ drivers/thermal/Makefile       |    3 +
+ drivers/thermal/thermal_test.c |  322 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 330 insertions(+)
+ create mode 100644 drivers/thermal/thermal_test.c
 
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index a053b60..3c4ef62 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -58,6 +58,7 @@ static LIST_HEAD(thermal_governor_list);
- static DEFINE_MUTEX(thermal_list_lock);
- static DEFINE_MUTEX(sensor_list_lock);
- static DEFINE_MUTEX(zone_list_lock);
-+static DEFINE_MUTEX(cdev_list_lock);
- static DEFINE_MUTEX(thermal_governor_lock);
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index ae18f02..d4b8458 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -192,4 +192,9 @@ depends on PLAT_SAMSUNG
+ source "drivers/thermal/samsung/Kconfig"
+ endmenu
  
- #define for_each_thermal_sensor(pos) \
-@@ -86,6 +87,9 @@ static DEFINE_MUTEX(thermal_governor_lock);
- 	ret;						\
- })
- 
-+#define for_each_cdev(pos) \
-+	list_for_each_entry(pos, &thermal_cdev_list, node)
++config THERMAL_TEST
++	tristate "test driver"
++	help
++	  Enable this to test the thermal framework.
 +
- static struct thermal_governor *__find_governor(const char *name)
- {
- 	struct thermal_governor *pos;
-@@ -511,6 +515,27 @@ static void remove_sensor_from_zone(struct thermal_zone *tz,
- 	mutex_unlock(&tz->lock);
- }
- 
-+static void remove_cdev_from_zone(struct thermal_zone *tz,
-+				struct thermal_cooling_device *cdev)
+ endif
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index c19df7a..ccff09e 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -26,3 +26,6 @@ obj-$(CONFIG_DB8500_CPUFREQ_COOLING)	+= db8500_cpufreq_cooling.o
+ obj-$(CONFIG_INTEL_POWERCLAMP)	+= intel_powerclamp.o
+ obj-$(CONFIG_X86_PKG_TEMP_THERMAL)	+= x86_pkg_temp_thermal.o
+ obj-$(CONFIG_TI_SOC_THERMAL)	+= ti-soc-thermal/
++
++# dummy driver for testing
++obj-$(CONFIG_THERMAL_TEST)	+= thermal_test.o
+diff --git a/drivers/thermal/thermal_test.c b/drivers/thermal/thermal_test.c
+new file mode 100644
+index 0000000..6d34bca
+--- /dev/null
++++ b/drivers/thermal/thermal_test.c
+@@ -0,0 +1,322 @@
++/*
++ * thermal_test.c - This driver can be used to test Thermal
++ *			   Framework changes. Not specific to any
++ *			   platform. Fills the log buffer generously ;)
++ *
++ * Copyright (C) 2012 Intel Corporation
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
++ * General Public License for more details.
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * Author: Durgadoss R <durgadoss.r@intel.com>
++ */
++
++#define pr_fmt(fmt)  "thermal_test: " fmt
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/param.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/pm.h>
++#include <linux/platform_device.h>
++#include <linux/thermal.h>
++
++#define MAX_THERMAL_ZONES	2
++#define MAX_THERMAL_SENSORS	2
++#define MAX_COOLING_DEVS	4
++#define NUM_THRESHOLDS		3
++
++static struct ts_data {
++	int curr_temp;
++	int flag;
++} ts_data;
++
++int active_trips[10] = {100, 90, 80, 70, 60, 50, 40, 30, 20, 10};
++int passive_trips[5] = {100, 90, 60, 50, 40};
++int wts[5] = {50, 50, 50, 50, 40};
++
++static struct platform_device *pdev;
++static unsigned long cur_cdev_state = 2;
++static struct thermal_sensor *ts, *ts1;
++static struct thermal_zone *tz;
++static struct thermal_cooling_device *cdev;
++
++static long thermal_thresholds[NUM_THRESHOLDS] = {30000, 40000, 50000};
++
++static struct thermal_trip_point trip = {
++	.hot = 90,
++	.crit = 100,
++	.num_passive_trips = 5,
++	.passive_trips = passive_trips,
++	.num_active_trips = 10,
++	.active_trips = active_trips,
++};
++
++static struct thermal_trip_point trip1 = {
++	.hot = 95,
++	.crit = 125,
++	.num_passive_trips = 0,
++	.passive_trips = passive_trips,
++	.num_active_trips = 6,
++	.active_trips = active_trips,
++};
++
++static struct thermal_map map = {
++	.trip_type = THERMAL_TRIP_PASSIVE,
++	.sensor_name = "ts",
++	.cdev_name = "cdev",
++	.num_weights = 5,
++	.trip_mask = 0x0F,
++	.weights = wts,
++};
++
++static int read_cur_state(struct thermal_cooling_device *cdev,
++			unsigned long *state)
 +{
-+	int j, indx;
-+
-+	indx = GET_INDEX(tz, cdev, cdev);
-+	if (indx < 0)
-+		return;
-+
-+	sysfs_remove_link(&tz->device.kobj, kobject_name(&cdev->device.kobj));
-+
-+	mutex_lock(&tz->lock);
-+
-+	/* Shift the entries in the tz->cdevs array */
-+	for (j = indx; j < MAX_CDEVS_PER_ZONE - 1; j++)
-+		tz->cdevs[j] = tz->cdevs[j + 1];
-+
-+	tz->cdev_indx--;
-+	mutex_unlock(&tz->lock);
++	*state = cur_cdev_state;
++	return 0;
 +}
 +
- /* sys I/F for thermal zone */
- 
- #define to_thermal_zone(_dev) \
-@@ -1555,6 +1580,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
- 	int i;
- 	const struct thermal_zone_params *tzp;
- 	struct thermal_zone_device *tz;
-+	struct thermal_zone *tmp_tz;
- 	struct thermal_cooling_device *pos = NULL;
- 
- 	if (!cdev)
-@@ -1592,6 +1618,13 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
- 
- 	mutex_unlock(&thermal_list_lock);
- 
-+	mutex_lock(&zone_list_lock);
-+
-+	for_each_thermal_zone(tmp_tz)
-+		remove_cdev_from_zone(tmp_tz, cdev);
-+
-+	mutex_unlock(&zone_list_lock);
-+
- 	if (cdev->type[0])
- 		device_remove_file(&cdev->device, &dev_attr_cdev_type);
- 	device_remove_file(&cdev->device, &dev_attr_max_state);
-@@ -1873,6 +1906,7 @@ void remove_thermal_zone(struct thermal_zone *tz)
- {
- 	struct thermal_zone *pos, *next;
- 	struct thermal_sensor *ts;
-+	struct thermal_cooling_device *cdev;
- 	bool found = false;
- 
- 	if (!tz)
-@@ -1894,6 +1928,9 @@ void remove_thermal_zone(struct thermal_zone *tz)
- 	for_each_thermal_sensor(ts)
- 		remove_sensor_from_zone(tz, ts);
- 
-+	for_each_cdev(cdev)
-+		remove_cdev_from_zone(tz, cdev);
-+
- 	device_remove_file(&tz->device, &dev_attr_zone_name);
- 
- 	mutex_destroy(&tz->lock);
-@@ -1909,6 +1946,47 @@ exit:
- EXPORT_SYMBOL(remove_thermal_zone);
- 
- /**
-+ * get_cdev_by_name() - search for a cdev and returns its reference
-+ * @name: cooling device name to fetch the reference
-+ *
-+ * On success returns a reference to an unique cdev with
-+ * the name matching that of @name, an ERR_PTR otherwise:
-+ * -EINVAL for invalid paramenters
-+ * -ENODEV for cdev not found
-+ * -EEXIST for multiple matches
-+ */
-+struct thermal_cooling_device *get_cdev_by_name(const char *name)
++static int write_cur_state(struct thermal_cooling_device *cdev,
++			unsigned long state)
 +{
-+	int found = 0;
-+	struct thermal_cooling_device *pos;
-+	struct thermal_cooling_device *cdev = ERR_PTR(-EINVAL);
++	cur_cdev_state = state;
++	return 0;
++}
 +
-+	if (!name)
-+		return cdev;
++static int read_max_state(struct thermal_cooling_device *cdev,
++			unsigned long *state)
++{
++	*state = 5;
++	return 0;
++}
 +
-+	mutex_lock(&cdev_list_lock);
-+	for_each_cdev(pos) {
-+		if (!strnicmp(pos->type, name, THERMAL_NAME_LENGTH)) {
-+			found++;
-+			cdev = pos;
-+		}
++static int read_curr_temp(struct thermal_sensor *ts, long *temp)
++{
++	*temp = ts_data.curr_temp;
++	return 0;
++}
++
++static ssize_t
++flag_show(struct device *dev, struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%d\n", ts_data.flag);
++}
++
++static ssize_t
++flag_store(struct device *dev, struct device_attribute *attr,
++		    const char *buf, size_t count)
++{
++	long flag;
++
++	if (kstrtol(buf, 10, &flag))
++		return -EINVAL;
++
++	ts_data.flag = flag;
++
++	if (flag == 0) {
++		thermal_sensor_unregister(ts);
++		ts = NULL;
++		pr_err("thermal_sensor_unregister (ts) done\n");
++	} else if (flag == 1) {
++		thermal_sensor_unregister(ts1);
++		ts1 = NULL;
++		pr_err("thermal_sensor_unregister (ts1) done\n");
++	} else if (flag == 2) {
++		thermal_cooling_device_unregister(cdev);
++		cdev = NULL;
++		pr_err("cdev unregister (cdev) done\n");
++	} else if (flag == 3) {
++		if (tz)
++			remove_thermal_zone(tz);
++		tz = NULL;
++		pr_err("removed thermal zone\n");
 +	}
-+	mutex_unlock(&cdev_list_lock);
 +
-+	/*
-+	 * Nothing has been found; return an error code for it.
-+	 * Return success only when an unique cdev is found.
-+	 */
-+	if (found == 0)
-+		cdev = ERR_PTR(-ENODEV);
-+	else if (found > 1)
-+		cdev = ERR_PTR(-EEXIST);
-+
-+	return cdev;
++	return count;
 +}
-+EXPORT_SYMBOL(get_cdev_by_name);
 +
-+/**
-  * get_sensor_by_name() - search for a sensor and returns its reference
-  * @name: thermal sensor name to fetch the reference
-  *
-@@ -2003,6 +2081,64 @@ exit_zone:
- EXPORT_SYMBOL(add_sensor_to_zone);
- 
- /**
-+ * add_cdev_to_zone - Add @cdev to thermal zone @tz
-+ * @tz:		Thermal zone reference
-+ * @cdev:	Cooling device reference
-+ *
-+ * Returns 0 on success, otherwise
-+ * -EINVAL for invalid paramenters
-+ * -EINVAL when trying to add more cdevs than MAX_CDEVS_PER_ZONE
-+ * -EEXIST when trying add existing cdev again
-+ */
-+int add_cdev_to_zone(struct thermal_zone *tz,
-+			struct thermal_cooling_device *cdev)
++static ssize_t
++temp_show(struct device *dev, struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%d\n", ts_data.curr_temp);
++}
++
++static int read_threshold(struct thermal_sensor *ts, int indx, long *val)
++{
++	if (indx < 0 || indx >= NUM_THRESHOLDS)
++		return -EINVAL;
++
++	*val = thermal_thresholds[indx];
++	return 0;
++}
++
++static int write_threshold(struct thermal_sensor *ts, int indx, long val)
++{
++	if (indx < 0 || indx >= NUM_THRESHOLDS)
++		return -EINVAL;
++
++	thermal_thresholds[indx] = val;
++	return 0;
++}
++
++static ssize_t
++temp_store(struct device *dev, struct device_attribute *attr,
++		    const char *buf, size_t count)
++{
++	long temp;
++
++	if (kstrtol(buf, 10, &temp))
++		return -EINVAL;
++
++	ts_data.curr_temp = temp;
++	return count;
++}
++
++static struct thermal_sensor_ops ts_ops = {
++	.get_temp = read_curr_temp,
++	.get_threshold = read_threshold,
++	.set_threshold = write_threshold,
++};
++
++static struct thermal_sensor_ops ts1_ops = {
++	.get_temp = read_curr_temp,
++	.get_threshold = read_threshold,
++	.set_threshold = write_threshold,
++};
++
++static struct thermal_cooling_device_ops cdev_ops = {
++	.get_cur_state = read_cur_state,
++	.set_cur_state = write_cur_state,
++	.get_max_state = read_max_state,
++};
++
++static DEVICE_ATTR(test_temp, S_IRUGO | S_IWUSR, temp_show, temp_store);
++static DEVICE_ATTR(sensor_enable, S_IRUGO | S_IWUSR, flag_show, flag_store);
++
++static int thermal_test_probe(struct platform_device *pdev)
 +{
 +	int ret;
 +
-+	if (!tz || !cdev)
++	ts_data.curr_temp = 30000;
++	ts_data.flag = 1;
++
++	ts = thermal_sensor_register("ts", NUM_THRESHOLDS, &ts_ops, &ts_data);
++	if (!ts) {
++		pr_err("thermal_sensor_register failed:\n");
 +		return -EINVAL;
-+
-+	mutex_lock(&zone_list_lock);
-+
-+	/* Ensure we are not adding the same cdev again!! */
-+	ret = GET_INDEX(tz, cdev, cdev);
-+	if (ret >= 0) {
-+		ret = -EEXIST;
-+		goto exit_zone;
 +	}
 +
-+	/* Protect against 'cdev' being unregistered */
-+	mutex_lock(&cdev_list_lock);
++	ts1 = thermal_sensor_register("ts1", NUM_THRESHOLDS, &ts1_ops, NULL);
 +
-+	ret = sysfs_create_link(&tz->device.kobj, &cdev->device.kobj,
-+				kobject_name(&cdev->device.kobj));
-+	if (ret)
-+		goto exit_cdev;
-+
-+	mutex_lock(&tz->lock);
-+
-+	if (tz->cdev_indx >= MAX_CDEVS_PER_ZONE - 1) {
-+		dev_err(&tz->device, "Only %d cdevs allowed per zone\n",
-+					MAX_CDEVS_PER_ZONE);
-+		sysfs_remove_link(&tz->device.kobj,
-+				kobject_name(&cdev->device.kobj));
-+		ret = -EINVAL;
-+		goto exit_indx_check;
++	cdev = thermal_cooling_device_register("cdev", NULL, &cdev_ops);
++	if (!cdev) {
++		pr_err("cdev_register failed:\n");
++		return -EINVAL;
 +	}
 +
-+	tz->cdevs[tz->cdev_indx++] = cdev;
++	device_create_file(&pdev->dev, &dev_attr_test_temp);
++	device_create_file(&pdev->dev, &dev_attr_sensor_enable);
 +
-+exit_indx_check:
-+	mutex_unlock(&tz->lock);
-+exit_cdev:
-+	mutex_unlock(&cdev_list_lock);
-+exit_zone:
-+	mutex_unlock(&zone_list_lock);
++	/* Create a zone */
++	tz = create_thermal_zone("myZone", NULL);
++	if (!tz) {
++		pr_err("create_thermal_zone failed:\n");
++		return -EINVAL;
++	}
++
++	pr_err("Zone created successfully..\n");
++
++	ret = add_sensor_to_zone(tz, ts);
++	if (ret) {
++		pr_err("add_sensor_to_zone failed:%d\n", ret);
++		return ret;
++	}
++
++	ret = add_sensor_to_zone(tz, ts1);
++	pr_err("add_sensor (ts1) ret_val: %d\n", ret);
++
++	ret = add_cdev_to_zone(tz, cdev);
++	pr_err("add_cdev_to_zone (cdev) ret_val: %d\n", ret);
++
++	ret = add_sensor_trip_info(tz, ts, &trip);
++	ret = add_sensor_trip_info(tz, ts1, &trip1);
++	pr_err("add_sensor_trip_info (ts) ret_val: %d\n", ret);
++
++	ret = add_map_entry(tz, &map);
++	pr_err("add_map_entry (ts) ret_val: %d\n", ret);
++
++	return 0;
++}
++
++static int thermal_test_remove(struct platform_device *pdev)
++{
++	device_remove_file(&pdev->dev, &dev_attr_test_temp);
++	device_remove_file(&pdev->dev, &dev_attr_sensor_enable);
++
++	return 0;
++}
++
++/*********************************************************************
++ *		Driver initialization and finalization
++ *********************************************************************/
++
++#define DRIVER_NAME "thermal_test"
++
++static const struct platform_device_id therm_id_table[] = {
++	{ DRIVER_NAME, 1 },
++};
++
++static struct platform_driver thermal_test_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	},
++	.probe = thermal_test_probe,
++	.remove = thermal_test_remove,
++	.id_table = therm_id_table,
++};
++
++static int __init thermal_test_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&thermal_test_driver);
++	if (ret) {
++		pr_err("platform driver register failed:%d\n", ret);
++		return ret;
++	}
++
++	pdev = platform_device_register_simple(DRIVER_NAME, -1, NULL, 0);
++	if (IS_ERR(pdev)) {
++		ret = PTR_ERR(pdev);
++		pr_err("platform device register failed:%d\n", ret);
++		platform_driver_unregister(&thermal_test_driver);
++	}
++
 +	return ret;
 +}
-+EXPORT_SYMBOL(add_cdev_to_zone);
 +
-+/**
-  * thermal_sensor_register - register a new thermal sensor
-  * @name:	name of the thermal sensor
-  * @count:	Number of thresholds supported by hardware
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 2e12321..da7520c 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -60,6 +60,8 @@
- 
- #define MAX_SENSORS_PER_ZONE		5
- 
-+#define MAX_CDEVS_PER_ZONE		5
++static void __exit thermal_test_exit(void)
++{
++	pr_err("in thermal_test_exit\n");
++	platform_device_unregister(pdev);
++	platform_driver_unregister(&thermal_test_driver);
++}
 +
- struct thermal_sensor;
- struct thermal_zone_device;
- struct thermal_cooling_device;
-@@ -223,6 +225,10 @@ struct thermal_zone {
- 	/* Sensor level information */
- 	int sensor_indx; /* index into 'sensors' array */
- 	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
++module_init(thermal_test_init);
++module_exit(thermal_test_exit);
 +
-+	/* cdev level information */
-+	int cdev_indx; /* index into 'cdevs' array */
-+	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
- };
- 
- /* Structure that holds thermal governor information */
-@@ -300,6 +306,9 @@ void remove_thermal_zone(struct thermal_zone *);
- int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
- struct thermal_sensor *get_sensor_by_name(const char *);
- 
-+int add_cdev_to_zone(struct thermal_zone *, struct thermal_cooling_device *);
-+struct thermal_cooling_device *get_cdev_by_name(const char *);
-+
- #ifdef CONFIG_NET
- extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
- 						enum events event);
++MODULE_AUTHOR("Durgadoss R <durgadoss.r@intel.com>");
++MODULE_DESCRIPTION("A dummy driver to test Thermal Framework");
++MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
