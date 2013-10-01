@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3JAGWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:22:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:29080 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab3JAGWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:22:10 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1012,1371052800"; 
-   d="scan'208";a="8662579"
-Message-ID: <524A69DA.9050701@cn.fujitsu.com>
-Date: Tue, 01 Oct 2013 14:21:14 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751326Ab3JAGaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 02:30:09 -0400
+Received: from vex.ruff.mobi ([46.167.245.136]:57959 "EHLO vex.ruff.mobi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871Ab3JAGaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 02:30:07 -0400
+Date: Tue, 1 Oct 2013 08:29:25 +0200
+From: "Ruslan N. Marchenko" <me@ruff.mobi>
+To: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Regression in 2fdac010
+ drivers/net/ethernet/via/via-velocity.c: update napi implementation
+Message-ID: <20131001062925.GA9458@ruff.mobi>
+Mail-Followup-To: Julia Lawall <julia.lawall@lip6.fr>,
+	linux-kernel@vger.kernel.org
+References: <20130930071531.GA13037@ruff.mobi>
+ <alpine.DEB.2.02.1309301353150.2036@localhost6.localdomain6>
+ <20130930135427.GA19660@ruff.mobi>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, imtangchen@gmail.com
-Subject: Re: [PATCH -mm] mm, memory-hotpulg: Rename movablenode boot option
- to movable_node
-References: <5249B7C6.7010902@gmail.com> <20131001054646.GA17220@gmail.com>
-In-Reply-To: <20131001054646.GA17220@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/01 14:20:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/01 14:20:15,
-	Serialize complete at 2013/10/01 14:20:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930135427.GA19660@ruff.mobi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ingo,
-
-On 10/01/2013 01:46 PM, Ingo Molnar wrote:
+On Mon, Sep 30, 2013 at 03:54:27PM +0200, Ruslan N. Marchenko wrote:
+> On Mon, Sep 30, 2013 at 01:54:06PM +0200, Julia Lawall wrote:
+> > On Mon, 30 Sep 2013, Ruslan N. Marchenko wrote:
+> > 
+> > > Hi Julia et al.,
+> > > 
+> > > With this commit VIA NANO board get CPU lockup in random places on any network activity.
+> > > .
+> > > Reverting the patch allows me to boot without problems even from latest Linus trunk and send this mail.
+> > 
+> > You can find the discussion and improved patch in this thread:
+> > 
+> > http://www.spinics.net/lists/netdev/msg251287.html
+> > Bug - regression - Via velocity interface coming up freezes kernel
+> > From: Dirk Kraft <dirk.kraft@xxxxxxxxx>
+> > Date: Sun, 22 Sep 2013 19:28:52 +0200
+> > 
+> > julia
 > 
-> * Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+> Oops, sorry, somehow I missed it even though 've been searching for via-velocity regression.
+> Will give a try to new proposed patch as well.
 > 
->> @@ -153,11 +153,18 @@ config MOVABLE_NODE
->>  	help
->>  	  Allow a node to have only movable memory.  Pages used by the kernel,
->>  	  such as direct mapping pages cannot be migrated.  So the corresponding
->> +	  memory device cannot be hotplugged.  This option allows the following
->> +	  two things:
->> +	  - When the system is booting, node full of hotpluggable memory can
->> +	  be arranged to have only movable memory so that the whole node can
->> +	  be hotplugged. (need movable_node boot option specified).
-> 
-> So this is _exactly_ what I complained about earlier: why is the 
-> movable_node boot option needed to get that extra functionality? It's 
-> clearly not just a drop-in substitute to CONFIG_MOVABLE_NODE but extends 
-> its functionality, right?
+ and short confirmation adding patch from Francois Romieu works on current -rc3+
 
-Generally speaking, CONFIG_MOVABLE_NODE is used to allow a node to have
-only movable memory. Firstly, we didn't support the functionality to support
-boot-time configuration. That said, before this patchset, we only support
-later hot-add node to have only movable memory but any node that is dectected
-at boot-time cannot. So here is movable_node option, to protect the kernel
-from using hotpluggable memory at boot-time and if a node is full of hotpluggable
-memory, this node is arranged to have only movable memory and can be hot-removed
-after the system is up.
-
-> 
-> Boot options are _very_ poor user interface. If you don't want to enable 
-> it by default then turn this sub-functionality into 
-> CONFIG_MOVABLE_NODE_AUTO and keep it default-off - but don't pretend that 
-> this is only about CONFIG_MOVABLE_NODE alone - it isnt: as described above 
-> the 'movable_node' is needed for the full functionality to be available!
-
-As explained above, we need the boot option to only disable boot-time
-memory-hotplug configuration not the whole MOVABLE_NODE functionality.
-
-Thanks
-
--- 
-Thanks.
-Zhang Yanfei
+Regards,
+Ruslan
