@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab3JAGjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:39:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8337 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab3JAGjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:39:36 -0400
-Message-ID: <524A6E29.1050702@redhat.com>
-Date: Tue, 01 Oct 2013 08:39:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	id S1751587Ab3JAGj7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 02:39:59 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:41632 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab3JAGj6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 02:39:58 -0400
+Date: Tue, 1 Oct 2013 08:39:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] sched, wait: Make the __wait_event*() interface more
+ friendly
+Message-ID: <20131001063954.GA19111@gmail.com>
+References: <20130930152242.207382649@infradead.org>
+ <20130930152625.131613711@infradead.org>
 MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH v3 3/3] tile: enable VIRTIO support for KVM
-References: <20130826120445.GD8218@redhat.com> <54dadfbf688618a900310d10363b9c395fa3d322.1377736306.git.cmetcalf@tilera.com> <522F14F8.2000101@redhat.com> <5249DAEC.2090106@tilera.com>
-In-Reply-To: <5249DAEC.2090106@tilera.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930152625.131613711@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/09/2013 22:11, Chris Metcalf ha scritto:
-> As I said to Gleb in the previous email - sorry for the delay in
-> replying to your thoughtful comments!
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> Change all __wait_event*() implementations to match the corresponding
+> wait_event*() signature for convenience.
 > 
+> In particular this does away with the weird 'ret' logic. Since there
+> are __wait_event*() users this requires we update them too.
 > 
-> On 9/10/2013 8:47 AM, Paolo Bonzini wrote:
->> Il 28/08/2013 22:58, Chris Metcalf ha scritto:
->>> This change enables support for a virtio-based console,
->>> network support, and block driver support.
->>>
->>> We remove some debug code in relocate_kernel_64.S that made raw
->>> calls to the hv_console_putc Tilera hypervisor API, since everything
->>> now should funnel through the early_hv_write() API.
->>>
->>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->> Why couldn't this use the "regular" virtio-mmio interface?
-> 
-> We probably should!  We were working with a CentOS 6 style distribution,
-> which has an older version of qemu; we upgraded slightly to 0.13 in
-> the thought that minimizing version skew would help distribution compatibility.
-> That version doesn't have the virtio-mmio stuff.  But you're right, we probably
-> should return the virtio-mmio stuff to the community instead, even if we're
-> going to keep something like this patch in our local copy of KVM.
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/mips/kernel/rtlx.c         |   19 +++---
+>  include/linux/tty.h             |   10 +--
+>  include/linux/wait.h            |  113 +++++++++++++++++++---------------------
+>  net/irda/af_irda.c              |    5 -
+>  net/netfilter/ipvs/ip_vs_sync.c |    7 --
+>  5 files changed, 73 insertions(+), 81 deletions(-)
 
-Thanks, that looks like the right thing to do.
+Since now everyone seems to agree about this series, and since this 
+particular patch changes generated code it would be really nice to split 
+it into about ten per interface patches:
 
-The difference between s390-virtio and virtio-mmio is that s390 has a
-single device that supports multiple "back-ends", with hotplug and
-hot-unplug support.
+  - __wait_event_interruptible()
+  - __wait_event_interruptible_timeout()
+  - __wait_event_interruptible_exclusive()
+  - __wait_event_interruptible_lock_irq()
+  - __wait_event_interruptible_tty()
+  - __wait_event()
+  - __wait_event_timeout()
+  - __wait_event_killable()
+  - __wait_event_interruptible_lock_irq_timeout()
 
-virtio-mmio supports a fixed number of devices, defined in the board by
-creating a number of instances of the "naked" virtio-mmio front-ends.
+The changes seem to be mostly isolated, they are even in separate patch 
+hunks most of the time making a splitup relatively easy - with a handful 
+of semantic interdependencies.
 
-On the other hand, s390-virtio was never fully specified and is not part
-of the virtio standardization effort (because s390 has now switched to a
-different mechanism).
+There's very little downside to doing it the split-up way, and there's a 
+lot of bisection and bug review upside, should any of these changes prove 
+problematic...
 
->>>  static void early_hv_write(struct console *con, const char *s, unsigned n)
->>>  {
->>> +#ifdef CONFIG_KVM_GUEST
->>> +     char buf[512];
->>> +
->>> +     if (n > sizeof(buf) - 1)
->>> +             n = sizeof(buf) - 1;
->>> +     memcpy(buf, s, n);
->>> +     buf[n] = '\0';
->>> +
->>> +     hcall_virtio(KVM_VIRTIO_NOTIFY, __pa(buf));
->> How can userspace know the difference between KVM_VIRTIO_NOTIFY with a
->> string buffer, and KVM_VIRTIO_NOTIFY with a config space pointer?
->>
->> In fact, this looks like a completely separate hypercall, why not keep
->> hv_console_putc?
-> 
-> Good point.  Right now in qemu the virtio hypercall with a KVM_VIRTIO_NOTIFY
-> reason either does a virtio_queue_notify(), if the address is not in RAM,
-> or a print, if it is.  It does seem we could just have separate calls;
-> the reason we grouped it in with the KVM_VIRTIO stuff instead of implementing
-> it with the hv_console_write() API is just that it uses the virtio_console
-> API to do the work.  But we probably could do it the other way too, and
-> that might arguably make more sense.  We'll think about it.
+Thanks,
 
-Yeah, using virtio-console is just an implementation-dependent issue.  I
-think it's better to keep the previous guest code for early printk.
-
-Paolo
-
+	Ingo
