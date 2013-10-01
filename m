@@ -1,37 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab3JAT4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 15:56:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34107 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3JAT4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 15:56:30 -0400
-Message-ID: <524B28EA.40702@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 13:56:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: tegra: PLLE spread spectrum control
-References: <1380209654-25458-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1380209654-25458-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752420Ab3JAT4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 15:56:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38233 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab3JAT4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 15:56:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1015,1371106800"; 
+   d="scan'208";a="368417940"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: cjb@laptop.org, bhelgaas@google.com, adrian.hunter@intel.com,
+        wfp5p@virginia.edu, gregkh@linuxfoundation.org, g.liakhovetski@gmx.de
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH 2/2] mmc: sdhci-pci: add Intel Merrifield support
+Date: Tue,  1 Oct 2013 13:00:33 -0700
+Message-Id: <1380657633-19543-2-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1380657633-19543-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1380657633-19543-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 09:34 AM, Peter De Schrijver wrote:
-> Add spread spectrum control for PLLE in Tegra114.
+Implement initial SDHCI Intel Merrifield support.
+This patch is based on previous one from Yunpeng Gao <yunpeng.gao@intel.com>
 
-It would be useful to have some description of the end-user-visible
-benefit of this change; why is it useful?
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ drivers/mmc/host/sdhci-pci.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
-(on Beaver and Harmony, a PCIe Ethernet NIC passes traffic just fine).
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index d7d6bc8..10bd17e 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -356,6 +356,28 @@ static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
+ 	.allow_runtime_pm = true,
+ };
+ 
++/* Define Host controllers for Intel Merrifield platform */
++#define INTEL_MRFL_EMMC_0	0
++#define INTEL_MRFL_EMMC_1	1
++
++static int intel_mrfl_mmc_probe_slot(struct sdhci_pci_slot *slot)
++{
++	if ((PCI_FUNC(slot->chip->pdev->devfn) != INTEL_MRFL_EMMC_0) &&
++	    (PCI_FUNC(slot->chip->pdev->devfn) != INTEL_MRFL_EMMC_1))
++		/* SD support is not ready yet */
++		return -ENODEV;
++
++	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_NONREMOVABLE |
++				 MMC_CAP_1_8V_DDR;
++
++	return 0;
++}
++
++static const struct sdhci_pci_fixes sdhci_intel_mrfl_mmc = {
++	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
++	.probe_slot	= intel_mrfl_mmc_probe_slot,
++};
++
+ /* O2Micro extra registers */
+ #define O2_SD_LOCK_WP		0xD3
+ #define O2_SD_MULTI_VCC3V	0xEE
+@@ -940,6 +962,13 @@ static const struct pci_device_id pci_ids[] = {
+ 	},
+ 
+ 	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_MRFL_MMC,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_intel_mrfl_mmc,
++	},
++	{
+ 		.vendor		= PCI_VENDOR_ID_O2,
+ 		.device		= PCI_DEVICE_ID_O2_8120,
+ 		.subvendor	= PCI_ANY_ID,
+-- 
+1.8.4.rc3
+
