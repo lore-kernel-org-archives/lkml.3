@@ -1,180 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab3JARTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 13:19:51 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4535 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128Ab3JARTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 13:19:49 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Tim Kryger" <tim.kryger@linaro.org>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Heikki Krogerus" <heikki.krogerus@linux.intel.com>
-cc: "Tim Kryger" <tim.kryger@linaro.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
-Date: Tue, 1 Oct 2013 10:18:08 -0700
-Message-ID: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
+	id S1752908Ab3JARWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 13:22:19 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47116 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3JARWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 13:22:17 -0400
+From: =?UTF-8?q?Anders=20F=2E=20U=2E=20Ki=C3=A6r?= 
+	<ablacksheep@gmail.com>
+To: jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Anders=20F=2E=20U=2E=20Ki=C3=A6r?= 
+	<ablacksheep@gmail.com>
+Subject: [PATCH] HID: Added Holtek USB ID 04d9:a081 SHARKOON DarkGlider Gaming mouse
+Date: Tue,  1 Oct 2013 19:22:05 +0200
+Message-Id: <1380648125-5735-1-git-send-email-ablacksheep@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-X-WSS-ID: 7E55DE2B2L890423793-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When configured with UART_16550_COMPATIBLE=NO or in versions prior to
-the introduction of this option, the Designware UART will ignore writes
-to the LCR if the UART is busy.  The current workaround saves a copy of
-the last written LCR and re-writes it in the ISR for a special interrupt
-that is raised when a write was ignored.
+Target: 3.11.2
+Added id, bindings and comments for Holtek USB ID 04d9:a081 SHARKOON
+DarkGlider Gaming mouse to use the same corrections of the report
+descriptor as Holtek 04d9:a04a. As the mouse exceed HID_MAX_USAGES
+at the same offsets in the reported descriptor.
+Tested on the hardware.
 
-Unfortunately, interrupts are typically disabled prior to performing a
-sequence of register writes that include the LCR so the point at which
-the retry occurs is too late.  An example is serial8250_do_set_termios()
-where an ignored LCR write results in the baud divisor not being set and
-instead a garbage character is sent out the transmitter.
-
-Furthermore, since serial_port_out() offers no way to indicate failure,
-a serious effort must be made to ensure that the LCR is actually updated
-before returning back to the caller.  This is difficult, however, as a
-UART that was busy during the first attempt is likely to still be busy
-when a subsequent attempt is made unless some extra action is taken.
-
-This updated workaround reads back the LCR after each write to confirm
-that the new value was accepted by the hardware.  Should the hardware
-ignore a write, the TX/RX FIFOs are cleared and the receive buffer read
-before attempting to rewrite the LCR out of the hope that doing so will
-force the UART into an idle state.  While this may seem unnecessarily
-aggressive, writes to the LCR are used to change the baud rate, parity,
-stop bit, or data length so the data that may be lost is likely not
-important.  Admittedly, this is far from ideal but it seems to be the
-best that can be done given the hardware limitations.
-
-Lastly, the revised workaround doesn't touch the LCR in the ISR, so it
-avoids the possibility of a "serial8250: too much work for irq" lock up.
-This problem is rare in real situations but can be reproduced easily by
-wiring up two UARTs and running the following commands.
-
-  # stty -F /dev/ttyS1 echo
-  # stty -F /dev/ttyS2 echo
-  # cat /dev/ttyS1 &
-  [1] 375
-  # echo asdf > /dev/ttyS1
-  asdf
-
-  [   27.700000] serial8250: too much work for irq96
-  [   27.700000] serial8250: too much work for irq96
-  [   27.710000] serial8250: too much work for irq96
-  [   27.710000] serial8250: too much work for irq96
-  [   27.720000] serial8250: too much work for irq96
-  [   27.720000] serial8250: too much work for irq96
-  [   27.730000] serial8250: too much work for irq96
-  [   27.730000] serial8250: too much work for irq96
-  [   27.740000] serial8250: too much work for irq96
-
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Signed-off-by: Anders F. U. Kiær <ablacksheep@gmail.com>
 ---
+ drivers/hid/Kconfig            | 1 +
+ drivers/hid/hid-core.c         | 1 +
+ drivers/hid/hid-holtek-mouse.c | 4 ++++
+ drivers/hid/hid-ids.h          | 1 +
+ 4 files changed, 7 insertions(+)
 
-Changes in v2:
-  - Rebased on tty-next
-  - Updated commit messsage to mention UART_16550_COMPATIBLE
-  - Removed potentially unnecessary read of LSR and MSR
-  - Only attempt workaround when LCR write is ignored
-
- drivers/tty/serial/8250/8250_dw.c | 41 ++++++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index d04a037..4658e3e 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -57,7 +57,6 @@
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 14ef6ab..750adde 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -241,6 +241,7 @@ config HID_HOLTEK
+ 	  - Sharkoon Drakonia / Perixx MX-2000 gaming mice
+ 	  - Tracer Sniper TRM-503 / NOVA Gaming Slider X200 /
+ 	    Zalman ZM-GM1
++	  - SHARKOON DarkGlider Gaming mouse
  
- struct dw8250_data {
- 	u8			usr_reg;
--	int			last_lcr;
- 	int			last_mcr;
- 	int			line;
- 	struct clk		*clk;
-@@ -77,17 +76,33 @@ static inline int dw8250_modify_msr(struct uart_port *p, int offset, int value)
- 	return value;
- }
+ config HOLTEK_FF
+ 	bool "Holtek On Line Grip force feedback support"
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 5956445..754cd59 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1600,6 +1600,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HUION, USB_DEVICE_ID_HUION_580) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
+diff --git a/drivers/hid/hid-holtek-mouse.c b/drivers/hid/hid-holtek-mouse.c
+index 7e6db3c..e696566 100644
+--- a/drivers/hid/hid-holtek-mouse.c
++++ b/drivers/hid/hid-holtek-mouse.c
+@@ -27,6 +27,7 @@
+  * - USB ID 04d9:a067, sold as Sharkoon Drakonia and Perixx MX-2000
+  * - USB ID 04d9:a04a, sold as Tracer Sniper TRM-503, NOVA Gaming Slider X200
+  *   and Zalman ZM-GM1
++ * - USB ID 04d9:a081, sold as SHARKOON DarkGlider Gaming mouse
+  */
  
-+static void dw8250_force_idle(struct uart_port *p)
-+{
-+	serial8250_clear_and_reinit_fifos(container_of
-+					  (p, struct uart_8250_port, port));
-+	(void)p->serial_in(p, UART_RX);
-+}
-+
- static void dw8250_serial_out(struct uart_port *p, int offset, int value)
- {
- 	struct dw8250_data *d = p->private_data;
+ static __u8 *holtek_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+@@ -46,6 +47,7 @@ static __u8 *holtek_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 			}
+ 			break;
+ 		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A:
++		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081:
+ 			if (*rsize >= 113 && rdesc[106] == 0xff && rdesc[107] == 0x7f
+ 					&& rdesc[111] == 0xff && rdesc[112] == 0x7f) {
+ 				hid_info(hdev, "Fixing up report descriptor\n");
+@@ -63,6 +65,8 @@ static const struct hid_device_id holtek_mouse_devices[] = {
+ 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
+ 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
++			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, holtek_mouse_devices);
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 22134d4..b602b02 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -450,6 +450,7 @@
+ #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
+ #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067	0xa067
+ #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A	0xa04a
++#define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081	0xa081
  
--	if (offset == UART_LCR)
--		d->last_lcr = value;
--
- 	if (offset == UART_MCR)
- 		d->last_mcr = value;
- 
- 	writeb(value, p->membase + (offset << p->regshift));
-+
-+	/* Make sure LCR write wasn't ignored */
-+	if (offset == UART_LCR) {
-+		int tries = 1000;
-+		while (tries--) {
-+			if (value == p->serial_in(p, UART_LCR))
-+				return;
-+			dw8250_force_idle(p);
-+			writeb(value, p->membase + (UART_LCR << p->regshift));
-+		}
-+		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
-+	}
- }
- 
- static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
-@@ -108,13 +123,22 @@ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
- {
- 	struct dw8250_data *d = p->private_data;
- 
--	if (offset == UART_LCR)
--		d->last_lcr = value;
--
- 	if (offset == UART_MCR)
- 		d->last_mcr = value;
- 
- 	writel(value, p->membase + (offset << p->regshift));
-+
-+	/* Make sure LCR write wasn't ignored */
-+	if (offset == UART_LCR) {
-+		int tries = 1000;
-+		while (tries--) {
-+			if (value == p->serial_in(p, UART_LCR))
-+				return;
-+			dw8250_force_idle(p);
-+			writel(value, p->membase + (UART_LCR << p->regshift));
-+		}
-+		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
-+	}
- }
- 
- static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
-@@ -132,9 +156,8 @@ static int dw8250_handle_irq(struct uart_port *p)
- 	if (serial8250_handle_irq(p, iir)) {
- 		return 1;
- 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
--		/* Clear the USR and write the LCR again. */
-+		/* Clear the USR */
- 		(void)p->serial_in(p, d->usr_reg);
--		p->serial_out(p, UART_LCR, d->last_lcr);
- 
- 		return 1;
- 	}
+ #define USB_VENDOR_ID_IMATION		0x0718
+ #define USB_DEVICE_ID_DISC_STAKKA	0xd000
 -- 
-1.8.0.1
-
+1.8.1.2
 
