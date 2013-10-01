@@ -1,77 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3JANTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 09:19:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44249 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834Ab3JANTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 09:19:17 -0400
-Message-ID: <524ACBC6.5060208@ti.com>
-Date: Tue, 1 Oct 2013 18:49:02 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <luca@coelho.fi>
-Subject: Re: using mmc2 on panda [was: Regression 3.11-rc1: omap4panda: no
- usb and consequently no ethernet]
-References: <51E7AA24.6080600@broadcom.com> <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com> <51E919CA.8060805@ti.com> <51E91B80.1050609@broadcom.com> <524A823F.6070209@broadcom.com> <524A9AB8.4010407@ti.com> <524A9BB2.2050503@ti.com> <524AA9C1.2000303@broadcom.com> <524ABD60.1010206@ti.com>
-In-Reply-To: <524ABD60.1010206@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753185Ab3JANVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 09:21:12 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56572 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab3JANVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 09:21:10 -0400
+X-Nat-Received: from [202.181.97.72]:55362 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1380633654.6285
+To: rientjes@google.com
+Cc: akpm@linux-foundation.org, oleg@redhat.com, security@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kthread: Make kthread_create() killable.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com>
+	<201309261159.BHB18780.OHLFQFMOOJSVtF@I-love.SAKURA.ne.jp>
+	<alpine.DEB.2.02.1309261149050.10904@chino.kir.corp.google.com>
+	<201309281618.JAG82364.VFMtSOOQOLFHJF@I-love.SAKURA.ne.jp>
+	<alpine.DEB.2.02.1309301441270.28109@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1309301441270.28109@chino.kir.corp.google.com>
+Message-Id: <201310012220.EIE35417.HFOQLFSFMJOtOV@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 1 Oct 2013 22:20:51 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 01102013 #11149554, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> Hi Roger,
->>>>>
->>>>> It has been a while, but I would like to pickup this thread. We have a couple of pandaboards used as test setup. These have an SDIO adapter hooked up to expansion connector A using MMC2. I have attached the patch file (just ignore platform_data stuff). Now on one board it works, but not for the other. I suspect a board issue so listing the two types that we use:
->>>>>
->>>>> PandaBoard rev A2 (dmesg: OMAP4430 ES2.1): works
->>>>> PandaBoardES rev B1 (dmesg: OMAP4460 ES1.1): nope
->>>>>
->>>>> Any hints for me.
->>>>
->>>> Does your PandaboardES have the WLAN chip (U4) mounted? If yes, how do you isolate
->>>> it from your external SDIO adapter?
->>
->> On my 4460 board in front of me U4 is not populated, but U3 is (the TiWi thing).
->>
->>>
->>> OK, just realized that the expansion connector uses different pads for MMC2. However, you still
->>> need to make sure that the other pins (connected to on board WLAN chip) are not muxed as MMC2.
->>
->> I think Luciano added DT patches for on-board WLAN and it uses MMC5 if I am not mistaken(?). Attached are the dmesg logs of the two boards.
->
-> Right. WLAN is supposed to use MMC5. But if you don't have Luca's patches, can you please ensure that those pins are muxed either as safe mode
-> or as MMC5? Default seems to be safe mode, but you should cross check.
->
-> Also in your patches you have set mmc2-clk to PIN_INPUT_PULLUP
-> Shouldn't it be PIN_OUTPUT?
->
-> Still I have no clue why it works on 4430 and not on 4460. Are you using the same bootloader image on both boards?
->
-if you are using vaux1, can you check the voltage levels,
+David Rientjes wrote:
+> On Sat, 28 Sep 2013, Tetsuo Handa wrote:
+> 
+> > Some of enterprise users might prefer "kernel panic followed by kdump and
+> > automatic reboot" to "a system is not responding for unpredictable period", for
+> > the panic helps getting information for analyzing what process caused the
+> > freeze. Well, can they use "Panic (Reboot) On Soft Lockups" option?
+> > 
+> 
+> Or, when the system doesn't respond for a long period of time you do 
+> sysrq+T and you find the TIF_MEMDIE bit set on a process that makes no 
+> progress exiting.
 
- From dmesg you attached,
-vaux1 is set to 1.8V on omap4430 and to 2.8V on OMAP4460
+In enterprise systems, an operator is not always sitting in front of the server
+for pressing sysrq keys (nor kept ssh session for issuing sysrq via procfs).
+The operator likely finds it many hours later after the system got frozen. The
+operator finds that he/she can't login, and presses power reset button.
+Rather than wasting for many hours, an unattended automatic reboot might be
+preferred.
 
-4430
-[    2.425750] VAUX1_6030: 1000 <--> 3000 mV at 1800 mV
+>                    These instances _should_ be very rare since we don't 
+> have any other reports of it (and the oom killer hasn't differed in this 
+> regard for over three years).  It used to be much more common for 
+> mm->mmap_sem dependencies that were fixed.
+> 
 
-4460
-[    2.244262] VAUX1_6030: 1000 <--> 3000 mV at 2800 mV
+Such reports in real world might be rare, but I care potential bugs which can
+affect availability of the server.
 
-Can you also check with MMC_DEBUG enabled for any clues.
+If local unprivileged users can execute their own programs, they can easily
+freeze the server. Therefore, I test whether such freeze can happen using DoS
+attacking programs executed by local unprivileged users. I confirmed that
+request_module() can easily freeze the server and the request_module() case was
+fixed as CVE-2012-4398. I confirmed that kthread_create() can freeze the server
+(though not easy to trigger but can happen by chance) and posted a patch in
+this thread.
 
-> cheers,
-> -roger
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> > Currently the OOM killer kills a process after
+> > 
+> >   blocking_notifier_call_chain(&oom_notify_list, 0, &freed);
+> > 
+> > in out_of_memory() released all reclaimable memory.
+> 
+> The oom notifiers usually don't do any good on x86.
+> 
+> > This call helps reducing
+> > the chance to kill a process if the bad process no longer asks for more memory.
+> 
+> The "bad process" could be anything, it's simply the process that is 
+> allocating memory when all memory is exhausted.
+> 
 
+I'm using "bad process" as what you mean.
+
+> > But if the bad process continues asking for more memory and the chosen task is
+> > in TASK_UNINTERRUPTIBLE state, this call helps the OOM killer to be disabled
+> > for unpredictable period. Therefore, releasing all reclaimable memory before
+> > the OOM killer kills a process might be considered bad.
+> > 
+> 
+> I don't follow this statement, could you reword it?
+> 
+> If current calls the oom killer and the oom notifiers don't free any 
+> memory (which is very likely), then choosing an uninterruptible process is 
+> possible and has always been possible.
+
+Yes, this does happen if a local unprivileged user who can execute his/her own
+program consumed a lots of memory.
+
+>                                         If sending SIGKILL and giving that 
+> process access to memory reserves does not allow it to exit in a short 
+> amount of time, then it must be waiting on another process that also 
+> cannot make forward process.
+
+Yes. kthread_create(), do_coredump() and call_usermodehelper_keys() are
+examples of such cases which I think I can trigger deadlock using DoS attacking
+programs executed by local unprivileged users.
+
+>                               We must identify these cases (which is 
+> easily doable as described above) and fix them.
+> 
+
+I'm not expecting that we identify all possible cases, for any blocking
+functions which wait in TASK_UNINTERRUPTIBLE are candidates for such cases.
+This is as problematic as GFP_NOFS allocation functions calling other functions
+which do GFP_KERNEL allocation.
+
+> > Then, what about an approach described below?
+> > 
+> > (1) Introduce a kernel thread which reserves (e.g.) 1 percent of kernel memory
+> >     (this amount should be configurable via sysctl) upon startup.
+> > 
+> 
+> We don't need kernel threads, this is what per-zone memory reserves are 
+> intended to provide for GFP_ATOMIC and TIF_MEMDIE allocations (or 
+> PF_MEMALLOC for reclaimers).
+> 
+
+I know some amount of memory is reserved for GFP_ATOMIC/TIF_MEMDIE allocations.
+What I'm talking about is GFP_KERNEL allocating processes which are preventing
+TIF_MEMDIE process from terminating due to TASK_UNINTERRUPTIBLE wait.
+
+> > (2) The kernel thread sleeps using wait_event(memory_reservoir_wait) and
+> >     releases PAGE_SIZE bytes from the reserved memory upon each wakeup.
+> > 
+> > (3) The OOM killer calls wake_up() like
+> > 
+> >      	if (test_tsk_thread_flag(task, TIF_MEMDIE)) {
+> >      		if (unlikely(frozen(task)))
+> >      			__thaw_task(task);
+> >     +		/* Let the memory reservoir release memory if the chosen process cannot die. */
+> >     +		if (time_after(jiffies, p->memdie_stamp) &&
+> >     +		    task->state == TASK_UNINTERRUPTIBLE)
+> >     +		        wake_up(&memory_reservoir_wait);
+> >      		if (!force_kill)
+> >      			return OOM_SCAN_ABORT;
+> >      	}
+> > 
+> >     in oom_scan_process_thread().
+> > 
+> 
+> This doesn't guarantee that the process that the chosen process is waiting 
+> for will be able to allocate that page, so it's useless.
+> 
+
+I don't think this is completely useless.
+
+The chosen process was marked as TIF_MEMDIE because the process was consuming
+most memory, but it does not mean that the process marked as TIF_MEMDIE itself
+needs more memory. The process marked as TIF_MEMDIE may be simply waiting at
+kthread_create() etc. where other process which is not marked as TIF_MEMDIE
+depends on more memory.
+
+Even if the process marked as TIF_MEMDIE is allowed to access reserved memory,
+the process which really wants memory may not be marked as TIF_MEMDIE.
+To be able to give the process which really wants memory chance to allocate
+memory, memory pool via kernel thread might help.
+
+> > (4) When a task where test_tsk_thread_flag(task, TIF_MEMDIE) is true has
+> >     terminated and memory used by the task is reclaimed, the reclaimed memory
+> >     is again reserved by the kernel thread up to 1 percent of kernel memory.
+> > 
+> > In this way, we could shorten the duration of the OOM killer being disabled
+> > unless the reserved memory was not enough to terminate the chosen process.
+> > 
+> 
+> Could you please describe and post the details of any case where this 
+> currently happens so we can address the problem directly instead of trying 
+> to workaround it?
+> 
+
+Even if the process marked as TIF_MEMDIE can access per-zone memory reserves,
+that does not help if the process which really needs memory (in order to
+terminate the process marked as TIF_MEMDIE) cannot access per-zone memory
+reserves.
+
+If (e.g.) the caller of kthread_create() was marked as TIF_MEMDIE but the
+kthreadd cannot allocate memory which is needed for terminating the caller of
+kthread_create(), the system freezes. We can make kthread_create() killable
+because it is not too difficult to fix.
+
+Some of such dependency (e.g. kthread_create()) can be addressed directly, but
+it is too hard to address all directly. Thus, I propose memory reserving thread
+as a workaround.
