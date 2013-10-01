@@ -1,128 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab3JASih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:38:37 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62952 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab3JASie (ORCPT
+	id S1752714Ab3JASjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 14:39:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35874 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3JASjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:38:34 -0400
-Date: Tue, 1 Oct 2013 13:38:31 -0500
-From: Kim Phillips <kim.phillips@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        a.motakis@virtualopensystems.com, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        stuart.yoder@freescale.com, Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        santosh.shukla@linaro.org, kvm@vger.kernel.org
-Subject: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-Id: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Oct 2013 14:39:43 -0400
+Message-ID: <524B16E8.5080506@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 12:39:36 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/10] pwm-backlight: Use new enable_gpio field
+References: <1379972467-11243-1-git-send-email-treding@nvidia.com> <1379972467-11243-9-git-send-email-treding@nvidia.com>
+In-Reply-To: <1379972467-11243-9-git-send-email-treding@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/23/2013 03:41 PM, Thierry Reding wrote:
+> Make use of the new enable_gpio field and allow it to be set from DT as
+> well. Now that all legacy users of platform data have been converted to
+> initialize this field to an invalid value, it is safe to use the field
+> from the driver.
 
-Santosh and I are having a problem figuring out how to enable binding
-(and re-binding) platform devices to a platform VFIO driver (see
-Antonis' WIP: [1]) in an upstream-acceptable manner.
+> diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
 
-Binding platform drivers currently depends on a string match in the
-device node's compatible entry.  On an arndale, one can currently
-rebind the same device to the same driver like so:
+>  Optional properties:
 
-echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
+> +  - enable-gpios: a list of GPIOs to enable and disable the backlight
 
-And one can bind it to the vfio-dt driver, as Antonis instructs, by
-appending a 'vfio-dt' string to the device tree compatible entry for
-the device.  Then this would work:
+That seems to imply that multiple GPIOs are legal. Was that intended? If
+not, I would suggest:
 
-echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
+- enable-gpios: contains a single GPIO specifier for the GPIO which
+		enables/disables the backlight. See [1] for the format.
 
-Consequently, the hack patch below [2] allows any platform device to be
-bound to the vfio-dt driver, without making changes to the device
-tree.  It's a hack because I don't see having any driver name specific
-code in drivers/base/bus.c being upstream acceptable.
+>  
+>  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
++ [1]: Documentation/devicetree/bindings/gpio/gpio.txt
 
-Alternately, device tree compatible entries may be made writeable after
-boot, e.g.:
+> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
 
-echo vfio-platform > /proc/device-tree/i2c\@12CE0000/compatible
+> @@ -51,12 +55,27 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness,
+>  		     pb->lth_brightness;
+>  
+>  	pwm_config(pb->pwm, duty_cycle, pb->period);
+> +
+> +	if (gpio_is_valid(pb->enable_gpio)) {
+> +		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
+> +			gpio_set_value(pb->enable_gpio, 0);
+> +		else
+> +			gpio_set_value(pb->enable_gpio, 1);
+> +	}
 
-[note s/vfio-dt/vfio-platform/]
+Feel completely free to ignore this, but when the difference in two
+code-paths is solely in function parameters, I prefer to calculate the
+parameter inside the if statement, then call the function outside the
+conditional code, to highlight the common/different parts:
 
-but that would require the vfio-platform module be reloaded, thereby
-unbinding it from any existing devices it was bound to: we're
-seeking a more dynamic solution.
+int value;
 
-Alex Graf (cc'd) proposed an alternate approach: re-write the driver
-name in the device's sysfs entry:
+/* or an if statement for the next 1 line, if you don't like ?: */
+value = (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW) ? 0 : 1;
+gpio_set_value((pb->enable_gpio, value);
 
-echo "vfio-platform" > /sys/bus/platform/devices/101e0000.rtc/driver/driver_name
+> @@ -148,11 +168,10 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
-The advantage of this approach is that we can achieve the re-bind
-(unbind + bind) as an atomic operation, which alleviates userspace from
-having to coordinate with other device operations (I think VM migration
-is an example case here).
+> +	data->enable_gpio = of_get_named_gpio_flags(node, "enable-gpios", 0,
+> +						    &flags);
+> +	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
+> +		data->enable_gpio_flags |= PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
 
-Note that driver_name currently doesn't exist in sysfs, so it would
-either have to be added, or another means developed to rename the
-driver symlink itself:
+This doesn't seem to handle deferred probe correctly; I would expect
+something more like:
 
-cd /sys/bus/platform/devices/12ce0000.i2c
-ln -s ../../bus/platform/drivers/s5p-ehci /tmp/tmp-link
-mv -Tf /tmp/tmp-link driver
+	data->enable_gpio = of_get_named_gpio_flags(...);
+	if (data->enable_gpio == -EPROBE_DEFERRED)
+		return data->enable_gpio;
+	if (gpio_is_valid(...))
+		...
+	return 0;
 
-So I guess the question is:  Is our understanding corret - are we on
-the right track at all here?  Is the hack below definitely not
-acceptable?  Is it correct to assume upstream maintainers are against
-writing compatible entries to the device tree sysfs at runtime?  Would
-a driver_name be acceptable to add to sysfs, or should we investigate
-something like the atomic mv command above further?
-
-Thanks,
-
-Kim
-
-[1] Note that in this RFC, 'vfio-dt' is the name for the driver (-dt for
-device tree) which has already been pointed out as a misnomer and
-should probably be rewritten as 'vfio-platform':
-
-http://lists.linux-foundation.org/pipermail/iommu/2013-August/006284.html
-
-[2]
->From 6fa383d3f7bb53eb5efbb324c07484191b29543d Mon Sep 17 00:00:00 2001
-From: Kim Phillips <kim.phillips@linaro.org>
-Date: Fri, 27 Sep 2013 14:36:04 -0500
-Subject: [PATCH] hack/rfc: allow vfio-dt to bind to any platform device
-
----
- drivers/base/bus.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 4c289ab..1cf08d6 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -201,7 +201,8 @@ static ssize_t bind_store(struct device_driver *drv, const char *buf,
- 	int err = -ENODEV;
- 
- 	dev = bus_find_device_by_name(bus, NULL, buf);
--	if (dev && dev->driver == NULL && driver_match_device(drv, dev)) {
-+	if (dev && dev->driver == NULL && (driver_match_device(drv, dev) ||
-+	    !strcmp(drv->name, "vfio-dt"))) {
- 		if (dev->parent)	/* Needed for USB */
- 			device_lock(dev->parent);
- 		device_lock(dev);
--- 
-1.8.4
+I suppose it's possible that the value filters down to
+gpio_request_one() and this actually does work out OK, but that feels
+very accidental/implicit to me.
