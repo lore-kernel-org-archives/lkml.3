@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3JAH2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 03:28:21 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:58221 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3JAH2U (ORCPT
+	id S1751845Ab3JAHb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:31:27 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:55947 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3JAHb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 03:28:20 -0400
-Date: Tue, 1 Oct 2013 09:28:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
+	Tue, 1 Oct 2013 03:31:26 -0400
+Date: Tue, 1 Oct 2013 09:31:24 +0200
+From: Andi Kleen <andi@firstfloor.org>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-Message-ID: <20131001072815.GA20261@gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130928192123.GA8228@gmail.com>
- <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
- <20130930104408.GW3081@twins.programming.kicks-ass.net>
- <CA+55aFwTCCXaD4S4OPGmwf=fhOwWdxr8NU9uFvdf_nRx0Nk0_w@mail.gmail.com>
- <20130930164141.GH3081@twins.programming.kicks-ass.net>
+Cc: Andi Kleen <andi@firstfloor.org>, acma@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com
+Subject: Re: perf, x86: Add last TSX PMU code for Haswell v3
+Message-ID: <20131001073124.GF6931@two.firstfloor.org>
+References: <1380578343-31301-1-git-send-email-andi@firstfloor.org>
+ <20131001072203.GJ3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130930164141.GH3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131001072203.GJ3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Mon, Sep 30, 2013 at 09:13:52AM -0700, Linus Torvalds wrote:
->  
-> > So unlike a lot of other "let's try to make our locking fancy" that I 
-> > dislike because it tends to hide the fundamental problem of 
-> > contention, the rwlock patches make me go "those actually _fix_ a 
-> > fundamental problem".
+On Tue, Oct 01, 2013 at 09:22:03AM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 30, 2013 at 02:58:57PM -0700, Andi Kleen wrote:
+> > [This has kernel and user parts.
+> > Both sides have been reviewed now, so hopefully it's good
+> > to merge.]
+> > [v2: Address Peter's feedback for the kernel parts]
+> > [v3: Rebased to current tip. Added Ack/Reviewed-by for user tools code]
 > 
-> So here I'm slightly disagreeing; fixing a fundamental problem would be 
-> coming up a better anon_vma management that doesn't create such immense 
-> chains.
-
-So, I think the fundamental problem seems to be that when rwsems are 
-applied to this usecase, they still don't perform as well as a primitive 
-rwlock.
-
-That means that when rwsems cause a context switch it is a loss, while an 
-rwlock_t burning CPU time by looping around is a win. I'm not sure it's 
-even about 'immense chains' - if those were true then context-switching 
-should actually improve performance by allowing other work to continue 
-while the heavy chains are processed.
-
-Alas that's not what happens!
-
-Or is AIM7 essentially triggering a single large lock? I doubt that's the 
-case though.
-
-> Its still the same lock, spinlock or not.
+> I merged your previous version yesterday; and did the rebase to current
+> tip as that was a trivial one; I added Jolsa's ack.
 > 
-> And regardless of if we keep anon_vma lock a rwsem or not; I think we 
-> should merge those rwsem patches as they do improve the lock 
-> implementation and the hard work has already been done.
+> Did I miss anything?
 
-That I mostly agree with, except that without a serious usecase do we have 
-a guarantee that bugs in fancies queueing in rwsems gets ironed out?
+Sorry I missed that.  No change other than acks/rebase,
+so the previous version should be fine. Thanks.
 
-Thanks,
+Outstanding TSX patches i have now (unless someone merged them):
 
-	Ingo
+perf stat -T 
+
+https://lkml.org/lkml/2013/8/21/667
+
+Was acked by Arnaldo
+
+64bit comparison fix without that the abort code reporting with 
+the abort code in the high 32bit doesn't work.
+
+https://lkml.org/lkml/2013/9/27/569
+
+Acked by Namyoung.
+
+If someone could take care of those that would be great.
+
+Thanks.
+
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
