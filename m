@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3JATjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 15:39:01 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41323 "EHLO smtp.outflux.net"
+	id S1753123Ab3JATix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 15:38:53 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37349 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab3JAThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751616Ab3JAThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Oct 2013 15:37:53 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -13,9 +13,9 @@ Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
         Mathias Krause <minipli@googlemail.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
-Subject: [PATCH 4/7] x86, kaslr: select random base offset
-Date: Tue,  1 Oct 2013 12:37:22 -0700
-Message-Id: <1380656245-29975-5-git-send-email-keescook@chromium.org>
+Subject: [PATCH 5/7] x86, kaslr: select memory region from e820 maps
+Date: Tue,  1 Oct 2013 12:37:23 -0700
+Message-Id: <1380656245-29975-6-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380656245-29975-1-git-send-email-keescook@chromium.org>
 References: <1380656245-29975-1-git-send-email-keescook@chromium.org>
@@ -24,138 +24,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Select a random location when CONFIG_RANDOMIZE_BASE is used, bounded
-by CONFIG_RANDOMIZE_BASE_MAX_OFFSET. Sources of randomness currently
-include RDRAND, RDTSC, or the i8254.
+Counts available alignment positions across all e820 maps, and chooses
+one randomly for the new kernel base address.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/x86/boot/compressed/aslr.c |   83 ++++++++++++++++++++++++++++++++++++++-
- arch/x86/boot/compressed/misc.h |    2 +
- 2 files changed, 84 insertions(+), 1 deletion(-)
+ arch/x86/boot/compressed/aslr.c |  140 ++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 130 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index ed7e9f0..2f63f9f 100644
+index 2f63f9f..ab0f8a3 100644
 --- a/arch/x86/boot/compressed/aslr.c
 +++ b/arch/x86/boot/compressed/aslr.c
-@@ -1,6 +1,72 @@
- #include "misc.h"
+@@ -2,6 +2,7 @@
  
  #ifdef CONFIG_RANDOMIZE_BASE
-+#include <asm/msr.h>
-+
-+#include <asm/archrandom.h>
-+static inline int rdrand(unsigned long *v)
+ #include <asm/msr.h>
++#include <asm/e820.h>
+ 
+ #include <asm/archrandom.h>
+ static inline int rdrand(unsigned long *v)
+@@ -115,6 +116,130 @@ static unsigned long find_minimum_location(unsigned long input,
+ 	return output;
+ }
+ 
++/*
++ * This routine is used to count how many aligned slots that can hold the
++ * kernel exist across all e820 entries. It is called in two phases, once
++ * to count valid memory regions available for the kernel image, and a
++ * second time to select one from those seen.
++ *
++ * It is first called with "counting" set to true, where it expects to be
++ * called once for each e820 entry. In this mode, it will update *count
++ * with how many slots are available in the given e820 entry. Once the walk
++ * across all e820 entries has finished, the caller will have a total count
++ * of all valid memory regions available for the kernel image.
++ *
++ * Once the first pass of entry walking is finished, the caller selects one
++ * of the possible slots (stored in *count), and performs a second walk,
++ * with "counting" set to false. In this mode, *count is decremented until
++ * the corresponding slot is found in a specific e820 region, at which
++ * point, the function returns that address, and the walk terminates.
++ */
++static unsigned long process_e820_entry(struct e820entry *entry, bool counting,
++					unsigned long minimum,
++					unsigned long image_size,
++					unsigned long *count)
 +{
-+	int ok;
-+	asm volatile("1: " RDRAND_LONG "\n\t"
-+		     "jc 2f\n\t"
-+		     "decl %0\n\t"
-+		     "jnz 1b\n\t"
-+		     "2:"
-+		     : "=r" (ok), "=a" (*v)
-+		     : "0" (RDRAND_RETRY_LOOPS));
-+	return ok;
-+}
++	u64 addr, size;
++	unsigned long alignments;
 +
-+#define I8254_PORT_CONTROL	0x43
-+#define I8254_PORT_COUNTER0	0x40
-+#define I8254_CMD_READBACK	0xC0
-+#define I8254_SELECT_COUNTER0	0x02
-+#define I8254_STATUS_NOTREADY	0x40
-+static inline u16 i8254(void)
-+{
-+	u16 status, timer;
++	/* Skip non-RAM entries. */
++	if (entry->type != E820_RAM)
++		return 0;
 +
-+	do {
-+		outb(I8254_PORT_CONTROL,
-+		     I8254_CMD_READBACK | I8254_SELECT_COUNTER0);
-+		status = inb(I8254_PORT_COUNTER0);
-+		timer  = inb(I8254_PORT_COUNTER0);
-+		timer |= inb(I8254_PORT_COUNTER0) << 8;
-+	} while (status & I8254_STATUS_NOTREADY);
++	/* Ignore entries entirely above our maximum. */
++	if (entry->addr >= CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
++		return 0;
 +
-+	return timer;
-+}
++	/* Ignore entries entirely below our minimum. */
++	if (entry->addr + entry->size < minimum)
++		return 0;
 +
-+static unsigned long get_random_long(void)
-+{
-+	unsigned long random;
++	size = entry->size;
++	addr = entry->addr;
 +
-+	if (has_cpuflag(X86_FEATURE_RDRAND)) {
-+		debug_putstr("KASLR using RDRAND...\n");
-+		if (rdrand(&random))
-+			return random;
++	/* Potentially raise address to minimum location. */
++	if (addr < minimum)
++		addr = minimum;
++
++	/* Potentially raise address to meet alignment requirements. */
++	addr = ALIGN(addr, CONFIG_PHYSICAL_ALIGN);
++
++	/* Did we raise the address above the bounds of this e820 region? */
++	if (addr > entry->addr + entry->size)
++		return 0;
++
++	/* Reduce size by any delta from the original address. */
++	size -= addr - entry->addr;
++
++	/* Reduce maximum image starting location to maximum limit. */
++	if (addr + size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
++		size = CONFIG_RANDOMIZE_BASE_MAX_OFFSET - addr;
++
++	/* Ignore entries that cannot hold even a single kernel image. */
++	if (size < image_size)
++		return 0;
++
++	/*
++	 * Reduce size by kernel image size so we can see how many aligned
++	 * starting addresses will fit without running past the end of a
++	 * region. XXX: adjacent e820 regions are not detected, so up to
++	 * image_size / CONFIG_PHYSICAL_ALIGN slots may go unused across
++	 * adjacent regions.
++	 */
++	size -= image_size;
++
++	/* Now we know how many aligned slots can contain the image. */
++	alignments = (size / CONFIG_PHYSICAL_ALIGN) + 1;
++
++	/* In the first pass, just counting all the e820 entries? */
++	if (counting) {
++		*count += alignments;
++		return 0;
 +	}
 +
-+	if (has_cpuflag(X86_FEATURE_TSC)) {
-+		uint32_t raw;
-+
-+		debug_putstr("KASLR using RDTSC...\n");
-+		rdtscl(raw);
-+
-+		/* Only use the low bits of rdtsc. */
-+		random = raw & 0xffff;
++	/* Otherwise we're counting down to find a specific aligned slot. */
++	if (*count < alignments) {
++		/* Desired region is in this entry. */
++		return addr + (CONFIG_PHYSICAL_ALIGN * *count);
 +	} else {
-+		debug_putstr("KASLR using i8254...\n");
-+		random = i8254();
++		/* Desired region is beyond this entry. */
++		*count -= alignments;
++		return 0;
++	}
++}
++
++static unsigned long find_random_e820(unsigned long minimum,
++				      unsigned long size)
++{
++	int i;
++	unsigned long addr, count;
++
++	/* Make sure minimum is aligned. */
++	minimum = ALIGN(minimum, CONFIG_PHYSICAL_ALIGN);
++
++	/* Verify potential e820 positions. */
++	count = 0;
++	for (i = 0; i < real_mode->e820_entries; i++) {
++		process_e820_entry(&real_mode->e820_map[i], true, minimum,
++				   size, &count);
 +	}
 +
-+	/* Extend timer bits poorly... */
-+	random |= (random << 16);
-+#ifdef CONFIG_X86_64
-+	random |= (random << 32) | (random << 48);
-+#endif
-+	return random;
++	/* Handle crazy case of nothing fitting. */
++	if (count == 0)
++		return 0;
++
++	count = get_random_long() % count;
++
++	/* Select desired e820 position. */
++	for (i = 0; i < real_mode->e820_entries; i++) {
++		addr = process_e820_entry(&real_mode->e820_map[i], false,
++					  minimum, size, &count);
++		if (addr)
++			return addr;
++	}
++	return 0;
 +}
- 
- static unsigned long find_minimum_location(unsigned long input,
- 					   unsigned long input_size,
-@@ -55,6 +121,7 @@ unsigned char *choose_kernel_location(unsigned char *input,
- 				      unsigned long output_size)
- {
- 	unsigned long choice = (unsigned long)output;
-+	unsigned long random;
- 
- 	if (cmdline_find_option_bool("nokaslr")) {
- 		debug_putstr("KASLR disabled...\n");
-@@ -64,8 +131,22 @@ unsigned char *choose_kernel_location(unsigned char *input,
++
+ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long input_size,
+ 				      unsigned char *output,
+@@ -131,16 +256,11 @@ unsigned char *choose_kernel_location(unsigned char *input,
  	choice = find_minimum_location((unsigned long)input, input_size,
  				       (unsigned long)output, output_size);
  
--	/* XXX: choose random location. */
-+	/* XXX: Find an appropriate E820 hole, instead of adding offset. */
-+	random = get_random_long();
-+
-+	/* Clip off top of the range. */
-+	random &= (CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1);
-+	while (random + output_size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
-+		random >>= 1;
-+
-+	/* Clip off bottom of range. */
-+	random &= ~(choice - 1);
-+
-+	/* Always enforce the minimum. */
-+	if (random < choice)
+-	/* XXX: Find an appropriate E820 hole, instead of adding offset. */
+-	random = get_random_long();
+-
+-	/* Clip off top of the range. */
+-	random &= (CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1);
+-	while (random + output_size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
+-		random >>= 1;
+-
+-	/* Clip off bottom of range. */
+-	random &= ~(choice - 1);
++	random = find_random_e820(choice, output_size);
++	if (!random) {
++		debug_putstr("KASLR could not find suitable E820 region...\n");
 +		goto out;
++	}
  
-+	choice = random;
- out:
- 	return (unsigned char *)choice;
- }
-diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-index 42f71bb..24e3e56 100644
---- a/arch/x86/boot/compressed/misc.h
-+++ b/arch/x86/boot/compressed/misc.h
-@@ -60,6 +60,8 @@ unsigned char *choose_kernel_location(unsigned char *input,
- 				      unsigned long input_size,
- 				      unsigned char *output,
- 				      unsigned long output_size);
-+/* cpuflags.c */
-+bool has_cpuflag(int flag);
- #else
- static inline
- unsigned char *choose_kernel_location(unsigned char *input,
+ 	/* Always enforce the minimum. */
+ 	if (random < choice)
 -- 
 1.7.9.5
 
