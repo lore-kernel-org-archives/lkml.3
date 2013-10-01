@@ -1,54 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3JAOFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:05:34 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39111 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab3JAOFM (ORCPT
+	id S1753581Ab3JAOFc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:05:32 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:52966 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab3JAOFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:05:12 -0400
+	Tue, 1 Oct 2013 10:05:31 -0400
+Date: Tue, 1 Oct 2013 16:05:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20131001140525.GE24825@localhost.localdomain>
+References: <52138BE9.5090005@linux.intel.com>
+ <20130820160146.GG3258@twins.programming.kicks-ass.net>
+ <20130820163312.GA17957@redhat.com>
+ <20130820175429.GI3258@twins.programming.kicks-ass.net>
+ <20130820182553.GB22287@redhat.com>
+ <20130821083130.GM3258@twins.programming.kicks-ass.net>
+ <20130821113551.GA1472@redhat.com>
+ <20130821123311.GA31370@twins.programming.kicks-ass.net>
+ <20130821142356.GC31370@twins.programming.kicks-ass.net>
+ <20130821164146.GA15194@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <5249BA20.1040402@lwfinger.net>
-References: <5249BA20.1040402@lwfinger.net>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Tue, 1 Oct 2013 15:04:48 +0100
-X-Google-Sender-Auth: 2kMG8TmyhLDtpQUJ6AcqQXsmiyU
-Message-ID: <CAHkRjk6Wuf4Lcd1mN0ZuKBb9aX2VqoUVMG_UWkKNdRSM3407+Q@mail.gmail.com>
-Subject: Re: 3.12-rc3 memory leak in module memstick
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Alex Dubov <oakad@yahoo.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821164146.GA15194@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 September 2013 18:51, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 3.12-rc3, I detected a memory leak in module memstick. The kmemleak
-> results are listed below. The second output is after memstick was unloaded,
-> which shows that it is not a false positive from kmemleak.
->
-> larrylap:~ # echo scan > /sys/kernel/debug/kmemleak
-> larrylap:~ # cat /sys/kernel/debug/kmemleak
-> unreferenced object 0xffff8800ae85c190 (size 16):
->   comm "kworker/u4:3", pid 685, jiffies 4294916336 (age 2831.760s)
->   hex dump (first 16 bytes):
->     6d 65 6d 73 74 69 63 6b 30 00 00 00 00 00 00 00  memstick0.......
->   backtrace:
->     [<ffffffff8146a0d1>] kmemleak_alloc+0x21/0x50
->     [<ffffffff81160720>] __kmalloc_track_caller+0x160/0x2f0
->     [<ffffffff81237b9b>] kvasprintf+0x5b/0x90
->     [<ffffffff8122c0c1>] kobject_set_name_vargs+0x21/0x60
->     [<ffffffff812e7f5c>] dev_set_name+0x3c/0x40
->     [<ffffffffa02bf918>] memstick_check+0xb8/0x340 [memstick]
->     [<ffffffff81069862>] process_one_work+0x1d2/0x670
->     [<ffffffff8106a88a>] worker_thread+0x11a/0x370
->     [<ffffffff81072ea6>] kthread+0xd6/0xe0
->     [<ffffffff81478bbc>] ret_from_fork+0x7c/0xb0
+On Wed, Aug 21, 2013 at 06:41:46PM +0200, Oleg Nesterov wrote:
+> On 08/21, Peter Zijlstra wrote:
+> >
+> > The other consideration is that this adds two branches to the normal
+> > schedule path. I really don't know what the regular ratio between
+> > schedule() and io_schedule() is -- and I suspect it can very much depend
+> > on workload -- but it might be a net loss due to that, even if it makes
+> > io_schedule() 'lots' cheaper.
+> 
+> Yes, agreed. Please ignore it for now, I didn't try to actually suggest
+> this change. And even if this is fine perfomance wise, this needs some
+> benchmarking.
+> 
+> Well. actually I have a vague feeling that _perhaps_ this change can
+> help to solve other problems we are discussing, but I am not sure and
+> right now I can't even explain the idea to me.
+> 
+> In short: please ignore ;)
+> 
+> Oleg.
+> 
 
-The leak is most likely coming from memstick_alloc_card() on the error
-path. Commit 0252c3b4f0 (memstick: struct device - replace bus_id with
-dev_name(), dev_set_name()) sets allocates the device name but 'card'
-is freed on the error path without freeing the name.
+Ok, the discussion is hard to synthesize but I think I now have more
+clues to send a better new iteration.
 
--- 
-Catalin
+So we have the choice between keeping atomics or using rq->lock. It seems
+that using rq->lock is going to be worrisome for several reasons. So let's
+stick to atomics (but tell me if you prefer the other way).
+
+So the idea for the next try is to do something along the lines of:
+
+struct cpu_idletime {
+       nr_iowait,
+       seqlock,
+       idle_start,
+       idle_time,
+       iowait_time,
+} __cacheline_aligned_in_smp;
+
+DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
+       
+io_schedule()
+{
+        int prev_cpu;
+	
+        preempt_disable();
+        prev_cpu_idletime = __this_cpu_ptr(&cpu_idletime);
+        atomic_inc(prev_cpu_idletime->nr_iowait);
+        WARN_ON_ONCE(is_idle_task(current));
+        preempt_enable_no_resched();
+
+        schedule();
+
+        write_seqlock(prev_cpu_idletime->seqlock)
+	if (!atomic_dec_return(prev_cpu_idletime->nr_iowait))
+           flush_cpu_idle_time(prev_cpu_idletime, 1)
+        write_sequnlock(prev_cpu_idletime->seqlock)
+
+}
+
+flush_cpu_idle_time(cpu_idletime, iowait)
+{
+       if (!cpu_idletime->idle_start)
+            return;
+
+       if (nr_iowait)
+            cpu_idletime->iowait_time = NOW() - cpu_idletime->idle_start;
+       else
+            cpu_idletime->idle_time = NOW() - cpu_idletime->idle_start;
+}
+
+idle_entry()
+{
+        write_seqlock(this_cpu_idletime->seqlock)
+        this_cpu_idletime->idle_start = NOW();
+        write_sequnlock(iowait(cpu)->seqlock)
+}
+
+idle_exit()
+{
+        write_seqlock(this_cpu_idletime->seqlock)
+        flush_cpu_idle_time(this_cpu_idletime, atomic_read(&this_cpu_idletime->nr_iowait));
+	this_cpu_idletime->idle_start = 0;
+        write_sequnlock(this_cpu_idletime->seqlock)
+}
+
+
+Now this all realy on the fact that atomic_inc(cpu_idletime->nr_iowait) can't happen
+in a CPU that is already idle. So it can't happen between idle_entry() and idle_exit().
+Hence the WARN_ON(is_idle_task(current)) below after the inc.
+
+Hmm?
