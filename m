@@ -1,94 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab3JATZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 15:25:48 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:45668 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3JATZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 15:25:46 -0400
-X-AuditID: cbfec37c-b7fd86d00000670b-44-524b21b98dcb
-Message-id: <524B21B7.1040806@samsung.com>
-Date: Tue, 01 Oct 2013 13:25:43 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/22] 3.4.64-stable review
-References: <20130929191158.889693326@linuxfoundation.org>
-In-reply-to: <20130929191158.889693326@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX92dit5BBj2LTC3mrF/DZtG8eD2b
-	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mr4NvUEY0E3T8Xl7i+MDYyPObsYOTkkBEwkFvx7xQhhi0lcuLeerYuRi0NIYBmjxOqv
-	r1kgnF4miR1PvkE5GxklPt25yQrSwiugJbH3xh+gdg4OFgFVibdv1EDCbALqEp9f72AHsYUE
-	5CSalqxmBrFFBSIkVi55ANUqKPFj8j0WEFtEwFii/+wssHpmgWOMEgubTUBsYaDxx++dZQEZ
-	LyRgJbHjoA1ImFPAWuLNwZ9sEOXWEisnbWOEsOUlNq95ywyxVlniz+VTTCCtEgKKEttXW01g
-	FJmFZPEsJN2zkHQvYGRexShWWpxcUJyUnlphrFecmFtcmpeul5yfu4kREi81OxjvfbU5xCjA
-	wajEw1vw2CtIiDWxrLgy9xCjBAezkghvL793kBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGs36n
-	ItdHex5n/zn1SO7f9yNW2704Y4Mt5HyTjaeK5Ci8ZljUv4/bZmZdGxuL9BmB+6wNxUHNk1p0
-	Vu2q1J2l+ozJwXvt1sTyT2vMTq7vZ1WWOx0f4yN+3fbpA10v3SquSj7tpV+uftj651Xjp5ia
-	qz9tLglbxr6bcHhjXN2Ky6/1tlx0/39CiaU4I9FQi7moOBEAFNN/0HUCAAA=
+	id S1752629Ab3JATiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 15:38:00 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58701 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515Ab3JAThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 15:37:53 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
+Subject: [PATCH 3/7] x86, kaslr: find minimum safe relocation position
+Date: Tue,  1 Oct 2013 12:37:21 -0700
+Message-Id: <1380656245-29975-4-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380656245-29975-1-git-send-email-keescook@chromium.org>
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2013 01:26 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.64 release.
-> There are 22 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Tue Oct  1 19:11:47 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.64-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+Examine all the known unsafe areas and avoid them by just raising the
+minimum relocation position to be past them.
 
-3.4.64-rc1 applied cleanly to 3.4.63
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/x86/boot/compressed/aslr.c |   50 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/boot/compressed/misc.c |   10 ++------
+ arch/x86/boot/compressed/misc.h |    8 +++++++
+ 3 files changed, 60 insertions(+), 8 deletions(-)
 
-Compiled and booted on the following systems:
-
-Samsung Series 9 900X4C Intel Corei5
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-
-dmesgs look good. No regressions compared to the previous dmesgs for 
-this release. dmesg emerg, crit, alert, err are clean. No regressions in 
-warn.
-
-Cross-compile testing: HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
-
-Cross-compile tests results:
-
-alpha: defconfig passed
-arm: defconfig passed
-arm64: not applicable
-blackfin: defconfig passed
-c6x: dsk6455_defconfig passed - defconfig isn't supported
-mips: defconfig passed
-mipsel: defconfig passed
-powerpc: wii_defconfig passed
-sh: defconfig passed
-sparc: defconfig passed
-tile: tilegx_defconfig passed
-
--- Shuah
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index b73cc66..ed7e9f0 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -2,6 +2,53 @@
+ 
+ #ifdef CONFIG_RANDOMIZE_BASE
+ 
++static unsigned long find_minimum_location(unsigned long input,
++					   unsigned long input_size,
++					   unsigned long output,
++					   unsigned long output_size)
++{
++	u64 initrd_start, initrd_size;
++	u64 cmd_line, cmd_line_size;
++	unsigned long unsafe, unsafe_len;
++	char *ptr;
++
++	/*
++	 * Mark off the region that is unsafe to overlap during
++	 * decompression (see calculations at top of misc.c).
++	 */
++	unsafe_len = (output_size >> 12) + 32768 + 18;
++	unsafe = (unsigned long)input + input_size - unsafe_len;
++
++	/*
++	 * Locate other regions that cannot be over-written during
++	 * decompression: initrd, cmd_line.
++	 */
++	initrd_start  = (u64)real_mode->ext_ramdisk_image << 32;
++	initrd_start |= real_mode->hdr.ramdisk_image;
++	initrd_size  = (u64)real_mode->ext_ramdisk_size << 32;
++	initrd_size |= real_mode->hdr.ramdisk_size;
++	cmd_line  = (u64)real_mode->ext_cmd_line_ptr << 32;
++	cmd_line |= real_mode->hdr.cmd_line_ptr;
++	/* Calculate size of cmd_line. */
++	ptr = (char *)(unsigned long)cmd_line;
++	for (cmd_line_size = 0; ptr[cmd_line_size++]; )
++		;
++
++	/* Minimum location must be above all these regions: */
++	output = max(output, unsafe + unsafe_len);
++	output = max(output, (unsigned long)free_mem_ptr + BOOT_HEAP_SIZE);
++	output = max(output, (unsigned long)free_mem_end_ptr + BOOT_STACK_SIZE);
++	output = max(output, (unsigned long)initrd_start
++			     + (unsigned long)initrd_size);
++	output = max(output, (unsigned long)cmd_line
++			     + (unsigned long)cmd_line_size);
++
++	/* Make sure the location is still aligned. */
++	output = ALIGN(output, CONFIG_PHYSICAL_ALIGN);
++
++	return output;
++}
++
+ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long input_size,
+ 				      unsigned char *output,
+@@ -14,6 +61,9 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 		goto out;
+ 	}
+ 
++	choice = find_minimum_location((unsigned long)input, input_size,
++				       (unsigned long)output, output_size);
++
+ 	/* XXX: choose random location. */
+ 
+ out:
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 7138768..196eaf3 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -112,14 +112,8 @@ struct boot_params *real_mode;		/* Pointer to real-mode data */
+ void *memset(void *s, int c, size_t n);
+ void *memcpy(void *dest, const void *src, size_t n);
+ 
+-#ifdef CONFIG_X86_64
+-#define memptr long
+-#else
+-#define memptr unsigned
+-#endif
+-
+-static memptr free_mem_ptr;
+-static memptr free_mem_end_ptr;
++memptr free_mem_ptr;
++memptr free_mem_end_ptr;
+ 
+ static char *vidmem;
+ static int vidport;
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 9077af7..42f71bb 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -23,7 +23,15 @@
+ #define BOOT_BOOT_H
+ #include "../ctype.h"
+ 
++#ifdef CONFIG_X86_64
++#define memptr long
++#else
++#define memptr unsigned
++#endif
++
+ /* misc.c */
++extern memptr free_mem_ptr;
++extern memptr free_mem_end_ptr;
+ extern struct boot_params *real_mode;		/* Pointer to real-mode data */
+ void __putstr(const char *s);
+ #define error_putstr(__x)  __putstr(__x)
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+1.7.9.5
+
