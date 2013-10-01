@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab3JAH0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 03:26:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:59487 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab3JAH0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 03:26:46 -0400
-Date: Tue, 1 Oct 2013 17:26:43 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20131001072642.GH17966@concordia>
-References: <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
- <20130918165045.GB2353@dhcp-26-207.brq.redhat.com>
- <20130920122603.GC7630@mtj.dyndns.org>
+	id S1752008Ab3JAH2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:28:21 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:58221 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab3JAH2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 03:28:20 -0400
+Date: Tue, 1 Oct 2013 09:28:15 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
+Message-ID: <20131001072815.GA20261@gmail.com>
+References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
+ <20130928074144.GA17773@gmail.com>
+ <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
+ <20130928192123.GA8228@gmail.com>
+ <CA+55aFyZqV_wJTpd9OVw=kM157Q45byW2F3kjhr5ML5Npz84OA@mail.gmail.com>
+ <20130930104408.GW3081@twins.programming.kicks-ass.net>
+ <CA+55aFwTCCXaD4S4OPGmwf=fhOwWdxr8NU9uFvdf_nRx0Nk0_w@mail.gmail.com>
+ <20130930164141.GH3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130920122603.GC7630@mtj.dyndns.org>
+In-Reply-To: <20130930164141.GH3081@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 20, 2013 at 07:26:03AM -0500, Tejun Heo wrote:
-> Hello,
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Mon, Sep 30, 2013 at 09:13:52AM -0700, Linus Torvalds wrote:
+>  
+> > So unlike a lot of other "let's try to make our locking fancy" that I 
+> > dislike because it tends to hide the fundamental problem of 
+> > contention, the rwlock patches make me go "those actually _fix_ a 
+> > fundamental problem".
 > 
-> On Wed, Sep 18, 2013 at 06:50:45PM +0200, Alexander Gordeev wrote:
-> > Actually, I do not see much contradiction with what I proposed. The
-> > key words here "determine the number of MSIs the controller wants".
-> > 
-> > In general case it is not what pci_msix_table_size() returns (or at
-> > least we should not limit ourselves to it) - there could be non-
-> > standard means to report number of MSIs: hardcoded, version-dependant,
-> > device-specific registers etc.
-> > 
-> > Next, if we opt to determine the number of MSIs by non-MSI standard
-> > means then there is no reason not to call pci_get_msix_limit() (or
-> > whatever) at this step.
+> So here I'm slightly disagreeing; fixing a fundamental problem would be 
+> coming up a better anon_vma management that doesn't create such immense 
+> chains.
+
+So, I think the fundamental problem seems to be that when rwsems are 
+applied to this usecase, they still don't perform as well as a primitive 
+rwlock.
+
+That means that when rwsems cause a context switch it is a loss, while an 
+rwlock_t burning CPU time by looping around is a win. I'm not sure it's 
+even about 'immense chains' - if those were true then context-switching 
+should actually improve performance by allowing other work to continue 
+while the heavy chains are processed.
+
+Alas that's not what happens!
+
+Or is AIM7 essentially triggering a single large lock? I doubt that's the 
+case though.
+
+> Its still the same lock, spinlock or not.
 > 
-> Yeah, that's all fine.  My point is that we shouldn't try to use
-> "degraded" multiple MSI mode where the number of MSIs allocated is
-> smaller than performing full multiple MSI operation.  How that number
-> is determined doesn't really matter but that number is a property
-> which is solely decided by the device driver, right?  If a device
-> needs full multiple MSI mode, given specific configuration, it needs
-> >= X number of MSIs and that's the number it should request.
+> And regardless of if we keep anon_vma lock a rwsem or not; I think we 
+> should merge those rwsem patches as they do improve the lock 
+> implementation and the hard work has already been done.
 
-Sure, the driver is in full control. If it can ONLY work with N MSIs
-then it should try for N, else fallback to 1.
+That I mostly agree with, except that without a serious usecase do we have 
+a guarantee that bugs in fancies queueing in rwsems gets ironed out?
 
-But some drivers are able to work with a range of values for N, and
-performance is improved vs using a single MSI.
+Thanks,
 
-> > Being Captain Obvious here, but it is up to the device driver to handle
-> > a failure. There could be no such option as single MSI mode after all :)
-> 
-> I don't think there actually is a mainstream device which can't
-> fallback to single interrupt.  Anyways, the point is the same, let's
-> please not try to create an interface which encourages complex retry
-> logic in its users which are likely to involve less traveled and
-> tested paths in both the driver and firmware.
-
-Why support > 1 MSI at all? It just adds complex logic and less travelled
-paths in the driver and firmware.
-
-cheers
+	Ingo
