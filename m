@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab3JAPdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:33:39 -0400
-Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:8517 "EHLO
-	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752920Ab3JAPdd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:33:33 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: applesmc oops in 3.10/3.11
-From: Chris Murphy <bugzilla@colorremedies.com>
-In-Reply-To: <20131001151954.GB14887@roeck-us.net>
-Date: Tue, 1 Oct 2013 09:33:13 -0600
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com>
-References: <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131001105526.GA481@polaris.bitmath.org> <20131001151954.GB14887@roeck-us.net>
-To: Guenter Roeck <linux@roeck-us.net>
-X-Mailer: Apple Mail (2.1510)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - colorremedies.com
-X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753777Ab3JAPeB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:34:01 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63542 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3JAPdy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:33:54 -0400
+Message-ID: <1380641628.19681.3.camel@phoenix>
+Subject: [RFT][PATCH 1/2] regulator: as3722: Fix equation to calculate
+ max_uV in regulator_lin_range macro
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Florian Lobmaier <florian.lobmaier@ams.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 01 Oct 2013 23:33:48 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix off-by-one in the equation to calculate max_uV.
 
-On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi,
+I don't have the datasheet and h/w.
+Just found this issue while reading the code. (Only compile test).
 
-> On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
->>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
->>>> 
->>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
->>>> 
->>> 
->>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
->>> Which I guess explains the subsequent memory allocation error in the log.
->>> 
->>> Henrik, any idea what might be going on ? Is it possible that the previous
->>> command failure leaves some state machine in a bad state ?
->> 
->> I seem to recall a report on another similar state problem on newer
->> machines, so maybe, yes. Older machines seem fine, I have never
->> encountered the problem myself. Here is a patch to test that
->> theory. It has been tested to be pretty harmless on two different
->> generations.
->> 
->> I really really do not want to add an 'if (value is insane)' check ;-)
->> 
-> Chris,
-> 
-> any chance you can load this patch on an affected machine so we can get
-> test feedback ? This one is too experimental to submit upstream without
-> knowing that it really fixes the problem.
+Axel
+ drivers/regulator/as3722-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
+diff --git a/drivers/regulator/as3722-regulator.c b/drivers/regulator/as3722-regulator.c
+index 16a5d26..c6a1fc6 100644
+--- a/drivers/regulator/as3722-regulator.c
++++ b/drivers/regulator/as3722-regulator.c
+@@ -441,7 +441,7 @@ static struct regulator_ops as3722_ldo3_extcntrl_ops = {
+ 		.max_sel = _max_sel,					\
+ 		.uV_step = _step_uV,					\
+ 		.min_uV = _min_uV,					\
+-		.max_uV = _min_uV + (_max_sel - _min_sel + 1) * _step_uV, \
++		.max_uV = _min_uV + (_max_sel - _min_sel) * _step_uV,	\
+ 	}
+ 
+ static const struct regulator_linear_range as3722_ldo_ranges[] = {
+-- 
+1.8.1.2
 
-Chris
+
+
