@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3JARmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 13:42:37 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:60161 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab3JARmb (ORCPT
+	id S1753095Ab3JARn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 13:43:56 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52377 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752436Ab3JARny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 13:42:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131001160014.GA7438@google.com>
-References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-	<1376189294-32022-26-git-send-email-yinghai@kernel.org>
-	<20131001160014.GA7438@google.com>
-Date: Tue, 1 Oct 2013 10:42:30 -0700
-X-Google-Sender-Auth: aob2heWInFluF4NcXOBrmOkR8eQ
-Message-ID: <CAE9FiQVSGRMbW34vQoYpLBHfu2yhh_2_MDeeRP_xEZhsTvbtqA@mail.gmail.com>
-Subject: Re: [PATCH v4 25/28] PCI, x86: Make ioapic hotplug support built-in
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Oct 2013 13:43:54 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mm: kmemleak: Avoid false negatives on vmalloc'ed objects
+Date: Tue,  1 Oct 2013 18:43:27 +0100
+Message-Id: <1380649407-27101-1-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.12.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 1, 2013 at 9:00 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Aug 10, 2013 at 07:48:11PM -0700, Yinghai Lu wrote:
->> ioapic hotplug should be built-in like pci root bus hotplug.
->>
->> Also need to make it depends on X86_IO_APIC.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->
-> Hi Yinghai,
->
-> What's the status of these?  It looks like the last three or four
-> could go via my PCI tree, but I don't know whether they depend on
-> the earlier patches.  If they could be applied separately, I could
-> merge them and we could make *some* progress.
+Commit 248ac0e1 (mm/vmalloc: remove guard page from between vmap blocks)
+had the side effect of making vmap_area.va_end member point to the next
+vmap_area.va_start. This was creating an artificial reference to
+vmalloc'ed objects and kmemleak was rarely reporting vmalloc() leaks.
 
-they are rely on other patches.
+This patch marks the vmap_area containing pointers explicitly and
+reduces the min ref_count to 2 as vm_struct still contains a reference
+to the vmalloc'ed object. The kmemleak add_scan_area() function has been
+improved to allow a SIZE_MAX argument covering the rest of the object
+(for simpler calling sites).
 
-would be better if you give them ack, and let them via tip/x86/irq etc.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
 
-or in two parts: after first part go to upstream via tip, and we can
-push left pci related via pci tree.
+It looks like it's been a while since kmemleak's effectiveness on
+catching vmalloc leaks was reduced. Let's see if the reports increase
+now.
 
->
-> Also, it looks like you planned some rework related to _UID and
-> resource parsing, so I've been waiting for that to show up before
-> doing much more.
+ mm/kmemleak.c |  4 +++-
+ mm/vmalloc.c  | 14 ++++++++++----
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
-yes, I have that ready. will post them shortly.
-
-Thanks
-
-Yinghai
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 8d84859..ecf1f83 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -753,7 +753,9 @@ static void add_scan_area(unsigned long ptr, size_t size, gfp_t gfp)
+ 	}
+ 
+ 	spin_lock_irqsave(&object->lock, flags);
+-	if (ptr + size > object->pointer + object->size) {
++	if (size == SIZE_MAX) {
++		size = object->pointer + object->size - ptr;
++	} else if (ptr + size > object->pointer + object->size) {
+ 		kmemleak_warn("Scan area larger than object 0x%08lx\n", ptr);
+ 		dump_object_info(object);
+ 		kmem_cache_free(scan_area_cache, area);
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 1074543..e2be0f8 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -359,6 +359,12 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ 	if (unlikely(!va))
+ 		return ERR_PTR(-ENOMEM);
+ 
++	/*
++	 * Only scan the relevant parts containing pointers to other objects
++	 * to avoid false negatives.
++	 */
++	kmemleak_scan_area(&va->rb_node, SIZE_MAX, gfp_mask & GFP_RECLAIM_MASK);
++
+ retry:
+ 	spin_lock(&vmap_area_lock);
+ 	/*
+@@ -1646,11 +1652,11 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+ 	clear_vm_uninitialized_flag(area);
+ 
+ 	/*
+-	 * A ref_count = 3 is needed because the vm_struct and vmap_area
+-	 * structures allocated in the __get_vm_area_node() function contain
+-	 * references to the virtual address of the vmalloc'ed block.
++	 * A ref_count = 2 is needed because vm_struct allocated in
++	 * __get_vm_area_node() contains a reference to the virtual address of
++	 * the vmalloc'ed block.
+ 	 */
+-	kmemleak_alloc(addr, real_size, 3, gfp_mask);
++	kmemleak_alloc(addr, real_size, 2, gfp_mask);
+ 
+ 	return addr;
+ 
