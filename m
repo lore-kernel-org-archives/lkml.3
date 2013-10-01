@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3JAGaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:30:09 -0400
-Received: from vex.ruff.mobi ([46.167.245.136]:57959 "EHLO vex.ruff.mobi"
+	id S1751454Ab3JAGjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 02:39:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8337 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab3JAGaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:30:07 -0400
-Date: Tue, 1 Oct 2013 08:29:25 +0200
-From: "Ruslan N. Marchenko" <me@ruff.mobi>
-To: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Regression in 2fdac010
- drivers/net/ethernet/via/via-velocity.c: update napi implementation
-Message-ID: <20131001062925.GA9458@ruff.mobi>
-Mail-Followup-To: Julia Lawall <julia.lawall@lip6.fr>,
-	linux-kernel@vger.kernel.org
-References: <20130930071531.GA13037@ruff.mobi>
- <alpine.DEB.2.02.1309301353150.2036@localhost6.localdomain6>
- <20130930135427.GA19660@ruff.mobi>
+	id S1750871Ab3JAGjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 02:39:36 -0400
+Message-ID: <524A6E29.1050702@redhat.com>
+Date: Tue, 01 Oct 2013 08:39:37 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930135427.GA19660@ruff.mobi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v3 3/3] tile: enable VIRTIO support for KVM
+References: <20130826120445.GD8218@redhat.com> <54dadfbf688618a900310d10363b9c395fa3d322.1377736306.git.cmetcalf@tilera.com> <522F14F8.2000101@redhat.com> <5249DAEC.2090106@tilera.com>
+In-Reply-To: <5249DAEC.2090106@tilera.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 03:54:27PM +0200, Ruslan N. Marchenko wrote:
-> On Mon, Sep 30, 2013 at 01:54:06PM +0200, Julia Lawall wrote:
-> > On Mon, 30 Sep 2013, Ruslan N. Marchenko wrote:
-> > 
-> > > Hi Julia et al.,
-> > > 
-> > > With this commit VIA NANO board get CPU lockup in random places on any network activity.
-> > > .
-> > > Reverting the patch allows me to boot without problems even from latest Linus trunk and send this mail.
-> > 
-> > You can find the discussion and improved patch in this thread:
-> > 
-> > http://www.spinics.net/lists/netdev/msg251287.html
-> > Bug - regression - Via velocity interface coming up freezes kernel
-> > From: Dirk Kraft <dirk.kraft@xxxxxxxxx>
-> > Date: Sun, 22 Sep 2013 19:28:52 +0200
-> > 
-> > julia
+Il 30/09/2013 22:11, Chris Metcalf ha scritto:
+> As I said to Gleb in the previous email - sorry for the delay in
+> replying to your thoughtful comments!
 > 
-> Oops, sorry, somehow I missed it even though 've been searching for via-velocity regression.
-> Will give a try to new proposed patch as well.
 > 
- and short confirmation adding patch from Francois Romieu works on current -rc3+
+> On 9/10/2013 8:47 AM, Paolo Bonzini wrote:
+>> Il 28/08/2013 22:58, Chris Metcalf ha scritto:
+>>> This change enables support for a virtio-based console,
+>>> network support, and block driver support.
+>>>
+>>> We remove some debug code in relocate_kernel_64.S that made raw
+>>> calls to the hv_console_putc Tilera hypervisor API, since everything
+>>> now should funnel through the early_hv_write() API.
+>>>
+>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> Why couldn't this use the "regular" virtio-mmio interface?
+> 
+> We probably should!  We were working with a CentOS 6 style distribution,
+> which has an older version of qemu; we upgraded slightly to 0.13 in
+> the thought that minimizing version skew would help distribution compatibility.
+> That version doesn't have the virtio-mmio stuff.  But you're right, we probably
+> should return the virtio-mmio stuff to the community instead, even if we're
+> going to keep something like this patch in our local copy of KVM.
 
-Regards,
-Ruslan
+Thanks, that looks like the right thing to do.
+
+The difference between s390-virtio and virtio-mmio is that s390 has a
+single device that supports multiple "back-ends", with hotplug and
+hot-unplug support.
+
+virtio-mmio supports a fixed number of devices, defined in the board by
+creating a number of instances of the "naked" virtio-mmio front-ends.
+
+On the other hand, s390-virtio was never fully specified and is not part
+of the virtio standardization effort (because s390 has now switched to a
+different mechanism).
+
+>>>  static void early_hv_write(struct console *con, const char *s, unsigned n)
+>>>  {
+>>> +#ifdef CONFIG_KVM_GUEST
+>>> +     char buf[512];
+>>> +
+>>> +     if (n > sizeof(buf) - 1)
+>>> +             n = sizeof(buf) - 1;
+>>> +     memcpy(buf, s, n);
+>>> +     buf[n] = '\0';
+>>> +
+>>> +     hcall_virtio(KVM_VIRTIO_NOTIFY, __pa(buf));
+>> How can userspace know the difference between KVM_VIRTIO_NOTIFY with a
+>> string buffer, and KVM_VIRTIO_NOTIFY with a config space pointer?
+>>
+>> In fact, this looks like a completely separate hypercall, why not keep
+>> hv_console_putc?
+> 
+> Good point.  Right now in qemu the virtio hypercall with a KVM_VIRTIO_NOTIFY
+> reason either does a virtio_queue_notify(), if the address is not in RAM,
+> or a print, if it is.  It does seem we could just have separate calls;
+> the reason we grouped it in with the KVM_VIRTIO stuff instead of implementing
+> it with the hv_console_write() API is just that it uses the virtio_console
+> API to do the work.  But we probably could do it the other way too, and
+> that might arguably make more sense.  We'll think about it.
+
+Yeah, using virtio-console is just an implementation-dependent issue.  I
+think it's better to keep the previous guest code for early printk.
+
+Paolo
+
