@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab3JAFrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 01:47:19 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:43460 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab3JAFqw (ORCPT
+	id S1751251Ab3JAFqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 01:46:53 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37790 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab3JAFqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 01:46:52 -0400
+	Tue, 1 Oct 2013 01:46:51 -0400
+Date: Tue, 1 Oct 2013 07:46:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, imtangchen@gmail.com
+Subject: Re: [PATCH -mm] mm, memory-hotpulg: Rename movablenode boot option
+ to movable_node
+Message-ID: <20131001054646.GA17220@gmail.com>
+References: <5249B7C6.7010902@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130930.212153.531876068589922786.davem@davemloft.net>
-References: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com> <20130930.212153.531876068589922786.davem@davemloft.net>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 1 Oct 2013 07:46:31 +0200
-Message-ID: <CAPybu_0OrwTo7CkuauRpu_ohQRY80U6BJDXQ6=KC0caOFiFCQA@mail.gmail.com>
-Subject: Re: [PATCH] ll_temac: Reset dma descriptors on ndo_open
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, jg1.han@samsung.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, wfp5p@virginia.edu,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5249B7C6.7010902@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David
 
-lp->tx_bd_ci, lp->tx_bd_next...  are only initialized to zero on
-temac_of_probe (inside  alloc_etherdev).  Those vars are used to index
-the dma descriptors.
+* Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
 
-The initialization of  lp->tx_bd_v[i].app0 = 0; is redundant, because
-it is already done on dma_zalloc_coherent in temac_dma_bd_init called
-on open.
+> @@ -153,11 +153,18 @@ config MOVABLE_NODE
+>  	help
+>  	  Allow a node to have only movable memory.  Pages used by the kernel,
+>  	  such as direct mapping pages cannot be migrated.  So the corresponding
+> +	  memory device cannot be hotplugged.  This option allows the following
+> +	  two things:
+> +	  - When the system is booting, node full of hotpluggable memory can
+> +	  be arranged to have only movable memory so that the whole node can
+> +	  be hotplugged. (need movable_node boot option specified).
 
-What if I move
-       lp->tx_bd_ci = 0;
-       lp->tx_bd_next = 0;
-       lp->tx_bd_tail = 0;
-       lp->rx_bd_ci = 0;
+So this is _exactly_ what I complained about earlier: why is the 
+movable_node boot option needed to get that extra functionality? It's 
+clearly not just a drop-in substitute to CONFIG_MOVABLE_NODE but extends 
+its functionality, right?
 
-to temac_dma_bd_init? Will this be more correct?
+Boot options are _very_ poor user interface. If you don't want to enable 
+it by default then turn this sub-functionality into 
+CONFIG_MOVABLE_NODE_AUTO and keep it default-off - but don't pretend that 
+this is only about CONFIG_MOVABLE_NODE alone - it isnt: as described above 
+the 'movable_node' is needed for the full functionality to be available!
 
-Without this patch a script like these kills the card in 1-10 iterations:
+Thanks,
 
-
-ifdown eth0
-ifdown eth1
-while true
-
-do
-ifconfig eth1 10.100.10.100
-udhcpc -i eth0
-ping 192.168.2.1 -c 5 || break
-ifconfig eth0 down
-
-
-ifconfig eth0 10.100.10.100
-udhcpc -i eth1
-ping 192.168.2.1 -c 5 || break
-ifconfig eth1 down
-
-done
-
-
-Regards
-
-On Tue, Oct 1, 2013 at 6:21 AM, David Miller <davem@davemloft.net> wrote:
-> From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> Date: Fri, 27 Sep 2013 13:24:28 +0200
->
->> The dma descriptors are only initialized on the probe function.
->>
->> If a packet is on the buffer when temac_stop is called, the dma
->> descriptors can be left on a incorrect status where no other package can
->> be sent.
->>
->> So an interface could be left in an usable state after ifdow/ifup.
->>
->> This patch makes sure that the descriptors are in a proper status when
->> the device is started.
->>
->> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->
-> This analysis is not correct.
->
-> In the current driver, the descriptors are allocated and initialized
-> in the open function, not the probe function.
->
-> I'm not applying this patch.
-
-
-
--- 
-Ricardo Ribalda
+	Ingo
