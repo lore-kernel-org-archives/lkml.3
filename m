@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab3JAGSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:18:34 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:34060 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab3JAGSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:18:32 -0400
+	id S1751783Ab3JAGWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 02:22:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29080 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119Ab3JAGWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 02:22:10 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1012,1371052800"; 
+   d="scan'208";a="8662579"
+Message-ID: <524A69DA.9050701@cn.fujitsu.com>
+Date: Tue, 01 Oct 2013 14:21:14 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20131001.020134.756782177490714135.davem@davemloft.net>
-References: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com>
- <20130930.212153.531876068589922786.davem@davemloft.net> <CAPybu_0OrwTo7CkuauRpu_ohQRY80U6BJDXQ6=KC0caOFiFCQA@mail.gmail.com>
- <20131001.020134.756782177490714135.davem@davemloft.net>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 1 Oct 2013 08:18:12 +0200
-Message-ID: <CAPybu_1s2m7RzTuj7J-_ddz8C56RDa53Vwid2wdTc4dkM6s3cQ@mail.gmail.com>
-Subject: Re: [PATCH] ll_temac: Reset dma descriptors on ndo_open
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, jg1.han@samsung.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, wfp5p@virginia.edu,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, imtangchen@gmail.com
+Subject: Re: [PATCH -mm] mm, memory-hotpulg: Rename movablenode boot option
+ to movable_node
+References: <5249B7C6.7010902@gmail.com> <20131001054646.GA17220@gmail.com>
+In-Reply-To: <20131001054646.GA17220@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/01 14:20:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/01 14:20:15,
+	Serialize complete at 2013/10/01 14:20:15
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just send a v2 of the patch
+Hello Ingo,
 
-http://patchwork.ozlabs.org/patch/279339/
+On 10/01/2013 01:46 PM, Ingo Molnar wrote:
+> 
+> * Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+> 
+>> @@ -153,11 +153,18 @@ config MOVABLE_NODE
+>>  	help
+>>  	  Allow a node to have only movable memory.  Pages used by the kernel,
+>>  	  such as direct mapping pages cannot be migrated.  So the corresponding
+>> +	  memory device cannot be hotplugged.  This option allows the following
+>> +	  two things:
+>> +	  - When the system is booting, node full of hotpluggable memory can
+>> +	  be arranged to have only movable memory so that the whole node can
+>> +	  be hotplugged. (need movable_node boot option specified).
+> 
+> So this is _exactly_ what I complained about earlier: why is the 
+> movable_node boot option needed to get that extra functionality? It's 
+> clearly not just a drop-in substitute to CONFIG_MOVABLE_NODE but extends 
+> its functionality, right?
 
-Thanks!
+Generally speaking, CONFIG_MOVABLE_NODE is used to allow a node to have
+only movable memory. Firstly, we didn't support the functionality to support
+boot-time configuration. That said, before this patchset, we only support
+later hot-add node to have only movable memory but any node that is dectected
+at boot-time cannot. So here is movable_node option, to protect the kernel
+from using hotpluggable memory at boot-time and if a node is full of hotpluggable
+memory, this node is arranged to have only movable memory and can be hot-removed
+after the system is up.
 
-On Tue, Oct 1, 2013 at 8:01 AM, David Miller <davem@davemloft.net> wrote:
-> From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> Date: Tue, 1 Oct 2013 07:46:31 +0200
->
->> What if I move
->>        lp->tx_bd_ci = 0;
->>        lp->tx_bd_next = 0;
->>        lp->tx_bd_tail = 0;
->>        lp->rx_bd_ci = 0;
->>
->> to temac_dma_bd_init? Will this be more correct?
->
-> Yes, that would be a lot better.
+> 
+> Boot options are _very_ poor user interface. If you don't want to enable 
+> it by default then turn this sub-functionality into 
+> CONFIG_MOVABLE_NODE_AUTO and keep it default-off - but don't pretend that 
+> this is only about CONFIG_MOVABLE_NODE alone - it isnt: as described above 
+> the 'movable_node' is needed for the full functionality to be available!
 
+As explained above, we need the boot option to only disable boot-time
+memory-hotplug configuration not the whole MOVABLE_NODE functionality.
 
+Thanks
 
 -- 
-Ricardo Ribalda
+Thanks.
+Zhang Yanfei
