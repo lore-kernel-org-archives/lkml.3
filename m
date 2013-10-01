@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab3JAWvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:51:01 -0400
-Received: from mout.gmx.net ([212.227.17.22]:54434 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab3JAWu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:50:59 -0400
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: [PATCH 08/13] tpm: Pull everything related to /dev/tpmX into tpm-dev.c
-Date: Wed, 2 Oct 2013 00:52:40 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-9-git-send-email-jgunthorpe@obsidianresearch.com>
-In-Reply-To: <1379960083-8942-9-git-send-email-jgunthorpe@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1753283Ab3JAWvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:51:16 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33107 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752556Ab3JAWvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:51:00 -0400
+Message-ID: <1380667842.2081.33.camel@dabdike>
+Subject: Re: [PATCH] [workqueue] check values of pwq and wq in
+ print_worker_info() before use
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Helge Deller <deller@gmx.de>
+Cc: Tejun Heo <tj@kernel.org>, Libin <huawei.libin@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
+Date: Tue, 01 Oct 2013 15:50:42 -0700
+In-Reply-To: <524B47A8.1010701@gmx.de>
+References: <20131001203520.GA8248@p100.box>
+	  <20131001204352.GA27149@mtj.dyndns.org> <1380663645.2081.29.camel@dabdike>
+	 <524B47A8.1010701@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201310020052.40497.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:PoMyMOvcx2CaH2MEoeeCwlDFGXIZHPa6JY4pY38otTVj85nAolZ
- rw4375hTWqtAj0+bmlXbv/ZOBf8PJQw3Fq/jkiYFNFszCBv7qGRcPnfjlczOPpmk/mjgel6
- vCHUe4QoymShNWHGCFaS8S5XV62FTXaNqoJMn5cNgdu96byipoRrLK+yYAYID9Dil85Dem2
- 5kaFEyoBhVQ2G0SGemWjg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 23. September 2013, 20:14:38 schrieb Jason Gunthorpe:
-> CLASS-dev.c is a common idiom for Linux subsystems
+On Wed, 2013-10-02 at 00:07 +0200, Helge Deller wrote:
+> On 10/01/2013 11:40 PM, James Bottomley wrote:
+> > On Tue, 2013-10-01 at 16:43 -0400, Tejun Heo wrote:
+> >> Hello,
+> >>
+> >> On Tue, Oct 01, 2013 at 10:35:20PM +0200, Helge Deller wrote:
+> >>> print_worker_info() includes no validity check on the pwq and wq
+> >>> pointers before handing them over to the probe_kernel_read() functions.
+> >>>
+> >>> It seems that most architectures don't care about that, but at least on
+> >>> the parisc architecture this leads to a kernel crash since accesses to
+> >>> page zero are protected by the kernel for security reasons.
+> >>>
+> >>> Fix this problem by verifying the contents of pwq and wq before usage.
+> >>> Even if probe_kernel_read() usually prevents such crashes by disabling
+> >>> page faults, clean code should always include such checks. 
+> >>>
+> >>> Without this fix issuing "echo t > /proc/sysrq-trigger" will immediately
+> >>> crash the Linux kernel on the parisc architecture.
+> >>
+> >> Hmm... um had similar problem but the root cause here is that the arch
+> >> isn't implementing probe_kernel_read() properly.  We really have no
+> >> idea what the pointer value may be at the dump point and that's why we
+> >> use probe_kernel_read().  If something like the above is necessary for
+> >> the time being, the correct place would be the arch
+> >> probe_kernel_read() implementation.  James, would it be difficult
+> >> implement proper probe_kernel_read() on parisc?
+> > 
+> > The problem seems to be that some traps bypass our exception table
+> > handling.  
 > 
-> This pulls all the code related to the miscdev into tpm-dev.c and makes it
-> static. The identical file_operation structs in the drivers are purged and
-> the tpm common code unconditionally creates the miscdev.
-> 
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> ---
->  drivers/char/tpm/Makefile           |   2 +-
->  drivers/char/tpm/tpm-dev.c          | 199
+> Yes, that's correct.
+> It's trap #26 and we directly call parisc_terminate() for fault_space==0
+> without checking the exception table.
+> See my patch I posted a few hours ago which fixes this:
+> https://patchwork.kernel.org/patch/2971701/
 
-When compiling the tpm drivers as modules I get
-ERROR: "tpm_sysfs_del_device" [drivers/char/tpm/tpm.ko] undefined!
-ERROR: "tpm_dev_add_device" [drivers/char/tpm/tpm.ko] undefined!
-ERROR: "tpm_dev_del_device" [drivers/char/tpm/tpm.ko] undefined!
-ERROR: "tpm_sysfs_add_device" [drivers/char/tpm/tpm.ko] undefined!
-ERROR: "tpm_transmit" [drivers/char/tpm/tpm-sysfs.ko] undefined!
-ERROR: "tpm_pcr_read_dev" [drivers/char/tpm/tpm-sysfs.ko] undefined!
-ERROR: "tpm_getcap" [drivers/char/tpm/tpm-sysfs.ko] undefined!
-ERROR: "tpm_transmit" [drivers/char/tpm/tpm-dev.ko] undefined!
+That doesn't quite look right ... I guessed it was probably access
+rights, so we should do an exception table fixup, so isn't this the fix?
+because we shouldn't call do_page_fault if there's no exception table.
+
+James
+
+---
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index 04e47c6..25a088a 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -684,6 +684,8 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
+ 		/* Fall Through */
+ 	case 26: 
+ 		/* PCXL: Data memory access rights trap */
++		if (!user_mode(regs) && fixup_exception(regs))
++			return;
+ 		fault_address = regs->ior;
+ 		fault_space   = regs->isr;
+ 		break;
 
 
-I added a suitable patch with the appropriate EXPORT_SYMBOL_GPL declarations 
-to my testing branch. (also see next message)
-
-
-Thanks,
-Peter
