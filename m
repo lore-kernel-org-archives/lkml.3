@@ -1,133 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3JAOFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:05:32 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:52966 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab3JAOFb (ORCPT
+	id S1753340Ab3JAOLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:11:19 -0400
+Received: from ihemail4.lucent.com ([135.245.0.39]:33409 "EHLO
+	ihemail4.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab3JAOLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:05:31 -0400
-Date: Tue, 1 Oct 2013 16:05:27 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20131001140525.GE24825@localhost.localdomain>
-References: <52138BE9.5090005@linux.intel.com>
- <20130820160146.GG3258@twins.programming.kicks-ass.net>
- <20130820163312.GA17957@redhat.com>
- <20130820175429.GI3258@twins.programming.kicks-ass.net>
- <20130820182553.GB22287@redhat.com>
- <20130821083130.GM3258@twins.programming.kicks-ass.net>
- <20130821113551.GA1472@redhat.com>
- <20130821123311.GA31370@twins.programming.kicks-ass.net>
- <20130821142356.GC31370@twins.programming.kicks-ass.net>
- <20130821164146.GA15194@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821164146.GA15194@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Oct 2013 10:11:18 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Oct 2013 10:11:17 EDT
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>, stable@vger.kernel.org
+Subject: [PATCH] devpts: plug the memory leak in kill_sb
+Date: Tue,  1 Oct 2013 10:05:27 -0400
+Message-Id: <1380636327-4452-1-git-send-email-ihadzic@research.bell-labs.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 06:41:46PM +0200, Oleg Nesterov wrote:
-> On 08/21, Peter Zijlstra wrote:
-> >
-> > The other consideration is that this adds two branches to the normal
-> > schedule path. I really don't know what the regular ratio between
-> > schedule() and io_schedule() is -- and I suspect it can very much depend
-> > on workload -- but it might be a net loss due to that, even if it makes
-> > io_schedule() 'lots' cheaper.
-> 
-> Yes, agreed. Please ignore it for now, I didn't try to actually suggest
-> this change. And even if this is fine perfomance wise, this needs some
-> benchmarking.
-> 
-> Well. actually I have a vague feeling that _perhaps_ this change can
-> help to solve other problems we are discussing, but I am not sure and
-> right now I can't even explain the idea to me.
-> 
-> In short: please ignore ;)
-> 
-> Oleg.
-> 
+When devpts is unmounted, there may be a no-longer-used
+IDR tree hanging off the superblock we are about to kill.
+This needs to be cleaned up before destroying the SB.
 
-Ok, the discussion is hard to synthesize but I think I now have more
-clues to send a better new iteration.
+The leak is usually not a big deal because unmounting
+devpts is typically done when shutting down the whole
+machine. However, shutting down an LXC container instead
+of a physical machine exposes the problem (the garbage is
+detectable with kmemleak).
 
-So we have the choice between keeping atomics or using rq->lock. It seems
-that using rq->lock is going to be worrisome for several reasons. So let's
-stick to atomics (but tell me if you prefer the other way).
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: stable@vger.kernel.org
+---
+ fs/devpts/inode.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-So the idea for the next try is to do something along the lines of:
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 073d30b..a726b9f 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -498,6 +498,7 @@ static void devpts_kill_sb(struct super_block *sb)
+ {
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+ 
++	ida_destroy(&fsi->allocated_ptys);
+ 	kfree(fsi);
+ 	kill_litter_super(sb);
+ }
+-- 
+1.8.2.1
 
-struct cpu_idletime {
-       nr_iowait,
-       seqlock,
-       idle_start,
-       idle_time,
-       iowait_time,
-} __cacheline_aligned_in_smp;
-
-DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
-       
-io_schedule()
-{
-        int prev_cpu;
-	
-        preempt_disable();
-        prev_cpu_idletime = __this_cpu_ptr(&cpu_idletime);
-        atomic_inc(prev_cpu_idletime->nr_iowait);
-        WARN_ON_ONCE(is_idle_task(current));
-        preempt_enable_no_resched();
-
-        schedule();
-
-        write_seqlock(prev_cpu_idletime->seqlock)
-	if (!atomic_dec_return(prev_cpu_idletime->nr_iowait))
-           flush_cpu_idle_time(prev_cpu_idletime, 1)
-        write_sequnlock(prev_cpu_idletime->seqlock)
-
-}
-
-flush_cpu_idle_time(cpu_idletime, iowait)
-{
-       if (!cpu_idletime->idle_start)
-            return;
-
-       if (nr_iowait)
-            cpu_idletime->iowait_time = NOW() - cpu_idletime->idle_start;
-       else
-            cpu_idletime->idle_time = NOW() - cpu_idletime->idle_start;
-}
-
-idle_entry()
-{
-        write_seqlock(this_cpu_idletime->seqlock)
-        this_cpu_idletime->idle_start = NOW();
-        write_sequnlock(iowait(cpu)->seqlock)
-}
-
-idle_exit()
-{
-        write_seqlock(this_cpu_idletime->seqlock)
-        flush_cpu_idle_time(this_cpu_idletime, atomic_read(&this_cpu_idletime->nr_iowait));
-	this_cpu_idletime->idle_start = 0;
-        write_sequnlock(this_cpu_idletime->seqlock)
-}
-
-
-Now this all realy on the fact that atomic_inc(cpu_idletime->nr_iowait) can't happen
-in a CPU that is already idle. So it can't happen between idle_entry() and idle_exit().
-Hence the WARN_ON(is_idle_task(current)) below after the inc.
-
-Hmm?
