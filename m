@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab3JAXl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 19:41:29 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:49772 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab3JAXlO (ORCPT
+	id S1753176Ab3JAXlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 19:41:23 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:58109 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab3JAXlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Oct 2013 19:41:14 -0400
 From: Sean Paul <seanpaul@chromium.org>
@@ -12,37 +12,53 @@ To: dri-devel@lists.freedesktop.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
         inki.dae@samsung.com
-Cc: airlied@linux.ie
-Subject: [PATCH 0/5] Add some missing bits for exynos5250-snow
-Date: Tue,  1 Oct 2013 19:40:55 -0400
-Message-Id: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+Cc: airlied@linux.ie, Sean Paul <seanpaul@chromium.org>
+Subject: [PATCH 1/5] ARM: dts: Add fimd display-timings for exynos5250-snow
+Date: Tue,  1 Oct 2013 19:40:56 -0400
+Message-Id: <1380670860-17621-2-git-send-email-seanpaul@chromium.org>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set adds some missing devicetree nodes to the exynos5250-snow file as well
-as adds a drm_bridge driver for the ptn3460 DP-LVDS chip. This chip is used in
-the exynos5250-snow board.
+This patch adds the internal panel timings to the exynos5250-snow board
+dts file.
 
-Sean
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ arch/arm/boot/dts/exynos5250-snow.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-
-Sean Paul (5):
- ARM: dts: Add fimd display-timings for exynos5250-snow
- ARM: dts: Add dp-controller node to exynos5250-snow
- drm/bridge: Add PTN3460 bridge driver
- drm/exynos: Initialize ptn3460 if present
- ARM: dts: Add ptn3460 to exynos5250-snow
-
-Documentation/devicetree/bindings/drm/bridge/ptn3460.txt |  27 +++++++++++++++++++++++++
-arch/arm/boot/dts/exynos5250-snow.dts                    |  48 ++++++++++++++++++++++++++++++++++++++++++++
-drivers/gpu/drm/Kconfig                                  |   2 ++
-drivers/gpu/drm/Makefile                                 |   1 +
-drivers/gpu/drm/bridge/Kconfig                           |   4 ++++
-drivers/gpu/drm/bridge/Makefile                          |   3 +++
-drivers/gpu/drm/bridge/ptn3460.c                         | 349 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-drivers/gpu/drm/exynos/exynos_drm_core.c                 |  44 +++++++++++++++++++++++++++++++++++++++-
-include/drm/bridge/ptn3460.h                             |  36 +++++++++++++++++++++++++++++++++
-9 files changed, 513 insertions(+), 1 deletion(-)
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index e79331d..e5af3f2 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -190,6 +190,23 @@
+ 		samsung,vbus-gpio = <&gpx1 1 0>;
+ 	};
+ 
++	fimd: fimd@14400000 {
++		display-timings {
++			native-mode = <&lcd_timing>;
++			lcd_timing: 1366x768 {
++				clock-frequency = <70589280>;
++				hactive = <1366>;
++				vactive = <768>;
++				hfront-porch = <40>;
++				hback-porch = <40>;
++				hsync-len = <32>;
++				vback-porch = <10>;
++				vfront-porch = <12>;
++				vsync-len = <6>;
++			};
++		};
++	};
++
+ 	fixed-rate-clocks {
+ 		xxti {
+ 			compatible = "samsung,clock-xxti";
+-- 
+1.8.4
 
