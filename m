@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3JAVoC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 17:44:02 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:61143 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab3JAVma (ORCPT
+	id S1753503Ab3JAVoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 17:44:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51657 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab3JAVoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 17:42:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/15] sysfs: collapse fs/sysfs/bin.c::fill_read() into read()
-Date: Tue,  1 Oct 2013 17:42:04 -0400
-Message-Id: <1380663729-18243-11-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380663729-18243-1-git-send-email-tj@kernel.org>
-References: <1380663729-18243-1-git-send-email-tj@kernel.org>
+	Tue, 1 Oct 2013 17:44:07 -0400
+Message-ID: <524B4220.1070209@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 15:44:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
+        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tarek Dakhran <t.dakhran@samsung.com>
+Subject: Re: [PATCH 2/6] clk: exynos5410: register clocks using common clock
+ framework
+References: <1380644227-12244-1-git-send-email-v.tyrtov@samsung.com> <1380644227-12244-3-git-send-email-v.tyrtov@samsung.com>
+In-Reply-To: <1380644227-12244-3-git-send-email-v.tyrtov@samsung.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read() is simple enough and fill_read() being in a separate function
-doesn't add anything.  Let's collapse it into read().  This will make
-merging bin file handling with regular file.
+On 10/01/2013 10:17 AM, Vyacheslav Tyrtov wrote:
+> From: Tarek Dakhran <t.dakhran@samsung.com>
+> 
+> The EXYNOS5410 clocks are statically listed and registered
+> using the Samsung specific common clock helper functions.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/sysfs/bin.c | 36 +++++++++++++++---------------------
- 1 file changed, 15 insertions(+), 21 deletions(-)
+> diff --git a/Documentation/devicetree/bindings/clock/exynos5410-clock.txt b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
 
-diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
-index d2142c0..60a4e78 100644
---- a/fs/sysfs/bin.c
-+++ b/fs/sysfs/bin.c
-@@ -44,30 +44,12 @@ struct bin_buffer {
- 	struct hlist_node		list;
- };
- 
--static int
--fill_read(struct file *file, char *buffer, loff_t off, size_t count)
-+static ssize_t
-+read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
- {
- 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
- 	struct bin_attribute *attr = attr_sd->s_bin_attr.bin_attr;
- 	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
--	int rc;
--
--	/* need attr_sd for attr, its parent for kobj */
--	if (!sysfs_get_active(attr_sd))
--		return -ENODEV;
--
--	rc = -EIO;
--	if (attr->read)
--		rc = attr->read(file, kobj, attr, buffer, off, count);
--
--	sysfs_put_active(attr_sd);
--
--	return rc;
--}
--
--static ssize_t
--read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
--{
- 	struct bin_buffer *bb = file->private_data;
- 	int size = file_inode(file)->i_size;
- 	loff_t offs = *off;
-@@ -88,8 +70,20 @@ read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
- 	if (!buf)
- 		return -ENOMEM;
- 
-+	/* need attr_sd for attr, its parent for kobj */
- 	mutex_lock(&bb->mutex);
--	count = fill_read(file, buf, offs, count);
-+	if (!sysfs_get_active(attr_sd)) {
-+		count = -ENODEV;
-+		mutex_unlock(&bb->mutex);
-+		goto out_free;
-+	}
-+
-+	if (attr->read)
-+		count = attr->read(file, kobj, attr, buf, offs, count);
-+	else
-+		count = -EIO;
-+
-+	sysfs_put_active(attr_sd);
- 	mutex_unlock(&bb->mutex);
- 
- 	if (count < 0)
--- 
-1.8.3.1
+> +       [Core Clocks]
+> +  [Clock Gate for Special Clocks]
+> +   [Peripheral Clock Gates]
+
+These headers/titles for the sections/lists aren't consistently aligned.
+
+> +  [Clock Gate for Special Clocks]
+> +
+> +  Clock			ID
+> +  ----------------------------
+> +  sclk_uart0		128
+> +  sclk_uart1		129
+> +  sclk_uart2		130
+> +  sclk_uart3		131
+> +  sclk_mmc0		132
+> +  sclk_mmc1		133
+> +  sclk_mmc2		134
+> +
+> +   [Peripheral Clock Gates]
+> +
+> +  Clock			ID
+> +  ----------------------------
+> +
+> +  uart0			257
+> +  uart1			258
+> +  uart2			259
+> +  uart3			260
+> +  mct			315
+> +  mmc0			351
+> +  mmc1			352
+> +  mmc2			353
+
+That's not many clocks. I assume you're planning on adding more IDs
+later, in a backwards-compatible fashion? I suppose that's OK since it
+won't break any existing usage, as long as there's no need to renumber
+any existing values.
+
+On that topic, are any of those clock IDs derived from HW, e.g. register
+numbers, or bit numbers in an array of registers? Numbering clocks in a
+HW-derived fashion would make it easier or more obvious how to add new
+clock IDs later while maintaining some consistency and without
+introducing the desire to break any ABI.
+
+Finally, how about creating a header file such as
+include/dt-bindings/clock/exynos5410.h to define those clock IDs, so
+that both *.dts and the clock driver can share the values without having
+to manually write them?
 
