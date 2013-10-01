@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab3JASvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 14:51:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50888 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3JASu5 (ORCPT
+	id S1751575Ab3JATBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 15:01:14 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42384 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3JATBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 14:50:57 -0400
-Message-ID: <524B198B.3010609@wwwdotorg.org>
-Date: Tue, 01 Oct 2013 12:50:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 1 Oct 2013 15:01:11 -0400
+Message-ID: <524B1AF6.8020406@linux.vnet.ibm.com>
+Date: Wed, 02 Oct 2013 00:26:54 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        openezx-devel@lists.openezx.org, linux-samsung-soc@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/10] pwm-backlight: Allow backlight to remain disabled
- on boot
-References: <1379972467-11243-1-git-send-email-treding@nvidia.com> <1379972467-11243-11-git-send-email-treding@nvidia.com>
-In-Reply-To: <1379972467-11243-11-git-send-email-treding@nvidia.com>
-X-Enigmail-Version: 1.4.6
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+References: <20130925175055.GA25914@redhat.com> <20130928144720.GL15690@laptop.programming.kicks-ass.net> <20130928163104.GA23352@redhat.com> <7632387.20FXkuCITr@vostro.rjw.lan> <524B0233.8070203@linux.vnet.ibm.com> <20131001173615.GW3657@laptop.programming.kicks-ass.net> <524B111F.9060003@linux.vnet.ibm.com>
+In-Reply-To: <524B111F.9060003@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100119-7014-0000-0000-000003B2B3ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2013 03:41 PM, Thierry Reding wrote:
-> The default for backlight devices is to be enabled immediately when
-> registering with the backlight core. This can be useful for setups that
-> use a simple framebuffer device and where the backlight cannot otherwise
-> be hooked up to the panel.
+On 10/01/2013 11:44 PM, Srivatsa S. Bhat wrote:
+> On 10/01/2013 11:06 PM, Peter Zijlstra wrote:
+>> On Tue, Oct 01, 2013 at 10:41:15PM +0530, Srivatsa S. Bhat wrote:
+>>> However, as Oleg said, its definitely worth considering whether this proposed
+>>> change in semantics is going to hurt us in the future. CPU_POST_DEAD has certainly
+>>> proved to be very useful in certain challenging situations (commit 1aee40ac9c
+>>> explains one such example), so IMHO we should be very careful not to undermine
+>>> its utility.
+>>
+>> Urgh.. crazy things. I've always understood POST_DEAD to mean 'will be
+>> called at some time after the unplug' with no further guarantees. And my
+>> patch preserves that.
+>>
+>> Its not at all clear to me why cpufreq needs more; 1aee40ac9c certainly
+>> doesn't explain it.
+>>
 > 
-> However, when dealing with more complex setups, such as those of recent
-> ARM SoCs, this can be problematic. Since the backlight is usually setup
-> separately from the display controller, the probe order is not usually
-> deterministic. That can lead to situations where the backlight will be
-> powered up and the panel will show an uninitialized framebuffer.
+> Sorry if I was unclear - I didn't mean to say that cpufreq needs more guarantees
+> than that. I was just saying that the cpufreq code would need certain additional
+> changes/restructuring to accommodate the change in the semantics brought about
+> by this patch. IOW, it won't work as it is, but it can certainly be fixed.
 > 
-> Furthermore, subsystems such as DRM have advanced functionality to set
-> the power mode of a panel. In order to allow such setups to power up the
-> panel at exactly the right moment, a way is needed to prevent the
-> backlight core from powering the backlight up automatically when it is
-> registered.
-> 
-> This commit introduces a new boot_off field in the platform data (and
-> also implements getting the same information from device tree). When set
-> the initial backlight power mode will be set to "off".
 
-> diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+And an important reason why this change can be accommodated with not so much
+trouble is because you are changing it only in the suspend/resume path, where
+userspace has already been frozen, so all hotplug operations are initiated by
+the suspend path and that path *alone* (and so we enjoy certain "simplifiers" that
+we know before-hand, eg: all of them are CPU offline operations, happening one at
+a time, in sequence) and we don't expect any "interference" to this routine ;-).
+As a result the number and variety of races that we need to take care of tend to
+be far lesser. (For example, we don't have to worry about the deadlock caused by
+sysfs-writes that 1aee40ac9c was talking about).
 
-> +  - backlight-boot-off: keep the backlight disabled on boot
+On the other hand, if the proposal was to change the regular hotplug path as well
+on the same lines, then I guess it would have been a little more difficult to
+adjust to it. For example, in cpufreq, _dev_prepare() sends a STOP to the governor,
+whereas a part of _dev_finish() sends a START to it; so we might have races there,
+due to which we might proceed with CPU offline with a running governor, depending
+on the exact timing of the events. Of course, this problem doesn't occur in the
+suspend/resume case, and hence I didn't bring it up in my previous mail.
 
-A few thoughts:
+So this is another reason why I'm a little concerned about POST_DEAD: since this
+is a change in semantics, it might be worth asking ourselves whether we'd still
+want to go with that change, if we happened to be changing regular hotplug as
+well, rather than just the more controlled environment of suspend/resume.
+Yes, I know that's not what you proposed, but I feel it might be worth considering
+its implications while deciding how to solve the POST_DEAD issue.
 
-1) Does this property indicate that:
-
-a) The current state of the backlight at boot. In which case, this will
-need bootloader involvement to modify the value in the DT at boot time
-based on whether the bootloader turned on the backlight:-(
-
-b) That the driver should not turn on the backlight immediately? That
-seems to describe driver behaviour more than HW. Is it appropriate to
-put that into DT?
-
-Your suggestion to make the backlight not turn on by default might be a
-better fix?
-
-2) Should the driver instead attempt to read the current state of the
-GPIO output to determine whether the backlight is on? This may not be
-possible on all HW.
-
-3) Doesn't the following code in probe() (added in a previous patch)
-need to be updated?
-
-> +	if (gpio_is_valid(pb->enable_gpio)) {
-> +		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
-> +			gpio_set_value(pb->enable_gpio, 0);
-> +		else
-> +			gpio_set_value(pb->enable_gpio, 1);
-> +	}
-
-... That assumes that the backlight is on at boot, and hence presumably
-after this patch still always turns on the backlight, only to turn it
-off very quickly once the following code in this patch executes:
-
-(and perhaps we also need to avoid turning the backlight off then on if
-it was already on at boot)
-
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-
-> @@ -318,6 +320,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
->  	}
->  
->  	bl->props.brightness = data->dft_brightness;
-> +
-> +	if (data->boot_off)
-> +		bl->props.power = FB_BLANK_POWERDOWN;
-> +	else
-> +		bl->props.power = FB_BLANK_UNBLANK;
+Regards,
+Srivatsa S. Bhat
 
