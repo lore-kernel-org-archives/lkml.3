@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3JAWvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:51:16 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33107 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752556Ab3JAWvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:51:00 -0400
-Message-ID: <1380667842.2081.33.camel@dabdike>
-Subject: Re: [PATCH] [workqueue] check values of pwq and wq in
- print_worker_info() before use
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Helge Deller <deller@gmx.de>
-Cc: Tejun Heo <tj@kernel.org>, Libin <huawei.libin@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Date: Tue, 01 Oct 2013 15:50:42 -0700
-In-Reply-To: <524B47A8.1010701@gmx.de>
-References: <20131001203520.GA8248@p100.box>
-	  <20131001204352.GA27149@mtj.dyndns.org> <1380663645.2081.29.camel@dabdike>
-	 <524B47A8.1010701@gmx.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753296Ab3JAWwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:52:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35351 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477Ab3JAWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:52:05 -0400
+Date: Tue, 1 Oct 2013 17:51:08 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] arm: dts: add tmp102 i2c sensor node on dra7-evm
+Message-ID: <20131001225108.GA11885@kahuna>
+References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
+ <1380652344-18819-7-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1380652344-18819-7-git-send-email-eduardo.valentin@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 00:07 +0200, Helge Deller wrote:
-> On 10/01/2013 11:40 PM, James Bottomley wrote:
-> > On Tue, 2013-10-01 at 16:43 -0400, Tejun Heo wrote:
-> >> Hello,
-> >>
-> >> On Tue, Oct 01, 2013 at 10:35:20PM +0200, Helge Deller wrote:
-> >>> print_worker_info() includes no validity check on the pwq and wq
-> >>> pointers before handing them over to the probe_kernel_read() functions.
-> >>>
-> >>> It seems that most architectures don't care about that, but at least on
-> >>> the parisc architecture this leads to a kernel crash since accesses to
-> >>> page zero are protected by the kernel for security reasons.
-> >>>
-> >>> Fix this problem by verifying the contents of pwq and wq before usage.
-> >>> Even if probe_kernel_read() usually prevents such crashes by disabling
-> >>> page faults, clean code should always include such checks. 
-> >>>
-> >>> Without this fix issuing "echo t > /proc/sysrq-trigger" will immediately
-> >>> crash the Linux kernel on the parisc architecture.
-> >>
-> >> Hmm... um had similar problem but the root cause here is that the arch
-> >> isn't implementing probe_kernel_read() properly.  We really have no
-> >> idea what the pointer value may be at the dump point and that's why we
-> >> use probe_kernel_read().  If something like the above is necessary for
-> >> the time being, the correct place would be the arch
-> >> probe_kernel_read() implementation.  James, would it be difficult
-> >> implement proper probe_kernel_read() on parisc?
-> > 
-> > The problem seems to be that some traps bypass our exception table
-> > handling.  
+On 14:32-20131001, Eduardo Valentin wrote:
+> On dra7-evm there is an tmp102 temperature sensor on i2c bus 1.
+> This patch adds its device tree node.
 > 
-> Yes, that's correct.
-> It's trap #26 and we directly call parisc_terminate() for fault_space==0
-> without checking the exception table.
-> See my patch I posted a few hours ago which fixes this:
-> https://patchwork.kernel.org/patch/2971701/
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7-evm.dts | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+> index 21fe16b..3b6c16a 100644
+> --- a/arch/arm/boot/dts/dra7-evm.dts
+> +++ b/arch/arm/boot/dts/dra7-evm.dts
+> @@ -7,6 +7,8 @@
+>   */
+>  /dts-v1/;
+>  
+> +#include <dt-bindings/thermal/thermal.h>
+> +
 
-That doesn't quite look right ... I guessed it was probably access
-rights, so we should do an exception table fixup, so isn't this the fix?
-because we shouldn't call do_page_fault if there's no exception table.
+^^ needed?
 
-James
+>  #include "dra7.dtsi"
+>  
+>  / {
+> @@ -93,6 +95,12 @@
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&i2c1_pins>;
+>  	clock-frequency = <400000>;
+could you add an EOL here?
+> +	tmp102: tmp102@48{
+	a space before the {?
+> +		compatible = "ti,tmp102";
+> +		reg = <0x48>;
+> +
+> +		#thermal-sensor-cells = <0>;
+> +	};
+>  };
+>  
+>  &i2c2 {
+> -- 
+> 1.8.2.1.342.gfa7285d
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
----
-diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
-index 04e47c6..25a088a 100644
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -684,6 +684,8 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
- 		/* Fall Through */
- 	case 26: 
- 		/* PCXL: Data memory access rights trap */
-+		if (!user_mode(regs) && fixup_exception(regs))
-+			return;
- 		fault_address = regs->ior;
- 		fault_space   = regs->isr;
- 		break;
-
-
+-- 
+Regards,
+Nishanth Menon
