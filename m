@@ -1,407 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3JAUPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:15:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab3JAUP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:15:27 -0400
-Subject: [PATCH 4/4] kvm: Add VFIO device for handling IOMMU cache coherency
-To: gleb@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: aik@ozlabs.ru, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Tue, 01 Oct 2013 14:15:24 -0600
-Message-ID: <20131001201524.31715.4300.stgit@bling.home>
-In-Reply-To: <20131001200757.31715.22994.stgit@bling.home>
-References: <20131001200757.31715.22994.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751769Ab3JAUVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:21:51 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:58305 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3JAUVr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 16:21:47 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jan Glauber <jan.glauber@gmail.com>
+Cc: Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
+Subject: [PATCHv2 1/2] mm: rearrange madvise code to allow for reuse
+Date: Tue,  1 Oct 2013 13:21:39 -0700
+Message-Id: <1380658901-11666-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far we've succeeded at making KVM and VFIO mostly unaware of each
-other, but there's an important point where that breaks down.  Intel
-VT-d hardware may or may not support snoop control.  When snoop
-control is available, intel-iommu promotes No-Snoop transactions on
-PCIe to be cache coherent.  That allows KVM to handle things like the
-x86 WBINVD opcode as a nop.  When the hardware does not support this,
-KVM must implement a hardware visible WBINVD for the guest.
+This patch refactors the madvise syscall to allow for parts of it
+to be reused by a prctl syscall that affects vmas.
 
-We could simply let userspace tell KVM how to handle WBINVD, but it's
-privileged for a reason.  Allowing an arbitrary user to enable
-physical WBINVD gives them more access to the hardware.  Previously,
-this has only been enabled for guests supporting legacy PCI device
-assignment.  In such cases it's necessary for proper guest execution.
-We therefore create a new KVM-VFIO virtual device.  The user can add
-and remove VFIO groups to this device via file descriptors.  KVM
-makes use of the VFIO external user interface to validate that the
-user has access to physical hardware and, for now, assumes the I/O
-is noncoherent.  Eventually we'll add an interface to allow KVM to
-determine the conherency of the domain as noted in the TODO.
+Move the code that walks vmas in a virtual address range into a
+function that takes a function pointer as a parameter.  The only
+caller for now is sys_madvise, which uses it to call
+madvise_vma_behavior on each vma, but the next patch will add
+an additional caller.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Move handling all vma behaviors inside madvise_behavior, and
+rename it to madvise_vma_behavior.
+
+Move the code that updates the flags on a vma, including splitting
+or merging the vma as necessary, into a new function called
+madvise_update_vma.  The next patch will add support for updating
+a new anon_name field as well.
+
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- Documentation/virtual/kvm/devices/vfio.txt |   22 ++
- arch/x86/kvm/Makefile                      |    2 
- include/linux/kvm_host.h                   |    1 
- include/uapi/linux/kvm.h                   |    4 
- virt/kvm/kvm_main.c                        |    3 
- virt/kvm/vfio.c                            |  262 ++++++++++++++++++++++++++++
- 6 files changed, 293 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/virtual/kvm/devices/vfio.txt
- create mode 100644 virt/kvm/vfio.c
+ mm/madvise.c | 272 +++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 151 insertions(+), 121 deletions(-)
 
-diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
-new file mode 100644
-index 0000000..ef51740
---- /dev/null
-+++ b/Documentation/virtual/kvm/devices/vfio.txt
-@@ -0,0 +1,22 @@
-+VFIO virtual device
-+===================
-+
-+Device types supported:
-+  KVM_DEV_TYPE_VFIO
-+
-+Only one VFIO instance may be created per VM.  The created device
-+tracks VFIO groups in use by the VM and features of those groups
-+important to the correctness and acceleration of the VM.  As groups
-+are enabled and disabled for use by the VM, KVM should be updated
-+about their presence.  When registered with KVM, a reference to the
-+VFIO-group is held by KVM.
-+
-+Groups:
-+  KVM_DEV_VFIO_GROUP
-+
-+KVM_DEV_VFIO_GROUP attributes:
-+  KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
-+  KVM_DEV_VFIO_GROUP_DEL: Remove a VFIO group from VFIO-KVM device tracking
-+
-+For each, kvm_device_attr.addr points to an int32_t file descriptor
-+for the VFIO group.
-diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
-index bf4fb04..25d22b2 100644
---- a/arch/x86/kvm/Makefile
-+++ b/arch/x86/kvm/Makefile
-@@ -9,7 +9,7 @@ KVM := ../../../virt/kvm
- 
- kvm-y			+= $(KVM)/kvm_main.o $(KVM)/ioapic.o \
- 				$(KVM)/coalesced_mmio.o $(KVM)/irq_comm.o \
--				$(KVM)/eventfd.o $(KVM)/irqchip.o
-+				$(KVM)/eventfd.o $(KVM)/irqchip.o $(KVM)/vfio.o
- kvm-$(CONFIG_KVM_DEVICE_ASSIGNMENT)	+= $(KVM)/assigned-dev.o $(KVM)/iommu.o
- kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(KVM)/async_pf.o
- 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index e239c93..8a6bfa0 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -1082,6 +1082,7 @@ struct kvm_device *kvm_device_from_filp(struct file *filp);
- 
- extern struct kvm_device_ops kvm_mpic_ops;
- extern struct kvm_device_ops kvm_xics_ops;
-+extern struct kvm_device_ops kvm_vfio_ops;
- 
- #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
- 
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index 99c2533..7c1a349 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -843,6 +843,10 @@ struct kvm_device_attr {
- #define KVM_DEV_TYPE_FSL_MPIC_20	1
- #define KVM_DEV_TYPE_FSL_MPIC_42	2
- #define KVM_DEV_TYPE_XICS		3
-+#define KVM_DEV_TYPE_VFIO		4
-+#define  KVM_DEV_VFIO_GROUP			1
-+#define   KVM_DEV_VFIO_GROUP_ADD			1
-+#define   KVM_DEV_VFIO_GROUP_DEL			2
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 7055883..b8820fd 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -39,65 +39,20 @@ static int madvise_need_mmap_write(int behavior)
+ }
  
  /*
-  * ioctls for VM fds
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 8727820..85185af 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -2273,6 +2273,9 @@ static int kvm_ioctl_create_device(struct kvm *kvm,
- 		ops = &kvm_xics_ops;
- 		break;
- #endif
-+	case KVM_DEV_TYPE_VFIO:
-+		ops = &kvm_vfio_ops;
-+		break;
- 	default:
- 		return -ENODEV;
- 	}
-diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-new file mode 100644
-index 0000000..37a8261
---- /dev/null
-+++ b/virt/kvm/vfio.c
-@@ -0,0 +1,262 @@
-+/*
-+ * VFIO-KVM bridge pseudo device
-+ *
-+ * Copyright (C) 2013 Red Hat, Inc.  All rights reserved.
-+ *     Author: Alex Williamson <alex.williamson@redhat.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/file.h>
-+#include <linux/kvm_host.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <linux/vfio.h>
-+
-+struct kvm_vfio_group {
-+	struct list_head node;
-+	struct vfio_group *vfio_group;
-+};
-+
-+struct kvm_vfio {
-+	struct list_head group_list;
-+	struct mutex lock;
-+	bool noncoherent;
-+};
-+
-+static struct vfio_group *kvm_vfio_group_get_external_user(struct file *filep)
-+{
-+	struct vfio_group *vfio_group;
-+	struct vfio_group *(*fn)(struct file *);
-+
-+	fn = symbol_get(vfio_group_get_external_user);
-+	if (!fn)
-+		return ERR_PTR(-EINVAL);
-+
-+	vfio_group = fn(filep);
-+
-+	symbol_put(vfio_group_get_external_user);
-+
-+	return vfio_group;
-+}
-+
-+static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
-+{
-+	void (*fn)(struct vfio_group *);
-+
-+	fn = symbol_get(vfio_group_put_external_user);
-+	if (!fn)
-+		return;
-+
-+	fn(vfio_group);
-+
-+	symbol_put(vfio_group_put_external_user);
-+}
-+
-+/*
-+ * Groups can use the same or different IOMMU domains.  If the same then
-+ * adding a new group may change the coherency of groups we've previously
-+ * been told about.  We don't want to care about any of that so we retest
-+ * each group and bail as soon as we find one that's noncoherent.  This
-+ * means we only ever [un]register_noncoherent_dma once for the whole device.
-+ */
-+static void kvm_vfio_update_coherency(struct kvm_device *dev)
-+{
-+	struct kvm_vfio *kv = dev->private;
-+	bool noncoherent = false;
-+	struct kvm_vfio_group *kvg;
-+
-+	mutex_lock(&kv->lock);
-+
-+	list_for_each_entry(kvg, &kv->group_list, node) {
-+		/*
-+		 * TODO: We need an interface to check the coherency of
-+		 * the IOMMU domain this group is using.  For now, assume
-+		 * it's always noncoherent.
-+		 */
-+		noncoherent = true;
-+		break;
-+	}
-+
-+	if (noncoherent != kv->noncoherent) {
-+		kv->noncoherent = noncoherent;
-+
-+		if (kv->noncoherent)
-+			kvm_arch_register_noncoherent_dma(dev->kvm);
-+		else
-+			kvm_arch_unregister_noncoherent_dma(dev->kvm);
-+	}
-+
-+	mutex_unlock(&kv->lock);
-+}
-+
-+static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
-+{
-+	struct kvm_vfio *kv = dev->private;
-+	struct vfio_group *vfio_group;
-+	struct kvm_vfio_group *kvg;
-+	struct fd f;
-+	int32_t fd;
-+	int ret;
-+
-+	switch (attr) {
-+	case KVM_DEV_VFIO_GROUP_ADD:
-+		if (get_user(fd, (int32_t __user *)arg))
-+			return -EFAULT;
-+
-+		f = fdget(fd);
-+		if (!f.file)
-+			return -EBADF;
-+
-+		vfio_group = kvm_vfio_group_get_external_user(f.file);
-+		fdput(f);
-+
-+		if (IS_ERR(vfio_group))
-+			return PTR_ERR(vfio_group);
-+
-+		mutex_lock(&kv->lock);
-+
-+		list_for_each_entry(kvg, &kv->group_list, node) {
-+			if (kvg->vfio_group == vfio_group) {
-+				mutex_unlock(&kv->lock);
-+				kvm_vfio_group_put_external_user(vfio_group);
-+				return -EEXIST;
-+			}
-+		}
-+
-+		kvg = kzalloc(sizeof(*kvg), GFP_KERNEL);
-+		if (!kvg) {
-+			mutex_unlock(&kv->lock);
-+			kvm_vfio_group_put_external_user(vfio_group);
-+			return -ENOMEM;
-+		}
-+
-+		list_add_tail(&kvg->node, &kv->group_list);
-+		kvg->vfio_group = vfio_group;
-+
-+		mutex_unlock(&kv->lock);
-+
-+		kvm_vfio_update_coherency(dev);
-+
+- * We can potentially split a vm area into separate
+- * areas, each area with its own behavior.
++ * Update the vm_flags on regiion of a vma, splitting it or merging it as
++ * necessary.  Must be called with mmap_sem held for writing;
+  */
+-static long madvise_behavior(struct vm_area_struct * vma,
+-		     struct vm_area_struct **prev,
+-		     unsigned long start, unsigned long end, int behavior)
++static int madvise_update_vma(struct vm_area_struct *vma,
++		     struct vm_area_struct **prev, unsigned long start,
++		     unsigned long end, unsigned long new_flags)
+ {
+ 	struct mm_struct * mm = vma->vm_mm;
+-	int error = 0;
+ 	pgoff_t pgoff;
+-	unsigned long new_flags = vma->vm_flags;
+-
+-	switch (behavior) {
+-	case MADV_NORMAL:
+-		new_flags = new_flags & ~VM_RAND_READ & ~VM_SEQ_READ;
+-		break;
+-	case MADV_SEQUENTIAL:
+-		new_flags = (new_flags & ~VM_RAND_READ) | VM_SEQ_READ;
+-		break;
+-	case MADV_RANDOM:
+-		new_flags = (new_flags & ~VM_SEQ_READ) | VM_RAND_READ;
+-		break;
+-	case MADV_DONTFORK:
+-		new_flags |= VM_DONTCOPY;
+-		break;
+-	case MADV_DOFORK:
+-		if (vma->vm_flags & VM_IO) {
+-			error = -EINVAL;
+-			goto out;
+-		}
+-		new_flags &= ~VM_DONTCOPY;
+-		break;
+-	case MADV_DONTDUMP:
+-		new_flags |= VM_DONTDUMP;
+-		break;
+-	case MADV_DODUMP:
+-		if (new_flags & VM_SPECIAL) {
+-			error = -EINVAL;
+-			goto out;
+-		}
+-		new_flags &= ~VM_DONTDUMP;
+-		break;
+-	case MADV_MERGEABLE:
+-	case MADV_UNMERGEABLE:
+-		error = ksm_madvise(vma, start, end, behavior, &new_flags);
+-		if (error)
+-			goto out;
+-		break;
+-	case MADV_HUGEPAGE:
+-	case MADV_NOHUGEPAGE:
+-		error = hugepage_madvise(vma, &new_flags, behavior);
+-		if (error)
+-			goto out;
+-		break;
+-	}
++	int error;
+ 
+ 	if (new_flags == vma->vm_flags) {
+ 		*prev = vma;
+-		goto out;
 +		return 0;
-+
-+	case KVM_DEV_VFIO_GROUP_DEL:
-+		if (get_user(fd, (int32_t __user *)arg))
-+			return -EFAULT;
-+
-+		f = fdget(fd);
-+		if (!f.file)
-+			return -EBADF;
-+
-+		vfio_group = kvm_vfio_group_get_external_user(f.file);
-+		fdput(f);
-+
-+		if (IS_ERR(vfio_group))
-+			return PTR_ERR(vfio_group);
-+
-+		ret = -ENOENT;
-+
-+		mutex_lock(&kv->lock);
-+
-+		list_for_each_entry(kvg, &kv->group_list, node) {
-+			if (kvg->vfio_group != vfio_group)
-+				continue;
-+
-+			list_del(&kvg->node);
-+			kvm_vfio_group_put_external_user(kvg->vfio_group);
-+			kfree(kvg);
-+			ret = 0;
-+			break;
-+		}
-+
-+		mutex_unlock(&kv->lock);
-+
-+		kvm_vfio_group_put_external_user(vfio_group);
-+
-+		kvm_vfio_update_coherency(dev);
-+
-+		return ret;
-+	}
-+
-+	return -ENXIO;
-+}
-+
-+static int kvm_vfio_set_attr(struct kvm_device *dev,
-+			     struct kvm_device_attr *attr)
+ 	}
+ 
+ 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
+@@ -113,13 +68,13 @@ static long madvise_behavior(struct vm_area_struct * vma,
+ 	if (start != vma->vm_start) {
+ 		error = split_vma(mm, vma, start, 1);
+ 		if (error)
+-			goto out;
++			return error;
+ 	}
+ 
+ 	if (end != vma->vm_end) {
+ 		error = split_vma(mm, vma, end, 0);
+ 		if (error)
+-			goto out;
++			return error;
+ 	}
+ 
+ success:
+@@ -128,10 +83,7 @@ success:
+ 	 */
+ 	vma->vm_flags = new_flags;
+ 
+-out:
+-	if (error == -ENOMEM)
+-		error = -EAGAIN;
+-	return error;
++	return 0;
+ }
+ 
+ #ifdef CONFIG_SWAP
+@@ -337,6 +289,77 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 	return error;
+ }
+ 
++/*
++ * Apply an madvise behavior to a region of a vma.  madvise_update_vma
++ * will handle splitting a vm area into separate areas, each area with its own
++ * behavior.
++ */
++static int madvise_vma_behavior(struct vm_area_struct *vma,
++		     struct vm_area_struct **prev,
++		     unsigned long start, unsigned long end,
++		     unsigned long behavior)
 +{
-+	switch (attr->group) {
-+	case KVM_DEV_VFIO_GROUP:
-+		return kvm_vfio_set_group(dev, attr->attr, attr->addr);
-+	}
++	int error = 0;
++	unsigned long new_flags = vma->vm_flags;
 +
-+	return -ENXIO;
-+}
-+
-+static int kvm_vfio_has_attr(struct kvm_device *dev,
-+			     struct kvm_device_attr *attr)
-+{
-+	switch (attr->group) {
-+	case KVM_DEV_VFIO_GROUP:
-+		switch (attr->attr) {
-+		case KVM_DEV_VFIO_GROUP_ADD:
-+		case KVM_DEV_VFIO_GROUP_DEL:
-+			return 0;
++	switch (behavior) {
++	case MADV_REMOVE:
++		return madvise_remove(vma, prev, start, end);
++	case MADV_WILLNEED:
++		return madvise_willneed(vma, prev, start, end);
++	case MADV_DONTNEED:
++		return madvise_dontneed(vma, prev, start, end);
++	case MADV_NORMAL:
++		new_flags = new_flags & ~VM_RAND_READ & ~VM_SEQ_READ;
++		break;
++	case MADV_SEQUENTIAL:
++		new_flags = (new_flags & ~VM_RAND_READ) | VM_SEQ_READ;
++		break;
++	case MADV_RANDOM:
++		new_flags = (new_flags & ~VM_SEQ_READ) | VM_RAND_READ;
++		break;
++	case MADV_DONTFORK:
++		new_flags |= VM_DONTCOPY;
++		break;
++	case MADV_DOFORK:
++		if (vma->vm_flags & VM_IO) {
++			error = -EINVAL;
++			goto out;
 +		}
-+
++		new_flags &= ~VM_DONTCOPY;
++		break;
++	case MADV_DONTDUMP:
++		new_flags |= VM_DONTDUMP;
++		break;
++	case MADV_DODUMP:
++		if (new_flags & VM_SPECIAL) {
++			error = -EINVAL;
++			goto out;
++		}
++		new_flags &= ~VM_DONTDUMP;
++		break;
++	case MADV_MERGEABLE:
++	case MADV_UNMERGEABLE:
++		error = ksm_madvise(vma, start, end, behavior, &new_flags);
++		if (error)
++			goto out;
++		break;
++	case MADV_HUGEPAGE:
++	case MADV_NOHUGEPAGE:
++		error = hugepage_madvise(vma, &new_flags, behavior);
++		if (error)
++			goto out;
 +		break;
 +	}
 +
-+	return -ENXIO;
++	error = madvise_update_vma(vma, prev, start, end, new_flags);
++
++out:
++	if (error == -ENOMEM)
++		error = -EAGAIN;
++	return error;
 +}
 +
-+static void kvm_vfio_destroy(struct kvm_device *dev)
+ #ifdef CONFIG_MEMORY_FAILURE
+ /*
+  * Error injection support for memory error handling.
+@@ -369,22 +392,6 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ }
+ #endif
+ 
+-static long
+-madvise_vma(struct vm_area_struct *vma, struct vm_area_struct **prev,
+-		unsigned long start, unsigned long end, int behavior)
+-{
+-	switch (behavior) {
+-	case MADV_REMOVE:
+-		return madvise_remove(vma, prev, start, end);
+-	case MADV_WILLNEED:
+-		return madvise_willneed(vma, prev, start, end);
+-	case MADV_DONTNEED:
+-		return madvise_dontneed(vma, prev, start, end);
+-	default:
+-		return madvise_behavior(vma, prev, start, end, behavior);
+-	}
+-}
+-
+ static int
+ madvise_behavior_valid(int behavior)
+ {
+@@ -415,6 +422,73 @@ madvise_behavior_valid(int behavior)
+ }
+ 
+ /*
++ * Walk the vmas in range [start,end), and call the visit function on each one.
++ * The visit function will get start and end parameters that cover the overlap
++ * between the current vma and the original range.  Any unmapped regions in the
++ * original range will result in this function returning -ENOMEM while still
++ * calling the visit function on all of the existing vmas in the range.
++ * Must be called with the mmap_sem held for reading or writing.
++ */
++static
++int madvise_walk_vmas(unsigned long start, unsigned long end,
++		unsigned long arg,
++		int (*visit)(struct vm_area_struct *vma,
++			struct vm_area_struct **prev, unsigned long start,
++			unsigned long end, unsigned long arg))
 +{
-+	struct kvm_vfio *kv = dev->private;
-+	struct kvm_vfio_group *kvg, *tmp;
++	struct vm_area_struct *vma;
++	struct vm_area_struct *prev;
++	unsigned long tmp;
++	int unmapped_error = 0;
 +
-+	list_for_each_entry_safe(kvg, tmp, &kv->group_list, node) {
-+		kvm_vfio_group_put_external_user(kvg->vfio_group);
-+		list_del(&kvg->node);
-+		kfree(kvg);
++	/*
++	 * If the interval [start,end) covers some unmapped address
++	 * ranges, just ignore them, but return -ENOMEM at the end.
++	 * - different from the way of handling in mlock etc.
++	 */
++	vma = find_vma_prev(current->mm, start, &prev);
++	if (vma && start > vma->vm_start)
++		prev = vma;
++
++	for (;;) {
++		int error;
++
++		/* Still start < end. */
++		if (!vma)
++			return -ENOMEM;
++
++		/* Here start < (end|vma->vm_end). */
++		if (start < vma->vm_start) {
++			unmapped_error = -ENOMEM;
++			start = vma->vm_start;
++			if (start >= end)
++				break;
++		}
++
++		/* Here vma->vm_start <= start < (end|vma->vm_end) */
++		tmp = vma->vm_end;
++		if (end < tmp)
++			tmp = end;
++
++		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
++		error = visit(vma, &prev, start, tmp, arg);
++		if (error)
++			return error;
++		start = tmp;
++		if (prev && start < prev->vm_end)
++			start = prev->vm_end;
++		if (start >= end)
++			break;
++		if (prev)
++			vma = prev->vm_next;
++		else	/* madvise_remove dropped mmap_sem */
++			vma = find_vma(current->mm, start);
 +	}
 +
-+	kvm_vfio_update_coherency(dev);
-+
-+	kfree(kv);
++	return unmapped_error;
 +}
 +
-+static int kvm_vfio_create(struct kvm_device *dev, u32 type)
-+{
-+	struct kvm_device *tmp;
-+	struct kvm_vfio *kv;
++/*
+  * The madvise(2) system call.
+  *
+  * Applications can use madvise() to advise the kernel how it should
+@@ -458,9 +532,7 @@ madvise_behavior_valid(int behavior)
+  */
+ SYSCALL_DEFINE3(madvise, unsigned long, start, size_t, len_in, int, behavior)
+ {
+-	unsigned long end, tmp;
+-	struct vm_area_struct * vma, *prev;
+-	int unmapped_error = 0;
++	unsigned long end;
+ 	int error = -EINVAL;
+ 	int write;
+ 	size_t len;
+@@ -495,52 +567,10 @@ SYSCALL_DEFINE3(madvise, unsigned long, start, size_t, len_in, int, behavior)
+ 	else
+ 		down_read(&current->mm->mmap_sem);
+ 
+-	/*
+-	 * If the interval [start,end) covers some unmapped address
+-	 * ranges, just ignore them, but return -ENOMEM at the end.
+-	 * - different from the way of handling in mlock etc.
+-	 */
+-	vma = find_vma_prev(current->mm, start, &prev);
+-	if (vma && start > vma->vm_start)
+-		prev = vma;
+-
+ 	blk_start_plug(&plug);
+-	for (;;) {
+-		/* Still start < end. */
+-		error = -ENOMEM;
+-		if (!vma)
+-			goto out;
+-
+-		/* Here start < (end|vma->vm_end). */
+-		if (start < vma->vm_start) {
+-			unmapped_error = -ENOMEM;
+-			start = vma->vm_start;
+-			if (start >= end)
+-				goto out;
+-		}
+-
+-		/* Here vma->vm_start <= start < (end|vma->vm_end) */
+-		tmp = vma->vm_end;
+-		if (end < tmp)
+-			tmp = end;
+-
+-		/* Here vma->vm_start <= start < tmp <= (end|vma->vm_end). */
+-		error = madvise_vma(vma, &prev, start, tmp, behavior);
+-		if (error)
+-			goto out;
+-		start = tmp;
+-		if (prev && start < prev->vm_end)
+-			start = prev->vm_end;
+-		error = unmapped_error;
+-		if (start >= end)
+-			goto out;
+-		if (prev)
+-			vma = prev->vm_next;
+-		else	/* madvise_remove dropped mmap_sem */
+-			vma = find_vma(current->mm, start);
+-	}
+-out:
++	error = madvise_walk_vmas(start, end, behavior, madvise_vma_behavior);
+ 	blk_finish_plug(&plug);
 +
-+	/* Only one VFIO "device" per VM */
-+	list_for_each_entry(tmp, &dev->kvm->devices, vm_node)
-+		if (tmp->ops == &kvm_vfio_ops)
-+			return -EBUSY;
-+
-+	kv = kzalloc(sizeof(*kv), GFP_KERNEL);
-+	if (!kv)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&kv->group_list);
-+	mutex_init(&kv->lock);
-+
-+	dev->private = kv;
-+
-+	return 0;
-+}
-+
-+struct kvm_device_ops kvm_vfio_ops = {
-+	.name = "kvm-vfio",
-+	.create = kvm_vfio_create,
-+	.destroy = kvm_vfio_destroy,
-+	.set_attr = kvm_vfio_set_attr,
-+	.has_attr = kvm_vfio_has_attr,
-+};
+ 	if (write)
+ 		up_write(&current->mm->mmap_sem);
+ 	else
+-- 
+1.8.4
 
