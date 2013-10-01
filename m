@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab3JAMZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 08:25:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095Ab3JAMZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 08:25:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        axboe@kernel.dk, Jianpeng Ma <majianpeng@gmail.com>
-Subject: Re: [PATCH 04/11] block: Return error code of elevator init function
-References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
-	<1380572952-30729-5-git-send-email-andi@firstfloor.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 01 Oct 2013 08:25:14 -0400
-In-Reply-To: <1380572952-30729-5-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Mon, 30 Sep 2013 13:29:05 -0700")
-Message-ID: <x49ioxhdvpx.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753115Ab3JAM1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 08:27:55 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59095 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab3JAM1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 08:27:53 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 5/6] clk: emev2: Add support for emev2 SMU clocks with DT
+Date: Tue, 01 Oct 2013 14:27:51 +0200
+Message-ID: <690317658.gaTDz3TliP@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
+References: <52410F86.4040301@renesas.com> <20130924131542.f865fad4dec98e024c0d4676@ops.dti.ne.jp> <CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+Hi Yoshii-san,
 
-> From: Andi Kleen <ak@linux.intel.com>
->
-> The error code was ignored, which I assume is a mistake.
+Thank you for the patch.
 
-Yeah, introduced in d50235b7bc3ee0a0427984d763ea7534149531b4, so I cc'd
-Jianpeng Ma, though it looks pretty obvious.
+(CC'ing LAMK as a generic CCF question follows)
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+On Tuesday 01 October 2013 18:15:26 Magnus Damm wrote:
+> On Tue, Sep 24, 2013 at 1:15 PM,  <takasi-y@ops.dti.ne.jp> wrote:
+> > Common clock framework version of emev2 clock support.
+> > smu_clkdiv and smu_gclk are handled.
+> > So far, reparent is not implemented, and is fixed to index #0.
+> > SMU and small numbers of clocks are described in emev2.dtsi.
+> > 
+> > That function and numbers of clocks are equivalent to current
+> > sh-clkfwk version. It is just enough to run kzm9d-reference.
+> > 
+> > Signed-off-by: Takashi Yoshii <takashi.yoshii.zj@renesas.com>
+> > ---
+> > 
+> >  arch/arm/boot/dts/emev2.dtsi     |  84 +++++++++++++++++++++++++++++++
+> >  drivers/clk/Makefile             |   2 +
+> >  drivers/clk/shmobile/Makefile    |   5 ++
+> >  drivers/clk/shmobile/clk-emev2.c | 104 ++++++++++++++++++++++++++++++++++
+> >  4 files changed, 195 insertions(+)
+> >  create mode 100644 drivers/clk/shmobile/Makefile
+> >  create mode 100644 drivers/clk/shmobile/clk-emev2.c
+> 
+> Hi Yoshii-san,
+> 
+> Thanks for your efforts on this. I'm very pleased to see that you describe
+> the clock topology using DT.
 
-> Cc: axboe@kernel.dk
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  block/elevator.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 2bcbd8c..6c2a8ee 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -184,7 +184,6 @@ static void elevator_release(struct kobject *kobj)
->  int elevator_init(struct request_queue *q, char *name)
->  {
->  	struct elevator_type *e = NULL;
-> -	int err;
->  
->  	if (unlikely(q->elevator))
->  		return 0;
-> @@ -222,8 +221,7 @@ int elevator_init(struct request_queue *q, char *name)
->  		}
->  	}
->  
-> -	err = e->ops.elevator_init_fn(q, e);
-> -	return 0;
-> +	return e->ops.elevator_init_fn(q, e);
->  }
->  EXPORT_SYMBOL(elevator_init);
+What is the generally accepted practice when an IP core provides a large 
+number of clocks, with either one register or one register bit dedicated to 
+each clock ? Should each clock be described as one DT node, or should the IP 
+core be described by a single DT node ?
+
+I also see both platforms using CLK_OF_DECLARE and platforms calling a clock 
+init function provided by drivers/clk/<platform>.c in the SoC setup code in 
+arch/arm/. What is the preferred practice there ?
+
+> In general I think your patch looks fine, but I have some comment related to
+> the multiplatform integration, please see below.
+> 
+> > diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> > index 7b11106..3e64ac4 100644
+> > --- a/drivers/clk/Makefile
+> > +++ b/drivers/clk/Makefile
+> > @@ -32,6 +32,8 @@ obj-$(CONFIG_ARCH_VT8500)     += clk-vt8500.o
+> > 
+> >  obj-$(CONFIG_ARCH_ZYNQ)                += zynq/
+> >  obj-$(CONFIG_ARCH_TEGRA)       += tegra/
+> >  obj-$(CONFIG_PLAT_SAMSUNG)     += samsung/
+> > 
+> > +obj-$(CONFIG_ARCH_SHMOBILE)    += shmobile/
+> > +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += shmobile/
+> 
+> Here I believe it is enough that you only use
+> CONFIG_ARCH_SHMOBILE_MULTI. Building common clocks to coexist with the
+> old legacy board code does not make any sense IMO. If you think it
+> makes sense for some reason, please explain why. =)
+> 
+> > diff --git a/drivers/clk/shmobile/Makefile b/drivers/clk/shmobile/Makefile
+> > new file mode 100644
+> > index 0000000..6a26eb6
+> > --- /dev/null
+> > +++ b/drivers/clk/shmobile/Makefile
+> > @@ -0,0 +1,5 @@
+> > +ifeq ($(CONFIG_COMMON_CLK), y)
+> > +obj-$(CONFIG_ARCH_EMEV2)       += clk-emev2.o
+> > +endif
+> 
+> I don't think you would need the above ifeq/endif wrapper if you only
+> used CONFIG_ARCH_SHMOBILE_MULTI above.
+> 
+> Apart from that it looks good to me. And, yes, I have tested this on
+> my KZM9D board together with multiplatform and it works very well!
+
+-- 
+Regards,
+
+Laurent Pinchart
+
