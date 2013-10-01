@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab3JAKbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 06:31:08 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:39284 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752017Ab3JAKbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 06:31:05 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
-Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
-        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
-        kernel@stlinux.com, Maxime Coquelin <maxime.coquelin@st.com>
-Subject: [PATCH v3 0/4] Add I2C support to ST SoCs
-Date: Tue,  1 Oct 2013 12:29:11 +0200
-Message-Id: <1380623351-3614-1-git-send-email-maxime.coquelin@st.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753270Ab3JAKde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 06:33:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab3JAKdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 06:33:31 -0400
+Date: Tue, 1 Oct 2013 12:35:27 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20131001103526.GA5053@dhcp-26-207.brq.redhat.com>
+References: <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
+ <20130905200608.GA3846@htj.dyndns.org>
+ <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
+ <20130906160621.GF22763@mtj.dyndns.org>
+ <20130906233205.GF12956@google.com>
+ <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
+ <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
+ <20130917143022.GA7707@concordia>
+ <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
+ <20131001075133.GJ17966@concordia>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001075133.GJ17966@concordia>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of this series is to add I2C support to ST SoCs.
-The DT definition is added for STiH415 and STiH416 SoCs on
-B2000 and B2020 boards.
+On Tue, Oct 01, 2013 at 05:51:33PM +1000, Michael Ellerman wrote:
+> The disadvantage is that any restriction imposed on us above the quota
+> can only be reported as an error from pci_enable_msix().
+> 
+> The quota code, called from pci_get_msix_limit(), can only do so much to
+> interogate firmware about the limitations. The ultimate way to check if
+> firmware will give us enough MSIs is to try and allocate them. But we
+> can't do that from pci_get_msix_limit() because the driver is not asking
+> us to enable MSIs, just query them.
 
-The series has been tested working on STiH416-B2020 board.
-It applies on top of v3.12-rc3.
+If things are this way then pci_enable_msix() already exposed to this
+problem internally on pSeries.
 
-Changes since v2:
-  - Create generic DT property for Anti-glitch filtering configuration
-  - Sort i2c-st entries in Makefile and Kconfig
-  - Various cosmetics changes
-  - Return IRQ_NONE in case of spurious interrupt
-  - Use INIT_COMPLETION instead of init_completion in st_i2c_xfer_msg
-  - Simplify st_i2c_xfer as proposed by Wolfram
-  - Fix PM ops issues
-  - Change author name to myself and fix license to GPL v2
-  - Inclu .h file content into the .c file
+I see that even successful quota checks in rtas_msi_check_device() and
+rtas_setup_msi_irqs() do not guarantee (as you say) that firmware will
+give enough MSIs. Hence, pci_enable_msix() might fail even though the
+its quota checks succeeded.
 
-Changes since v1:
-  - Anti-glitch filtering simplified (Only HW Anti-glitch is kept)
-  - Update I2C timings to comply with I2C specification
-  - Handle spurious interrupts properly
-  - DT binding updates taking into account Stephen's comments
-  - Use "clock-names" property to comply with GCF
-  - DT cosmetic changes reported by Lee and Gabriel 
+Therefore, nothing will really change if we make pci_get_msix_limit() check
+quota and hope the follow-up call to pci_enable_msix() succeeded.
 
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+(Of course, we could allocate-deallocate MSIs at check time, but I think it
+is an overkill).
 
-Maxime Coquelin (4):
-  i2c: busses: i2c-st: Add ST I2C controller
-  ARM: STi: Supply I2C configuration to STiH416 SoC
-  ARM: STi: Supply I2C configuration to STiH415 SoC
-  ARM: STi: Add I2C config to B2000 and B2020 boards
+> You'll also need to add another arch hook, for the quota check, and
+> we'll have to add it to our per-platform indirection as well.
 
- Documentation/devicetree/bindings/i2c/i2c-st.txt |   34 +
- arch/arm/boot/dts/stih415-pinctrl.dtsi           |   36 +
- arch/arm/boot/dts/stih415.dtsi                   |   53 ++
- arch/arm/boot/dts/stih416-pinctrl.dtsi           |   35 +
- arch/arm/boot/dts/stih416.dtsi                   |   53 ++
- arch/arm/boot/dts/stih41x-b2000.dtsi             |    9 +
- arch/arm/boot/dts/stih41x-b2020.dtsi             |   22 +
- drivers/i2c/busses/Kconfig                       |   10 +
- drivers/i2c/busses/Makefile                      |    1 +
- drivers/i2c/busses/i2c-st.c                      |  867 ++++++++++++++++++++++
- 10 files changed, 1120 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
- create mode 100644 drivers/i2c/busses/i2c-st.c
+Already, in a branch, hidden from Bjorn & Tejun eyes ;)
+
+> All a lot of bother for no real gain IMHO.
+
+Well, I do not have a strong opinion here. I leave it to the ones who have :)
+But few drivers have became clearer as result of this change (and messy ones
+are still messy).
+
+> cheers
 
 -- 
-1.7.9.5
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
