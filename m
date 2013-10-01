@@ -1,130 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3JAVqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 17:46:32 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:45499 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab3JAVmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 17:42:19 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/15] sysfs: remove sysfs_buffer->needs_read_fill
-Date: Tue,  1 Oct 2013 17:41:56 -0400
-Message-Id: <1380663729-18243-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380663729-18243-1-git-send-email-tj@kernel.org>
-References: <1380663729-18243-1-git-send-email-tj@kernel.org>
+	id S1751784Ab3JAV5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 17:57:17 -0400
+Received: from mout.gmx.net ([212.227.17.22]:62821 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab3JAV5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 17:57:15 -0400
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH 01/13] tpm: ibmvtpm: Use %zd formatting for size_t format arguments
+Date: Tue, 1 Oct 2013 23:58:55 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-2-git-send-email-jgunthorpe@obsidianresearch.com>
+In-Reply-To: <1379960083-8942-2-git-send-email-jgunthorpe@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310012358.55880.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:KV3q7wKyyQAl9lR4jU7VJvx0ySL/NXuigiBSkgkXG2gByYX7Jax
+ iVdX38aHFheibi96MYlKMP7Tvcy/pWC0lO/uo/50YIB7Jxs221rQE7vtotmLnW/5fWPDm20
+ M1XZu/L1GARHao0cphudehmi3scMG2C06MaTAaHxTvuVyHRIYzSIkTZaQrGr5EoC1WTMFcR
+ LT4QviHllTbV5vmnJ2NbQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->needs_read_fill is used to implement the following behaviors.
+Am Montag, 23. September 2013, 20:14:31 schrieb Jason Gunthorpe:
+> This suppresses compile warnings on 32 bit builds.
+> 
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-1. Ensure buffer filling on the first read.
-2. Force buffer filling after a write.
-3. Force buffer filling after a successful poll.
 
-However, #2 and #3 don't really work as sysfs doesn't reset file
-position.  While the read buffer would be refilled, the next read
-would continue from the position after the last read or write,
-requiring an explicit seek to the start for it to be useful, which
-makes ->needs_read_fill superflous as read buffer is always refilled
-if f_pos == 0.
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-Update sysfs_read_file() to test buffer->page for #1 instead and
-remove ->needs_read_fill.  While this changes behavior in extreme
-corner cases - e.g. re-reading a sysfs file after seeking to non-zero
-position after a write or poll, it's highly unlikely to lead to actual
-breakage.  This change is to prepare for using seq_file in the read
-path.
-
-While at it, reformat a comment in fill_write_buffer().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay@vrfy.org>
----
- fs/sysfs/file.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 81e3f72..e2fafc0 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -47,7 +47,6 @@ struct sysfs_buffer {
- 	char			*page;
- 	const struct sysfs_ops	*ops;
- 	struct mutex		mutex;
--	int			needs_read_fill;
- 	int			event;
- 	struct list_head	list;
- };
-@@ -95,12 +94,10 @@ static int fill_read_buffer(struct dentry *dentry, struct sysfs_buffer *buffer)
- 		/* Try to struggle along */
- 		count = PAGE_SIZE - 1;
- 	}
--	if (count >= 0) {
--		buffer->needs_read_fill = 0;
-+	if (count >= 0)
- 		buffer->count = count;
--	} else {
-+	else
- 		ret = count;
--	}
- 	return ret;
- }
- 
-@@ -130,7 +127,11 @@ sysfs_read_file(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 	ssize_t retval = 0;
- 
- 	mutex_lock(&buffer->mutex);
--	if (buffer->needs_read_fill || *ppos == 0) {
-+	/*
-+	 * Fill on zero offset and the first read so that silly things like
-+	 * "dd bs=1 skip=N" can work on sysfs files.
-+	 */
-+	if (*ppos == 0 || !buffer->page) {
- 		retval = fill_read_buffer(file->f_path.dentry, buffer);
- 		if (retval)
- 			goto out;
-@@ -166,14 +167,15 @@ static int fill_write_buffer(struct sysfs_buffer *buffer,
- 	if (count >= PAGE_SIZE)
- 		count = PAGE_SIZE - 1;
- 	error = copy_from_user(buffer->page, buf, count);
--	buffer->needs_read_fill = 1;
--	/* if buf is assumed to contain a string, terminate it by \0,
--	   so e.g. sscanf() can scan the string easily */
-+
-+	/*
-+	 * If buf is assumed to contain a string, terminate it by \0, so
-+	 * e.g. sscanf() can scan the string easily.
-+	 */
- 	buffer->page[count] = 0;
- 	return error ? -EFAULT : count;
- }
- 
--
- /**
-  *	flush_write_buffer - push buffer to kobject.
-  *	@dentry:	dentry to the attribute
-@@ -368,7 +370,6 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 		goto err_out;
- 
- 	mutex_init(&buffer->mutex);
--	buffer->needs_read_fill = 1;
- 	buffer->ops = ops;
- 	file->private_data = buffer;
- 
-@@ -435,7 +436,6 @@ static unsigned int sysfs_poll(struct file *filp, poll_table *wait)
- 	return DEFAULT_POLLMASK;
- 
-  trigger:
--	buffer->needs_read_fill = 1;
- 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
- }
- 
--- 
-1.8.3.1
+Staged here 
+https://github.com/PeterHuewe/linux-tpmdd  for-james
 
