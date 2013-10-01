@@ -1,135 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab3JAUXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:23:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50783 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751539Ab3JAUXn (ORCPT
+	id S1751877Ab3JAU1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:27:03 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:56223 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab3JAU1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:23:43 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ronald <ronald645@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: Fwd: [v3.12-rc1] [regression] PM / hibernate: Create memory bitmaps after freezing user space
-Date: Tue, 01 Oct 2013 22:35:11 +0200
-Message-ID: <1609889.2pSzhO4Dqr@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAF1_xX0veXd4AtPR43r50g8Tu4WeP0kVzqPihgSC-NCpW+nwkQ@mail.gmail.com>
-References: <CAF1_xX2=BYkEn3ycM4smREqk-ioGbvu8Ea4or22U-jBdKmDKGA@mail.gmail.com> <7570724.v5QLmkRO38@vostro.rjw.lan> <CAF1_xX0veXd4AtPR43r50g8Tu4WeP0kVzqPihgSC-NCpW+nwkQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 1 Oct 2013 16:27:00 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
+Date: Tue,  1 Oct 2013 21:26:09 +0100
+Message-Id: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 01, 2013 06:38:03 PM Ronald wrote:
-> This could be a coincidence, but I had a disk data corruption in /var
-> (LVM). Most other partitions are read-only during normal operation. So
-> I can safely keep testing this kernel. Just mentioning this, in case
-> you see this happening with other ppl testing this patch as well.
+/proc/<pid>/* entries varies at runtime, appropriate permission checks
+need to happen during each system call.
 
-If you have a failing resume from hibernation a filesystem is perfectly
-possible, unfortunately.
+Currently some of these sensitive entries are protected by performing
+the ptrace_may_access() check. However even with that the /proc file
+descriptors can be passed to a more privileged process
+(e.g. a suid-exec) which will pass the classic ptrace_may_access()
+check. In general the ->open() call will be issued by an unprivileged
+process while the ->read(),->write() calls by a more privileged one.
 
-The patch itself should't really cause any corruption to happen.
+Example of these files are:
+/proc/*/syscall, /proc/*/stack etc.
 
-Thanks,
-Rafael
+And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
 
 
-> 2013/9/30 Rafael J. Wysocki <rjw@rjwysocki.net>:
-> > On Monday, September 30, 2013 07:45:54 AM Ronald wrote:
-> >> Yes, works as well. Just survived twe cycles with s2disk. I'm
-> >> surprised someone else did not report this earlier btw... Because it
-> >> looks pretty generic (i.e. not specific to a 64bit UP system).
-> >
-> > It is a generic bug, actually.  Well, this means the user space driven
-> > hibernation doesn't receive much testing coverage these days ...
-> >
-> > I'll resend the patch with a proper changelog and then push it for v3.12-rc4.
-> >
-> > Thanks,
-> > Rafael
-> >
-> >
-> >> 2013/9/30 Rafael J. Wysocki <rjw@rjwysocki.net>:
-> >> > On Sunday, September 29, 2013 09:22:45 AM Ronald wrote:
-> >> >> Attached patch fixes the issue. Both methods function as they did
-> >> >> before. Thanks for the superfast fix!
-> >> >
-> >> > You're welcome, it's not the final one, however.
-> >> >
-> >> > Can you please test the one below and report back?
-> >> >
-> >> > Rafael
-> >> >
-> >> >
-> >> > ---
-> >> >  kernel/power/snapshot.c |    5 ++++-
-> >> >  kernel/power/user.c     |    8 ++++++++
-> >> >  2 files changed, 12 insertions(+), 1 deletion(-)
-> >> >
-> >> > Index: linux-pm/kernel/power/snapshot.c
-> >> > ===================================================================
-> >> > --- linux-pm.orig/kernel/power/snapshot.c
-> >> > +++ linux-pm/kernel/power/snapshot.c
-> >> > @@ -743,7 +743,10 @@ int create_basic_memory_bitmaps(void)
-> >> >         struct memory_bitmap *bm1, *bm2;
-> >> >         int error = 0;
-> >> >
-> >> > -       BUG_ON(forbidden_pages_map || free_pages_map);
-> >> > +       if (forbidden_pages_map && free_pages_map)
-> >> > +               return 0;
-> >> > +       else
-> >> > +               BUG_ON(forbidden_pages_map || free_pages_map);
-> >> >
-> >> >         bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
-> >> >         if (!bm1)
-> >> > Index: linux-pm/kernel/power/user.c
-> >> > ===================================================================
-> >> > --- linux-pm.orig/kernel/power/user.c
-> >> > +++ linux-pm/kernel/power/user.c
-> >> > @@ -39,6 +39,7 @@ static struct snapshot_data {
-> >> >         char frozen;
-> >> >         char ready;
-> >> >         char platform_support;
-> >> > +       bool free_bitmaps;
-> >> >  } snapshot_state;
-> >> >
-> >> >  atomic_t snapshot_device_available = ATOMIC_INIT(1);
-> >> > @@ -82,6 +83,10 @@ static int snapshot_open(struct inode *i
-> >> >                 data->swap = -1;
-> >> >                 data->mode = O_WRONLY;
-> >> >                 error = pm_notifier_call_chain(PM_RESTORE_PREPARE);
-> >> > +               if (!error) {
-> >> > +                       error = create_basic_memory_bitmaps();
-> >> > +                       data->free_bitmaps = !error;
-> >> > +               }
-> >> >                 if (error)
-> >> >                         pm_notifier_call_chain(PM_POST_RESTORE);
-> >> >         }
-> >> > @@ -111,6 +116,8 @@ static int snapshot_release(struct inode
-> >> >                 pm_restore_gfp_mask();
-> >> >                 free_basic_memory_bitmaps();
-> >> >                 thaw_processes();
-> >> > +       } else if (data->free_bitmaps) {
-> >> > +               free_basic_memory_bitmaps();
-> >> >         }
-> >> >         pm_notifier_call_chain(data->mode == O_RDONLY ?
-> >> >                         PM_POST_HIBERNATION : PM_POST_RESTORE);
-> >> > @@ -231,6 +238,7 @@ static long snapshot_ioctl(struct file *
-> >> >                         break;
-> >> >                 pm_restore_gfp_mask();
-> >> >                 free_basic_memory_bitmaps();
-> >> > +               data->free_bitmaps = false;
-> >> >                 thaw_processes();
-> >> >                 data->frozen = 0;
-> >> >                 break;
-> >> >
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+These files are protected during read() by the ptrace_may_access(),
+however the file descriptor can be passed to a suid-exec which can be
+used to read data and bypass ASLR. Of course this was discussed several
+times on LKML.
+
+
+Solution:
+Here we propose a clean solution that uses available mechanisms. No
+additions, nor new structs/memory allocation...
+
+After a discussion about some /proc/<pid>/* file permissions [1],
+Eric W. Biederman proposed to use the file->f_cred to check if current's
+cred have changed [2], actually he said that Linus was looking
+on using the file->f_cred to implement a similar thing! But run in
+problems with Chromes sandbox ? a link please ?
+
+
+So here are my experiments:
+The idea is to track the cred of current. If the cred change between
+->open() and read()/write() this means that current has lost or gained
+some X privileges. If so, in addition to the classic ptrace_may_access()
+check, perform a second check using the file's opener cred. This means,
+if an unprivileged process that tries to use a privileged one
+(e.g. suid-exec) to read privileged files will get caught. The original
+process that opened the file does not have the appropriate permissions
+to read()/write() the target /proc/<pid>/* entry.
+
+This second check is done of course during read(),write()...
+
+
+Advantages of the proposed solution:
+* It uses available mechanisms: file->f_cred which is a const cred
+  that reference the cred of the opener.
+
+* The file->f_cred can be easily referenced
+
+* It allows to pass file descriptors under certain conditions:
+  (1) current at open time may have enough permissions
+  (2) current does a suid-exec or change its ruid/euid (new cred)
+  (3) current or suid-exec tries to read from the task /proc entry
+     Allow the ->read() only if the file's opener cred at (1)
+     have enough permissions on *this* task /proc entry during
+     *this* ->read() moment. Otherwise fail.
+
+  IOW allow it, if the opener does not need the help of a suid-exec to
+  read/write data.
+
+
+Disadvantage:
+* Currently only /proc/*/{stack,syscall,stat,personality} are handled.
+  If the solution is accepted I'll continue with other files, taking
+  care to not break userspace. All the facilities are provided.
+* Your feedback
+
+
+[1] https://lkml.org/lkml/2013/8/26/354
+[2] https://lkml.org/lkml/2013/8/31/209
+
+
+Change log
+----------
+v1->v2:
+ - Removed the file->f_cred member that was added to seq_file struct.
+   Al Viro didn't like it, and Linus suggested to have a pointer on
+   'file struct', so it's done by using seq_file->private
+
+ - Added Acked-by: Kees Cook to
+   [PATCH v2 4/9] procfs: make /proc/*/{stack,syscall} 0400
+
+ - Added suggested-by: Eric W. Biederman  to
+   [PATCH v2 1/9] procfs: add proc_same_open_cred() to check if the cred
+   have changed
+   [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
+   opener may access task
+   [PATCH v2 3/9] procfs: Document the proposed solution to protect
+   procfs entries
+
+ - Patchset cleaned
+
+Version 1 was discussed here:
+https://lkml.org/lkml/2013/9/25/459
+
+
+The following series tries to implement what I describe.
+
+
+Djalal Harouni (9):
+ procfs: add proc_same_open_cred() to check if the cred have changed
+ procfs: add proc_allow_access() to check if file's opener may access task
+ procfs: Document the proposed solution to protect procfs entries
+ procfs: make /proc/*/{stack,syscall} 0400
+ procfs: make /proc entries that use seq files able to access file->f_cred
+ procfs: add permission checks on the file's opener of /proc/*/stat
+ procfs: add permission checks on the file's opener of /proc/*/personality
+ procfs: improve permission checks on /proc/*/stack
+ procfs: improve permission checks on /proc/*/syscall
+
+ fs/proc/array.c    |  16 ++++++-
+ fs/proc/base.c     | 301 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------
+ fs/proc/internal.h |   3 ++
+ 3 files changed, 292 insertions(+), 28 deletions(-)
