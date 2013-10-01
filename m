@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab3JAOVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:21:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52926 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753377Ab3JAOVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:21:40 -0400
-Date: Tue, 1 Oct 2013 16:14:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20131001141429.GA32423@redhat.com>
-References: <20130925174307.GA3220@laptop.programming.kicks-ass.net> <20130925175055.GA25914@redhat.com> <20130925184015.GC3657@laptop.programming.kicks-ass.net> <20130925212200.GA7959@linux.vnet.ibm.com> <20130926111042.GS3081@twins.programming.kicks-ass.net> <20130926165840.GA863@redhat.com> <20130926175016.GI3657@laptop.programming.kicks-ass.net> <20130927181532.GA8401@redhat.com> <20130927204116.GJ15690@laptop.programming.kicks-ass.net> <20131001035604.GW19582@linux.vnet.ibm.com>
+	id S1753749Ab3JAOWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:22:00 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:33368 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab3JAOV7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:21:59 -0400
+Date: Tue, 1 Oct 2013 16:21:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
+Message-ID: <20131001142154.GA31298@gmail.com>
+References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
+ <20131001071646.GA20023@gmail.com>
+ <524ACD2A.7040902@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131001035604.GW19582@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <524ACD2A.7040902@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30, Paul E. McKenney wrote:
->
-> On Fri, Sep 27, 2013 at 10:41:16PM +0200, Peter Zijlstra wrote:
-> > On Fri, Sep 27, 2013 at 08:15:32PM +0200, Oleg Nesterov wrote:
-> > > On 09/26, Peter Zijlstra wrote:
->
-> [ . . . ]
->
-> > > > +static bool cpuhp_readers_active_check(void)
-> > > >  {
-> > > > +	unsigned int seq = per_cpu_sum(cpuhp_seq);
-> > > > +
-> > > > +	smp_mb(); /* B matches A */
-> > > > +
-> > > > +	/*
-> > > > +	 * In other words, if we see __get_online_cpus() cpuhp_seq increment,
-> > > > +	 * we are guaranteed to also see its __cpuhp_refcount increment.
-> > > > +	 */
-> > > >
-> > > > +	if (per_cpu_sum(__cpuhp_refcount) != 0)
-> > > > +		return false;
-> > > >
-> > > > +	smp_mb(); /* D matches C */
-> > >
-> > > It seems that both barries could be smp_rmb() ? I am not sure the comments
-> > > from srcu_readers_active_idx_check() can explain mb(), note that
-> > > __srcu_read_lock() always succeeds unlike get_cpus_online().
+
+* David Ahern <dsahern@gmail.com> wrote:
+
+> On 10/1/13 1:16 AM, Ingo Molnar wrote:
+> >Just a detail: it would be nice to make all the user facing messages in
+> >tools/perf/util/header.c more specific and more structured. For example
+> >prefixing it with 'perf header:' would be fine:
 > >
-> > I see what you mean; cpuhp_readers_active_check() is all purely reads;
-> > there are no writes to order.
+> >	WARNING: perf/header: Data size is 0. Was the 'perf record' command properly terminated?
 > >
-> > Paul; is there any argument for the MB here as opposed to RMB; and if
-> > not should we change both these and SRCU?
->
-> Given that these memory barriers execute only on the semi-slow path,
-> why add the complexity of moving from smp_mb() to either smp_rmb()
-> or smp_wmb()?  Straight smp_mb() is easier to reason about and more
-> robust against future changes.
+> 
+> Why put code references in the messages? The message is all on one
+> line so grep finds it quickly for people working on the code.
 
-But otoh this looks misleading, and the comments add more confusion.
+I'd agree if this was some internal error that should never really trigger 
+(so at most developers see it).
 
-But please note another email, it seems to me we can simply kill
-cpuhp_seq and all the barriers in cpuhp_readers_active_check().
+But if I understood it correctly this particular message could trigger for 
+regular users of perf as well, of the perf record is terminated in some 
+unusual fashion. Regular users might not have the perf code handy (and 
+might not know about git grep either).
 
-Oleg.
+Thanks,
 
+	Ingo
