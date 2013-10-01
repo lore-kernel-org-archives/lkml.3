@@ -1,280 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab3JAQC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 12:02:26 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:51520 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3JAQAN (ORCPT
+	id S1751515Ab3JAQLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:11:17 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56634 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3JAQLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 12:00:13 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org, hch@infradead.org,
-        akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
-        jack@suse.cz, tytso@mit.edu, mszeredi@suse.cz
-Subject: [PATCH 6/7] ext4: rename: split out helper functions
-Date: Tue,  1 Oct 2013 18:00:38 +0200
-Message-Id: <1380643239-16060-7-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1380643239-16060-1-git-send-email-miklos@szeredi.hu>
-References: <1380643239-16060-1-git-send-email-miklos@szeredi.hu>
+	Tue, 1 Oct 2013 12:11:14 -0400
+Message-ID: <524AF322.8040200@linux.vnet.ibm.com>
+Date: Tue, 01 Oct 2013 21:36:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        g.liakhovetski@gmx.de, amit.daniel@samsung.com, kgene.kim@samsung.com
+Subject: Re: [PATCH 2/2] cpufreq: make sure frequency transitions are serialized
+References: <a0cad3326c6a6c8f0517332dd2230edaf67268e7.1378979483.git.viresh.kumar@linaro.org> <793a5fadad931d04c2adb3a61c64063b7e62d083.1378979483.git.viresh.kumar@linaro.org> <1791712.tJBFGgQvyI@vostro.rjw.lan>
+In-Reply-To: <1791712.tJBFGgQvyI@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100116-0260-0000-0000-000003B6F876
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 09/26/2013 12:07 AM, Rafael J. Wysocki wrote:
+> On Thursday, September 12, 2013 03:40:46 PM Viresh Kumar wrote:
+>> Some part of this patch was pushed in mainline earlier but was then removed due
+>> to loopholes in the patch. Those are now fixed and this patch is tested by the
+>> people who reported these problems.
+>>
+>> Whenever we are changing frequency of a cpu, we are calling PRECHANGE and
+>> POSTCHANGE notifiers. They must be serialized. i.e. PRECHANGE or POSTCHANGE
+>> shouldn't be called twice contiguously. Also, calls to cpufreq_driver_target()
+>> or cpufreq_driver->target() must also be serialized. Following examples show why
+>> this is important:
+>>
+>> Scenario 1:
+>> -----------
+>> One thread reading value of cpuinfo_cur_freq, which will call
+>> __cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()..
+>>
+>> And ondemand governor trying to change freq of cpu at the same time and so
+>> sending notification via ->target()..
+>>
+>> Notifiers are not serialized and suppose this is what happened
+>> - PRECHANGE Notification for freq A (from cpuinfo_cur_freq)
+>> - PRECHANGE Notification for freq B (from target())
+>> - Freq changed by target() to B
+>> - POSTCHANGE Notification for freq B
+>> - POSTCHANGE Notification for freq A
+>>
+>> Now the last POSTCHANGE Notification happened for freq A and hardware is
+>> currently running at freq B :)
+>>
+>> Where would we break then?: adjust_jiffies() in cpufreq.c,
+>> cpufreq_callback() in arch/arm/kernel/smp.c (which is also adjusting
+>> jiffies).. All loops_per_jiffy based stuff is broken..
+>>
+>> Scenario 2:
+>> -----------
+>> Governor is changing freq and has called __cpufreq_driver_target(). At the same
+>> time we are changing scaling_{min|max}_freq from sysfs, which would eventually
+>> end up calling governor's: CPUFREQ_GOV_LIMITS notification, that will also call:
+>> __cpufreq_driver_target().. And hence concurrent calls to ->target()
+>>
+>> And Platform have something like this in their ->target()
+>> (Like: cpufreq-cpu0, omap, exynos, etc)
+>>
+>> A. If new freq is more than old: Increase voltage
+>> B. Change freq
+>> C. If new freq is less than old: decrease voltage
+>>
+>> Now, two concurrent calls to target are X and Y, where X is trying to increase
+>> freq and Y is trying to decrease it..
+>>
+>> And this is the sequence that followed due to races..
+>>
+>> X.A: voltage increased for larger freq
+>> Y.A: nothing happened here
+>> Y.B: freq decreased
+>> Y.C: voltage decreased
+>> X.B: freq increased
+>> X.C: nothing happened..
+>>
+>> We ended up setting a freq which is not supported by the voltage we have
+>> set.. That will probably make clock to CPU unstable and system wouldn't
+>> be workable anymore...
+>>
+>> This patch adds some protection against to make transitions serialized.
+>>
+>> Tested-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
+> So the problem is real, but the fix seems to be of a "quick and dirty" kind.
+> 
+> First of all, it looks like we need a clear "begin transition" call that
+> I suppose drivers should execute from their .target() methods once they have
+> decided to do a transition.  That would increment the "ongoing" counter etc.
+> 
+> Second, we need a corresponding "end transition" call that would be executed
+> whenever appropriate from the driver's perspective.
+> 
+> Clearly, these two things should be independent of the notifiers and the
+> notifications should only be done between "begin transition" and "end
+> transition" and only by whoever called the "begin transition" to start with.
+> 
+> Now, question is what should happen if "begin transition" is called when
+> the previous transition hasn't been completed yet, should it block or should
+> it fail?  There seem to be arguments for both, but I suppose blocking would be
+> easier to implement.
+>
 
-Cross rename (exchange source and dest) will need to call some of these
-helpers for both source and dest, while overwriting rename currently only
-calls them for one or the other.  This also makes the code easier to
-follow.
+I agree with Rafael. We really need an elegant solution for this problem,
+something whose very semantics makes it easy and almost intuitive to get the
+synchronization right. Otherwise it might become too easy to get things wrong
+in these cases.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/ext4/namei.c | 199 +++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 126 insertions(+), 73 deletions(-)
-
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 1348251..fb0f1db 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -3014,6 +3014,125 @@ struct ext4_renament {
- 	int parent_inlined;
- };
- 
-+static int ext4_rename_dir_prepare(handle_t *handle, struct ext4_renament *ent)
-+{
-+	int retval;
-+
-+	ent->dir_bh = ext4_get_first_dir_block(handle, ent->inode,
-+					      &retval, &ent->parent_de,
-+					      &ent->parent_inlined);
-+	if (!ent->dir_bh)
-+		return retval;
-+	if (le32_to_cpu(ent->parent_de->inode) != ent->dir->i_ino)
-+		return -EIO;
-+	BUFFER_TRACE(ent->dir_bh, "get_write_access");
-+	return ext4_journal_get_write_access(handle, ent->dir_bh);
-+}
-+
-+static int ext4_rename_dir_finish(handle_t *handle, struct ext4_renament *ent,
-+				  unsigned dir_ino)
-+{
-+	int retval;
-+
-+	ent->parent_de->inode = cpu_to_le32(dir_ino);
-+	BUFFER_TRACE(ent->dir_bh, "call ext4_handle_dirty_metadata");
-+	if (!ent->parent_inlined) {
-+		if (is_dx(ent->inode)) {
-+			retval = ext4_handle_dirty_dx_node(handle,
-+							   ent->inode,
-+							   ent->dir_bh);
-+		} else {
-+			retval = ext4_handle_dirty_dirent_node(handle,
-+							       ent->inode,
-+							       ent->dir_bh);
-+		}
-+	} else {
-+		retval = ext4_mark_inode_dirty(handle, ent->inode);
-+	}
-+	if (retval) {
-+		ext4_std_error(ent->dir->i_sb, retval);
-+		return retval;
-+	}
-+	return 0;
-+}
-+
-+static int ext4_setent(handle_t *handle, struct ext4_renament *ent,
-+		       unsigned ino, unsigned file_type)
-+{
-+	int retval;
-+
-+	BUFFER_TRACE(ent->bh, "get write access");
-+	retval = ext4_journal_get_write_access(handle, ent->bh);
-+	if (retval)
-+		return retval;
-+	ent->de->inode = cpu_to_le32(ino);
-+	if (EXT4_HAS_INCOMPAT_FEATURE(ent->dir->i_sb,
-+				      EXT4_FEATURE_INCOMPAT_FILETYPE))
-+		ent->de->file_type = file_type;
-+	ent->dir->i_version++;
-+	ent->dir->i_ctime = ent->dir->i_mtime =
-+		ext4_current_time(ent->dir);
-+	ext4_mark_inode_dirty(handle, ent->dir);
-+	BUFFER_TRACE(ent->bh, "call ext4_handle_dirty_metadata");
-+	if (!ent->inlined) {
-+		retval = ext4_handle_dirty_dirent_node(handle,
-+						       ent->dir, ent->bh);
-+		if (unlikely(retval)) {
-+			ext4_std_error(ent->dir->i_sb, retval);
-+			return retval;
-+		}
-+	}
-+	brelse(ent->bh);
-+	ent->bh = NULL;
-+
-+	return 0;
-+}
-+
-+static int ext4_find_delete_entry(handle_t *handle, struct inode *dir,
-+				  const struct qstr *d_name)
-+{
-+	int retval = -ENOENT;
-+	struct buffer_head *bh;
-+	struct ext4_dir_entry_2 *de;
-+
-+	bh = ext4_find_entry(dir, d_name, &de, NULL);
-+	if (bh) {
-+		retval = ext4_delete_entry(handle, dir, de, bh);
-+		brelse(bh);
-+	}
-+	return retval;
-+}
-+
-+static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent)
-+{
-+	int retval;
-+	/*
-+	 * ent->de could have moved from under us during htree split, so make
-+	 * sure that we are deleting the right entry.  We might also be pointing
-+	 * to a stale entry in the unused part of ent->bh so just checking inum
-+	 * and the name isn't enough.
-+	 */
-+	if (le32_to_cpu(ent->de->inode) != ent->inode->i_ino ||
-+	    ent->de->name_len != ent->dentry->d_name.len ||
-+	    strncmp(ent->de->name, ent->dentry->d_name.name,
-+		    ent->de->name_len)) {
-+		retval = ext4_find_delete_entry(handle, ent->dir,
-+						&ent->dentry->d_name);
-+	} else {
-+		retval = ext4_delete_entry(handle, ent->dir, ent->de, ent->bh);
-+		if (retval == -ENOENT) {
-+			retval = ext4_find_delete_entry(handle, ent->dir,
-+							&ent->dentry->d_name);
-+		}
-+	}
-+
-+	if (retval) {
-+		ext4_warning(ent->dir->i_sb,
-+				"Deleting old file (%lu), %d, error=%d",
-+				ent->dir->i_ino, ent->dir->i_nlink, retval);
-+	}
-+}
-+
- /*
-  * Anybody can rename anything with this: the permission checks are left to the
-  * higher-level routines.
-@@ -3087,16 +3206,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 			if (new.dir != old.dir && EXT4_DIR_LINK_MAX(new.dir))
- 				goto end_rename;
- 		}
--		retval = -EIO;
--		old.dir_bh = ext4_get_first_dir_block(handle, old.inode,
--						  &retval, &old.parent_de,
--						  &old.parent_inlined);
--		if (!old.dir_bh)
--			goto end_rename;
--		if (le32_to_cpu(old.parent_de->inode) != old.dir->i_ino)
--			goto end_rename;
--		BUFFER_TRACE(old.dir_bh, "get_write_access");
--		retval = ext4_journal_get_write_access(handle, old.dir_bh);
-+		retval = ext4_rename_dir_prepare(handle, &old);
- 		if (retval)
- 			goto end_rename;
- 	}
-@@ -3105,29 +3215,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		if (retval)
- 			goto end_rename;
- 	} else {
--		BUFFER_TRACE(new.bh, "get write access");
--		retval = ext4_journal_get_write_access(handle, new.bh);
-+		retval = ext4_setent(handle, &new,
-+				     old.inode->i_ino, old.de->file_type);
- 		if (retval)
- 			goto end_rename;
--		new.de->inode = cpu_to_le32(old.inode->i_ino);
--		if (EXT4_HAS_INCOMPAT_FEATURE(new.dir->i_sb,
--					      EXT4_FEATURE_INCOMPAT_FILETYPE))
--			new.de->file_type = old.de->file_type;
--		new.dir->i_version++;
--		new.dir->i_ctime = new.dir->i_mtime =
--					ext4_current_time(new.dir);
--		ext4_mark_inode_dirty(handle, new.dir);
--		BUFFER_TRACE(new.bh, "call ext4_handle_dirty_metadata");
--		if (!new.inlined) {
--			retval = ext4_handle_dirty_dirent_node(handle,
--							       new.dir, new.bh);
--			if (unlikely(retval)) {
--				ext4_std_error(new.dir->i_sb, retval);
--				goto end_rename;
--			}
--		}
--		brelse(new.bh);
--		new.bh = NULL;
- 	}
- 
- 	/*
-@@ -3140,31 +3231,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	/*
- 	 * ok, that's it
- 	 */
--	if (le32_to_cpu(old.de->inode) != old.inode->i_ino ||
--	    old.de->name_len != old.dentry->d_name.len ||
--	    strncmp(old.de->name, old.dentry->d_name.name, old.de->name_len) ||
--	    (retval = ext4_delete_entry(handle, old.dir,
--					old.de, old.bh)) == -ENOENT) {
--		/* old.de could have moved from under us during htree split, so
--		 * make sure that we are deleting the right entry.  We might
--		 * also be pointing to a stale entry in the unused part of
--		 * old.bh so just checking inum and the name isn't enough. */
--		struct buffer_head *old_bh2;
--		struct ext4_dir_entry_2 *old_de2;
--
--		old_bh2 = ext4_find_entry(old.dir, &old.dentry->d_name,
--					  &old_de2, NULL);
--		if (old_bh2) {
--			retval = ext4_delete_entry(handle, old.dir,
--						   old_de2, old_bh2);
--			brelse(old_bh2);
--		}
--	}
--	if (retval) {
--		ext4_warning(old.dir->i_sb,
--				"Deleting old file (%lu), %d, error=%d",
--				old.dir->i_ino, old.dir->i_nlink, retval);
--	}
-+	ext4_rename_delete(handle, &old);
- 
- 	if (new.inode) {
- 		ext4_dec_count(handle, new.inode);
-@@ -3173,24 +3240,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
- 	ext4_update_dx_flag(old.dir);
- 	if (old.dir_bh) {
--		old.parent_de->inode = cpu_to_le32(new.dir->i_ino);
--		BUFFER_TRACE(old.dir_bh, "call ext4_handle_dirty_metadata");
--		if (!old.parent_inlined) {
--			if (is_dx(old.inode)) {
--				retval = ext4_handle_dirty_dx_node(handle,
--								   old.inode,
--								   old.dir_bh);
--			} else {
--				retval = ext4_handle_dirty_dirent_node(handle,
--							old.inode, old.dir_bh);
--			}
--		} else {
--			retval = ext4_mark_inode_dirty(handle, old.inode);
--		}
--		if (retval) {
--			ext4_std_error(old.dir->i_sb, retval);
-+		retval = ext4_rename_dir_finish(handle, &old, new.dir->i_ino);
-+		if (retval)
- 			goto end_rename;
--		}
-+
- 		ext4_dec_count(handle, old.dir);
- 		if (new.inode) {
- 			/* checked empty_dir above, can't have another parent,
--- 
-1.8.1.4
+Regards,
+Srivatsa S. Bhat
 
