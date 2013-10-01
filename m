@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab3JAG7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 02:59:54 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:58658 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab3JAG7x (ORCPT
+	id S1751755Ab3JAHEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:04:15 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:64673 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3JAHEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 02:59:53 -0400
-Date: Tue, 1 Oct 2013 08:59:50 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] x86/geode: fix incorrect placement of __initdata tag
-Message-ID: <20131001065950.GC19718@gmail.com>
-References: <18427893.G5JGWn465D@amdc1032>
+	Tue, 1 Oct 2013 03:04:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <18427893.G5JGWn465D@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
+References: <20130912133855.GA23780@gmail.com>
+	<CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+	<CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+	<20130912184341.GA11400@ghostprotocols.net>
+	<52321CE4.1080804@gmail.com>
+	<20130912200236.GC11400@ghostprotocols.net>
+	<20130912203116.GD32644@gmail.com>
+	<20130912204313.GA3259@gmail.com>
+	<20130915091029.GA21465@gmail.com>
+	<20130930164210.GA22342@gmail.com>
+	<20130930171220.GC10293@ghostprotocols.net>
+	<CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
+Date: Tue, 1 Oct 2013 09:04:13 +0200
+X-Google-Sender-Auth: 3Caeycw3y-jlf2t9jzCeJdRnnRw
+Message-ID: <CAMuHMdUe3nLFcsZL+soHC7hsjURT+3uO-PMuboSV_eGEO=XPxQ@mail.gmail.com>
+Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them in parallel
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 30, 2013 at 7:34 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Sep 30, 2013 at 10:12 AM, Arnaldo Carvalho de Melo
+> <acme@ghostprotocols.net> wrote:
+>>
+>> Checking why that strlcpy failed...
+>
+> I don't think glibc does strlcpy. It's not a standard C function, and
+> it's somewhat controversial (although I dislike strncpy more with the
+> crazy zero-padding, ugh).
 
-* Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+Indeed, e.g. on Ubuntu it's in libbsd, so you also need to #include
+<bsd/string.h> and link with -lbsd.
 
-> __initdata tag should be placed between the variable name and equal
-> sign for the variable to be placed in the intended .init.data section.
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/x86/platform/geode/alix.c    | 2 +-
->  arch/x86/platform/geode/geos.c    | 2 +-
->  arch/x86/platform/geode/net5501.c | 2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
+Gr{oetje,eeting}s,
 
-Does this fix have any runtime effects, i.e. should we queue this up as an 
-urgent fix for v3.12, or does tip:x86/platform with a v3.13 merge suffice?
+                        Geert
 
-Thanks,
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-	ingo
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
