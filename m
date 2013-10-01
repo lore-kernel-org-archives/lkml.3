@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3JAByF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 21:54:05 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54277 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834Ab3JAByE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 21:54:04 -0400
-Date: Tue, 1 Oct 2013 02:53:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: spinlock contention of files->file_lock
-Message-ID: <20131001015344.GV13318@ZenIV.linux.org.uk>
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
- <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
+	id S1755490Ab3JACBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 22:01:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:46636 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755110Ab3JACBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 22:01:42 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net-next PATCH V2] virtio-net: switch to use XPS to choose txq
+In-Reply-To: <20130930090402.GB20291@redhat.com>
+References: <1380526637-35524-1-git-send-email-jasowang@redhat.com> <20130930090402.GB20291@redhat.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 01 Oct 2013 11:24:08 +0930
+Message-ID: <87eh8521tr.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 06:05:03PM -0700, Eric Dumazet wrote:
-> Speaking of spinlock contention, the files->file_lock is a good example.
-> 
-> Multi threaded programs hit this spinlock three times per fd : 
-> 
-> alloc_fd() / fd_install() / close() 
-> 
-> I think fd_install() could be done without this spinlock.
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> On Mon, Sep 30, 2013 at 03:37:17PM +0800, Jason Wang wrote:
+>> We used to use a percpu structure vq_index to record the cpu to queue
+>> mapping, this is suboptimal since it duplicates the work of XPS and
+>> loses all other XPS functionality such as allowing use to configure
+>> their own transmission steering strategy.
+>> 
+>> So this patch switches to use XPS and suggest a default mapping when
+>> the number of cpus is equal to the number of queues. With XPS support,
+>> there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
+>> so they were removed also.
+>> 
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-The problem is dup2(), not table resize...  I'm not saying it can't be
-done, but it won't be trivial and you seem to be looking for potential
-trouble in the wrong place.  dup2() semantics is the real bitch.
-What we want is
-	* dup2() over unused descriptor => insert and be done with that
-	* dup2() over opened one => replace and do equivalent of close()
-for what had been there before
-The trouble is, what to do with dup2() over reserved, but still not
-installed descriptor?  We handle that as -EBUSY and we use ->file_lock
-to get atomicity wrt transitions between those states.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-And yes, dup2() is a lousy API in multithreaded situation.  It's still
-there...  See comments in do_dup2() for some amusement.
+Dave, please apply.
+
+Cheers,
+Rusty.
