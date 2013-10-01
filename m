@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3JAQYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 12:24:32 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:60975 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab3JAQYb (ORCPT
+	id S1751769Ab3JAQ15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:27:57 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:49926 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab3JAQ1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 12:24:31 -0400
-Date: Tue, 1 Oct 2013 09:24:25 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Chris Murphy <bugzilla@colorremedies.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20131001162425.GD14887@roeck-us.net>
-References: <20130927171256.GA6391@roeck-us.net>
- <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com>
- <20130927175926.GA6267@roeck-us.net>
- <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
- <524615B1.6000106@roeck-us.net>
- <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
- <524A4384.4040403@roeck-us.net>
- <20131001105526.GA481@polaris.bitmath.org>
- <20131001151954.GB14887@roeck-us.net>
- <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com>
+	Tue, 1 Oct 2013 12:27:54 -0400
+Date: Tue, 1 Oct 2013 19:27:43 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Yoichi Yuasa <yuasa@linux-mips.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.12-rc2 - MIPS regression
+Message-ID: <20131001162743.GB14359@blackmetal.musicnaut.iki.fi>
+References: <CA+55aFxoF75RJfkp0vnm-b9B0h7PGMitrQiLyTt315tKvG-wTQ@mail.gmail.com>
+ <20130927231012.GB4572@blackmetal.musicnaut.iki.fi>
+ <20131001142421.6cd0870138caf2fe5600a1ea@linux-mips.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com>
+In-Reply-To: <20131001142421.6cd0870138caf2fe5600a1ea@linux-mips.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 09:33:13AM -0600, Chris Murphy wrote:
-> 
-> On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
-> >>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
-> >>>> 
-> >>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
-> >>>> 
-> >>> 
-> >>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
-> >>> Which I guess explains the subsequent memory allocation error in the log.
-> >>> 
-> >>> Henrik, any idea what might be going on ? Is it possible that the previous
-> >>> command failure leaves some state machine in a bad state ?
-> >> 
-> >> I seem to recall a report on another similar state problem on newer
-> >> machines, so maybe, yes. Older machines seem fine, I have never
-> >> encountered the problem myself. Here is a patch to test that
-> >> theory. It has been tested to be pretty harmless on two different
-> >> generations.
-> >> 
-> >> I really really do not want to add an 'if (value is insane)' check ;-)
-> >> 
-> > Chris,
+On Tue, Oct 01, 2013 at 02:24:21PM +0900, Yoichi Yuasa wrote:
+> On Sat, 28 Sep 2013 02:10:12 +0300
+> Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> > 3.12-rc2 breaks the boot (BUG: scheduling while atomic, see logs below)
+> > on Lemote Mini-PC (MIPS). According to git bisect, this is caused by:
 > > 
-> > any chance you can load this patch on an affected machine so we can get
-> > test feedback ? This one is too experimental to submit upstream without
-> > knowing that it really fixes the problem.
+> > ff522058bd717506b2fa066fa564657f2b86477e is the first bad commit
+> > commit ff522058bd717506b2fa066fa564657f2b86477e
+> > Author: Ralf Baechle <ralf@linux-mips.org>
+> > Date:   Tue Sep 17 12:44:31 2013 +0200
+> > 
+> >     MIPS: Fix accessing to per-cpu data when flushing the cache
+> > 
+> > Reverting the commit from v3.12-rc2 makes the board boot fine.
 > 
-> Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
+> Please try this patch on top of rc2.
 > 
-Only requirement is that it also includes the previous patch, so it would be
-optimal if you can apply it on top of the previous image.
+> MIPS: Fix forgotten preempt_enable() when CPU has inclusive pcaches
 
-Thanks,
-Guenter
+Didn't work but making similar change to also r4k_dma_cache_inv() helps.
+So both r4k_dma_cache_wback_inv() and r4k_dma_cache_inv() need to
+be fixed.
+
+A.
+
+> Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
+> 
+> diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+> index 627883b..2492e60 100644
+> --- a/arch/mips/mm/c-r4k.c
+> +++ b/arch/mips/mm/c-r4k.c
+> @@ -609,6 +609,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+>  			r4k_blast_scache();
+>  		else
+>  			blast_scache_range(addr, addr + size);
+> +		preempt_enable();
+>  		__sync();
+>  		return;
+>  	}
