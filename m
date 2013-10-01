@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab3JAHEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 03:04:15 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:64673 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3JAHEO (ORCPT
+	id S1751564Ab3JAHQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:16:51 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:48473 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab3JAHQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 03:04:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
-References: <20130912133855.GA23780@gmail.com>
-	<CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
-	<CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
-	<20130912184341.GA11400@ghostprotocols.net>
-	<52321CE4.1080804@gmail.com>
-	<20130912200236.GC11400@ghostprotocols.net>
-	<20130912203116.GD32644@gmail.com>
-	<20130912204313.GA3259@gmail.com>
-	<20130915091029.GA21465@gmail.com>
-	<20130930164210.GA22342@gmail.com>
-	<20130930171220.GC10293@ghostprotocols.net>
-	<CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
-Date: Tue, 1 Oct 2013 09:04:13 +0200
-X-Google-Sender-Auth: 3Caeycw3y-jlf2t9jzCeJdRnnRw
-Message-ID: <CAMuHMdUe3nLFcsZL+soHC7hsjURT+3uO-PMuboSV_eGEO=XPxQ@mail.gmail.com>
-Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them in parallel
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	Tue, 1 Oct 2013 03:16:50 -0400
+Date: Tue, 1 Oct 2013 09:16:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
+Message-ID: <20131001071646.GA20023@gmail.com>
+References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 7:34 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Sep 30, 2013 at 10:12 AM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
->>
->> Checking why that strlcpy failed...
->
-> I don't think glibc does strlcpy. It's not a standard C function, and
-> it's somewhat controversial (although I dislike strncpy more with the
-> crazy zero-padding, ugh).
 
-Indeed, e.g. on Ubuntu it's in libbsd, so you also need to #include
-<bsd/string.h> and link with -lbsd.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Gr{oetje,eeting}s,
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -2753,6 +2753,15 @@ int perf_session__read_header(struct perf_session *session)
+>  	if (perf_file_header__read(&f_header, header, fd) < 0)
+>  		return -EINVAL;
+>  
+> +	/*
+> +	 * Sanity check that perf.data was written cleanly; data size is
+> +	 * initialized to 0 and updated only if the on_exit function is run.
+> +	 * If data size is still 0 then the file contains only partial
+> +	 * information.  Just warn user and process it as much as it can.
+> +	 */
+> +	if (f_header.data.size == 0)
+> +		pr_warning("Data size is 0. Was the record command properly terminated?\n");
 
-                        Geert
+Just a detail: it would be nice to make all the user facing messages in 
+tools/perf/util/header.c more specific and more structured. For example 
+prefixing it with 'perf header:' would be fine:
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+	WARNING: perf/header: Data size is 0. Was the 'perf record' command properly terminated?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+or something like that.
+
+etc.
+
+	Ingo
