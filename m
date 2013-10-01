@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3JAWqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:46:16 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:39037 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab3JAWqN (ORCPT
+	id S1752323Ab3JAWqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:46:21 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:52500 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab3JAWqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:46:13 -0400
-Date: Tue, 1 Oct 2013 15:46:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sergey Dyasly <dserrg@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to
- exit
-In-Reply-To: <20131001192640.ed55682d3113b00b402bbef5@gmail.com>
-Message-ID: <alpine.DEB.2.02.1310011545310.14977@chino.kir.corp.google.com>
-References: <1378740624-2456-1-git-send-email-dserrg@gmail.com> <alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com> <20130911190605.5528ee4563272dbea1ed56a6@gmail.com> <alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
- <20130927185833.6c72b77ab105d70d4996ebef@gmail.com> <alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com> <20131001192640.ed55682d3113b00b402bbef5@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 1 Oct 2013 18:46:17 -0400
+Date: Wed, 2 Oct 2013 00:45:15 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: "Ruslan N. Marchenko" <me@ruff.mobi>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Regression in 2fdac010
+ drivers/net/ethernet/via/via-velocity.c: update napi implementation
+Message-ID: <20131001224515.GA3113@electric-eye.fr.zoreil.com>
+References: <20130930071531.GA13037@ruff.mobi>
+ <alpine.DEB.2.02.1309301342530.2036@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1309301342530.2036@localhost6.localdomain6>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Oct 2013, Sergey Dyasly wrote:
+Julia Lawall <julia.lawall@lip6.fr> :
+[...]
+> There has already been a discussion about this, and a patch has already 
+> been proposed.  It has to do with lock managament.  I will look for the 
+> email.
 
-> If you are ok with the first change in my patch regarding fatal_signal_pending,
-> I can send new patch with just that change.
-> 
+The underlying problem has to do with disabled irq. netif_receive_skb
+assumes irq to be enabled. Current via-velocity poll() method should
+narrow its (spinlocked) irq disabled section.
 
-The entire patch is pointless, there's no need to give access to memory 
-reserves simply because it is PF_EXITING.  If it needs memory, it will 
-call the oom killer itself.
+What I've done should not require much analysis (aka "what could race
+with the rx bh processing in a napi driver ?") and avoids a more intrusive
+lockless napi design.
+
+-- 
+Ueimor
