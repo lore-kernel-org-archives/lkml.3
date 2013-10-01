@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3JAP1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:27:41 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:37732 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab3JAP1e (ORCPT
+	id S1753538Ab3JAP1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:27:55 -0400
+Received: from mail-de.keymile.com ([195.8.104.250]:60412 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab3JAP1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:27:34 -0400
-Date: Tue, 1 Oct 2013 19:26:40 +0400
-From: Sergey Dyasly <dserrg@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to exit
-Message-Id: <20131001192640.ed55682d3113b00b402bbef5@gmail.com>
-In-Reply-To: <alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com>
-References: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
-	<alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
-	<20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
-	<alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
-	<20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
-	<alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Oct 2013 11:27:46 -0400
+Message-ID: <524AE9E3.4080701@keymile.com>
+Date: Tue, 01 Oct 2013 17:27:31 +0200
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [patch 0/8] genirq: Support for irq domains in generic irq chip
+ - V2
+References: <20130506142348.321859745@linutronix.de>
+In-Reply-To: <20130506142348.321859745@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems to me that we are going nowhere with this discussion...
+Hi Thomas, Sebastian,
 
-If you are ok with the first change in my patch regarding fatal_signal_pending,
-I can send new patch with just that change.
+I see these changes made it to 3.11.
+AFAICT though, 3.10.9 still has the original bug (the one that got me to 
+write the patch for handling separate mask registers) and I am bit 
+confused as to how to integrate that back into 3.10 (or any previous 
+affected kernels, as they deserve a fix as well!).
 
+The way I understand it, any mainstream patch would be based on this 
+work, which is not available on previous kernels. And I guess 
+backporting the whole thing would be overkill.
+So I believe the only way to fix it on older kernels would be to write 
+one (or more) minimal version-specific patch series.
+But then I wonder: would that be acceptable material for linux-stable?
 
-On Mon, 30 Sep 2013 15:08:25 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+Please correct me if I'm totally wrong here. I'm willing to help & test 
+but I need directions.
 
-> On Fri, 27 Sep 2013, Sergey Dyasly wrote:
-> 
-> > What you are saying contradicts current OOMk code the way I read it. Comment in
-> > oom_kill_process() says:
-> > 
-> > "If the task is already exiting ... set TIF_MEMDIE so it can die quickly"
-> > 
-> > I just want to know the right solution.
-> > 
-> 
-> That's a comment, not code.  The point of the PF_EXITING special handling 
-> in oom_kill_process() is to avoid telling sysadmins that a process has 
-> been killed to free memory when it has already called exit() and to avoid 
-> sacrificing one of its children for the exiting process.
-> 
-> It may or may not need access to memory reserves to actually exit after 
-> PF_EXITING depending on whether it needs to allocate memory for 
-> coredumping or anything else.  So instead of waiting for it to recall the 
-> oom killer, TIF_MEMDIE is set anyway.  The point is that PF_EXITING 
-> processes can already get TIF_MEMDIE immediately when their memory 
-> allocation fails so there's no reason not to set it now as an 
-> optimization.
-> 
-> But we definitely want to avoid printing anything to the kernel log when 
-> the process has already called exit() and issuing the SIGKILL at that 
-> point would be pointless.
-> 
-> > You are mistaken, oom_kill_process() is only called from out_of_memory()
-> > and mem_cgroup_out_of_memory().
-> > 
-> 
-> out_of_memory() calls oom_kill_process() in two places, plus the call from 
-> mem_cgroup_out_of_memory(), making three calls in the tree.  Not that this 
-> matters in the slightest, though.
-> 
-> > > Read the comment about why we don't emit anything to the kernel log in 
-> > > this case; the process is already exiting, there's no need to kill it or 
-> > > make anyone believe that it was killed.
-> > 
-> > Yes, but there is already the PF_EXITING check in oom_scan_process_thread(),
-> > and in this case oom_kill_process() won't be even called. That's why it's
-> > redundant.
-> > 
-> 
-> You apparently have no idea how long select_bad_process() runs on a large 
-> system with thousands of processes.  Keep in mind that SGI requested the 
-> addition of the oom_kill_allocating_task sysctl specifically because of 
-> how long select_bad_process() runs.  The PF_EXITING check in 
-> oom_kill_process() is simply an optimization to return early and with 
-> access to memory reserves so it can exit as quickly as possible and 
-> without the kernel stating it's killing something that has already called 
-> exit().
+Thanks,
+Gerlando
 
+On 05/06/2013 04:30 PM, Thomas Gleixner wrote:
+> Changes vs. V1:
+>
+> 	- Fixed the generic chip pointer thinko (Sebastian Hesselbarth)
+>
+> 	- Proper support for mask cache
+>
+> 	- Read mask hardware only for the first map of an generic chip
+>            instance
+>
+> 	- sun4i prefix irq functions proper
+>
+> Thanks,
+>
+> 	tglx
+>
+>
 
--- 
-Sergey Dyasly <dserrg@gmail.com>
