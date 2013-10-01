@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab3JATRn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 15:17:43 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:36852
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751360Ab3JATRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 15:17:40 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1380655036.10618.32.camel@snotra.buserror.net>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-From: Scott Wood <scottwood@freescale.com>
-To: Kim Phillips <kim.phillips@linaro.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <a.motakis@virtualopensystems.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        <stuart.yoder@freescale.com>, Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        <santosh.shukla@linaro.org>, <kvm@vger.kernel.org>
-Date: Tue, 1 Oct 2013 14:17:16 -0500
-In-Reply-To: <1380654938.10618.30.camel@snotra.buserror.net>
-References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
-	 <1380654938.10618.30.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1752229Ab3JATWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 15:22:34 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37399 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab3JATWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 15:22:32 -0400
+Date: Tue, 1 Oct 2013 12:22:04 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] x86, relocs: add more per-cpu gold special cases
+Message-ID: <20131001192203.GA29794@www.outflux.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-01 at 14:15 -0500, Scott Wood wrote:
-> On Tue, 2013-10-01 at 13:38 -0500, Kim Phillips wrote:
-> > Hi,
-> > 
-> > Santosh and I are having a problem figuring out how to enable binding
-> > (and re-binding) platform devices to a platform VFIO driver (see
-> > Antonis' WIP: [1]) in an upstream-acceptable manner.
-> > 
-> > Binding platform drivers currently depends on a string match in the
-> > device node's compatible entry.  On an arndale, one can currently
-> > rebind the same device to the same driver like so:
-> > 
-> > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-> > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
-> > 
-> > And one can bind it to the vfio-dt driver, as Antonis instructs, by
-> > appending a 'vfio-dt' string to the device tree compatible entry for
-> > the device.  Then this would work:
-> > 
-> > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-> > echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
-> > 
-> > Consequently, the hack patch below [2] allows any platform device to be
-> > bound to the vfio-dt driver, without making changes to the device
-> > tree.  It's a hack because I don't see having any driver name specific
-> > code in drivers/base/bus.c being upstream acceptable.
-> 
-> Modifying the device tree is the worse part of this.
+The "gold" linker doesn't seem to put some additional per-cpu cases in
+the right place. Add these to the per-cpu check. Without this, the kASLR
+patch series fails to correctly apply relocations, and fails to boot.
 
-I think I missed something.  How do you reconcile "without making
-changes to the device tree" with "appending a 'vfio-dt' string to the
-device tree compatible entry"?
+Found and fixed by Michael Davidson.
 
--Scott
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/x86/tools/relocs.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index f7bab68..71a2533 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -722,15 +722,23 @@ static void percpu_init(void)
+ 
+ /*
+  * Check to see if a symbol lies in the .data..percpu section.
+- * For some as yet not understood reason the "__init_begin"
+- * symbol which immediately preceeds the .data..percpu section
+- * also shows up as it it were part of it so we do an explict
+- * check for that symbol name and ignore it.
++ *
++ * The linker incorrectly associates some symbols with the
++ * .data..percpu section so we also need to check the symbol
++ * name to make sure that we classify the symbol correctly.
++ *
++ * The GNU linker incorrectly associates:
++ *	__init_begin
++ *
++ * The "gold" linker incorrectly associates:
++ *	init_per_cpu__irq_stack_union
++ *	init_per_cpu__gdt_page
+  */
+ static int is_percpu_sym(ElfW(Sym) *sym, const char *symname)
+ {
+ 	return (sym->st_shndx == per_cpu_shndx) &&
+-		strcmp(symname, "__init_begin");
++		strcmp(symname, "__init_begin") &&
++		strncmp(symname, "init_per_cpu_", 13);
+ }
+ 
+ 
+-- 
+1.7.9.5
 
 
-
+-- 
+Kees Cook
+Chrome OS Security
