@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab3JAWrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:47:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57329 "EHLO bear.ext.ti.com"
+	id S1753154Ab3JAWvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:51:01 -0400
+Received: from mout.gmx.net ([212.227.17.22]:54434 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479Ab3JAWrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:47:42 -0400
-Date: Tue, 1 Oct 2013 17:46:47 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] arm: dts: dra7: add bandgap entry
-Message-ID: <20131001224645.GC11451@kahuna>
-References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
- <1380652344-18819-4-git-send-email-eduardo.valentin@ti.com>
+	id S1751783Ab3JAWu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:50:59 -0400
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH 08/13] tpm: Pull everything related to /dev/tpmX into tpm-dev.c
+Date: Wed, 2 Oct 2013 00:52:40 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <1379960083-8942-9-git-send-email-jgunthorpe@obsidianresearch.com>
+In-Reply-To: <1379960083-8942-9-git-send-email-jgunthorpe@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1380652344-18819-4-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310020052.40497.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:PoMyMOvcx2CaH2MEoeeCwlDFGXIZHPa6JY4pY38otTVj85nAolZ
+ rw4375hTWqtAj0+bmlXbv/ZOBf8PJQw3Fq/jkiYFNFszCBv7qGRcPnfjlczOPpmk/mjgel6
+ vCHUe4QoymShNWHGCFaS8S5XV62FTXaNqoJMn5cNgdu96byipoRrLK+yYAYID9Dil85Dem2
+ 5kaFEyoBhVQ2G0SGemWjg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:32-20131001, Eduardo Valentin wrote:
-> This patch adds bandgap IP entry on DRA7 dtsi device tree file.
+Am Montag, 23. September 2013, 20:14:38 schrieb Jason Gunthorpe:
+> CLASS-dev.c is a common idiom for Linux subsystems
 > 
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> This pulls all the code related to the miscdev into tpm-dev.c and makes it
+> static. The identical file_operation structs in the drivers are purged and
+> the tpm common code unconditionally creates the miscdev.
+> 
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 > ---
->  arch/arm/boot/dts/dra7.dtsi | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> index 3a746c2..4e9b159 100644
-> --- a/arch/arm/boot/dts/dra7.dtsi
-> +++ b/arch/arm/boot/dts/dra7.dtsi
-> @@ -53,6 +53,18 @@
->  		};
->  	};
->  
-> +	bandgap: bandgap {
-	would you like to follow bandgap: bandgap@4a0021e0 convention?
-Also, could you move it under ocp?
-I already commented about this previously here: 
-https://lkml.org/lkml/2013/9/27/300
+>  drivers/char/tpm/Makefile           |   2 +-
+>  drivers/char/tpm/tpm-dev.c          | 199
 
-> +		reg = <0x4a0021e0 0xc
-> +			0x4a00232c 0xc
-> +			0x4a002380 0x2c
-> +			0x4a0023C0 0x3c
-> +			0x4a002564 0x8
-> +			0x4a002574 0x50>;
-> +		compatible = "ti,dra752-bandgap";
-> +		interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_HIGH>;
-> +		#thermal-sensor-cells = <1>;
-> +	};
-> +
->  	gic: interrupt-controller@48211000 {
->  		compatible = "arm,cortex-a15-gic";
->  		interrupt-controller;
--- 
-Regards,
-Nishanth Menon
+When compiling the tpm drivers as modules I get
+ERROR: "tpm_sysfs_del_device" [drivers/char/tpm/tpm.ko] undefined!
+ERROR: "tpm_dev_add_device" [drivers/char/tpm/tpm.ko] undefined!
+ERROR: "tpm_dev_del_device" [drivers/char/tpm/tpm.ko] undefined!
+ERROR: "tpm_sysfs_add_device" [drivers/char/tpm/tpm.ko] undefined!
+ERROR: "tpm_transmit" [drivers/char/tpm/tpm-sysfs.ko] undefined!
+ERROR: "tpm_pcr_read_dev" [drivers/char/tpm/tpm-sysfs.ko] undefined!
+ERROR: "tpm_getcap" [drivers/char/tpm/tpm-sysfs.ko] undefined!
+ERROR: "tpm_transmit" [drivers/char/tpm/tpm-dev.ko] undefined!
+
+
+I added a suitable patch with the appropriate EXPORT_SYMBOL_GPL declarations 
+to my testing branch. (also see next message)
+
+
+Thanks,
+Peter
