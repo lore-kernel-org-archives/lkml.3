@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab3JAVm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 17:42:57 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:60138 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753315Ab3JAVmj (ORCPT
+	id S1753451Ab3JAVno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 17:43:44 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:65103 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab3JAVmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 17:42:39 -0400
+	Tue, 1 Oct 2013 17:42:32 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: [PATCH 15/15] sysfs: merge regular and bin file handling
-Date: Tue,  1 Oct 2013 17:42:09 -0400
-Message-Id: <1380663729-18243-16-git-send-email-tj@kernel.org>
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 11/15] sysfs: prepare path write for unified regular / bin file handling
+Date: Tue,  1 Oct 2013 17:42:05 -0400
+Message-Id: <1380663729-18243-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380663729-18243-1-git-send-email-tj@kernel.org>
 References: <1380663729-18243-1-git-send-email-tj@kernel.org>
@@ -22,642 +21,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the previous changes, sysfs regular file code is ready to handle
-bin files too.  This patch makes bin files share the regular file
-path.
+sysfs bin file handling will be merged into the regular file support.
+This patch prepares the write path.
 
-* sysfs_create/remove_bin_file() are moved to fs/sysfs/file.c.
+bin file write is almost identical to regular file write except that
+the write length is capped by the inode size and @off is passed to the
+write method.  This patch adds bin file handling to sysfs_write_file()
+so that it can handle both regular and bin files.
 
-* sysfs_init_inode() is updated to use the new sysfs_bin_operations
-  instead of bin_fops for bin files.
-
-* fs/sysfs/bin.c and the related pieces are removed.
-
-This patch shouldn't introduce any behavior difference to bin file
-accesses.
-
-Overall, this unification reduces the amount of duplicate logic, makes
-behaviors more consistent and paves the road for building simpler and
-more versatile interface which will allow other subsystems to make use
-of sysfs for their pseudo filesystems.
-
-v2: Stale fs/sysfs/bin.c reference dropped from
-    Documentation/DocBook/filesystems.tmpl.  Reported by kbuild test
-    robot.
+A new file_operations struct sysfs_bin_operations is added, which
+currently only hosts sysfs_write_file() and generic_file_llseek().
+This isn't used yet but will eventually replace fs/sysfs/bin.c.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>
 ---
- Documentation/DocBook/filesystems.tmpl |   1 -
- fs/sysfs/Makefile                      |   3 +-
- fs/sysfs/bin.c                         | 491 ---------------------------------
- fs/sysfs/dir.c                         |   1 -
- fs/sysfs/file.c                        |  26 ++
- fs/sysfs/inode.c                       |   2 +-
- fs/sysfs/sysfs.h                       |   6 -
- 7 files changed, 28 insertions(+), 502 deletions(-)
- delete mode 100644 fs/sysfs/bin.c
+ fs/sysfs/file.c  | 40 ++++++++++++++++++++++++++++++++++------
+ fs/sysfs/sysfs.h |  1 +
+ 2 files changed, 35 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/DocBook/filesystems.tmpl b/Documentation/DocBook/filesystems.tmpl
-index 25b58ef..4f67683 100644
---- a/Documentation/DocBook/filesystems.tmpl
-+++ b/Documentation/DocBook/filesystems.tmpl
-@@ -91,7 +91,6 @@
-      <title>The Filesystem for Exporting Kernel Objects</title>
- !Efs/sysfs/file.c
- !Efs/sysfs/symlink.c
--!Efs/sysfs/bin.c
-   </chapter>
- 
-   <chapter id="debugfs">
-diff --git a/fs/sysfs/Makefile b/fs/sysfs/Makefile
-index 7a1ceb9..8876ac1 100644
---- a/fs/sysfs/Makefile
-+++ b/fs/sysfs/Makefile
-@@ -2,5 +2,4 @@
- # Makefile for the sysfs virtual filesystem
- #
- 
--obj-y		:= inode.o file.o dir.o symlink.o mount.o bin.o \
--		   group.o
-+obj-y		:= inode.o file.o dir.o symlink.o mount.o group.o
-diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
-deleted file mode 100644
-index 60a4e78..0000000
---- a/fs/sysfs/bin.c
-+++ /dev/null
-@@ -1,491 +0,0 @@
--/*
-- * fs/sysfs/bin.c - sysfs binary file implementation
-- *
-- * Copyright (c) 2003 Patrick Mochel
-- * Copyright (c) 2003 Matthew Wilcox
-- * Copyright (c) 2004 Silicon Graphics, Inc.
-- * Copyright (c) 2007 SUSE Linux Products GmbH
-- * Copyright (c) 2007 Tejun Heo <teheo@suse.de>
-- *
-- * This file is released under the GPLv2.
-- *
-- * Please see Documentation/filesystems/sysfs.txt for more information.
-- */
--
--#undef DEBUG
--
--#include <linux/errno.h>
--#include <linux/fs.h>
--#include <linux/kernel.h>
--#include <linux/kobject.h>
--#include <linux/module.h>
--#include <linux/slab.h>
--#include <linux/mutex.h>
--#include <linux/mm.h>
--#include <linux/uaccess.h>
--
--#include "sysfs.h"
--
--/*
-- * There's one bin_buffer for each open file.
-- *
-- * filp->private_data points to bin_buffer and
-- * sysfs_dirent->s_bin_attr.buffers points to a the bin_buffer s
-- * sysfs_dirent->s_bin_attr.buffers is protected by sysfs_bin_lock
-- */
--static DEFINE_MUTEX(sysfs_bin_lock);
--
--struct bin_buffer {
--	struct mutex			mutex;
--	void				*buffer;
--	int				mmapped;
--	const struct vm_operations_struct *vm_ops;
--	struct file			*file;
--	struct hlist_node		list;
--};
--
--static ssize_t
--read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
--{
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct bin_attribute *attr = attr_sd->s_bin_attr.bin_attr;
--	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
--	struct bin_buffer *bb = file->private_data;
--	int size = file_inode(file)->i_size;
--	loff_t offs = *off;
--	int count = min_t(size_t, bytes, PAGE_SIZE);
--	char *buf;
--
--	if (!bytes)
--		return 0;
--
--	if (size) {
--		if (offs > size)
--			return 0;
--		if (offs + count > size)
--			count = size - offs;
--	}
--
--	buf = kmalloc(count, GFP_KERNEL);
--	if (!buf)
--		return -ENOMEM;
--
--	/* need attr_sd for attr, its parent for kobj */
--	mutex_lock(&bb->mutex);
--	if (!sysfs_get_active(attr_sd)) {
--		count = -ENODEV;
--		mutex_unlock(&bb->mutex);
--		goto out_free;
--	}
--
--	if (attr->read)
--		count = attr->read(file, kobj, attr, buf, offs, count);
--	else
--		count = -EIO;
--
--	sysfs_put_active(attr_sd);
--	mutex_unlock(&bb->mutex);
--
--	if (count < 0)
--		goto out_free;
--
--	if (copy_to_user(userbuf, buf, count)) {
--		count = -EFAULT;
--		goto out_free;
--	}
--
--	pr_debug("offs = %lld, *off = %lld, count = %d\n", offs, *off, count);
--
--	*off = offs + count;
--
-- out_free:
--	kfree(buf);
--	return count;
--}
--
--static int
--flush_write(struct file *file, char *buffer, loff_t offset, size_t count)
--{
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct bin_attribute *attr = attr_sd->s_bin_attr.bin_attr;
--	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
--	int rc;
--
--	/* need attr_sd for attr, its parent for kobj */
--	if (!sysfs_get_active(attr_sd))
--		return -ENODEV;
--
--	rc = -EIO;
--	if (attr->write)
--		rc = attr->write(file, kobj, attr, buffer, offset, count);
--
--	sysfs_put_active(attr_sd);
--
--	return rc;
--}
--
--static ssize_t write(struct file *file, const char __user *userbuf,
--		     size_t bytes, loff_t *off)
--{
--	struct bin_buffer *bb = file->private_data;
--	int size = file_inode(file)->i_size;
--	loff_t offs = *off;
--	int count = min_t(size_t, bytes, PAGE_SIZE);
--	char *temp;
--
--	if (!bytes)
--		return 0;
--
--	if (size) {
--		if (offs > size)
--			return 0;
--		if (offs + count > size)
--			count = size - offs;
--	}
--
--	temp = memdup_user(userbuf, count);
--	if (IS_ERR(temp))
--		return PTR_ERR(temp);
--
--	mutex_lock(&bb->mutex);
--
--	memcpy(bb->buffer, temp, count);
--
--	count = flush_write(file, bb->buffer, offs, count);
--	mutex_unlock(&bb->mutex);
--
--	if (count > 0)
--		*off = offs + count;
--
--	kfree(temp);
--	return count;
--}
--
--static void bin_vma_open(struct vm_area_struct *vma)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--
--	if (!bb->vm_ops)
--		return;
--
--	if (!sysfs_get_active(attr_sd))
--		return;
--
--	if (bb->vm_ops->open)
--		bb->vm_ops->open(vma);
--
--	sysfs_put_active(attr_sd);
--}
--
--static int bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	int ret;
--
--	if (!bb->vm_ops)
--		return VM_FAULT_SIGBUS;
--
--	if (!sysfs_get_active(attr_sd))
--		return VM_FAULT_SIGBUS;
--
--	ret = VM_FAULT_SIGBUS;
--	if (bb->vm_ops->fault)
--		ret = bb->vm_ops->fault(vma, vmf);
--
--	sysfs_put_active(attr_sd);
--	return ret;
--}
--
--static int bin_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	int ret;
--
--	if (!bb->vm_ops)
--		return VM_FAULT_SIGBUS;
--
--	if (!sysfs_get_active(attr_sd))
--		return VM_FAULT_SIGBUS;
--
--	ret = 0;
--	if (bb->vm_ops->page_mkwrite)
--		ret = bb->vm_ops->page_mkwrite(vma, vmf);
--	else
--		file_update_time(file);
--
--	sysfs_put_active(attr_sd);
--	return ret;
--}
--
--static int bin_access(struct vm_area_struct *vma, unsigned long addr,
--		  void *buf, int len, int write)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	int ret;
--
--	if (!bb->vm_ops)
--		return -EINVAL;
--
--	if (!sysfs_get_active(attr_sd))
--		return -EINVAL;
--
--	ret = -EINVAL;
--	if (bb->vm_ops->access)
--		ret = bb->vm_ops->access(vma, addr, buf, len, write);
--
--	sysfs_put_active(attr_sd);
--	return ret;
--}
--
--#ifdef CONFIG_NUMA
--static int bin_set_policy(struct vm_area_struct *vma, struct mempolicy *new)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	int ret;
--
--	if (!bb->vm_ops)
--		return 0;
--
--	if (!sysfs_get_active(attr_sd))
--		return -EINVAL;
--
--	ret = 0;
--	if (bb->vm_ops->set_policy)
--		ret = bb->vm_ops->set_policy(vma, new);
--
--	sysfs_put_active(attr_sd);
--	return ret;
--}
--
--static struct mempolicy *bin_get_policy(struct vm_area_struct *vma,
--					unsigned long addr)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct mempolicy *pol;
--
--	if (!bb->vm_ops)
--		return vma->vm_policy;
--
--	if (!sysfs_get_active(attr_sd))
--		return vma->vm_policy;
--
--	pol = vma->vm_policy;
--	if (bb->vm_ops->get_policy)
--		pol = bb->vm_ops->get_policy(vma, addr);
--
--	sysfs_put_active(attr_sd);
--	return pol;
--}
--
--static int bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
--			const nodemask_t *to, unsigned long flags)
--{
--	struct file *file = vma->vm_file;
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	int ret;
--
--	if (!bb->vm_ops)
--		return 0;
--
--	if (!sysfs_get_active(attr_sd))
--		return 0;
--
--	ret = 0;
--	if (bb->vm_ops->migrate)
--		ret = bb->vm_ops->migrate(vma, from, to, flags);
--
--	sysfs_put_active(attr_sd);
--	return ret;
--}
--#endif
--
--static const struct vm_operations_struct bin_vm_ops = {
--	.open		= bin_vma_open,
--	.fault		= bin_fault,
--	.page_mkwrite	= bin_page_mkwrite,
--	.access		= bin_access,
--#ifdef CONFIG_NUMA
--	.set_policy	= bin_set_policy,
--	.get_policy	= bin_get_policy,
--	.migrate	= bin_migrate,
--#endif
--};
--
--static int mmap(struct file *file, struct vm_area_struct *vma)
--{
--	struct bin_buffer *bb = file->private_data;
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct bin_attribute *attr = attr_sd->s_bin_attr.bin_attr;
--	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
--	int rc;
--
--	mutex_lock(&bb->mutex);
--
--	/* need attr_sd for attr, its parent for kobj */
--	rc = -ENODEV;
--	if (!sysfs_get_active(attr_sd))
--		goto out_unlock;
--
--	rc = -EINVAL;
--	if (!attr->mmap)
--		goto out_put;
--
--	rc = attr->mmap(file, kobj, attr, vma);
--	if (rc)
--		goto out_put;
--
--	/*
--	 * PowerPC's pci_mmap of legacy_mem uses shmem_zero_setup()
--	 * to satisfy versions of X which crash if the mmap fails: that
--	 * substitutes a new vm_file, and we don't then want bin_vm_ops.
--	 */
--	if (vma->vm_file != file)
--		goto out_put;
--
--	rc = -EINVAL;
--	if (bb->mmapped && bb->vm_ops != vma->vm_ops)
--		goto out_put;
--
--	/*
--	 * It is not possible to successfully wrap close.
--	 * So error if someone is trying to use close.
--	 */
--	rc = -EINVAL;
--	if (vma->vm_ops && vma->vm_ops->close)
--		goto out_put;
--
--	rc = 0;
--	bb->mmapped = 1;
--	bb->vm_ops = vma->vm_ops;
--	vma->vm_ops = &bin_vm_ops;
--out_put:
--	sysfs_put_active(attr_sd);
--out_unlock:
--	mutex_unlock(&bb->mutex);
--
--	return rc;
--}
--
--static int open(struct inode *inode, struct file *file)
--{
--	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct bin_attribute *attr = attr_sd->s_bin_attr.bin_attr;
--	struct bin_buffer *bb = NULL;
--	int error;
--
--	/* binary file operations requires both @sd and its parent */
--	if (!sysfs_get_active(attr_sd))
--		return -ENODEV;
--
--	error = -EACCES;
--	if ((file->f_mode & FMODE_WRITE) && !(attr->write || attr->mmap))
--		goto err_out;
--	if ((file->f_mode & FMODE_READ) && !(attr->read || attr->mmap))
--		goto err_out;
--
--	error = -ENOMEM;
--	bb = kzalloc(sizeof(*bb), GFP_KERNEL);
--	if (!bb)
--		goto err_out;
--
--	bb->buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	if (!bb->buffer)
--		goto err_out;
--
--	mutex_init(&bb->mutex);
--	bb->file = file;
--	file->private_data = bb;
--
--	mutex_lock(&sysfs_bin_lock);
--	hlist_add_head(&bb->list, &attr_sd->s_bin_attr.buffers);
--	mutex_unlock(&sysfs_bin_lock);
--
--	/* open succeeded, put active references */
--	sysfs_put_active(attr_sd);
--	return 0;
--
-- err_out:
--	sysfs_put_active(attr_sd);
--	kfree(bb);
--	return error;
--}
--
--static int release(struct inode *inode, struct file *file)
--{
--	struct bin_buffer *bb = file->private_data;
--
--	mutex_lock(&sysfs_bin_lock);
--	hlist_del(&bb->list);
--	mutex_unlock(&sysfs_bin_lock);
--
--	kfree(bb->buffer);
--	kfree(bb);
--	return 0;
--}
--
--const struct file_operations bin_fops = {
--	.read		= read,
--	.write		= write,
--	.mmap		= mmap,
--	.llseek		= generic_file_llseek,
--	.open		= open,
--	.release	= release,
--};
--
--
--void unmap_bin_file(struct sysfs_dirent *attr_sd)
--{
--	struct bin_buffer *bb;
--
--	if (sysfs_type(attr_sd) != SYSFS_KOBJ_BIN_ATTR)
--		return;
--
--	mutex_lock(&sysfs_bin_lock);
--
--	hlist_for_each_entry(bb, &attr_sd->s_bin_attr.buffers, list) {
--		struct inode *inode = file_inode(bb->file);
--
--		unmap_mapping_range(inode->i_mapping, 0, 0, 1);
--	}
--
--	mutex_unlock(&sysfs_bin_lock);
--}
--
--/**
-- *	sysfs_create_bin_file - create binary file for object.
-- *	@kobj:	object.
-- *	@attr:	attribute descriptor.
-- */
--int sysfs_create_bin_file(struct kobject *kobj,
--			  const struct bin_attribute *attr)
--{
--	BUG_ON(!kobj || !kobj->sd || !attr);
--
--	return sysfs_add_file(kobj->sd, &attr->attr, SYSFS_KOBJ_BIN_ATTR);
--}
--EXPORT_SYMBOL_GPL(sysfs_create_bin_file);
--
--/**
-- *	sysfs_remove_bin_file - remove binary file for object.
-- *	@kobj:	object.
-- *	@attr:	attribute descriptor.
-- */
--void sysfs_remove_bin_file(struct kobject *kobj,
--			   const struct bin_attribute *attr)
--{
--	sysfs_hash_and_remove(kobj->sd, attr->attr.name, NULL);
--}
--EXPORT_SYMBOL_GPL(sysfs_remove_bin_file);
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index c4040dd..f6025c8 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -596,7 +596,6 @@ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt)
- 
- 		sysfs_deactivate(sd);
- 		sysfs_unmap_bin_file(sd);
--		unmap_bin_file(sd);
- 		sysfs_put(sd);
- 	}
- }
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 417d005..5f7a955 100644
+index 4921bda..b36473f 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -987,6 +987,32 @@ void sysfs_remove_file_from_group(struct kobject *kobj,
- }
- EXPORT_SYMBOL_GPL(sysfs_remove_file_from_group);
+@@ -54,6 +54,11 @@ struct sysfs_open_file {
+ 	struct list_head	list;
+ };
  
-+/**
-+ *	sysfs_create_bin_file - create binary file for object.
-+ *	@kobj:	object.
-+ *	@attr:	attribute descriptor.
-+ */
-+int sysfs_create_bin_file(struct kobject *kobj,
-+			  const struct bin_attribute *attr)
++static bool sysfs_is_bin(struct sysfs_dirent *sd)
 +{
-+	BUG_ON(!kobj || !kobj->sd || !attr);
-+
-+	return sysfs_add_file(kobj->sd, &attr->attr, SYSFS_KOBJ_BIN_ATTR);
++	return sysfs_type(sd) == SYSFS_KOBJ_BIN_ATTR;
 +}
-+EXPORT_SYMBOL_GPL(sysfs_create_bin_file);
 +
-+/**
-+ *	sysfs_remove_bin_file - remove binary file for object.
-+ *	@kobj:	object.
-+ *	@attr:	attribute descriptor.
-+ */
-+void sysfs_remove_bin_file(struct kobject *kobj,
-+			   const struct bin_attribute *attr)
-+{
-+	sysfs_hash_and_remove(kobj->sd, attr->attr.name, NULL);
-+}
-+EXPORT_SYMBOL_GPL(sysfs_remove_bin_file);
+ static struct sysfs_open_file *sysfs_of(struct file *file)
+ {
+ 	return ((struct seq_file *)file->private_data)->private;
+@@ -138,16 +143,16 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
+  * flush_write_buffer - push buffer to kobject
+  * @of: open file
+  * @buf: data buffer for file
++ * @off: file offset to write to
+  * @count: number of bytes
+  *
+  * Get the correct pointers for the kobject and the attribute we're dealing
+  * with, then call the store() method for it with @buf.
+  */
+-static int flush_write_buffer(struct sysfs_open_file *of, char *buf,
++static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+ 			      size_t count)
+ {
+ 	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
+-	const struct sysfs_ops *ops;
+ 	int rc = 0;
+ 
+ 	/*
+@@ -161,8 +166,18 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf,
+ 		return -ENODEV;
+ 	}
+ 
+-	ops = sysfs_file_ops(of->sd);
+-	rc = ops->store(kobj, of->sd->s_attr.attr, buf, count);
++	if (sysfs_is_bin(of->sd)) {
++		struct bin_attribute *battr = of->sd->s_bin_attr.bin_attr;
 +
- struct sysfs_schedule_callback_struct {
- 	struct list_head	workq_list;
- 	struct kobject		*kobj;
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 63f755e..2cb1b6b 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -260,7 +260,7 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 	case SYSFS_KOBJ_BIN_ATTR:
- 		bin_attr = sd->s_bin_attr.bin_attr;
- 		inode->i_size = bin_attr->size;
--		inode->i_fop = &bin_fops;
-+		inode->i_fop = &sysfs_bin_operations;
- 		break;
- 	case SYSFS_KOBJ_LINK:
- 		inode->i_op = &sysfs_symlink_inode_operations;
++		rc = -EIO;
++		if (battr->write)
++			rc = battr->write(of->file, kobj, battr, buf, off,
++					  count);
++	} else {
++		const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
++
++		rc = ops->store(kobj, of->sd->s_attr.attr, buf, count);
++	}
+ 
+ 	sysfs_put_active(of->sd);
+ 	mutex_unlock(&of->mutex);
+@@ -190,9 +205,17 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+ 				size_t count, loff_t *ppos)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+-	ssize_t len = min_t(size_t, count, PAGE_SIZE - 1);
++	ssize_t len = min_t(size_t, count, PAGE_SIZE);
+ 	char *buf;
+ 
++	if (sysfs_is_bin(of->sd)) {
++		loff_t size = file_inode(file)->i_size;
++
++		if (size <= *ppos)
++			return 0;
++		len = min_t(ssize_t, len, size - *ppos);
++	}
++
+ 	if (!len)
+ 		return 0;
+ 
+@@ -206,7 +229,7 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+ 	}
+ 	buf[len] = '\0';	/* guarantee string termination */
+ 
+-	len = flush_write_buffer(of, buf, len);
++	len = flush_write_buffer(of, buf, *ppos, len);
+ 	if (len > 0)
+ 		*ppos += len;
+ out_free:
+@@ -471,6 +494,11 @@ const struct file_operations sysfs_file_operations = {
+ 	.poll		= sysfs_poll,
+ };
+ 
++const struct file_operations sysfs_bin_operations = {
++	.write		= sysfs_write_file,
++	.llseek		= generic_file_llseek,
++};
++
+ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 			   const struct attribute *attr, int type,
+ 			   umode_t amode, const void *ns)
 diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index c960d62..4e01d3b 100644
+index 4b1d825..f103bac 100644
 --- a/fs/sysfs/sysfs.h
 +++ b/fs/sysfs/sysfs.h
-@@ -223,12 +223,6 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
- 
- /*
-- * bin.c
-- */
--extern const struct file_operations bin_fops;
--void unmap_bin_file(struct sysfs_dirent *attr_sd);
--
--/*
-  * symlink.c
+@@ -212,6 +212,7 @@ int sysfs_inode_init(void);
+  * file.c
   */
- extern const struct inode_operations sysfs_symlink_inode_operations;
+ extern const struct file_operations sysfs_file_operations;
++extern const struct file_operations sysfs_bin_operations;
+ 
+ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+ 		   const struct attribute *attr, int type);
 -- 
 1.8.3.1
 
