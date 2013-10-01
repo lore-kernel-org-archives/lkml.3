@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3JAVmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 17:42:42 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:62210 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3JAVmh (ORCPT
+	id S1753313Ab3JAVmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 17:42:36 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:47892 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab3JAVmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 17:42:37 -0400
+	Tue, 1 Oct 2013 17:42:33 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 14/15] sysfs: prepare open path for unified regular / bin file handling
-Date: Tue,  1 Oct 2013 17:42:08 -0400
-Message-Id: <1380663729-18243-15-git-send-email-tj@kernel.org>
+Subject: [PATCH 12/15] sysfs: add sysfs_bin_read()
+Date: Tue,  1 Oct 2013 17:42:06 -0400
+Message-Id: <1380663729-18243-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380663729-18243-1-git-send-email-tj@kernel.org>
 References: <1380663729-18243-1-git-send-email-tj@kernel.org>
@@ -22,113 +22,103 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 sysfs bin file handling will be merged into the regular file support.
-This patch prepares the open path.
+This patch prepares the read path.
 
-This patch updates sysfs_open_file() such that it can handle both
-regular and bin files.
+Copy fs/sysfs/bin.c::read() to fs/sysfs/file.c and make it use
+sysfs_open_file instead of bin_buffer.  The function is identical copy
+except for the use of sysfs_open_file.
 
-This is a preparation and the new bin file path isn't used yet.
+The new function is added to sysfs_bin_operations.  This isn't used
+yet but will eventually replace fs/sysfs/bin.c.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c | 58 ++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 33 insertions(+), 25 deletions(-)
+ fs/sysfs/file.c | 65 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 02797a1..417d005 100644
+index b36473f..9ba492a 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -610,38 +610,40 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
- 	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
- 	struct sysfs_open_file *of;
--	const struct sysfs_ops *ops;
-+	bool has_read, has_write;
- 	int error = -EACCES;
+@@ -139,6 +139,70 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
+ 	return 0;
+ }
  
- 	/* need attr_sd for attr and ops, its parent for kobj */
- 	if (!sysfs_get_active(attr_sd))
- 		return -ENODEV;
- 
--	/* every kobject with an attribute needs a ktype assigned */
--	ops = sysfs_file_ops(attr_sd);
--	if (WARN(!ops, KERN_ERR
--		 "missing sysfs attribute operations for kobject: %s\n",
--		 kobject_name(kobj)))
--		goto err_out;
-+	if (sysfs_is_bin(attr_sd)) {
-+		struct bin_attribute *battr = attr_sd->s_bin_attr.bin_attr;
- 
--	/* File needs write support.
--	 * The inode's perms must say it's ok,
--	 * and we must have a store method.
--	 */
--	if (file->f_mode & FMODE_WRITE) {
--		if (!(inode->i_mode & S_IWUGO) || !ops->store)
--			goto err_out;
--	}
-+		has_read = battr->read || battr->mmap;
-+		has_write = battr->write || battr->mmap;
-+	} else {
-+		const struct sysfs_ops *ops = sysfs_file_ops(attr_sd);
- 
--	/* File needs read support.
--	 * The inode's perms must say it's ok, and we there
--	 * must be a show method for it.
--	 */
--	if (file->f_mode & FMODE_READ) {
--		if (!(inode->i_mode & S_IRUGO) || !ops->show)
-+		/* every kobject with an attribute needs a ktype assigned */
-+		if (WARN(!ops, KERN_ERR
-+			 "missing sysfs attribute operations for kobject: %s\n",
-+			 kobject_name(kobj)))
- 			goto err_out;
++/*
++ * Read method for bin files.  As reading a bin file can have side-effects,
++ * the exact offset and bytes specified in read(2) call should be passed to
++ * the read callback making it difficult to use seq_file.  Implement
++ * simplistic custom buffering for bin files.
++ */
++static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
++			      size_t bytes, loff_t *off)
++{
++	struct sysfs_open_file *of = sysfs_of(file);
++	struct bin_attribute *battr = of->sd->s_bin_attr.bin_attr;
++	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
++	int size = file_inode(file)->i_size;
++	int count = min_t(size_t, bytes, PAGE_SIZE);
++	loff_t offs = *off;
++	char *buf;
 +
-+		has_read = ops->show;
-+		has_write = ops->store;
- 	}
- 
-+	/* check perms and supported operations */
-+	if ((file->f_mode & FMODE_WRITE) &&
-+	    (!(inode->i_mode & S_IWUGO) || !has_write))
-+		goto err_out;
++	if (!bytes)
++		return 0;
 +
-+	if ((file->f_mode & FMODE_READ) &&
-+	    (!(inode->i_mode & S_IRUGO) || !has_read))
-+		goto err_out;
++	if (size) {
++		if (offs > size)
++			return 0;
++		if (offs + count > size)
++			count = size - offs;
++	}
 +
- 	/* allocate a sysfs_open_file for the file */
- 	error = -ENOMEM;
- 	of = kzalloc(sizeof(struct sysfs_open_file), GFP_KERNEL);
-@@ -653,11 +655,14 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 	of->file = file;
- 
- 	/*
--	 * Always instantiate seq_file even if read access is not
--	 * implemented or requested.  This unifies private data access and
--	 * most files are readable anyway.
-+	 * Always instantiate seq_file even if read access doesn't use
-+	 * seq_file or is not requested.  This unifies private data access
-+	 * and readable regular files are the vast majority anyway.
- 	 */
--	error = single_open(file, sysfs_seq_show, of);
-+	if (sysfs_is_bin(attr_sd))
-+		error = single_open(file, NULL, of);
++	buf = kmalloc(count, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	/* need of->sd for battr, its parent for kobj */
++	mutex_lock(&of->mutex);
++	if (!sysfs_get_active(of->sd)) {
++		count = -ENODEV;
++		mutex_unlock(&of->mutex);
++		goto out_free;
++	}
++
++	if (battr->read)
++		count = battr->read(file, kobj, battr, buf, offs, count);
 +	else
-+		error = single_open(file, sysfs_seq_show, of);
- 	if (error)
- 		goto err_free;
- 
-@@ -807,6 +812,9 @@ const struct file_operations sysfs_bin_operations = {
- 	.write		= sysfs_write_file,
- 	.llseek		= generic_file_llseek,
- 	.mmap		= sysfs_bin_mmap,
-+	.open		= sysfs_open_file,
-+	.release	= sysfs_release,
-+	.poll		= sysfs_poll,
++		count = -EIO;
++
++	sysfs_put_active(of->sd);
++	mutex_unlock(&of->mutex);
++
++	if (count < 0)
++		goto out_free;
++
++	if (copy_to_user(userbuf, buf, count)) {
++		count = -EFAULT;
++		goto out_free;
++	}
++
++	pr_debug("offs = %lld, *off = %lld, count = %d\n", offs, *off, count);
++
++	*off = offs + count;
++
++ out_free:
++	kfree(buf);
++	return count;
++}
++
+ /**
+  * flush_write_buffer - push buffer to kobject
+  * @of: open file
+@@ -495,6 +559,7 @@ const struct file_operations sysfs_file_operations = {
  };
  
- int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ const struct file_operations sysfs_bin_operations = {
++	.read		= sysfs_bin_read,
+ 	.write		= sysfs_write_file,
+ 	.llseek		= generic_file_llseek,
+ };
 -- 
 1.8.3.1
 
