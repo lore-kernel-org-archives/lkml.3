@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab3JALJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 07:09:26 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:43544 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab3JALJY (ORCPT
+	id S1753629Ab3JALJa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 07:09:30 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:56002 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab3JALJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 07:09:24 -0400
+	Tue, 1 Oct 2013 07:09:27 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the sh tree
-Date: Tue,  1 Oct 2013 13:07:23 +0200
-Message-Id: <1380625644-11331-7-git-send-email-treding@nvidia.com>
+Subject: linux-next: manual merge of the vfs tree
+Date: Tue,  1 Oct 2013 13:07:24 +0200
+Message-Id: <1380625644-11331-8-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <20131001110344.GA20249@ulmo.nvidia.com>
 References: <20131001110344.GA20249@ulmo.nvidia.com>
@@ -22,66 +21,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the sh tree got conflicts in
+Today's linux-next merge of the vfs tree got conflicts in:
 
-	arch/sh/kernel/cpu/sh2a/Makefile
-	drivers/tty/serial/sh-sci.c
-	include/linux/serial_sci.h
+	fs/nfs/direct.c
+	fs/nfs/file.c
 
 I fixed them up (see below). Please check if the resolution looks correct.
 
 Thanks,
 Thierry
 ---
-diff --cc arch/sh/kernel/cpu/sh2a/Makefile
-index 990195d,130984c..92f0da4
---- a/arch/sh/kernel/cpu/sh2a/Makefile
-+++ b/arch/sh/kernel/cpu/sh2a/Makefile
-@@@ -21,4 -21,5 +21,5 @@@ pinmux-$(CONFIG_CPU_SUBTYPE_SH7203)	:= 
-  pinmux-$(CONFIG_CPU_SUBTYPE_SH7264)	:= pinmux-sh7264.o
-  pinmux-$(CONFIG_CPU_SUBTYPE_SH7269)	:= pinmux-sh7269.o
+diff --cc fs/nfs/direct.c
+index 239c2fe,d71d66c..e83817c
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@@ -118,18 -117,26 +118,17 @@@ static inline int put_dreq(struct nfs_d
+   * @nr_segs: size of iovec array
+   *
+   * The presence of this routine in the address space ops vector means
+ - * the NFS client supports direct I/O. However, for most direct IO, we
+ - * shunt off direct read and write requests before the VFS gets them,
+ - * so this method is only ever called for swap.
+ + * the NFS client supports direct I/O. However, we shunt off direct
+ + * read and write requests before the VFS gets them, so this method
+ + * should never be called.
+   */
+ -ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov, loff_t pos, unsigned long nr_segs)
+ +ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
+ +		      loff_t pos)
+  {
+- 	dprintk("NFS: nfs_direct_IO (%s) off/no(%Ld/%lu) EINVAL\n",
+- 			iocb->ki_filp->f_path.dentry->d_name.name,
+- 			(long long) pos, iter->nr_segs);
+ -#ifndef CONFIG_NFS_SWAP
++ 	dprintk("NFS: nfs_direct_IO (%pD) off/no(%Ld/%lu) EINVAL\n",
++ 			iocb->ki_filp, (long long) pos, nr_segs);
   
- -obj-$(CONFIG_GENERIC_GPIO)		+= $(pinmux-y)
- +obj-$(CONFIG_GPIOLIB)			+= $(pinmux-y)
-+ obj-$(CONFIG_HAVE_HW_BREAKPOINT)	+= ubc.o
-diff --cc drivers/tty/serial/sh-sci.c
-index 5377502,e3847cc..d262c1f
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@@ -2481,9 -2502,20 +2588,20 @@@ static int sci_probe(struct platform_de
-  	if (is_early_platform_device(dev))
-  		return sci_probe_earlyprintk(dev);
+  	return -EINVAL;
+ -#else
+ -	VM_BUG_ON(iocb->ki_nbytes != PAGE_SIZE);
+ -
+ -	if (rw == READ || rw == KERNEL_READ)
+ -		return nfs_file_direct_read(iocb, iov, nr_segs, pos,
+ -				rw == READ ? true : false);
+ -	return nfs_file_direct_write(iocb, iov, nr_segs, pos,
+ -				rw == WRITE ? true : false);
+ -#endif /* CONFIG_NFS_SWAP */
+  }
   
-+ 	if (dev->dev.of_node)
-+ 		p = sci_parse_dt(dev, &dev_id);
-+ 	else
- -		p = dev->dev.platform_data;
-++		p = dev_get_platdata(&dev->dev);
-+ 
-+ 	if (!p) {
-+ 		dev_err(&dev->dev, "no setup data supplied\n");
-+ 		return -EINVAL;
-+ 	}
-+ 
-+ 	sp = &sci_ports[dev_id];
-  	platform_set_drvdata(dev, sp);
+  static void nfs_direct_release_pages(struct page **pages, unsigned int npages)
+@@@ -1010,13 -905,11 +1009,11 @@@ ssize_t nfs_file_direct_read(struct kio
+  	struct address_space *mapping = file->f_mapping;
+  	size_t count;
   
-- 	ret = sci_probe_single(dev, dev->id, p, sp);
-+ 	ret = sci_probe_single(dev, dev_id, p, sp);
-  	if (ret)
-  		return ret;
+ -	count = iov_length(iov, nr_segs);
+ +	count = iov_iter_count(iter);
+  	nfs_add_stats(mapping->host, NFSIOS_DIRECTREADBYTES, count);
   
-diff --cc include/linux/serial_sci.h
-index 50fe651,857eec4..3dbdf7e
---- a/include/linux/serial_sci.h
-+++ b/include/linux/serial_sci.h
-@@@ -16,7 -18,8 +18,9 @@@ enum 
-  	SCBRR_ALGO_3,		/* (((clk * 2) + 16 * bps) / (16 * bps) - 1) */
-  	SCBRR_ALGO_4,		/* (((clk * 2) + 16 * bps) / (32 * bps) - 1) */
-  	SCBRR_ALGO_5,		/* (((clk * 1000 / 32) / bps) - 1) */
- +	SCBRR_ALGO_6,		/* HSCIF variable sample rate algorithm */
-+ 
-+ 	SCBRR_NR_ALGOS,
-  };
+- 	dfprintk(FILE, "NFS: direct read(%s/%s, %zd@%Ld)\n",
+- 		file->f_path.dentry->d_parent->d_name.name,
+- 		file->f_path.dentry->d_name.name,
+- 		count, (long long) pos);
++ 	dfprintk(FILE, "NFS: direct read(%pD2, %zd@%Ld)\n",
++ 		file, count, (long long) pos);
   
-  #define SCSCR_TIE	(1 << 7)
+  	retval = 0;
+  	if (!count)
+@@@ -1065,13 -959,11 +1062,11 @@@ ssize_t nfs_file_direct_write(struct ki
+  	struct address_space *mapping = file->f_mapping;
+  	size_t count;
+  
+ -	count = iov_length(iov, nr_segs);
+ +	count = iov_iter_count(iter);
+  	nfs_add_stats(mapping->host, NFSIOS_DIRECTWRITTENBYTES, count);
+  
+- 	dfprintk(FILE, "NFS: direct write(%s/%s, %zd@%Ld)\n",
+- 		file->f_path.dentry->d_parent->d_name.name,
+- 		file->f_path.dentry->d_name.name,
+- 		count, (long long) pos);
++ 	dfprintk(FILE, "NFS: direct write(%pD2, %zd@%Ld)\n",
++ 		file, count, (long long) pos);
+  
+  	retval = generic_write_checks(file, &pos, &count, 0);
+  	if (retval)
+diff --cc fs/nfs/file.c
+index 19ac4fd,e2fcacf..cb66d5f
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@@ -174,18 -165,18 +165,17 @@@ nfs_file_flush(struct file *file, fl_ow
+  EXPORT_SYMBOL_GPL(nfs_file_flush);
+  
+  ssize_t
+ -nfs_file_read(struct kiocb *iocb, const struct iovec *iov,
+ -		unsigned long nr_segs, loff_t pos)
+ +nfs_file_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+  {
+- 	struct dentry * dentry = iocb->ki_filp->f_path.dentry;
+- 	struct inode * inode = dentry->d_inode;
++ 	struct inode *inode = file_inode(iocb->ki_filp);
+  	ssize_t result;
+  
+  	if (iocb->ki_filp->f_flags & O_DIRECT)
+ -		return nfs_file_direct_read(iocb, iov, nr_segs, pos, true);
+ +		return nfs_file_direct_read(iocb, iter, pos);
+  
+- 	dprintk("NFS: read_iter(%s/%s, %lu@%lu)\n",
+- 		dentry->d_parent->d_name.name, dentry->d_name.name,
+- 		(unsigned long) iov_iter_count(iter), (unsigned long) pos);
+ -	dprintk("NFS: read(%pD2, %lu@%lu)\n",
+++	dprintk("NFS: read_iter(%pD2, %lu@%lu)\n",
++ 		iocb->ki_filp,
++ 		(unsigned long) iov_length(iov, nr_segs), (unsigned long) pos);
+  
+  	result = nfs_revalidate_mapping(inode, iocb->ki_filp->f_mapping);
+  	if (!result) {
+@@@ -655,25 -634,24 +633,24 @@@ static int nfs_need_sync_write(struct f
+  	return 0;
+  }
+  
+ -ssize_t nfs_file_write(struct kiocb *iocb, const struct iovec *iov,
+ -		       unsigned long nr_segs, loff_t pos)
+ +ssize_t nfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
+ +			    loff_t pos)
+  {
+- 	struct dentry * dentry = iocb->ki_filp->f_path.dentry;
+- 	struct inode * inode = dentry->d_inode;
++ 	struct file *file = iocb->ki_filp;
++ 	struct inode *inode = file_inode(file);
+  	unsigned long written = 0;
+  	ssize_t result;
+ -	size_t count = iov_length(iov, nr_segs);
+ +	size_t count = iov_iter_count(iter);
+  
+- 	result = nfs_key_timeout_notify(iocb->ki_filp, inode);
++ 	result = nfs_key_timeout_notify(file, inode);
+  	if (result)
+  		return result;
+  
+- 	if (iocb->ki_filp->f_flags & O_DIRECT)
++ 	if (file->f_flags & O_DIRECT)
+ -		return nfs_file_direct_write(iocb, iov, nr_segs, pos, true);
+ +		return nfs_file_direct_write(iocb, iter, pos);
+  
+- 	dprintk("NFS: write_iter(%s/%s, %lu@%lld)\n",
+- 		dentry->d_parent->d_name.name, dentry->d_name.name,
+- 		(unsigned long) count, (long long) pos);
+ -	dprintk("NFS: write(%pD2, %lu@%Ld)\n",
+++	dprintk("NFS: write_iter(%pD2, %lu@%Ld)\n",
++ 		file, (unsigned long) count, (long long) pos);
+  
+  	result = -EBUSY;
+  	if (IS_SWAPFILE(inode))
