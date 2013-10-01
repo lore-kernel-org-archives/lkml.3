@@ -1,168 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab3JAP0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:26:23 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:61478 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab3JAP0Q (ORCPT
+	id S1753921Ab3JAP1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:27:41 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:37732 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab3JAP1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:26:16 -0400
-Date: Tue, 1 Oct 2013 08:19:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Chris Murphy <bugzilla@colorremedies.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20131001151954.GB14887@roeck-us.net>
-References: <20130926063453.GA526@polaris.bitmath.org>
- <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com>
- <20130927171256.GA6391@roeck-us.net>
- <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com>
- <20130927175926.GA6267@roeck-us.net>
- <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
- <524615B1.6000106@roeck-us.net>
- <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
- <524A4384.4040403@roeck-us.net>
- <20131001105526.GA481@polaris.bitmath.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001105526.GA481@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Oct 2013 11:27:34 -0400
+Date: Tue, 1 Oct 2013 19:26:40 +0400
+From: Sergey Dyasly <dserrg@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to exit
+Message-Id: <20131001192640.ed55682d3113b00b402bbef5@gmail.com>
+In-Reply-To: <alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com>
+References: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
+	<alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
+	<20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
+	<alpine.DEB.2.02.1309251328130.24412@chino.kir.corp.google.com>
+	<20130927185833.6c72b77ab105d70d4996ebef@gmail.com>
+	<alpine.DEB.2.02.1309301457590.28109@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
-> > >Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
-> > >
-> > >[   10.886016] applesmc: key count changed from 261 to 1174405121
-> > >
+It seems to me that we are going nowhere with this discussion...
+
+If you are ok with the first change in my patch regarding fatal_signal_pending,
+I can send new patch with just that change.
+
+
+On Mon, 30 Sep 2013 15:08:25 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
+
+> On Fri, 27 Sep 2013, Sergey Dyasly wrote:
+> 
+> > What you are saying contradicts current OOMk code the way I read it. Comment in
+> > oom_kill_process() says:
 > > 
-> > Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
-> > Which I guess explains the subsequent memory allocation error in the log.
+> > "If the task is already exiting ... set TIF_MEMDIE so it can die quickly"
 > > 
-> > Henrik, any idea what might be going on ? Is it possible that the previous
-> > command failure leaves some state machine in a bad state ?
+> > I just want to know the right solution.
+> > 
 > 
-> I seem to recall a report on another similar state problem on newer
-> machines, so maybe, yes. Older machines seem fine, I have never
-> encountered the problem myself. Here is a patch to test that
-> theory. It has been tested to be pretty harmless on two different
-> generations.
+> That's a comment, not code.  The point of the PF_EXITING special handling 
+> in oom_kill_process() is to avoid telling sysadmins that a process has 
+> been killed to free memory when it has already called exit() and to avoid 
+> sacrificing one of its children for the exiting process.
 > 
-> I really really do not want to add an 'if (value is insane)' check ;-)
+> It may or may not need access to memory reserves to actually exit after 
+> PF_EXITING depending on whether it needs to allocate memory for 
+> coredumping or anything else.  So instead of waiting for it to recall the 
+> oom killer, TIF_MEMDIE is set anyway.  The point is that PF_EXITING 
+> processes can already get TIF_MEMDIE immediately when their memory 
+> allocation fails so there's no reason not to set it now as an 
+> optimization.
 > 
-Chris,
+> But we definitely want to avoid printing anything to the kernel log when 
+> the process has already called exit() and issuing the SIGKILL at that 
+> point would be pointless.
+> 
+> > You are mistaken, oom_kill_process() is only called from out_of_memory()
+> > and mem_cgroup_out_of_memory().
+> > 
+> 
+> out_of_memory() calls oom_kill_process() in two places, plus the call from 
+> mem_cgroup_out_of_memory(), making three calls in the tree.  Not that this 
+> matters in the slightest, though.
+> 
+> > > Read the comment about why we don't emit anything to the kernel log in 
+> > > this case; the process is already exiting, there's no need to kill it or 
+> > > make anyone believe that it was killed.
+> > 
+> > Yes, but there is already the PF_EXITING check in oom_scan_process_thread(),
+> > and in this case oom_kill_process() won't be even called. That's why it's
+> > redundant.
+> > 
+> 
+> You apparently have no idea how long select_bad_process() runs on a large 
+> system with thousands of processes.  Keep in mind that SGI requested the 
+> addition of the oom_kill_allocating_task sysctl specifically because of 
+> how long select_bad_process() runs.  The PF_EXITING check in 
+> oom_kill_process() is simply an optimization to return early and with 
+> access to memory reserves so it can exit as quickly as possible and 
+> without the kernel stating it's killing something that has already called 
+> exit().
 
-any chance you can load this patch on an affected machine so we can get
-test feedback ? This one is too experimental to submit upstream without
-knowing that it really fixes the problem.
 
-Thanks,
-Guenter
-
-> Thanks,
-> Henrik
-> 
-> From d48a9e4e6e45dcd9c7e7ad88df714b92772a62d6 Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Tue, 1 Oct 2013 12:16:09 +0200
-> Subject: [PATCH] applesmc remedy take 1
-> 
-> Conjectured problem: there are remnant bytes ready on the data line
-> which corrupts the read after a failure.
-> 
-> Remedy: assuming bit0 is the read valid line, try to flush it before
-> starting a new command.
-> 
-> Exception: the write-number-of-bytes-to-read command seems to differ
-> between models (it may not be needed on the newest), so do not try to
-> flush the data at that particular point.
-> 
-> Tested on a MacBookPro10,1 and a MacBookAir3,1, but the original problem
-> has not been reproduced, so the actual effect of this patch is unknown.
-> ---
->  drivers/hwmon/applesmc.c | 29 +++++++++++++++++++++--------
->  1 file changed, 21 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index 98814d1..f6eaf6d1 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> @@ -186,10 +186,23 @@ static int wait_read(void)
->   * send_byte - Write to SMC port, retrying when necessary. Callers
->   * must hold applesmc_lock.
->   */
-> -static int send_byte(u8 cmd, u16 port)
-> +static int send_byte(u8 cmd, u16 port, bool flush)
->  {
-> -	u8 status;
-> -	int us;
-> +	u8 status, data;
-> +	int us, nskip;
-> +
-> +	if (flush) {
-> +		/* read the data port until bit0 is cleared */
-> +		for (nskip = 0; nskip < 16; nskip++) {
-> +			udelay(APPLESMC_MIN_WAIT);
-> +			status = inb(APPLESMC_CMD_PORT);
-> +			if (!(status & 0x01))
-> +				break;
-> +			data = inb(APPLESMC_DATA_PORT);
-> +		}
-> +		if (nskip)
-> +			pr_warn("flushed %d bytes\n", nskip);
-> +	}
->  
->  	outb(cmd, port);
->  	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
-> @@ -215,7 +228,7 @@ static int send_byte(u8 cmd, u16 port)
->  
->  static int send_command(u8 cmd)
->  {
-> -	return send_byte(cmd, APPLESMC_CMD_PORT);
-> +	return send_byte(cmd, APPLESMC_CMD_PORT, true);
->  }
->  
->  static int send_argument(const char *key)
-> @@ -223,7 +236,7 @@ static int send_argument(const char *key)
->  	int i;
->  
->  	for (i = 0; i < 4; i++)
-> -		if (send_byte(key[i], APPLESMC_DATA_PORT))
-> +		if (send_byte(key[i], APPLESMC_DATA_PORT, true))
->  			return -EIO;
->  	return 0;
->  }
-> @@ -237,7 +250,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
->  		return -EIO;
->  	}
->  
-> -	if (send_byte(len, APPLESMC_DATA_PORT)) {
-> +	if (send_byte(len, APPLESMC_DATA_PORT, false)) {
->  		pr_warn("%.4s: read len fail\n", key);
->  		return -EIO;
->  	}
-> @@ -262,13 +275,13 @@ static int write_smc(u8 cmd, const char *key, const u8 *buffer, u8 len)
->  		return -EIO;
->  	}
->  
-> -	if (send_byte(len, APPLESMC_DATA_PORT)) {
-> +	if (send_byte(len, APPLESMC_DATA_PORT, true)) {
->  		pr_warn("%.4s: write len fail\n", key);
->  		return -EIO;
->  	}
->  
->  	for (i = 0; i < len; i++) {
-> -		if (send_byte(buffer[i], APPLESMC_DATA_PORT)) {
-> +		if (send_byte(buffer[i], APPLESMC_DATA_PORT, true)) {
->  			pr_warn("%s: write data fail\n", key);
->  			return -EIO;
->  		}
-> -- 
-> 1.8.3.4
-> 
-> 
+-- 
+Sergey Dyasly <dserrg@gmail.com>
