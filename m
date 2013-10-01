@@ -1,108 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751030Ab3JAPgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:36:04 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:55708 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab3JAPf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:35:58 -0400
-Message-ID: <1380641753.19681.5.camel@phoenix>
-Subject: [RFT][PATCH 2/2] regulator: as3722: Fix off-by-one n_voltages
- setting for SDx
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Florian Lobmaier <florian.lobmaier@ams.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 01 Oct 2013 23:35:53 +0800
-In-Reply-To: <1380641628.19681.3.camel@phoenix>
-References: <1380641628.19681.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753593Ab3JAPil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:38:41 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44707 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751479Ab3JAPif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:38:35 -0400
+Date: Tue, 1 Oct 2013 08:38:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131001153829.GE5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130925155515.GA17447@redhat.com>
+ <20130925174307.GA3220@laptop.programming.kicks-ass.net>
+ <20130925175055.GA25914@redhat.com>
+ <20130925184015.GC3657@laptop.programming.kicks-ass.net>
+ <20130925212200.GA7959@linux.vnet.ibm.com>
+ <20130926111042.GS3081@twins.programming.kicks-ass.net>
+ <20130926165840.GA863@redhat.com>
+ <20130926175016.GI3657@laptop.programming.kicks-ass.net>
+ <20130927181532.GA8401@redhat.com>
+ <20130929135646.GA3743@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130929135646.GA3743@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100115-5806-0000-0000-000022EA7B84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AS3722_SDx_VSEL_MAX means the maximum selector, the n_voltages should be
-AS3722_SDx_VSEL_MAX + 1.
+On Sun, Sep 29, 2013 at 03:56:46PM +0200, Oleg Nesterov wrote:
+> On 09/27, Oleg Nesterov wrote:
+> >
+> > I tried hard to find any hole in this version but failed, I believe it
+> > is correct.
+> 
+> And I still believe it is. But now I am starting to think that we
+> don't need cpuhp_seq. (and imo cpuhp_waitcount, but this is minor).
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/as3722-regulator.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Here is one scenario that I believe requires cpuhp_seq:
 
-diff --git a/drivers/regulator/as3722-regulator.c b/drivers/regulator/as3722-regulator.c
-index c6a1fc6..91b0abe 100644
---- a/drivers/regulator/as3722-regulator.c
-+++ b/drivers/regulator/as3722-regulator.c
-@@ -99,7 +99,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD0_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD0_CONTROL_REG,
- 		.mode_mask = AS3722_SD0_MODE_FAST,
--		.n_voltages = AS3722_SD0_VSEL_MAX,
-+		.n_voltages = AS3722_SD0_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD1,
-@@ -112,7 +112,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD1_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD1_CONTROL_REG,
- 		.mode_mask = AS3722_SD1_MODE_FAST,
--		.n_voltages = AS3722_SD0_VSEL_MAX,
-+		.n_voltages = AS3722_SD0_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD2,
-@@ -126,7 +126,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD2_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD23_CONTROL_REG,
- 		.mode_mask = AS3722_SD2_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD3,
-@@ -140,7 +140,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD3_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD23_CONTROL_REG,
- 		.mode_mask = AS3722_SD3_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD4,
-@@ -154,7 +154,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD4_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD4_CONTROL_REG,
- 		.mode_mask = AS3722_SD4_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD5,
-@@ -168,7 +168,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD5_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD5_CONTROL_REG,
- 		.mode_mask = AS3722_SD5_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD6,
-@@ -181,7 +181,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD6_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD6_CONTROL_REG,
- 		.mode_mask = AS3722_SD6_MODE_FAST,
--		.n_voltages = AS3722_SD0_VSEL_MAX,
-+		.n_voltages = AS3722_SD0_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_LDO0,
--- 
-1.8.1.2
+1.	Task 0 on CPU 0 increments its counter on entry.
 
+2.	Task 1 on CPU 1 starts summing the counters and gets to
+	CPU 4.  The sum thus far is 1 (Task 0).
 
+3.	Task 2 on CPU 2 increments its counter on entry.
+	Upon completing its entry code, it re-enables preemption.
+
+4.	Task 2 is preempted, and starts running on CPU 5.
+
+5.	Task 2 decrements its counter on exit.
+
+6.	Task 1 continues summing.  Due to the fact that it saw Task 2's
+	exit but not its entry, the sum is zero.
+
+One of cpuhp_seq's jobs is to prevent this scenario.
+
+That said, bozo here still hasn't gotten to look at Peter's newest patch,
+so perhaps it prevents this scenario some other way, perhaps by your
+argument below.
+
+> > We need to ensure 2 things:
+> >
+> > 1. The reader should notic state = BLOCK or the writer should see
+> >    inc(__cpuhp_refcount). This is guaranteed by 2 mb's in
+> >    __get_online_cpus() and in cpu_hotplug_begin().
+> >
+> >    We do not care if the writer misses some inc(__cpuhp_refcount)
+> >    in per_cpu_sum(__cpuhp_refcount), that reader(s) should notice
+> >    state = readers_block (and inc(cpuhp_seq) can't help anyway).
+> 
+> Yes!
+
+OK, I will look over the patch with this in mind.
+
+> > 2. If the writer sees the result of this_cpu_dec(__cpuhp_refcount)
+> >    from __put_online_cpus() (note that the writer can miss the
+> >    corresponding inc() if it was done on another CPU, so this dec()
+> >    can lead to sum() == 0),
+> 
+> But this can't happen in this version? Somehow I forgot that
+> __get_online_cpus() does inc/get under preempt_disable(), always on
+> the same CPU. And thanks to mb's the writer should not miss the
+> reader which has already passed the "state != BLOCK" check.
+> 
+> To simplify the discussion, lets ignore the "readers_fast" state,
+> synchronize_sched() logic looks obviously correct. IOW, lets discuss
+> only the SLOW -> BLOCK transition.
+> 
+> 	cput_hotplug_begin()
+> 	{
+> 		state = BLOCK;
+> 
+> 		mb();
+> 
+> 		wait_event(cpuhp_writer,
+> 				per_cpu_sum(__cpuhp_refcount) == 0);
+> 	}
+> 
+> should work just fine? Ignoring all details, we have
+> 
+> 	get_online_cpus()
+> 	{
+> 	again:
+> 		preempt_disable();
+> 
+> 		__this_cpu_inc(__cpuhp_refcount);
+> 
+> 		mb();
+> 
+> 		if (state == BLOCK) {
+> 
+> 			mb();
+> 
+> 			__this_cpu_dec(__cpuhp_refcount);
+> 			wake_up_all(cpuhp_writer);
+> 
+> 			preempt_enable();
+> 			wait_event(state != BLOCK);
+> 			goto again;
+> 		}
+> 
+> 		preempt_enable();
+> 	}
+> 
+> It seems to me that these mb's guarantee all we need, no?
+> 
+> It looks really simple. The reader can only succed if it doesn't see
+> BLOCK, in this case per_cpu_sum() should see the change,
+> 
+> We have
+> 
+> 	WRITER					READER on CPU X
+> 
+> 	state = BLOCK;				__cpuhp_refcount[X]++;
+> 
+> 	mb();					mb();
+> 
+> 	...
+> 	count += __cpuhp_refcount[X];		if (state != BLOCK)
+> 	...						return;
+> 
+> 						mb();
+> 						__cpuhp_refcount[X]--;
+> 
+> Either reader or writer should notice the STORE we care about.
+> 
+> If a reader can decrement __cpuhp_refcount, we have 2 cases:
+> 
+> 	1. It is the reader holding this lock. In this case we
+> 	   can't miss the corresponding inc() done by this reader,
+> 	   because this reader didn't see BLOCK in the past.
+> 
+> 	   It is just the
+> 
+> 			A == B == 0
+> 	   	CPU_0			CPU_1
+> 	   	-----			-----
+> 	   	A = 1;			B = 1;
+> 	   	mb();			mb();
+> 	   	b = B;			a = A;
+> 
+> 	   pattern, at least one CPU should see 1 in its a/b.
+> 
+> 	2. It is the reader which tries to take this lock and
+> 	   noticed state == BLOCK. We could miss the result of
+> 	   its inc(), but we do not care, this reader is going
+> 	   to block.
+> 
+> 	   _If_ the reader could migrate between inc/dec, then
+> 	   yes, we have a problem. Because that dec() could make
+> 	   the result of per_cpu_sum() = 0. IOW, we could miss
+> 	   inc() but notice dec(). But given that it does this
+> 	   on the same CPU this is not possible.
+> 
+> So why do we need cpuhp_seq?
+
+Good question, I will look again.
+
+							Thanx, Paul
 
