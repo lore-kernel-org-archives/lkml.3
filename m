@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab3JAM3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 08:29:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:14022 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751816Ab3JAM3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 08:29:04 -0400
-Message-ID: <1380630531.16752.9.camel@pippen.local.home>
-Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 01 Oct 2013 08:28:51 -0400
-In-Reply-To: <20131001042025.GA7038@redhat.com>
-References: <20130828034627.GA30596@redhat.com>
-	 <20130828095408.37c3dd83@gandalf.local.home>
-	 <20130828095833.103ccdf0@gandalf.local.home>
-	 <20130828111746.35369b84@gandalf.local.home>
-	 <20130828182710.GA14103@redhat.com> <20130828182902.GB14103@redhat.com>
-	 <20130828152745.18a73c4e@gandalf.local.home>
-	 <20130930171201.GA10474@redhat.com>
-	 <1380599766.16752.6.camel@pippen.local.home>
-	 <20131001042025.GA7038@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1752403Ab3JAMod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 08:44:33 -0400
+Received: from imap.thunk.org ([74.207.234.97]:40710 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab3JAMoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 08:44:32 -0400
+Date: Tue, 1 Oct 2013 08:44:24 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 01/11] random: don't feed stack data into pool when
+ interrupt regs NULL
+Message-ID: <20131001124424.GA2097@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	Andi Kleen <andi@firstfloor.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Andi Kleen <ak@linux.intel.com>
+References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
+ <1380572952-30729-2-git-send-email-andi@firstfloor.org>
+ <3908561D78D1C84285E8C5FCA982C28F31D1F249@ORSMSX106.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D1F249@ORSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-01 at 00:20 -0400, Dave Jones wrote:
+On Mon, Sep 30, 2013 at 08:51:43PM +0000, Luck, Tony wrote:
+> > In this case fast_mix would use two uninitialized ints from the stack
+> > and mix it into the pool.
+> 
+> Is the concern here is that an attacker might know (or be able to control) what is on
+> the stack - and so get knowledge of what is being mixed into the pool?
 
-> It seems like trace-cmd needs to be run as root. all hell will break loose if trinity gets root privs.
+Yes, this is a bogus complaint.
 
-Then run this:
+> > In this case set the input to 0.
+> 
+> And the fix is to guarantee that everyone knows what is being mixed in? (!)
+> 
+> Wouldn't it be better to adjust the "nbytes" parameter to
+> 
+> 	fast_mix(..., ..., sizeof (input));
+> 
+> to only mix in the part of input[] that we successfully initialized?
 
-trace-cmd record -e syscalls -B trinity su davej -c 'trinity <args>'
+The changes queued for the next merge window in the random tree solve
+this problem slightly differently:
 
--- Steve
+	...
+	input[0] = cycles ^ j_high ^ irq;
+	input[1] = now ^ c_high;
+	ip = regs ? instruction_pointer(regs) : _RET_IP_;
+	input[2] = ip;
+	input[3] = ip >> 32;
 
+	fast_mix(fast_pool, input);
+	...
 
+(Note the lack of nbytes parameter in fast_mix --- there are some
+optimizations so that we mix in the changes by 32-bit words, instead
+of bytes, and the number of 32-bit words is fixed to 4, since it's the
+only way fast_mix is called).
+
+_RET_IP_ isn't that much better than 0, but it's at least kernel
+specific, and I figured it was better to shut up bogus warnings, as
+opposed to trying to depend on stack garbage (which would likely be
+kernel specific anyway).
+
+Cheers,
+
+						- Ted
