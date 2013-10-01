@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab3JAUAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:00:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56094 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3JAUAs (ORCPT
+	id S1752902Ab3JAUBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:01:22 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:47272 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3JAUBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:00:48 -0400
-Date: Tue, 1 Oct 2013 13:00:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kim Phillips <kim.phillips@linaro.org>
-Cc: linux-kernel@vger.kernel.org, a.motakis@virtualopensystems.com,
-        Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        stuart.yoder@freescale.com, Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        santosh.shukla@linaro.org, kvm@vger.kernel.org
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131001200054.GA27330@kroah.com>
-References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
+	Tue, 1 Oct 2013 16:01:20 -0400
+Message-ID: <524B2A01.4080403@hp.com>
+Date: Tue, 01 Oct 2013 16:01:05 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Jason Low <jason.low2@hp.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>  <1380147049.3467.67.camel@schen9-DESK>  <20130927152953.GA4464@linux.vnet.ibm.com>  <1380310733.3467.118.camel@schen9-DESK>  <20130927203858.GB9093@linux.vnet.ibm.com>  <1380322005.3467.186.camel@schen9-DESK>  <20130927230137.GE9093@linux.vnet.ibm.com>  <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>  <20130928021947.GF9093@linux.vnet.ibm.com>  <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>  <52499E13.8050109@hp.com> <1380557440.14213.6.camel@j-VirtualBox>  <5249A8A4.9060400@hp.com> <1380646092.11046.6.camel@schen9-DESK>
+In-Reply-To: <1380646092.11046.6.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 01:38:31PM -0500, Kim Phillips wrote:
-> Hi,
-> 
-> Santosh and I are having a problem figuring out how to enable binding
-> (and re-binding) platform devices to a platform VFIO driver (see
-> Antonis' WIP: [1]) in an upstream-acceptable manner.
-> 
-> Binding platform drivers currently depends on a string match in the
-> device node's compatible entry.  On an arndale, one can currently
-> rebind the same device to the same driver like so:
-> 
-> echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-> echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
-> 
-> And one can bind it to the vfio-dt driver, as Antonis instructs, by
-> appending a 'vfio-dt' string to the device tree compatible entry for
-> the device.  Then this would work:
-> 
-> echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-> echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
-> 
-> Consequently, the hack patch below [2] allows any platform device to be
-> bound to the vfio-dt driver, without making changes to the device
-> tree.  It's a hack because I don't see having any driver name specific
-> code in drivers/base/bus.c being upstream acceptable.
+On 10/01/2013 12:48 PM, Tim Chen wrote:
+> On Mon, 2013-09-30 at 12:36 -0400, Waiman Long wrote:
+>> On 09/30/2013 12:10 PM, Jason Low wrote:
+>>> On Mon, 2013-09-30 at 11:51 -0400, Waiman Long wrote:
+>>>> On 09/28/2013 12:34 AM, Jason Low wrote:
+>>>>>> Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
+>>>>>> functions would look like after applying the proposed changes.
+>>>>>>
+>>>>>> static noinline
+>>>>>> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+>>>>>> {
+>>>>>>            struct mcs_spin_node *prev;
+>>>>>>
+>>>>>>            /* Init node */
+>>>>>>            node->locked = 0;
+>>>>>>            node->next   = NULL;
+>>>>>>
+>>>>>>            prev = xchg(lock, node);
+>>>>>>            if (likely(prev == NULL)) {
+>>>>>>                    /* Lock acquired. No need to set node->locked since it
+>>>>>> won't be used */
+>>>>>>                    return;
+>>>>>>            }
+>>>>>>            ACCESS_ONCE(prev->next) = node;
+>>>>>>            /* Wait until the lock holder passes the lock down */
+>>>>>>            while (!ACCESS_ONCE(node->locked))
+>>>>>>                    arch_mutex_cpu_relax();
+>>>>>>            smp_mb();
+>>>> I wonder if a memory barrier is really needed here.
+>>> If the compiler can reorder the while (!ACCESS_ONCE(node->locked)) check
+>>> so that the check occurs after an instruction in the critical section,
+>>> then the barrier may be necessary.
+>>>
+>> In that case, just a barrier() call should be enough.
+> The cpu could still be executing out of order load instruction from the
+> critical section before checking node->locked?  Probably smp_mb() is
+> still needed.
+>
+> Tim
 
-You are correct.
+But this is the lock function, a barrier() call should be enough to 
+prevent the critical section from creeping up there. We certainly need 
+some kind of memory barrier at the end of the unlock function.
 
-What is wrong with just doing the above unbind/bind things through
-sysfs, that is what it is there for, right?
-
-greg k-h
+-Longman
