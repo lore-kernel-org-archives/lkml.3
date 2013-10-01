@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3JAWek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 18:34:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45231 "EHLO arroyo.ext.ti.com"
+	id S1753127Ab3JAWe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 18:34:58 -0400
+Received: from mout.gmx.net ([212.227.15.15]:56643 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092Ab3JAWeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 18:34:37 -0400
-Date: Tue, 1 Oct 2013 17:33:37 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] arm: dts: add dra7 IVA thermal data
-Message-ID: <20131001223337.GA11451@kahuna>
-References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com>
- <1380652344-18819-3-git-send-email-eduardo.valentin@ti.com>
+	id S1752424Ab3JAWe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 18:34:56 -0400
+Message-ID: <524B4E0D.9050107@gmx.de>
+Date: Wed, 02 Oct 2013 00:34:53 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1380652344-18819-3-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Libin <huawei.libin@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] [workqueue] check values of pwq and wq in print_worker_info()
+ before use
+References: <20131001203520.GA8248@p100.box> <20131001204352.GA27149@mtj.dyndns.org> <524B364B.3010405@gmx.de> <20131001210348.GB27149@mtj.dyndns.org> <20131001210735.GA27867@mtj.dyndns.org>
+In-Reply-To: <20131001210735.GA27867@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:os7WkJVtTLLP5PuRYoMf5EZRdO47meSRH8Zalr0C19i5m8DdIvu
+ u/sxa0a0No9+B4KxLWeH5K+/NURHyzn/1bRxONUo7xOtYt6tp/5t4KXZ4KO0Gg+5+17fuus
+ jC74u9wb0LwKpvZajuAcJpbCgRaUla9wJkBiaWjGz+K6rsaRnWQ7EiHXp4eILowN1I3VRw2
+ klgkYr6Fh6x/Zq3pD6jZQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:32-20131001, Eduardo Valentin wrote:
-minor comments follow
-> This patch changes a dtsi file to contain the thermal data
-s/changes/introduces?
-> for IVA domain on DRA7 and later SoCs. This data will
-> enable a thermal shutdown at 125C.
+On 10/01/2013 11:07 PM, Tejun Heo wrote:
+> On Tue, Oct 01, 2013 at 05:03:48PM -0400, Tejun Heo wrote:
+>> On Tue, Oct 01, 2013 at 10:53:31PM +0200, Helge Deller wrote:
+>>> So, in summary my patch here is not really necessary, but for the sake of
+>>> clean code I think it doesn't hurt either and as such it would be nice if
+>>> you could apply it.
+>>
+>> What? function *must* take any value and try to access it and not
+>> cause failure.  That's the *whole* purpose of that interface.  How is
+>> having incomplete spurious checks around it "clean code" in any sense
+>> of the word?  That doesn't make any sense.
 > 
-> This thermal data can be reused across TI SoC devices.
-is'nt it just DRA7 that reuses this - based on dtsi name?
-> 
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  arch/arm/boot/dts/dra7-iva-thermal.dtsi | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->  create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/dra7-iva-thermal.dtsi b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
-> new file mode 100644
-> index 0000000..fea0cea
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
-> @@ -0,0 +1,28 @@
-> +/*
-> + * Device Tree Source for DRA7 SoC IVA thermal
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-> + * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public License
-> + * version 2.  This program is licensed "as is" without any warranty of any
-> + * kind, whether express or implied.
-> + */
-> +
-> +#include <dt-bindings/thermal/thermal.h>
-> +
-> +iva_thermal: iva_thermal {
-> +	polling-delay-passive = <250>; /* milliseconds */
-> +	polling-delay = <1000>; /* milliseconds */
-> +
-> +		/* sensor       ID */
-^^ double tab here?
-> +	thermal-sensors = <&bandgap     4>;
-space after bandgap is good enough?
-> +
-> +	trips {
-> +		iva_crit: iva_crit {
-> +			temperature = <125000>; /* milliCelsius */
-> +			hysteresis = <2000>; /* milliCelsius */
-> +			type = THERMAL_TRIP_CRITICAL;
-> +		};
-> +	};
-> +};
+> Just in case you didn't know already.  probe_kernel_read()'s role is
+> to take any ulong value and dereference it if it can.  If not, it can
+> return any value, but it shouldn't crash in any case.  If you're just
+> adding NULL test in probe_kernel_read(), you're just masking a common
+> failure pattern and the kernel still *will* panic while dumping the
+> states.  If a specific arch doesn't have proper probe_kernel_read()
+> implementation, adding if (!NULL) test there could be a temporary
+> workaround, but it should be clearly marked as such.
 
--- 
-Regards,
-Nishanth Menon
+Sure, probe_kernel_read() takes care that no segfaults will happen.
+Nevertheless, if we know that "pwq" might become NULL, why access pwq->wq at all?
+  struct pool_workqueue *pwq = NULL;
+  probe_kernel_read(&wq, &pwq>wq, sizeof(wq));
+
+If you wouldn't have used probe_kernel_read() you would never code it 
+like that. That's what I meant when I wrote "clean coding" (aka "similar
+to what you would have done without probe_kernel_read()").
+
+Helge
