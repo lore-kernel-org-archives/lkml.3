@@ -1,95 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab3JAOqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:46:00 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39892 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab3JAOpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:45:46 -0400
-Date: Tue, 1 Oct 2013 07:45:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1753075Ab3JAOq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:46:28 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:59640 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab3JAOqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:46:22 -0400
+Date: Tue, 1 Oct 2013 16:46:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Ahern <dsahern@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20131001144537.GC5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130925175055.GA25914@redhat.com>
- <20130925184015.GC3657@laptop.programming.kicks-ass.net>
- <20130925212200.GA7959@linux.vnet.ibm.com>
- <20130926111042.GS3081@twins.programming.kicks-ass.net>
- <20130926165840.GA863@redhat.com>
- <20130926175016.GI3657@laptop.programming.kicks-ass.net>
- <20130927181532.GA8401@redhat.com>
- <20130927204116.GJ15690@laptop.programming.kicks-ass.net>
- <20131001035604.GW19582@linux.vnet.ibm.com>
- <20131001141429.GA32423@redhat.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: [PATCH] perf tools: Speed up git-version test on re-make
+Message-ID: <20131001144618.GA8970@gmail.com>
+References: <20130912200236.GC11400@ghostprotocols.net>
+ <20130912203116.GD32644@gmail.com>
+ <20130912204313.GA3259@gmail.com>
+ <20130915091029.GA21465@gmail.com>
+ <20130930164210.GA22342@gmail.com>
+ <20130930171220.GC10293@ghostprotocols.net>
+ <CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
+ <20130930175342.GI10293@ghostprotocols.net>
+ <20130930190434.GA3427@gmail.com>
+ <20131001113456.GA31331@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131001141429.GA32423@redhat.com>
+In-Reply-To: <20131001113456.GA31331@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100114-0320-0000-0000-00000131CF34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 04:14:29PM +0200, Oleg Nesterov wrote:
-> On 09/30, Paul E. McKenney wrote:
-> >
-> > On Fri, Sep 27, 2013 at 10:41:16PM +0200, Peter Zijlstra wrote:
-> > > On Fri, Sep 27, 2013 at 08:15:32PM +0200, Oleg Nesterov wrote:
-> > > > On 09/26, Peter Zijlstra wrote:
-> >
-> > [ . . . ]
-> >
-> > > > > +static bool cpuhp_readers_active_check(void)
-> > > > >  {
-> > > > > +	unsigned int seq = per_cpu_sum(cpuhp_seq);
-> > > > > +
-> > > > > +	smp_mb(); /* B matches A */
-> > > > > +
-> > > > > +	/*
-> > > > > +	 * In other words, if we see __get_online_cpus() cpuhp_seq increment,
-> > > > > +	 * we are guaranteed to also see its __cpuhp_refcount increment.
-> > > > > +	 */
-> > > > >
-> > > > > +	if (per_cpu_sum(__cpuhp_refcount) != 0)
-> > > > > +		return false;
-> > > > >
-> > > > > +	smp_mb(); /* D matches C */
-> > > >
-> > > > It seems that both barries could be smp_rmb() ? I am not sure the comments
-> > > > from srcu_readers_active_idx_check() can explain mb(), note that
-> > > > __srcu_read_lock() always succeeds unlike get_cpus_online().
-> > >
-> > > I see what you mean; cpuhp_readers_active_check() is all purely reads;
-> > > there are no writes to order.
-> > >
-> > > Paul; is there any argument for the MB here as opposed to RMB; and if
-> > > not should we change both these and SRCU?
-> >
-> > Given that these memory barriers execute only on the semi-slow path,
-> > why add the complexity of moving from smp_mb() to either smp_rmb()
-> > or smp_wmb()?  Straight smp_mb() is easier to reason about and more
-> > robust against future changes.
-> 
-> But otoh this looks misleading, and the comments add more confusion.
-> 
-> But please note another email, it seems to me we can simply kill
-> cpuhp_seq and all the barriers in cpuhp_readers_active_check().
 
-If you don't have cpuhp_seq, you need some other way to avoid
-counter overflow.  Which might be provided by limited number of
-tasks, or, on 64-bit systems, 64-bit counters.
+Another build speedup, while at it.
 
-							Thanx, Paul
+===============>
+Subject: perf tools: Speed up git-version test on re-make
+From: Ingo Molnar <mingo@kernel.org>
+Date: Tue Oct 1 16:28:09 CEST 2013
 
+util/PERF-VERSION-GEN is currently executed on every build attempt,
+and this script can take a lot of time on trees that are at a
+significant git-distance from Linus's tree:
+
+  $ time util/PERF-VERSION-GEN
+
+  real    0m4.343s
+  user    0m4.176s
+  sys     0m0.140s
+
+It also takes a lot of time if the Git repository is network attached, etc.,
+because the commands it uses:
+
+        TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
+
+has to count commits from the nearest tag and thus has to access (and
+decompress) every git commit blob on the relevant version path.
+
+Even on Linus's tree it takes 0.28 seconds on a fast box to count all the
+commits and get the git version string:
+
+  $ time util/PERF-VERSION-GEN
+
+  real    0m0.279s
+  user    0m0.247s
+  sys     0m0.025s
+
+But the version string only has to be regenerated if the git repository's
+head commit changes. So add a dependency of ../../.git/HEAD and touch
+the file every time it's regenerated, so that Make's build rules can
+pick it up and cache the result:
+
+  make: `PERF-VERSION-FILE' is up to date.
+
+  real    0m0.184s
+  user    0m0.117s
+  sys     0m0.026s
+
+So the version generation overhead is completely gone for re-builds.
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/Makefile |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+Index: tip/tools/perf/Makefile
+===================================================================
+--- tip.orig/tools/perf/Makefile
++++ tip/tools/perf/Makefile
+@@ -70,8 +70,9 @@ ifneq ($(OUTPUT),)
+ #$(info Determined 'OUTPUT' to be $(OUTPUT))
+ endif
+ 
+-$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
++$(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
++	@touch $(OUTPUT)PERF-VERSION-FILE
+ 
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+@@ -813,7 +814,17 @@ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-c
+ 	$(RM) $(OUTPUT)util/*-flex*
+ 	$(python-clean)
+ 
++#
++# Trick: if ../../.git does not exist - we are building out of tree for example,
++# then force version regeneration:
++#
++ifeq ($(wildcard ../../.git/HEAD),) 
++    GIT-HEAD-PHONY = ../../.git/HEAD
++else 
++    GIT-HEAD-PHONY =
++endif
++
+ .PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+-.PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
++.PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
+ 
