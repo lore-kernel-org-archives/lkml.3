@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3JAVm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 17:42:28 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:50689 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab3JAVmY (ORCPT
+	id S1753274Ab3JAVmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 17:42:33 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:33272 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab3JAVm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 17:42:24 -0400
+	Tue, 1 Oct 2013 17:42:29 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/15] sysfs: add sysfs_open_file->sd and ->file
-Date: Tue,  1 Oct 2013 17:42:00 -0400
-Message-Id: <1380663729-18243-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/15] sysfs: skip bin_buffer->buffer while reading
+Date: Tue,  1 Oct 2013 17:42:03 -0400
+Message-Id: <1380663729-18243-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1380663729-18243-1-git-send-email-tj@kernel.org>
 References: <1380663729-18243-1-git-send-email-tj@kernel.org>
@@ -21,91 +21,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs will be converted to use seq_file for read path, which will make
-it difficult to pass around multiple pointers directly.  This patch
-adds sysfs_open_file->sd and ->file so that we can reach all the
-necessary data structures from sysfs_open_file.
+After b31ca3f5dfc ("sysfs: fix deadlock"), bin read() first writes
+data to bb->buffer and bounces it to a transient kernel buffer which
+is then copied out to userland.  The double bouncing doesn't add
+anything.  Let's just use the transient buffer directly.
 
-flush_write_buffer() is updated to drop @dentry which was used to
-discover the sysfs_dirent as it's now available through
-sysfs_open_file->sd.
-
-This patch doesn't cause any behavior difference.
+While at it, rename @temp to @buf for clarity.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ fs/sysfs/bin.c | 21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 4b55bcf..af6e909 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -45,6 +45,8 @@ struct sysfs_open_dirent {
- };
+diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
+index d49e6ca..d2142c0 100644
+--- a/fs/sysfs/bin.c
++++ b/fs/sysfs/bin.c
+@@ -72,7 +72,7 @@ read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
+ 	int size = file_inode(file)->i_size;
+ 	loff_t offs = *off;
+ 	int count = min_t(size_t, bytes, PAGE_SIZE);
+-	char *temp;
++	char *buf;
  
- struct sysfs_open_file {
-+	struct sysfs_dirent	*sd;
-+	struct file		*file;
- 	size_t			count;
- 	char			*page;
- 	struct mutex		mutex;
-@@ -192,7 +194,6 @@ static int fill_write_buffer(struct sysfs_open_file *of,
+ 	if (!bytes)
+ 		return 0;
+@@ -84,23 +84,18 @@ read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
+ 			count = size - offs;
+ 	}
  
- /**
-  *	flush_write_buffer - push buffer to kobject.
-- *	@dentry:	dentry to the attribute
-  *	@of:		open file
-  *	@count:		number of bytes
-  *
-@@ -200,22 +201,20 @@ static int fill_write_buffer(struct sysfs_open_file *of,
-  *	dealing with, then call the store() method for the attribute,
-  *	passing the buffer that we acquired in fill_write_buffer().
-  */
--static int flush_write_buffer(struct dentry *dentry,
--			      struct sysfs_open_file *of, size_t count)
-+static int flush_write_buffer(struct sysfs_open_file *of, size_t count)
- {
--	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
--	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
- 	const struct sysfs_ops *ops;
- 	int rc;
+-	temp = kmalloc(count, GFP_KERNEL);
+-	if (!temp)
++	buf = kmalloc(count, GFP_KERNEL);
++	if (!buf)
+ 		return -ENOMEM;
  
--	/* need attr_sd for attr and ops, its parent for kobj */
--	if (!sysfs_get_active(attr_sd))
-+	/* need @of->sd for attr and ops, its parent for kobj */
-+	if (!sysfs_get_active(of->sd))
- 		return -ENODEV;
+ 	mutex_lock(&bb->mutex);
++	count = fill_read(file, buf, offs, count);
++	mutex_unlock(&bb->mutex);
  
--	ops = sysfs_file_ops(attr_sd);
--	rc = ops->store(kobj, attr_sd->s_attr.attr, of->page, count);
-+	ops = sysfs_file_ops(of->sd);
-+	rc = ops->store(kobj, of->sd->s_attr.attr, of->page, count);
+-	count = fill_read(file, bb->buffer, offs, count);
+-	if (count < 0) {
+-		mutex_unlock(&bb->mutex);
++	if (count < 0)
+ 		goto out_free;
+-	}
+-
+-	memcpy(temp, bb->buffer, count);
  
--	sysfs_put_active(attr_sd);
-+	sysfs_put_active(of->sd);
+-	mutex_unlock(&bb->mutex);
+-
+-	if (copy_to_user(userbuf, temp, count)) {
++	if (copy_to_user(userbuf, buf, count)) {
+ 		count = -EFAULT;
+ 		goto out_free;
+ 	}
+@@ -110,7 +105,7 @@ read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
+ 	*off = offs + count;
  
- 	return rc;
+  out_free:
+-	kfree(temp);
++	kfree(buf);
+ 	return count;
  }
-@@ -245,7 +244,7 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *buf,
- 	mutex_lock(&of->mutex);
- 	len = fill_write_buffer(of, buf, count);
- 	if (len > 0)
--		len = flush_write_buffer(file->f_path.dentry, of, len);
-+		len = flush_write_buffer(of, len);
- 	if (len > 0)
- 		*ppos += len;
- 	mutex_unlock(&of->mutex);
-@@ -385,6 +384,8 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 		goto err_out;
  
- 	mutex_init(&of->mutex);
-+	of->sd = attr_sd;
-+	of->file = file;
- 	file->private_data = of;
- 
- 	/* make sure we have open dirent struct */
 -- 
 1.8.3.1
 
