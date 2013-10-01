@@ -1,130 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3JAPIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:08:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60534 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab3JAPIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:08:16 -0400
-Message-ID: <524AE536.5080307@ti.com>
-Date: Tue, 1 Oct 2013 11:07:34 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753552Ab3JAPJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:09:12 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53575 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751898Ab3JAPJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 11:09:03 -0400
+Message-ID: <524AE58B.9060902@hurleysoftware.com>
+Date: Tue, 01 Oct 2013 11:08:59 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: <tglx@linutronix.de>, Sricharan R <r.sricharan@ti.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>
-Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com> <524AAE69.8060703@ti.com> <524AD290.207@gmail.com> <524AD4B7.7040700@ti.com> <524AE1FA.2050104@gmail.com>
-In-Reply-To: <524AE1FA.2050104@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: [BUG] 3.12.0-rc2: cpufreq_get(0) crashes since commit 6eed9404a (cpufreq:
+ Use rwsem for protecting critical sections)
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 October 2013 10:53 AM, Rob Herring wrote:
-> On 10/01/2013 08:57 AM, Santosh Shilimkar wrote:
->> On Tuesday 01 October 2013 09:48 AM, Rob Herring wrote:
->>> On 10/01/2013 06:13 AM, Sricharan R wrote:
->>>> Hi,
->>>>
->>>> On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
->>>>> On 09/30/2013 08:59 AM, Sricharan R wrote:
->>>>>> Some socs have a large number of interrupts requests to service
->>>>>> the needs of its many peripherals and subsystems. All of the interrupt
->>>>>> requests lines from the subsystems are not needed at the same
->>>>>> time, so they have to be muxed to the controllers appropriately.
->>>>>> In such places a interrupt controllers are preceded by an
->>>>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->>>>>> requests to the controller inputs.
->>>>>>
->>>>>> This series models the peripheral interrupts that can be routed through
->>>>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->>>>>> in a separate linear domain inside the GIC. The registered routable domain's
->>>>>> callback are invoked as a part of the GIC's callback, which in turn should
->>>>>> allocate a free irq line and configure the IP accordingly. So every peripheral
->>>>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
->>>>>> gic line for that gets allocated and configured when the peripheral's interrupt
->>>>>> is mapped.
->>>>>>
->>>>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
->>>>>> crossbar is added here, along with the DT bindings.
->>>>> Seems like interrupt-map property is what you need here.
->>>>>
->>>>> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
->>>>>
->>>>> Versatile Express also has an example.
->>>>    OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
->>>>    DTS level, but to assign it dynamically during runtime. This was one of the
->>>>   comments that came up with first crossbar support patches, which was assigning a
->>>>   interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
->>>
->>> Is there an actual usecase on a single h/w design that you run out of
->>> interrupts and it is a user decision which interrupts to use?
->>>
->> Yes. There are 240 peripheral interrupts connected out of which 160 can
->> be used in this specific case. 
-> 
-> Yes, I understand the SOC connections. That does not answer my question.
-> The 240 interrupts are likely to be limited to fewer by board design,
-> pinmuxing, etc.
-> 
-yes limited by different board designs ...
+On 3.12.0-rc2 without a sub-driver loaded, the trivial module
+inlined below [1] BUGs.
 
-> How do you handle the 161st interrupt request? Will never happen? Just
-> rely on the random driver probe ordering?
->
-Well the board dts are expected to provide the peripheral support info to optimise it.
-If a board actually has more than 160 peripherals available then in that
-case the 161 interrupt will not be mapped. 
- 
->>> You could fill in the interrupt-map at run-time. It would have to be
->>> early (bootloader or early kernel init) and can't be at request_irq time.
->>>
->> Well all options are tried before coming up to the $subject solution.
->> It was suggested by Thomas in the last review.
->>  
->>>>     https://lkml.org/lkml/2013/7/18/416
->>>>
->>>>    Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
->>>>    that did not go as well. Finally was asked to handle this as a part of GIC driver with
->>>>    a separate domain.
->>>>    
->>>>   http://www.spinics.net/lists/linux-omap/msg97085.html
->>>
->>> This has nothing to do with the GIC, so it does not belong there.
->>>
->> Well the router makes connections from peripheral to GIC. Thomas can
->> better explain it but I think since its doing irq routing for GIC on
->> a given hardware, I don't see any issue having some generic map/unmap
->> function in GIC. The actual implementation is still outside of GIC.
-> 
-> I read Thomas' reply as don't put this crap in his code.
->
-That was for the IRQCHIP based approach and as part of that review
-Thomas suggested why not irqdomain and suggested a prototype code
-as well.
- 
-> You can call it generic, but it is not. It is specific to the GIC and
-> looks like an abuse of irqdomains to me. Look where the function
-> declaration for register_routable_domain_ops is.
-> 
-I am not sure why you call it abuse of irqdomain since the map/unmap
-are exactly the interfaces where the logical to physical irq
-connections are made. Look at existing GIC code as well. I still
-let Thomas give his expert comment whether it is abusive because it
-it was, am sure he wouldn't have suggested that.
+On 3.11.0, cpufreq_get(0) returns 0.
 
-Now if your concern is the register_routable_domain_ops() then
-we are open to hear if there is any better way to do that. Thats
-why the series is still RFC.
+  kernel BUG at /home/peter/src/kernels/mainline/drivers/cpufreq/cpufreq.c:79!
+  invalid opcode: 0000 [#1] PREEMPT SMP
+  Modules linked in: cpufq(O+) ext2 ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp iptable_filter ip_tables x_tables kvm_intel kvm bnep rfcomm bridge stp llc binfmt_misc snd_ctxfi snd_pcm snd_seq_midi snd_rawmidi joydev snd_seq_midi_event snd_seq snd_timer snd_seq_device snd i5400_edac edac_core soundcore btusb bluetooth gpio_ich lpc_ich psmouse snd_page_alloc dm_multipath ppdev scsi_dh dcdbas i5k_amb parport_pc shpchp serio_raw lp parport hid_generic hid_logitech_dj usbhid hid netconsole configfs dm_mirror dm_region_hash dm_log usb_storage nouveau tg3 firewire_ohci ttm e1000e firewire_core drm_kms_helper crc_itu_t ptp drm pps_core i2c_algo_bit mxm_wmi video wmi
+  CPU: 5 PID: 4189 Comm: modprobe Tainted: G           O 3.12-rc2+git07d8cec-trim #rc2+git07d8cec
+  Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
+  task: ffff8800b3082e60 ti: ffff8802b20c8000 task.ti: ffff8802b20c8000
+  RIP: 0010:[<ffffffff814f9d7f>]  [<ffffffff814f9d7f>] lock_policy_rwsem_read+0x3f/0x50
+  RSP: 0018:ffff8802b20c9cc0  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000760
+  RDX: ffff8802bfc00000 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff8802b20c9cd8 R08: ffffffffa0570000 R09: 00000000000030d0
+  R10: 0000000000000001 R11: 8000000000000000 R12: 0000000000000000
+  R13: ffffffffa0570050 R14: ffffffffa0570000 R15: ffff8802b0557660
+  FS:  00007f9805a44700(0000) GS:ffff8802bfd40000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00007f98055833d0 CR3: 00000002b219d000 CR4: 00000000000007e0
+  Stack:
+   ffffffff814faff8 0000000000000000 ffffffffa056e000 ffff8802b20c9ce8
+   ffffffffa056e010 ffff8802b20c9d68 ffffffff810002fa ffffffffa0570000
+   ffff8802b0557660 ffff8802b20c9d38 ffffffff8103c993 0000000000000000
+  Call Trace:
+   [<ffffffff814faff8>] ? cpufreq_get+0x48/0x80
+   [<ffffffffa056e000>] ? 0xffffffffa056dfff
+   [<ffffffffa056e010>] cpufq_init+0x10/0x30 [cpufq]
+   [<ffffffff810002fa>] do_one_initcall+0xfa/0x1b0
+   [<ffffffff8103c993>] ? set_memory_nx+0x43/0x50
+   [<ffffffff810bf674>] load_module+0x1d74/0x2890
+   [<ffffffff810bb140>] ? unset_module_init_ro_nx+0x80/0x80
+   [<ffffffff810c0242>] SyS_init_module+0xb2/0x100
+   [<ffffffff8163bf92>] system_call_fastpath+0x16/0x1b
+  Code: 44 cd 81 48 8b 04 10 48 85 c0 74 1f 55 48 c7 c7 20 fb 00 00 8b 40 14 48 89 e5 48 03 3c c5 40 44 cd 81 e8 a5 74 13 00 31 c0 5d c3 <0f> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66
+  RIP  [<ffffffff814f9d7f>] lock_policy_rwsem_read+0x3f/0x50
+   RSP <ffff8802b20c9cc0>
 
-Regards,
-Santosh
 
+[1] trivial module
+
+--- /dev/null	2013-10-01 10:01:46.782370182 -0400
++++ /home/peter/src/drivers/cpufq/cpufq.c	2013-10-01 09:40:18.996316926 -0400
+@@ -0,0 +1,26 @@
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/cpufreq.h>
++
++
++static int cpufq_init(void)
++{
++	unsigned int freq = cpufreq_get(0);
++
++	pr_info("cpu 0 frequency: %u\n", freq);
++	return 0;
++}
++
++static void cpufq_exit(void)
++{
++}
++
++module_init(cpufq_init);
++module_exit(cpufq_exit);
++
++MODULE_LICENSE("GPL");
++
