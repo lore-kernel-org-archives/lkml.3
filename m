@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3JALOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 07:14:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57267 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab3JALOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 07:14:33 -0400
-Message-ID: <524AAE69.8060703@ti.com>
-Date: Tue, 1 Oct 2013 16:43:45 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1753635Ab3JALOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 07:14:44 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:60383 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab3JALOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 07:14:40 -0400
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <tglx@linutronix.de>,
-        <linus.walleij@linaro.org>, <santosh.shilimkar@ti.com>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>
-Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com>
-In-Reply-To: <52499441.1030403@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <524A7B00.4010001@collabora.co.uk>
+References: <1380069414-2922-1-git-send-email-javier.martinez@collabora.co.uk>
+	<87r4cajfx0.fsf@linaro.org>
+	<524A7B00.4010001@collabora.co.uk>
+Date: Tue, 1 Oct 2013 13:14:38 +0200
+Message-ID: <CACRpkdbo=cwp_KzOVYiKayES=jq1_6KGbTRXuEV4w4NOGbFbjA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio/omap: maintain GPIO and IRQ usage separately
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Jon Hunter <jgchunter@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sricharan R <r.sricharan@ti.com>,
+        Alexander Holler <holler@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 1, 2013 at 9:34 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
 
-On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
-> On 09/30/2013 08:59 AM, Sricharan R wrote:
->> Some socs have a large number of interrupts requests to service
->> the needs of its many peripherals and subsystems. All of the interrupt
->> requests lines from the subsystems are not needed at the same
->> time, so they have to be muxed to the controllers appropriately.
->> In such places a interrupt controllers are preceded by an
->> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->> requests to the controller inputs.
->>
->> This series models the peripheral interrupts that can be routed through
->> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->> in a separate linear domain inside the GIC. The registered routable domain's
->> callback are invoked as a part of the GIC's callback, which in turn should
->> allocate a free irq line and configure the IP accordingly. So every peripheral
->> in the dts files mentions the fixed crossbar number as its interrupt. A free
->> gic line for that gets allocated and configured when the peripheral's interrupt
->> is mapped.
->>
->> The minimal crossbar driver to track and allocate free GIC lines and configure the
->> crossbar is added here, along with the DT bindings.
-> Seems like interrupt-map property is what you need here.
+> Linus,
 >
-> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
->
-> Versatile Express also has an example.
-   OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
-   DTS level, but to assign it dynamically during runtime. This was one of the
-  comments that came up with first crossbar support patches, which was assigning a
-  interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
+> Since this patch-set doesn't cause any regression and fix a long standing issue
+> on OMAP, do you think that it would be possible to include on the -rc series as
+> a bugfix or do you prefer to wait until 3.13?
 
-    https://lkml.org/lkml/2013/7/18/416
+I've added it to my fixes branch for v3.12. Since linux-next is not available we
+need some extensive build testing first to make sure that if something explodes
+it explodes on OMAP only.
 
-   Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
-   that did not go as well. Finally was asked to handle this as a part of GIC driver with
-   a separate domain.
-   
-  http://www.spinics.net/lists/linux-omap/msg97085.html
-  
-Regards,
- Sricharan
+So will let this boil a few days and then send a pull request.
 
- 
+Yours,
+Linus Walleij
