@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab3JAUbE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:31:04 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:38978 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab3JAUbA (ORCPT
+	id S1753049Ab3JAUcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:32:04 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:52660 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab3JAUcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:31:00 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAJfpegvddcZMFLMOikx5vKa8v_o5b+QjupKZNRTj8uGuOLiHtA@mail.gmail.com>
-References: <CA+icZUUOfFdd34CZfGpX+_ezuaPyeakZSGGvfmw8K1cguUbmxg@mail.gmail.com>
-	<CA+55aFzuZp094CB-FG2Ku32m3ZR5DC6FKGSfnLVdy3w9Aju2Bg@mail.gmail.com>
-	<CAJfpegvddcZMFLMOikx5vKa8v_o5b+QjupKZNRTj8uGuOLiHtA@mail.gmail.com>
-Date: Tue, 1 Oct 2013 22:30:58 +0200
-Message-ID: <CA+icZUXZt5ZvodGTcdLnh0LMmL8hb43b5Dxb7Ce4f0ZOtLNUKg@mail.gmail.com>
-Subject: Re: fuse-3.12-fixes?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Maxim Patlasov <MPatlasov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 1 Oct 2013 16:32:00 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Cc: tixxdz@gmail.com, Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH v2 5/9] procfs: make /proc entries that use seq files able to access file->f_cred
+Date: Tue,  1 Oct 2013 21:26:14 +0100
+Message-Id: <1380659178-28605-6-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 5:21 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Mon, Sep 30, 2013 at 5:13 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Mon, Sep 30, 2013 at 12:20 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>
->>> any reasons why these fuse-3.12-fixes did not went into -rc3?
->>
->> Perhaps because they were never sent to me?
->>
->> Searching my email archives I see that a pull request went to Al and
->> the mailing lists, but not actually to me. I do have a pending pull
->> request from Al (which came in after -rc3) but that doesn't contain
->> them either. And the "for-linus" branch implies that perhaps somebody
->> _iindended_ to send them to me, but somehow missed.
->
-> Mea culpa.  I sent it to Al, but didn't create a for_al branch for it,
-> and Al didn't pull.  I'll send a new pull request after testing the
-> fuse_dentry_revalidate fixes.
->
+In order to check if the cred of current have changed between ->open()
+and ->read(), we must able to access the file's opener cred
+'file->f_cred' at any point.
 
-Hm, I see some updates in the for-linus GIT branch, but no for-al...
+To make this possible for /proc/*/{stack,personality,stat} pass the
+'file struct' as a 3rd argument to single_open() so it will be stored in
+seq_file->private in seq_open(). This way these entries are able to
+continue to use seq files, and access the file->f_cred easily.
 
-- Sedat -
+This is also a preparation for the following patches which will check
+the corresponding file->f_cred.
+
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/proc/base.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 54e926a..d4b604d 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -765,7 +765,8 @@ static const struct file_operations proc_info_file_operations = {
+ 
+ static int proc_single_show(struct seq_file *m, void *v)
+ {
+-	struct inode *inode = m->private;
++	struct file *filp = m->private;
++	struct inode *inode = file_inode(filp);
+ 	struct pid_namespace *ns;
+ 	struct pid *pid;
+ 	struct task_struct *task;
+@@ -785,7 +786,9 @@ static int proc_single_show(struct seq_file *m, void *v)
+ 
+ static int proc_single_open(struct inode *inode, struct file *filp)
+ {
+-	return single_open(filp, proc_single_show, inode);
++	/* Later we need inode and filp->f_cred, so pass filp as 3rd
++	 * argument, it will be referenced by seq_file->private */
++	return single_open(filp, proc_single_show, filp);
+ }
+ 
+ static const struct file_operations proc_single_file_operations = {
+-- 
+1.7.11.7
+
