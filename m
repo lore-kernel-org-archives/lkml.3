@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3JAQsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 12:48:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41005 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403Ab3JAQsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 12:48:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1014,1371106800"; 
-   d="scan'208";a="412506715"
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
+	id S1751803Ab3JAQvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:51:45 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:57975 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab3JAQvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 12:51:43 -0400
+Date: Tue, 1 Oct 2013 13:51:33 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <5249A8A4.9060400@hp.com>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-	 <1380147049.3467.67.camel@schen9-DESK>
-	 <20130927152953.GA4464@linux.vnet.ibm.com>
-	 <1380310733.3467.118.camel@schen9-DESK>
-	 <20130927203858.GB9093@linux.vnet.ibm.com>
-	 <1380322005.3467.186.camel@schen9-DESK>
-	 <20130927230137.GE9093@linux.vnet.ibm.com>
-	 <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>
-	 <20130928021947.GF9093@linux.vnet.ibm.com>
-	 <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>
-	 <52499E13.8050109@hp.com> <1380557440.14213.6.camel@j-VirtualBox>
-	 <5249A8A4.9060400@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Oct 2013 09:48:12 -0700
-Message-ID: <1380646092.11046.6.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf stat: Set child_pid after
+ perf_evlist__prepare_workload()
+Message-ID: <20131001165133.GE2920@ghostprotocols.net>
+References: <1380531671-28076-1-git-send-email-namhyung@kernel.org>
+ <524980ED.2000507@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524980ED.2000507@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-30 at 12:36 -0400, Waiman Long wrote:
-> On 09/30/2013 12:10 PM, Jason Low wrote:
-> > On Mon, 2013-09-30 at 11:51 -0400, Waiman Long wrote:
-> >> On 09/28/2013 12:34 AM, Jason Low wrote:
-> >>>> Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
-> >>>> functions would look like after applying the proposed changes.
-> >>>>
-> >>>> static noinline
-> >>>> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
-> >>>> {
-> >>>>           struct mcs_spin_node *prev;
-> >>>>
-> >>>>           /* Init node */
-> >>>>           node->locked = 0;
-> >>>>           node->next   = NULL;
-> >>>>
-> >>>>           prev = xchg(lock, node);
-> >>>>           if (likely(prev == NULL)) {
-> >>>>                   /* Lock acquired. No need to set node->locked since it
-> >>>> won't be used */
-> >>>>                   return;
-> >>>>           }
-> >>>>           ACCESS_ONCE(prev->next) = node;
-> >>>>           /* Wait until the lock holder passes the lock down */
-> >>>>           while (!ACCESS_ONCE(node->locked))
-> >>>>                   arch_mutex_cpu_relax();
-> >>>>           smp_mb();
-> >> I wonder if a memory barrier is really needed here.
-> > If the compiler can reorder the while (!ACCESS_ONCE(node->locked)) check
-> > so that the check occurs after an instruction in the critical section,
-> > then the barrier may be necessary.
+Em Mon, Sep 30, 2013 at 07:47:25AM -0600, David Ahern escreveu:
+> On 9/30/13 3:01 AM, Namhyung Kim wrote:
+> >From: Namhyung Kim <namhyung.kim@lge.com>
+> >
+> >The commit acf2892270dc ("perf stat: Use perf_evlist__prepare/
+> >start_workload()") converted to use the function but forgot to update
+> >child_pid.  Fix it.
+> >
+> >Cc: David Ahern <dsahern@gmail.com>
+> >Cc: Stephane Eranian <eranian@google.com>
+> >Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> >---
+> >  tools/perf/builtin-stat.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> >diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> >index f686d5ff594e..5098f144b92d 100644
+> >--- a/tools/perf/builtin-stat.c
+> >+++ b/tools/perf/builtin-stat.c
+> >@@ -457,6 +457,7 @@ static int __run_perf_stat(int argc, const char **argv)
+> >  			perror("failed to prepare workload");
+> >  			return -1;
+> >  		}
+> >+		child_pid = evsel_list->workload.pid;
+> >  	}
+> >
+> >  	if (group)
 > >
 > 
-> In that case, just a barrier() call should be enough.
+> Interesting. I can't find a test case where is matters ... perhaps a
+> convenience of waitpid taking -1.
 
-The cpu could still be executing out of order load instruction from the
-critical section before checking node->locked?  Probably smp_mb() is
-still needed.
+Yeah, the interval part initially used the fork return, then after
+acf2892270dc used the default value of child_pid, -1, which is ok as it
+waits for any children, but I wonder what would happen in workloads with
+multiple children.
 
-Tim
+But for correctness acf2892270dc should have kept the existing
+semantics, even if using -1 could in the end be ok.
 
-
+- Arnaldo
