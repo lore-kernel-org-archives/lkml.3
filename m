@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3JAVky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 17:40:54 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32908 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751253Ab3JAVkv (ORCPT
+	id S1752262Ab3JAVmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 17:42:04 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:36253 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab3JAVmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 17:40:51 -0400
-Message-ID: <1380663645.2081.29.camel@dabdike>
-Subject: Re: [PATCH] [workqueue] check values of pwq and wq in
- print_worker_info() before use
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Helge Deller <deller@gmx.de>, Libin <huawei.libin@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Date: Tue, 01 Oct 2013 14:40:45 -0700
-In-Reply-To: <20131001204352.GA27149@mtj.dyndns.org>
-References: <20131001203520.GA8248@p100.box>
-	 <20131001204352.GA27149@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
+	Tue, 1 Oct 2013 17:42:02 -0400
+Message-ID: <1380663718.19002.49.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: spinlock contention of files->file_lock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Date: Tue, 01 Oct 2013 14:41:58 -0700
+In-Reply-To: <CA+55aFwWi-RveiuFEManbED3DcA76Cf3CKVXrrs5d5FvNgedOg@mail.gmail.com>
+References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
+	 <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
+	 <CA+55aFwWi-RveiuFEManbED3DcA76Cf3CKVXrrs5d5FvNgedOg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-01 at 16:43 -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Oct 01, 2013 at 10:35:20PM +0200, Helge Deller wrote:
-> > print_worker_info() includes no validity check on the pwq and wq
-> > pointers before handing them over to the probe_kernel_read() functions.
-> > 
-> > It seems that most architectures don't care about that, but at least on
-> > the parisc architecture this leads to a kernel crash since accesses to
-> > page zero are protected by the kernel for security reasons.
-> > 
-> > Fix this problem by verifying the contents of pwq and wq before usage.
-> > Even if probe_kernel_read() usually prevents such crashes by disabling
-> > page faults, clean code should always include such checks. 
-> > 
-> > Without this fix issuing "echo t > /proc/sysrq-trigger" will immediately
-> > crash the Linux kernel on the parisc architecture.
-> 
-> Hmm... um had similar problem but the root cause here is that the arch
-> isn't implementing probe_kernel_read() properly.  We really have no
-> idea what the pointer value may be at the dump point and that's why we
-> use probe_kernel_read().  If something like the above is necessary for
-> the time being, the correct place would be the arch
-> probe_kernel_read() implementation.  James, would it be difficult
-> implement proper probe_kernel_read() on parisc?
+From: Eric Dumazet <edumazet@google.com>
 
-The problem seems to be that some traps bypass our exception table
-handling.  Helge, do you have the actual stack trace for this?  That
-should show where the exception handling is missing.
+On Mon, 2013-09-30 at 18:44 -0700, Linus Torvalds wrote:
 
-Thanks,
+> Now, that only gets rid of fd_install(), but I suspect you could do
+> something similar for put_unused_fd() (that one does need cmpxchg for
+> the "next_fd" thing, though). We'd have to replace the non-atomic
+> bitops on open_fds[] with atomic ones, just to make sure adjacent bit
+> clearings don't screw up concurrent adjacent bit values, but that
+> looks fairly straightforward too.
 
-James
+While looking at this (exciting) stuff, I found following bug.
+
+Maybe I am missing something obvious ?
+
+Thanks
+
+[PATCH] fs: fix a race in do_close_on_exec()
+
+commit 6a6d27de ("take close-on-exec logics to fs/file.c, clean it up a
+bit") added a possible race, as another thread could resize file table
+once we released files->file_lock.
+
+We must reload fdt after getting the lock.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ fs/file.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/fs/file.c b/fs/file.c
+index 4a78f98..b614f13 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -616,10 +616,10 @@ void do_close_on_exec(struct files_struct *files)
+ 
+ 	/* exec unshares first */
+ 	spin_lock(&files->file_lock);
++	fdt = files_fdtable(files);
+ 	for (i = 0; ; i++) {
+ 		unsigned long set;
+ 		unsigned fd = i * BITS_PER_LONG;
+-		fdt = files_fdtable(files);
+ 		if (fd >= fdt->max_fds)
+ 			break;
+ 		set = fdt->close_on_exec[i];
+@@ -639,6 +639,9 @@ void do_close_on_exec(struct files_struct *files)
+ 			filp_close(file, files);
+ 			cond_resched();
+ 			spin_lock(&files->file_lock);
++
++			/* We released files->file_lock, we must reload fdt */
++			fdt = files_fdtable(files);
+ 		}
+ 
+ 	}
 
 
