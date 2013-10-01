@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab3JAQrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 12:47:17 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:59717 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3JAQrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 12:47:14 -0400
-Date: Tue, 1 Oct 2013 18:47:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20131001164708.GG24825@localhost.localdomain>
-References: <20130820163312.GA17957@redhat.com>
- <20130820175429.GI3258@twins.programming.kicks-ass.net>
- <20130820182553.GB22287@redhat.com>
- <20130821083130.GM3258@twins.programming.kicks-ass.net>
- <20130821113551.GA1472@redhat.com>
- <20130821123311.GA31370@twins.programming.kicks-ass.net>
- <20130821142356.GC31370@twins.programming.kicks-ass.net>
- <20130821164146.GA15194@redhat.com>
- <20131001140525.GE24825@localhost.localdomain>
- <20131001155633.GR3657@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001155633.GR3657@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752784Ab3JAQsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 12:48:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41005 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab3JAQsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 12:48:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1014,1371106800"; 
+   d="scan'208";a="412506715"
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Jason Low <jason.low2@hp.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <5249A8A4.9060400@hp.com>
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
+	 <1380147049.3467.67.camel@schen9-DESK>
+	 <20130927152953.GA4464@linux.vnet.ibm.com>
+	 <1380310733.3467.118.camel@schen9-DESK>
+	 <20130927203858.GB9093@linux.vnet.ibm.com>
+	 <1380322005.3467.186.camel@schen9-DESK>
+	 <20130927230137.GE9093@linux.vnet.ibm.com>
+	 <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>
+	 <20130928021947.GF9093@linux.vnet.ibm.com>
+	 <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>
+	 <52499E13.8050109@hp.com> <1380557440.14213.6.camel@j-VirtualBox>
+	 <5249A8A4.9060400@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Oct 2013 09:48:12 -0700
+Message-ID: <1380646092.11046.6.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 05:56:33PM +0200, Peter Zijlstra wrote:
+On Mon, 2013-09-30 at 12:36 -0400, Waiman Long wrote:
+> On 09/30/2013 12:10 PM, Jason Low wrote:
+> > On Mon, 2013-09-30 at 11:51 -0400, Waiman Long wrote:
+> >> On 09/28/2013 12:34 AM, Jason Low wrote:
+> >>>> Also, below is what the mcs_spin_lock() and mcs_spin_unlock()
+> >>>> functions would look like after applying the proposed changes.
+> >>>>
+> >>>> static noinline
+> >>>> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node *node)
+> >>>> {
+> >>>>           struct mcs_spin_node *prev;
+> >>>>
+> >>>>           /* Init node */
+> >>>>           node->locked = 0;
+> >>>>           node->next   = NULL;
+> >>>>
+> >>>>           prev = xchg(lock, node);
+> >>>>           if (likely(prev == NULL)) {
+> >>>>                   /* Lock acquired. No need to set node->locked since it
+> >>>> won't be used */
+> >>>>                   return;
+> >>>>           }
+> >>>>           ACCESS_ONCE(prev->next) = node;
+> >>>>           /* Wait until the lock holder passes the lock down */
+> >>>>           while (!ACCESS_ONCE(node->locked))
+> >>>>                   arch_mutex_cpu_relax();
+> >>>>           smp_mb();
+> >> I wonder if a memory barrier is really needed here.
+> > If the compiler can reorder the while (!ACCESS_ONCE(node->locked)) check
+> > so that the check occurs after an instruction in the critical section,
+> > then the barrier may be necessary.
+> >
 > 
-> So what's wrong with something like:
-> 
-> struct cpu_idletime {
->        seqlock_t seqlock;
->        unsigned long nr_iowait;
->        u64 start;
->        u64 idle_time,
->        u64 iowait_time,
-> } __cacheline_aligned_in_smp;
-> 
-> DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
-> 
-> void io_schedule(void)
-> {
-> 	struct cpu_idletime *it = __raw_get_cpu_var(cpu_idletime);
-> 
-> 	write_seqlock(&it->seqlock);
-> 	if (!it->nr_iowait++)
-> 		it->start = local_clock();
-> 	write_sequnlock(&it->seqlock);
-> 
-> 	current->in_iowait = 1;
-> 	schedule();
-> 	current->in_iowait = 0;
-> 
-> 	write_seqlock(&it->seqlock);
-> 	if (!--it->nr_iowait)
-> 		it->iowait_time += local_clock() - it->start;
-> 	write_sequnlock(&it->seqlock);
-> }
-> 
-> Afaict you don't need the preempt disable and atomic muck at all.
+> In that case, just a barrier() call should be enough.
 
-Yeah thinking more about it, the preempt disable was probably not
-necessary. Now that's trading 2 atomics + 1 Lock/Unlock with 2 Lock/Unlock.
+The cpu could still be executing out of order load instruction from the
+critical section before checking node->locked?  Probably smp_mb() is
+still needed.
 
-OTOH it computes iowait time seperately from idle time, so we probably don't
-need to lock the idle time anymore.
+Tim
 
-Plus this solution is much much more simple. So if nobody sees a flaw there,
-I'll try this.
 
-Thanks.
-
-> 
-> It will all get a little more complicated to deal with overlapping idle
-> and iowait times, but the idea is the same.
-
-Probably no big deal.
