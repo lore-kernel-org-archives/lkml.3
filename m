@@ -1,84 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3JAUhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 16:37:11 -0400
-Received: from tulikuusama.dnainternet.net ([83.102.40.132]:55920 "EHLO
-	tulikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752656Ab3JAUhH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 16:37:07 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-From: Anssi Hannula <anssi.hannula@iki.fi>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org,
-        =?UTF-8?q?Peter=20Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Olivier Langlois <olivier@trillion01.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] ALSA: hda - hdmi: Disable ramp-up/down for non-PCM on AMD codecs
-Date: Tue,  1 Oct 2013 23:30:56 +0300
-Message-Id: <1380659456-3746-5-git-send-email-anssi.hannula@iki.fi>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
+	id S1753195Ab3JAUhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 16:37:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454Ab3JAUhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 16:37:06 -0400
+Date: Tue, 1 Oct 2013 16:36:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: x86: sort reboot DMI quirks by vendor.
+Message-ID: <20131001203655.GA10719@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	"H. Peter Anvin" <hpa@zytor.com>
+References: <20130927203308.GB22836@redhat.com>
+ <20130928064030.GA16660@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130928064030.GA16660@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent AMD HDMI codecs (revision ID 3 and later, 0x100300 as reported by
-procfs codec#0) have a configurable ramp-up/down functionality.
+Grouping them by vendor should make it easier to spot duplicates.
 
-The documentation ( http://www.x.org/docs/AMD/AMD_HDA_verbs_v2.pdf )
-specifies that 180 (meaning 180/256 =~ 0.7) is recommended for PCM and 0
-for non-PCM.
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
-Apply the recommended values according to provided S/PDIF AES0 settings.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
----
- sound/pci/hda/patch_hdmi.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index c0cd4ca..22f30fe 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -2673,6 +2673,10 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
- #define ATI_VERB_GET_MULTICHANNEL_7	0xf88
- #define ATI_VERB_GET_MULTICHANNEL_MODE	0xf89
- 
-+/* AMD specific HDA cvt verbs */
-+#define ATI_VERB_SET_RAMP_RATE		0x770
-+#define ATI_VERB_GET_RAMP_RATE		0xf70
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index d9333a4..7692520 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -136,236 +136,248 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
+  * This is a single dmi_table handling all reboot quirks.
+  */
+ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+-	{	/* Handle problems with rebooting on Dell E520's */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell E520",
 +
- #define ATI_OUT_ENABLE 0x1
- 
- #define ATI_HBR_CAPABLE 0x01
-@@ -2824,6 +2828,7 @@ static int atihdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- 					unsigned int format,
- 					struct snd_pcm_substream *substream)
- {
-+	hda_nid_t cvt_nid = hinfo->nid;
- 	struct hdmi_spec *spec = codec->spec;
- 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
- 	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
-@@ -2853,6 +2858,15 @@ static int atihdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- 		return -EINVAL;
- 	}
- 
-+	if (is_amdhdmi_rev3(codec)) {
-+		int ramp_rate = 180; /* default as per spec */
-+		/* disable ramp-up/down for non-pcm as per spec */
-+		if (format & AC_FMT_TYPE_NON_PCM)
-+			ramp_rate = 0;
++	/* Acer */
++	{	/* Handle reboot issue on Acer Aspire one */
++		.callback = set_kbd_reboot,
++		.ident = "Acer Aspire One A110",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DM061"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell 1300's */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell PowerEdge 1300",
 +
-+		snd_hda_codec_write(codec, cvt_nid, 0, ATI_VERB_SET_RAMP_RATE, ramp_rate);
-+	}
++	/* Apple */
++	{	/* Handle problems with rebooting on Apple MacBook5 */
++		.callback = set_pci_reboot,
++		.ident = "Apple MacBook5",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1300/"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook5"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell 300's */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell PowerEdge 300",
++	{	/* Handle problems with rebooting on Apple MacBookPro5 */
++		.callback = set_pci_reboot,
++		.ident = "Apple MacBookPro5",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 300/"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell Optiplex 745's SFF */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell OptiPlex 745",
++	{	/* Handle problems with rebooting on Apple Macmini3,1 */
++		.callback = set_pci_reboot,
++		.ident = "Apple Macmini3,1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Macmini3,1"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell Optiplex 745's DFF */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell OptiPlex 745",
++	{	/* Handle problems with rebooting on the iMac9,1. */
++		.callback = set_pci_reboot,
++		.ident = "Apple iMac9,1",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0MM599"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell Optiplex 745 with 0KW626 */
 +
- 	return generic_hdmi_playback_pcm_prepare(hinfo, codec, stream_tag, format, substream);
- }
++	/* ASUS */
++	{	/* Handle problems with rebooting on ASUS P4S800 */
+ 		.callback = set_bios_reboot,
+-		.ident = "Dell OptiPlex 745",
++		.ident = "ASUS P4S800",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0KW626"),
++			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
++			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell Optiplex 330 with 0KP561 */
++
++	/* Dell */
++	{	/* Handle problems with rebooting on Dell DXP061 */
+ 		.callback = set_bios_reboot,
+-		.ident = "Dell OptiPlex 330",
++		.ident = "Dell DXP061",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 330"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0KP561"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DXP061"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell Optiplex 360 with 0T656F */
++	{	/* Handle problems with rebooting on Dell E520's */
+ 		.callback = set_bios_reboot,
+-		.ident = "Dell OptiPlex 360",
++		.ident = "Dell E520",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 360"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0T656F"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DM061"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell OptiPlex 760 with 0G919G */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell OptiPlex 760",
++	{	/* Handle problems with rebooting on the Latitude E5420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E5420",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 760"),
+-			DMI_MATCH(DMI_BOARD_NAME, "0G919G"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell 2400's */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell PowerEdge 2400",
++	{	/* Handle problems with rebooting on the Latitude E6320. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E6320",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2400"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell T5400's */
+-		.callback = set_bios_reboot,
+-		.ident = "Dell Precision T5400",
++	{	/* Handle problems with rebooting on the Latitude E6420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E6420",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T5400"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell T7400's */
++	{	/* Handle problems with rebooting on Dell Optiplex 330 with 0KP561 */
+ 		.callback = set_bios_reboot,
+-		.ident = "Dell Precision T7400",
++		.ident = "Dell OptiPlex 330",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T7400"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 330"),
++			DMI_MATCH(DMI_BOARD_NAME, "0KP561"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on HP laptops */
++	{	/* Handle problems with rebooting on Dell Optiplex 360 with 0T656F */
+ 		.callback = set_bios_reboot,
+-		.ident = "HP Compaq Laptop",
++		.ident = "Dell OptiPlex 360",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 360"),
++			DMI_MATCH(DMI_BOARD_NAME, "0T656F"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell XPS710 */
++	{	/* Handle problems with rebooting on Dell Optiplex 745's SFF */
+ 		.callback = set_bios_reboot,
+-		.ident = "Dell XPS710",
++		.ident = "Dell OptiPlex 745",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Dell XPS710"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Dell DXP061 */
++	{	/* Handle problems with rebooting on Dell Optiplex 745's DFF */
+ 		.callback = set_bios_reboot,
+-		.ident = "Dell DXP061",
++		.ident = "Dell OptiPlex 745",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DXP061"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
++			DMI_MATCH(DMI_BOARD_NAME, "0MM599"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Sony VGN-Z540N */
++	{	/* Handle problems with rebooting on Dell Optiplex 745 with 0KW626 */
+ 		.callback = set_bios_reboot,
+-		.ident = "Sony VGN-Z540N",
++		.ident = "Dell OptiPlex 745",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "VGN-Z540N"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
++			DMI_MATCH(DMI_BOARD_NAME, "0KW626"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on ASUS P4S800 */
++	{	/* Handle problems with rebooting on Dell OptiPlex 760 with 0G919G */
+ 		.callback = set_bios_reboot,
+-		.ident = "ASUS P4S800",
++		.ident = "Dell OptiPlex 760",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+-			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 760"),
++			DMI_MATCH(DMI_BOARD_NAME, "0G919G"),
+ 		},
+ 	},
+-
+-	{	/* Handle reboot issue on Acer Aspire one */
+-		.callback = set_kbd_reboot,
+-		.ident = "Acer Aspire One A110",
++	{	/* Handle problems with rebooting on the OptiPlex 990. */
++		.callback = set_pci_reboot,
++		.ident = "Dell OptiPlex 990",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 990"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Apple MacBook5 */
+-		.callback = set_pci_reboot,
+-		.ident = "Apple MacBook5",
++	{	/* Handle problems with rebooting on Dell 300's */
++		.callback = set_bios_reboot,
++		.ident = "Dell PowerEdge 300",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook5"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 300/"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Apple MacBookPro5 */
+-		.callback = set_pci_reboot,
+-		.ident = "Apple MacBookPro5",
++	{	/* Handle problems with rebooting on Dell 1300's */
++		.callback = set_bios_reboot,
++		.ident = "Dell PowerEdge 1300",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1300/"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on Apple Macmini3,1 */
+-		.callback = set_pci_reboot,
+-		.ident = "Apple Macmini3,1",
++	{	/* Handle problems with rebooting on Dell 2400's */
++		.callback = set_bios_reboot,
++		.ident = "Dell PowerEdge 2400",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Macmini3,1"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2400"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the iMac9,1. */
++	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
+ 		.callback = set_pci_reboot,
+-		.ident = "Apple iMac9,1",
++		.ident = "Dell PowerEdge C6100",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the Latitude E6320. */
++	{	/* Handle problems with rebooting on the Precision M6600. */
+ 		.callback = set_pci_reboot,
+-		.ident = "Dell Latitude E6320",
++		.ident = "Dell Precision M6600",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the Latitude E5420. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell Latitude E5420",
++	{	/* Handle problems with rebooting on Dell T5400's */
++		.callback = set_bios_reboot,
++		.ident = "Dell Precision T5400",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T5400"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the Latitude E6420. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell Latitude E6420",
++	{	/* Handle problems with rebooting on Dell T7400's */
++		.callback = set_bios_reboot,
++		.ident = "Dell Precision T7400",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T7400"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the OptiPlex 990. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell OptiPlex 990",
++	{	/* Handle problems with rebooting on Dell XPS710 */
++		.callback = set_bios_reboot,
++		.ident = "Dell XPS710",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 990"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Dell XPS710"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the Precision M6600. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell Precision M6600",
++
++	/* Hewlett-Packard */
++	{	/* Handle problems with rebooting on HP laptops */
++		.callback = set_bios_reboot,
++		.ident = "HP Compaq Laptop",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
+-		.callback = set_pci_reboot,
+-		.ident = "Dell PowerEdge C6100",
++
++	/* Sony */
++	{	/* Handle problems with rebooting on Sony VGN-Z540N */
++		.callback = set_bios_reboot,
++		.ident = "Sony VGN-Z540N",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "VGN-Z540N"),
+ 		},
+ 	},
++
+ 	{ }
+ };
  
--- 
-1.8.1.5
-
