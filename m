@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab3JAHsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 03:48:09 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:42202 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3JAHsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 03:48:07 -0400
-Date: Tue, 1 Oct 2013 09:48:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] rwsem: reduce spinlock contention in wakeup code path
-Message-ID: <20131001074802.GB20889@gmail.com>
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>
- <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>
- <20130928074144.GA17773@gmail.com>
- <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>
- <20130930104658.GX3081@twins.programming.kicks-ass.net>
+	id S1752121Ab3JAHvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 03:51:39 -0400
+Received: from ozlabs.org ([203.10.76.45]:55641 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751174Ab3JAHvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 03:51:37 -0400
+Date: Tue, 1 Oct 2013 17:51:33 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20131001075133.GJ17966@concordia>
+References: <20130905154436.GC24148@htj.dyndns.org>
+ <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
+ <20130905200608.GA3846@htj.dyndns.org>
+ <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
+ <20130906160621.GF22763@mtj.dyndns.org>
+ <20130906233205.GF12956@google.com>
+ <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
+ <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
+ <20130917143022.GA7707@concordia>
+ <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130930104658.GX3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Sat, Sep 28, 2013 at 11:55:26AM -0700, Linus Torvalds wrote:
-> > So if the primary reason for this is really just that f*cking anon_vma
-> > lock, then I would seriously suggest:
+On Wed, Sep 18, 2013 at 11:48:00AM +0200, Alexander Gordeev wrote:
+> On Wed, Sep 18, 2013 at 12:30:23AM +1000, Michael Ellerman wrote:
+> > How about no?
+> > 
+> > We have a small number of MSIs available, limited by hardware &
+> > firmware, if we don't impose a quota then the first device that probes
+> > will get most/all of the MSIs and other devices miss out.
 > 
-> I would still like to see the rwsem patches merged; even if we end up 
-> going back to a spin style anon_vma lock.
+> Out of curiosity - how pSeries has had done it without quotas before
+> 448e2ca ("powerpc/pseries: Implement a quota system for MSIs")?
 > 
-> There's been various reports in the past about how programs are 
-> significantly faster if they wrap their mmap() calls in a pthread_mutex. 
-> And this was purely down to the fact that rwsem writer-writer contention 
-> blows chunks.
+> > Anyway I don't see what problem you're trying to solve? I agree the
+> > -ve/0/+ve return value pattern is ugly, but it's hardly the end of the
+> > world.
+> 
+> Well, the interface recently has been re-classified from "ugly" to
+> "unnecessarily complex and actively harmful" in Tejun's words ;)
+> 
+> Indeed, I checked most of the drivers and it is incredible how people
+> are creative in misusing the interface: from innocent pci_disable_msix()
+> calls when if pci_enable_msix() failed to assuming MSI-Xs were enabled
+> if pci_enable_msix() returned a positive value (apparently untested).
 
-That's about the mm->mmap_sem rwsem, right?
+OK, but we have the source to the drivers, we could just fix them.
 
-That impact would have to be measured carefully, and not just for 
-workloads where we know that better contention logic helps, but other MM 
-workloads that are hitting hard on mmap_sem.
+We could even add:
 
-Thanks,
+  pci_enable_msix_i_am_stupid()
 
-	Ingo
+Which swallows the positive return and just gives back -ve/0.
+
+> Roughly third of the drivers just do not care and bail out once
+> pci_enable_msix() has not succeeded. Not sure how many of these are
+> mandated by the hardware.
+
+Sure, that's fine if those drivers do that, it's up to the drivers after
+all.
+
+> Another quite common pattern is a call to pci_enable_msix() to figure out
+> the number of MSI-Xs available and a repeated call of pci_enable_msix()
+> to enable those MSI-Xs, this time.
+
+Also fine, though as the documentation suggests a loop is the best
+construct rather than two explicit calls.
+
+> The recommended practice would be:
+> 
+> 	/*
+> 	 * Retrieving 'nvec' by means other than pci_msix_table_size()
+> 	 */
+> 
+> 	rc = pci_get_msix_limit(pdev);
+> 	if (rc < 0)
+> 		return rc;
+> 
+> 	/*
+> 	 * nvec = min(rc, nvec);
+> 	 */
+> 
+> 	for (i = 0; i < nvec; i++)
+> 		msix_entry[i].entry = i;
+> 
+> 	rc = pci_enable_msix(pdev, msix_entry, nvec);
+> 	if (rc)
+> 		return rc;
+> 
+> Thoughts?
+
+We could probably make that work.
+
+The disadvantage is that any restriction imposed on us above the quota
+can only be reported as an error from pci_enable_msix().
+
+The quota code, called from pci_get_msix_limit(), can only do so much to
+interogate firmware about the limitations. The ultimate way to check if
+firmware will give us enough MSIs is to try and allocate them. But we
+can't do that from pci_get_msix_limit() because the driver is not asking
+us to enable MSIs, just query them.
+
+You'll also need to add another arch hook, for the quota check, and
+we'll have to add it to our per-platform indirection as well.
+
+All a lot of bother for no real gain IMHO.
+
+cheers
