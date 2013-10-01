@@ -1,123 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab3JACle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Sep 2013 22:41:34 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:28972 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab3JACld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Sep 2013 22:41:33 -0400
-Message-ID: <524A364D.3040606@hp.com>
-Date: Mon, 30 Sep 2013 22:41:17 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH, v2] anon_vmas: Convert the rwsem to an rwlock_t
-References: <1380308424-31011-1-git-send-email-Waiman.Long@hp.com>  <CA+55aFxXeQ69B1bfrO+0QtBqm0gt688LOshx=ppNjch10JF8FQ@mail.gmail.com>  <20130928074144.GA17773@gmail.com>  <CA+55aFyx-Lpqd8i2tHvhXCqL+nJZPq-6SikEkb-cQZEU9ogRjA@mail.gmail.com>  <20130928192123.GA8228@gmail.com> <20130928193739.GA8642@gmail.com>  <CA+55aFyMXxH-PGewqxse=VJzMdHWkyN4iKMh-VgQ1X2yJFnAgw@mail.gmail.com>  <20130928195207.GA31245@gmail.com> <1380561027.3467.196.camel@schen9-DESK>  <20130930181411.GO15690@laptop.programming.kicks-ass.net>  <1380568987.3467.198.camel@schen9-DESK>  <5249D26C.8020208@hp.com> <1380570436.3467.199.camel@schen9-DESK>
-In-Reply-To: <1380570436.3467.199.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755525Ab3JADLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Sep 2013 23:11:50 -0400
+Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:44483 "EHLO
+	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755330Ab3JADLs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Sep 2013 23:11:48 -0400
+X-Greylist: delayed 4426 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Sep 2013 23:11:48 EDT
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: applesmc oops in 3.10/3.11
+From: Chris Murphy <bugzilla@colorremedies.com>
+In-Reply-To: <524615B1.6000106@roeck-us.net>
+Date: Mon, 30 Sep 2013 19:57:48 -0600
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        Henrik Rydberg <rydberg@euromail.se>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
+References: <CA+5PVA5mmLPEqM2r5=fBN4sM4LLacynn8R1tewObsX35e4_TfA@mail.gmail.com> <20130925195628.GA1532@roeck-us.net> <20130925214807.GA3234@polaris.bitmath.org> <20130925220838.GB4184@roeck-us.net> <20130926063453.GA526@polaris.bitmath.org> <CA+5PVA76tjoR+GNaQps_zQmqz=V_GAcQaZLqKcx1ihgUMQBrQw@mail.gmail.com> <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net>
+To: Guenter Roeck <linux@roeck-us.net>
+X-Mailer: Apple Mail (2.1510)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - colorremedies.com
+X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 03:47 PM, Tim Chen wrote:
->> My qrwlock doesn't enable qrwlock by default. You have to use menuconfig
->> to explicitly enable it. Have you done that when you build the test
->> kernel? I am thinking of explicitly enabling it for x86 if the anon-vma
->> lock is converted back to a rwlock.
->>
-> Yes, I have explicitly enabled it during my testing.
->
-> Thanks.
-> Tim
->
-Thank for the info.
 
-I had tested Ingo's 2nd patch myself with the qrwlock patch on a 8-node
-machine with a 3.12.0-rc2 kernel. The results of AIM7's high_systime
-(at 1500 users) were:
+On Sep 27, 2013, at 5:33 PM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-Anon-vmas lock          JPM        %Change
---------------          ---        -------
-     rwsem        148265           -
-     rwlock        238715          +61%
-     qrwlock        242048          +63%
+> On 09/27/2013 11:03 AM, Chris Murphy wrote:
+>> 
+>> On Sep 27, 2013, at 11:59 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> 
+>>> On Fri, Sep 27, 2013 at 11:41:42AM -0600, Chris Murphy wrote:
+>>>> 
+>>>> On Sep 27, 2013, at 11:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>> 
+>>>>> On Fri, Sep 27, 2013 at 12:21:04PM -0400, Josh Boyer wrote:
+>>>>>> On Thu, Sep 26, 2013 at 2:34 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>>>>>>>>>> This suggests that initialization may be attempted more than once. The key cache
+>>>>>>>>>> is allocated only once, but the number of keys is read for each attempt.
+>>>>>>>>>> 
+>>>>>>>>>> No idea if that can happen, but if the number of keys can increase after
+>>>>>>>>>> the first initialization attempt you would have an explanation for the crash.
+>>>>>>>>> 
+>>>>>>>>> Good idea, and easy enough to test with the patch below.
+>>>>>>>>> 
+>>>>>>>> Should we apply this patch even though it may not solve the specific problem ?
+>>>>>>> 
+>>>>>>> Yes, why not - it certainly won't hurt. I am running it right now, so
+>>>>>>> it is at least run-tested.
+>>>>>>> 
+>>>>>>>> Again, not sure if the key count can change, but the current code is at the very
+>>>>>>>> least inconsistent, as it keeps reading the key count without updating or
+>>>>>>>> verifying the cache size.
+>>>>>>> 
+>>>>>>> Yes - I agree that the error state is far-fetched, but it is hard to
+>>>>>>> see any other logical explanation. There is of course always the
+>>>>>>> possibility that the problem is somewhere else completely.
+>>>>>>> 
+>>>>>>> Proper patch attached.
+>>>>>>> 
+>>>>>>> Thanks,
+>>>>>>> Henrik
+>>>>>>> 
+>>>>>>> ---
+>>>>>>> 
+>>>>>>> From dedefba9167913c46e1896ce0624e68ffe95d532 Mon Sep 17 00:00:00 2001
+>>>>>>> From: Henrik Rydberg <rydberg@euromail.se>
+>>>>>>> Date: Thu, 26 Sep 2013 08:33:16 +0200
+>>>>>>> Subject: [PATCH] hwmon: (applesmc) Check key count before proceeding
+>>>>>>> 
+>>>>>>> After reports from Chris and Josh Boyer of a rare crash in applesmc,
+>>>>>>> Guenter pointed at the initialization problem fixed below. The patch
+>>>>>>> has not been verified to fix the crash, but should be applied
+>>>>>>> regardless.
+>>>>>>> 
+>>>>>>> Reported-by: <jwboyer@fedoraproject.org>
+>>>>>>> Suggested-by: Guenter Roeck <linux@roeck-us.net>
+>>>>>>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>>>>>>> ---
+>>>>>>> drivers/hwmon/applesmc.c | 11 ++++++++++-
+>>>>>>> 1 file changed, 10 insertions(+), 1 deletion(-)
+>>>>>> 
+>>>>>> Thanks for the quick reply.  I'll get this rolled into our kernels soon.
+>>>>>> 
+>>>>> I sent a pull request to Linus, so you should be able to pull it from
+>>>>> the upstream kernel shortly. Would be great to get feedback if the patch
+>>>>> solves the problem (or doesn't).
+>>>> 
+>>>> I'll start running it when it appears in koji. It's very transient, maybe one oops per week with lots of (other) testing. I'm not even sure if it happens on warm or cold boots or both.
+>>>> 
+>>> When you do, can you possibly trigger an event based on the warning added
+>>> with the patch ? This might help us to identify if the problem fixed
+>>> with the patch actually happens.
+>> 
+>> I don't understand the question. I'm uncertain how to trigger, and also what event.
+>> 
+> 
+> The patch includes a new warning message.
+> 
+> 	pr_warn("key count changed from %d to %d\n",
+>                        s->key_count, count);
+> 
+> It would be great if there would be a means to detect if this message is seen
+> in a kernel log, because it would show that the potential crash condition
+> fixed with the patch was actually encountered. This would help us to determine
+> if we actually fixed the problem or not.
+> 
+> Of course, we'll know if is wasn't fixed if the system still crashes.
 
-So the queue rwlock was only slightly faster in this case. Below were
-the perf profile with rwlock:
+Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64. 
 
-  18.20%   reaim  [kernel.kallsyms]  [k] __write_lock_failed
-   9.36%   reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-   2.91%   reaim  [kernel.kallsyms]  [k] mspin_lock
-   2.73%   reaim  [kernel.kallsyms]  [k] anon_vma_interval_tree_insert
-   2.23%      ls  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-   1.29%   reaim  [kernel.kallsyms]  [k] __read_lock_failed
-   1.21%    true  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-   1.14%   reaim  [kernel.kallsyms]  [k] zap_pte_range
-   1.13%   reaim  [kernel.kallsyms]  [k] _raw_spin_lock
-   1.04%   reaim  [kernel.kallsyms]  [k] mutex_spin_on_owner
+[   10.886016] applesmc: key count changed from 261 to 1174405121
 
-The perf profile with qrwlock:
+Attaching new full dmesg to the bug report:
+https://bugzilla.redhat.com/show_bug.cgi?id=1011719#c11
 
-  10.57%   reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-   7.98%   reaim  [kernel.kallsyms]  [k] queue_write_lock_slowpath
-   5.83%   reaim  [kernel.kallsyms]  [k] mspin_lock
-   2.86%      ls  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-   2.71%   reaim  [kernel.kallsyms]  [k] anon_vma_interval_tree_insert
-   1.52%    true  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-   1.51%   reaim  [kernel.kallsyms]  [k] queue_read_lock_slowpath
-   1.35%   reaim  [kernel.kallsyms]  [k] mutex_spin_on_owner
-   1.12%   reaim  [kernel.kallsyms]  [k] zap_pte_range
-   1.06%   reaim  [kernel.kallsyms]  [k] perf_event_aux_ctx
-   1.01%   reaim  [kernel.kallsyms]  [k] perf_event_aux
-
-In the qrwlock kernel, less time were spent in the rwlock slowpath
-path (about half). However, more time were now spent in the spinlock
-and mutex spinning. Another observation is that no noticeable idle
-time was reported whereas the system could be half idle with rwsem.
-There was also a lot less idle balancing activities.
-
-The qrwlock is fair wrt the writers. So its performance may not be
-as good as the fully unfair rwlock. However, queuing reduces a lot
-of cache contention traffic, thus improving performance. It is the
-interplay of these 2 factors that determine how much performance
-benefit we can see. Another factor to consider is that when we have
-less contention in anon-vmas, other areas of contentions will show up.
-
-With qrwlock, the spinlock contention was:
-
-  10.57%   reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
-              |--58.70%-- release_pages
-              |--38.42%-- pagevec_lru_move_fn
-              |--0.64%-- get_page_from_freelist
-              |--0.64%-- __page_cache_release
-               --1.60%-- [...]
-
-   2.86%      ls  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
-                 |--52.73%-- pagevec_lru_move_fn
-                 |--46.25%-- release_pages
-                  --1.02%-- [...]
-
-   1.52%    true  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
-               |--53.76%-- pagevec_lru_move_fn
-               |--43.95%-- release_pages
-               |--1.02%-- __page_cache_release
-
--Longman
-
+Chris
