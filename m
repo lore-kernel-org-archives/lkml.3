@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3JAMRD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 08:17:03 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38688 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab3JAMQ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 08:16:59 -0400
-Date: Tue, 1 Oct 2013 05:16:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: Avoiding the dentry d_lock on final dput(), part deux:
- transactional memory
-Message-ID: <20131001121654.GX19582@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
- <1380581522.6396.20.camel@pasglop>
- <23118.1380587771@ale.ozlabs.ibm.com>
- <CA+55aFwi5sZK4mFxs3PT1wU4_vNzsLOFiocqi3g14fPamKXYsw@mail.gmail.com>
- <1380593103.6396.38.camel@pasglop>
- <20131001031356.GP19582@linux.vnet.ibm.com>
- <CAEjGV6xuscOh=t6BhbdRKAPcZ1DOJkD6ZcB1wgTf9-AedKSaxA@mail.gmail.com>
+	id S1752944Ab3JAMRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 08:17:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60003 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230Ab3JAMRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 08:17:46 -0400
+Message-ID: <524ABD60.1010206@ti.com>
+Date: Tue, 1 Oct 2013 15:17:36 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEjGV6xuscOh=t6BhbdRKAPcZ1DOJkD6ZcB1wgTf9-AedKSaxA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100112-8236-0000-0000-000002470791
+To: Arend van Spriel <arend@broadcom.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <luca@coelho.fi>
+Subject: Re: using mmc2 on panda [was: Regression 3.11-rc1: omap4panda: no
+ usb and consequently no ethernet]
+References: <51E7AA24.6080600@broadcom.com> <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com> <51E919CA.8060805@ti.com> <51E91B80.1050609@broadcom.com> <524A823F.6070209@broadcom.com> <524A9AB8.4010407@ti.com> <524A9BB2.2050503@ti.com> <524AA9C1.2000303@broadcom.com>
+In-Reply-To: <524AA9C1.2000303@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 02:52:28PM +1000, Michael Neuling wrote:
-> >> Well we don't have to, I think Mikey wasn't totally clear about that
-> >> "making all registers volatile" business :-) This is just something we
-> >> need to handle in assembly if we are going to reclaim the suspended
-> >> transaction.
+On 10/01/2013 01:53 PM, Arend van Spriel wrote:
+> On 10/01/2013 11:53 AM, Roger Quadros wrote:
+>> On 10/01/2013 12:49 PM, Roger Quadros wrote:
+>>> Hi Arend,
+>>>
+>>> On 10/01/2013 11:05 AM, Arend van Spriel wrote:
+>>>> On 07/19/2013 12:57 PM, Arend van Spriel wrote:
+>>>>> On 07/19/2013 12:49 PM, Roger Quadros wrote:
+>>>>>> On 07/19/2013 01:36 PM, Arend van Spriel wrote:
+>>>>>>> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
+>>>>>>>> Then for the SDIO with device tree, take a look at the following
+>>>>>>>> patches:
+>>>>>>>>
+>>>>>>>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
+>>>>>>>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
+>>>>>>>
+>>>>>>> I have been looking at the pandaboard patch in the series above and I
+>>>>>>> do have a question. Among other things the patch adds these dt entries.
+>>>>>>>
+>>>>>>> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP |
+>>>>>>> MODE0 */
+>>>>>>> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP |
+>>>>>>> MODE0 */
+>>>>>>>
+>>>>>>> If I look at the similar names in the deceased board-omap4panda.c:
+>>>>>>>
+>>>>>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 |
+>>>>>>> OMAP_PIN_INPUT_PULLUP),
+>>>>>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 |
+>>>>>>> OMAP_PIN_INPUT_PULLUP),
+>>>>>>>
+>>>>>>> and in mux44xx.h:
+>>>>>>>
+>>>>>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
+>>>>>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
+>>>>>>>
+>>>>>>> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is
+>>>>>>> probably an explanation to it and it would help my understanding to
+>>>>>>> know where this difference comes from. Hope you can help me out here.
+>>>>>>>
+>>>>>>
+>>>>>> If you see omap4.dtsi, omap4_pmx_core starts at register address
+>>>>>> 0x4a100040.
+>>>>>>
+>>>>>> So, you need to subtract 0x40 from the offsets defined in mux44xx.h
+>>>>>> for pmx_core registers.
+>>>>>
+>>>>> That was what I was looking for. Thanks!
+>>>>
+>>>> Hi Roger,
+>>>>
+>>>> It has been a while, but I would like to pickup this thread. We have a couple of pandaboards used as test setup. These have an SDIO adapter hooked up to expansion connector A using MMC2. I have attached the patch file (just ignore platform_data stuff). Now on one board it works, but not for the other. I suspect a board issue so listing the two types that we use:
+>>>>
+>>>> PandaBoard rev A2 (dmesg: OMAP4430 ES2.1): works
+>>>> PandaBoardES rev B1 (dmesg: OMAP4460 ES1.1): nope
+>>>>
+>>>> Any hints for me.
+>>>
+>>> Does your PandaboardES have the WLAN chip (U4) mounted? If yes, how do you isolate
+>>> it from your external SDIO adapter?
 > 
-> Yeah, sorry.  The slow path with all registers as volatile is only
-> needed if we get pre-empted during the transaction.
+> On my 4460 board in front of me U4 is not populated, but U3 is (the TiWi thing).
 > 
-> >>
-> >> So basically, what we need is something along the lines of
-> >> enable_kernel_tm() which checks if there's a suspended user transaction
-> >> and if yes, kills/reclaims it.
-> >>
-> >> Then we also need to handle in our interrupt handlers that we have an
-> >> active/suspended transaction from a kernel state, which we don't deal
-> >> with at this point, and do whatever has to be done to kill it... we
-> >> might get away with something simple if we can state that we only allow
-> >> kernel transactions at task level and not from interrupt/softirq
-> >> contexts, at least initially.
-> >
-> > Call me a coward, but this is starting to sound a bit scary.  ;-)
+>>
+>> OK, just realized that the expansion connector uses different pads for MMC2. However, you still
+>> need to make sure that the other pins (connected to on board WLAN chip) are not muxed as MMC2.
 > 
-> We are just wanting to prototype it for now to see if we could make it
-> go faster.  If it's worth it, then we'd consider the additional
-> complexity this would bring.
-> 
-> I don't think it'll be that bad, but I'd certainly want to make sure
-> it's worth it before trying :-)
+> I think Luciano added DT patches for on-board WLAN and it uses MMC5 if I am not mistaken(?). Attached are the dmesg logs of the two boards.
 
-OK, fair point.  ;-)
+Right. WLAN is supposed to use MMC5. But if you don't have Luca's patches, can you please ensure that those pins are muxed either as safe mode
+or as MMC5? Default seems to be safe mode, but you should cross check.
 
-							Thanx, Paul
+Also in your patches you have set mmc2-clk to PIN_INPUT_PULLUP
+Shouldn't it be PIN_OUTPUT?
 
+Still I have no clue why it works on 4430 and not on 4460. Are you using the same bootloader image on both boards?
+
+cheers,
+-roger
