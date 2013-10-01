@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750934Ab3JAEOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 00:14:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41919 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab3JAEOs (ORCPT
+	id S1751266Ab3JAEQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 00:16:23 -0400
+Received: from antispam.pmmg.mg.gov.br ([200.198.34.67]:51023 "EHLO
+	antispam.pmmg.mg.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3JAEQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 00:14:48 -0400
-Date: Mon, 30 Sep 2013 21:21:53 -0700 (PDT)
-Message-Id: <20130930.212153.531876068589922786.davem@davemloft.net>
-To: ricardo.ribalda@gmail.com
-Cc: joe@perches.com, jg1.han@samsung.com, gregkh@linuxfoundation.org,
-        wfp5p@virginia.edu, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ll_temac: Reset dma descriptors on ndo_open
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1380281068-13269-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 30 Sep 2013 21:14:48 -0700 (PDT)
+	Tue, 1 Oct 2013 00:16:21 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Oct 2013 00:16:21 EDT
+Date: Tue, 01 Oct 2013 00:52:50 -0300 (BRT)
+From: "Mrs. Olga Patarkatsishvili" <mrs.patarkatsishvili@w.cn>
+Reply-To: olgapatarkatsishvili@Safe-mail.net
+Subject: An Emergency, Please Acknowledge!!!!
+Message-ID: <9b1abd59-86a5-461e-90d2-cf1479d24cb9@webmail>
+Content-Type: text/plain;
+  charset="utf-8"
+MIME-Version: 1.0
+X-Originating-IP: [46.4.106.211]
+X-Mailer: Zimbra 7.1.1_GA_3196 (ZimbraWebClient - SAF3 (Win)/7.1.1_GA_3196)
+To: undisclosed-recipients:;
+X-NAIMIME-Disclaimer: 1
+X-NAIMIME-Modified: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r914GSk9014711
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Fri, 27 Sep 2013 13:24:28 +0200
 
-> The dma descriptors are only initialized on the probe function.
-> 
-> If a packet is on the buffer when temac_stop is called, the dma
-> descriptors can be left on a incorrect status where no other package can
-> be sent.
-> 
-> So an interface could be left in an usable state after ifdow/ifup.
-> 
-> This patch makes sure that the descriptors are in a proper status when
-> the device is started.
-> 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-This analysis is not correct.
+Greetings From Georgia
 
-In the current driver, the descriptors are allocated and initialized
-in the open function, not the probe function.
+Greetings in the name of the lord, I am Mrs. Olga Patarkatsishvili,  the widow of late Georgian business tycoon Mr. Badri Patarkatsishvili, I have a
+business proposal which will be of great benefit to you and myself. I will send you further details once i receive your response back. 
+Please for security reason, i will strongly recommend that you write me through my private email: mrs_olgapatarkatsishviili@Safe-mail.net account 
+only.Thanks for your understanding.
 
-I'm not applying this patch.
+Yours truly,
+
+Mrs. Olga Patarkatsishvili.
+
+
+
+...:PMMG:...
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
