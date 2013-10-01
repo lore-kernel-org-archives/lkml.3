@@ -1,32 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3JAMod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 08:44:33 -0400
-Received: from imap.thunk.org ([74.207.234.97]:40710 "EHLO imap.thunk.org"
+	id S1752962Ab3JAMpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 08:45:45 -0400
+Received: from imap.thunk.org ([74.207.234.97]:40714 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab3JAMoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 08:44:32 -0400
-Date: Tue, 1 Oct 2013 08:44:24 -0400
+	id S1752642Ab3JAMpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 08:45:43 -0400
+Date: Tue, 1 Oct 2013 08:45:41 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 01/11] random: don't feed stack data into pool when
- interrupt regs NULL
-Message-ID: <20131001124424.GA2097@thunk.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 08/11] ext4: Fix end of group handling in
+ ext4_mb_init_cache
+Message-ID: <20131001124541.GB2097@thunk.org>
 Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"Luck, Tony" <tony.luck@intel.com>,
-	Andi Kleen <andi@firstfloor.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>
+	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+	Andi Kleen <ak@linux.intel.com>, linux-ext4@vger.kernel.org
 References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
- <1380572952-30729-2-git-send-email-andi@firstfloor.org>
- <3908561D78D1C84285E8C5FCA982C28F31D1F249@ORSMSX106.amr.corp.intel.com>
+ <1380572952-30729-9-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D1F249@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <1380572952-30729-9-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -35,48 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 08:51:43PM +0000, Luck, Tony wrote:
-> > In this case fast_mix would use two uninitialized ints from the stack
-> > and mix it into the pool.
+On Mon, Sep 30, 2013 at 01:29:09PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Is the concern here is that an attacker might know (or be able to control) what is on
-> the stack - and so get knowledge of what is being mixed into the pool?
-
-Yes, this is a bogus complaint.
-
-> > In this case set the input to 0.
+> The first loop in ext4_mb_init_cache can bail out when the end of
+> all groups is reached. Unfortunately the later loops did not
+> have that check and could access uninitialized buffer pointers
+> in bh[]. Add the end of group check everywhere.
 > 
-> And the fix is to guarantee that everyone knows what is being mixed in? (!)
+> Cc: tytso@mit.edu
+> Cc: linux-ext4@vger.kernel.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  Makefile          | 6 +++---
+>  fs/ext4/mballoc.c | 6 +++++-
+>  2 files changed, 8 insertions(+), 4 deletions(-)
 > 
-> Wouldn't it be better to adjust the "nbytes" parameter to
-> 
-> 	fast_mix(..., ..., sizeof (input));
-> 
-> to only mix in the part of input[] that we successfully initialized?
+> diff --git a/Makefile b/Makefile
+> index 8d0668f..be3ef83 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -663,9 +663,9 @@ KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
+>  KBUILD_ARFLAGS := $(call ar-option,D)
+>  
+>  # check for 'asm goto'
+> -ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
+> -	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
+> -endif
+> +#ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
+> +#	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
+> +#endif
+>  
+>  # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
+>  KBUILD_CPPFLAGS += $(KCPPFLAGS)
 
-The changes queued for the next merge window in the random tree solve
-this problem slightly differently:
-
-	...
-	input[0] = cycles ^ j_high ^ irq;
-	input[1] = now ^ c_high;
-	ip = regs ? instruction_pointer(regs) : _RET_IP_;
-	input[2] = ip;
-	input[3] = ip >> 32;
-
-	fast_mix(fast_pool, input);
-	...
-
-(Note the lack of nbytes parameter in fast_mix --- there are some
-optimizations so that we mix in the changes by 32-bit words, instead
-of bytes, and the number of 32-bit words is fixed to 4, since it's the
-only way fast_mix is called).
-
-_RET_IP_ isn't that much better than 0, but it's at least kernel
-specific, and I figured it was better to shut up bogus warnings, as
-opposed to trying to depend on stack garbage (which would likely be
-kernel specific anyway).
-
-Cheers,
+What's this change all about, and why is it included in this
+patch?
 
 						- Ted
