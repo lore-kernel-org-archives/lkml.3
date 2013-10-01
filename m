@@ -1,122 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab3JAOX6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:23:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57727 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab3JAOXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:23:51 -0400
-Date: Tue, 1 Oct 2013 09:22:40 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: Felipe Balbi <balbi@ti.com>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <freemangordon@abv.bg>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH usb 1/2] usb: musb: Add missing ATOMIC_INIT_NOTIFIER_HEAD
-Message-ID: <20131001142240.GR1476@radagast>
-Reply-To: <balbi@ti.com>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <20130918164816.GN21559@radagast>
- <201309181903.33243@pali>
- <201309251017.39014@pali>
- <20130925203333.GU10746@radagast>
- <20130926000059.GA25716@amd.pavel.ucw.cz>
+	id S1753637Ab3JAO0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:26:05 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47215 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab3JAO0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:26:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ma2pZxZcUUd0eybH"
-Content-Disposition: inline
-In-Reply-To: <20130926000059.GA25716@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131001140525.GE24825@localhost.localdomain>
+References: <52138BE9.5090005@linux.intel.com>
+	<20130820160146.GG3258@twins.programming.kicks-ass.net>
+	<20130820163312.GA17957@redhat.com>
+	<20130820175429.GI3258@twins.programming.kicks-ass.net>
+	<20130820182553.GB22287@redhat.com>
+	<20130821083130.GM3258@twins.programming.kicks-ass.net>
+	<20130821113551.GA1472@redhat.com>
+	<20130821123311.GA31370@twins.programming.kicks-ass.net>
+	<20130821142356.GC31370@twins.programming.kicks-ass.net>
+	<20130821164146.GA15194@redhat.com>
+	<20131001140525.GE24825@localhost.localdomain>
+Date: Tue, 1 Oct 2013 16:26:01 +0200
+Message-ID: <CAFTL4hzxN2nj8H+ycPaFLzvM0NK5TtfWtfVJVTSEtNzofTvqSw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
+	<fernando_b1@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Ma2pZxZcUUd0eybH
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2013/10/1 Frederic Weisbecker <fweisbec@gmail.com>:
+> On Wed, Aug 21, 2013 at 06:41:46PM +0200, Oleg Nesterov wrote:
+>> On 08/21, Peter Zijlstra wrote:
+>> >
+>> > The other consideration is that this adds two branches to the normal
+>> > schedule path. I really don't know what the regular ratio between
+>> > schedule() and io_schedule() is -- and I suspect it can very much depend
+>> > on workload -- but it might be a net loss due to that, even if it makes
+>> > io_schedule() 'lots' cheaper.
+>>
+>> Yes, agreed. Please ignore it for now, I didn't try to actually suggest
+>> this change. And even if this is fine perfomance wise, this needs some
+>> benchmarking.
+>>
+>> Well. actually I have a vague feeling that _perhaps_ this change can
+>> help to solve other problems we are discussing, but I am not sure and
+>> right now I can't even explain the idea to me.
+>>
+>> In short: please ignore ;)
+>>
+>> Oleg.
+>>
+>
+> Ok, the discussion is hard to synthesize but I think I now have more
+> clues to send a better new iteration.
+>
+> So we have the choice between keeping atomics or using rq->lock. It seems
+> that using rq->lock is going to be worrisome for several reasons. So let's
+> stick to atomics (but tell me if you prefer the other way).
+>
+> So the idea for the next try is to do something along the lines of:
+>
+> struct cpu_idletime {
+>        nr_iowait,
+>        seqlock,
+>        idle_start,
+>        idle_time,
+>        iowait_time,
+> } __cacheline_aligned_in_smp;
+>
+> DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
+>
+> io_schedule()
+> {
+>         int prev_cpu;
+>
+>         preempt_disable();
+>         prev_cpu_idletime = __this_cpu_ptr(&cpu_idletime);
+>         atomic_inc(prev_cpu_idletime->nr_iowait);
+>         WARN_ON_ONCE(is_idle_task(current));
+>         preempt_enable_no_resched();
+>
+>         schedule();
+>
+>         write_seqlock(prev_cpu_idletime->seqlock)
+>         if (!atomic_dec_return(prev_cpu_idletime->nr_iowait))
+>            flush_cpu_idle_time(prev_cpu_idletime, 1)
 
-Hi,
+I forgot...
+              cpu_idletime->idle_start;
 
-On Thu, Sep 26, 2013 at 02:00:59AM +0200, Pavel Machek wrote:
-> > On Wed, Sep 25, 2013 at 10:17:38AM +0200, Pali Roh=E1r wrote:
-> > > On Wednesday 18 September 2013 19:03:33 Pali Roh=E1r wrote:
-> > > > &twl->phy.notifier is not initalized
-> > > >=20
-> > > > Signed-off-by: Pali Roh=E1r <pali.rohar@gmail.com>
-> > > >=20
-> > > > diff --git a/drivers/usb/phy/phy-twl4030-usb.c
-> > > > b/drivers/usb/phy/phy-twl4030-usb.c index 8f78d2d..efe6155
-> > > > 100644
-> > > > --- a/drivers/usb/phy/phy-twl4030-usb.c
-> > > > +++ b/drivers/usb/phy/phy-twl4030-usb.c
-> > > > @@ -705,6 +705,8 @@ static int twl4030_usb_probe(struct
-> > > > platform_device *pdev) if (device_create_file(&pdev->dev,
-> > > > &dev_attr_vbus)) dev_warn(&pdev->dev, "could not create sysfs
-> > > > file\n");
-> > > >=20
-> > > > +	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
-> > > > +
-> > > >  	/* Our job is to use irqs and status from the power module
-> > > >  	 * to keep the transceiver disabled when nothing's
-> > > > connected. *
-> > >=20
-> > > I sent above patch week ago. Did you already included it?
-> >=20
-> > look at my testing branch.
->=20
-> Felipe prefers you to go MAINTAINERS file for
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
->=20
-> entry. After few clicks, you'll find out your two patches in=20
->=20
-> https://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git/log/?h=3Dtesti=
-ng
->=20
-> . So yes, it seems that after 10+ flames Felipe was _not_ lazy to
-> send, "Thanks for a patch" mail was too much work.
->=20
-> Apparently, we'll need  Documentation/HowToBeGoodMaintainer file...
+after the update.
 
-I only send my automated emails after properly testing them. They sit in
-'testing' for as long as necessary. After all the test is done, they'll
-be moved to 'next' at which point you get your email notification and
-they reach linux-next for the next day.
+Also now I wonder if we actually should lock the inc part. Otherwise
+it may be hard to get the readers right...
 
---=20
-balbi
+Thanks.
 
---Ma2pZxZcUUd0eybH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSStqwAAoJEIaOsuA1yqREAwsP/1FZp9Q04f3ZWw28tSd9flJ3
-i8ioP4uhQGr3c6lF5B1fyMcl80R9yBslQudVS8Zc5o1/ZXCgsECXtHE2KyZAvahR
-Jg3wfKCSFbIr3/ubuH0RRgyzPDzNOiDJ0T2a4PJHMSnxsFT4pdaJRMAvIaW7AuTT
-PqDvN1+sHbR1/pTDyfeuXnKTu9Bu5IZ5G/NLDKqwW1StHhoWDCPxLI/ryLR9Lh4+
-SPMirEszNGmnWGCL/DR4+cdC+WqvrxmttGavbsRAmB3yDh/8xbGnWJR3i+5cKIGR
-cEcn6bBufltmJbu99nX1J/x0TJ9zqSBnM/nm9uPReSb0/SzRM62THLbuJ5i41Nph
-rz0OIYl5GmV3PVjh0FX8KAi+8csCcNxCnHqIgSqk6t2JehN/BYBPO1cJ28We371N
-lLxdkQGH6+uSN5z4Am6sOM3Y6jYOePnYSuVkt+Mo8gRzTEQwQjw3jXe59CGOLfZE
-T+0eJzYpCdJNI84PgvqVDk7ofZUV1ezb+sO83C4FjfkeP8pDwRXHc61eHHx6hoDF
-x/SA1uLKGCVRNQFnyUtzFv7GFBFEKjLPROuPtlmMYB35sE4YUYaDVkUZ45/3imu+
-xux0snwUByRwgFcP1HVipkhpM9xAZF2L4CAhl0MeSbglAf1/KlwznZG30OD3Cdyd
-3ONL9X+CFtxZ28o68Aof
-=h3uN
------END PGP SIGNATURE-----
-
---Ma2pZxZcUUd0eybH--
+>         write_sequnlock(prev_cpu_idletime->seqlock)
+>
+> }
+>
+> flush_cpu_idle_time(cpu_idletime, iowait)
+> {
+>        if (!cpu_idletime->idle_start)
+>             return;
+>
+>        if (nr_iowait)
+>             cpu_idletime->iowait_time = NOW() - cpu_idletime->idle_start;
+>        else
+>             cpu_idletime->idle_time = NOW() - cpu_idletime->idle_start;
+> }
+>
+> idle_entry()
+> {
+>         write_seqlock(this_cpu_idletime->seqlock)
+>         this_cpu_idletime->idle_start = NOW();
+>         write_sequnlock(iowait(cpu)->seqlock)
+> }
+>
+> idle_exit()
+> {
+>         write_seqlock(this_cpu_idletime->seqlock)
+>         flush_cpu_idle_time(this_cpu_idletime, atomic_read(&this_cpu_idletime->nr_iowait));
+>         this_cpu_idletime->idle_start = 0;
+>         write_sequnlock(this_cpu_idletime->seqlock)
+> }
+>
+>
+> Now this all realy on the fact that atomic_inc(cpu_idletime->nr_iowait) can't happen
+> in a CPU that is already idle. So it can't happen between idle_entry() and idle_exit().
+> Hence the WARN_ON(is_idle_task(current)) below after the inc.
+>
+> Hmm?
