@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab3JAP4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 11:56:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53217 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3JAP4p (ORCPT
+	id S1751121Ab3JAP5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 11:57:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43877 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3JAP5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 11:56:45 -0400
-Date: Tue, 1 Oct 2013 17:56:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20131001155633.GR3657@laptop.programming.kicks-ass.net>
-References: <20130820160146.GG3258@twins.programming.kicks-ass.net>
- <20130820163312.GA17957@redhat.com>
- <20130820175429.GI3258@twins.programming.kicks-ass.net>
- <20130820182553.GB22287@redhat.com>
- <20130821083130.GM3258@twins.programming.kicks-ass.net>
- <20130821113551.GA1472@redhat.com>
- <20130821123311.GA31370@twins.programming.kicks-ass.net>
- <20130821142356.GC31370@twins.programming.kicks-ass.net>
- <20130821164146.GA15194@redhat.com>
- <20131001140525.GE24825@localhost.localdomain>
+	Tue, 1 Oct 2013 11:57:48 -0400
+Message-ID: <524AF0F8.3050008@wwwdotorg.org>
+Date: Tue, 01 Oct 2013 09:57:44 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001140525.GE24825@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
+Subject: Re: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
+References: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de> <5242F434.7060702@linaro.org> <20131001080829.GJ2548@pengutronix.de>
+In-Reply-To: <20131001080829.GJ2548@pengutronix.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/01/2013 02:08 AM, Uwe Kleine-König wrote:
+> On Wed, Sep 25, 2013 at 04:33:24PM +0200, Daniel Lezcano wrote:
+>> On 09/16/2013 11:44 AM, Uwe Kleine-König wrote:
+>>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>>> ---
+>>> Hello,
+>>>
+>>> I'm not sure that the way I implemented if a given timer is used as
+>>> clock_source or clock_event_device is robust. Does it need locking?
+>>> The reason to create a timer device for each timer instead of a single
+>>> device of all of them is that it makes it cleaner to specify irqs and
+>>> clks which each timer has one of each respectively. I didn't find an
+>>> example, but while looking I wondered if in zevio-timer.c a single timer
+>>> can really support both clock_event and clocksource.
+>>>
+>>> I guess for inclusion I need to write a document describing the
+>>> of-binding. I will include that in the next iteration.
+>>
+>> Right and a nice description of the timer would be valuable.
+> Where is the location to put a device tree binding document for a
+> clocksource/clock event device? I found
+> 
+> 	arm,armv7-timer-mem	| arm/arch_timer.txt
+> 	fsl,timrot		| N/A
+> 	nvidia,tegra20-rtc	| rtc/nvidia,tegra20-rtc.txt
 
-So what's wrong with something like:
+The Tegra example isn't a good one here, since the Tegra HW block is
+primarily an RTC (hence the location of the binding file), which also
+happens to be able to act as the clocksource.
 
-struct cpu_idletime {
-       seqlock_t seqlock;
-       unsigned long nr_iowait;
-       u64 start;
-       u64 idle_time,
-       u64 iowait_time,
-} __cacheline_aligned_in_smp;
+> Should I introduce a "clocksource" directory below
+> Documentation/devicetree/bindings?
 
-DEFINE_PER_CPU(struct cpu_idletime, cpu_idletime);
-
-void io_schedule(void)
-{
-	struct cpu_idletime *it = __raw_get_cpu_var(cpu_idletime);
-
-	write_seqlock(&it->seqlock);
-	if (!it->nr_iowait++)
-		it->start = local_clock();
-	write_sequnlock(&it->seqlock);
-
-	current->in_iowait = 1;
-	schedule();
-	current->in_iowait = 0;
-
-	write_seqlock(&it->seqlock);
-	if (!--it->nr_iowait)
-		it->iowait_time += local_clock() - it->start;
-	write_sequnlock(&it->seqlock);
-}
-
-Afaict you don't need the preempt disable and atomic muck at all.
-
-It will all get a little more complicated to deal with overlapping idle
-and iowait times, but the idea is the same.
+That seems reasonable for any HW block that is truly purely a
+clocksource. However, you'd want to also check with all the other DT
+bindings maintainers.
