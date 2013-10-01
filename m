@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3JAOrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 10:47:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab3JAOrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 10:47:15 -0400
-Date: Tue, 1 Oct 2013 17:47:12 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com
-Subject: [PULL] KVM fixes for 3.12-rc4
-Message-ID: <20131001144712.GO11993@redhat.com>
+	id S1753300Ab3JAOso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 10:48:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51379 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab3JAOsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 10:48:38 -0400
+Date: Tue, 1 Oct 2013 16:48:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131001144820.GP3657@laptop.programming.kicks-ass.net>
+References: <20130925184015.GC3657@laptop.programming.kicks-ass.net>
+ <20130925212200.GA7959@linux.vnet.ibm.com>
+ <20130926111042.GS3081@twins.programming.kicks-ass.net>
+ <20130926165840.GA863@redhat.com>
+ <20130926175016.GI3657@laptop.programming.kicks-ass.net>
+ <20130927181532.GA8401@redhat.com>
+ <20130927204116.GJ15690@laptop.programming.kicks-ass.net>
+ <20131001035604.GW19582@linux.vnet.ibm.com>
+ <20131001141429.GA32423@redhat.com>
+ <20131001144537.GC5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131001144537.GC5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, Oct 01, 2013 at 07:45:37AM -0700, Paul E. McKenney wrote:
+> If you don't have cpuhp_seq, you need some other way to avoid
+> counter overflow.  Which might be provided by limited number of
+> tasks, or, on 64-bit systems, 64-bit counters.
 
-The following changes since commit 62d228b8c676232eca579f91cc0782b060a59097:
-
-  Merge branch 'fixes' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2013-09-17 22:20:30 -0400)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
-
-for you to fetch changes up to bcd1c2949501869631b25fd62d8df5079677a101:
-
-  KVM: VMX: do not check bit 12 of EPT violation exit qualification when undefined (2013-09-25 11:38:26 +0200)
-
-----------------------------------------------------------------
-Gleb Natapov (1):
-      KVM: VMX: do not check bit 12 of EPT violation exit qualification when undefined
-
-Olof Johansson (1):
-      ARM: kvm: rename cpu_reset to avoid name clash
-
- arch/arm/kvm/reset.c | 6 +++---
- arch/x86/kvm/vmx.c   | 4 +++-
- 2 files changed, 6 insertions(+), 4 deletions(-)
---
-			Gleb.
+How so? PID space is basically limited to 30 bits, so how could we
+overflow a 32bit reference counter?
