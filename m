@@ -1,181 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3JARIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 13:08:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41518 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902Ab3JARIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 13:08:34 -0400
-Date: Tue, 1 Oct 2013 19:01:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC] introduce prepare_to_wait_event()
-Message-ID: <20131001170137.GA8560@redhat.com>
-References: <20130930152242.207382649@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130930152242.207382649@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752971Ab3JARIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 13:08:15 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:40076 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752496Ab3JARIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 13:08:11 -0400
+To: akpm@linux-foundation.org
+Cc: normalperson@yhbt.net, nzimmer@sgi.com, viro@zeniv.linux.org.uk,
+        nelhage@nelhage.com, davidel@xmailserver.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Message-Id: <788e40eac585039ded51e6d70856c8d432b6e97b.1380645717.git.jbaron@akamai.com>
+In-Reply-To: <cover.1380645717.git.jbaron@akamai.com>
+References: <cover.1380645717.git.jbaron@akamai.com>
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH 1/2 v2] epoll: optimize EPOLL_CTL_DEL using rcu
+Date: Tue,  1 Oct 2013 17:08:10 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't test is yet, and I did write the changelog.
+Optimize EPOLL_CTL_DEL such that it does not require the 'epmutex' by
+converting the file->f_ep_links list into an rcu one. In this way, we can
+traverse the epoll network on the add path in parallel with deletes. Since
+deletes can't create loops or worse wakeup paths, this is safe.
 
-But let me show the patch for review right now, before we all
-forget the details... On top of Peter's "wait: Collapse __wait_event
-macros -v4".
+This patch in combination with the patch "epoll: Do not take global 'epmutex'
+for simple topologies", shows a dramatic performance improvement in
+scalability for SPECjbb.
 
-This patch moves the signal-pending checks and part of DEFINE_WAIT's
-code into the new helper: prepare_to_wait_event().
-
-Yes, sure, prepare_to_wait_event() becomes a little bit slower than
-prepare_to_wait/prepare_to_wait_exclusive. But this is the slow path
-anyway, we are likely going to sleep. IMO, it is better to shrink
-.text, and on my build the difference is
-
-	- 5124686 2955056 10117120        18196862        115a97e vmlinux
-	+ 5123212 2955088 10117120        18195420        115a3dc vmlinux
-
-The code with the patch is
-
-	#define ___wait_is_interruptible(state)					\
-		(!__builtin_constant_p(state) ||				\
-			state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)	\
-
-	#define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
-	({									\
-		__label__ __out;						\
-		wait_queue_t __wait;						\
-		long __ret = ret;						\
-										\
-		INIT_LIST_HEAD(&__wait.task_list);				\
-		if (exclusive)							\
-			__wait.flags = WQ_FLAG_EXCLUSIVE;			\
-		else								\
-			__wait.flags = 0;					\
-										\
-		for (;;) {							\
-			long intr = prepare_to_wait_event(&wq, &__wait, state);	\
-										\
-			if (condition)						\
-				break;						\
-										\
-			if (___wait_is_interruptible(state) && intr) {		\
-				__ret = intr;					\
-				if (exclusive) {				\
-					abort_exclusive_wait(&wq, &__wait, 	\
-							     state, NULL); 	\
-					goto __out;				\
-				}						\
-				break;						\
-			}							\
-										\
-			cmd;							\
-		}								\
-		finish_wait(&wq, &__wait);					\
-	__out:	__ret;								\
-	})
-
-Compiler should optimize out "long intr" if !interruptible/killable.
-
-What do you think?
-
-Oleg.
+Tested-by: Nathan Zimmer <nzimmer@sgi.com>
+Signed-off-by: Jason Baron <jbaron@akamai.com>
 ---
+ fs/eventpoll.c | 65 ++++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 41 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index bd4bd7b..aa758d3 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -187,27 +187,30 @@ wait_queue_head_t *bit_waitqueue(void *, int);
-  	__cond || !__ret;						\
- })
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 473e09d..dd9fae1 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -42,6 +42,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+ #include <linux/compat.h>
++#include <linux/rculist.h>
  
--#define ___wait_signal_pending(state)					\
--	((state == TASK_INTERRUPTIBLE && signal_pending(current)) ||	\
--	 (state == TASK_KILLABLE && fatal_signal_pending(current)))
-+#define ___wait_is_interruptible(state)					\
-+	(!__builtin_constant_p(state) ||				\
-+		state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)	\
- 
- #define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
- ({									\
- 	__label__ __out;						\
--	DEFINE_WAIT(__wait);						\
-+	wait_queue_t __wait;						\
- 	long __ret = ret;						\
- 									\
-+	INIT_LIST_HEAD(&__wait.task_list);				\
-+	if (exclusive)							\
-+		__wait.flags = WQ_FLAG_EXCLUSIVE;			\
-+	else								\
-+		__wait.flags = 0;					\
-+									\
- 	for (;;) {							\
--		if (exclusive)						\
--			prepare_to_wait_exclusive(&wq, &__wait, state); \
--		else							\
--			prepare_to_wait(&wq, &__wait, state);		\
-+		long intr = prepare_to_wait_event(&wq, &__wait, state);	\
- 									\
- 		if (condition)						\
- 			break;						\
- 									\
--		if (___wait_signal_pending(state)) {			\
--			__ret = -ERESTARTSYS;				\
-+		if (___wait_is_interruptible(state) && intr) {		\
-+			__ret = intr;					\
- 			if (exclusive) {				\
- 				abort_exclusive_wait(&wq, &__wait, 	\
- 						     state, NULL); 	\
-@@ -794,6 +797,7 @@ extern long interruptible_sleep_on_timeout(wait_queue_head_t *q,
+ /*
+  * LOCKING:
+@@ -134,8 +135,12 @@ struct nested_calls {
+  * of these on a server and we do not want this to take another cache line.
   */
- void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state);
-+long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
- void abort_exclusive_wait(wait_queue_head_t *q, wait_queue_t *wait,
- 			unsigned int mode, void *key);
-diff --git a/kernel/wait.c b/kernel/wait.c
-index d550920..de21c63 100644
---- a/kernel/wait.c
-+++ b/kernel/wait.c
-@@ -92,6 +92,30 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
- }
- EXPORT_SYMBOL(prepare_to_wait_exclusive);
+ struct epitem {
+-	/* RB tree node used to link this structure to the eventpoll RB tree */
+-	struct rb_node rbn;
++	union {
++		/* RB tree node links this structure to the eventpoll RB tree */
++		struct rb_node rbn;
++		/* Used to free the struct epitem */
++		struct rcu_head rcu;
++	};
  
-+long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
+ 	/* List header used to link this structure to the eventpoll ready list */
+ 	struct list_head rdllink;
+@@ -166,6 +171,9 @@ struct epitem {
+ 
+ 	/* The structure that describe the interested events and the source fd */
+ 	struct epoll_event event;
++
++	/* The fllink is in use. Since rcu can't do 'list_del_init()' */
++	int on_list;
+ };
+ 
+ /*
+@@ -672,6 +680,12 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 	return error;
+ }
+ 
++static void epi_rcu_free(struct rcu_head *head)
 +{
-+	unsigned long flags;
-+
-+	if (signal_pending_state(state, current))
-+		return -ERESTARTSYS;
-+
-+	wait->private = current;
-+	wait->func = autoremove_wake_function;
-+
-+	spin_lock_irqsave(&q->lock, flags);
-+	if (list_empty(&wait->task_list)) {
-+		if (wait->flags & WQ_FLAG_EXCLUSIVE)
-+			__add_wait_queue_tail(q, wait);
-+		else
-+			__add_wait_queue(q, wait);
-+	}
-+	set_current_state(state);
-+	spin_unlock_irqrestore(&q->lock, flags);
-+
-+	return 0;
++	struct epitem *epi = container_of(head, struct epitem, rcu);
++	kmem_cache_free(epi_cache, epi);
 +}
-+EXPORT_SYMBOL(prepare_to_wait_event);
 +
- /**
-  * finish_wait - clean up after waiting in a queue
-  * @q: waitqueue waited on
+ /*
+  * Removes a "struct epitem" from the eventpoll RB tree and deallocates
+  * all the associated resources. Must be called with "mtx" held.
+@@ -693,8 +707,10 @@ static int ep_remove(struct eventpoll *ep, struct epitem *epi)
+ 
+ 	/* Remove the current item from the list of epoll hooks */
+ 	spin_lock(&file->f_lock);
+-	if (ep_is_linked(&epi->fllink))
+-		list_del_init(&epi->fllink);
++	if (epi->on_list) {
++		list_del_rcu(&epi->fllink);
++		epi->on_list = 0;
++	}
+ 	spin_unlock(&file->f_lock);
+ 
+ 	rb_erase(&epi->rbn, &ep->rbr);
+@@ -705,9 +721,14 @@ static int ep_remove(struct eventpoll *ep, struct epitem *epi)
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+ 
+ 	wakeup_source_unregister(ep_wakeup_source(epi));
+-
+-	/* At this point it is safe to free the eventpoll item */
+-	kmem_cache_free(epi_cache, epi);
++	/*
++	 * At this point it is safe to free the eventpoll item. Use the union
++	 * field epi->rcu, since we are trying to minimize the size of
++	 * 'struct epitem'. The 'rbn' field is no longer in use. Protected by
++	 * ep->mtx. The rcu read side, reverse_path_check_proc(), does not make
++	 * use of the rbn field.
++	 */
++	call_rcu(&epi->rcu, epi_rcu_free);
+ 
+ 	atomic_long_dec(&ep->user->epoll_watches);
+ 
+@@ -873,7 +894,6 @@ static const struct file_operations eventpoll_fops = {
+  */
+ void eventpoll_release_file(struct file *file)
+ {
+-	struct list_head *lsthead = &file->f_ep_links;
+ 	struct eventpoll *ep;
+ 	struct epitem *epi;
+ 
+@@ -891,17 +911,12 @@ void eventpoll_release_file(struct file *file)
+ 	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
+ 	 */
+ 	mutex_lock(&epmutex);
+-
+-	while (!list_empty(lsthead)) {
+-		epi = list_first_entry(lsthead, struct epitem, fllink);
+-
++	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
+ 		ep = epi->ep;
+-		list_del_init(&epi->fllink);
+ 		mutex_lock_nested(&ep->mtx, 0);
+ 		ep_remove(ep, epi);
+ 		mutex_unlock(&ep->mtx);
+ 	}
+-
+ 	mutex_unlock(&epmutex);
+ }
+ 
+@@ -1139,7 +1154,9 @@ static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
+ 	struct file *child_file;
+ 	struct epitem *epi;
+ 
+-	list_for_each_entry(epi, &file->f_ep_links, fllink) {
++	/* CTL_DEL can remove links here, but that can't increase our count */
++	rcu_read_lock();
++	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
+ 		child_file = epi->ep->file;
+ 		if (is_file_epoll(child_file)) {
+ 			if (list_empty(&child_file->f_ep_links)) {
+@@ -1161,6 +1178,7 @@ static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
+ 				"file is not an ep!\n");
+ 		}
+ 	}
++	rcu_read_unlock();
+ 	return error;
+ }
+ 
+@@ -1255,6 +1273,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 	epi->event = *event;
+ 	epi->nwait = 0;
+ 	epi->next = EP_UNACTIVE_PTR;
++	epi->on_list = 0;
+ 	if (epi->event.events & EPOLLWAKEUP) {
+ 		error = ep_create_wakeup_source(epi);
+ 		if (error)
+@@ -1287,7 +1306,8 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 
+ 	/* Add the current item to the list of active epoll hook for this file */
+ 	spin_lock(&tfile->f_lock);
+-	list_add_tail(&epi->fllink, &tfile->f_ep_links);
++	list_add_tail_rcu(&epi->fllink, &tfile->f_ep_links);
++	epi->on_list = 1;
+ 	spin_unlock(&tfile->f_lock);
+ 
+ 	/*
+@@ -1328,8 +1348,8 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 
+ error_remove_epi:
+ 	spin_lock(&tfile->f_lock);
+-	if (ep_is_linked(&epi->fllink))
+-		list_del_init(&epi->fllink);
++	if (epi->on_list)
++		list_del_rcu(&epi->fllink);
+ 	spin_unlock(&tfile->f_lock);
+ 
+ 	rb_erase(&epi->rbn, &ep->rbr);
+@@ -1846,15 +1866,12 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	 * and hang them on the tfile_check_list, so we can check that we
+ 	 * haven't created too many possible wakeup paths.
+ 	 *
+-	 * We need to hold the epmutex across both ep_insert and ep_remove
+-	 * b/c we want to make sure we are looking at a coherent view of
+-	 * epoll network.
++	 * We need to hold the epmutex across ep_insert to prevent
++	 * multple adds from creating loops in parallel.
+ 	 */
+-	if (op == EPOLL_CTL_ADD || op == EPOLL_CTL_DEL) {
++	if (op == EPOLL_CTL_ADD) {
+ 		mutex_lock(&epmutex);
+ 		did_lock_epmutex = 1;
+-	}
+-	if (op == EPOLL_CTL_ADD) {
+ 		if (is_file_epoll(tf.file)) {
+ 			error = -ELOOP;
+ 			if (ep_loop_check(ep, tf.file) != 0) {
+-- 
+1.8.2
 
