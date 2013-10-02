@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab3JBRvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:51:36 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27032 "EHLO
+	id S1755984Ab3JBRve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:51:34 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27031 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755474Ab3JBRvb (ORCPT
+	by vger.kernel.org with ESMTP id S1754751Ab3JBRvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Oct 2013 13:51:31 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
@@ -27,9 +27,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
         Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
         "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 22/77] cxgb3: Do not call pci_disable_msix() if pci_enable_msix() failed
-Date: Wed,  2 Oct 2013 12:48:38 +0200
-Message-Id: <c5c45dfed1a95dbb7848298f1fb8e26d5f10506a.1380703262.git.agordeev@redhat.com>
+Subject: [PATCH RFC 25/77] cxgb4: Return -ENOSPC when not enough MSI-X vectors available
+Date: Wed,  2 Oct 2013 12:48:41 +0200
+Message-Id: <3c7f347b79afdce03af1fadf4f50f7906979ee94.1380703262.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
 References: <cover.1380703262.git.agordeev@redhat.com>
@@ -39,23 +39,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
-index b650951..9bd3099 100644
---- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
-@@ -3097,9 +3097,6 @@ static int cxgb_enable_msix(struct adapter *adap)
- 	while ((err = pci_enable_msix(adap->pdev, entries, vectors)) > 0)
- 		vectors = err;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+index c73cabd..9425bc6 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+@@ -5732,9 +5732,11 @@ static int enable_msix(struct adapter *adap)
+ 		}
+ 		for (i = 0; i < want; ++i)
+ 			adap->msix_info[i].vec = entries[i].vector;
+-	} else if (err > 0)
++	} else if (err > 0) {
+ 		dev_info(adap->pdev_dev,
+ 			 "only %d MSI-X vectors left, not using MSI-X\n", err);
++		err = -ENOSPC;
++	}
+ 	return err;
+ }
  
--	if (err < 0)
--		pci_disable_msix(adap->pdev);
--
- 	if (!err && vectors < (adap->params.nports + 1)) {
- 		pci_disable_msix(adap->pdev);
- 		err = -1;
 -- 
 1.7.7.6
 
