@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3JBPK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:10:28 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41249 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab3JBPKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:10:24 -0400
-Date: Wed, 2 Oct 2013 11:10:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Eric Dumazet <eric.dumazet@gmail.com>, Tom Herbert <therbert@google.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] random: introduce
- get_random_bytes_busy_wait_initialized
-Message-ID: <20131002151018.GA31579@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Tom Herbert <therbert@google.com>, davem@davemloft.net,
-	netdev@vger.kernel.org, jesse.brandeburg@intel.com,
-	linux-kernel@vger.kernel.org
-References: <alpine.DEB.2.02.1309231535030.23896@tomh.mtv.corp.google.com>
- <1379980991.3165.37.camel@edumazet-glaptop>
- <20130924023038.GA22393@order.stressinduktion.org>
- <20130924033505.GB22393@order.stressinduktion.org>
- <1380001118.3165.41.camel@edumazet-glaptop>
- <20130924054532.GA24446@order.stressinduktion.org>
- <1380028797.3165.65.camel@edumazet-glaptop>
- <20130925090034.GC4904@order.stressinduktion.org>
+	id S1754060Ab3JBPLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:11:18 -0400
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:43543 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753121Ab3JBPLN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 11:11:13 -0400
+Date: Wed, 2 Oct 2013 15:11:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu
+ ops
+In-Reply-To: <20130928083952.GB26167@gmail.com>
+Message-ID: <0000014179b908eb-29821dc1-7b08-4dd5-b86b-a88c00864249-000000@email.amazonses.com>
+References: <20130924154159.855373283@linux.com> <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com> <20130924171029.GB10261@gmail.com> <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
+ <20130925181146.GA16693@gmail.com> <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com> <20130928083952.GB26167@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130925090034.GC4904@order.stressinduktion.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.02-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 11:00:34AM +0200, Hannes Frederic Sowa wrote:
-> [PATCH RFC] random: introduce get_random_bytes_busy_wait_initialized
-> 
-> We want to use good entropy for initializing the secret keys used for
-> hashing in the core network stack. So busy wait before extracting random
-> data until the nonblocking_pool is initialized.
-> 
-> Further entropy is also gathered by interrupts, so we are guaranteed to
-> make progress here.
+On Sat, 28 Sep 2013, Ingo Molnar wrote:
 
-One thing that makes me a bit worried is that on certain
-architectures, it may take quite a while before we get enough entropy
-such that the non-blocking pool gets initialized.
+>
+> * Christoph Lameter <cl@linux.com> wrote:
+>
+> > On Wed, 25 Sep 2013, Ingo Molnar wrote:
+> >
+> > > >
+> > > > I think this is necessary since it seems that the discussions on how
+> > > > to do the raw_cpu conversions may take some time. If we enable it by
+> > > > default then there will be numerous new log messages. That way a
+> > > > developer can enable it for working on this.
+> > >
+> > > Note that for these patches to be eligible for upstream merge any
+> > > extra warnings that trigger must be fixed, regardless of the default
+> > > setting.
+> >
+> > That is exactly what this patch does. There will only be warning if the
+> > user enabled them.
+>
+> You didn't understand me apparently: all warnings that trigger with the
+> debug CONFIG option enabled must be fixed before this can be sent
+> upstream.
 
-Speaking more generally, there are many different reasons why
-different parts of the kernel needs randomness.  I've found a number
-of places (mostly in various file systems so far because I know that
-subsystem better) because we are trying to use a random number
-generator with a higher level of guarantees than what was really
-required.
+This patchset is required to determine the warnings that will be triggered
+and to get the work to address these issues done. The feedback so far
+indicates that there may be lots of discussions regarding the warnings
+that have been discovered so far. Its not realistic to do this in one go.
 
-What's not completely clear to me is what's the potential danger if
-build_ehash_secret() is initialized with a value that might be known
-to an adversary.  I'll note that inet_ehash_secret() is a 32-bit uint.
-A 32-bit number isn't all that hard for an adversary to brute force.
-If the answer is there's now oracle that can be used so an adversary
-can tell whether or not they have correctly figured out the ehash
-secret, then it's not that clear that it's worth blocking until the
-urandom pool has 128 bits of entropy, when ehash_secret is only a
-32-bit value.
 
-Speaking even more generally, any time you have subsystems grabbing
-random entropy very shortly after boot, especially if it's less than
-64 bits, it's really good idea of the secret gets periodically
-rekeyed.  I understand why that may be hard in this case, since it
-would require rehashing all of the currently open sockets, and maybe
-in this case the security requirements are such that it's not really
-necessary.  But it's something we should definitely keep in mind for
-situations where we are generating random session keys for CIFS,
-ipsec, etc.
 
-Regards,
 
-						- Ted
