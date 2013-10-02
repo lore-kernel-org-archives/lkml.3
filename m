@@ -1,130 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3JBPOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:14:43 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:47596 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab3JBPOj (ORCPT
+	id S1753636Ab3JBPOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:14:19 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:62497 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab3JBPOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:14:39 -0400
-Date: Wed, 2 Oct 2013 16:14:30 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
-Subject: Re: [PATCH v2 6/9] procfs: add permission checks on the file's
- opener of /proc/*/stat
-Message-ID: <20131002151430.GB2669@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <1380659178-28605-7-git-send-email-tixxdz@opendz.org>
- <524B7934.9070606@amacapital.net>
+	Wed, 2 Oct 2013 11:14:15 -0400
+Date: Wed, 2 Oct 2013 16:14:13 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Kim Phillips <kim.phillips@linaro.org>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, a.motakis@virtualopensystems.com,
+        agraf@suse.de, stuart.yoder@freescale.com, B07421@freescale.com,
+        B16395@freescale.com, R65777@freescale.com, peter.maydell@linaro.org,
+        santosh.shukla@linaro.org, kvm@vger.kernel.org
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+Message-ID: <20131002151413.GG63102@lvm>
+References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
+ <20131001200054.GA27330@kroah.com>
+ <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+ <20131002015355.GD63102@lvm>
+ <1380681356.14271.57.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524B7934.9070606@amacapital.net>
+In-Reply-To: <1380681356.14271.57.camel@ul30vt.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 06:39:00PM -0700, Andy Lutomirski wrote:
-> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> > Some fields of the /proc/*/stat are sensitive fields that need
-> > appropriate protection.
+On Tue, Oct 01, 2013 at 08:35:56PM -0600, Alex Williamson wrote:
+> On Wed, 2013-10-02 at 02:53 +0100, Christoffer Dall wrote:
+> > On Tue, Oct 01, 2013 at 05:02:44PM -0500, Kim Phillips wrote:
+> > > On Tue, 1 Oct 2013 13:00:54 -0700
+> > > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > > 
+> > > > On Tue, Oct 01, 2013 at 01:38:31PM -0500, Kim Phillips wrote:
+> > > > > Hi,
+> > > > > 
+> > > > > Santosh and I are having a problem figuring out how to enable binding
+> > > > > (and re-binding) platform devices to a platform VFIO driver (see
+> > > > > Antonis' WIP: [1]) in an upstream-acceptable manner.
+> > > > > 
+> > > > > Binding platform drivers currently depends on a string match in the
+> > > > > device node's compatible entry.  On an arndale, one can currently
+> > > > > rebind the same device to the same driver like so:
+> > > > > 
+> > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
+> > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
+> > > > > 
+> > > > > And one can bind it to the vfio-dt driver, as Antonis instructs, by
+> > > > > appending a 'vfio-dt' string to the device tree compatible entry for
+> > > > > the device.  Then this would work:
+> > > > > 
+> > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
+> > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
+> > > > > 
+> > > > > Consequently, the hack patch below [2] allows any platform device to be
+> > > > > bound to the vfio-dt driver, without making changes to the device
+> > > > > tree.  It's a hack because I don't see having any driver name specific
+> > > > > code in drivers/base/bus.c being upstream acceptable.
+> > > > 
+> > > > You are correct.
+> > > > 
+> > > > What is wrong with just doing the above unbind/bind things through
+> > > > sysfs, that is what it is there for, right?
+> > > 
+> > > The bind fails because the compatible string in the device tree doesn't
+> > > match that of the VFIO platform driver, so driver_match_device always
+> > > returns false.
+> > > 
+> > It sounds like this is not going to be pretty almost no matter what
+> > we'll end up doing: Inherently VFIO is going to bind to a device without
+> > the device tree entry for that device ever saying anything about VFIO.
 > > 
-> > However, /proc file descriptors can be passed to a more privileged
-> > process (e.g. a suid-exec) which will pass the classic
-> > ptrace_may_access() permission check during read().
-> > 
-> > To prevent it, use proc_same_open_cred() to detect if current's cred
-> > have changed between ->open() and ->read(), if so, call
-> > proc_allow_access() to check if the original file's opener had enough
-> > permissions to read these sensitive fields. This will prevent passing
-> > file descriptors to a more privileged process to leak data.
-> > 
-> > The patch also adds a previously missing signal->cred_guard_mutex lock.
-> > 
-> > This patch does not break userspace since it only hides the fields that
-> > were supposed to be protected.
-> > 
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> > ---
-> >  fs/proc/array.c | 16 ++++++++++++++--
-> >  1 file changed, 14 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/proc/array.c b/fs/proc/array.c
-> > index cbd0f1b..f034e05 100644
-> > --- a/fs/proc/array.c
-> > +++ b/fs/proc/array.c
-> > @@ -394,7 +394,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
-> >  	char state;
-> >  	pid_t ppid = 0, pgid = -1, sid = -1;
-> >  	int num_threads = 0;
-> > -	int permitted;
-> > +	int permitted = 0;
-> >  	struct mm_struct *mm;
-> >  	unsigned long long start_time;
-> >  	unsigned long cmin_flt = 0, cmaj_flt = 0;
-> > @@ -404,10 +404,22 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
-> >  	unsigned long rsslim = 0;
-> >  	char tcomm[sizeof(task->comm)];
-> >  	unsigned long flags;
-> > +	struct file *file = m->private;
-> > +	int same_cred = proc_same_open_cred(file->f_cred);
-> > +	unsigned int ptrace_mode = PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT;
-> >  
-> >  	state = *get_task_state(task);
-> >  	vsize = eip = esp = 0;
-> > -	permitted = ptrace_may_access(task, PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT);
-> > +
-> > +	if (!mutex_lock_killable(&task->signal->cred_guard_mutex)) {
-> > +		permitted = ptrace_may_access(task, ptrace_mode);
-> > +		if (permitted && !same_cred)
-> > +			permitted = proc_allow_access(file->f_cred,
-> > +						      task, ptrace_mode);
-> > +
-> > +		mutex_unlock(&task->signal->cred_guard_mutex);
-> > +	}
-> > +
+> > How is this solved for PCI?  Can we use some analogy from that work to
+> > construct the missing piece?
 > 
-> else permitted = false?
-permitted is initialized to 0
+> PCI supports a dynamic ID table for driver/device matching, see
+> pci_add_dynid().  The problem is that this gets a little sloppy for the
+> period where you have multiple drivers that can claim the same device,
+> especially in the presence of hotplug.  Thus the desire to improve the
+> situation with some kind of direct binding interface.  Thanks,
+> 
+So that's called on the vfio pci driver?
 
-First the original ptrace_may_access() check did not hold
-cred_guard_mutex, so add it. If we can't grab mutex then let permitted
-to be zero. Yes this a change in behaviour and I think it's correct, IOW
-we were not able to perform the ptrace_may_access() check, otherwise
-permitted will depend on checks result.
+Wouldn't a sysfs file to add compatibility strings to the vfio-platform
+driver make driver_match_device return true and make everyone happy?
 
-However, there is still a race here since we set the permitted value
-before gathering the appropriate info about task. At the read() data moment
-this target task may have been gone privileged... , acquiring an X lock
-on target task, will just break/slow things, as it has been shown before...
-Not to mention that the race window is small...
+There would be an issue of binding priority to solve, I guess similar to
+the PCI problem, but then at least the two device types would share a
+common orthogonal challenge.
+
+-Christoffer
 
 
-> But surely this would be *much* more comprehensible if you had
-> proc_allow_access do the entire check.
-I don't understand what you mean by "do the entire check" ?
-
-the /proc/pid/stat file is used by "ps", "top" ... it's a vital file
-We don't want to break it, otherwise "ps" will hide processes. So just
-do the ptrace_may_access() check correctly with the help of
-proc_allow_access() and set the permitted variable only. The patch did
-not touch /proc/pid/stat fields.
-
-I've done tests on ps and top, and they work fine.
-
--- 
-Djalal Harouni
-http://opendz.org
