@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab3JBU7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:59:48 -0400
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.92]:35554 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754105Ab3JBU7j convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:59:39 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Gerd Hoffmann <kraxel@redhat.com>
-CC: KY Srinivasan <kys@microsoft.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "open list:Hyper-V CORE AND..." <devel@linuxdriverproject.org>,
-        "open list:FRAMEBUFFER LAYER" <linux-fbdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] hyperv-fb: add blanking support
-Thread-Topic: [PATCH 2/2] hyperv-fb: add blanking support
-Thread-Index: AQHOv2aIF5+o1BZc8kmy2iErsNMPg5nh4QRw
-Date: Wed, 2 Oct 2013 20:43:26 +0000
-Message-ID: <4909db2eb4774c1a8b263d911d266d33@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1380714911-6254-1-git-send-email-kraxel@redhat.com>
- <1380714911-6254-2-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1380714911-6254-2-git-send-email-kraxel@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754152Ab3JBU7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:59:47 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:38363 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab3JBU7h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 16:59:37 -0400
+Date: Wed, 2 Oct 2013 13:59:31 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Chris Murphy <bugzilla@colorremedies.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20131002205931.GA18939@roeck-us.net>
+References: <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
+ <524A4384.4040403@roeck-us.net>
+ <20131002035156.GA566@roeck-us.net>
+ <20131002095339.GA2716@polaris.bitmath.org>
+ <524C1FE1.4050207@roeck-us.net>
+ <20131002163418.GA4557@polaris.bitmath.org>
+ <20131002164718.GA7392@roeck-us.net>
+ <20131002172410.GA381@polaris.bitmath.org>
+ <20131002180206.GB4811@roeck-us.net>
+ <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com>
 MIME-Version: 1.0
-X-Forefront-Antispam-Report: CIP:131.107.1.27;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(13464003)(377454003)(51704005)(199002)(189002)(80976001)(46102001)(44976005)(47736001)(50466002)(19580395003)(83322001)(19580405001)(6806004)(4396001)(49866001)(47976001)(50986001)(56816003)(76786001)(33646001)(76796001)(85306001)(74876001)(65816001)(59766001)(74706001)(81816001)(81686001)(66066001)(83072001)(51856001)(79102001)(74502001)(47446002)(74662001)(56776001)(76482001)(81542001)(23726002)(81342001)(54356001)(74366001)(53806001)(54316002)(31966008)(80022001)(63696002)(77982001)(69226001)(46406003)(20776003)(47776003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB602;H:hybrid.exchange.microsoft.com;CLIP:131.107.1.27;FPR:;RD:mail7.exchange.microsoft.com;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0987ACA2E2
-X-OriginatorOrg: DuplicateDomain-b1291ffc-369c-4c2a-9225-e2908f70a426.microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Gerd Hoffmann
-> Sent: Wednesday, October 2, 2013 7:55 AM
-> Cc: Gerd Hoffmann; KY Srinivasan; Haiyang Zhang; Jean-Christophe Plagniol-
-> Villard; Tomi Valkeinen; open list:Hyper-V CORE AND...; open
-> list:FRAMEBUFFER LAYER; open list
-> Subject: [PATCH 2/2] hyperv-fb: add blanking support
+On Wed, Oct 02, 2013 at 12:33:00PM -0600, Chris Murphy wrote:
 > 
-> Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+> On Oct 2, 2013, at 12:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> > On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
+> >> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
+> >>> On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
+> >>>>>>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
+> >>>>>>> I think that is a pre-requisite.
+> >>>>>> 
+> >>>>>> Not necessarily - it could be that the patch actually fixes the root
+> >>>>>> cause. One possible scenario is that on recent SMCs, some of the
+> >>>>>> commands produce more data than we actually read. This would
+> >>>>>> eventually lead to both data corruption and overflow somwhere in the
+> >>>>>> SMC internals.  If the original SMC error is interpreted as a read
+> >>>>>> buffer overflow, then that problem should be fixed with this patch.
+> >>>>>> 
+> >>>>> 
+> >>>>> Good point.
+> >>>>> 
+> >>>>> But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
+> >>>> 
+> >>>> The explanation I have there is that the (newer) SMC needs the
+> >>>> application to read the 'no more bytes' or it will get confused. It
+> >>>> makes sense, if the number of bytes to read is no longer specified.
+> >>>> 
+> >>> You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
+> >>> That might make sense.
+> >> 
+> >> It also points at the possibility of a smaller patch to test, but I
+> >> have not had the time to check this very deeply myself:
+> >> 
+> > I like this patch much more than the previous patch. Chris, can you test it ?
+> 
+> Yes. Building now. What kernel message should I be looking for? At least on 2011 and 2012 laptops I have yet to see an Oops related to smc. The kernel with previous patch at least is not causing problems on them so far, which works well as I can test more on the 2008 model.
+> 
+None, if I understand correctly and if the patch really fixes the root cause
+of the problem.
 
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
-
+Guenter
