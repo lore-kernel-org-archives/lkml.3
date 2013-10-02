@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab3JBTaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:30:04 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44289 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab3JBTaC (ORCPT
+	id S1754101Ab3JBTby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:31:54 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50778 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab3JBTbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:30:02 -0400
+	Wed, 2 Oct 2013 15:31:50 -0400
+Message-ID: <524C748D.8080803@linux.vnet.ibm.com>
+Date: Wed, 02 Oct 2013 14:31:25 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <524C71C1.9060408@hp.com>
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>
-	<1380147049.3467.67.camel@schen9-DESK>
-	<CAGQ1y=7Ehkr+ot3tDZtHv6FR6RQ9fXBVY0=LOyWjmGH_UjH7xA@mail.gmail.com>
-	<1380226007.2170.2.camel@buesod1.americas.hpqcorp.net>
-	<1380226997.2602.11.camel@j-VirtualBox>
-	<1380228059.2170.10.camel@buesod1.americas.hpqcorp.net>
-	<1380229794.2602.36.camel@j-VirtualBox>
-	<1380231702.3467.85.camel@schen9-DESK>
-	<1380235333.3229.39.camel@j-VirtualBox>
-	<524C71C1.9060408@hp.com>
-Date: Wed, 2 Oct 2013 12:30:00 -0700
-X-Google-Sender-Auth: EnOSuHTW5OZjDUVhg6mQbHUWVtI
-Message-ID: <CAGQ1y=7mU0cJfFN3DhuTkukjxm3MXm0PrUxdxFXfo7GT_umUkA@mail.gmail.com>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Jason Low <jason.low2@hp.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-nvme@lists.infradead.org,
+        linux-ide@vger.kernel.org, stable@vger.kernel.org,
+        linux-s390@vger.kernel.org, Andy King <acking@vmware.com>,
+        linux-scsi@vger.kernel.org, linux-rdma@vger.kernel.org, x86@kernel.org,
+        linux-pci@vger.kernel.org, iss_storagedev@hp.com,
+        linux-driver@qlogic.com, Tejun Heo <tj@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Jon Mason <jon.mason@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        netdev@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        e1000-devel@lists.sourceforge.net,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linuxppc-dev@lists.ozlabs.org,
+        Wendy Xiong <wenxiong@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC 36/77] ipr: Enable MSI-X when IPR_USE_MSIX type is
+ set, not IPR_USE_MSI
+References: <cover.1380703262.git.agordeev@redhat.com> <2d4272136269f3cb3b1a5ac53b12aa45c7ea65c0.1380703263.git.agordeev@redhat.com>
+In-Reply-To: <2d4272136269f3cb3b1a5ac53b12aa45c7ea65c0.1380703263.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100219-9332-0000-0000-000001A008D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 12:19 PM, Waiman Long <waiman.long@hp.com> wrote:
-> On 09/26/2013 06:42 PM, Jason Low wrote:
->>
->> On Thu, 2013-09-26 at 14:41 -0700, Tim Chen wrote:
->>>
->>> Okay, that would makes sense for consistency because we always
->>> first set node->lock = 0 at the top of the function.
->>>
->>> If we prefer to optimize this a bit though, perhaps we can
->>> first move the node->lock = 0 so that it gets executed after the
->>> "if (likely(prev == NULL)) {}" code block and then delete
->>> "node->lock = 1" inside the code block.
->>>
->>> static noinline
->>> void mcs_spin_lock(struct mcs_spin_node **lock, struct mcs_spin_node
->>> *node)
->>> {
->>>         struct mcs_spin_node *prev;
->>>
->>>         /* Init node */
->>>         node->next   = NULL;
->>>
->>>         prev = xchg(lock, node);
->>>         if (likely(prev == NULL)) {
->>>                 /* Lock acquired */
->>>                 return;
->>>         }
->>>         node->locked = 0;
->
->
-> You can remove the locked flag setting statement inside if (prev == NULL),
-> but you can't clear the locked flag after xchg(). In the interval between
-> xchg() and locked=0, the previous lock owner may come in and set the flag.
-> Now if your clear it, the thread will loop forever. You have to clear it
-> before xchg().
+On 10/02/2013 05:48 AM, Alexander Gordeev wrote:
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  drivers/scsi/ipr.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+> index fb57e21..762a93e 100644
+> --- a/drivers/scsi/ipr.c
+> +++ b/drivers/scsi/ipr.c
+> @@ -9527,7 +9527,7 @@ static int ipr_probe_ioa(struct pci_dev *pdev,
+>  		ipr_number_of_msix = IPR_MAX_MSIX_VECTORS;
+>  	}
+> 
+> -	if (ioa_cfg->ipr_chip->intr_type == IPR_USE_MSI &&
+> +	if (ioa_cfg->ipr_chip->intr_type == IPR_USE_MSIX &&
+>  			ipr_enable_msix(ioa_cfg) == 0)
+>  		ioa_cfg->intr_flag = IPR_USE_MSIX;
+>  	else if (ioa_cfg->ipr_chip->intr_type == IPR_USE_MSI &&
+> 
 
-Yes, in my most recent version, I left locked = 0 in its original
-place so that the xchg() can act as a barrier for it.
+Nack. ioa_cfg->ipr_chip->intr_type gets initialized from the ipr_chip table
+at the top of the driver which never sets intr_type to IPR_USE_MSIX, so this
+will break MSI-X support for ipr. 
 
-The other option would have been to put another barrier after locked =
-0. I went with leaving locked = 0 in its original place so that we
-don't need that extra barrier.
+We indicate at the chip level only whether we want to force LSI or whether
+we want to enable MSI / MSI-X and then try enabling MSI-X and fall back to
+MSI if MSI-X is not available or does not work. We then set intr_flag to indicate
+what we are actually using on the specific adapter.
+
+Thanks,
+
+Brian
+
+-- 
+Brian King
+Power Linux I/O
+IBM Linux Technology Center
+
+
