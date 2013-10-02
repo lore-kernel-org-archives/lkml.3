@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab3JBFP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:15:57 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:53611 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab3JBFPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:15:55 -0400
-Message-ID: <524BAC04.30501@gmail.com>
-Date: Wed, 02 Oct 2013 15:15:48 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752765Ab3JBFYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:24:18 -0400
+Received: from mout.web.de ([212.227.17.11]:56306 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab3JBFYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 01:24:16 -0400
+From: Martin Walch <walch.martin@web.de>
+Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Dirk Gouders <dirk@gouders.net>,
+        Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4]kconfig: minor cleanups and corrections
+Date: Wed, 02 Oct 2013 07:24:11 +0200
+Message-ID: <2239119.8z7hSRUtxP@tacticalops>
+User-Agent: KMail/4.11.1 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.11.1; x86_64; ; )
 MIME-Version: 1.0
-To: =?UTF-8?B?TWF0aGlldSBSaMOpYXVtZQ==?= <mathieu@codingrhemes.com>
-CC: gregkh@linuxfoundation.org, arve@android.com, dan.carpenter@oracle.com,
-        mirsal@mirsal.fr, serban.constantinescu@arm.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] Staging : android: binder.c: Prefer seq_puts to seq_printf
-References: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
-In-Reply-To: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:UFxWv1314kjlKHWYrZMV+/4UWI8liV9EUtiXeCl77bFGBLFRH6p
+ KK/8Ss2vLELIoKKcB4sVrsIn94qjsSHM0apd4aoiptfhdTS1lnBpjso5SHanvmslRqbthyc
+ Plz4TZZMYJbWooGXlp1ZNKmersTI+Ku3eU86kMKy7OX0uFMQ918pyAkrErJKhA5Wg2sxY+i
+ OF8sM1dxxZotB4Xdi7kTg==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/13 11:57, Mathieu Rhéaume wrote:
-> This patch changes seq_printf for seq_puts in binder.c.
-> It fixes the warnings emitted by checkpatch.pl.
-> 
-> Signed-off-by: Mathieu Rhéaume <mathieu@codingrhemes.com>
-> ---
->  drivers/staging/android/binder.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-> index 09edebb..f3d4a1f 100644
-> --- a/drivers/staging/android/binder.c
-> +++ b/drivers/staging/android/binder.c
-> @@ -3272,7 +3272,7 @@ binder_defer_work(struct binder_proc *proc, enum binder_deferred_state defer)
->  static void print_binder_transaction(struct seq_file *m, const char *prefix,
->  				     struct binder_transaction *t)
->  {
-> -	seq_printf(m,
-> +	seq_puts(m,
->  		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
->  		   prefix, t->debug_id, t,
->  		   t->from ? t->from->proc->pid : 0,
+Hello,
 
-Umm, this won't compile. seq_puts() is defined as:
+these are some simple fixes to correct minor things I came across while reading the code.
 
-  int seq_puts(struct seq_file *m, const char *s);
+Martin Walch (4):
+  kconfig: add short explanation to SYMBOL_WRITE
+  kconfig: trivial: fix typos in comments
+  kconfig: adjust warning message for conflicting types
+  kconfig: remove unused definition from scanner
 
-checkpatch.pl does indeed complain about uses of seq_printf() in
-drivers/staging/android/binder.c which are passing formatted strings. At
-a quick glance it looks like checkpatch.pl is only checking for the
-format string on the same line as seq_printf(), so this files ugly
-coding style confuses the check. Joe?
+ scripts/kconfig/expr.h   | 2 +-
+ scripts/kconfig/mconf.c  | 2 +-
+ scripts/kconfig/menu.c   | 4 ++--
+ scripts/kconfig/symbol.c | 2 +-
+ scripts/kconfig/zconf.l  | 1 -
+ 5 files changed, 5 insertions(+), 6 deletions(-)
 
-Anyway, please don't blindly change things in the kernel without at
-least compile testing them.
-
-~Ryan
+-- 
+1.8.1.5
 
