@@ -1,112 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3JBQvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:51:37 -0400
-Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:58583 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754493Ab3JBQve (ORCPT
+	id S1754778Ab3JBQvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:51:45 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:33625 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab3JBQvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:51:34 -0400
-X-Greylist: delayed 15370 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 12:51:34 EDT
-Message-ID: <524C4CF1.7060407@overkiz.com>
-Date: Wed, 02 Oct 2013 18:42:25 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 2 Oct 2013 12:51:36 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yang Wenyou <Wenyou.Yang@atmel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [v2,2/4] watchdog: at91sam9_wdt: update device tree doc
-References: <1371799414-3654-1-git-send-email-b.brezillon@overkiz.com> <20131002155118.GA16703@roeck-us.net>
-In-Reply-To: <20131002155118.GA16703@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 5544494092054001679
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <20131002143759.GA2966@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net> <20131002143759.GA2966@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 2 Oct 2013 17:51:15 +0100
+Message-ID: <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        kernel-hardening@lists.openwall.com, Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2013 17:51, Guenter Roeck wrote:
-> On Fri, Jun 21, 2013 at 03:23:34PM -0000, Boris BREZILLON wrote:
->> Add new at91sam9 watchdog properties to the documentation.
+On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
+>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+>> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
+>> > need to happen during each system call.
+>> >
+>> > Currently some of these sensitive entries are protected by performing
+>> > the ptrace_may_access() check. However even with that the /proc file
+>> > descriptors can be passed to a more privileged process
+>> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
+>> > check. In general the ->open() call will be issued by an unprivileged
+>> > process while the ->read(),->write() calls by a more privileged one.
+>> >
+>> > Example of these files are:
+>> > /proc/*/syscall, /proc/*/stack etc.
+>> >
+>> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
+>> >
+>> >
+>> > These files are protected during read() by the ptrace_may_access(),
+>> > however the file descriptor can be passed to a suid-exec which can be
+>> > used to read data and bypass ASLR. Of course this was discussed several
+>> > times on LKML.
 >>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> Acked-by: Grant Likely<grant.likely@linaro.org>
->>
->> ---
->> .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
->>   1 file changed, 28 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
->> index fcdd48f..e043106 100644
->> --- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
->> +++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
->> @@ -9,11 +9,37 @@ Required properties:
->>   
->>   Optional properties:
->>   - timeout-sec: contains the watchdog timeout in seconds.
->> +- interrupts : Should contain WDT interrupt.
->> +- atmel,max-heartbeat-sec : Should contain the maximum heartbeat value in
->> +	seconds. This value should be less than 16. It is used to compute the
->> +	WDV field.
->> +- atmel,min-heartbeat-sec : Should contain the minimum heartbeat value in
->> +	seconds. This value should be less than 4 times the max-heartbeat-sec
->> +	value. It is used to compute the WDD field.
-> I am a bit at loss about "less than 4 times the max-heartbeat-sec value".
-> Why would a min-timeout larger than the max-timeout make sense under any
-> condition ? Do you mean to say that max-heartbeat should be at least four
-> times the value of min-heartbeat (or that min-heartbeat should be less or
-> equal to one-forth of max-heartbeat) ?
-That's exactely what I meant (should be less or equal to one-forth of 
-max-heartbeat).
-I'll fix it.
-
-> Guenter
+>> Can you elaborate on what it is that you're fixing?  That is, can you
+>> give a concrete example of what process opens what file and passes the
+>> fd to what process?
+> Yes, the references were already given in this email:
+> https://lkml.org/lkml/2013/8/31/209
 >
->> +- atmel,watchdog-type : Should be "hardware" or "software". Hardware watchdog
->> +	use the at91 watchdog reset. Software watchdog use the watchdog
->> +	interrupt to trigger a software reset.
->> +- atmel,reset-type : Should be "proc" or "all".
->> +	"all" : assert peripherals and processor reset signals
->> +	"proc" : assert the processor reset signal
->> +	This is valid only when using "hardware" watchdog.
->> +- atmel,disable : Should be present if you want to disable the watchdog.
->> +- atmel,idle-halt : Should be present if you want to stop the watchdog when
->> +	entering idle state.
->> +- atmel,dbg-halt : Should be present if you want to stop the watchdog when
->> +	entering debug state.
->>   
->>   Example:
->> -
->>   	watchdog@fffffd40 {
->>   		compatible = "atmel,at91sam9260-wdt";
->>   		reg = <0xfffffd40 0x10>;
->> -		timeout-sec = <10>;
->> +		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
->> +		timeout-sec = <15>;
->> +		atmel,watchdog-type = "hardware";
->> +		atmel,reset-type = "all";
->> +		atmel,dbg-halt;
->> +		atmel,idle-halt;
->> +		atmel,max-heartbeat-sec = <16>;
->> +		atmel,min-heartbeat-sec = <0>;
->> +		status = "okay";
->>   	};
+> This has been discussed several times on lkml:
+> https://lkml.org/lkml/2013/8/28/544
+>
+> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
+>
+>
+>> I'm having trouble following your description.
+> Process open a /proc file and pass the fd to a more privilaged process
+> that will pass the ptrace_may_access() check, while the original process
+> that opened that file should fail at the ptrace_may_access()
 
+So we're talking about two kinds of attacks, right?
+
+Type 1: Unprivileged process does something like open("/proc/1/maps",
+O_RDONLY) and then passes the resulting fd to something privileged.
+
+Type 2: Unprivileged process does something like
+open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
+execve on something privileged.
+
+
+Can we really not get away with fixing type 1 by preventing these
+files from being opened in the first place and type 2 by revoking all
+of these fds when a privilege-changing exec happens?
+
+I'm not objecting to your patches so much as thinking that read(2) has
+no business looking at current->cred *at all*.  But maybe that ship
+has already sailed.
+
+--Andy
+
+>
+>
+>> --Andy
+>>
+>
+> --
+> Djalal Harouni
+> http://opendz.org
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
