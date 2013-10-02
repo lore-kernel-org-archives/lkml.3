@@ -1,127 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3JBKsC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:48:02 -0400
-Received: from emh07.mail.saunalahti.fi ([62.142.5.117]:43119 "EHLO
-	emh07.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab3JBKsA (ORCPT
+	id S1753695Ab3JBKuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 06:50:05 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:46942 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab3JBKuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:48:00 -0400
-Message-ID: <1380710891.5049.1.camel@porter.coelho.fi>
-Subject: Re: using mmc2 on panda [was: Regression 3.11-rc1: omap4panda: no
- usb and consequently no ethernet]
-From: Luca Coelho <luca@coelho.fi>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 02 Oct 2013 13:48:11 +0300
-In-Reply-To: <524BF378.50309@broadcom.com>
-References: <51E7AA24.6080600@broadcom.com>
-	 <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com>
-	 <51E919CA.8060805@ti.com> <51E91B80.1050609@broadcom.com>
-	 <524A823F.6070209@broadcom.com> <524A9AB8.4010407@ti.com>
-	 <524A9BB2.2050503@ti.com> <524AA9C1.2000303@broadcom.com>
-	 <1380626960.4318.6.camel@porter.coelho.fi> <524BF378.50309@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Oct 2013 06:50:01 -0400
+Message-ID: <524BFA57.6070506@linaro.org>
+Date: Wed, 02 Oct 2013 12:49:59 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL - resend ] clocksource: new material for 3.13
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 12:20 +0200, Arend van Spriel wrote:
-> On 10/01/2013 01:29 PM, Luca Coelho wrote:
-> > Hi,
-> >
-> > On Tue, 2013-10-01 at 12:53 +0200, Arend van Spriel wrote:
-> >> On 10/01/2013 11:53 AM, Roger Quadros wrote:
-> >>> On 10/01/2013 12:49 PM, Roger Quadros wrote:
-> >>>> Hi Arend,
-> >>>>
-> >>>> On 10/01/2013 11:05 AM, Arend van Spriel wrote:
-> >>>>> On 07/19/2013 12:57 PM, Arend van Spriel wrote:
-> >>>>>> On 07/19/2013 12:49 PM, Roger Quadros wrote:
-> >>>>>>> On 07/19/2013 01:36 PM, Arend van Spriel wrote:
-> >>>>>>>> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
-> >>>>>>>>> Then for the SDIO with device tree, take a look at the following
-> >>>>>>>>> patches:
-> >>>>>>>>>
-> >>>>>>>>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
-> >>>>>>>>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
-> >>>>>>>>
-> >>>>>>>> I have been looking at the pandaboard patch in the series above and I
-> >>>>>>>> do have a question. Among other things the patch adds these dt entries.
-> >>>>>>>>
-> >>>>>>>> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP |
-> >>>>>>>> MODE0 */
-> >>>>>>>> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP |
-> >>>>>>>> MODE0 */
-> >>>>>>>>
-> >>>>>>>> If I look at the similar names in the deceased board-omap4panda.c:
-> >>>>>>>>
-> >>>>>>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 |
-> >>>>>>>> OMAP_PIN_INPUT_PULLUP),
-> >>>>>>>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 |
-> >>>>>>>> OMAP_PIN_INPUT_PULLUP),
-> >>>>>>>>
-> >>>>>>>> and in mux44xx.h:
-> >>>>>>>>
-> >>>>>>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
-> >>>>>>>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
-> >>>>>>>>
-> >>>>>>>> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is
-> >>>>>>>> probably an explanation to it and it would help my understanding to
-> >>>>>>>> know where this difference comes from. Hope you can help me out here.
-> >>>>>>>>
-> >>>>>>>
-> >>>>>>> If you see omap4.dtsi, omap4_pmx_core starts at register address
-> >>>>>>> 0x4a100040.
-> >>>>>>>
-> >>>>>>> So, you need to subtract 0x40 from the offsets defined in mux44xx.h
-> >>>>>>> for pmx_core registers.
-> >>>>>>
-> >>>>>> That was what I was looking for. Thanks!
-> >>>>>
-> >>>>> Hi Roger,
-> >>>>>
-> >>>>> It has been a while, but I would like to pickup this thread. We have a couple of pandaboards used as test setup. These have an SDIO adapter hooked up to expansion connector A using MMC2. I have attached the patch file (just ignore platform_data stuff). Now on one board it works, but not for the other. I suspect a board issue so listing the two types that we use:
-> >>>>>
-> >>>>> PandaBoard rev A2 (dmesg: OMAP4430 ES2.1): works
-> >>>>> PandaBoardES rev B1 (dmesg: OMAP4460 ES1.1): nope
-> >>>>>
-> >>>>> Any hints for me.
-> >>>>
-> >>>> Does your PandaboardES have the WLAN chip (U4) mounted? If yes, how do you isolate
-> >>>> it from your external SDIO adapter?
-> >>
-> >> On my 4460 board in front of me U4 is not populated, but U3 is (the TiWi
-> >> thing).
-> >>
-> >>>
-> >>> OK, just realized that the expansion connector uses different pads for MMC2. However, you still
-> >>> need to make sure that the other pins (connected to on board WLAN chip) are not muxed as MMC2.
-> >>
-> >> I think Luciano added DT patches for on-board WLAN and it uses MMC5 if I
-> >> am not mistaken(?). Attached are the dmesg logs of the two boards.
-> >
-> > I sent 2 patch series to add DT support for the on-board WLAN, but they
-> > were not applied, since there were some comments that required changes.
-> > I really don't have the time to revisit them now that I'm not with TI
-> > anymore, so I'm hoping someone else will pick them up at some point.
-> 
-> I found this one in my email archive:
-> 
-> [PATCH v2 0/4] ARM: dts: add WiLink support to panda and omap4-sdp
-> 
-> Guess that is what you are referring to, right?
+Hi Thomas, Ingo
 
-Yes, that one and also this (which implements DT in the driver itself):
+this pull request has the following content:
 
-[PATCH v4 0/8] wilink: add device tree support
-http://mid.gmane.org/1375189476-21557-1-git-send-email-coelho@ti.com
+  - Soren added FEAT_PERCPU to a clock device when it is local per cpu.
+This feature prevents the clock framework to choose a per cpu timer as
+a broadcast timer. This problem arised when the ARM global timer is
+used when switching to the broadcast timer which is the case now on 
+Xillinx with its cpuidle driver.
 
---
-Luca.
+  - Stephen extended the generic sched_clock code to support 64bit
+counters and removes the setup_sched_clock deprecation, as that causes
+lots of warnings since there's still users in the arch/arm tree. He 
+added also the CLOCK_SOURCE_SUSPEND_NONSTOP flag on the architected 
+timer as they continue counting during suspend.
+
+  - Uwe added some missing __init sections and consolidated the code by 
+moving the of_node_put call from the drivers to the function 
+clocksource_of_init.
+
+Sorry for the last crappy pull request, I hope all is good now.
+
+Thanks !
+
+   -- Daniel
+
+ps: Is it possible to update timers/core to v3.12-rc2/3 ?
+
+The following changes since commit 389e067032fbb96e439abafae848dd447e4cafb4:
+
+   Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16 
+18:54:07 -0700)
+
+are available in the git repository at:
+
+
+   git://git.linaro.org/people/dlezcano/linux.git clockevents/3.13
+
+for you to fetch changes up to 4fbcdc813fb9c0324fcff4c75414e717569d965e:
+
+   clocksource: arm_arch_timer: Use clocksource for suspend timekeeping 
+(2013-10-02 11:43:17 +0200)
+
+----------------------------------------------------------------
+John Stultz (1):
+       Merge remote-tracking branch 'tip/timers/core' into 
+fordlezcano/3.13/sched-clock64-conversion
+
+Soren Brinkmann (4):
+       clockchips: Add FEAT_PERCPU clockevent flag
+       clocksource/arm_global_timer: Set FEAT_PERCPU flag
+       tick: broadcast: Deny per-cpu clockevents from being broadcast 
+sources
+       arm: zynq: Enable arm_global_timer
+
+Stephen Boyd (11):
+       clocksource: bcm2835: Switch to sched_clock_register()
+       clocksource: dbx500-prcmu: Switch to sched_clock_register()
+       clocksource: dw_apb_timer_of: Switch to sched_clock_register()
+       clocksource: mxs_timer: Switch to sched_clock_register()
+       clocksource: nomadik: Switch to sched_clock_register()
+       clocksource: samsung_pwm_timer: Switch to sched_clock_register()
+       clocksource: tegra: Switch to sched_clock_register()
+       clocksource: time-armada-370-xp: Switch to sched_clock_register()
+       clocksource: sirf: Switch to sched_clock_register() and use 64 bits
+       clocksource: vf_pit_timer: Switch to sched_clock_register()
+       clocksource: arm_arch_timer: Use clocksource for suspend timekeeping
+
+Uwe Kleine-König (2):
+       clocksource: Put nodes passed to CLOCKSOURCE_OF_DECLARE callbacks 
+centrally
+       clocksource: dw_apb_timer_of: Mark a few more functions as __init
+
+  arch/arm/boot/dts/zynq-7000.dtsi          |    8 ++++++++
+  arch/arm/mach-msm/timer.c                 |    1 -
+  arch/arm/mach-zynq/Kconfig                |    1 +
+  drivers/clocksource/arm_arch_timer.c      |    2 +-
+  drivers/clocksource/arm_global_timer.c    |    3 ++-
+  drivers/clocksource/bcm2835_timer.c       |    4 ++--
+  drivers/clocksource/clksrc-dbx500-prcmu.c |    5 ++---
+  drivers/clocksource/clksrc-of.c           |    1 +
+  drivers/clocksource/dw_apb_timer_of.c     |   16 +++++++---------
+  drivers/clocksource/mxs_timer.c           |    4 ++--
+  drivers/clocksource/nomadik-mtu.c         |    4 ++--
+  drivers/clocksource/samsung_pwm_timer.c   |    4 ++--
+  drivers/clocksource/tegra20_timer.c       |    8 ++------
+  drivers/clocksource/time-armada-370-xp.c  |    4 ++--
+  drivers/clocksource/timer-prima2.c        |    6 +++---
+  drivers/clocksource/vf_pit_timer.c        |    4 ++--
+  drivers/clocksource/vt8500_timer.c        |    2 --
+  include/linux/clockchips.h                |    1 +
+  kernel/time/tick-broadcast.c              |    1 +
+  19 files changed, 41 insertions(+), 38 deletions(-)
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
