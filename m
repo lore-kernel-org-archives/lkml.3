@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab3JBQnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:43:45 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:62446 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab3JBQnm (ORCPT
+	id S1754667Ab3JBQoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:44:06 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:65305 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3JBQoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:43:42 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-fbdev@vger.kernel.org
-Cc: James Bates <james.h.bates@gmail.com>, linux-kernel@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v3] efifb: prevent null-deref when iterating dmi_list
-Date: Wed,  2 Oct 2013 18:43:39 +0200
-Message-Id: <1380732219-5458-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com>
-References: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com>
+	Wed, 2 Oct 2013 12:44:03 -0400
+Date: Wed, 2 Oct 2013 11:43:59 -0500
+From: Kim Phillips <kim.phillips@linaro.org>
+To: taras.kondratiuk@linaro.org
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-networking@linaro.org,
+        d.xie@sta.samsung.com
+Subject: Re: [LNG] [PATCH] mfd: twl6030: Fix endianness problem in IRQ
+ handler
+Message-Id: <20131002114359.681cbdf92bd683373f07cca2@linaro.org>
+In-Reply-To: <1380712124-20666-1-git-send-email-taras.kondratiuk@linaro.org>
+References: <1380712124-20666-1-git-send-email-taras.kondratiuk@linaro.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Bates <james.h.bates@gmail.com>
+On Wed,  2 Oct 2013 14:08:44 +0300
+Taras Kondratiuk <taras.kondratiuk@linaro.org> wrote:
 
-The dmi_list array is initialized using gnu designated initializers, and
-therefore may contain fewer explicitly defined entries as there are
-elements in it. This is because the enum above with M_xyz constants
-contains more items than the designated initializer. Those elements not
-explicitly initialized are implicitly set to 0.
+> From: Danke Xie <d.xie@sta.samsung.com>
+> 
+> The current TWL 6030 IRQ handler assumes little endianness.
+> This change makes it endian-neutral.
+> 
+> Signed-off-by: Danke Xie <d.xie@sta.samsung.com>
+> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> ---
 
-Now efifb_setup() loops through all these array elements, and performs
-a strcmp on each item. For non explicitly initialized elements this will
-be a null pointer:
+this patch causes a new sparse warning:
 
-This patch swaps the check order in the if statement, thus checks first
-whether dmi_list[i].base is null.
+make C=2 CF="-D__CHECK_ENDIAN__" drivers/mfd/twl6030-irq.o
+...
+  CHECK   drivers/mfd/twl6030-irq.c
+drivers/mfd/twl6030-irq.c:200:19: warning: cast to restricted __le32
 
-Signed-off-by: James Bates <james.h.bates@gmail.com>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
-v3: fixes the "Author" field and James' email address
+does int_sts in the sts union need to be defined as __le32?
 
- drivers/video/efifb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 7f9ff75..fcb9500 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -108,8 +108,8 @@ static int efifb_setup(char *options)
- 			if (!*this_opt) continue;
- 
- 			for (i = 0; i < M_UNKNOWN; i++) {
--				if (!strcmp(this_opt, efifb_dmi_list[i].optname) &&
--				    efifb_dmi_list[i].base != 0) {
-+				if (efifb_dmi_list[i].base != 0 &&
-+				    !strcmp(this_opt, efifb_dmi_list[i].optname)) {
- 					screen_info.lfb_base = efifb_dmi_list[i].base;
- 					screen_info.lfb_linelength = efifb_dmi_list[i].stride;
- 					screen_info.lfb_width = efifb_dmi_list[i].width;
--- 
-1.8.4
-
+Kim
