@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab3JBRE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:04:56 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:5378 "EHLO SMTP.CITRIX.COM"
+	id S1754755Ab3JBRFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:05:31 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43290 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754340Ab3JBREn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:04:43 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1019,1371081600"; 
-   d="scan'208";a="59625443"
-Date: Wed, 2 Oct 2013 18:03:46 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v6 10/19] xen: introduce xen_alloc/free_coherent_pages
-In-Reply-To: <DB675896-3FF2-409B-A2C6-24295C197A3F@arm.com>
-Message-ID: <alpine.DEB.2.02.1310021754580.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-10-git-send-email-stefano.stabellini@eu.citrix.com> <20130930153143.GQ3106@phenom.dumpdata.com> <DB675896-3FF2-409B-A2C6-24295C197A3F@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753634Ab3JBRF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:05:28 -0400
+Date: Wed, 2 Oct 2013 19:05:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20131002170522.GA20647@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <1379602494-26684-12-git-send-email-bp@alien8.de>
+ <20130921113929.GB1587@pd.tnic>
+ <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
+ <20130922133722.GC28718@pd.tnic>
+ <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
+ <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
+ <2d27a1bc-eabf-4d45-8303-27ae58511b11@email.android.com>
+ <20131002100426.GB20568@pd.tnic>
+ <524C3F38.6050507@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <524C3F38.6050507@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Oct 2013, Catalin Marinas wrote:
-> On 30 Sep 2013, at 16:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > On Fri, Sep 27, 2013 at 05:09:58PM +0100, Stefano Stabellini wrote:
-> >> xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
-> >> and devices. On native x86 and ARMv8 is sufficient to call
-> >> __get_free_pages in order to get a coherent buffer, while on ARM we need
-> >> to call the native dma_ops->alloc implementation.
-> >> 
-> >> When arm64 stops using the swiotlb by default and starts having multiple
-> >> dma_ops implementations, we'll use __get_dma_ops there too.
-> > 
-> > I presume this is a future TODO, not some further patch (in which
-> > case you should say in here the title of it). If it is a TODO could
-> > you stick that in the sentence here somewhere to make it crytal clear that
-> > it is not implemented.
+On Wed, Oct 02, 2013 at 08:43:52AM -0700, H. Peter Anvin wrote:
+> On 10/02/2013 03:04 AM, Borislav Petkov wrote:
+> > When we start allocating from -4G, i.e. 0xffffffff00000000, I think we
+> > want to do it bottom-up so that 0xffffffff00000000 is the *last*, i.e.
+> > lowest address. Because we link the kernel text at 0xffffffff81000000 by
+> > default, which would mean, if -4G was the first address, we'll have only
+> > 2G:
 > 
-> Thanks for pointing this out.  The arm64 patch shouldn't be different
-> from arm here.  I thought a subsequent patch already added
-> __get_dma_ops() for arm64.
+> Right.
 
-Yes, the arm64 patch already added __get_dma_ops.
+Btw, Matt just found another issue with the bottom-up approach - due to
+different alignment of VA and PA addresses, this messes up the pagetable
+in terms of the order in which we're using 4K, 2M, etc pages.
 
-However I am not using __get_dma_ops to implement
-xen_alloc_coherent_pages for arm64 because I can just use
-__get_free_pages for the moment:
+What can happen is that, you can get a non-2M aligned PA mapped with
+2M-aligned VA which results in a #PF with PF_RSVD set, which most likely
+happens because one or more of the bits in the [12:20] slice of the PMD
+are reserved but they get set due to the PA having address bits set in
+the aforementioned slice and thus a #PF is raised.
 
+So we changed the mapping method to a more straight-forward one: we map
+all EFI regions in the following range:
 
-> diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
-> new file mode 100644
-> index 0000000..0d6ad25
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/xen/page-coherent.h
-> @@ -0,0 +1,24 @@
-> +#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
-> +#define _ASM_ARM64_XEN_PAGE_COHERENT_H
-> +
-> +#include <asm/page.h>
-> +#include <linux/dma-attrs.h>
-> +#include <linux/dma-mapping.h>
-> +
-> +static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-> +             dma_addr_t *dma_handle, gfp_t flags,
-> +             struct dma_attrs *attrs)
-> +{
-> +     void *vstart = (void*)__get_free_pages(flags, get_order(size));
-> +     *dma_handle = virt_to_phys(vstart);
-> +     return vstart;
-> +}
-> +
-> +static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-> +             void *cpu_addr, dma_addr_t dma_handle,
-> +             struct dma_attrs *attrs)
-> +{
-> +     free_pages((unsigned long) cpu_addr, get_order(size));
-> +}
-> +
-> +#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
+[ efi_va - -4G ]
+
+and we compute efi_va by subtracting the highest EFI region address from
+-4G, i.e. 0xffff_ffff_0000_0000.
+
+Then, each VA is computed by doing efi_va + PA.
+
+Basically, we have a non-contiguous window in the virtual address space
+with the highest address of it being -4G. In OVMF, f.e., we get the
+following mappings:
+
+VA: 0xfffffffe80800000..0xfffffffe81000000 -> PA: 0x800000..0x1000000
+VA: 0xfffffffefc000000..0xfffffffefc020000 -> PA: 0x7c000000..0x7c020000
+VA: 0xfffffffefdc5b000..0xfffffffefe146000 -> PA: 0x7dc5b000..0x7e146000
+
+...
+
+VA: 0xfffffffeffa65000..0xfffffffefffe0000 -> PA: 0x7fa65000..0x7ffe0000
+VA: 0xfffffffefffe0000..0xffffffff00000000 -> PA: 0x7ffe0000..0x80000000
+
+So, basically, the EFI regions occupy a 2Gish window with holes in the
+range:
+
+[ 0xfffffffe80800000 - 0xffffffff00000000 )
+
+and since we said, we want to give the whole EFI memmap 64G max, that
+should be ok.
+
+Oh, and the alignment remains compatible this way.
+
+So this mapping scheme - courtesy of Matt - is very straight-forward
+and simple and I like simple. This way we won't need the setup_data
+games with kexec tools as we'll be simply doing the same mappings in the
+kexec'ed kernel.
+
+Anyway, I'll clean up the patch and send it out later.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
