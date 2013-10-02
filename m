@@ -1,59 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab3JBK5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:57:51 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:41984 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab3JBK5t (ORCPT
+	id S1753777Ab3JBK5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 06:57:53 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:34966 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425Ab3JBK5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:57:49 -0400
+	Wed, 2 Oct 2013 06:57:50 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: David Miller <davem@davemloft.net>,
         Lennert Buytenhek <buytenh@wantstofly.org>,
         Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] net: mv643xx_eth: various small fixes for v3.12
-Date: Wed,  2 Oct 2013 12:57:19 +0200
-Message-Id: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 2/3] net: mv643xx_eth: fix orphaned statistics timer crash
+Date: Wed,  2 Oct 2013 12:57:21 +0200
+Message-Id: <1380711442-24735-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set comprises some one-liners to fix issues with repeated
-loading and unloading of a modular mv643xx_eth driver.
+The periodic statistics timer gets started at port _probe() time, but
+is stopped on _stop() only. In a modular environment, this can cause
+the timer to access already deallocated memory, if the module is unloaded
+without starting the eth device. To fix this, we add the timer right
+before the port is started, instead of at _probe() time.
 
-First two patches take care of the periodic port statistic timer, that
-updates statistics by reading port registers using add_timer/mod_timer.
-
-Patch 1 moves timer re-schedule from mib_counters_update to the timer
-callback. As mib_counters_update is also called from non-timer context,
-this ensures the timer is reactivated from timer context only.
-
-Patch 2 moves initial timer schedule from _probe() time to right before
-the port is actually started as the corresponding del_timer_sync is at
-_stop() time. This fixes a regression, where unloading the driver from a
-non-started eth device can cause the timer to access deallocated mem.
-
-Patch 3 adds an assignment of the ports device_node to the corresponding
-self-created platform_device. This is required to allow fixups based on
-the device_node's compatible string later. Actually, it is also a potential
-regression because we already check compatible string for Kirkwood, but
-does not (yet) rely on the fixup.
-
-All patches are based on v3.12-rc3 and have been tested on Kirkwood-based
-Seagate Dockstar.
-
-Patches 1 and 2 can also possibly queued up for -stable.
-
-Sebastian Hesselbarth (3):
-  net: mv643xx_eth: update statistics timer from timer context only
-  net: mv643xx_eth: fix orphaned statistics timer crash
-  net: mv643xx_eth: fix missing device_node for port devices
-
- drivers/net/ethernet/marvell/mv643xx_eth.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: David Miller <davem@davemloft.net>
 Cc: Lennert Buytenhek <buytenh@wantstofly.org>
@@ -61,6 +36,30 @@ Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: netdev@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index 44a87e4..2364707 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2235,6 +2235,7 @@ static int mv643xx_eth_open(struct net_device *dev)
+ 		mp->int_mask |= INT_TX_END_0 << i;
+ 	}
+ 
++	add_timer(&mp->mib_counters_timer);
+ 	port_start(mp);
+ 
+ 	wrlp(mp, INT_MASK_EXT, INT_EXT_LINK_PHY | INT_EXT_TX);
+@@ -2914,7 +2915,6 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
+ 	mp->mib_counters_timer.data = (unsigned long)mp;
+ 	mp->mib_counters_timer.function = mib_counters_timer_wrapper;
+ 	mp->mib_counters_timer.expires = jiffies + 30 * HZ;
+-	add_timer(&mp->mib_counters_timer);
+ 
+ 	spin_lock_init(&mp->mib_counters_lock);
+ 
 -- 
 1.7.10.4
 
