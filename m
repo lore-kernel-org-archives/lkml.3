@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab3JBVQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:16:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42844 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3JBVQT (ORCPT
+	id S1754074Ab3JBVUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:20:46 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:48973 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab3JBVUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:16:19 -0400
-Date: Wed, 2 Oct 2013 14:16:31 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Christoffer Dall <christoffer.dall@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131002211631.GA11914@kroah.com>
-References: <20131001200054.GA27330@kroah.com>
- <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
- <20131002015355.GD63102@lvm>
- <1380681356.14271.57.camel@ul30vt.home>
- <20131002151413.GG63102@lvm>
- <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
- <1380738758.12932.43.camel@snotra.buserror.net>
- <20131002184330.GC5108@cbox>
- <20131002203735.GA10871@kroah.com>
- <1380748121.12932.89.camel@snotra.buserror.net>
+	Wed, 2 Oct 2013 17:20:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380748121.12932.89.camel@snotra.buserror.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1380670860-17621-4-git-send-email-seanpaul@chromium.org>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+	<1380670860-17621-4-git-send-email-seanpaul@chromium.org>
+Date: Wed, 2 Oct 2013 14:20:42 -0700
+Message-ID: <CAOesGMjWi3Bk+OtfWjkgHqLk+Zb7cHRjS9S0AfpcPU3UqB+UTw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] drm/bridge: Add PTN3460 bridge driver
+From: Olof Johansson <olof@lixom.net>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: dri-devel@lists.freedesktop.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Inki Dae <inki.dae@samsung.com>, airlied@linux.ie
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:08:41PM -0500, Scott Wood wrote:
-> On Wed, 2013-10-02 at 13:37 -0700, gregkh@linuxfoundation.org wrote:
-> > On Wed, Oct 02, 2013 at 11:43:30AM -0700, Christoffer Dall wrote:
-> > > > What's wrong with a non-vfio-specific flag that a driver can set, that
-> > > > indicates that the driver is willing to try to bind to any device on the
-> > > > bus if explicitly requested via the existing sysfs bind mechanism?
-> > > > 
-> > > It sounds more hackish to me to invent some 'generic' flag to solve a
-> > > very specific case.  What you're suggesting would let users specify that
-> > > a serial driver should handle a NIC hardware, no?  That sounds much much
-> > > worse to me.
-> > 
-> > You can do that today, with any PCI driver (or USB driver as well), just
-> > use the bind/unbind files in sysfs and you had better "know" what you
-> > are doing...
-> 
-> sysfs bind won't work if it driver_match_device() fails.  PCI has
-> PCI_ANY_ID, so the missing piece for PCI is a way to say that the driver
-> should not bind to a device except when explicitly requested via sysfs
-> bind.
-> 
-> I don't see any equivalent functionality to PCI_ANY_ID for platform
-> devices.
+Hi,
 
-Nor should it.  If you are wanting to bind platform devices to different
-things based on "ids" or "strings" or something else, then you had
-better not be using a platform device because that is not what you have
-anymore.
 
-Yes, I know the OF stuff uses platform devices, and again, it's one
-reason why I don't like it at all.  So fix OF devices "properly",
-creating your own bus and device type, and then you will not have these
-issues.
+On Tue, Oct 1, 2013 at 4:40 PM, Sean Paul <seanpaul@chromium.org> wrote:
+> This patch adds a drm_bridge driver for the PTN3460 DisplayPort to LVDS
+> bridge chip.
+>
+> Signed-off-by: Sean Paul <seanpaul@chromium.org>
+> ---
 
-thanks,
+[...]
 
-greg "I should never have let platform devices be created" k-h
+> +Example:
+> +       ptn3460-bridge@20 {
+
+Nit: Name is usually generic device name, i.e. "lvds-bridge" or
+something like that.
+
+> +               compatible = "nxp,ptn3460";
+> +               reg = <0x20>;
+> +               powerdown-gpio = <&gpy2 5 1 0 0>;
+> +               reset-gpio = <&gpx1 5 1 0 0>;
+> +               edid-emulation = <5>;
+> +       };
+
+[...]
+
+
+> diff --git a/include/drm/bridge/ptn3460.h b/include/drm/bridge/ptn3460.h
+> new file mode 100644
+> index 0000000..157ffa1
+> --- /dev/null
+> +++ b/include/drm/bridge/ptn3460.h
+> @@ -0,0 +1,36 @@
+> +/*
+> + * Copyright (C) 2013 Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef _DRM_BRIDGE_PTN3460_H_
+> +#define _DRM_BRIDGE_PTN3460_H_
+> +
+> +struct drm_device;
+> +struct drm_encoder;
+> +struct i2c_client;
+> +struct device_node;
+> +
+> +#ifdef CONFIG_DRM_PTN3460
+> +
+> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
+> +               struct i2c_client *client, struct device_node *node);
+> +#else
+> +
+> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
+> +               struct i2c_client *client, struct device_node *node)
+
+This should be static inline int ptn3460_init(...)
+
+> +{
+> +       return 0;
+> +}
+
+
+-0Olof
