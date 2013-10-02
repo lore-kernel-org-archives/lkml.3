@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab3JBL70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 07:59:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43934 "EHLO mx1.redhat.com"
+	id S1754074Ab3JBL7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 07:59:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52671 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab3JBL7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 07:59:22 -0400
-From: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Gerd Hoffmann <kraxel@redhat.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        devel@linuxdriverproject.org (open list:Hyper-V CORE AND...),
-        linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/2] hyperv-fb: add pci stub
-Date: Wed,  2 Oct 2013 13:55:10 +0200
-Message-Id: <1380714911-6254-1-git-send-email-kraxel@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1753621Ab3JBL7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 07:59:46 -0400
+Date: Wed, 2 Oct 2013 13:59:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [BUG] perf timechart segfault
+Message-ID: <20131002115935.GD10099@krava.brq.redhat.com>
+References: <CALkWK0k5sQ9WCGevFQ3D18=Fs3ziS8imVVvasE0QR9e0r91cYA@mail.gmail.com>
+ <20131002111958.GC10099@krava.brq.redhat.com>
+ <CALkWK0mCbnBZXJNFyX3odoGb1pvGs7ox1mOiFacqX98ewBOGKw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALkWK0mCbnBZXJNFyX3odoGb1pvGs7ox1mOiFacqX98ewBOGKw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a pci stub driver to hyper-fb.  The hyperv framebuffer
-driver will bind to the pci device then, so linux kernel and userspace
-know there is a proper kernel driver for the device active.  lspci shows
-this for example:
+On Wed, Oct 02, 2013 at 05:03:48PM +0530, Ramkumar Ramachandra wrote:
+> Hi Jiri,
+> 
+> Jiri Olsa wrote:
+> > what perf version are you running?
+> 
+> I'm running off the one in torvalds/linux.git.
+> 
+> $ perf --version
+> perf version 3.12.rc3.g34b22d5
+> 
+> The log of builtin-timechart.c shows that it was last touched by you
+> three months ago: 5936678 (perf timechart: Remove event types
+> framework only user, 2013-07-11). Are there some patches awaiting
+> merge that I'm missing?
 
-[root@dhcp231 ~]# lspci -vs8
-00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual
-VGA (prog-if 00 [VGA controller])
-        Flags: bus master, fast devsel, latency 0, IRQ 11
-        Memory at f8000000 (32-bit, non-prefetchable) [size=64M]
-        Expansion ROM at <unassigned> [disabled]
-        Kernel driver in use: hyperv_fb
+looks like you're missing this one:
+(git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core)
 
-Another effect is that the xorg vesa driver will not attach to the
-device and thus the Xorg server will automatically use the fbdev
-driver instead.
+perf tools: Add default handler for mmap2 events
+commit e0e3e2d9a522b2230d395922fde9c6ea928ae7f8
+Author: David Ahern <dsahern@gmail.com>
+Date:   Sun Sep 22 19:44:59 2013 -0600
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
----
- drivers/video/hyperv_fb.c | 40 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 39 insertions(+), 1 deletion(-)
+Not sure if this one plus some other MMAP2 David's fixies
+are on its way up, but if not I guess Arnaldo's planning
+to push them out eventually ;-)
 
-diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c
-index 8ac99b8..8d456dc 100644
---- a/drivers/video/hyperv_fb.c
-+++ b/drivers/video/hyperv_fb.c
-@@ -795,12 +795,21 @@ static int hvfb_remove(struct hv_device *hdev)
- }
- 
- 
-+static DEFINE_PCI_DEVICE_TABLE(pci_stub_id_table) = {
-+	{
-+		.vendor      = PCI_VENDOR_ID_MICROSOFT,
-+		.device      = PCI_DEVICE_ID_HYPERV_VIDEO,
-+	},
-+	{ /* end of list */ }
-+};
-+
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* Synthetic Video Device GUID */
- 	{HV_SYNTHVID_GUID},
- 	{}
- };
- 
-+MODULE_DEVICE_TABLE(pci, pci_stub_id_table);
- MODULE_DEVICE_TABLE(vmbus, id_table);
- 
- static struct hv_driver hvfb_drv = {
-@@ -810,14 +819,43 @@ static struct hv_driver hvfb_drv = {
- 	.remove = hvfb_remove,
- };
- 
-+static int hvfb_pci_stub_probe(struct pci_dev *pdev,
-+			       const struct pci_device_id *ent)
-+{
-+	return 0;
-+}
-+
-+static void hvfb_pci_stub_remove(struct pci_dev *pdev)
-+{
-+}
-+
-+static struct pci_driver hvfb_pci_stub_driver = {
-+	.name =		KBUILD_MODNAME,
-+	.id_table =	pci_stub_id_table,
-+	.probe =	hvfb_pci_stub_probe,
-+	.remove =	hvfb_pci_stub_remove,
-+};
- 
- static int __init hvfb_drv_init(void)
- {
--	return vmbus_driver_register(&hvfb_drv);
-+	int ret;
-+
-+	ret = vmbus_driver_register(&hvfb_drv);
-+	if (ret != 0)
-+		return ret;
-+
-+	ret = pci_register_driver(&hvfb_pci_stub_driver);
-+	if (ret != 0) {
-+		vmbus_driver_unregister(&hvfb_drv);
-+		return ret;
-+	}
-+
-+	return 0;
- }
- 
- static void __exit hvfb_drv_exit(void)
- {
-+	pci_unregister_driver(&hvfb_pci_stub_driver);
- 	vmbus_driver_unregister(&hvfb_drv);
- }
- 
--- 
-1.8.3.1
-
+jirka
