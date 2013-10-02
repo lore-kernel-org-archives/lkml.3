@@ -1,109 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3JBJ0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 05:26:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752837Ab3JBJ0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 05:26:32 -0400
-Date: Wed, 2 Oct 2013 11:26:08 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1753341Ab3JBJ3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 05:29:03 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:40801 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab3JBJ27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 05:28:59 -0400
+Date: Wed, 2 Oct 2013 11:28:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH] perf auto-dep: Speed up feature tests by building them
- in parallel
-Message-ID: <20131002092608.GA10099@krava.brq.redhat.com>
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] tools/perf/build: Automatically build in parallel, based on
+ number of CPUs in the system
+Message-ID: <20131002092856.GA9360@gmail.com>
 References: <20130912133855.GA23780@gmail.com>
  <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
- <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
- <20130912184341.GA11400@ghostprotocols.net>
- <52321CE4.1080804@gmail.com>
- <20130912200236.GC11400@ghostprotocols.net>
- <20130912203116.GD32644@gmail.com>
- <20130912204313.GA3259@gmail.com>
- <20130915091029.GA21465@gmail.com>
- <20130930164210.GA22342@gmail.com>
+ <20131002073140.GA6652@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130930164210.GA22342@gmail.com>
+In-Reply-To: <20131002073140.GA6652@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 06:42:10PM +0200, Ingo Molnar wrote:
-> 
-> This series (with combo patch attached) implements (much) faster 
-> perf-tools feature-auto-detection.
-> 
-> I used 3 tricks to implement feature auto-dependencies and to speed up 
-> feature detection:
-> 
->   - standalone Makefile in config/feature-checks/ built in parallel
-> 
->   - split-out standalone .c files in config/feature-checks/*.c
-> 
->   - used GCC's auto-dependency generation feature (-MD) to track the
->     effects of system library addition/removal.
-> 
-> Before the changes a fully cached re-build of an already built tree took 
-> 2.6 second:
-> 
->     $ perf stat --null --sync --repeat 3 -a make Makefile
-> 
->        2.669467209 seconds time elapsed                                          ( +-  0.07% )
-> 
-> After the changes it takes only 0.6 seconds:
-> 
->        0.599161560 seconds time elapsed                                          ( +-  0.25% )
 
-nice!
+This patch below fixes another tools/perf build system annoyance: that it 
+does not build in parallel by default.
 
-> 
-> So the empty build got 4.4x faster.
-> 
+The effect is that for example 'make install' will build in parallel 
+(dependent on number of CPUs in the system) and then install the result.
 
-SNIP
+Thanks,
 
->  ifdef NO_DEMANGLE
->    CFLAGS += -DNO_DEMANGLE
->  else
-> -  ifdef HAVE_CPLUS_DEMANGLE
-> +  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
->      EXTLIBS += -liberty
-> -    CFLAGS += -DHAVE_CPLUS_DEMANGLE
-> +    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
->    else
->      FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-> -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-> -    ifeq ($(has_bfd),y)
-> +    ifeq ($(feature-libbfd), 1)
->        EXTLIBS += -lbfd
->      else
->        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-> @@ -388,7 +410,7 @@ else
->            has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
->            ifeq ($(has_cplus_demangle),y)
->              EXTLIBS += -liberty
-> -            CFLAGS += -DHAVE_CPLUS_DEMANGLE
-> +            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
->            else
->              msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
->              CFLAGS += -DNO_DEMANGLE
-> @@ -400,30 +422,29 @@ else
->  endif
+	Ingo
 
-Why not add tests for has_bfd_iberty/has_bfd_iberty_z/has_cplus_demangle?
+=======================>
+Subject: tools/perf/build: Automatically build in parallel, based on number of CPUs in the system
+From: Ingo Molnar <mingo@kernel.org>
+Date: Wed Oct 2 11:18:28 CEST 2013
 
-We could remove the config/feature-tests.mak completely
-and other cleanup like remove try-cc.
+Implement automatic parallel builds when building in tools/perf:
 
-jirka
+  $ time make
+
+  # [ perf build: Doing 'make -j12' parallel build. ]
+
+  Auto-detecting system features:
+
+  ...
+
+  real    0m9.265s
+  user    0m59.888s
+  sys     0m6.082s
+
+On GNU make achieving this is not particularly easy, it requires a separate
+makefile, which then invokes the main Makefile.
+
+( Note: this patch adds Makefile.parallel to show the concept - the two
+  makefiles will be flipped in the next patch to avoid having to specify -f
+  to get parallelism in the default build. )
+
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/Makefile.parallel |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+Index: tip/tools/perf/Makefile.parallel
+===================================================================
+--- /dev/null
++++ tip/tools/perf/Makefile.parallel
+@@ -0,0 +1,26 @@
++#
++# Do a parallel build with multiple jobs, based on the number of CPUs online
++# in this system: 'make -j8' on a 8-CPU system, etc.
++#
++# (To override it, run 'make JOBS=1' and similar.)
++#
++ifeq ($(JOBS),)
++  JOBS := $(shell grep -c ^processor /proc/cpuinfo 2>/dev/null)
++  ifeq ($(JOBS),)
++    JOBS := 1
++  endif
++endif
++
++export JOBS
++
++$(info $(shell printf '# [ perf build: Doing '\''make \033[33m-j'$(JOBS)'\033[m'\'' parallel build. ]\n'))
++
++#
++# Needed if no target specified:
++#
++all:
++	@$(MAKE) --no-print-directory -j$(JOBS) $@
++
++%:
++	@$(MAKE) --no-print-directory -j$(JOBS) $@
++
