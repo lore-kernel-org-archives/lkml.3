@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3JBUhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:37:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42468 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab3JBUhX (ORCPT
+	id S1754105Ab3JBUhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:37:54 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49064 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab3JBUhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:37:23 -0400
-Date: Wed, 2 Oct 2013 13:37:35 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Scott Wood <scottwood@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131002203735.GA10871@kroah.com>
-References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
- <20131001200054.GA27330@kroah.com>
- <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
- <20131002015355.GD63102@lvm>
- <1380681356.14271.57.camel@ul30vt.home>
- <20131002151413.GG63102@lvm>
- <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
- <1380738758.12932.43.camel@snotra.buserror.net>
- <20131002184330.GC5108@cbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002184330.GC5108@cbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Oct 2013 16:37:53 -0400
+Date: Wed, 02 Oct 2013 16:37:51 -0400 (EDT)
+Message-Id: <20131002.163751.1094931323876276388.davem@davemloft.net>
+To: baker.kernel@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 net-next] fib_trie: avoid a redundant bit judgement
+ in inflate
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1380584709-5877-1-git-send-email-baker.kernel@gmail.com>
+References: <1380584709-5877-1-git-send-email-baker.kernel@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 13:37:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:43:30AM -0700, Christoffer Dall wrote:
-> > What's wrong with a non-vfio-specific flag that a driver can set, that
-> > indicates that the driver is willing to try to bind to any device on the
-> > bus if explicitly requested via the existing sysfs bind mechanism?
-> > 
-> It sounds more hackish to me to invent some 'generic' flag to solve a
-> very specific case.  What you're suggesting would let users specify that
-> a serial driver should handle a NIC hardware, no?  That sounds much much
-> worse to me.
+From: baker.kernel@gmail.com
+Date: Tue,  1 Oct 2013 07:45:09 +0800
 
-You can do that today, with any PCI driver (or USB driver as well), just
-use the bind/unbind files in sysfs and you had better "know" what you
-are doing...
+> From: "baker.zhang" <baker.kernel@gmail.com>
+> 
+> Because 'node' is the i'st child of 'oldnode',
+> thus, here 'i' equals
+> tkey_extract_bits(node->key, oldtnode->pos, oldtnode->bits)
+> 
+> we just get 1 more bit,
+> and need not care the detail value of this bits.
+> 
+> I apologize for the mistake.
+> 
+> I generated the patch on a branch version,
+> and did not notice the put_child has been changed.
+> 
+> I have redone the test on HEAD version with my patch.
 
+Applied, thanks for testing things so thoroughly.
