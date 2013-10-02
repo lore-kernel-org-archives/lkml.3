@@ -1,119 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3JBN2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 09:28:31 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:33988 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3JBN22 (ORCPT
+	id S1754294Ab3JBNaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 09:30:17 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53316 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab3JBNaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 09:28:28 -0400
-Message-ID: <524C1F75.307@linaro.org>
-Date: Wed, 02 Oct 2013 15:28:21 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 2 Oct 2013 09:30:14 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <524C1FE1.4050207@roeck-us.net>
+Date: Wed, 02 Oct 2013 06:30:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: tglx@linutronix.de, sboyd@codeaurora.org
-CC: linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH V2] tick: Make sleep length calculation more accurate
-References: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Chris Murphy <bugzilla@colorremedies.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+References: <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131002035156.GA566@roeck-us.net> <20131002095339.GA2716@polaris.bitmath.org>
+In-Reply-To: <20131002095339.GA2716@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 12:26 PM, Daniel Lezcano wrote:
-> The sleep_length is computed in the tick_nohz_stop_sched_tick function but it
-> is used later in the code with in between the local irq enabled.
+On 10/02/2013 02:53 AM, Henrik Rydberg wrote:
+>>> Patch added on top of 3.12.0-0.rc3.git0.1.fc20.x86_64 and built. But after ~dozen reboots, I'm not triggering the problem. The only items in dmesg with smc in it:
+>>>
+>>> [   13.799819] applesmc: key=261 fan=2 temp=14 index=14 acc=1 lux=2 kbd=1
+>>> [   13.833402] input: applesmc as /devices/platform/applesmc.768/input/input10
+>>>
+>>
+>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
+>> I think that is a pre-requisite.
 >
-> cpu_idle_loop
->    tick_nohz_idle_enter         [ exits with local irq enabled ]
->     __tick_nohz_idle_enter
->       tick_nohz_stop_sched_tick
->    ...
->
->    arch_cpu_idle
->       menu_select               [ uses here 'sleep_length' ]
->    ...
->
-> Between the computation of the sleep length and its usage, some interrupts
-> may occur, making the sleep length shorter than actually it is because of the
-> interrupt processing, or different if the timer itself expired.
->
-> This patch fixes that by moving the sleep_length computation in the
-> tick_nohz_get_sleep_length function and using the tick device's next_event.
->
-> As the sleep_length field is no longer needed, it is removed from the
-> tick_sched structure.
->
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-
-Stephen,
-
-I added your signed-off as the change in tick_nohz_get_sleep_length is 
-the one you proposed previously.
-
-   -- Daniel
-
-> ---
->   include/linux/tick.h     |    2 --
->   kernel/time/tick-sched.c |    5 +++--
->   2 files changed, 3 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> index 5128d33..53dbbd7 100644
-> --- a/include/linux/tick.h
-> +++ b/include/linux/tick.h
-> @@ -48,7 +48,6 @@ enum tick_nohz_mode {
->    * @idle_exittime:	Time when the idle state was left
->    * @idle_sleeptime:	Sum of the time slept in idle with sched tick stopped
->    * @iowait_sleeptime:	Sum of the time slept in idle with sched tick stopped, with IO outstanding
-> - * @sleep_length:	Duration of the current idle sleep
->    * @do_timer_lst:	CPU was the last one doing do_timer before going idle
->    */
->   struct tick_sched {
-> @@ -67,7 +66,6 @@ struct tick_sched {
->   	ktime_t				idle_exittime;
->   	ktime_t				idle_sleeptime;
->   	ktime_t				iowait_sleeptime;
-> -	ktime_t				sleep_length;
->   	unsigned long			last_jiffies;
->   	unsigned long			next_jiffies;
->   	ktime_t				idle_expires;
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 3612fc7..60b1dcd 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -673,7 +673,6 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
->   out:
->   	ts->next_jiffies = next_jiffies;
->   	ts->last_jiffies = last_jiffies;
-> -	ts->sleep_length = ktime_sub(dev->next_event, now);
->
->   	return ret;
->   }
-> @@ -837,8 +836,10 @@ void tick_nohz_irq_exit(void)
->   ktime_t tick_nohz_get_sleep_length(void)
->   {
->   	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> +	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
-> +	ktime_t now = ktime_get();
->
-> -	return ts->sleep_length;
-> +	return ktime_sub(dev->next_event, now);
->   }
->
->   static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+> Not necessarily - it could be that the patch actually fixes the root
+> cause. One possible scenario is that on recent SMCs, some of the
+> commands produce more data than we actually read. This would
+> eventually lead to both data corruption and overflow somwhere in the
+> SMC internals.  If the original SMC error is interpreted as a read
+> buffer overflow, then that problem should be fixed with this patch.
 >
 
+Good point.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Thanks,
+Guenter
 
