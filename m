@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab3JBOaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:30:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49071 "EHLO mx2.suse.de"
+	id S1753828Ab3JBOaE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:30:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49070 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab3JBO3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752944Ab3JBO3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Oct 2013 10:29:01 -0400
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH 26/26] aio: Remove useless get_user_pages() call
-Date: Wed,  2 Oct 2013 16:28:07 +0200
-Message-Id: <1380724087-13927-27-git-send-email-jack@suse.cz>
+Cc: linux-mm@kvack.org, Jan Kara <jack@suse.cz>, linux-cris-kernel@axis.com,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: [PATCH 01/26] cris: Convert cryptocop to use get_user_pages_fast()
+Date: Wed,  2 Oct 2013 16:27:42 +0200
+Message-Id: <1380724087-13927-2-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1380724087-13927-1-git-send-email-jack@suse.cz>
 References: <1380724087-13927-1-git-send-email-jack@suse.cz>
@@ -21,100 +21,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_user_pages() call in aio_setup_ring() is useless these days. We
-create all ringbuffer the pages in page cache using
-find_or_create_page() anyway so we can just use the pointers we get from
-this function instead of having to look them up via user address space.
-
-CC: linux-fsdevel@vger.kernel.org
-CC: linux-aio@kvack.org
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: Benjamin LaHaise <bcrl@kvack.org>
+CC: linux-cris-kernel@axis.com
+CC: Mikael Starvik <starvik@axis.com>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/aio.c | 48 +++++++++++++++++-------------------------------
- 1 file changed, 17 insertions(+), 31 deletions(-)
+ arch/cris/arch-v32/drivers/cryptocop.c | 35 ++++++++++------------------------
+ 1 file changed, 10 insertions(+), 25 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 6b868f0e0c4c..a14a33027990 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -269,9 +269,21 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	file->f_inode->i_mapping->a_ops = &aio_ctx_aops;
- 	file->f_inode->i_mapping->private_data = ctx;
- 	file->f_inode->i_size = PAGE_SIZE * (loff_t)nr_pages;
-+	ctx->aio_ring_file = file;
-+	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring))
-+			/ sizeof(struct io_event);
-+
-+	ctx->ring_pages = ctx->internal_pages;
-+	if (nr_pages > AIO_RING_PAGES) {
-+		ctx->ring_pages = kcalloc(nr_pages, sizeof(struct page *),
-+					  GFP_KERNEL);
-+		if (!ctx->ring_pages)
-+			return -ENOMEM;
-+	}
- 
- 	for (i = 0; i < nr_pages; i++) {
- 		struct page *page;
-+
- 		page = find_or_create_page(file->f_inode->i_mapping,
- 					   i, GFP_HIGHUSER | __GFP_ZERO);
- 		if (!page)
-@@ -281,19 +293,13 @@ static int aio_setup_ring(struct kioctx *ctx)
- 		SetPageUptodate(page);
- 		SetPageDirty(page);
- 		unlock_page(page);
-+		ctx->ring_pages[i] = page;
- 	}
--	ctx->aio_ring_file = file;
--	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring))
--			/ sizeof(struct io_event);
--
--	ctx->ring_pages = ctx->internal_pages;
--	if (nr_pages > AIO_RING_PAGES) {
--		ctx->ring_pages = kcalloc(nr_pages, sizeof(struct page *),
--					  GFP_KERNEL);
--		if (!ctx->ring_pages)
--			return -ENOMEM;
-+	ctx->nr_pages = i;
-+	if (unlikely(ctx->nr_pages != nr_pages)) {
-+		aio_free_ring(ctx);
-+		return -EAGAIN;
- 	}
--
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
- 	pr_debug("attempting mmap of %lu bytes\n", ctx->mmap_size);
- 
-@@ -309,28 +315,8 @@ static int aio_setup_ring(struct kioctx *ctx)
+diff --git a/arch/cris/arch-v32/drivers/cryptocop.c b/arch/cris/arch-v32/drivers/cryptocop.c
+index 877da1908234..df7ceeff1086 100644
+--- a/arch/cris/arch-v32/drivers/cryptocop.c
++++ b/arch/cris/arch-v32/drivers/cryptocop.c
+@@ -2716,43 +2716,28 @@ static int cryptocop_ioctl_process(struct inode *inode, struct file *filp, unsig
+ 		}
  	}
  
- 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
+-	/* Acquire the mm page semaphore. */
+-	down_read(&current->mm->mmap_sem);
 -
--	/* We must do this while still holding mmap_sem for write, as we
--	 * need to be protected against userspace attempting to mremap()
--	 * or munmap() the ring buffer.
--	 */
--	ctx->nr_pages = get_user_pages(current, mm, ctx->mmap_base, nr_pages,
--				       1, 0, ctx->ring_pages, NULL);
--
--	/* Dropping the reference here is safe as the page cache will hold
--	 * onto the pages for us.  It is also required so that page migration
--	 * can unmap the pages and get the right reference count.
--	 */
--	for (i = 0; i < ctx->nr_pages; i++)
--		put_page(ctx->ring_pages[i]);
--
- 	up_write(&mm->mmap_sem);
+-	err = get_user_pages(current,
+-			     current->mm,
+-			     (unsigned long int)(oper.indata + prev_ix),
+-			     noinpages,
+-			     0,  /* read access only for in data */
+-			     0, /* no force */
+-			     inpages,
+-			     NULL);
++	err = get_user_pages_fast((unsigned long)(oper.indata + prev_ix),
++				  noinpages,
++				  0,  /* read access only for in data */
++				  inpages);
  
--	if (unlikely(ctx->nr_pages != nr_pages)) {
--		aio_free_ring(ctx);
--		return -EAGAIN;
--	}
--
- 	ctx->user_id = ctx->mmap_base;
- 	ctx->nr_events = nr_events; /* trusted copy */
+ 	if (err < 0) {
+-		up_read(&current->mm->mmap_sem);
+ 		nooutpages = noinpages = 0;
+-		DEBUG_API(printk("cryptocop_ioctl_process: get_user_pages indata\n"));
++		DEBUG_API(printk("cryptocop_ioctl_process: get_user_pages_fast indata\n"));
+ 		goto error_cleanup;
+ 	}
+ 	noinpages = err;
+ 	if (oper.do_cipher){
+-		err = get_user_pages(current,
+-				     current->mm,
+-				     (unsigned long int)oper.cipher_outdata,
+-				     nooutpages,
+-				     1, /* write access for out data */
+-				     0, /* no force */
+-				     outpages,
+-				     NULL);
+-		up_read(&current->mm->mmap_sem);
++		err = get_user_pages_fast((unsigned long)oper.cipher_outdata,
++					  nooutpages,
++					  1, /* write access for out data */
++					  outpages);
+ 		if (err < 0) {
+ 			nooutpages = 0;
+-			DEBUG_API(printk("cryptocop_ioctl_process: get_user_pages outdata\n"));
++			DEBUG_API(printk("cryptocop_ioctl_process: get_user_pages_fast outdata\n"));
+ 			goto error_cleanup;
+ 		}
+ 		nooutpages = err;
+-	} else {
+-		up_read(&current->mm->mmap_sem);
+ 	}
  
+ 	/* Add 6 to nooutpages to make room for possibly inserted buffers for storing digest and
 -- 
 1.8.1.4
 
