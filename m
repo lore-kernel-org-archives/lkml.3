@@ -1,293 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3JBMTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:19:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44040 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab3JBMTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:19:30 -0400
-Date: Wed, 2 Oct 2013 14:19:28 +0200
-From: Jan Kara <jack@suse.cz>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        zab@redhat.com, jack@suse.cz, tytso@mit.edu, mszeredi@suse.cz
-Subject: Re: [PATCH 6/7] ext4: rename: split out helper functions
-Message-ID: <20131002121928.GC25126@quack.suse.cz>
-References: <1380643239-16060-1-git-send-email-miklos@szeredi.hu>
- <1380643239-16060-7-git-send-email-miklos@szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380643239-16060-7-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754108Ab3JBMUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:20:20 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:50940 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab3JBMUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 08:20:18 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: jcliburn@gmail.com
+Cc: chris.snook@gmail.com, jkosina@suse.cz, rdunlap@infradead.org,
+        standby24x7@gmail.com, peter.senna@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 08/19 v2] net: atl1c: Change variable type to bool
+Date: Wed,  2 Oct 2013 14:19:48 +0200
+Message-Id: <1380716391-20214-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 01-10-13 18:00:38, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Cross rename (exchange source and dest) will need to call some of these
-> helpers for both source and dest, while overwriting rename currently only
-> calls them for one or the other.  This also makes the code easier to
-> follow.
-  The patch looks good to me. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+The variable ret is only assigned the values true and false.
+The function atl1c_read_eeprom already returns bool. Change
+ret type to bool.
 
-								Honza
+The simplified semantic patch that find this problem is as
+follows (http://coccinelle.lip6.fr/):
 
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/ext4/namei.c | 199 +++++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 126 insertions(+), 73 deletions(-)
-> 
-> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-> index 1348251..fb0f1db 100644
-> --- a/fs/ext4/namei.c
-> +++ b/fs/ext4/namei.c
-> @@ -3014,6 +3014,125 @@ struct ext4_renament {
->  	int parent_inlined;
->  };
->  
-> +static int ext4_rename_dir_prepare(handle_t *handle, struct ext4_renament *ent)
-> +{
-> +	int retval;
-> +
-> +	ent->dir_bh = ext4_get_first_dir_block(handle, ent->inode,
-> +					      &retval, &ent->parent_de,
-> +					      &ent->parent_inlined);
-> +	if (!ent->dir_bh)
-> +		return retval;
-> +	if (le32_to_cpu(ent->parent_de->inode) != ent->dir->i_ino)
-> +		return -EIO;
-> +	BUFFER_TRACE(ent->dir_bh, "get_write_access");
-> +	return ext4_journal_get_write_access(handle, ent->dir_bh);
-> +}
-> +
-> +static int ext4_rename_dir_finish(handle_t *handle, struct ext4_renament *ent,
-> +				  unsigned dir_ino)
-> +{
-> +	int retval;
-> +
-> +	ent->parent_de->inode = cpu_to_le32(dir_ino);
-> +	BUFFER_TRACE(ent->dir_bh, "call ext4_handle_dirty_metadata");
-> +	if (!ent->parent_inlined) {
-> +		if (is_dx(ent->inode)) {
-> +			retval = ext4_handle_dirty_dx_node(handle,
-> +							   ent->inode,
-> +							   ent->dir_bh);
-> +		} else {
-> +			retval = ext4_handle_dirty_dirent_node(handle,
-> +							       ent->inode,
-> +							       ent->dir_bh);
-> +		}
-> +	} else {
-> +		retval = ext4_mark_inode_dirty(handle, ent->inode);
-> +	}
-> +	if (retval) {
-> +		ext4_std_error(ent->dir->i_sb, retval);
-> +		return retval;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int ext4_setent(handle_t *handle, struct ext4_renament *ent,
-> +		       unsigned ino, unsigned file_type)
-> +{
-> +	int retval;
-> +
-> +	BUFFER_TRACE(ent->bh, "get write access");
-> +	retval = ext4_journal_get_write_access(handle, ent->bh);
-> +	if (retval)
-> +		return retval;
-> +	ent->de->inode = cpu_to_le32(ino);
-> +	if (EXT4_HAS_INCOMPAT_FEATURE(ent->dir->i_sb,
-> +				      EXT4_FEATURE_INCOMPAT_FILETYPE))
-> +		ent->de->file_type = file_type;
-> +	ent->dir->i_version++;
-> +	ent->dir->i_ctime = ent->dir->i_mtime =
-> +		ext4_current_time(ent->dir);
-> +	ext4_mark_inode_dirty(handle, ent->dir);
-> +	BUFFER_TRACE(ent->bh, "call ext4_handle_dirty_metadata");
-> +	if (!ent->inlined) {
-> +		retval = ext4_handle_dirty_dirent_node(handle,
-> +						       ent->dir, ent->bh);
-> +		if (unlikely(retval)) {
-> +			ext4_std_error(ent->dir->i_sb, retval);
-> +			return retval;
-> +		}
-> +	}
-> +	brelse(ent->bh);
-> +	ent->bh = NULL;
-> +
-> +	return 0;
-> +}
-> +
-> +static int ext4_find_delete_entry(handle_t *handle, struct inode *dir,
-> +				  const struct qstr *d_name)
-> +{
-> +	int retval = -ENOENT;
-> +	struct buffer_head *bh;
-> +	struct ext4_dir_entry_2 *de;
-> +
-> +	bh = ext4_find_entry(dir, d_name, &de, NULL);
-> +	if (bh) {
-> +		retval = ext4_delete_entry(handle, dir, de, bh);
-> +		brelse(bh);
-> +	}
-> +	return retval;
-> +}
-> +
-> +static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent)
-> +{
-> +	int retval;
-> +	/*
-> +	 * ent->de could have moved from under us during htree split, so make
-> +	 * sure that we are deleting the right entry.  We might also be pointing
-> +	 * to a stale entry in the unused part of ent->bh so just checking inum
-> +	 * and the name isn't enough.
-> +	 */
-> +	if (le32_to_cpu(ent->de->inode) != ent->inode->i_ino ||
-> +	    ent->de->name_len != ent->dentry->d_name.len ||
-> +	    strncmp(ent->de->name, ent->dentry->d_name.name,
-> +		    ent->de->name_len)) {
-> +		retval = ext4_find_delete_entry(handle, ent->dir,
-> +						&ent->dentry->d_name);
-> +	} else {
-> +		retval = ext4_delete_entry(handle, ent->dir, ent->de, ent->bh);
-> +		if (retval == -ENOENT) {
-> +			retval = ext4_find_delete_entry(handle, ent->dir,
-> +							&ent->dentry->d_name);
-> +		}
-> +	}
-> +
-> +	if (retval) {
-> +		ext4_warning(ent->dir->i_sb,
-> +				"Deleting old file (%lu), %d, error=%d",
-> +				ent->dir->i_ino, ent->dir->i_nlink, retval);
-> +	}
-> +}
-> +
->  /*
->   * Anybody can rename anything with this: the permission checks are left to the
->   * higher-level routines.
-> @@ -3087,16 +3206,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
->  			if (new.dir != old.dir && EXT4_DIR_LINK_MAX(new.dir))
->  				goto end_rename;
->  		}
-> -		retval = -EIO;
-> -		old.dir_bh = ext4_get_first_dir_block(handle, old.inode,
-> -						  &retval, &old.parent_de,
-> -						  &old.parent_inlined);
-> -		if (!old.dir_bh)
-> -			goto end_rename;
-> -		if (le32_to_cpu(old.parent_de->inode) != old.dir->i_ino)
-> -			goto end_rename;
-> -		BUFFER_TRACE(old.dir_bh, "get_write_access");
-> -		retval = ext4_journal_get_write_access(handle, old.dir_bh);
-> +		retval = ext4_rename_dir_prepare(handle, &old);
->  		if (retval)
->  			goto end_rename;
->  	}
-> @@ -3105,29 +3215,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
->  		if (retval)
->  			goto end_rename;
->  	} else {
-> -		BUFFER_TRACE(new.bh, "get write access");
-> -		retval = ext4_journal_get_write_access(handle, new.bh);
-> +		retval = ext4_setent(handle, &new,
-> +				     old.inode->i_ino, old.de->file_type);
->  		if (retval)
->  			goto end_rename;
-> -		new.de->inode = cpu_to_le32(old.inode->i_ino);
-> -		if (EXT4_HAS_INCOMPAT_FEATURE(new.dir->i_sb,
-> -					      EXT4_FEATURE_INCOMPAT_FILETYPE))
-> -			new.de->file_type = old.de->file_type;
-> -		new.dir->i_version++;
-> -		new.dir->i_ctime = new.dir->i_mtime =
-> -					ext4_current_time(new.dir);
-> -		ext4_mark_inode_dirty(handle, new.dir);
-> -		BUFFER_TRACE(new.bh, "call ext4_handle_dirty_metadata");
-> -		if (!new.inlined) {
-> -			retval = ext4_handle_dirty_dirent_node(handle,
-> -							       new.dir, new.bh);
-> -			if (unlikely(retval)) {
-> -				ext4_std_error(new.dir->i_sb, retval);
-> -				goto end_rename;
-> -			}
-> -		}
-> -		brelse(new.bh);
-> -		new.bh = NULL;
->  	}
->  
->  	/*
-> @@ -3140,31 +3231,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
->  	/*
->  	 * ok, that's it
->  	 */
-> -	if (le32_to_cpu(old.de->inode) != old.inode->i_ino ||
-> -	    old.de->name_len != old.dentry->d_name.len ||
-> -	    strncmp(old.de->name, old.dentry->d_name.name, old.de->name_len) ||
-> -	    (retval = ext4_delete_entry(handle, old.dir,
-> -					old.de, old.bh)) == -ENOENT) {
-> -		/* old.de could have moved from under us during htree split, so
-> -		 * make sure that we are deleting the right entry.  We might
-> -		 * also be pointing to a stale entry in the unused part of
-> -		 * old.bh so just checking inum and the name isn't enough. */
-> -		struct buffer_head *old_bh2;
-> -		struct ext4_dir_entry_2 *old_de2;
-> -
-> -		old_bh2 = ext4_find_entry(old.dir, &old.dentry->d_name,
-> -					  &old_de2, NULL);
-> -		if (old_bh2) {
-> -			retval = ext4_delete_entry(handle, old.dir,
-> -						   old_de2, old_bh2);
-> -			brelse(old_bh2);
-> -		}
-> -	}
-> -	if (retval) {
-> -		ext4_warning(old.dir->i_sb,
-> -				"Deleting old file (%lu), %d, error=%d",
-> -				old.dir->i_ino, old.dir->i_nlink, retval);
-> -	}
-> +	ext4_rename_delete(handle, &old);
->  
->  	if (new.inode) {
->  		ext4_dec_count(handle, new.inode);
-> @@ -3173,24 +3240,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
->  	old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
->  	ext4_update_dx_flag(old.dir);
->  	if (old.dir_bh) {
-> -		old.parent_de->inode = cpu_to_le32(new.dir->i_ino);
-> -		BUFFER_TRACE(old.dir_bh, "call ext4_handle_dirty_metadata");
-> -		if (!old.parent_inlined) {
-> -			if (is_dx(old.inode)) {
-> -				retval = ext4_handle_dirty_dx_node(handle,
-> -								   old.inode,
-> -								   old.dir_bh);
-> -			} else {
-> -				retval = ext4_handle_dirty_dirent_node(handle,
-> -							old.inode, old.dir_bh);
-> -			}
-> -		} else {
-> -			retval = ext4_mark_inode_dirty(handle, old.inode);
-> -		}
-> -		if (retval) {
-> -			ext4_std_error(old.dir->i_sb, retval);
-> +		retval = ext4_rename_dir_finish(handle, &old, new.dir->i_ino);
-> +		if (retval)
->  			goto end_rename;
-> -		}
-> +
->  		ext4_dec_count(handle, old.dir);
->  		if (new.inode) {
->  			/* checked empty_dir above, can't have another parent,
-> -- 
-> 1.8.1.4
-> 
+@exists@
+type T;
+identifier b;
+@@
+- T
++ bool
+  b = ...;
+  ... when any
+  b = \(true\|false\)
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+Changes from v1:
+ - Added subsystem prefix to shortlog
+
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c
+index 3ef7092..1cda49a 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c
+@@ -153,7 +153,7 @@ static int atl1c_get_permanent_address(struct atl1c_hw *hw)
+ bool atl1c_read_eeprom(struct atl1c_hw *hw, u32 offset, u32 *p_value)
+ {
+ 	int i;
+-	int ret = false;
++	bool ret = false;
+ 	u32 otp_ctrl_data;
+ 	u32 control;
+ 	u32 data;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.1
+
