@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab3JBRZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:25:39 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26081 "EHLO
+	id S1755223Ab3JBR0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:26:43 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26110 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754542Ab3JBRZf (ORCPT
+	by vger.kernel.org with ESMTP id S1754196Ab3JBR0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:25:35 -0400
+	Wed, 2 Oct 2013 13:26:40 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -27,9 +27,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         linux-driver@qlogic.com,
         Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
         "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 29/77] cxgb4vf: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:45 +0200
-Message-Id: <e4d21d117874dbbe4aac4618b3cc3e3d9d0cbeb6.1380703262.git.agordeev@redhat.com>
+Subject: [PATCH RFC 26/77] cxgb4: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:48:42 +0200
+Message-Id: <384501214b90270df2f9414e3ddcffbe0335ddff.1380703262.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
 References: <cover.1380703262.git.agordeev@redhat.com>
@@ -43,55 +43,57 @@ obtain a optimal number of MSI/MSI-X interrupts required.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- .../net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c    |   49 ++++++++++++--------
- 1 files changed, 29 insertions(+), 20 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |   62 +++++++++++++----------
+ 1 files changed, 35 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c b/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-index 11cbce1..48bb33b 100644
---- a/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-@@ -2437,13 +2437,10 @@ static void reduce_ethqs(struct adapter *adapter, int n)
-  */
- static int enable_msix(struct adapter *adapter)
- {
--	int i, err, want, need;
-+	int i, err, want, need, nqsets;
- 	struct msix_entry entries[MSIX_ENTRIES];
- 	struct sge *s = &adapter->sge;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+index 9425bc6..e5fbbd3 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+@@ -5699,9 +5699,6 @@ static int enable_msix(struct adapter *adap)
+ 	unsigned int nchan = adap->params.nports;
+ 	struct msix_entry entries[MAX_INGQ + 1];
  
--	for (i = 0; i < MSIX_ENTRIES; ++i)
+-	for (i = 0; i < ARRAY_SIZE(entries); ++i)
 -		entries[i].entry = i;
 -
- 	/*
- 	 * We _want_ enough MSI-X interrupts to cover all of our "Queue Sets"
- 	 * plus those needed for our "extras" (for example, the firmware
-@@ -2453,26 +2450,38 @@ static int enable_msix(struct adapter *adapter)
- 	 */
- 	want = s->max_ethqsets + MSIX_EXTRAS;
- 	need = adapter->params.nports + MSIX_EXTRAS;
--	while ((err = pci_enable_msix(adapter->pdev, entries, want)) >= need)
--		want = err;
+ 	want = s->max_ethqsets + EXTRA_VECS;
+ 	if (is_offload(adap)) {
+ 		want += s->rdmaqs + s->ofldqsets;
+@@ -5710,34 +5707,45 @@ static int enable_msix(struct adapter *adap)
+ 	}
+ 	need = adap->params.nports + EXTRA_VECS + ofld_need;
  
--	if (err == 0) {
--		int nqsets = want - MSIX_EXTRAS;
--		if (nqsets < s->max_ethqsets) {
--			dev_warn(adapter->pdev_dev, "only enough MSI-X vectors"
--				 " for %d Queue Sets\n", nqsets);
--			s->max_ethqsets = nqsets;
--			if (nqsets < s->ethqsets)
--				reduce_ethqs(adapter, nqsets);
--		}
--		for (i = 0; i < want; ++i)
--			adapter->msix_info[i].vec = entries[i].vector;
--	} else if (err > 0) {
-+	err = pci_msix_table_size(adapter->pdev);
+-	while ((err = pci_enable_msix(adap->pdev, entries, want)) >= need)
+-		want = err;
++	err = pci_msix_table_size(adap->pdev);
 +	if (err < 0)
 +		return err;
-+
+ 
+-	if (!err) {
+-		/*
+-		 * Distribute available vectors to the various queue groups.
+-		 * Every group gets its minimum requirement and NIC gets top
+-		 * priority for leftovers.
+-		 */
+-		i = want - EXTRA_VECS - ofld_need;
+-		if (i < s->max_ethqsets) {
+-			s->max_ethqsets = i;
+-			if (i < s->ethqsets)
+-				reduce_ethqs(adap, i);
+-		}
+-		if (is_offload(adap)) {
+-			i = want - EXTRA_VECS - s->max_ethqsets;
+-			i -= ofld_need - nchan;
+-			s->ofldqsets = (i / nchan) * nchan;  /* round down */
+-		}
+-		for (i = 0; i < want; ++i)
+-			adap->msix_info[i].vec = entries[i].vector;
+-	} else if (err > 0) {
 +	want = min(want, err);
 +	if (want < need) {
- 		dev_info(adapter->pdev_dev, "only %d MSI-X vectors left,"
- 			 " not using MSI-X\n", err);
+ 		dev_info(adap->pdev_dev,
+ 			 "only %d MSI-X vectors left, not using MSI-X\n", err);
 -		err = -ENOSPC;
 +		return -ENOSPC;
  	}
@@ -101,25 +103,33 @@ index 11cbce1..48bb33b 100644
 +	for (i = 0; i < want; ++i)
 +		entries[i].entry = i;
 +
-+	err = pci_enable_msix(adapter->pdev, entries, want);
++	err = pci_enable_msix(adap->pdev, entries, want);
 +	if (err)
 +		return err;
 +
-+	nqsets = want - MSIX_EXTRAS;
-+	if (nqsets < s->max_ethqsets) {
-+		dev_warn(adapter->pdev_dev, "only enough MSI-X vectors"
-+			 " for %d Queue Sets\n", nqsets);
-+		s->max_ethqsets = nqsets;
-+		if (nqsets < s->ethqsets)
-+			reduce_ethqs(adapter, nqsets);
++	/*
++	 * Distribute available vectors to the various queue groups.
++	 * Every group gets its minimum requirement and NIC gets top
++	 * priority for leftovers.
++	 */
++	i = want - EXTRA_VECS - ofld_need;
++	if (i < s->max_ethqsets) {
++		s->max_ethqsets = i;
++		if (i < s->ethqsets)
++			reduce_ethqs(adap, i);
++	}
++	if (is_offload(adap)) {
++		i = want - EXTRA_VECS - s->max_ethqsets;
++		i -= ofld_need - nchan;
++		s->ofldqsets = (i / nchan) * nchan;  /* round down */
 +	}
 +	for (i = 0; i < want; ++i)
-+		adapter->msix_info[i].vec = entries[i].vector;
++		adap->msix_info[i].vec = entries[i].vector;
 +
 +	return 0;
  }
  
- static const struct net_device_ops cxgb4vf_netdev_ops	= {
+ #undef EXTRA_VECS
 -- 
 1.7.7.6
 
