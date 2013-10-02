@@ -1,184 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab3JBRcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:32:16 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26264 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754182Ab3JBRcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:32:14 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 64/77] qlcnic: Make MSI-X initialization routine bit more readable
-Date: Wed,  2 Oct 2013 12:49:20 +0200
-Message-Id: <685e235adcdeafb5e72b5fe1efe63f8f03a8f035.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	id S1755404Ab3JBRcn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:32:43 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:5693 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754894Ab3JBRcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:32:42 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1019,1371081600"; 
+   d="scan'208";a="57052508"
+Date: Wed, 2 Oct 2013 18:31:57 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH v6 12/19] swiotlb: don't assume that io_tlb_start-io_tlb_end
+ is coherent
+In-Reply-To: <20130930155617.GS3106@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1310021826410.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-12-git-send-email-stefano.stabellini@eu.citrix.com> <20130930155617.GS3106@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |  112 +++++++++++-----------
- 1 files changed, 56 insertions(+), 56 deletions(-)
+On Mon, 30 Sep 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 27, 2013 at 05:10:00PM +0100, Stefano Stabellini wrote:
+> > The swiotlb code has appropriate calls to dma_mark_clean in place for
+> > buffers passed to swiotlb_map_page as an argument. However it assumes
+> > that the swiotlb bounce buffer (io_tlb_start-io_tlb_end) is already
+> > coherent and doesn't need any calls to dma_mark_clean.
+> > 
+> > On ARM the swiotlb bounce buffer is not coherent (the memory is
+> > writealloc while it should be bufferable) and therefore we need to call
+> > dma_mark_clean appropriately on the bounce buffer code paths too.
+> > 
+> > Note that most architecures have an empty dma_mark_clean implementation
+> > anyway.
+> 
+> The other architecture that uses swiotlb is IA64 and that does have
+> an implementation where it touches on page attributes.
+> 
+> Which means I have to figure out why my HP zx6000 won't boot with 3.11 now :-(
+> 
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index a137c14..8510457 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -568,7 +568,7 @@ int qlcnic_enable_msix(struct qlcnic_adapter *adapter, u32 num_msix)
- {
- 	struct pci_dev *pdev = adapter->pdev;
- 	int max_tx_rings, max_sds_rings, tx_vector;
--	int err = -EINVAL, i;
-+	int err, i;
- 
- 	if (adapter->flags & QLCNIC_TX_INTR_SHARED) {
- 		max_tx_rings = 0;
-@@ -589,68 +589,68 @@ int qlcnic_enable_msix(struct qlcnic_adapter *adapter, u32 num_msix)
- 	adapter->max_sds_rings = 1;
- 	adapter->flags &= ~(QLCNIC_MSI_ENABLED | QLCNIC_MSIX_ENABLED);
- 
--	if (adapter->ahw->msix_supported) {
--		err = pci_msix_table_size(pdev);
--		if (err < 0)
-+	if (!adapter->ahw->msix_supported)
-+		return -EINVAL;
-+
-+	err = pci_msix_table_size(pdev);
-+	if (err < 0)
-+		goto fail;
-+
-+	if (err < num_msix) {
-+		dev_info(&pdev->dev,
-+			 "Unable to allocate %d MSI-X interrupt vectors\n",
-+			 num_msix);
-+		if (qlcnic_83xx_check(adapter)) {
-+			if (err < (QLC_83XX_MINIMUM_VECTOR - tx_vector))
-+				return -ENOSPC;
-+			err -= (max_tx_rings + 1);
-+			num_msix = rounddown_pow_of_two(err);
-+			num_msix += (max_tx_rings + 1);
-+		} else {
-+			num_msix = rounddown_pow_of_two(err);
-+			if (qlcnic_check_multi_tx(adapter))
-+				num_msix += max_tx_rings;
-+		}
-+
-+		if (!num_msix) {
-+			err = -ENOSPC;
- 			goto fail;
-+		}
- 
--		if (err < num_msix) {
--			dev_info(&pdev->dev,
--				 "Unable to allocate %d MSI-X interrupt vectors\n",
--				 num_msix);
--			if (qlcnic_83xx_check(adapter)) {
--				if (err < (QLC_83XX_MINIMUM_VECTOR - tx_vector))
--					return -ENOSPC;
--				err -= (max_tx_rings + 1);
--				num_msix = rounddown_pow_of_two(err);
--				num_msix += (max_tx_rings + 1);
--			} else {
--				num_msix = rounddown_pow_of_two(err);
--				if (qlcnic_check_multi_tx(adapter))
--					num_msix += max_tx_rings;
--			}
-+		dev_info(&pdev->dev,
-+			 "Trying to allocate %d MSI-X interrupt vectors\n",
-+			 num_msix);
-+	}
- 
--			if (!num_msix) {
--				err = -ENOSPC;
--				goto fail;
--			}
-+	for (i = 0; i < num_msix; i++)
-+		adapter->msix_entries[i].entry = i;
- 
--			dev_info(&pdev->dev,
--				 "Trying to allocate %d MSI-X interrupt vectors\n",
--				 num_msix);
--			}
--		}
-+	err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
-+	if (err)
-+		goto fail;
- 
--		for (i = 0; i < num_msix; i++)
--			adapter->msix_entries[i].entry = i;
--		err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
--		if (err == 0) {
--			adapter->flags |= QLCNIC_MSIX_ENABLED;
--			if (qlcnic_83xx_check(adapter)) {
--				adapter->ahw->num_msix = num_msix;
--				/* subtract mail box and tx ring vectors */
--				adapter->max_sds_rings = num_msix -
--							 max_tx_rings - 1;
--			} else {
--				adapter->ahw->num_msix = num_msix;
--				if (qlcnic_check_multi_tx(adapter) &&
--				    !adapter->ahw->diag_test &&
--				    (adapter->max_drv_tx_rings > 1))
--					max_sds_rings = num_msix - max_tx_rings;
--				else
--					max_sds_rings = num_msix;
--
--				adapter->max_sds_rings = max_sds_rings;
--			}
--			dev_info(&pdev->dev, "using msi-x interrupts\n");
--		} else {
--fail:
--			dev_info(&pdev->dev,
--				 "Unable to allocate %d MSI-X interrupt vectors\n",
--				 num_msix);
--		}
-+	adapter->flags |= QLCNIC_MSIX_ENABLED;
-+	if (qlcnic_83xx_check(adapter)) {
-+		adapter->ahw->num_msix = num_msix;
-+		/* subtract mail box and tx ring vectors */
-+		adapter->max_sds_rings = num_msix - max_tx_rings - 1;
-+	} else {
-+		adapter->ahw->num_msix = num_msix;
-+		if (qlcnic_check_multi_tx(adapter) &&
-+		    !adapter->ahw->diag_test && (adapter->max_drv_tx_rings > 1))
-+			max_sds_rings = num_msix - max_tx_rings;
-+		else
-+			max_sds_rings = num_msix;
-+
-+		adapter->max_sds_rings = max_sds_rings;
- 	}
- 
-+	dev_info(&pdev->dev, "using msi-x interrupts\n");
-+	return 0;
-+
-+fail:
-+	dev_info(&pdev->dev,
-+		 "Unable to allocate %d MSI-X interrupt vectors\n", num_msix);
- 	return err;
- }
- 
--- 
-1.7.7.6
+Now this is a very thorny issue.
 
+Honestly I don't like the dma_mark_clean interface very much: it's one
+big hammer, when we actually need some finesse to handle coherency.
+
+For example on ARM some devices might not need the dma_mark_clean call,
+while others do. Calling it all the times is at the very best
+inefficient and incorrect at worst.
+
+I am thinking of calling the original map/unmap_page functions instead
+(arm_dma_map_page or arm_coherent_dma_map_page in the arm case).
+However in order to do that I would need to add more __get_dma_ops calls in
+both lib/swiotlb.c and drivers/xen/swiotlb-xen.c
+
+
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  lib/swiotlb.c |   13 ++++++++++---
+> >  1 files changed, 10 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> > index 4e8686c..eb45d17 100644
+> > --- a/lib/swiotlb.c
+> > +++ b/lib/swiotlb.c
+> > @@ -515,6 +515,7 @@ found:
+> >  		io_tlb_orig_addr[index+i] = orig_addr + (i << IO_TLB_SHIFT);
+> >  	if (dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)
+> >  		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_TO_DEVICE);
+> > +	dma_mark_clean(phys_to_virt(tlb_addr), size);
+> >  
+> >  	return tlb_addr;
+> >  }
+> > @@ -547,7 +548,10 @@ void swiotlb_tbl_unmap_single(struct device *hwdev, phys_addr_t tlb_addr,
+> >  	 * First, sync the memory before unmapping the entry
+> >  	 */
+> >  	if (orig_addr && ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
+> > +	{
+> > +		dma_mark_clean(phys_to_virt(tlb_addr), size);
+> >  		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_FROM_DEVICE);
+> > +	}
+> >  
+> >  	/*
+> >  	 * Return the buffer to the free list by setting the corresponding
+> > @@ -587,17 +591,20 @@ void swiotlb_tbl_sync_single(struct device *hwdev, phys_addr_t tlb_addr,
+> >  
+> >  	switch (target) {
+> >  	case SYNC_FOR_CPU:
+> > -		if (likely(dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL))
+> > +		if (likely(dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL)) {
+> > +			dma_mark_clean(phys_to_virt(tlb_addr), size);
+> >  			swiotlb_bounce(orig_addr, tlb_addr,
+> >  				       size, DMA_FROM_DEVICE);
+> > +		}
+> >  		else
+> >  			BUG_ON(dir != DMA_TO_DEVICE);
+> >  		break;
+> >  	case SYNC_FOR_DEVICE:
+> > -		if (likely(dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL))
+> > +		if (likely(dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)) {
+> >  			swiotlb_bounce(orig_addr, tlb_addr,
+> >  				       size, DMA_TO_DEVICE);
+> > -		else
+> > +			dma_mark_clean(phys_to_virt(tlb_addr), size);
+> > +		} else
+> >  			BUG_ON(dir != DMA_FROM_DEVICE);
+> >  		break;
+> >  	default:
+> > -- 
+> > 1.7.2.5
+> > 
+> 
