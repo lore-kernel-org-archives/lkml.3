@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3JBLHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 07:07:30 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:49195 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab3JBLH0 (ORCPT
+	id S1753717Ab3JBLKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 07:10:30 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:48622 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab3JBLK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 07:07:26 -0400
-MIME-Version: 1.0
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Wed, 2 Oct 2013 16:36:45 +0530
-Message-ID: <CALkWK0k5sQ9WCGevFQ3D18=Fs3ziS8imVVvasE0QR9e0r91cYA@mail.gmail.com>
-Subject: [BUG] perf timechart segfault
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 2 Oct 2013 07:10:27 -0400
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-networking@linaro.org, Danke Xie <d.xie@sta.samsung.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Subject: [PATCH] mfd: twl6030: Fix endianness problem in IRQ handler
+Date: Wed,  2 Oct 2013 14:08:44 +0300
+Message-Id: <1380712124-20666-1-git-send-email-taras.kondratiuk@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Danke Xie <d.xie@sta.samsung.com>
 
-I tried using the `perf timechart` command after a `sudo perf
-timechart record -- git status`, and it segfaulted. Backtrace follows:
+The current TWL 6030 IRQ handler assumes little endianness.
+This change makes it endian-neutral.
 
-Program received signal SIGSEGV, Segmentation fault.
-0x0000000000000000 in ?? ()
-(gdb) bt
-#0  0x0000000000000000 in ?? ()
-#1  0x000000000047d728 in perf_session_deliver_event
-(session=session@entry=0x8ea450, event=event@entry=0x7ffff7f13f98,
-    sample=sample@entry=0x7fffffffd530,
-tool=tool@entry=0x7fffffffd7a0, file_offset=file_offset@entry=8088)
-    at util/session.c:1006
-#2  0x000000000047faec in perf_session__process_event
-(file_offset=8088, tool=0x7fffffffd7a0, event=0x7ffff7f13f98,
-    session=0x8ea450) at util/session.c:1098
-#3  __perf_session__process_events (session=session@entry=0x8ea450,
-data_offset=<optimized out>,
-    data_size=<optimized out>, file_size=635384,
-tool=tool@entry=0x7fffffffd7a0) at util/session.c:1360
-#4  0x000000000047ff81 in perf_session__process_events
-(self=self@entry=0x8ea450, tool=tool@entry=0x7fffffffd7a0)
-    at util/session.c:1403
-#5  0x000000000042f12a in __cmd_timechart (output_name=0x4ee399
-"output.svg") at builtin-timechart.c:1009
-#6  cmd_timechart (argc=0, argv=0x7fffffffdf20, prefix=<optimized
-out>) at builtin-timechart.c:1116
-#7  0x0000000000419925 in run_builtin (p=p@entry=0x725f90
-<commands+240>, argc=argc@entry=1,
-    argv=argv@entry=0x7fffffffdf20) at perf.c:319
-#8  0x0000000000419199 in handle_internal_command
-(argv=0x7fffffffdf20, argc=1) at perf.c:376
-#9  run_argv (argv=0x7fffffffdd20, argcp=0x7fffffffdd2c) at perf.c:420
-#10 main (argc=1, argv=0x7fffffffdf20) at perf.c:521
+Signed-off-by: Danke Xie <d.xie@sta.samsung.com>
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+---
+ drivers/mfd/twl6030-irq.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-I compiled it with EXTRA_CFLAGS="-O0 -g", so all the debugging symbols
-should be available. Not sure what's going on, or why I needed sudo to
-record data in the first place.
+diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+index 517eda8..1941dc6 100644
+--- a/drivers/mfd/twl6030-irq.c
++++ b/drivers/mfd/twl6030-irq.c
+@@ -178,6 +178,7 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
+ 		u8 bytes[4];
+ 		u32 int_sts;
+ 	} sts;
++	u32 int_sts; /* sts.int_sts converted to CPU endianness */
+ 	struct twl6030_irq *pdata = data;
+ 
+ 	/* read INT_STS_A, B and C in one shot using a burst read */
+@@ -196,8 +197,9 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
+ 	if (sts.bytes[2] & 0x10)
+ 		sts.bytes[2] |= 0x08;
+ 
+-	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
+-		if (sts.int_sts & 0x1) {
++	int_sts = le32_to_cpu(sts.int_sts);
++	for (i = 0; int_sts; int_sts >>= 1, i++)
++		if (int_sts & 0x1) {
+ 			int module_irq =
+ 				irq_find_mapping(pdata->irq_domain,
+ 						 pdata->irq_mapping_tbl[i]);
+-- 
+1.7.9.5
 
-Any hints?
