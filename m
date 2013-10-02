@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab3JBMiC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:38:02 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:32836 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab3JBMiA (ORCPT
+	id S1754121Ab3JBMiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:38:12 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:40934 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947Ab3JBMiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:38:00 -0400
+	Wed, 2 Oct 2013 08:38:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>, Russell King <rmk@arm.linux.org.uk>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arm Linux <linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL] nohz: Full dynticks for 32 bits and arm support
-Date: Wed,  2 Oct 2013 14:37:52 +0200
-Message-Id: <1380717475-11505-1-git-send-email-fweisbec@gmail.com>
+        Arm Linux <linux-arm-kernel@lists.infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 3/3] ARM: Kconfig: allow full nohz CPU accounting
+Date: Wed,  2 Oct 2013 14:37:55 +0200
+Message-Id: <1380717475-11505-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1380717475-11505-1-git-send-email-fweisbec@gmail.com>
+References: <1380717475-11505-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+From: Kevin Hilman <khilman@linaro.org>
 
-Please pull the timers/core branch that can be found at:
+With the 64-bit requirement removed from VIRT_CPU_ACCOUNTING_GEN,
+allow ARM platforms to enable it.  Since VIRT_CPU_ACCOUNTING_GEN is a
+dependency for full NO_HZ, this allows ARM platforms to enable full
+NO_HZ as well.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/core
-
-Thanks,
-	Frederic
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Arm Linux <linux-arm-kernel@lists.infradead.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ arch/arm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Kevin Hilman (3):
-      vtime: Add HAVE_VIRT_CPU_ACCOUNTING_GEN Kconfig
-      nohz: Drop generic vtime obsolete dependency on CONFIG_64BIT
-      ARM: Kconfig: allow full nohz CPU accounting
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 1ad6fb6..323baf0 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -54,6 +54,7 @@ config ARM
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select HAVE_UID16
++	select HAVE_VIRT_CPU_ACCOUNTING_GEN
+ 	select IRQ_FORCED_THREADING
+ 	select KTIME_SCALAR
+ 	select MODULES_USE_ELF_REL
+-- 
+1.8.3.1
 
-
- arch/Kconfig        | 12 ++++++++++++
- arch/arm/Kconfig    |  1 +
- init/Kconfig        |  3 ++-
- kernel/time/Kconfig |  2 +-
- 4 files changed, 16 insertions(+), 2 deletions(-)
