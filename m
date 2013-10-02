@@ -1,209 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3JBQFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:05:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753207Ab3JBQFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:05:33 -0400
-Date: Wed, 2 Oct 2013 18:05:14 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com
-Subject: [RESEND PATCH] x86: add phys addr validity check for /dev/mem mmap
-Message-ID: <20131002160514.GA25471@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754076Ab3JBQGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:06:45 -0400
+Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:55366 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753046Ab3JBQGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 12:06:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,::::::::::::::::::::::::::::::::::::::::::::::cesarb@cesarb
+X-HE-Tag: drain81_912bb347b1712
+X-Filterd-Recvd-Size: 4653
+Message-ID: <1380729996.2081.59.camel@joe-AO722>
+Subject: Re: [RFC PATCH v2] fpga: Introduce new fpga subsystem
+From: Joe Perches <joe@perches.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Brown <davidb@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org
+Date: Wed, 02 Oct 2013 09:06:36 -0700
+In-Reply-To: <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
+References: <cover.1380727889.git.michal.simek@xilinx.com>
+	 <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CR4.PAE is set, the 64b PTE's are used(ARCH_PHYS_ADDR_T_64BIT is set for
-X86_64 || X86_PAE). According to [1] Chapter 4 Paging, some higher bits in 64b
-PTE are reserved and have to be set to zero. For example, for IA-32e and 4KB
-page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR) are reserved. So
-for a CPU with e.g. 48bit phys addr width, bits 51-48 have to be zero. If one of
-the reserved bits is set, [1] 4.7 Page-Fault Exceptions, the #PF is generated
-with RSVD error code.
+On Wed, 2013-10-02 at 17:35 +0200, Michal Simek wrote:
+> This new fpga subsystem core should unify all fpga drivers/managers which
+> do the same things. Load configuration data to fpga or another programmable
+> logic through common interface. It doesn't matter if it is MMIO device,
+> gpio bitbanging, etc. connection. The point is to have the same
+> interface for these drivers.
 
-<quote>
-RSVD flag (bit 3).
-This flag is 1 if there is no valid translation for the linear address because a
-reserved bit was set in one of the paging-structure entries used to translate
-that address. (Because reserved bits are not checked in a paging-structure entry
-whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
-set.)
-</quote>
+Does this interface support partial reprogramming/configuration
+for FPGAs that can do that?
 
-In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
-returns 1 on x86. So it's possible to use any pgoff we want and to set the PTE's
-reserved bits in remap_pfn_range(). Meaning there is a possibility to use mmap
-on /dev/mem and cause system panic. It's probably not that serious, because
-access to /dev/mem is limited and the system has to have panic_on_oops set, but
-still I think we should check this and return error.
+trivial notes:
 
-This patch adds check for x86 when ARCH_PHYS_ADDR_T_64BIT is set, the same way
-as it is already done in e.g. ioremap. With this fix mmap returns -EINVAL if the
-requested phys addr is bigger then the supported phys addr width.
+There are a _lot_ of dev_dbg statements.
 
-[1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
+I hope some of these would be removed one day,
+especially the function tracing style ones, because
+there's already a generic kernel mechanism for that.
 
-reproducer
----------------------------------8<--------------------------------------
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <err.h>
- #include <stdlib.h>
- #include <sys/mman.h>
+Maybe perf/trace support could be added eventually.
 
- #define die(fmt, ...) err(1, fmt, ##__VA_ARGS__)
+> diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
+[]
+> +/**
+> + * fpga_mgr_status_write - Write fpga manager status
+> + * @dev: Pointer to the device structure
+> + * @attr: Pointer to the device attribute structure
+> + * @buf: Pointer to the buffer location
+> + * @count: Number of characters in @buf
+> + *
+> + * Returns the number of bytes copied to @buf, a negative error number otherwise
+> + */
+> +static ssize_t fpga_mgr_status_write(struct device *dev,
+> +				     struct device_attribute *attr,
+> +				     const char *buf, size_t count)
+> +{
+> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	if (test_and_set_bit_lock(FPGA_MGR_DEV_BUSY, &mgr->flags))
+> +		return -EBUSY;
+> +
+> +	ret = strcmp(buf, "write_init");
+> +	if (!ret) {
+> +		ret = fpga_mgr_write_init(mgr);
+> +		goto out;
+> +	}
+> +
+> +	ret = strcmp(buf, "write_complete");
+> +	if (!ret) {
+> +		ret = fpga_mgr_write_complete(mgr);
+> +		goto out;
+> +	}
+> +
+> +	ret = strcmp(buf, "read_init");
+> +	if (!ret) {
+> +		ret = fpga_mgr_read_init(mgr);
+> +		goto out;
+> +	}
+> +
+> +	ret = strcmp(buf, "read_complete");
+> +	if (!ret) {
+> +		ret = fpga_mgr_read_complete(mgr);
+> +		goto out;
+> +	}
+> +
+> +	ret = -EINVAL;
+> +out:
+> +	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
+> +
+> +	return ret ? : count;
+> +}
 
-/*
-   1) Find some non system ram in case the CONFIG_STRICT_DEVMEM is defined
-   $ cat /proc/iomem | grep -v "\(System RAM\|reserved\)"
+I think this style is awkward and this would be
+better written as:
 
-   2) Find physical address width
-   $ cat /proc/cpuinfo | grep "address sizes"
+	if (!strcmp(buf, "write_init"))
+		ret = fpga_mgr_write_init(mgr);
+	else if (!strcmp(buf, "write_complete"))
+		ret = fpga_mgr_write_complete(mgr);
+	else if (!strcmp(buf, "read_init"))
+		ret = fpga_mgr_read_init(mgr);
+	else if (!strcmp(buf, "read_complete"))
+		ret = fpga_mgr_read_complete(mgr);
+	else
+		ret = -EINVAL;
 
-   PTE bits 51 - M are reserved, where M is physical address width found 2)
-   Note: step 2) is actually not needed, we can always set just the 51th bit
-   (0x8000000000000)
+	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
 
-   Set OFFSET macro to
+	if (ret)
+		return ret;
 
-   (start of iomem range found in 1)) | (1 << 51)
-
-   for example
-   0x000a0000 | 0x8000000000000 = 0x80000000a0000
-
-   where 0x000a0000 is start of PCI BUS on my laptop
-
- */
-
- #define OFFSET 0x80000000a0000LL
-
-int main(int argc, char *argv[])
-{
-	int fd;
-	long ps;
-	long pgoff;
-	char *map;
-	char c;
-
-	ps = sysconf(_SC_PAGE_SIZE);
-	if (ps == -1)
-		die("cannot get page size");
-
-	fd = open("/dev/mem", O_RDONLY);
-	if (fd == -1)
-		die("cannot open /dev/mem");
-
-	pgoff = (OFFSET + (ps - 1)) & ~(ps - 1);
-	printf("%Lx\n", pgoff);
-
-	map = mmap(NULL, ps, PROT_READ, MAP_SHARED, fd, pgoff);
-	if (map == MAP_FAILED)
-		die("cannot mmap");
-
-	c = map[0];
-
-	if (munmap(map, ps) == -1)
-		die("cannot munmap");
-
-	if (close(fd) == -1)
-		die("cannot close");
-
-	return 0;
+	return count;
 }
----------------------------------8<--------------------------------------
 
-oops info
----------------------------------8<--------------------------------------
-Oct  2 11:24:02 amd-pence-01 kernel: rep: Corrupted page table at address 7f911ffc8000
-Oct  2 11:24:02 amd-pence-01 kernel: PGD c18db067 PUD c270e067 PMD c3864067 PTE 80080000000a0225
-Oct  2 11:24:02 amd-pence-01 kernel: Bad pagetable: 000d [#1] SMP
-Oct  2 11:24:02 amd-pence-01 kernel: Modules linked in: cpufreq_ondemand(F) ipv6(F) microcode(F) pcspkr(F) serio_raw(F) acpi_cpufreq(F) freq_table(F) fam15h_power(F) k10temp(F) amd64_edac_mod(F) edac_core(F) edac_mce_amd(F) i2c_piix4(F) sg(F) bnx2(F) ext4(F) jbd2(F) mbcache(F) sd_mod(F) crc_t10dif(F) crct10dif_common(F) sr_mod(F) cdrom(F) ata_generic(F) pata_acpi(F) pata_atiixp(F) ahci(F) libahci(F) radeon(F) ttm(F) drm_kms_helper(F) drm(F) i2c_algo_bit(F) i2c_core(F) dm_mirror(F) dm_region_hash(F) dm_log(F) dm_mod(F)
-Oct  2 11:24:02 amd-pence-01 kernel: CPU: 11 PID: 2303 Comm: rep Tainted: GF            3.12.0-rc3+ #1
-Oct  2 11:24:02 amd-pence-01 kernel: Hardware name: AMD Pence/Pence, BIOS WPN2905X_Weekly_12_09_05 09/03/2012
-Oct  2 11:24:02 amd-pence-01 kernel: task: ffff8800c3912ae0 ti: ffff8800c3838000 task.ti: ffff8800c3838000
-Oct  2 11:24:02 amd-pence-01 kernel: RIP: 0033:[<0000000000400776>]  [<0000000000400776>] 0x400775
-Oct  2 11:24:02 amd-pence-01 kernel: RSP: 002b:00007fff2d34da10  EFLAGS: 00010213
-Oct  2 11:24:02 amd-pence-01 kernel: RAX: 00007f911ffc8000 RBX: 0000000000000000 RCX: 00007f911fafd51a
-Oct  2 11:24:02 amd-pence-01 kernel: RDX: 0000000000000001 RSI: 0000000000001000 RDI: 0000000000000000
-Oct  2 11:24:02 amd-pence-01 kernel: RBP: 00007fff2d34da50 R08: 0000000000000003 R09: 00080000000a0000
-Oct  2 11:24:02 amd-pence-01 kernel: R10: 0000000000000001 R11: 0000000000000202 R12: 0000000000400590
-Oct  2 11:24:02 amd-pence-01 kernel: R13: 00007fff2d34db30 R14: 0000000000000000 R15: 0000000000000000
-Oct  2 11:24:02 amd-pence-01 kernel: FS:  00007f911ffce700(0000) GS:ffff880136cc0000(0000) knlGS:0000000000000000
-Oct  2 11:24:02 amd-pence-01 kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-Oct  2 11:24:02 amd-pence-01 kernel: CR2: 00007f911ffc8000 CR3: 00000000c39ec000 CR4: 00000000000407e0
-Oct  2 11:24:02 amd-pence-01 kernel:
-Oct  2 11:24:02 amd-pence-01 kernel: RIP  [<0000000000400776>] 0x400775
-Oct  2 11:24:02 amd-pence-01 kernel: RSP <00007fff2d34da10>
-Oct  2 11:24:02 amd-pence-01 kernel: ---[ end trace 8a123cd70049eebc ]---
----------------------------------8<--------------------------------------
+Maybe use (strcmp(...) == 0) if you prefer that.
+Both styles are commonly used in linux.
 
-Please note the PTE value 80080000000a0225.
-
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
----
- arch/x86/include/asm/io.h |  4 ++++
- arch/x86/mm/mmap.c        | 13 +++++++++++++
- 2 files changed, 17 insertions(+)
-
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index 34f69cb..af9f363 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
- #endif
- }
- 
-+#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
-+extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
-+extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
-+
- #endif /* __KERNEL__ */
- 
- extern void native_io_delay(void);
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 25e7e13..ef02a93 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,6 +31,8 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
-+#include "physaddr.h"
-+
- struct __read_mostly va_alignment va_align = {
- 	.flags = -1,
- };
-@@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 	}
- }
-+
-+int valid_phys_addr_range(phys_addr_t addr, size_t count)
-+{
-+	return addr + count <= __pa(high_memory);
-+}
-+
-+int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
-+{
-+	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
-+	return phys_addr_valid(addr);
-+}
--- 
-1.8.3.1
+Probably all of the "return ret ?: count;" uses
+would be more easily understood on 3 lines.
 
 
--- 
-Frantisek Hrbata
