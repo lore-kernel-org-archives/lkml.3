@@ -1,126 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab3JBMl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:41:57 -0400
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:60198 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753761Ab3JBMlc (ORCPT
+	id S1753972Ab3JBMpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:45:47 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:54416 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab3JBMpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:41:32 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 1/3] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare
-Date: Wed,  2 Oct 2013 14:34:57 +0200
-Message-Id: <1380717297-6537-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
-References: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 1365716587702614124
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 2 Oct 2013 08:45:45 -0400
+Date: Wed, 2 Oct 2013 14:45:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20131002124539.GF7941@localhost.localdomain>
+References: <20130820182553.GB22287@redhat.com>
+ <20130821083130.GM3258@twins.programming.kicks-ass.net>
+ <20130821113551.GA1472@redhat.com>
+ <20130821123311.GA31370@twins.programming.kicks-ass.net>
+ <20130821142356.GC31370@twins.programming.kicks-ass.net>
+ <20130821164146.GA15194@redhat.com>
+ <20131001140525.GE24825@localhost.localdomain>
+ <20131001155633.GR3657@laptop.programming.kicks-ass.net>
+ <20131001164708.GG24825@localhost.localdomain>
+ <20131001165957.GT3657@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001165957.GT3657@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On Tue, Oct 01, 2013 at 06:59:57PM +0200, Peter Zijlstra wrote:
+> On Tue, Oct 01, 2013 at 06:47:10PM +0200, Frederic Weisbecker wrote:
+> > Yeah thinking more about it, the preempt disable was probably not
+> > necessary. Now that's trading 2 atomics + 1 Lock/Unlock with 2 Lock/Unlock.
+> 
+> It trades the current 2 atomics for 2 LOCK/UNLOCK. And on x86_64 that's
+> 2 atomics.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/clocksource/tcb_clksrc.c |   26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
+Do you mean 2 atomics for LOCK/UNLOCK? Or is that pair optimized somehow
+in x86?
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 8a61872..0481562 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable(tcd->clk);
-+		clk_disable_unprepare(tcd->clk);
- 	}
- 
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -265,6 +265,7 @@ static int __init tcb_clksrc_init(void)
- 	int best_divisor_idx = -1;
- 	int clk32k_divisor_idx = -1;
- 	int i;
-+	int ret;
- 
- 	tc = atmel_tc_alloc(CONFIG_ATMEL_TCB_CLKSRC_BLOCK, clksrc.name);
- 	if (!tc) {
-@@ -275,7 +276,11 @@ static int __init tcb_clksrc_init(void)
- 	pdev = tc->pdev;
- 
- 	t0_clk = tc->clk[0];
--	clk_enable(t0_clk);
-+	ret = clk_prepare_enable(t0_clk);
-+	if (ret) {
-+		pr_debug("can't enable T0 clk\n");
-+		goto err_free_tc;
-+	}
- 
- 	/* How fast will we be counting?  Pick something over 5 MHz.  */
- 	rate = (u32) clk_get_rate(t0_clk);
-@@ -313,7 +318,11 @@ static int __init tcb_clksrc_init(void)
- 		/* tclib will give us three clocks no matter what the
- 		 * underlying platform supports.
- 		 */
--		clk_enable(tc->clk[1]);
-+		ret = clk_prepare_enable(tc->clk[1]);
-+		if (ret) {
-+			pr_debug("can't enable T1 clk\n");
-+			goto err_disable_t0;
-+		}
- 		/* setup both channel 0 & 1 */
- 		tcb_setup_dual_chan(tc, best_divisor_idx);
- 	}
-@@ -325,5 +334,12 @@ static int __init tcb_clksrc_init(void)
- 	setup_clkevents(tc, clk32k_divisor_idx);
- 
- 	return 0;
-+
-+err_disable_t0:
-+	clk_disable_unprepare(t0_clk);
-+
-+err_free_tc:
-+	atmel_tc_free(tc);
-+	return ret;
- }
- arch_initcall(tcb_clksrc_init);
--- 
-1.7.9.5
+> 
+> So all we get is some extra branches; which we must hope for don't
+> actually mess things up too bad.
+> 
+> Ohh.. wait a sec.. we also call local_clock() which includes another
+> atomic :/ Bugger.. 
 
+Yeah. Anyway, I'm going to try something on top of that. May be we'll get
+a fresher mind and ideas on how to optimize that all after.
