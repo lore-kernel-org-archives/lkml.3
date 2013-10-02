@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab3JBFon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:44:43 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:2712 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3JBFol (ORCPT
+	id S1753103Ab3JBFrk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:47:40 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:53298 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab3JBFri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:44:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 01 Oct 2013 22:44:40 -0700
-Message-ID: <524BB1E5.9080601@nvidia.com>
-Date: Wed, 2 Oct 2013 08:40:53 +0300
-From: Arto Merilainen <amerilainen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 2 Oct 2013 01:47:38 -0400
+Date: Tue, 1 Oct 2013 22:47:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com, minchan@kernel.org, Bob Liu <bob.liu@oracle.com>
+Subject: Re: [PATCH] mm: pagevec: cleanup: drop pvec->cold argument in all
+ places
+In-Reply-To: <20130930150207.3661b5c146b6ecea84194547@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1310012243220.5682@chino.kir.corp.google.com>
+References: <1380357239-30102-1-git-send-email-bob.liu@oracle.com> <20130930150207.3661b5c146b6ecea84194547@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Terje Bergstrom <tbergstrom@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mayuresh Kulkarni <mkulkarni@nvidia.com>
-Subject: Re: [PATCHv3 4/4] gpu: host1x: Add runtime pm support for host1x
-References: <1380024325-18280-1-git-send-email-amerilainen@nvidia.com> <1380024325-18280-5-git-send-email-amerilainen@nvidia.com> <524B11AA.30400@wwwdotorg.org>
-In-Reply-To: <524B11AA.30400@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 09:17 PM, Stephen Warren wrote:
-> On 09/24/2013 06:05 AM, Arto Merilainen wrote:
->> From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
->>
->> This patch adds runtime pm support for host1x hardware unit. This
->> allows host1x clock to be turned off when it is idle. If pm runtime
->> is not configured, we enable host1x clock in device probe and disable
->> it in remove.
->
->> diff --git a/drivers/gpu/host1x/dev.c b/drivers/gpu/host1x/dev.c
->
->> +static int host1x_runtime_suspend(struct device *dev);
->> +static int host1x_runtime_resume(struct device *dev);
->
-> You could avoid having these prototypes by simply putting the function
-> bodies earlier on in the file, somewhere before they're used. I don't
-> care much either way, but I've certainly seen some people care about
-> this and ask for them to be moved.
+On Mon, 30 Sep 2013, Andrew Morton wrote:
 
-Will fix.
+> > Nobody uses the pvec->cold argument of pagevec and it's also unreasonable for
+> > pages in pagevec released as cold page, so drop the cold argument from pagevec.
+> 
+> Is it unreasonable?  I'd say it's unreasonable to assume that all pages
+> in all cases are likely to be cache-hot.  Example: what if the pages
+> are being truncated and were found to be on the inactive LRU,
+> unreferenced?
+> 
+> A useful exercise would be to go through all those pagevec_init() sites
+> and convince ourselves that the decision at each place was the correct
+> one.
+> 
 
-- Arto
-
+Agreed, and the "cold" argument to release_pages() becomes a no-op if this 
+patch is merged meaning that anything released through it will 
+automatically go to the start of the pcp lists.  If the pages aren't hot 
+then this is exactly the opposite of what we wanted to do; the fact that 
+the pvec length doesn't take into account the size of cpu cache can almost 
+guarantee that everything isn't cache hot.
