@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab3JBVfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:35:33 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:47683
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754199Ab3JBVfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:35:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1380749715.12932.109.camel@snotra.buserror.net>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-From: Scott Wood <scottwood@freescale.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: Christoffer Dall <christoffer.dall@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Wed, 2 Oct 2013 16:35:15 -0500
-In-Reply-To: <20131002211631.GA11914@kroah.com>
-References: <20131001200054.GA27330@kroah.com>
-	 <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
-	 <20131002015355.GD63102@lvm> <1380681356.14271.57.camel@ul30vt.home>
-	 <20131002151413.GG63102@lvm>
-	 <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
-	 <1380738758.12932.43.camel@snotra.buserror.net>
-	 <20131002184330.GC5108@cbox> <20131002203735.GA10871@kroah.com>
-	 <1380748121.12932.89.camel@snotra.buserror.net>
-	 <20131002211631.GA11914@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1754120Ab3JBVfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:35:18 -0400
+Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:48217 "EHLO
+	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753602Ab3JBVfH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 17:35:07 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: applesmc oops in 3.10/3.11
+From: Chris Murphy <bugzilla@colorremedies.com>
+In-Reply-To: <20131002205931.GA18939@roeck-us.net>
+Date: Wed, 2 Oct 2013 15:34:41 -0600
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A8F36092-DB64-4F4F-AB34-EAE24601A1E8@colorremedies.com>
+References: <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131002035156.GA566@roeck-us.net> <20131002095339.GA2716@polaris.bitmath.org> <524C1FE1.4050207@roeck-us.net> <20131002163418.GA4557@polaris.bitmath.org> <20131002164718.GA7392@roeck-us.net> <20131002172410.GA381@polaris.bitmath.org> <20131002180206.GB4811@roeck-us.net> <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com> <20131002205931.GA18939@roeck-us.net>
+To: Guenter Roeck <linux@roeck-us.net>
+X-Mailer: Apple Mail (2.1510)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - colorremedies.com
+X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 14:16 -0700, gregkh@linuxfoundation.org wrote:
-> On Wed, Oct 02, 2013 at 04:08:41PM -0500, Scott Wood wrote:
-> > On Wed, 2013-10-02 at 13:37 -0700, gregkh@linuxfoundation.org wrote:
-> > > On Wed, Oct 02, 2013 at 11:43:30AM -0700, Christoffer Dall wrote:
-> > > > > What's wrong with a non-vfio-specific flag that a driver can set, that
-> > > > > indicates that the driver is willing to try to bind to any device on the
-> > > > > bus if explicitly requested via the existing sysfs bind mechanism?
-> > > > > 
-> > > > It sounds more hackish to me to invent some 'generic' flag to solve a
-> > > > very specific case.  What you're suggesting would let users specify that
-> > > > a serial driver should handle a NIC hardware, no?  That sounds much much
-> > > > worse to me.
-> > > 
-> > > You can do that today, with any PCI driver (or USB driver as well), just
-> > > use the bind/unbind files in sysfs and you had better "know" what you
-> > > are doing...
-> > 
-> > sysfs bind won't work if it driver_match_device() fails.  PCI has
-> > PCI_ANY_ID, so the missing piece for PCI is a way to say that the driver
-> > should not bind to a device except when explicitly requested via sysfs
-> > bind.
-> > 
-> > I don't see any equivalent functionality to PCI_ANY_ID for platform
-> > devices.
-> 
-> Nor should it.  If you are wanting to bind platform devices to different
-> things based on "ids" or "strings" or something else, then you had
-> better not be using a platform device because that is not what you have
-> anymore.
 
-I don't see how anything could be considered a platform device under
-your definition.  Even before all the device tree stuff came along,
-platform devices were still bound based on strings.
+On Oct 2, 2013, at 2:59 PM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-> Yes, I know the OF stuff uses platform devices, and again, it's one
-> reason why I don't like it at all.  So fix OF devices "properly",
-> creating your own bus and device type, and then you will not have these
-> issues.
+> On Wed, Oct 02, 2013 at 12:33:00PM -0600, Chris Murphy wrote:
+>> 
+>> On Oct 2, 2013, at 12:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> 
+>>> On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
+>>>> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
+>>>>> On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
+>>>>>>>>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
+>>>>>>>>> I think that is a pre-requisite.
+>>>>>>>> 
+>>>>>>>> Not necessarily - it could be that the patch actually fixes the root
+>>>>>>>> cause. One possible scenario is that on recent SMCs, some of the
+>>>>>>>> commands produce more data than we actually read. This would
+>>>>>>>> eventually lead to both data corruption and overflow somwhere in the
+>>>>>>>> SMC internals.  If the original SMC error is interpreted as a read
+>>>>>>>> buffer overflow, then that problem should be fixed with this patch.
+>>>>>>>> 
+>>>>>>> 
+>>>>>>> Good point.
+>>>>>>> 
+>>>>>>> But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
+>>>>>> 
+>>>>>> The explanation I have there is that the (newer) SMC needs the
+>>>>>> application to read the 'no more bytes' or it will get confused. It
+>>>>>> makes sense, if the number of bytes to read is no longer specified.
+>>>>>> 
+>>>>> You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
+>>>>> That might make sense.
+>>>> 
+>>>> It also points at the possibility of a smaller patch to test, but I
+>>>> have not had the time to check this very deeply myself:
+>>>> 
+>>> I like this patch much more than the previous patch. Chris, can you test it ?
+>> 
+>> Yes. Building now. What kernel message should I be looking for? At least on 2011 and 2012 laptops I have yet to see an Oops related to smc. The kernel with previous patch at least is not causing problems on them so far, which works well as I can test more on the 2008 model.
+>> 
+> None, if I understand correctly and if the patch really fixes the root cause
+> of the problem.
 
-That's what we used to have...  It was merged with platform bus because
-so many devices may be probed multiple different ways (device tree,
-platform data, ACPI, etc).  OF is not a bus.  A platform device
-discovered from OF is still a platform device, just as an i2c device
-discovered from OF is still an i2c device.
-
-If you don't like devices that don't sit on some formalized bus and can
-be described in more than one way, fine, but that won't make them go
-away.
-
-And even if we did still have a separate OF platform bus, my point about
-there not being a wildcard match applies to of_device_id as well.  It
-certainly is not the case that "this is already there, and has been for
-years with no problems".
-
-> greg "I should never have let platform devices be created" k-h
-
-The alternative is what?  A bunch of duplicated code, with a different
-bus type for every SoC family, just so you can put a name on it?
-
--Scott
+A vast majority of the Ooops I've had are when booting from flash media, testing Fedora installs. Is it possible the much slower kernel load and boot time is a trigger? If so, I'll look into modifying the media to accept the custom kernel and requisite fat initramfs.
 
 
-
+Chris
