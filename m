@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab3JBM7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:59:38 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:50113 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab3JBM7e (ORCPT
+	id S1754080Ab3JBNBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 09:01:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48312 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab3JBNBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:59:34 -0400
+	Wed, 2 Oct 2013 09:01:04 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Luciano Coelho <luca@coelho.fi>
+CC: <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] net: wireless: wl1251: update firmware path
+Date: Wed, 2 Oct 2013 08:00:48 -0500
+Message-ID: <1380718848-26634-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 MIME-Version: 1.0
-In-Reply-To: <20131002124610.GD28601@twins.programming.kicks-ass.net>
-References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
-	<20130930161546.GG3081@twins.programming.kicks-ass.net>
-	<CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
-	<20130930165420.GI3081@twins.programming.kicks-ass.net>
-	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
-	<20131002112316.GP3081@twins.programming.kicks-ass.net>
-	<20131002115826.GM26785@twins.programming.kicks-ass.net>
-	<20131002123953.GB27811@gmail.com>
-	<20131002124610.GD28601@twins.programming.kicks-ass.net>
-Date: Wed, 2 Oct 2013 14:59:32 +0200
-Message-ID: <CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
->>  - then there are timing attacks, and someone having access to a PMU
->>    context and who can trigger this SHA1 computation arbitrarily in task
->>    local context can run very accurate and low noise timing attacks...
->>
->>    I don't think the kernel's sha_transform() is hardened against timing
->>    attacks, it's performance optimized so it has variable execution time
->>    highly dependent on plaintext input - which leaks information about the
->>    plaintext.
->
-> Typical user doesn't have enough priv to profile kernel space; once you
-> do you also have enough priv to see kernel addresses outright (ie.
-> kallsyms etc..).
->
-I was going to say just that. But that's not the default, paranoid level
-is at 1 by default and not 2. So I supposedly can still do:
+TI firmwares are located under ti-connectivity
+directory. Update path to make sure driver can
+find and load firmware blob.
 
-$ perf record -e cycles ......
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/net/wireless/ti/wl1251/wl1251.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-In per-thread mode and collect kernel level addresses.
+diff --git a/drivers/net/wireless/ti/wl1251/wl1251.h b/drivers/net/wireless/ti/wl1251/wl1251.h
+index fd02060..2c3bd1b 100644
+--- a/drivers/net/wireless/ti/wl1251/wl1251.h
++++ b/drivers/net/wireless/ti/wl1251/wl1251.h
+@@ -424,8 +424,8 @@ void wl1251_disable_interrupts(struct wl1251 *wl);
+ #define CHIP_ID_1271_PG10	           (0x4030101)
+ #define CHIP_ID_1271_PG20	           (0x4030111)
+ 
+-#define WL1251_FW_NAME "wl1251-fw.bin"
+-#define WL1251_NVS_NAME "wl1251-nvs.bin"
++#define WL1251_FW_NAME "ti-connectivity/wl1251-fw.bin"
++#define WL1251_NVS_NAME "ti-connectivity/wl1251-nvs.bin"
+ 
+ #define WL1251_POWER_ON_SLEEP 10 /* in milliseconds */
+ 
+-- 
+1.8.3.4.840.g6a90778
+
