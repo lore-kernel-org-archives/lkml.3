@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3JBLUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 07:20:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59173 "EHLO mx1.redhat.com"
+	id S1753810Ab3JBLUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 07:20:46 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:33553 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353Ab3JBLUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 07:20:19 -0400
-Date: Wed, 2 Oct 2013 13:19:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [BUG] perf timechart segfault
-Message-ID: <20131002111958.GC10099@krava.brq.redhat.com>
-References: <CALkWK0k5sQ9WCGevFQ3D18=Fs3ziS8imVVvasE0QR9e0r91cYA@mail.gmail.com>
+	id S1753615Ab3JBLUo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 07:20:44 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/2] pinctrl: palmas: do not abort pin configuration for BIAS_DEFAULT
+Date: Wed, 2 Oct 2013 13:20:51 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1380199684-20126-1-git-send-email-ldewangan@nvidia.com> <5245AD0C.7070206@wwwdotorg.org> <CACRpkdbuetPbxPzJTpKuM4O-mqpqjh7rgGoanfAwad4M2vbZTQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbuetPbxPzJTpKuM4O-mqpqjh7rgGoanfAwad4M2vbZTQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0k5sQ9WCGevFQ3D18=Fs3ziS8imVVvasE0QR9e0r91cYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201310021320.51544.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:36:45PM +0530, Ramkumar Ramachandra wrote:
-> Hi,
+Am Mittwoch, 2. Oktober 2013, 12:40:14 schrieb Linus Walleij:
+> On Fri, Sep 27, 2013 at 6:06 PM, Stephen Warren <swarren@wwwdotorg.org> 
+wrote:
+> > [Laxman]
+> > 
+> >> Hmm.. When I added the PIN_DEFAULT, I just though that do not update
+> >> anything in the register and implemented like that.
+> >> There is nothing "default" option in HW.
+> > 
+> > The description of that pinconfig option is:
+> >> 7970cb77 (Heiko Stübner    2013-06-06 16:44:25 +0200  43)  *
+> >> @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down
+> >> based 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  44)  *   
+> >> on embedded knowledge of the controller hardware, like current mux
+> >> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  45)  *   
+> >> function. The pull direction and possibly strength too will normally
+> >> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  46)  *    be
+> >> decided completely inside the hardware block and not be readable
+> >> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  47)  *    from
+> >> the kernel side. 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200 
+> >> 48)  *    If the argument is != 0 pull up/down is enabled, if it is 0,
+> >> the 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  49)  *   
+> >> configuration is ignored. The proper way to disable it is to use
+> >> 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  50)  *   
+> >> @PIN_CONFIG_BIAS_DISABLE.
+> > 
+> > If the HW doesn't support any concept of a default pull, I think the
+> > driver shouldn't support that option; it should return an error if asked
+> > to program it.
 > 
-> I tried using the `perf timechart` command after a `sudo perf
-> timechart record -- git status`, and it segfaulted. Backtrace follows:
-> 
-> Program received signal SIGSEGV, Segmentation fault.
-> 0x0000000000000000 in ?? ()
-> (gdb) bt
-> #0  0x0000000000000000 in ?? ()
-> #1  0x000000000047d728 in perf_session_deliver_event
-> (session=session@entry=0x8ea450, event=event@entry=0x7ffff7f13f98,
->     sample=sample@entry=0x7fffffffd530,
-> tool=tool@entry=0x7fffffffd7a0, file_offset=file_offset@entry=8088)
->     at util/session.c:1006
-> #2  0x000000000047faec in perf_session__process_event
-> (file_offset=8088, tool=0x7fffffffd7a0, event=0x7ffff7f13f98,
->     session=0x8ea450) at util/session.c:1098
-> #3  __perf_session__process_events (session=session@entry=0x8ea450,
-> data_offset=<optimized out>,
->     data_size=<optimized out>, file_size=635384,
-> tool=tool@entry=0x7fffffffd7a0) at util/session.c:1360
-> #4  0x000000000047ff81 in perf_session__process_events
-> (self=self@entry=0x8ea450, tool=tool@entry=0x7fffffffd7a0)
->     at util/session.c:1403
-> #5  0x000000000042f12a in __cmd_timechart (output_name=0x4ee399
-> "output.svg") at builtin-timechart.c:1009
-> #6  cmd_timechart (argc=0, argv=0x7fffffffdf20, prefix=<optimized
-> out>) at builtin-timechart.c:1116
-> #7  0x0000000000419925 in run_builtin (p=p@entry=0x725f90
-> <commands+240>, argc=argc@entry=1,
->     argv=argv@entry=0x7fffffffdf20) at perf.c:319
-> #8  0x0000000000419199 in handle_internal_command
-> (argv=0x7fffffffdf20, argc=1) at perf.c:376
-> #9  run_argv (argv=0x7fffffffdd20, argcp=0x7fffffffdd2c) at perf.c:420
-> #10 main (argc=1, argv=0x7fffffffdf20) at perf.c:521
-> 
-> I compiled it with EXTRA_CFLAGS="-O0 -g", so all the debugging symbols
-> should be available. Not sure what's going on, or why I needed sudo to
-> record data in the first place.
+> Yes that's how I remember it and how we specified it.
+> Correct Heiko?
 
-hi,
-what perf version are you running? I can't hit the issue
-and also the file lines in backtrace indicate it's not
-current one.
+Correct. The option was/is meant for hardware that sets pull settings without 
+telling the kernel specifics and the kernel also not being able to influence 
+them.
 
-thanks,
-jirka
+
+Heiko
