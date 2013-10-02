@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3JBPCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:02:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50760 "EHLO mx2.suse.de"
+	id S1753692Ab3JBPEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:04:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50832 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab3JBPCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:02:50 -0400
-Date: Wed, 2 Oct 2013 17:02:45 +0200 (CEST)
+	id S1753050Ab3JBPEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 11:04:37 -0400
+Date: Wed, 2 Oct 2013 17:04:33 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Manoj Chourasia <mchourasia@nvidia.com>
-Cc: "Mika Westerberg (mika.westerberg@linux.intel.com)" 
-	<mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: FW: [PATCH] hidraw: close underlying device at removal of last
- reader
-In-Reply-To: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDD19DD43@BGMAIL02.nvidia.com>
-Message-ID: <alpine.LNX.2.00.1310021702330.29701@pobox.suse.cz>
-References: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDD19DD43@BGMAIL02.nvidia.com>
+To: =?ISO-8859-15?Q?Anders_F=2E_U=2E_Ki=E6r?= <ablacksheep@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Added Holtek USB ID 04d9:a081 SHARKOON DarkGlider
+ Gaming mouse
+In-Reply-To: <1380648125-5735-1-git-send-email-ablacksheep@gmail.com>
+Message-ID: <alpine.LNX.2.00.1310021704260.29701@pobox.suse.cz>
+References: <1380648125-5735-1-git-send-email-ablacksheep@gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Oct 2013, Manoj Chourasia wrote:
+On Tue, 1 Oct 2013, Anders F. U. Ki√¶r wrote:
 
-> Hi Jiri,
+> Target: 3.11.2
+> Added id, bindings and comments for Holtek USB ID 04d9:a081 SHARKOON
+> DarkGlider Gaming mouse to use the same corrections of the report
+> descriptor as Holtek 04d9:a04a. As the mouse exceed HID_MAX_USAGES
+> at the same offsets in the reported descriptor.
+> Tested on the hardware.
 > 
-> Mika Westerberg mika.westerberg@linux.intel.com reported a bug introduced in hid driver after 
-> commit 212a871a393 (HID: hidraw: correctly deallocate memory on device disconnect) 
-> that hidraw doesn't close the underlying hid device when the device node is closed last time.
-> 
-> I am proposing following patch as fix. †Please review it. †Mika will help in testing.
-> 
-> ----------------------------------------
-> >From b37519b65be0d51b90c5fc177c0dc0cd2f6358b1 Mon Sep 17 00:00:00 2001
-> From: Manoj Chourasia <mchourasia@nvidia.com>
-> Date: Tue, 1 Oct 2013 15:39:00 +0530
-> Subject: [PATCH] HID: hidraw: close underlying device at removal of last reader
-> 
-> Even though device exist bit is set the underlying
-> HW device should be closed when the last reader
-> of the device is closed i.e. open count drops to zero.
-> 
-> Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
+> Signed-off-by: Anders F. U. Ki√¶r <ablacksheep@gmail.com>
 
-Applied, thanks a lot to both of you.
+Applied, thanks.
 
 -- 
 Jiri Kosina
