@@ -1,81 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3JBSFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:05:48 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27352 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754370Ab3JBSFq (ORCPT
+	id S1755921Ab3JBSHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:07:44 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:55558 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab3JBSHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:05:46 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
-        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 74/77] vmxnet3: Limit number of rx queues to 1 if per-queue MSI-Xs failed
-Date: Wed,  2 Oct 2013 12:49:30 +0200
-Message-Id: <f029865a23808e2f788f90f878355fddf3b04ad2.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 14:07:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrW05=Jk_nCakZgjwJjbdG-X-f=ssFntB3Xpe1ogxiTMFQ@mail.gmail.com>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+	<524B7999.60806@amacapital.net>
+	<20131002143759.GA2966@dztty>
+	<CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+	<CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+	<CALCETrW05=Jk_nCakZgjwJjbdG-X-f=ssFntB3Xpe1ogxiTMFQ@mail.gmail.com>
+Date: Wed, 2 Oct 2013 11:07:41 -0700
+X-Google-Sender-Auth: L2ge6Rb4ObKrwhHdSZ32_2sJDiw
+Message-ID: <CAGXu5jKb-aKRQ10ZQ6tCqVMnJE=Cg5HT8m1Gm3snmge49XyyqA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>, Julien Tinnes <jln@google.com>
+Cc: Djalal Harouni <tixxdz@opendz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/vmxnet3/vmxnet3_drv.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+On Wed, Oct 2, 2013 at 11:00 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Oct 2, 2013 at 10:48 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Oct 2, 2013 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>>>> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
+>>>>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+>>>>> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
+>>>>> > need to happen during each system call.
+>>>>> >
+>>>>> > Currently some of these sensitive entries are protected by performing
+>>>>> > the ptrace_may_access() check. However even with that the /proc file
+>>>>> > descriptors can be passed to a more privileged process
+>>>>> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
+>>>>> > check. In general the ->open() call will be issued by an unprivileged
+>>>>> > process while the ->read(),->write() calls by a more privileged one.
+>>>>> >
+>>>>> > Example of these files are:
+>>>>> > /proc/*/syscall, /proc/*/stack etc.
+>>>>> >
+>>>>> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
+>>>>> >
+>>>>> >
+>>>>> > These files are protected during read() by the ptrace_may_access(),
+>>>>> > however the file descriptor can be passed to a suid-exec which can be
+>>>>> > used to read data and bypass ASLR. Of course this was discussed several
+>>>>> > times on LKML.
+>>>>>
+>>>>> Can you elaborate on what it is that you're fixing?  That is, can you
+>>>>> give a concrete example of what process opens what file and passes the
+>>>>> fd to what process?
+>>>> Yes, the references were already given in this email:
+>>>> https://lkml.org/lkml/2013/8/31/209
+>>>>
+>>>> This has been discussed several times on lkml:
+>>>> https://lkml.org/lkml/2013/8/28/544
+>>>>
+>>>> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
+>>>>
+>>>>
+>>>>> I'm having trouble following your description.
+>>>> Process open a /proc file and pass the fd to a more privilaged process
+>>>> that will pass the ptrace_may_access() check, while the original process
+>>>> that opened that file should fail at the ptrace_may_access()
+>>>
+>>> So we're talking about two kinds of attacks, right?
+>>
+>> Correct.
+>>
+>>> Type 1: Unprivileged process does something like open("/proc/1/maps",
+>>> O_RDONLY) and then passes the resulting fd to something privileged.
+>>
+>> ... and then leaks contents back to unprivileged process.
+>>
+>>> Type 2: Unprivileged process does something like
+>>> open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
+>>> execve on something privileged.
+>>
+>> ... and then parent snoops on file contents for the privileged child.
+>>
+>> (Type 2 is solved currently, IIUC. Type 1 could be reduced in scope by
+>> changing these file modes back to 0400.)
+>>
+>>> Can we really not get away with fixing type 1 by preventing these
+>>> files from being opened in the first place and type 2 by revoking all
+>>> of these fds when a privilege-changing exec happens?
+>>
+>> Type 1 can be done via exec as well. Instead of using a priv exec to
+>> read an arbitrary process, read it could read its own.
+>
+> Right.
+>
+>>
+>> I think revoking the fd would be great. Does that mechanism exist?
+>
+> There's this thing that never got merged.
+>
+> http://thread.gmane.org/gmane.linux.kernel/1523331
+>
+> But doing it more directly should be reasonably straightforward.  Either:
+>
+> (a) when a process execs and privileges change, find all the old proc
+> inodes, mark them dead, and unlink them, or
+>
+> (b) add self_exec_id to all the proc file private_data entries (or
+> somewhere else).  Then just make sure that they're unchanged.  I think
+> the bug last time around was because the self_exec_id and struct pid
+> weren't being compared together.
+>
+> (a) is probably nicer.  I don't know if it'll break things.  Linus
+> seemed to think that the Chrome sandbox was sensitive to this stuff,
+> but I don't know why.
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 3df7f32..00dc0d0 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2814,12 +2814,14 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
- 
- 		err = vmxnet3_acquire_msix_vectors(adapter,
- 						   adapter->intr.num_intrs);
--		/* If we cannot allocate one MSIx vector per queue
--		 * then limit the number of rx queues to 1
--		 */
--		if (err == VMXNET3_LINUX_MIN_MSIX_VECT) {
--			if (adapter->share_intr != VMXNET3_INTR_BUDDYSHARE
--			    || adapter->num_rx_queues != 1) {
-+		if (!err) {
-+			/* If we cannot allocate one MSIx vector per queue
-+			 * then limit the number of rx queues to 1
-+			 */
-+			if ((adapter->intr.num_intrs ==
-+			     VMXNET3_LINUX_MIN_MSIX_VECT) &&
-+			    ((adapter->share_intr != VMXNET3_INTR_BUDDYSHARE) ||
-+			     (adapter->num_rx_queues != 1))) {
- 				adapter->share_intr = VMXNET3_INTR_TXSHARE;
- 				netdev_err(adapter->netdev,
- 					   "Number of rx queues : 1\n");
-@@ -2829,8 +2831,6 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
- 			}
- 			return;
- 		}
--		if (!err)
--			return;
- 
- 		/* If we cannot allocate MSIx vectors use only one rx queue */
- 		dev_info(&adapter->pdev->dev,
+I agree, (a) seems much cleaner. Hm, I don't think Chrome does
+anything with these sensitive files (maps, stack, syscall, etc). But
+let's ask Julien. :)
+
+Julien, do you see any problem with Chrome's sandbox behavior if these
+proc files would be unavailable across privilege changes?
+
+-Kees
+
 -- 
-1.7.7.6
-
+Kees Cook
+Chrome OS Security
