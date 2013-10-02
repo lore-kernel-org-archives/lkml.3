@@ -1,133 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab3JBO4C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:56:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50363 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753392Ab3JBOz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:55:59 -0400
-Date: Wed, 2 Oct 2013 16:55:39 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Luosong <android@generaltouch.com>
-Subject: Re: [PATCH] HID: multitouch: Fix GeneralTouch products and add more
- PIDs
-In-Reply-To: <1380705600-11055-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1310021654240.29701@pobox.suse.cz>
-References: <1380705600-11055-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753673Ab3JBO4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:56:31 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62184 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab3JBO4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:56:30 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gleb@redhat.com, kvm@vger.kernel.org
+Subject: [PATCH 0/7] KVM: x86: small MMU cleanups
+Date: Wed,  2 Oct 2013 16:56:09 +0200
+Message-Id: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Oct 2013, Benjamin Tissoires wrote:
+A few small things (uninteresting callbacks or arguments, duplicate or
+dead code) that I noticed while reviewing Gleb's latest nVMX series.
 
-> From: Luosong <android@generaltouch.com>
-> 
-> GeneralTouch products should use the quirk SLOT_IS_CONTACTID
-> instead of SLOT_IS_CONTACTNUMBER.
-> 
-> Adding PIDs 0101,e100,0102,0106,010a from the new products.
-> 
-> Tested on new and older products by GeneralTouch engineers.
-> 
-> Signed-off-by: Luosong <android@generaltouch.com>
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> 
-> Hi Luosong,
-> 
-> I took the liberty to rewrite the commit message for it to be
-> more compliant with the kernel rules:
-> - there should be a one line title commit message first,
-> - and the rest should detail the patch, tell how it was tested, etc...
-> 
-> If you could just give our ack on this one, Jiri would be able to take it
-> through his tree.
+Paolo Bonzini (7):
+  KVM: mmu: remove uninteresting MMU "free" callbacks
+  KVM: mmu: remove uninteresting MMU "new_cr3" callbacks
+  KVM: mmu: unify destroy_kvm_mmu with kvm_mmu_unload
+  KVM: mmu: change useless int return types to void
+  KVM: mmu: remove argument to kvm_init_shadow_mmu and kvm_init_shadow_ept_mmu
+  KVM: mmu: remove ASSERT(vcpu)
+  KVM: mmu: replace assertions with MMU_WARN_ON
 
-Thanks Benjamin.
-
-Luosong, the patch as sent by Benjamin is properly formatted and contains 
-proper changelog. Please make sure that you fix your patch submission 
-workflow for your next submissions.
-
-Luosong, please let me know that you are find with applying the patch as 
-Benjamin sent it (with attribution to you and your signoff), and I'll 
-proceed.
-
-> 
-> Cheers,
-> Benjamin
-> 
->  drivers/hid/hid-ids.h        |  5 +++++
->  drivers/hid/hid-multitouch.c | 19 +++++++++++++++++--
->  2 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index e60e8d5..9a91dee 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -332,6 +332,11 @@
->  #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
->  #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
->  #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
-> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
-> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
-> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
-> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
-> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
->  
->  #define USB_VENDOR_ID_GLAB		0x06c2
->  #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 5e5fe1b..cb3250c 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -250,12 +250,12 @@ static struct mt_class mt_classes[] = {
->  	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
->  		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
->  			MT_QUIRK_VALID_IS_INRANGE |
-> -			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-> +			MT_QUIRK_SLOT_IS_CONTACTID,
->  		.maxcontacts = 2
->  	},
->  	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
->  		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
-> -			MT_QUIRK_SLOT_IS_CONTACTNUMBER
-> +			MT_QUIRK_SLOT_IS_CONTACTID
->  	},
->  
->  	{ .name = MT_CLS_FLATFROG,
-> @@ -1173,6 +1173,21 @@ static const struct hid_device_id mt_devices[] = {
->  	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
->  		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
->  			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
-> +	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
-> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
-> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
-> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
-> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
-> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
->  
->  	/* Gametel game controller */
->  	{ .driver_data = MT_CLS_NSMU,
-> -- 
-> 1.8.3.1
-> 
+ arch/x86/include/asm/kvm_host.h |   7 +-
+ arch/x86/kvm/mmu.c              | 170 ++++++++++++----------------------------
+ arch/x86/kvm/mmu.h              |   5 +-
+ arch/x86/kvm/svm.c              |  10 +--
+ arch/x86/kvm/vmx.c              |   8 +-
+ arch/x86/kvm/x86.c              |   4 +-
+ 6 files changed, 63 insertions(+), 141 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.3.1
+
