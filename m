@@ -1,153 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3JBBSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 21:18:36 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61968 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab3JBBSe convert rfc822-to-8bit (ORCPT
+	id S1752555Ab3JBBZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 21:25:21 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:35450 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab3JBBZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 21:18:34 -0400
-X-AuditID: 9c93016f-b7bc8ae000004e6e-66-524b7468af0c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Separate lbfd check out of NO_DEMANGLE condition
-References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
-	<1380292332-6518-1-git-send-email-jolsa@redhat.com>
-	<1380437526.1727.10.camel@leonhard>
-Date: Wed, 02 Oct 2013 10:18:32 +0900
-In-Reply-To: <1380437526.1727.10.camel@leonhard> (Namhyung Kim's message of
-	"Sun, 29 Sep 2013 15:52:06 +0900")
-Message-ID: <87d2noo4gn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 1 Oct 2013 21:25:18 -0400
+Message-ID: <524B75F0.2070005@hp.com>
+Date: Tue, 01 Oct 2013 21:25:04 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Jason Low <jason.low2@hp.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
+ locking code into its own file
+References: <cover.1380144003.git.tim.c.chen@linux.intel.com>  <1380147049.3467.67.camel@schen9-DESK>  <20130927152953.GA4464@linux.vnet.ibm.com>  <1380310733.3467.118.camel@schen9-DESK>  <20130927203858.GB9093@linux.vnet.ibm.com>  <1380322005.3467.186.camel@schen9-DESK>  <20130927230137.GE9093@linux.vnet.ibm.com>  <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>  <20130928021947.GF9093@linux.vnet.ibm.com>  <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>  <52499E13.8050109@hp.com> <1380557440.14213.6.camel@j-VirtualBox>  <5249A8A4.9060400@hp.com> <1380646092.11046.6.camel@schen9-DESK>  <524B2A01.4080403@hp.com> <1380662188.11046.37.camel@schen9-DESK>
+In-Reply-To: <1380662188.11046.37.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Sun, 29 Sep 2013 15:52:06 +0900, Namhyung Kim wrote:
-> Hi Jiri,
+On 10/01/2013 05:16 PM, Tim Chen wrote:
+> On Tue, 2013-10-01 at 16:01 -0400, Waiman Long wrote:
+>>>
+>>> The cpu could still be executing out of order load instruction from the
+>>> critical section before checking node->locked?  Probably smp_mb() is
+>>> still needed.
+>>>
+>>> Tim
+>> But this is the lock function, a barrier() call should be enough to
+>> prevent the critical section from creeping up there. We certainly need
+>> some kind of memory barrier at the end of the unlock function.
+> I may be missing something.  My understanding is that barrier only
+> prevents the compiler from rearranging instructions, but not for cpu out
+> of order execution (as in smp_mb). So cpu could read memory in the next
+> critical section, before node->locked is true, (i.e. unlock has been
+> completed).  If we only have a simple barrier at end of mcs_lock, then
+> say the code on CPU1 is
 >
-> 2013-09-27 (금), 16:32 +0200, Jiri Olsa:
->> We fail build with NO_DEMANGLE with missing -lbfd externals error.
->> The reason is that we now use bfd code in srcline object:
->>   perf tools: Implement addr2line directly using libbfd
->> 
->> So we need to check/add -lbfd always now.
->> 
->> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
->> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
->> Cc: Ingo Molnar <mingo@elte.hu>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
->> Cc: David Ahern <dsahern@gmail.com>
->> ---
->>  tools/perf/config/Makefile | 17 ++++++++---------
->>  1 file changed, 8 insertions(+), 9 deletions(-)
->> 
->> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
->> index 8b49a00..40a41c6 100644
->> --- a/tools/perf/config/Makefile
->> +++ b/tools/perf/config/Makefile
->> @@ -360,6 +360,13 @@ else
->>    endif
->>  endif
->>  
->> +FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
->> +has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
->> +ifeq ($(has_bfd),y)
->> +  EXTLIBS += -lbfd
->> +  CFLAGS += -DLIBBFD_SUPPORT
->> +endif
->> +
->>  ifdef NO_DEMANGLE
->>    CFLAGS += -DNO_DEMANGLE
->>  else
->> @@ -367,11 +374,7 @@ else
->>      EXTLIBS += -liberty
->>      CFLAGS += -DHAVE_CPLUS_DEMANGLE
->>    else
->> -    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
->> -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
->> -    ifeq ($(has_bfd),y)
->> -      EXTLIBS += -lbfd
->> -    else
->> +    ifneq ($(has_bfd),y)
->>        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
->>        has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
->>        ifeq ($(has_bfd_iberty),y)
->> @@ -397,10 +400,6 @@ else
->>    endif
->>  endif
->>  
->> -ifndef ($(filter -lbfd,$(EXTLIBS)),)
->> -  CFLAGS += -DLIBBFD_SUPPORT
->> -endif
->> -
->>  ifndef NO_STRLCPY
->>    ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
->>      CFLAGS += -DHAVE_STRLCPY
+> 	mcs_lock
+> 	x = 1;
+> 	...
+> 	x = 2;
+> 	mcs_unlock
 >
-> Is it enough to check on -lbfd only?  I guess libbfd can have additional
-> dependencies to libiberty and libz.  If so, this patch can fail to set
-> -DLIBBFD_SUPPORT, right?
+> and CPU 2 is
+>
+> 	mcs_lock
+> 	y = x;
+> 	...
+> 	mcs_unlock
+>
+> We expect y to be 2 after the "y = x" assignment.  But we
+> we may execute the code as
+>
+> 	CPU1		CPU2
+> 		
+> 	x = 1;
+> 	...		y = x;  ( y=1, out of order load)
+> 	x = 2
+> 	mcs_unlock
+> 			Check node->locked==true
+> 			continue executing critical section (y=1 when we expect y=2)
+>
+> So we get y to be 1 when we expect that it should be 2.  Adding smp_mb
+> after the node->locked check in lock code
+>
+>             ACCESS_ONCE(prev->next) = node;
+>             /* Wait until the lock holder passes the lock down */
+>             while (!ACCESS_ONCE(node->locked))
+>                      arch_mutex_cpu_relax();
+>             smp_mb();
+>
+> should prevent this scenario.
+>
+> Thanks.
+> Tim
 
-I tested this on my system.  At first I guessed (without testing) it
-cannot build SOURCE_BFD with -lbfd only due to additional -liberty and
--lz dependency, but it's not.  Actually the libfd.so is a plain text
-file which contains linker script like this:
+If the lock and unlock functions are done right, there should be no 
+overlap of critical section. So it is job of the lock/unlock functions 
+to make sure that critical section code won't leak out. There should be 
+some kind of memory barrier at the beginning of the lock function and 
+the end of the unlock function.
 
-  $ file /lib64/libbfd.so
-  /lib64/libbfd.so: ASCII text
+The critical section also likely to have branches. The CPU may 
+speculatively execute code on the 2 branches, but one of them will be 
+discarded once the branch condition is known. Also 
+arch_mutex_cpu_relax() is a compiler barrier by itself. So we may not 
+need a barrier() after all. The while statement is a branch instruction, 
+any code after that can only be speculatively executed and cannot be 
+committed until the branch is done.
 
-  $ cat /lib64/libbfd.so
-  /* GNU ld script */
-  
-  /* Ensure this .so library will not be used by a link for a different format
-     on a multi-architecture system.  */
-  OUTPUT_FORMAT(elf64-x86-64)
-  
-  /* The libz dependency is unexpected by legacy build scripts.  */
-  INPUT ( /usr/lib64/libbfd.a -liberty -lz )
+In x86, the smp_mb() function translated to a mfence instruction which 
+cost time. That is why I try to get rid of it if it is not necessary.
 
-
-So it should handle external dependencies.  But it doesn't.
-
-  $ cat bfd.c
-  #include <bfd.h>
-  
-  int main(void)
-  {
-  	bfd_demangle(0, 0, 0);
-  	return 0;
-  }
-
-  namhyung@sejong:tmp$ gcc bfd.c -lbfd
-  /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
-  (.text+0x1ab): undefined reference to `dlopen'
-  /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
-  (.text+0x1ca): undefined reference to `dlsym'
-  /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
-  (.text+0x263): undefined reference to `dlerror'
-  collect2: error: ld returned 1 exit status
-
-
-It seems that it needs libdl for loading plugins.  Adding -ldl makes
-above build successfully.  So we need to add -ldl for EXTLIBS IMHO.
-Without it, make NO_GTK2=1 NO_LIBPERL=1 NO_LIBPYTHON=1 will fail to
-check libbfd correctly (FYI, libperl and libpython add -ldl to the
-dependency list).
-
-Thanks,
-Namhyung
+Regards,
+Longman
