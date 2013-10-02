@@ -1,113 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab3JBBZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 21:25:21 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:35450 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab3JBBZS (ORCPT
+	id S1752685Ab3JBB1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 21:27:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53752 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3JBB1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 21:25:18 -0400
-Message-ID: <524B75F0.2070005@hp.com>
-Date: Tue, 01 Oct 2013 21:25:04 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 1 Oct 2013 21:27:44 -0400
+Message-ID: <524B7647.9050208@ti.com>
+Date: Tue, 1 Oct 2013 21:26:31 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Jason Low <jason.low2@hp.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v6 5/6] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-References: <cover.1380144003.git.tim.c.chen@linux.intel.com>  <1380147049.3467.67.camel@schen9-DESK>  <20130927152953.GA4464@linux.vnet.ibm.com>  <1380310733.3467.118.camel@schen9-DESK>  <20130927203858.GB9093@linux.vnet.ibm.com>  <1380322005.3467.186.camel@schen9-DESK>  <20130927230137.GE9093@linux.vnet.ibm.com>  <CAGQ1y=7YbB_BouYZVJwAZ9crkSMLVCxg8hoqcO_7sXHRrZ90_A@mail.gmail.com>  <20130928021947.GF9093@linux.vnet.ibm.com>  <CAGQ1y=5RnRsWdOe5CX6WYEJ2vUCFtHpj+PNC85NuEDH4bMdb0w@mail.gmail.com>  <52499E13.8050109@hp.com> <1380557440.14213.6.camel@j-VirtualBox>  <5249A8A4.9060400@hp.com> <1380646092.11046.6.camel@schen9-DESK>  <524B2A01.4080403@hp.com> <1380662188.11046.37.camel@schen9-DESK>
-In-Reply-To: <1380662188.11046.37.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Nishanth Menon <nm@ti.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] arm: dts: add dra7 IVA thermal data
+References: <1380652344-18819-1-git-send-email-eduardo.valentin@ti.com> <1380652344-18819-3-git-send-email-eduardo.valentin@ti.com> <20131001223337.GA11451@kahuna>
+In-Reply-To: <20131001223337.GA11451@kahuna>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="6pqVNbPwKseJBULfT3TQs8lHgS5ktBjh2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 05:16 PM, Tim Chen wrote:
-> On Tue, 2013-10-01 at 16:01 -0400, Waiman Long wrote:
->>>
->>> The cpu could still be executing out of order load instruction from the
->>> critical section before checking node->locked?  Probably smp_mb() is
->>> still needed.
->>>
->>> Tim
->> But this is the lock function, a barrier() call should be enough to
->> prevent the critical section from creeping up there. We certainly need
->> some kind of memory barrier at the end of the unlock function.
-> I may be missing something.  My understanding is that barrier only
-> prevents the compiler from rearranging instructions, but not for cpu out
-> of order execution (as in smp_mb). So cpu could read memory in the next
-> critical section, before node->locked is true, (i.e. unlock has been
-> completed).  If we only have a simple barrier at end of mcs_lock, then
-> say the code on CPU1 is
->
-> 	mcs_lock
-> 	x = 1;
-> 	...
-> 	x = 2;
-> 	mcs_unlock
->
-> and CPU 2 is
->
-> 	mcs_lock
-> 	y = x;
-> 	...
-> 	mcs_unlock
->
-> We expect y to be 2 after the "y = x" assignment.  But we
-> we may execute the code as
->
-> 	CPU1		CPU2
-> 		
-> 	x = 1;
-> 	...		y = x;  ( y=1, out of order load)
-> 	x = 2
-> 	mcs_unlock
-> 			Check node->locked==true
-> 			continue executing critical section (y=1 when we expect y=2)
->
-> So we get y to be 1 when we expect that it should be 2.  Adding smp_mb
-> after the node->locked check in lock code
->
->             ACCESS_ONCE(prev->next) = node;
->             /* Wait until the lock holder passes the lock down */
->             while (!ACCESS_ONCE(node->locked))
->                      arch_mutex_cpu_relax();
->             smp_mb();
->
-> should prevent this scenario.
->
-> Thanks.
-> Tim
+--6pqVNbPwKseJBULfT3TQs8lHgS5ktBjh2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-If the lock and unlock functions are done right, there should be no 
-overlap of critical section. So it is job of the lock/unlock functions 
-to make sure that critical section code won't leak out. There should be 
-some kind of memory barrier at the beginning of the lock function and 
-the end of the unlock function.
+On 01-10-2013 18:33, Nishanth Menon wrote:
+> On 14:32-20131001, Eduardo Valentin wrote:
+> minor comments follow
+>> This patch changes a dtsi file to contain the thermal data
+> s/changes/introduces?
+>> for IVA domain on DRA7 and later SoCs. This data will
+>> enable a thermal shutdown at 125C.
+>>
+>> This thermal data can be reused across TI SoC devices.
+> is'nt it just DRA7 that reuses this - based on dtsi name?
 
-The critical section also likely to have branches. The CPU may 
-speculatively execute code on the 2 branches, but one of them will be 
-discarded once the branch condition is known. Also 
-arch_mutex_cpu_relax() is a compiler barrier by itself. So we may not 
-need a barrier() after all. The while statement is a branch instruction, 
-any code after that can only be speculatively executed and cannot be 
-committed until the branch is done.
+For now, yes, but the file is intended to be reusable. just like the
+file with cpu thermal zone is reusable on omap4/5/dra devices.
 
-In x86, the smp_mb() function translated to a mfence instruction which 
-cost time. That is why I try to get rid of it if it is not necessary.
+>>
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>> ---
+>>  arch/arm/boot/dts/dra7-iva-thermal.dtsi | 28 ++++++++++++++++++++++++=
+++++
+>>  1 file changed, 28 insertions(+)
+>>  create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
+>>
+>> diff --git a/arch/arm/boot/dts/dra7-iva-thermal.dtsi b/arch/arm/boot/d=
+ts/dra7-iva-thermal.dtsi
+>> new file mode 100644
+>> index 0000000..fea0cea
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
+>> @@ -0,0 +1,28 @@
+>> +/*
+>> + * Device Tree Source for DRA7 SoC IVA thermal
+>> + *
+>> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.=
+com/
+>> + * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
+>> + *
+>> + * This file is licensed under the terms of the GNU General Public Li=
+cense
+>> + * version 2.  This program is licensed "as is" without any warranty =
+of any
+>> + * kind, whether express or implied.
+>> + */
+>> +
+>> +#include <dt-bindings/thermal/thermal.h>
+>> +
+>> +iva_thermal: iva_thermal {
+>> +	polling-delay-passive =3D <250>; /* milliseconds */
+>> +	polling-delay =3D <1000>; /* milliseconds */
+>> +
+>> +		/* sensor       ID */
+> ^^ double tab here?
+>> +	thermal-sensors =3D <&bandgap     4>;
+> space after bandgap is good enough?
 
-Regards,
-Longman
+Those tabulation were intentional, to hint that 4 means sensor id.
+
+>> +
+>> +	trips {
+>> +		iva_crit: iva_crit {
+>> +			temperature =3D <125000>; /* milliCelsius */
+>> +			hysteresis =3D <2000>; /* milliCelsius */
+>> +			type =3D THERMAL_TRIP_CRITICAL;
+>> +		};
+>> +	};
+>> +};
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--6pqVNbPwKseJBULfT3TQs8lHgS5ktBjh2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJLdkcACgkQCXcVR3XQvP0h9gD+MOsSs0efkzK+Eml5snVILD76
+7scvGupqFQv89A61pzIBAOGPCcZA0bSemUhIBUxx97q3cs3GWtzd0wscYcVKlHRg
+=9IZC
+-----END PGP SIGNATURE-----
+
+--6pqVNbPwKseJBULfT3TQs8lHgS5ktBjh2--
