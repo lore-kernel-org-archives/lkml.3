@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab3JBSCI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:02:08 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27307 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753653Ab3JBSCE (ORCPT
+	id S1755794Ab3JBSCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:02:17 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:35284 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337Ab3JBSCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:02:04 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
-        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 60/77] qlcnic: Return -ENOSPC when not enough MSI-X vectors available
-Date: Wed,  2 Oct 2013 12:49:16 +0200
-Message-Id: <530f1aac8bdfcd600abe1eab52657409269f8a4a.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 14:02:13 -0400
+Date: Wed, 2 Oct 2013 11:02:06 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Chris Murphy <bugzilla@colorremedies.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20131002180206.GB4811@roeck-us.net>
+References: <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
+ <524615B1.6000106@roeck-us.net>
+ <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
+ <524A4384.4040403@roeck-us.net>
+ <20131002035156.GA566@roeck-us.net>
+ <20131002095339.GA2716@polaris.bitmath.org>
+ <524C1FE1.4050207@roeck-us.net>
+ <20131002163418.GA4557@polaris.bitmath.org>
+ <20131002164718.GA7392@roeck-us.net>
+ <20131002172410.GA381@polaris.bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002172410.GA381@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
+> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
+> > On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
+> > > > >>One thing I have seen in all logs is the earlier "send_byte fail" message, so
+> > > > >>I think that is a pre-requisite.
+> > > > >
+> > > > >Not necessarily - it could be that the patch actually fixes the root
+> > > > >cause. One possible scenario is that on recent SMCs, some of the
+> > > > >commands produce more data than we actually read. This would
+> > > > >eventually lead to both data corruption and overflow somwhere in the
+> > > > >SMC internals.  If the original SMC error is interpreted as a read
+> > > > >buffer overflow, then that problem should be fixed with this patch.
+> > > > >
+> > > > 
+> > > > Good point.
+> > > > 
+> > > > But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
+> > > 
+> > > The explanation I have there is that the (newer) SMC needs the
+> > > application to read the 'no more bytes' or it will get confused. It
+> > > makes sense, if the number of bytes to read is no longer specified.
+> > > 
+> > You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
+> > That might make sense.
+> 
+> It also points at the possibility of a smaller patch to test, but I
+> have not had the time to check this very deeply myself:
+> 
+I like this patch much more than the previous patch. Chris, can you test it ?
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index c4c5023..c6018bb 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -620,7 +620,7 @@ int qlcnic_enable_msix(struct qlcnic_adapter *adapter, u32 num_msix)
- 				 num_msix);
- 			if (qlcnic_83xx_check(adapter)) {
- 				if (err < (QLC_83XX_MINIMUM_VECTOR - tx_vector))
--					return err;
-+					return -ENOSPC;
- 				err -= (max_tx_rings + 1);
- 				num_msix = rounddown_pow_of_two(err);
- 				num_msix += (max_tx_rings + 1);
-@@ -636,6 +636,7 @@ int qlcnic_enable_msix(struct qlcnic_adapter *adapter, u32 num_msix)
- 					 num_msix);
- 				goto enable_msix;
- 			}
-+			err = -ENOSPC;
- 		} else {
- 			dev_info(&pdev->dev,
- 				 "Unable to allocate %d MSI-X interrupt vectors\n",
--- 
-1.7.7.6
+Thanks,
+Guenter
 
+> Thanks,
+> Henrik
+> 
+> From 4451da32414080bd0563ee9e061f19bf90463cc5 Mon Sep 17 00:00:00 2001
+> From: Henrik Rydberg <rydberg@euromail.se>
+> Date: Wed, 2 Oct 2013 19:15:03 +0200
+> Subject: [PATCH] applesmc remedy take 2
+> 
+> Conjectured problem: there are remnant bytes ready on the data line
+> which corrupts the read after a failure.
+> 
+> Remedy: assuming bit0 is the read valid line, try to flush it before
+> starting a new command.
+> 
+> Tests by Chris suggests reading the status is enough for the problem
+> to go away, which is consistent with a change in the SMC interface,
+> where the number of bytes to read is no longer specified, but found
+> out by reading until end of data.
+> 
+> Tested on a MacBookAir3,1, but the original problem has not been
+> reproduced.
+> ---
+>  drivers/hwmon/applesmc.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 98814d1..c0ff350 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -230,6 +230,7 @@ static int send_argument(const char *key)
+>  
+>  static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+>  {
+> +	u8 status, data;
+>  	int i;
+>  
+>  	if (send_command(cmd) || send_argument(key)) {
+> @@ -237,6 +238,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+>  		return -EIO;
+>  	}
+>  
+> +	/* This has no effect on newer (2012) SMCs */
+>  	if (send_byte(len, APPLESMC_DATA_PORT)) {
+>  		pr_warn("%.4s: read len fail\n", key);
+>  		return -EIO;
+> @@ -250,6 +252,17 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+>  		buffer[i] = inb(APPLESMC_DATA_PORT);
+>  	}
+>  
+> +	/* Read the data port until bit0 is cleared */
+> +	for (i = 0; i < 16; i++) {
+> +		udelay(APPLESMC_MIN_WAIT);
+> +		status = inb(APPLESMC_CMD_PORT);
+> +		if (!(status & 0x01))
+> +			break;
+> +		data = inb(APPLESMC_DATA_PORT);
+> +	}
+> +	if (i)
+> +		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
+> +
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.8.3.4
+> 
+> 
