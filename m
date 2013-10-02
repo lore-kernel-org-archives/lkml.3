@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3JBRM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:12:59 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25820 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753385Ab3JBRM4 (ORCPT
+	id S1754747Ab3JBROP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:14:15 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:59358 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623Ab3JBRON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:12:56 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 13/77] bna: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:29 +0200
-Message-Id: <e138df4579979bc0f60940258525036f5da61424.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 13:14:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131002133759.GH28601@twins.programming.kicks-ass.net>
+References: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+	<CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
+	<20131002133759.GH28601@twins.programming.kicks-ass.net>
+Date: Wed, 2 Oct 2013 10:14:11 -0700
+X-Google-Sender-Auth: KbzXUxBwV22n2i3AByjzL8H_dJs
+Message-ID: <CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Kees Cook <keescook@chromium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wed, Oct 2, 2013 at 6:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Oct 02, 2013 at 03:13:16PM +0200, Stephane Eranian wrote:
+>> On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>> >> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>> >> >>  - then there are timing attacks, and someone having access to a PMU
+>> >> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>> >> >>    local context can run very accurate and low noise timing attacks...
+>> >> >>
+>> >> >>    I don't think the kernel's sha_transform() is hardened against timing
+>> >> >>    attacks, it's performance optimized so it has variable execution time
+>> >> >>    highly dependent on plaintext input - which leaks information about the
+>> >> >>    plaintext.
+>> >> >
+>> >> > Typical user doesn't have enough priv to profile kernel space; once you
+>> >> > do you also have enough priv to see kernel addresses outright (ie.
+>> >> > kallsyms etc..).
+>> >> >
+>> >> I was going to say just that. But that's not the default, paranoid level
+>> >> is at 1 by default and not 2. So I supposedly can still do:
+>> >>
+>> >> $ perf record -e cycles ......
+>> >>
+>> >> In per-thread mode and collect kernel level addresses.
+>> >
+>> > Oh right you are.. so yes that's a very viable avenue.
+>>
+>> You mean simply encoding the vma->vm_mm as the ino number, for instance.
+>
+> Nah.. I think Kees would very much shoot us on the spot for doing that.
+> But with the paranoid level defaulting to 1 the PMU attack on the kernel
+> SHA implenentation is feasible.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/brocade/bna/bnad.c |   34 ++++++++++++------------------
- 1 files changed, 14 insertions(+), 20 deletions(-)
+We already have other kernel address leaks (e.g. heap addresses via
+INET_DIAG), and I'd like to avoid adding more. It'd be nice if there
+was a common way to uniquely mask these values that are really just
+"handles". We could use it both here and in the network code.
 
-diff --git a/drivers/net/ethernet/brocade/bna/bnad.c b/drivers/net/ethernet/brocade/bna/bnad.c
-index b78e69e..d41257c 100644
---- a/drivers/net/ethernet/brocade/bna/bnad.c
-+++ b/drivers/net/ethernet/brocade/bna/bnad.c
-@@ -2469,21 +2469,11 @@ bnad_enable_msix(struct bnad *bnad)
- 	if (bnad->msix_table)
- 		return;
- 
--	bnad->msix_table =
--		kcalloc(bnad->msix_num, sizeof(struct msix_entry), GFP_KERNEL);
--
--	if (!bnad->msix_table)
-+	ret = pci_msix_table_size(bnad->pcidev);
-+	if (ret < 0)
- 		goto intx_mode;
- 
--	for (i = 0; i < bnad->msix_num; i++)
--		bnad->msix_table[i].entry = i;
--
--	ret = pci_enable_msix(bnad->pcidev, bnad->msix_table, bnad->msix_num);
--	if (ret > 0) {
--		/* Not enough MSI-X vectors. */
--		pr_warn("BNA: %d MSI-X vectors allocated < %d requested\n",
--			ret, bnad->msix_num);
--
-+	if (ret < bnad->msix_num) {
- 		spin_lock_irqsave(&bnad->bna_lock, flags);
- 		/* ret = #of vectors that we got */
- 		bnad_q_num_adjust(bnad, (ret - BNAD_MAILBOX_MSIX_VECTORS) / 2,
-@@ -2495,15 +2485,19 @@ bnad_enable_msix(struct bnad *bnad)
- 
- 		if (bnad->msix_num > ret)
- 			goto intx_mode;
-+	}
- 
--		/* Try once more with adjusted numbers */
--		/* If this fails, fall back to INTx */
--		ret = pci_enable_msix(bnad->pcidev, bnad->msix_table,
--				      bnad->msix_num);
--		if (ret)
--			goto intx_mode;
-+	bnad->msix_table =
-+		kcalloc(bnad->msix_num, sizeof(struct msix_entry), GFP_KERNEL);
-+
-+	if (!bnad->msix_table)
-+		goto intx_mode;
- 
--	} else if (ret < 0)
-+	for (i = 0; i < bnad->msix_num; i++)
-+		bnad->msix_table[i].entry = i;
-+
-+	ret = pci_enable_msix(bnad->pcidev, bnad->msix_table, bnad->msix_num);
-+	if (ret)
- 		goto intx_mode;
- 
- 	pci_intx(bnad->pcidev, 0);
+Would it be possible to just have a "regular" incrementing handle,
+like fd, or are we talking about doing that map for all VMAs, which
+would make that mapping unfeasible due to storage needs?
+
+On the other hand, trying to hide kernel addresses from root is no
+easy task, especially given that while kptr_restrict has a "2" level,
+dmesg_restrict does not. Are these kernel-address-leaking perf modes
+already limited to a specific POSIX capability?
+
+-Kees
+
 -- 
-1.7.7.6
-
+Kees Cook
+Chrome OS Security
