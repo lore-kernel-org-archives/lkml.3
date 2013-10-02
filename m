@@ -1,162 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab3JBO4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:56:53 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:53621 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab3JBO4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:56:45 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: gleb@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH 7/7] KVM: mmu: replace assertions with MMU_WARN_ON, a conditional WARN_ON
-Date: Wed,  2 Oct 2013 16:56:16 +0200
-Message-Id: <1380725776-14948-8-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
-References: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
+	id S1753976Ab3JBO5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:57:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58675 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753878Ab3JBO4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:56:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1019,1371106800"; 
+   d="scan'208";a="413006865"
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran\, Aswin" <aswin@hp.com>,
+        "Norton\, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: Avoiding the dentry d_lock on final dput(), part deux: transactional memory
+References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
+	<5249D897.1010109@hp.com>
+	<CA+55aFw6tOVMw=pKE_knj4BOwTi_JAX=4N=-5_WduykNPotdww@mail.gmail.com>
+Date: Wed, 02 Oct 2013 07:56:50 -0700
+In-Reply-To: <CA+55aFw6tOVMw=pKE_knj4BOwTi_JAX=4N=-5_WduykNPotdww@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 30 Sep 2013 13:04:34 -0700")
+Message-ID: <87y56boh59.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the direction of the conditions consistent with code that
-is already using WARN_ON.
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/mmu.c | 42 ++++++++++++++----------------------------
- 1 file changed, 14 insertions(+), 28 deletions(-)
+> On Mon, Sep 30, 2013 at 1:01 PM, Waiman Long <waiman.long@hp.com> wrote:
+>>
+>> I think this patch is worth a trial if relevant hardware is more widely
+>> available. The TSX code certainly need to be moved to an architecture
+>> specific area and should be runtime enabled using a static key. We also need
+>> more TSX support infrastructure in place first.
+>
+> I think we can pick that up from Andi's patches, he should have that.
+> Although that did have very x86-specific naming (ie "xbegin"). And I
+> don't think he used "asm goto" to quite the same advantage as this -
+> and I think we do want to make sure that the overhead is minimal.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 699eab3..550e33d 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -62,30 +62,16 @@ enum {
- #undef MMU_DEBUG
- 
- #ifdef MMU_DEBUG
-+static bool dbg = 0;
-+module_param(dbg, bool, 0644);
- 
- #define pgprintk(x...) do { if (dbg) printk(x); } while (0)
- #define rmap_printk(x...) do { if (dbg) printk(x); } while (0)
--
-+#define MMU_WARN_ON(x) WARN_ON(x)
- #else
--
- #define pgprintk(x...) do { } while (0)
- #define rmap_printk(x...) do { } while (0)
--
--#endif
--
--#ifdef MMU_DEBUG
--static bool dbg = 0;
--module_param(dbg, bool, 0644);
--#endif
--
--#ifndef MMU_DEBUG
--#define ASSERT(x) do { } while (0)
--#else
--#define ASSERT(x)							\
--	if (!(x)) {							\
--		printk(KERN_WARNING "assertion failed %s:%d: %s\n",	\
--		       __FILE__, __LINE__, #x);				\
--	}
-+#define MMU_WARN_ON(x) do { } while (0)
- #endif
- 
- #define PTE_PREFETCH_NUM		8
-@@ -1533,7 +1519,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
- 
- static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
- {
--	ASSERT(is_empty_shadow_page(sp->spt));
-+	MMU_WARN_ON(!is_empty_shadow_page(sp->spt));
- 	hlist_del(&sp->hash_link);
- 	list_del(&sp->link);
- 	free_page((unsigned long)sp->spt);
-@@ -3016,7 +3002,7 @@ static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
- 		for (i = 0; i < 4; ++i) {
- 			hpa_t root = vcpu->arch.mmu.pae_root[i];
- 
--			ASSERT(!VALID_PAGE(root));
-+			MMU_WARN_ON(VALID_PAGE(root));
- 			spin_lock(&vcpu->kvm->mmu_lock);
- 			make_mmu_pages_available(vcpu);
- 			sp = kvm_mmu_get_page(vcpu, i << (30 - PAGE_SHIFT),
-@@ -3054,7 +3040,7 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
- 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
- 
--		ASSERT(!VALID_PAGE(root));
-+		MMU_WARN_ON(VALID_PAGE(root));
- 
- 		spin_lock(&vcpu->kvm->mmu_lock);
- 		make_mmu_pages_available(vcpu);
-@@ -3079,7 +3065,7 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
- 	for (i = 0; i < 4; ++i) {
- 		hpa_t root = vcpu->arch.mmu.pae_root[i];
- 
--		ASSERT(!VALID_PAGE(root));
-+		MMU_WARN_ON(VALID_PAGE(root));
- 		if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
- 			pdptr = vcpu->arch.mmu.get_pdptr(vcpu, i);
- 			if (!is_present_gpte(pdptr)) {
-@@ -3301,7 +3287,7 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
- 	if (r)
- 		return r;
- 
--	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
-+	MMU_WARN_ON(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
- 
- 	gfn = gva >> PAGE_SHIFT;
- 
-@@ -3367,7 +3353,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
- 	int write = error_code & PFERR_WRITE_MASK;
- 	bool map_writable;
- 
--	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
-+	MMU_WARN_ON(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
- 
- 	if (unlikely(error_code & PFERR_RSVD_MASK)) {
- 		r = handle_mmio_page_fault(vcpu, gpa, error_code, true);
-@@ -3655,7 +3641,7 @@ static void paging64_init_context_common(struct kvm_vcpu *vcpu,
- 	update_permission_bitmask(vcpu, context, false);
- 	update_last_pte_bitmap(vcpu, context);
- 
--	ASSERT(is_pae(vcpu));
-+	MMU_WARN_ON(!is_pae(vcpu));
- 	context->page_fault = paging64_page_fault;
- 	context->gva_to_gpa = paging64_gva_to_gpa;
- 	context->sync_page = paging64_sync_page;
-@@ -3745,7 +3731,7 @@ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
- 	bool smep = kvm_read_cr4_bits(vcpu, X86_CR4_SMEP);
- 	struct kvm_mmu *context = vcpu->arch.walk_mmu;
- 
--	ASSERT(!VALID_PAGE(context->root_hpa));
-+	MMU_WARN_ON(VALID_PAGE(context->root_hpa));
- 
- 	if (!is_paging(vcpu))
- 		nonpaging_init_context(vcpu, context);
-@@ -3768,7 +3754,7 @@ void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly)
- {
- 	struct kvm_mmu *context = vcpu->arch.walk_mmu;
- 
--	ASSERT(!VALID_PAGE(context->root_hpa));
-+	MMU_WARN_ON(VALID_PAGE(context->root_hpa));
- 
- 	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
- 
-@@ -4230,7 +4216,7 @@ int kvm_mmu_create(struct kvm_vcpu *vcpu)
- 
- void kvm_mmu_setup(struct kvm_vcpu *vcpu)
- {
--	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
-+	MMU_WARN_ON(VALID_PAGE(vcpu->arch.mmu.root_hpa));
- 
- 	init_kvm_mmu(vcpu);
- }
+FWIW my version #0 used asm goto directly, but I later switched to not
+using it to support more compilers and higher level abstractions (locks
+etc.) and use the same intrinsics as the user level guys are using.
+
+The two extra instructions from not using asm goto for xbegin
+don't matter all that much in the end.
+
+That's the old asm goto stuff I wrote originally
+(user level version):
+
+https://github.com/andikleen/tsx-tools/blob/master/include/rtm-goto.h
+
+There was also a kernel version of it that patched, right 
+now this is done in the main TSX patchkit like this:
+
+https://git.kernel.org/cgit/linux/kernel/git/ak/linux-misc.git/commit/?h=hle312/rtm-base&id=9190346d57a9bc89e746aee774d07e54cd1e6e75
+
+Essentially without RTM it just becomes and unconditional jump
+to the abort handler, xabort is a nop, and xtest always returns 0.
+
+-Andi
 -- 
-1.8.3.1
-
+ak@linux.intel.com -- Speaking for myself only
