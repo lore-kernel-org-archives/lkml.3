@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3JBSdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:33:09 -0400
-Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:47435 "EHLO
-	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753927Ab3JBSdI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:33:08 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: applesmc oops in 3.10/3.11
-From: Chris Murphy <bugzilla@colorremedies.com>
-In-Reply-To: <20131002180206.GB4811@roeck-us.net>
-Date: Wed, 2 Oct 2013 12:33:00 -0600
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com>
-References: <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131002035156.GA566@roeck-us.net> <20131002095339.GA2716@polaris.bitmath.org> <524C1FE1.4050207@roeck-us.net> <20131002163418.GA4557@polaris.bitmath.org> <20131002164718.GA7392@roeck-us.net> <20131002172410.GA381@polaris.bitmath.org> <20131002180206.GB4811@roeck-us.net>
-To: Guenter Roeck <linux@roeck-us.net>
-X-Mailer: Apple Mail (2.1510)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - colorremedies.com
-X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1754593Ab3JBSeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:34:19 -0400
+Received: from [216.32.180.16] ([216.32.180.16]:37745 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754336Ab3JBSeS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 14:34:18 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz98dI9371I936eI542I1432I168aJzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1380738758.12932.43.camel@snotra.buserror.net>
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+From: Scott Wood <scottwood@freescale.com>
+To: Yoder Stuart-B08248 <B08248@freescale.com>
+CC: Christoffer Dall <christoffer.dall@linaro.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Wed, 2 Oct 2013 13:32:38 -0500
+In-Reply-To: <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
+References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
+	 <20131001200054.GA27330@kroah.com>
+	 <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+	 <20131002015355.GD63102@lvm> <1380681356.14271.57.camel@ul30vt.home>
+	 <20131002151413.GG63102@lvm>
+	 <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-10-02 at 13:25 -0500, Yoder Stuart-B08248 wrote:
+> 
+> > -----Original Message-----
+> > From: Christoffer Dall [mailto:christoffer.dall@linaro.org]
+> > Sent: Wednesday, October 02, 2013 10:14 AM
+> > To: Alex Williamson
+> > Cc: Kim Phillips; gregkh@linuxfoundation.org; linux-
+> > kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
+> > Yoder Stuart-B08248; Wood Scott-B07421; Sethi Varun-B16395; Bhushan
+> > Bharat-R65777; peter.maydell@linaro.org; santosh.shukla@linaro.org;
+> > kvm@vger.kernel.org
+> > Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform
+> > device
+> > 
+> > Wouldn't a sysfs file to add compatibility strings to the vfio-platform
+> > driver make driver_match_device return true and make everyone happy?
+> 
+> I had a similar thought.  Why can't we do something like:
+> 
+>   echo "fsl,i2c" > /sys/bus/platform/drivers/vfio-platform/new_compatible
+>   echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-platform/bind
+> 
+> The first steps tell vfio-platform to register itself to handle
+> "fsl,i2c" compatible devices.  The second step does the bind.
 
-On Oct 2, 2013, at 12:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+Needing to specify the compatible is hacky (we already know what device
+we want to bind; why do we need to scrounge up more information than
+that, and add a new sysfs interface for extending compatible matches,
+and a more flexible data structure to back that up?), and is racy on
+buses that can hotplug (which driver gets the new device?).
 
-> On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
->> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
->>> On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
->>>>>>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
->>>>>>> I think that is a pre-requisite.
->>>>>> 
->>>>>> Not necessarily - it could be that the patch actually fixes the root
->>>>>> cause. One possible scenario is that on recent SMCs, some of the
->>>>>> commands produce more data than we actually read. This would
->>>>>> eventually lead to both data corruption and overflow somwhere in the
->>>>>> SMC internals.  If the original SMC error is interpreted as a read
->>>>>> buffer overflow, then that problem should be fixed with this patch.
->>>>>> 
->>>>> 
->>>>> Good point.
->>>>> 
->>>>> But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
->>>> 
->>>> The explanation I have there is that the (newer) SMC needs the
->>>> application to read the 'no more bytes' or it will get confused. It
->>>> makes sense, if the number of bytes to read is no longer specified.
->>>> 
->>> You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
->>> That might make sense.
->> 
->> It also points at the possibility of a smaller patch to test, but I
->> have not had the time to check this very deeply myself:
->> 
-> I like this patch much more than the previous patch. Chris, can you test it ?
+What's wrong with a non-vfio-specific flag that a driver can set, that
+indicates that the driver is willing to try to bind to any device on the
+bus if explicitly requested via the existing sysfs bind mechanism?
 
-Yes. Building now. What kernel message should I be looking for? At least on 2011 and 2012 laptops I have yet to see an Oops related to smc. The kernel with previous patch at least is not causing problems on them so far, which works well as I can test more on the 2008 model.
+-Scott
 
-Chris Murphy
+
+
