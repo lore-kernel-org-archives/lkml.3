@@ -1,72 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3JBXBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 19:01:40 -0400
-Received: from zix01.bmc.org ([209.249.112.198]:37136 "EHLO ZIX01.BMC.ORG"
+	id S1753742Ab3JBXJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 19:09:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29197 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753313Ab3JBXBh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 19:01:37 -0400
-X-AuditID: d1f970c2-b7f316d000000ada-4a-524ca1456519
-To: undisclosed-recipients:;
-From: "Sokoll, Frances" <Frances.Sokoll@bmc.org>
-Subject: On behalf of Mrs. Margaret Crawford
-Thread-Topic: On behalf of Mrs. Margaret Crawford
-Thread-Index: Ac6/wKKI9N+qCJLjRXq3PGjZIVBiYQ==
-Date: Wed, 2 Oct 2013 22:42:12 +0000
-Message-ID: <F5C351EC100E484AACF2D3FDA2F434230BE31041@ex-mb04.bmc.bmcroot.bmc.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.153.249.138]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-Brightmail-Tracker: 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
-X-Authorized-Sender: BMC2008
-X-VPM-HOST: ZIX01.BMC.ORG
-X-VPM-MSG-ID: e1004f93-c7d6-4b5b-b38b-a77a867d582d
-X-VPM-ENC-REGIME: Plaintext
-X-VPM-CERT-FLAG: 0
-X-VPM-IS-HYBRID: 0
+	id S1753326Ab3JBXJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 19:09:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
+   d="scan'208";a="413224850"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Joe Perches <joe@perches.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: Nikhil Rao <nikhil.rao@intel.com>, Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next] misc: mic: Fix build issues in sample daemon.
+Date: Wed,  2 Oct 2013 16:09:00 -0700
+Message-Id: <03258a55f3cfae828b0f0c96b010c8ab6aa2065d.1380735129.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Specifying gcc format function attribute for mpsslog(..) and
+building on 32 bit systems exposed a few build issues in the
+sample MIC daemon which are fixed by this patch. Some of these
+changes were authored by Joe Perches @
+https://lkml.org/lkml/2013/9/27/419
 
+Reported-by: Joe Perches <joe@perches.com>
+Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Signed-off-by: Caz Yokoyama <Caz.Yokoyama@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+---
+ Documentation/mic/mpssd/mpssd.c | 22 +++++++++++-----------
+ Documentation/mic/mpssd/mpssd.h |  1 +
+ 2 files changed, 12 insertions(+), 11 deletions(-)
 
-I am sending you this email on behalf of Mrs. Margaret Crawford in regards to her wish. She have decided to will her inheritance to you for Humanitarian work and your personal use. For more info contact her Attorney, Mark Lawson on email: mark.lawson3@rogers.com
-
-This electronic transmission may contain information that is privileged, confidential and exempt from disclosure under applicable law. If you are not the intended recipient, please notify me immediately as use of this information is strictly prohibited.
-
+diff --git a/Documentation/mic/mpssd/mpssd.c b/Documentation/mic/mpssd/mpssd.c
+index f9327a2..82c6bc2 100644
+--- a/Documentation/mic/mpssd/mpssd.c
++++ b/Documentation/mic/mpssd/mpssd.c
+@@ -362,9 +362,9 @@ static inline void verify_out_len(struct mic_info *mic,
+ 	struct mic_copy_desc *copy)
+ {
+ 	if (copy->out_len != sum_iovec_len(copy)) {
+-		mpsslog("%s %s %d BUG copy->out_len 0x%x len 0x%x\n",
++		mpsslog("%s %s %d BUG copy->out_len 0x%x len 0x%zx\n",
+ 			mic->name, __func__, __LINE__,
+-				copy->out_len, sum_iovec_len(copy));
++			copy->out_len, sum_iovec_len(copy));
+ 		assert(copy->out_len == sum_iovec_len(copy));
+ 	}
+ }
+@@ -377,7 +377,7 @@ disp_iovec(struct mic_info *mic, struct mic_copy_desc *copy,
+ 	int i;
+ 
+ 	for (i = 0; i < copy->iovcnt; i++)
+-		mpsslog("%s %s %d copy->iov[%d] addr %p len 0x%lx\n",
++		mpsslog("%s %s %d copy->iov[%d] addr %p len 0x%zx\n",
+ 			mic->name, s, line, i,
+ 			copy->iov[i].iov_base, copy->iov[i].iov_len);
+ }
+@@ -630,7 +630,7 @@ virtio_net(void *arg)
+ 				disp_iovec(mic, &copy, __func__, __LINE__);
+ 				mpsslog("%s %s %d read failed %s ", mic->name,
+ 					__func__, __LINE__, strerror(errno));
+-				mpsslog("cnt %d sum %d\n",
++				mpsslog("cnt %d sum %zd\n",
+ 					copy.iovcnt, sum_iovec_len(&copy));
+ 			}
+ 		}
+@@ -680,8 +680,8 @@ virtio_net(void *arg)
+ 					if (len != sum_iovec_len(&copy)) {
+ 						mpsslog("Tun write failed %s ",
+ 							strerror(errno));
+-						mpsslog("len 0x%x ", len);
+-						mpsslog("read_len 0x%x\n",
++						mpsslog("len 0x%zx ", len);
++						mpsslog("read_len 0x%zx\n",
+ 							sum_iovec_len(&copy));
+ 					} else {
+ #ifdef DEBUG
+@@ -827,7 +827,7 @@ virtio_console(void *arg)
+ 				mpsslog("%s %s %d read failed %s ",
+ 					mic->name, __func__, __LINE__,
+ 					strerror(errno));
+-				mpsslog("cnt %d sum %d\n",
++				mpsslog("cnt %d sum %zd\n",
+ 					copy.iovcnt, sum_iovec_len(&copy));
+ 			}
+ 		}
+@@ -859,8 +859,8 @@ virtio_console(void *arg)
+ 					if (len != sum_iovec_len(&copy)) {
+ 						mpsslog("Tun write failed %s ",
+ 							strerror(errno));
+-						mpsslog("len 0x%x ", len);
+-						mpsslog("read_len 0x%x\n",
++						mpsslog("len 0x%zx ", len);
++						mpsslog("read_len 0x%zx\n",
+ 							sum_iovec_len(&copy));
+ 					} else {
+ #ifdef DEBUG
+@@ -953,7 +953,7 @@ set_backend_file(struct mic_info *mic)
+ 		return false;
+ 	mic->mic_virtblk.backend_file = malloc(strlen(evv) + 1);
+ 	if (mic->mic_virtblk.backend_file == NULL) {
+-		mpsslog("can't allocate memory\n", mic->name, mic->id);
++		mpsslog("%s %d can't allocate memory\n", mic->name, mic->id);
+ 		return false;
+ 	}
+ 	strcpy(mic->mic_virtblk.backend_file, evv + 1);
+@@ -1026,7 +1026,7 @@ close_backend(struct mic_info *mic)
+ static bool
+ start_virtblk(struct mic_info *mic, struct mic_vring *vring)
+ {
+-	if (((__u64)&virtblk_dev_page.blk_config % 8) != 0) {
++	if (((unsigned long)&virtblk_dev_page.blk_config % 8) != 0) {
+ 		mpsslog("%s: blk_config is not 8 byte aligned.\n",
+ 			mic->name);
+ 		return false;
+diff --git a/Documentation/mic/mpssd/mpssd.h b/Documentation/mic/mpssd/mpssd.h
+index b6dee38..ccd589f 100644
+--- a/Documentation/mic/mpssd/mpssd.h
++++ b/Documentation/mic/mpssd/mpssd.h
+@@ -94,6 +94,7 @@ struct mic_info {
+ 	struct mic_info *next;
+ };
+ 
++__attribute__((format(printf, 1, 2)))
+ void mpsslog(char *format, ...);
+ char *readsysfs(char *dir, char *entry);
+ int setsysfs(char *dir, char *entry, char *value);
+-- 
+1.8.2.1
 
