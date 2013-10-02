@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3JBPzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:55:08 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52045 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753422Ab3JBPzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:55:06 -0400
-Date: Wed, 2 Oct 2013 16:54:18 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Bird, Tim" <Tim.Bird@sonymobile.com>
-Cc: Christoph Lameter <cl@linux.com>, Frank Rowand <frowand.list@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>,
-        =?iso-8859-1?Q?Andersson=2C_Bj=F6rn?= 
-	<Bjorn.Andersson@sonymobile.com>
-Subject: Re: [PATCH] slub: Proper kmemleak tracking if CONFIG_SLUB_DEBUG
- disabled
-Message-ID: <20131002155417.GB29794@arm.com>
-References: <5245ECC3.8070200@gmail.com>
- <00000141799dd4b3-f6df96c0-1003-427d-9bd8-f6455622f4ea-000000@email.amazonses.com>
- <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
+	id S1754011Ab3JBP4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:56:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753377Ab3JBP4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 11:56:09 -0400
+Date: Wed, 2 Oct 2013 17:49:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131002154901.GA13389@redhat.com>
+References: <20131002145655.361606532@infradead.org> <20131002150518.675931976@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131002150518.675931976@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:33:47PM +0100, Bird, Tim wrote:
-> On Wednesday, October 02, 2013 7:41 AM, Christoph Lameter [cl@linux.com] wrote:
-> >
-> >On Fri, 27 Sep 2013, Frank Rowand wrote:
-> >
-> >> Move the kmemleak code for small block allocation out from
-> >> under CONFIG_SLUB_DEBUG.
-> >
-> >Well in that case it may be better to move the hooks as a whole out of
-> >the CONFIG_SLUB_DEBUG section. Do the #ifdeffering for each call from the
-> >hooks instead.
-> >
-> >The point of the hook functions is to separate the hooks out of the
-> >functions so taht they do not accumulate in the main code.
-> >
-> >The patch moves one hook back into the main code. Please keep the checks
-> >in the hooks.
-> 
-> Thanks for the feedback.  Roman's first patch, which we discussed internally
-> before sending this one, did exactly that.  I guess Roman gets to say "I told
-> you so." :-)  My bad for telling him to change it.
-> 
-> We'll refactor along the lines that you describe, and send another one.
-> 
-> The problem child is actually the unconditional call to kmemleak_alloc()
-> in kmalloc_large_node() (in slub.c).  The problem comes because that call
-> is unconditional on CONFIG_SLUB_DEBUG but the kmemleak
-> calls in the hook routines are conditional on CONFIG_SLUB_DEBUG.
-> So if you have CONFIG_SLUB_DEBUG=n but CONFIG_DEBUG_KMEMLEAK=y,
-> you get the false reports.
-> 
-> Now, there are kmemleak calls in kmalloc_large_node() and kfree() that don't
-> follow the "hook" pattern.  Should these be moved to 'hook' routines, to keep
-> all the checks in the hooks?
-> 
-> Personally, I like the idea of keeping bookeeping/tracing/debug stuff in hook
-> routines.  I also like de-coupling CONFIG_SLUB_DEBUG and CONFIG_DEBUG_KMEMLEAK,
-> but maybe others have a different opinon.  Unless someone speaks up, we'll
-> move the the currently in-function kmemleak calls into hooks, and all of the
-> kmemleak stuff out from under CONFIG_SLUB_DEBUG.
-> We'll have to see if the ifdefs get a little messy.
+On 10/02, Peter Zijlstra wrote:
+>
+> From: Oleg Nesterov <oleg@redhat.com>
 
-Kmemleak doesn't depend on SLUB_DEBUG (at least it didn't originally ;),
-so I don't think we should add an artificial dependency (or select). Can
-we have kmemleak_*() calls in both debug and !debug hooks?
+Thanks! I was writing the patch, and I chose almost the same naming ;)
 
--- 
-Catalin
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+In fact I'd like to add my sob to 1/3 and 3/3 as well.
+
+
+Paul, to remind, this is only the first step. I am going to send
+the following improvements:
+
+	1. Add rcu_sync->exlusive. The change is simple, just we
+	   need s/wait_queue_head_t/completion/ in rcu_sync_struct
+	   and a couple of "if (rss->exclusive)" checks in enter/exit.
+
+	2. rcu_sync_enter() should return !!need_sync. This can help
+	   in exclusive mode.
+
+	3. rcu_sync_struct needs more function pointers (perhaps we
+	   should add a single rcu_sync_struct->ops pointer but this
+	   is minor). See below.
+
+But let me repeat just in case, we should do this later.
+And once this series is applied, I'll change percpu_rw_semaphore.
+
+
+> +struct rcu_sync_struct {
+> +	int			gp_state;
+> +	int			gp_count;
+> +	wait_queue_head_t	gp_wait;
+> +
+> +	int			cb_state;
+> +	struct rcu_head		cb_head;
+> +
+> +	void (*sync)(void);
+> +	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+
+Yes, and we also need rcu_sync_struct->barrier(). From the patch I was
+working on:
+
+	void rcu_sync_wait_for_callback(struct rcu_sync *sync)
+	{
+		int cb_state;
+
+		BUG_ON(sync->gp_count);
+
+		spin_lock_irq(&sync->state_lock);
+		if (sync->cb_state == CB_REPLAY)
+			sync->cb_state = CB_PENDING;
+		cb_state = sync->cb_state;
+		spin_unlock_irq(&sync->state_lock);
+
+		if (cb_state != CB_IDLE) {
+			rcu_barrier_sched();
+			BUG_ON(sync->cb_state != CB_IDLE);
+		}
+	}
+
+It should be called if you are going to kfree the object.
+
+Perhaps another rcu_sync_struct->state_change(new_state) callback (set
+by the user) makes sense too, this can help (for example) to implement
+the array of semaphores with a single rcu_sync_struct (freeze_super).
+
+Thanks.
+
+Oleg.
+
