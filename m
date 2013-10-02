@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab3JBO5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:57:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58675 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab3JBO4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:56:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1019,1371106800"; 
-   d="scan'208";a="413006865"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran\, Aswin" <aswin@hp.com>,
-        "Norton\, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: Avoiding the dentry d_lock on final dput(), part deux: transactional memory
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
-	<5249D897.1010109@hp.com>
-	<CA+55aFw6tOVMw=pKE_knj4BOwTi_JAX=4N=-5_WduykNPotdww@mail.gmail.com>
-Date: Wed, 02 Oct 2013 07:56:50 -0700
-In-Reply-To: <CA+55aFw6tOVMw=pKE_knj4BOwTi_JAX=4N=-5_WduykNPotdww@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 30 Sep 2013 13:04:34 -0700")
-Message-ID: <87y56boh59.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754017Ab3JBO5f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:57:35 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:51926 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813Ab3JBO4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:56:44 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gleb@redhat.com, kvm@vger.kernel.org
+Subject: [PATCH 6/7] KVM: mmu: remove ASSERT(vcpu)
+Date: Wed,  2 Oct 2013 16:56:15 +0200
+Message-Id: <1380725776-14948-7-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
+References: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Because ASSERT is just a printk, these would oops right away.
+The assertion thus hardly adds anything.
 
-> On Mon, Sep 30, 2013 at 1:01 PM, Waiman Long <waiman.long@hp.com> wrote:
->>
->> I think this patch is worth a trial if relevant hardware is more widely
->> available. The TSX code certainly need to be moved to an architecture
->> specific area and should be runtime enabled using a static key. We also need
->> more TSX support infrastructure in place first.
->
-> I think we can pick that up from Andi's patches, he should have that.
-> Although that did have very x86-specific naming (ie "xbegin"). And I
-> don't think he used "asm goto" to quite the same advantage as this -
-> and I think we do want to make sure that the overhead is minimal.
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/mmu.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-FWIW my version #0 used asm goto directly, but I later switched to not
-using it to support more compilers and higher level abstractions (locks
-etc.) and use the same intrinsics as the user level guys are using.
-
-The two extra instructions from not using asm goto for xbegin
-don't matter all that much in the end.
-
-That's the old asm goto stuff I wrote originally
-(user level version):
-
-https://github.com/andikleen/tsx-tools/blob/master/include/rtm-goto.h
-
-There was also a kernel version of it that patched, right 
-now this is done in the main TSX patchkit like this:
-
-https://git.kernel.org/cgit/linux/kernel/git/ak/linux-misc.git/commit/?h=hle312/rtm-base&id=9190346d57a9bc89e746aee774d07e54cd1e6e75
-
-Essentially without RTM it just becomes and unconditional jump
-to the abort handler, xabort is a nop, and xtest always returns 0.
-
--Andi
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index ac598c8..699eab3 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3301,7 +3301,6 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 	if (r)
+ 		return r;
+ 
+-	ASSERT(vcpu);
+ 	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
+ 
+ 	gfn = gva >> PAGE_SHIFT;
+@@ -3368,7 +3367,6 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	int write = error_code & PFERR_WRITE_MASK;
+ 	bool map_writable;
+ 
+-	ASSERT(vcpu);
+ 	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
+ 
+ 	if (unlikely(error_code & PFERR_RSVD_MASK)) {
+@@ -3747,7 +3745,6 @@ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
+ 	bool smep = kvm_read_cr4_bits(vcpu, X86_CR4_SMEP);
+ 	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+ 
+-	ASSERT(vcpu);
+ 	ASSERT(!VALID_PAGE(context->root_hpa));
+ 
+ 	if (!is_paging(vcpu))
+@@ -3771,7 +3768,6 @@ void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly)
+ {
+ 	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+ 
+-	ASSERT(vcpu);
+ 	ASSERT(!VALID_PAGE(context->root_hpa));
+ 
+ 	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
+@@ -3851,8 +3847,6 @@ static void init_kvm_mmu(struct kvm_vcpu *vcpu)
+ 
+ void kvm_mmu_reset_context(struct kvm_vcpu *vcpu)
+ {
+-	ASSERT(vcpu);
+-
+ 	kvm_mmu_unload(vcpu);
+ 	init_kvm_mmu(vcpu);
+ }
+@@ -4208,8 +4202,6 @@ static int alloc_mmu_pages(struct kvm_vcpu *vcpu)
+ 	struct page *page;
+ 	int i;
+ 
+-	ASSERT(vcpu);
+-
+ 	/*
+ 	 * When emulating 32-bit mode, cr3 is only 32 bits even on x86_64.
+ 	 * Therefore we need to allocate shadow page tables in the first
+@@ -4228,8 +4220,6 @@ static int alloc_mmu_pages(struct kvm_vcpu *vcpu)
+ 
+ int kvm_mmu_create(struct kvm_vcpu *vcpu)
+ {
+-	ASSERT(vcpu);
+-
+ 	vcpu->arch.walk_mmu = &vcpu->arch.mmu;
+ 	vcpu->arch.mmu.root_hpa = INVALID_PAGE;
+ 	vcpu->arch.mmu.translate_gpa = translate_gpa;
+@@ -4240,7 +4230,6 @@ int kvm_mmu_create(struct kvm_vcpu *vcpu)
+ 
+ void kvm_mmu_setup(struct kvm_vcpu *vcpu)
+ {
+-	ASSERT(vcpu);
+ 	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
+ 
+ 	init_kvm_mmu(vcpu);
+@@ -4528,8 +4517,6 @@ EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
+ 
+ void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
+ {
+-	ASSERT(vcpu);
+-
+ 	kvm_mmu_unload(vcpu);
+ 	free_mmu_pages(vcpu);
+ 	mmu_free_memory_caches(vcpu);
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.8.3.1
+
+
