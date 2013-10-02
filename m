@@ -1,467 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3JBM1D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:27:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44363 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab3JBM1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:27:00 -0400
-Date: Wed, 2 Oct 2013 14:26:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        zab@redhat.com, jack@suse.cz, tytso@mit.edu, mszeredi@suse.cz
-Subject: Re: [PATCH 3/7] vfs: add renameat2 syscall and cross-rename
-Message-ID: <20131002122658.GD25126@quack.suse.cz>
-References: <1380643239-16060-1-git-send-email-miklos@szeredi.hu>
- <1380643239-16060-4-git-send-email-miklos@szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380643239-16060-4-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754116Ab3JBM2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:28:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41468 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753539Ab3JBM2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 08:28:17 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [RFC PATCH] regulator: core: Add ability to create a lookup alias for supply
+Date: Wed,  2 Oct 2013 13:16:59 +0100
+Message-Id: <1380716219-32039-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 01-10-13 18:00:35, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Add new renameat2 syscall, which is the same as renameat with an added
-> flags argument.
-> 
-> If flags is zero then this is a plain overwriting rename.  If flags contain
-> RENAME_EXCHANGE then exchange source and destination files.  There's no
-> restriction on the type of the files; e.g. a directory can be exchanged
-> with a symlink.
-  It's not completely clear to me what should happen if RENAME_EXCHANGE is
-set but destination doesn't exist. Return -ENOENT or just do standard
-rename?
+These patches add the ability to create an alternative device on which
+a lookup for a certain supply should be conducted.
 
-								Honza
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  arch/x86/syscalls/syscall_64.tbl |   1 +
->  fs/dcache.c                      |  46 ++++++++++---
->  fs/namei.c                       | 139 ++++++++++++++++++++++++++++++---------
->  include/linux/dcache.h           |   1 +
->  include/linux/fs.h               |   2 +
->  include/uapi/linux/fs.h          |   2 +
->  6 files changed, 152 insertions(+), 39 deletions(-)
-> 
-> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-> index 38ae65d..fafd734 100644
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -320,6 +320,7 @@
->  311	64	process_vm_writev	sys_process_vm_writev
->  312	common	kcmp			sys_kcmp
->  313	common	finit_module		sys_finit_module
-> +314	common	renameat2		sys_renameat2
->  
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 4100030..1735bac 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2495,12 +2495,14 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
->  			dentry->d_name.name = dentry->d_iname;
->  		} else {
->  			/*
-> -			 * Both are internal.  Just copy target to dentry
-> +			 * Both are internal.
->  			 */
-> -			memcpy(dentry->d_iname, target->d_name.name,
-> -					target->d_name.len + 1);
-> -			dentry->d_name.len = target->d_name.len;
-> -			return;
-> +			unsigned int i;
-> +			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-> +			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
-> +				swap(((long *) &dentry->d_iname)[i],
-> +				     ((long *) &target->d_iname)[i]);
-> +			}
->  		}
->  	}
->  	swap(dentry->d_name.len, target->d_name.len);
-> @@ -2557,13 +2559,15 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
->   * __d_move - move a dentry
->   * @dentry: entry to move
->   * @target: new dentry
-> + * @exchange: exchange the two dentries
->   *
->   * Update the dcache to reflect the move of a file name. Negative
->   * dcache entries should not be moved in this way. Caller must hold
->   * rename_lock, the i_mutex of the source and target directories,
->   * and the sb->s_vfs_rename_mutex if they differ. See lock_rename().
->   */
-> -static void __d_move(struct dentry * dentry, struct dentry * target)
-> +static void __d_move(struct dentry *dentry, struct dentry *target,
-> +		     bool exchange)
->  {
->  	if (!dentry->d_inode)
->  		printk(KERN_WARNING "VFS: moving negative dcache entry\n");
-> @@ -2587,6 +2591,10 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
->  
->  	/* Unhash the target: dput() will then get rid of it */
->  	__d_drop(target);
-> +	if (exchange) {
-> +		__d_rehash(target,
-> +			   d_hash(dentry->d_parent, dentry->d_name.hash));
-> +	}
->  
->  	list_del(&dentry->d_u.d_child);
->  	list_del(&target->d_u.d_child);
-> @@ -2613,6 +2621,8 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
->  	write_seqcount_end(&dentry->d_seq);
->  
->  	dentry_unlock_parents_for_move(dentry, target);
-> +	if (exchange)
-> +		fsnotify_d_move(target);
->  	spin_unlock(&target->d_lock);
->  	fsnotify_d_move(dentry);
->  	spin_unlock(&dentry->d_lock);
-> @@ -2630,11 +2640,31 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
->  void d_move(struct dentry *dentry, struct dentry *target)
->  {
->  	write_seqlock(&rename_lock);
-> -	__d_move(dentry, target);
-> +	__d_move(dentry, target, false);
->  	write_sequnlock(&rename_lock);
->  }
->  EXPORT_SYMBOL(d_move);
->  
-> +/*
-> + * d_exchange - exchange two dentries
-> + * @dentry1: first dentry
-> + * @dentry2: second dentry
-> + */
-> +void d_exchange(struct dentry *dentry1, struct dentry *dentry2)
-> +{
-> +	write_seqlock(&rename_lock);
-> +
-> +	WARN_ON(!dentry1->d_inode);
-> +	WARN_ON(!dentry2->d_inode);
-> +	WARN_ON(IS_ROOT(dentry1));
-> +	WARN_ON(IS_ROOT(dentry2));
-> +
-> +	__d_move(dentry1, dentry2, true);
-> +
-> +	write_sequnlock(&rename_lock);
-> +}
-> +
-> +
->  /**
->   * d_ancestor - search for an ancestor
->   * @p1: ancestor dentry
-> @@ -2682,7 +2712,7 @@ static struct dentry *__d_unalias(struct inode *inode,
->  	m2 = &alias->d_parent->d_inode->i_mutex;
->  out_unalias:
->  	if (likely(!d_mountpoint(alias))) {
-> -		__d_move(alias, dentry);
-> +		__d_move(alias, dentry, false);
->  		ret = alias;
->  	}
->  out_err:
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 7ec6a12..55700b3 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -3963,14 +3963,18 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
->   *	   ->i_mutex on parents, which works but leads to some truly excessive
->   *	   locking].
->   */
-> -int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
-> -	       struct inode *new_dir, struct dentry *new_dentry)
-> +static int vfs_rename2(struct inode *old_dir, struct dentry *old_dentry,
-> +		       struct inode *new_dir, struct dentry *new_dentry,
-> +		       unsigned int flags)
->  {
->  	int error;
->  	const unsigned char *old_name;
->  	struct inode *source = old_dentry->d_inode;
->  	struct inode *target = new_dentry->d_inode;
->  	bool is_dir = S_ISDIR(source->i_mode);
-> +	bool new_is_dir = target ? S_ISDIR(target->i_mode) : false;
-> +	bool overwrite = !(flags & RENAME_EXCHANGE);
-> +	unsigned max_links = new_dir->i_sb->s_max_links;
->  
->  	if (source == target)
->  		return 0;
-> @@ -3981,74 +3985,116 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
->  
->  	if (!target)
->  		error = may_create(new_dir, new_dentry);
-> -	else
-> +	else if (overwrite)
->  		error = may_delete(new_dir, new_dentry, is_dir);
-> +	else
-> +		error = may_delete(new_dir, new_dentry, new_is_dir);
->  	if (error)
->  		return error;
->  
-> -	if (!old_dir->i_op->rename)
-> +	if (!old_dir->i_op->rename && !old_dir->i_op->rename2)
->  		return -EPERM;
->  
-> +	if (flags && !old_dir->i_op->rename2)
-> +		return -EOPNOTSUPP;
-> +
->  	/*
->  	 * If we are going to change the parent - check write permissions,
->  	 * we'll need to flip '..'.
->  	 */
-> -	if (is_dir && new_dir != old_dir) {
-> -		error = inode_permission(source, MAY_WRITE);
-> -		if (error)
-> -			return error;
-> +	if (new_dir != old_dir) {
-> +		if (is_dir) {
-> +			error = inode_permission(source, MAY_WRITE);
-> +			if (error)
-> +				return error;
-> +		}
-> +		if (!overwrite && new_is_dir) {
-> +			error = inode_permission(target, MAY_WRITE);
-> +			if (error)
-> +				return error;
-> +		}
->  	}
->  
->  	error = security_inode_rename(old_dir, old_dentry, new_dir, new_dentry);
->  	if (error)
->  		return error;
->  
-> +	if (!overwrite) {
-> +		error = security_inode_rename(new_dir, new_dentry,
-> +					      old_dir, old_dentry);
-> +		if (error)
-> +			return error;
-> +	}
-> +
->  	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
->  	dget(new_dentry);
-> -	if (target)
-> +	if (overwrite && target)
->  		mutex_lock(&target->i_mutex);
->  
->  	error = -EBUSY;
->  	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
->  		goto out;
->  
-> -	if (is_dir) {
-> -		unsigned max_links = new_dir->i_sb->s_max_links;
-> -
-> +	if (max_links && new_dir != old_dir) {
->  		error = -EMLINK;
-> -		if (max_links && !target && new_dir != old_dir &&
-> -		    new_dir->i_nlink >= max_links)
-> +		if (is_dir && !new_is_dir && new_dir->i_nlink >= max_links)
->  			goto out;
-> +		if (!overwrite && !is_dir && new_is_dir &&
-> +		    old_dir->i_nlink > max_links)
-> +			goto out;
-> +	}
-> +
-> +	if (overwrite && is_dir && target)
-> +		shrink_dcache_parent(new_dentry);
->  
-> -		if (target)
-> -			shrink_dcache_parent(new_dentry);
-> +	if (old_dir->i_op->rename2) {
-> +		error = old_dir->i_op->rename2(old_dir, old_dentry,
-> +					       new_dir, new_dentry, flags);
-> +	} else {
-> +		error = old_dir->i_op->rename(old_dir, old_dentry,
-> +					      new_dir, new_dentry);
->  	}
->  
-> -	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
->  	if (error)
->  		goto out;
->  
-> -	if (target) {
-> +	if (overwrite && target) {
->  		if (is_dir)
->  			target->i_flags |= S_DEAD;
->  		dont_mount(new_dentry);
->  	}
-> -	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
-> -		d_move(old_dentry, new_dentry);
-> +	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE)) {
-> +		if (overwrite)
-> +			d_move(old_dentry, new_dentry);
-> +		else
-> +			d_exchange(old_dentry, new_dentry);
-> +	}
->  out:
-> -	if (target)
-> +	if (overwrite && target)
->  		mutex_unlock(&target->i_mutex);
->  	dput(new_dentry);
-> -	if (!error)
-> +	if (!error) {
->  		fsnotify_move(old_dir, new_dir, old_name, is_dir,
-> -			      target, old_dentry);
-> +			      overwrite ? target : NULL, old_dentry);
-> +		if (!overwrite) {
-> +			fsnotify_move(new_dir, old_dir, old_dentry->d_name.name,
-> +				      new_is_dir, NULL, new_dentry);
-> +		}
-> +	}
->  	fsnotify_oldname_free(old_name);
->  
->  	return error;
->  }
->  
-> -SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
-> -		int, newdfd, const char __user *, newname)
-> +int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
-> +	       struct inode *new_dir, struct dentry *new_dentry)
-> +{
-> +	return vfs_rename2(old_dir, old_dentry, new_dir, new_dentry, 0);
-> +}
-> +
-> +
-> +SYSCALL_DEFINE5(renameat2, int, olddfd, const char __user *, oldname,
-> +		int, newdfd, const char __user *, newname, unsigned int, flags)
->  {
->  	struct dentry *old_dir, *new_dir;
->  	struct dentry *old_dentry, *new_dentry;
-> @@ -4058,7 +4104,13 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
->  	struct filename *to;
->  	unsigned int lookup_flags = 0;
->  	bool should_retry = false;
-> +	bool overwrite = !(flags & RENAME_EXCHANGE);
->  	int error;
-> +
-> +	error = -EOPNOTSUPP;
-> +	if (flags & ~RENAME_EXCHANGE)
-> +		goto exit;
-> +
->  retry:
->  	from = user_path_parent(olddfd, oldname, &oldnd, lookup_flags);
->  	if (IS_ERR(from)) {
-> @@ -4091,7 +4143,8 @@ retry:
->  
->  	oldnd.flags &= ~LOOKUP_PARENT;
->  	newnd.flags &= ~LOOKUP_PARENT;
-> -	newnd.flags |= LOOKUP_RENAME_TARGET;
-> +	if (overwrite)
-> +		newnd.flags |= LOOKUP_RENAME_TARGET;
->  
->  	trap = lock_rename(new_dir, old_dir);
->  
-> @@ -4108,7 +4161,7 @@ retry:
->  		error = -ENOTDIR;
->  		if (oldnd.last.name[oldnd.last.len])
->  			goto exit4;
-> -		if (newnd.last.name[newnd.last.len])
-> +		if (overwrite && newnd.last.name[newnd.last.len])
->  			goto exit4;
->  	}
->  	/* source should not be ancestor of target */
-> @@ -4119,8 +4172,19 @@ retry:
->  	error = PTR_ERR(new_dentry);
->  	if (IS_ERR(new_dentry))
->  		goto exit4;
-> +	if (!overwrite) {
-> +		error = -ENOENT;
-> +		if (!new_dentry->d_inode)
-> +			goto exit4;
-> +
-> +		if (!S_ISDIR(new_dentry->d_inode->i_mode)) {
-> +			error = -ENOTDIR;
-> +			if (newnd.last.name[newnd.last.len])
-> +				goto exit4;
-> +		}
-> +	}
->  	/* target should not be an ancestor of source */
-> -	error = -ENOTEMPTY;
-> +	error = overwrite ? -ENOTEMPTY : -EINVAL;
->  	if (new_dentry == trap)
->  		goto exit5;
->  
-> @@ -4128,8 +4192,15 @@ retry:
->  				     &newnd.path, new_dentry);
->  	if (error)
->  		goto exit5;
-> -	error = vfs_rename(old_dir->d_inode, old_dentry,
-> -				   new_dir->d_inode, new_dentry);
-> +	if (!overwrite) {
-> +		error = security_path_rename(&newnd.path, new_dentry,
-> +					     &oldnd.path, old_dentry);
-> +		if (error)
-> +			goto exit5;
-> +	}
-> +
-> +	error = vfs_rename2(old_dir->d_inode, old_dentry,
-> +			    new_dir->d_inode, new_dentry, flags);
->  exit5:
->  	dput(new_dentry);
->  exit4:
-> @@ -4154,9 +4225,15 @@ exit:
->  	return error;
->  }
->  
-> +SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
-> +		int, newdfd, const char __user *, newname)
-> +{
-> +	return sys_renameat2(olddfd, oldname, newdfd, newname, 0);
-> +}
-> +
->  SYSCALL_DEFINE2(rename, const char __user *, oldname, const char __user *, newname)
->  {
-> -	return sys_renameat(AT_FDCWD, oldname, AT_FDCWD, newname);
-> +	return sys_renameat2(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
->  }
->  
->  int vfs_readlink(struct dentry *dentry, char __user *buffer, int buflen, const char *link)
-> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-> index 59066e0..ce5ebed 100644
-> --- a/include/linux/dcache.h
-> +++ b/include/linux/dcache.h
-> @@ -297,6 +297,7 @@ extern void dentry_update_name_case(struct dentry *, struct qstr *);
->  
->  /* used for rename() and baskets */
->  extern void d_move(struct dentry *, struct dentry *);
-> +extern void d_exchange(struct dentry *, struct dentry *);
->  extern struct dentry *d_ancestor(struct dentry *, struct dentry *);
->  
->  /* appendix may either be NULL or be used for transname suffixes */
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 3f40547..71c6cf9 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1572,6 +1572,8 @@ struct inode_operations {
->  	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
->  	int (*rename) (struct inode *, struct dentry *,
->  			struct inode *, struct dentry *);
-> +	int (*rename2) (struct inode *, struct dentry *,
-> +			struct inode *, struct dentry *, unsigned int);
->  	int (*setattr) (struct dentry *, struct iattr *);
->  	int (*getattr) (struct vfsmount *mnt, struct dentry *, struct kstat *);
->  	int (*setxattr) (struct dentry *, const char *,const void *,size_t,int);
-> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-> index 6c28b61..ebdafb6 100644
-> --- a/include/uapi/linux/fs.h
-> +++ b/include/uapi/linux/fs.h
-> @@ -35,6 +35,8 @@
->  #define SEEK_HOLE	4	/* seek to the next hole */
->  #define SEEK_MAX	SEEK_HOLE
->  
-> +#define RENAME_EXCHANGE	(1 << 0)	/* Exchange source and dest */
-> +
->  struct fstrim_range {
->  	__u64 start;
->  	__u64 len;
-> -- 
-> 1.8.1.4
-> 
+A common use-case for this would be devices that are logically
+represented as a collection of drivers within Linux but are are
+presented as a single device from device tree. It this case it is
+necessary for each sub device to locate their supply data on the main
+device.
+
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+
+Hi Mark,
+
+Following our discussions around the Arizona regulator
+bindings here is an effort at putting a mechanism into the
+regulator core to alias registering of a supply from one
+device to another.
+
+I have a couple of patches that update the Arizona driver to
+use this that I will send in if you think this looks along
+the lines of what you were suggesting.
+
+Thanks,
+Charles
+
+ drivers/regulator/core.c           |   93 ++++++++++++++++++++++++++++++++++++
+ include/linux/regulator/consumer.h |   17 +++++++
+ 2 files changed, 110 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 6333080..e9f11f0 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -53,6 +53,7 @@ static DEFINE_MUTEX(regulator_list_mutex);
+ static LIST_HEAD(regulator_list);
+ static LIST_HEAD(regulator_map_list);
+ static LIST_HEAD(regulator_ena_gpio_list);
++static LIST_HEAD(regulator_supply_alias_list);
+ static bool has_full_constraints;
+ 
+ static struct dentry *debugfs_root;
+@@ -82,6 +83,18 @@ struct regulator_enable_gpio {
+ 	unsigned int ena_gpio_invert:1;
+ };
+ 
++/*
++ * struct regulator_supply_alias
++ *
++ * Used to map lookups for a supply onto an alternative device.
++ */
++struct regulator_supply_alias {
++	struct list_head list;
++	struct device *dev;
++	const char *supply;
++	struct device *alias;
++};
++
+ static int _regulator_is_enabled(struct regulator_dev *rdev);
+ static int _regulator_disable(struct regulator_dev *rdev);
+ static int _regulator_get_voltage(struct regulator_dev *rdev);
+@@ -1208,6 +1221,28 @@ static int _regulator_get_enable_time(struct regulator_dev *rdev)
+ 	return rdev->desc->ops->enable_time(rdev);
+ }
+ 
++static inline int regulator_supply_alias_match(struct device *dev,
++					       const char *supply,
++					       struct regulator_supply_alias *map)
++{
++	return map->dev == dev && strcmp(map->supply, supply) == 0;
++}
++
++static struct device *regulator_supply_alias(struct device *dev,
++					     const char *supply)
++{
++	struct regulator_supply_alias *map;
++
++	list_for_each_entry(map, &regulator_supply_alias_list, list)
++		if (regulator_supply_alias_match(dev, supply, map)) {
++			dev_dbg(dev, "Mapping supply %s to %s\n",
++				supply, dev_name(map->alias));
++			return map->alias;
++		}
++
++	return dev;
++}
++
+ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
+ 						  const char *supply,
+ 						  int *ret)
+@@ -1217,6 +1252,8 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
+ 	struct regulator_map *map;
+ 	const char *devname = NULL;
+ 
++	dev = regulator_supply_alias(dev, supply);
++
+ 	/* first do a dt based lookup */
+ 	if (dev && dev->of_node) {
+ 		node = of_get_regulator(dev, supply);
+@@ -1470,6 +1507,62 @@ void regulator_put(struct regulator *regulator)
+ }
+ EXPORT_SYMBOL_GPL(regulator_put);
+ 
++/**
++ * regulator_register_supply_alias - Provide device alias for supply lookup
++ * @dev: device that will be given as the regulator "consumer"
++ * @id: Supply name or regulator ID.
++ * @alias: device that should be used to lookup the supply
++ *
++ * All lookups for id on dev will instead be conducted on for id on alias.
++ */
++int regulator_register_supply_alias(struct device *dev, const char *id,
++				    struct device *alias)
++{
++	struct regulator_supply_alias *map;
++
++	list_for_each_entry(map, &regulator_supply_alias_list, list)
++		if (regulator_supply_alias_match(dev, id, map))
++			return -EEXIST;
++
++	map = kzalloc(sizeof(struct regulator_supply_alias), GFP_KERNEL);
++	if (!map)
++		return -ENOMEM;
++
++	map->dev = dev;
++	map->supply = id;
++	map->alias = alias;
++
++	list_add(&map->list, &regulator_supply_alias_list);
++
++	pr_info("Adding alias for supply %s: %s -> %s\n",
++		id, dev_name(dev), dev_name(alias));
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(regulator_register_supply_alias);
++
++/**
++ * regulator_unregister_supply_alias - Remove device alias
++ * @dev: device that will be given as the regulator "consumer"
++ * @id: Supply name or regulator ID.
++ *
++ * Remove a lookup alias if one exists for id on dev.
++ */
++int regulator_unregister_supply_alias(struct device *dev, const char *id)
++{
++	struct regulator_supply_alias *map;
++
++	list_for_each_entry(map, &regulator_supply_alias_list, list)
++		if (regulator_supply_alias_match(dev, id, map)) {
++			list_del(&map->list);
++			kfree(map);
++			return 0;
++		}
++
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(regulator_unregister_supply_alias);
++
+ /* Manage enable GPIO list. Same GPIO pin can be shared among regulators */
+ static int regulator_ena_gpio_request(struct regulator_dev *rdev,
+ 				const struct regulator_config *config)
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index 27be915..622d81e 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -146,6 +146,10 @@ struct regulator *__must_check devm_regulator_get_optional(struct device *dev,
+ void regulator_put(struct regulator *regulator);
+ void devm_regulator_put(struct regulator *regulator);
+ 
++int regulator_register_supply_alias(struct device *dev, const char *id,
++				    struct device *alias);
++int regulator_unregister_supply_alias(struct device *dev, const char *id);
++
+ /* regulator output control and status */
+ int __must_check regulator_enable(struct regulator *regulator);
+ int regulator_disable(struct regulator *regulator);
+@@ -250,6 +254,19 @@ static inline void devm_regulator_put(struct regulator *regulator)
+ {
+ }
+ 
++static inline int regulator_register_supply_alias(struct device *dev,
++						  const char *id,
++						  struct device *alias)
++{
++	return 0;
++}
++
++static inline int regulator_unregister_supply_alias(struct device *dev,
++						    const char *id)
++{
++	return 0;
++}
++
+ static inline int regulator_enable(struct regulator *regulator)
+ {
+ 	return 0;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.2.5
+
