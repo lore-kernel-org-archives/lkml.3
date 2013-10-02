@@ -1,106 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3JBRFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:05:31 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43290 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753634Ab3JBRF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:05:28 -0400
-Date: Wed, 2 Oct 2013 19:05:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
-Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
-Message-ID: <20131002170522.GA20647@pd.tnic>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <1379602494-26684-12-git-send-email-bp@alien8.de>
- <20130921113929.GB1587@pd.tnic>
- <20130922123515.GA7476@dhcp-16-126.nay.redhat.com>
- <20130922133722.GC28718@pd.tnic>
- <1ba7eca6-419c-4181-9927-9ba0927a6abf@email.android.com>
- <20130924025209.GA5561@dhcp-16-126.nay.redhat.com>
- <2d27a1bc-eabf-4d45-8303-27ae58511b11@email.android.com>
- <20131002100426.GB20568@pd.tnic>
- <524C3F38.6050507@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <524C3F38.6050507@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754499Ab3JBRGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:06:55 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25721 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753937Ab3JBRGx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:06:53 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 56/77] nvme: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:49:12 +0200
+Message-Id: <e8ea98c33d82a110db6bfdda092402ef45692f43.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 08:43:52AM -0700, H. Peter Anvin wrote:
-> On 10/02/2013 03:04 AM, Borislav Petkov wrote:
-> > When we start allocating from -4G, i.e. 0xffffffff00000000, I think we
-> > want to do it bottom-up so that 0xffffffff00000000 is the *last*, i.e.
-> > lowest address. Because we link the kernel text at 0xffffffff81000000 by
-> > default, which would mean, if -4G was the first address, we'll have only
-> > 2G:
-> 
-> Right.
+As result of recent re-design of the MSI/MSI-X interrupts enabling
+pattern this driver has to be updated to use the new technique to
+obtain a optimal number of MSI/MSI-X interrupts required.
 
-Btw, Matt just found another issue with the bottom-up approach - due to
-different alignment of VA and PA addresses, this messes up the pagetable
-in terms of the order in which we're using 4K, 2M, etc pages.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/block/nvme-core.c |   48 +++++++++++++++++++++++---------------------
+ 1 files changed, 25 insertions(+), 23 deletions(-)
 
-What can happen is that, you can get a non-2M aligned PA mapped with
-2M-aligned VA which results in a #PF with PF_RSVD set, which most likely
-happens because one or more of the bits in the [12:20] slice of the PMD
-are reserved but they get set due to the PA having address bits set in
-the aforementioned slice and thus a #PF is raised.
-
-So we changed the mapping method to a more straight-forward one: we map
-all EFI regions in the following range:
-
-[ efi_va - -4G ]
-
-and we compute efi_va by subtracting the highest EFI region address from
--4G, i.e. 0xffff_ffff_0000_0000.
-
-Then, each VA is computed by doing efi_va + PA.
-
-Basically, we have a non-contiguous window in the virtual address space
-with the highest address of it being -4G. In OVMF, f.e., we get the
-following mappings:
-
-VA: 0xfffffffe80800000..0xfffffffe81000000 -> PA: 0x800000..0x1000000
-VA: 0xfffffffefc000000..0xfffffffefc020000 -> PA: 0x7c000000..0x7c020000
-VA: 0xfffffffefdc5b000..0xfffffffefe146000 -> PA: 0x7dc5b000..0x7e146000
-
-...
-
-VA: 0xfffffffeffa65000..0xfffffffefffe0000 -> PA: 0x7fa65000..0x7ffe0000
-VA: 0xfffffffefffe0000..0xffffffff00000000 -> PA: 0x7ffe0000..0x80000000
-
-So, basically, the EFI regions occupy a 2Gish window with holes in the
-range:
-
-[ 0xfffffffe80800000 - 0xffffffff00000000 )
-
-and since we said, we want to give the whole EFI memmap 64G max, that
-should be ok.
-
-Oh, and the alignment remains compatible this way.
-
-So this mapping scheme - courtesy of Matt - is very straight-forward
-and simple and I like simple. This way we won't need the setup_data
-games with kexec tools as we'll be simply doing the same mappings in the
-kexec'ed kernel.
-
-Anyway, I'll clean up the patch and send it out later.
-
-Thanks.
-
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index da52092..f69d7af 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1774,34 +1774,36 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
+ 	/* Deregister the admin queue's interrupt */
+ 	free_irq(dev->entry[0].vector, dev->queues[0]);
+ 
+-	vecs = nr_io_queues;
++	result = pci_msix_table_size(pdev);
++	if (result < 0)
++		goto msi;
++
++	vecs = min(result, nr_io_queues);
+ 	for (i = 0; i < vecs; i++)
+ 		dev->entry[i].entry = i;
+-	for (;;) {
+-		result = pci_enable_msix(pdev, dev->entry, vecs);
+-		if (result <= 0)
+-			break;
+-		vecs = result;
+-	}
+ 
+-	if (result < 0) {
+-		vecs = nr_io_queues;
+-		if (vecs > 32)
+-			vecs = 32;
+-		for (;;) {
+-			result = pci_enable_msi_block(pdev, vecs);
+-			if (result == 0) {
+-				for (i = 0; i < vecs; i++)
+-					dev->entry[i].vector = i + pdev->irq;
+-				break;
+-			} else if (result < 0) {
+-				vecs = 1;
+-				break;
+-			}
+-			vecs = result;
+-		}
++	result = pci_enable_msix(pdev, dev->entry, vecs);
++	if (result == 0)
++		goto irq;
++
++ msi:
++	result = pci_get_msi_cap(pdev);
++	if (result < 0)
++		goto no_msi;
++
++	vecs = min(result, nr_io_queues);
++
++	result = pci_enable_msi_block(pdev, vecs);
++	if (result == 0) {
++		for (i = 0; i < vecs; i++)
++			dev->entry[i].vector = i + pdev->irq;
++		goto irq;
+ 	}
+ 
++ no_msi:
++	vecs = 1;
++
++ irq:
+ 	/*
+ 	 * Should investigate if there's a performance win from allocating
+ 	 * more queues than interrupt vectors; it might allow the submission
 -- 
-Regards/Gruss,
-    Boris.
+1.7.7.6
 
-Sent from a fat crate under my desk. Formatting is fine.
---
