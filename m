@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab3JBJgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 05:36:46 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:58131 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752837Ab3JBJgn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 05:36:43 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        "kernel@stlinux.com" <kernel@stlinux.com>
-Date: Wed, 2 Oct 2013 11:35:55 +0200
-Subject: Re: [PATCH 1/4] i2c: busses: i2c-st: Add ST I2C controller
-Thread-Topic: [PATCH 1/4] i2c: busses: i2c-st: Add ST I2C controller
-Thread-Index: Ac6/UsuKhEYz6Jg2T76rP5eBUGnNQg==
-Message-ID: <524BE8FB.40000@st.com>
-References: <1380623952-4252-1-git-send-email-maxime.coquelin@st.com>
- <1380623952-4252-2-git-send-email-maxime.coquelin@st.com>
- <524B346C.8070607@wwwdotorg.org> <524BDB00.3010508@st.com>
- <20131002090257.GA3059@katana>
-In-Reply-To: <20131002090257.GA3059@katana>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1753268Ab3JBJm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 05:42:28 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:42613 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab3JBJmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 05:42:25 -0400
+Date: Wed, 2 Oct 2013 11:42:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf tool: simplify a git command in PERF-VERSION-GEN
+Message-ID: <20131002094220.GA9358@gmail.com>
+References: <1380702502-9171-1-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380702502-9171-1-git-send-email-artagnon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 10/02/2013 11:02 AM, Wolfram Sang wrote:
->>>> +Optional properties :
->>>> +- i2c-min-scl-pulse-width-us : The minimum valid SCL pulse width that is allowed
->>>> +  through the deglitch circuit. In units of us.
->>>> +- i2c-min-sda-pulse-width-us : The minimum valid SDA pulse width that is allowed
->>>> +  through the deglitch circuit. In units of us.
->>> Are those properties specific to this binding, or intended to be
->>> generic? If specific to this binding, a vendor prefix should be present
->>> in the property name. If not, you probably want to document the
->>> properties in some common file.
->> Ok.
->> In last revision, I put this properties as specific to this binding.
->> Wolfram proposed to make this generic, but it looks like this IP is the
->> only one
->> needing such properties.
->>
->> Wolfram, what would you advise?
-> It might be the only SoC now, but I could imagine that other will have
-> something similar in the future. I am not perfectly sure, though. So, I
-> asked for opinions from DT experts when I suggested those bindings. We
-> could start with vendor specific bindings and generalize them later if
-> similar ones appear. Yet my experience is that old drivers rarely get
-> converted to the new bindings.
-Ok.
-But if I start with vendor specific bindings, we will have to support it
-forever, right?
->
->> If you still prefer to make this properties generics, in which file should I
->> document it? I don't see any common i2c binding document for now.
-> Yeah, it is missing sadly. That's on my todo-list, like many other
-> things...
-OK :-)
+* Ramkumar Ramachandra <artagnon@gmail.com> wrote:
+
+> Replace a complex git log invocation with a simpler git rev-parse
+> invocation.
+> 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> ---
+>  tools/perf/util/PERF-VERSION-GEN | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+> index 15a77b7..b23d11b 100755
+> --- a/tools/perf/util/PERF-VERSION-GEN
+> +++ b/tools/perf/util/PERF-VERSION-GEN
+> @@ -18,7 +18,7 @@ TAG=
+>  if test -d ../../.git -o -f ../../.git
+>  then
+>  	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
+> -	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
+> +	CID=$(git rev-parse --short HEAD 2>/dev/null) && CID="-g$CID"
+
+This shaves 4 milliseconds off the build time as well.
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
 Thanks,
 
-Maxime
+	Ingo
