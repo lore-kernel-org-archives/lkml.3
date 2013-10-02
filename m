@@ -1,147 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab3JBR3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:29:47 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26202 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754164Ab3JBR3p (ORCPT
+	id S1755317Ab3JBR3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:29:55 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:35213 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab3JBR3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:29:45 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 14/77] bnx2x: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:30 +0200
-Message-Id: <1a91f00e27e06e93806bd8af34fccd580ec68585.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 13:29:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+References: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+	<CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
+	<20131002133759.GH28601@twins.programming.kicks-ass.net>
+	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+Date: Wed, 2 Oct 2013 10:29:51 -0700
+X-Google-Sender-Auth: PzJ9evVsvDa_wDM1O954QNM5hb0
+Message-ID: <CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Kees Cook <keescook@chromium.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wed, Oct 2, 2013 at 10:20 AM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Oct 2, 2013 at 7:14 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Oct 2, 2013 at 6:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Wed, Oct 02, 2013 at 03:13:16PM +0200, Stephane Eranian wrote:
+>>>> On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>> > On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>>>> >> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>> >> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>>>> >> >>  - then there are timing attacks, and someone having access to a PMU
+>>>> >> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>>>> >> >>    local context can run very accurate and low noise timing attacks...
+>>>> >> >>
+>>>> >> >>    I don't think the kernel's sha_transform() is hardened against timing
+>>>> >> >>    attacks, it's performance optimized so it has variable execution time
+>>>> >> >>    highly dependent on plaintext input - which leaks information about the
+>>>> >> >>    plaintext.
+>>>> >> >
+>>>> >> > Typical user doesn't have enough priv to profile kernel space; once you
+>>>> >> > do you also have enough priv to see kernel addresses outright (ie.
+>>>> >> > kallsyms etc..).
+>>>> >> >
+>>>> >> I was going to say just that. But that's not the default, paranoid level
+>>>> >> is at 1 by default and not 2. So I supposedly can still do:
+>>>> >>
+>>>> >> $ perf record -e cycles ......
+>>>> >>
+>>>> >> In per-thread mode and collect kernel level addresses.
+>>>> >
+>>>> > Oh right you are.. so yes that's a very viable avenue.
+>>>>
+>>>> You mean simply encoding the vma->vm_mm as the ino number, for instance.
+>>>
+>>> Nah.. I think Kees would very much shoot us on the spot for doing that.
+>>> But with the paranoid level defaulting to 1 the PMU attack on the kernel
+>>> SHA implenentation is feasible.
+>>
+>> We already have other kernel address leaks (e.g. heap addresses via
+>> INET_DIAG), and I'd like to avoid adding more. It'd be nice if there
+>> was a common way to uniquely mask these values that are really just
+>> "handles". We could use it both here and in the network code.
+>>
+>> Would it be possible to just have a "regular" incrementing handle,
+>> like fd, or are we talking about doing that map for all VMAs, which
+>> would make that mapping unfeasible due to storage needs?
+>>
+> All we need is a way to report that two vmas point to the same
+> vma->vm_mm, i..e, same physical data. If I understand what
+> you are suggesting, you'd add some sort of generation number
+> to the vm_mm. Each new vm_mm gets a new number. That
+> would work, I think. No kernel addresses reported directly nor
+> hashed.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   54 ++++++++++-------------
- 1 files changed, 23 insertions(+), 31 deletions(-)
+Right. Is that workable? It sounds like this handle is only needed at
+inspection time, though. Is this uniqueness test limited to a single
+process, or is this uniqueness test across processes?
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 61726af..edf31d2 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -1564,7 +1564,7 @@ void bnx2x_free_irq(struct bnx2x *bp)
- 
- int bnx2x_enable_msix(struct bnx2x *bp)
- {
--	int msix_vec = 0, i, rc;
-+	int msix_vec = 0, nvec, i, rc;
- 
- 	/* VFs don't have a default status block */
- 	if (IS_PF(bp)) {
-@@ -1590,60 +1590,52 @@ int bnx2x_enable_msix(struct bnx2x *bp)
- 		msix_vec++;
- 	}
- 
-+	rc = pci_msix_table_size(bp->pdev);
-+	if (rc < 0)
-+		goto no_msix;
-+
-+	nvec = min(msix_vec, rc);
-+	if (nvec < BNX2X_MIN_MSIX_VEC_CNT(bp))
-+		nvec = 1;
-+
- 	DP(BNX2X_MSG_SP, "about to request enable msix with %d vectors\n",
- 	   msix_vec);
- 
--	rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], msix_vec);
-+	rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], nvec);
-+	if (rc)
-+		goto no_msix;
- 
- 	/*
- 	 * reconfigure number of tx/rx queues according to available
- 	 * MSI-X vectors
- 	 */
--	if (rc >= BNX2X_MIN_MSIX_VEC_CNT(bp)) {
--		/* how less vectors we will have? */
--		int diff = msix_vec - rc;
--
--		BNX2X_DEV_INFO("Trying to use less MSI-X vectors: %d\n", rc);
-+	if (nvec == 1) {
-+		bp->flags |= USING_SINGLE_MSIX_FLAG;
- 
--		rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], rc);
-+		bp->num_ethernet_queues = 1;
-+		bp->num_queues = bp->num_ethernet_queues + bp->num_cnic_queues;
-+	} else if (nvec < msix_vec) {
-+		/* how less vectors we will have? */
-+		int diff = msix_vec - nvec;
- 
--		if (rc) {
--			BNX2X_DEV_INFO("MSI-X is not attainable rc %d\n", rc);
--			goto no_msix;
--		}
- 		/*
- 		 * decrease number of queues by number of unallocated entries
- 		 */
- 		bp->num_ethernet_queues -= diff;
- 		bp->num_queues = bp->num_ethernet_queues + bp->num_cnic_queues;
-+	}
- 
-+	if (nvec != msix_vec)
- 		BNX2X_DEV_INFO("New queue configuration set: %d\n",
- 			       bp->num_queues);
--	} else if (rc > 0) {
--		/* Get by with single vector */
--		rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], 1);
--		if (rc) {
--			BNX2X_DEV_INFO("Single MSI-X is not attainable rc %d\n",
--				       rc);
--			goto no_msix;
--		}
--
--		BNX2X_DEV_INFO("Using single MSI-X vector\n");
--		bp->flags |= USING_SINGLE_MSIX_FLAG;
--
--		BNX2X_DEV_INFO("set number of queues to 1\n");
--		bp->num_ethernet_queues = 1;
--		bp->num_queues = bp->num_ethernet_queues + bp->num_cnic_queues;
--	} else if (rc < 0) {
--		BNX2X_DEV_INFO("MSI-X is not attainable  rc %d\n", rc);
--		goto no_msix;
--	}
- 
- 	bp->flags |= USING_MSIX_FLAG;
- 
- 	return 0;
- 
- no_msix:
-+	BNX2X_DEV_INFO("MSI-X is not attainable rc %d\n", rc);
-+
- 	/* fall to INTx if not enough memory */
- 	if (rc == -ENOMEM)
- 		bp->flags |= DISABLE_MSI_FLAG;
+-Kees
+
 -- 
-1.7.7.6
-
+Kees Cook
+Chrome OS Security
