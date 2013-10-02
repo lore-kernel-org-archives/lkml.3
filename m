@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab3JBWj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 18:39:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47427 "EHLO mga02.intel.com"
+	id S1753646Ab3JBWpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 18:45:51 -0400
+Received: from ozlabs.org ([203.10.76.45]:41317 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405Ab3JBWin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 18:38:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
-   d="scan'208";a="413212347"
-Subject: [PATCH v8 2/9] rwsem: remove 'out' label in do_wake
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <cover.1380748401.git.tim.c.chen@linux.intel.com>
-References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Oct 2013 15:38:22 -0700
-Message-ID: <1380753502.11046.84.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752949Ab3JBWpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 18:45:49 -0400
+Date: Thu, 3 Oct 2013 08:45:42 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Gleb Natapov <gleb@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
+Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
+ some powernv systems
+Message-ID: <20131002224542.GA10016@iris.ozlabs.ibm.com>
+References: <20131002050940.GA25363@drongo>
+ <524BDD73.3020106@redhat.com>
+ <1380704789.645.57.camel@pasglop>
+ <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
+ <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
+ <20131002100224.GF17294@redhat.com>
+ <1380722275.12149.28.camel@concordia>
+ <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de>
+ <524C2EAE.7090209@redhat.com>
+ <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That make code simple and more readable.
+On Wed, Oct 02, 2013 at 04:36:05PM +0200, Alexander Graf wrote:
+> 
+> On 02.10.2013, at 16:33, Paolo Bonzini wrote:
+> 
+> > Il 02/10/2013 16:08, Alexander Graf ha scritto:
+> >>> The hwrng is accessible by host userspace via /dev/mem.
+> >> 
+> >> A guest should live on the same permission level as a user space
+> >> application. If you run QEMU as UID 1000 without access to /dev/mem, why
+> >> should the guest suddenly be able to directly access a memory location
+> >> (MMIO) it couldn't access directly through a normal user space interface.
+> >> 
+> >> It's basically a layering violation.
+> > 
+> > With Michael's earlier patch in this series, the hwrng is accessible by
+> > host userspace via /dev/hwrng, no?
+> 
+> Yes, but there's not token from user space that gets passed into the kernel to check whether access is ok or not. So while QEMU may not have permission to open /dev/hwrng it could spawn a guest that opens it, drains all entropy out of it and thus stall other processes which try to fetch entropy, no?
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- lib/rwsem.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Even if you drain all entropy out of it, wait 64 microseconds and it
+will be full again. :)  Basically it produces 64 bits every
+microsecond and puts that in a 64 entry x 64-bit FIFO buffer, which is
+what is read by the MMIO.  So there is no danger of stalling other
+processes for any significant amount of time.
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 19c5fa9..42f1b1a 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -75,7 +75,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 			 * will block as they will notice the queued writer.
- 			 */
- 			wake_up_process(waiter->task);
--		goto out;
-+		return sem;
- 	}
- 
- 	/* Writers might steal the lock before we grant it to the next reader.
-@@ -91,7 +91,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 			/* A writer stole the lock. Undo our reader grant. */
- 			if (rwsem_atomic_update(-adjustment, sem) &
- 						RWSEM_ACTIVE_MASK)
--				goto out;
-+				return sem;
- 			/* Last active locker left. Retry waking readers. */
- 			goto try_reader_grant;
- 		}
-@@ -136,7 +136,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
- 	sem->wait_list.next = next;
- 	next->prev = &sem->wait_list;
- 
-- out:
- 	return sem;
- }
- 
--- 
-1.7.4.4
-
-
-
+Paul.
