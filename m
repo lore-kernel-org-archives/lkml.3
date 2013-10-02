@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3JBOiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:38:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409Ab3JBOiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:38:14 -0400
-Message-ID: <524C2FDB.4080203@redhat.com>
-Date: Wed, 02 Oct 2013 16:38:19 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Michael Ellerman <michael@ellerman.id.au>, Gleb Natapov <gleb@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        mpm@selenic.com, herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
- some powernv systems
-References: <5243F933.7000907@redhat.com> <20131001083426.GB27484@concordia> <20131001083908.GA17294@redhat.com> <1380620338.645.22.camel@pasglop> <524AAFAA.3010801@redhat.com> <20131002050940.GA25363@drongo> <524BDD73.3020106@redhat.com> <1380704789.645.57.camel@pasglop> <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de> <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de> <20131002100224.GF17294@redhat.com> <1380722275.12149.28.camel@concordia> <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de> <524C2EAE.7090209@redhat.com> <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
-In-Reply-To: <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753551Ab3JBOlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:41:20 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:54729 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab3JBOlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:41:17 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tom Gundersen <teg@jklm.no>, Pavel Roskin <proski@gnu.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        x86@kernel.org, David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH] x86: sysfb: mark simplefb resources as BUSY
+Date: Wed,  2 Oct 2013 16:41:04 +0200
+Message-Id: <1380724864-1757-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/10/2013 16:36, Alexander Graf ha scritto:
->> > 
->> > With Michael's earlier patch in this series, the hwrng is accessible by
->> > host userspace via /dev/hwrng, no?
-> Yes, but there's not token from user space that gets passed into the
-> kernel to check whether access is ok or not. So while QEMU may not have
-> permission to open /dev/hwrng it could spawn a guest that opens it,
-> drains all entropy out of it and thus stall other processes which try to
-> fetch entropy, no?
-> 
-> Maybe I haven't fully grasped the interface yet though :).
+IORESOURCE_BUSY is used to mark temporary driver mem-resources instead of
+global regions. This suppresses warnings if regions overlap with a region
+marked as BUSY.
 
-Yes, that's right.  I don't think it's a huge problem, but it's another
-point in favor of just doing the hypercall in userspace.
+This was always the case for VESA/VGA/EFI framebuffer regions so do the
+same for simplefb regions. The reason we do this is to allow device
+handover to real GPU drivers like i915/radeon/nouveau which get the same
+regions via PCI BARs. Maybe at some point we will be able to unregister
+platform devices properly during the handover. In this case the simplefb
+region would get removed before the new region is created. However, this
+is currently not the case and would require rather huge changes in
+remove_conflicting_framebuffers(). Add the BUSY marker now and try to
+eventually rewrite the handover for a next release.
 
-Paolo
+Also see kernel/resource.c for more information:
+  /*
+   * if a resource is "BUSY", it's not a hardware resource
+   * but a driver mapping of such a resource; we don't want
+   * to warn for those; some drivers legitimately map only
+   * partial hardware resources. (example: vesafb)
+   */
+
+This suppresses warnings like:
+  ------------[ cut here ]------------
+  WARNING: CPU: 2 PID: 199 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x2e3/0x390()
+  Info: mapping multiple BARs. Your kernel is fine.
+  Call Trace:
+    dump_stack+0x54/0x8d
+    warn_slowpath_common+0x7d/0xa0
+    warn_slowpath_fmt+0x4c/0x50
+    iomem_map_sanity_check+0xac/0xe0
+    __ioremap_caller+0x2e3/0x390
+    ioremap_wc+0x32/0x40
+    i915_driver_load+0x670/0xf50 [i915]
+    ...
+
+Reported-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Tested-by: Tom Gundersen <teg@jklm.no>
+Tested-by: Pavel Roskin <proski@gnu.org>
+---
+Hi
+
+Sorry for the delay, but I was in the US for the last 2 weeks and this is really
+no major issue, just suppresses a warning that says "Your kernel is fine".
+Anyhow, thanks to Tom and Pavel for reporting and testing this! This is
+targeted at 3.12-rc4 as bugfix. I think it's still early/mid rc-stage and is a
+one-line patch so it should be fine, right?
+
+Thanks
+David
+
+ arch/x86/kernel/sysfb_simplefb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+index 22513e9..b7bb615 100644
+--- a/arch/x86/kernel/sysfb_simplefb.c
++++ b/arch/x86/kernel/sysfb_simplefb.c
+@@ -79,7 +79,7 @@ __init int create_simplefb(const struct screen_info *si,
+ 
+ 	/* setup IORESOURCE_MEM as framebuffer memory */
+ 	memset(&res, 0, sizeof(res));
+-	res.flags = IORESOURCE_MEM;
++	res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+ 	res.name = simplefb_resname;
+ 	res.start = si->lfb_base;
+ 	res.end = si->lfb_base + len - 1;
+-- 
+1.8.4
+
