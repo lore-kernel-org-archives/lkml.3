@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3JBQrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:47:46 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24804 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754199Ab3JBQrn (ORCPT
+	id S1754347Ab3JBQtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:49:21 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:49067 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab3JBQtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:47:43 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 16/77] cciss: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:32 +0200
-Message-Id: <0498333a0ddc360d43d4496310917a5d0f9a51fd.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 12:49:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1472934.KdmdpVCX1h@vostro.rjw.lan>
+References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
+	<2382588.IckWbq3JRN@vostro.rjw.lan>
+	<CAKohpomoqp0dtS+TG-Johsh=o6VefeqByD0bM_DLXg+qYhQ5+g@mail.gmail.com>
+	<1472934.KdmdpVCX1h@vostro.rjw.lan>
+Date: Wed, 2 Oct 2013 22:19:18 +0530
+Message-ID: <CAKohpok2iwwhZbAZuawW-Ow4ofbGZpUj6Jn7A-F8C42yQ=rA7Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: make return type of lock_policy_rwsem_{read|write}()
+ as void
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jon Medhurst <tixy@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On 2 October 2013 22:08, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, October 02, 2013 02:13:36 PM Viresh Kumar wrote:
+>> On 30 September 2013 23:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Monday, September 16, 2013 08:40:17 PM Viresh Kumar wrote:
+>> >> lock_policy_rwsem_{read|write}() currently has return type of int but it always
+>> >> return zero and hence its return type must be void instead. This patch makes its
+>> >> return type void and fixes all users of it as well.
+>> >>
+>> >> Reported-by: Jon Medhurst<tixy@linaro.org>
+>> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> >
+>> > This doesn't apply to bleeding-edge for me any more after I have applied your
+>> > series of 44 patches to it.  Care to resend?
+>>
+>> Done..
+>
+> Which one is it?
+>
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/block/cciss.c |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index d2d95ff..80068a0 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4079,7 +4079,11 @@ static void cciss_interrupt_mode(ctlr_info_t *h)
- 		goto default_int_mode;
- 
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSIX)) {
--		err = pci_enable_msix(h->pdev, cciss_msix_entries, 4);
-+		err = pci_msix_table_size(h->pdev);
-+		if (err < ARRAY_SIZE(cciss_msix_entries))
-+			goto default_int_mode;
-+		err = pci_enable_msix(h->pdev, cciss_msix_entries,
-+				      ARRAY_SIZE(cciss_msix_entries));
- 		if (!err) {
- 			h->intr[0] = cciss_msix_entries[0].vector;
- 			h->intr[1] = cciss_msix_entries[1].vector;
-@@ -4088,15 +4092,8 @@ static void cciss_interrupt_mode(ctlr_info_t *h)
- 			h->msix_vector = 1;
- 			return;
- 		}
--		if (err > 0) {
--			dev_warn(&h->pdev->dev,
--				"only %d MSI-X vectors available\n", err);
--			goto default_int_mode;
--		} else {
--			dev_warn(&h->pdev->dev,
--				"MSI-X init failed %d\n", err);
--			goto default_int_mode;
--		}
-+		dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
-+		goto default_int_mode;
- 	}
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
- 		if (!pci_enable_msi(h->pdev))
--- 
-1.7.7.6
-
+ [PATCH RESEND 01/11] cpufreq: make return type of
+lock_policy_rwsem_{read|write}() as void
