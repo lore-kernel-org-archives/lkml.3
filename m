@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab3JBHFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:05:24 -0400
-Received: from p-mail1.rd.orange.com ([195.101.245.15]:25208 "EHLO
-	p-mail1.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab3JBHFV (ORCPT
+	id S1753285Ab3JBHGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:06:45 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:62521 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3JBHGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:05:21 -0400
-X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 03:05:20 EDT
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Dirk Gouders <dirk@gouders.net>
-Subject: Re: [PATCH 4/4] kconfig: remove unused definition from scanner
-Date: Wed, 2 Oct 2013 08:57:54 +0200
-User-Agent: KMail/1.13.5 (Linux/3.10.11-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
-Cc: Martin Walch <walch.martin@web.de>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <trivial@kernel.org>,
-        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Benjamin Poirier <bpoirier@suse.de>, Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <6249343.9Mjtul3lu5@tacticalops> <ghk3hwjhqk.fsf@lena.gouders.net>
-In-Reply-To: <ghk3hwjhqk.fsf@lena.gouders.net>
+	Wed, 2 Oct 2013 03:06:43 -0400
+Date: Wed, 2 Oct 2013 00:06:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+cc: Andrew Morton <akpm@linux-foundation.org>, oleg@redhat.com,
+        security@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: kthread: Make kthread_create() killable.
+In-Reply-To: <201310012220.EIE35417.HFOQLFSFMJOtOV@I-love.SAKURA.ne.jp>
+Message-ID: <alpine.DEB.2.02.1310012358140.20628@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1309251351001.27471@chino.kir.corp.google.com> <201309261159.BHB18780.OHLFQFMOOJSVtF@I-love.SAKURA.ne.jp> <alpine.DEB.2.02.1309261149050.10904@chino.kir.corp.google.com> <201309281618.JAG82364.VFMtSOOQOLFHJF@I-love.SAKURA.ne.jp>
+ <alpine.DEB.2.02.1309301441270.28109@chino.kir.corp.google.com> <201310012220.EIE35417.HFOQLFSFMJOtOV@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310020857.54800.yann.morin.1998@free.fr>
-X-OriginalArrivalTime: 02 Oct 2013 06:57:55.0538 (UTC) FILETIME=[B88AF320:01CEBF3C]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin, All,
+On Tue, 1 Oct 2013, Tetsuo Handa wrote:
 
-On Wednesday 02 October 2013 08:42:59 Dirk Gouders wrote:
-> Martin Walch <walch.martin@web.de> writes:
+> > Or, when the system doesn't respond for a long period of time you do 
+> > sysrq+T and you find the TIF_MEMDIE bit set on a process that makes no 
+> > progress exiting.
 > 
-> > From: Martin Walch <walch.martin@web.de>
-> > Date: Wed, 2 Oct 2013 06:58:46 +0200
-> > Subject: [PATCH 4/4] kconfig: remove unused definition from scanner
-> >
-> > The definition ws [ \n\t] is not used anywhere. Drop it to avoid confusion.
-> 
-> Hi Martin,
-> 
-> I think you should also regenerate the scanner and add
-> the new zconf.lex.c_shipped to this patch.
+> In enterprise systems, an operator is not always sitting in front of the server
+> for pressing sysrq keys (nor kept ssh session for issuing sysrq via procfs).
 
-I think sending the re-generated parser as a separate patch helps
-in reviewing. Ie. I'd prefer a fifth patch.
+We have a lot of machines and we collect netdumps from those that 
+encounter soft lockups, I haven't seen _any_ examples of the oom killer 
+stalling out because of wait_for_completion() in three years, period.
 
-BTW, regenerating the parser can be done with:
-    make REGENERATE_PARSERS=1 config
-
-Regards,
-Yann E. MORIN.
-
-> > Signed-off-by: Martin Walch <walch.martin@web.de>
-> > ---
-> >  scripts/kconfig/zconf.l | 1 -
-> >  1 file changed, 1 deletion(-)
-> >
-> > diff --git a/scripts/kconfig/zconf.l b/scripts/kconfig/zconf.l
-> > index 6555a47..1a9f53e 100644
-> > --- a/scripts/kconfig/zconf.l
-> > +++ b/scripts/kconfig/zconf.l
-> > @@ -68,7 +68,6 @@ static void alloc_string(const char *str, int size)
-> >  }
-> >  %}
-> >  
-> > -ws	[ \n\t]
-> >  n	[A-Za-z0-9_]
-> >  
-> >  %%
+> Such reports in real world might be rare, but I care potential bugs which can
+> affect availability of the server.
 > 
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
-| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
-| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
-'------------------------------'-------'------------------'--------------------'
+If you have a reproducible testcase or an example from the kernel log that 
+demonstrates this problem, please post it.
+
+> If local unprivileged users can execute their own programs, they can easily
+> freeze the server. Therefore, I test whether such freeze can happen using DoS
+> attacking programs executed by local unprivileged users. I confirmed that
+> request_module() can easily freeze the server and the request_module() case was
+> fixed as CVE-2012-4398. I confirmed that kthread_create() can freeze the server
+> (though not easy to trigger but can happen by chance) and posted a patch in
+> this thread.
+> 
+
+Right, and that issue required an instrumented kernel to impose a five 
+second delay for you to be able to test it.  I acked the patch.  I'm not 
+against fixing issues as they arise, I'm against time-based oom kill 
+mechanisms that (1) aren't guaranteed to solve the issue and (2) lead to 
+unnecessary memory killing or machine panic.
+
+> > process access to memory reserves does not allow it to exit in a short 
+> > amount of time, then it must be waiting on another process that also 
+> > cannot make forward process.
+> 
+> Yes. kthread_create(), do_coredump() and call_usermodehelper_keys() are
+> examples of such cases which I think I can trigger deadlock using DoS attacking
+> programs executed by local unprivileged users.
+> 
+
+I thought you had addressed the kthread_create() issue on 
+security@kernel.org, is it possible to address the others?
+
+> The chosen process was marked as TIF_MEMDIE because the process was consuming
+> most memory, but it does not mean that the process marked as TIF_MEMDIE itself
+> needs more memory. The process marked as TIF_MEMDIE may be simply waiting at
+> kthread_create() etc. where other process which is not marked as TIF_MEMDIE
+> depends on more memory.
+> 
+> Even if the process marked as TIF_MEMDIE is allowed to access reserved memory,
+> the process which really wants memory may not be marked as TIF_MEMDIE.
+> To be able to give the process which really wants memory chance to allocate
+> memory, memory pool via kernel thread might help.
+> 
+
+That may or may not work depending on whether other processes are 
+allocating memory or not, there's no guarantee that this pool of memory is 
+available only to the process needing to make progress, so it's not a 100% 
+solution and now we've allocated 1% of memory to a kthread needlessly in 
+99.999% of users who will never see this issue.
