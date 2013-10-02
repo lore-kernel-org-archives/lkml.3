@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3JBLUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 07:20:46 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:33553 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab3JBLUo convert rfc822-to-8bit (ORCPT
+	id S1753600Ab3JBLXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 07:23:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43184 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab3JBLXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 07:20:44 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/2] pinctrl: palmas: do not abort pin configuration for BIAS_DEFAULT
-Date: Wed, 2 Oct 2013 13:20:51 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1380199684-20126-1-git-send-email-ldewangan@nvidia.com> <5245AD0C.7070206@wwwdotorg.org> <CACRpkdbuetPbxPzJTpKuM4O-mqpqjh7rgGoanfAwad4M2vbZTQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbuetPbxPzJTpKuM4O-mqpqjh7rgGoanfAwad4M2vbZTQ@mail.gmail.com>
+	Wed, 2 Oct 2013 07:23:34 -0400
+Date: Wed, 2 Oct 2013 13:23:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+Message-ID: <20131002112316.GP3081@twins.programming.kicks-ass.net>
+References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+ <20130930161546.GG3081@twins.programming.kicks-ass.net>
+ <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+ <20130930165420.GI3081@twins.programming.kicks-ass.net>
+ <CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201310021320.51544.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 2. Oktober 2013, 12:40:14 schrieb Linus Walleij:
-> On Fri, Sep 27, 2013 at 6:06 PM, Stephen Warren <swarren@wwwdotorg.org> 
-wrote:
-> > [Laxman]
-> > 
-> >> Hmm.. When I added the PIN_DEFAULT, I just though that do not update
-> >> anything in the register and implemented like that.
-> >> There is nothing "default" option in HW.
-> > 
-> > The description of that pinconfig option is:
-> >> 7970cb77 (Heiko Stübner    2013-06-06 16:44:25 +0200  43)  *
-> >> @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down
-> >> based 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  44)  *   
-> >> on embedded knowledge of the controller hardware, like current mux
-> >> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  45)  *   
-> >> function. The pull direction and possibly strength too will normally
-> >> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  46)  *    be
-> >> decided completely inside the hardware block and not be readable
-> >> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  47)  *    from
-> >> the kernel side. 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200 
-> >> 48)  *    If the argument is != 0 pull up/down is enabled, if it is 0,
-> >> the 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  49)  *   
-> >> configuration is ignored. The proper way to disable it is to use
-> >> 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  50)  *   
-> >> @PIN_CONFIG_BIAS_DISABLE.
-> > 
-> > If the HW doesn't support any concept of a default pull, I think the
-> > driver shouldn't support that option; it should return an error if asked
-> > to program it.
+On Tue, Oct 01, 2013 at 01:22:58PM +0200, Stephane Eranian wrote:
+> > So the problem is that we don't have a user visible address space
+> > identifier; with CLONE_THREAD we have the thread group id that acts
+> > like this. But for bare CLONE_VM usage there's nothing afaik.
 > 
-> Yes that's how I remember it and how we specified it.
-> Correct Heiko?
+> 
+> From the tool's perspective, the MMAP2 record must contain enough information
+> to identify that the mapping points to the same physical pages in that
+> particular
+> case (multi-process + VM_CLONE). As we have it now all inode-related fields
+> are zero which is useless (indicates: no info). In other words, we need to make
+> up some unique number and stash it in the maj.min,ino triplet somehow.
 
-Correct. The option was/is meant for hardware that sets pull settings without 
-telling the kernel specifics and the kernel also not being able to influence 
-them.
+So the only thing I can come up with is something like the below;
+supposedly the sha hash mixing a boot time random seed and the mm
+pointer is enough to avoid it being a data leak.
 
+And of course there's the possibility of a collision.
 
-Heiko
+---
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -39,11 +39,15 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
++#include <linux/random.h>
++#include <linux/cryptohash.h>
+ 
+ #include "internal.h"
+ 
+ #include <asm/irq_regs.h>
+ 
++static u64 __perf_rand_seed;
++
+ struct remote_function_call {
+ 	struct task_struct	*p;
+ 	int			(*func)(void *info);
+@@ -5136,6 +5140,33 @@ static void perf_event_mmap_event(struct
+ 		min = MINOR(dev);
+ 
+ 	} else {
++		union {
++			struct {
++				u64 ino, gen;
++				u32 min;
++			};
++			u32 digest[SHA_DIGEST_WORDS];
++		} hash;
++		union {
++			struct {
++				u64 seed;
++				u64 ptr;
++			};
++			u8 message[SHA_MESSAGE_BYTES];
++		} data;
++		u32 workspace[SHA_WORKSPACE_WORDS];
++
++		memset(&data, 0, sizeof(data));
++		data.seed = __perf_rand_seed;
++		data.ptr = (u64)vma->vm_mm;
++
++		sha_init(hash.digest);
++		sha_transform(hash.digest, data.message, workspace);
++
++		gen = hash.gen;
++		ino = hash.ino;
++		min = hash.min;
++
+ 		if (arch_vma_name(mmap_event->vma)) {
+ 			name = strncpy(tmp, arch_vma_name(mmap_event->vma),
+ 				       sizeof(tmp) - 1);
+@@ -7895,6 +7926,8 @@ void __init perf_event_init(void)
+ 	/* do not patch jump label more than once per second */
+ 	jump_label_rate_limit(&perf_sched_events, HZ);
+ 
++	get_random_bytes(&__perf_rand_seed, sizeof(__perf_rand_seed));
++
+ 	/*
+ 	 * Build time assertion that we keep the data_head at the intended
+ 	 * location.  IOW, validation we got the __reserved[] size right.
