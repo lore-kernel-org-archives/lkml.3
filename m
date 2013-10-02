@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3JBRP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:15:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48604 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab3JBRPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:15:24 -0400
-Message-ID: <524C5484.5000601@ti.com>
-Date: Wed, 2 Oct 2013 13:14:44 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1754892Ab3JBRPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:15:34 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:15219 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab3JBRPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:15:32 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1019,1371081600"; 
+   d="scan'208";a="57044804"
+Date: Wed, 2 Oct 2013 18:14:47 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
-References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com>
-In-Reply-To: <20131002170917.GB30298@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH v6 10/19] xen: introduce xen_alloc/free_coherent_pages
+In-Reply-To: <20131002170747.GG29794@arm.com>
+Message-ID: <alpine.DEB.2.02.1310021814250.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-10-git-send-email-stefano.stabellini@eu.citrix.com> <20130930153143.GQ3106@phenom.dumpdata.com> <DB675896-3FF2-409B-A2C6-24295C197A3F@arm.com>
+ <alpine.DEB.2.02.1310021754580.26077@kaball.uk.xensource.com> <20131002170747.GG29794@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 October 2013 01:09 PM, Will Deacon wrote:
-> On Wed, Oct 02, 2013 at 05:55:28PM +0100, Santosh Shilimkar wrote:
->> The sched_clock code uses 2 levels of function pointers, sched_clock_func()
->> and read_sched_clock() but the no sched_clock check in postinit() just
->> checks read_sched_clock().
->>
->> This leads to kernel falling back to jiffy based sched clock even in
->> presence of sched_clock_func() which is not desirable.
->>
->> Fix the postinit() check to avoid the issue. Probably the issue is hidden
->> so far on most of the arm SOCs because of already existing sched_clock
->> registrations apart from arch_timer sched_clock. One can reproduce the
->> issue by just have arch_timer as sched_clock
+On Wed, 2 Oct 2013, Catalin Marinas wrote:
+> On Wed, Oct 02, 2013 at 06:03:46PM +0100, Stefano Stabellini wrote:
+> > On Tue, 1 Oct 2013, Catalin Marinas wrote:
+> > > On 30 Sep 2013, at 16:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > > > On Fri, Sep 27, 2013 at 05:09:58PM +0100, Stefano Stabellini wrote:
+> > > >> xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
+> > > >> and devices. On native x86 and ARMv8 is sufficient to call
+> > > >> __get_free_pages in order to get a coherent buffer, while on ARM we need
+> > > >> to call the native dma_ops->alloc implementation.
+> > > >> 
+> > > >> When arm64 stops using the swiotlb by default and starts having multiple
+> > > >> dma_ops implementations, we'll use __get_dma_ops there too.
+> > > > 
+> > > > I presume this is a future TODO, not some further patch (in which
+> > > > case you should say in here the title of it). If it is a TODO could
+> > > > you stick that in the sentence here somewhere to make it crytal clear that
+> > > > it is not implemented.
+> > > 
+> > > Thanks for pointing this out.  The arm64 patch shouldn't be different
+> > > from arm here.  I thought a subsequent patch already added
+> > > __get_dma_ops() for arm64.
+> > 
+> > Yes, the arm64 patch already added __get_dma_ops.
+> > 
+> > However I am not using __get_dma_ops to implement
+> > xen_alloc_coherent_pages for arm64 because I can just use
+> > __get_free_pages for the moment:
 > 
-> Isn't this just an issue with the arch timer driver not calling
-> setup_sched_clock? Instead, we munge around with sched_clock_func directly,
-> which doesn't appear to be the way anybody else deals with this.
-> 
-I thought about that option as well but was not sure since even in that case
-the check is not complete. We just ensure that function is popullated.
+> So why do the work twice when we'll get coherency maintenance in the DMA
+> ops?
 
-> I'm not sure of the history though, so perhaps there's a reason for this...
-> 
-Am curious as well.
-
-Regards,
-Santosh
+Yeah, good point.
