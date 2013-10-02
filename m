@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3JBKVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:21:06 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39593 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab3JBKVD (ORCPT
+	id S1753425Ab3JBKXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 06:23:46 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:48050 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab3JBKXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:21:03 -0400
-Date: Wed, 2 Oct 2013 11:20:37 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: spinlock contention of files->file_lock
-Message-ID: <20131002102037.GZ13318@ZenIV.linux.org.uk>
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
- <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
- <CA+55aFwWi-RveiuFEManbED3DcA76Cf3CKVXrrs5d5FvNgedOg@mail.gmail.com>
- <1380663718.19002.49.camel@edumazet-glaptop.roam.corp.google.com>
- <20131001220453.GY13318@ZenIV.linux.org.uk>
- <20131002051319.GB27982@gmail.com>
+	Wed, 2 Oct 2013 06:23:43 -0400
+Message-ID: <524BF42A.7020509@linaro.org>
+Date: Wed, 02 Oct 2013 12:23:38 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002051319.GB27982@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH] clocksource: arm_arch_timer: Use clocksource for suspend
+ timekeeping
+References: <1380312792-7275-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1380312792-7275-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 07:13:19AM +0200, Ingo Molnar wrote:
-> 
-> * Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> 
-> > On Tue, Oct 01, 2013 at 02:41:58PM -0700, Eric Dumazet wrote:
-> > > Maybe I am missing something obvious ?
-> > 
-> > Yes.  do_execve_common() starts with unshare_files(); there can be
-> > no other thread capable of modifying that descriptor table.
-> 
-> Btw., might the Android Binder:
-> 
->   drivers/staging/android/binder.c:       struct files_struct *files = proc->files;
-> ...
->   drivers/staging/android/binder.c:               __fd_install(proc->files, fd, file);
-> ...
->   drivers/staging/android/binder.c:       retval = __close_fd(proc->files, fd);
-> 
-> violate that assumption?
+On 09/27/2013 10:13 PM, Stephen Boyd wrote:
+> The ARM architected timers keep counting during suspend so we can
+> mark this clocksource with the CLOCK_SOURCE_SUSPEND_NONSTOP flag.
+> This flag will indicate that this clocksource can be used for
+> calculating suspend time and injecting sleep time into the
+> timekeeping core. This should be more accurate than using an
+> external RTC or architecture specific persistent clock.
+>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
 
-Not unless your thread has managed to call an ioctl between entering
-do_execve_common() and calling do_close_on_exec() ;-)
+Applied to my tree for 3.13
+
+Thanks
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
