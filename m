@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab3JBQjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:39:53 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24700 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753256Ab3JBQjt (ORCPT
+	id S1754502Ab3JBQlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:41:01 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:43347 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab3JBQk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:39:49 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 59/77] qla2xxx: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:49:15 +0200
-Message-Id: <54f6b89372f51cd27a6adf6ecc91b8bf6bb5ba74.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 12:40:59 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-fbdev@vger.kernel.org
+Cc: James Bates <james.h.bates@gmail.com>, linux-kernel@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        James Bates <james.h.bates@yahoo.com>
+Subject: [PATCH v2] efifb: prevent null-deref when iterating dmi_list
+Date: Wed,  2 Oct 2013 18:40:56 +0200
+Message-Id: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+The dmi_list array is initialized using gnu designated initializers, and
+therefore may contain fewer explicitly defined entries as there are
+elements in it. This is because the enum above with M_xyz constants
+contains more items than the designated initializer. Those elements not
+explicitly initialized are implicitly set to 0.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Now efifb_setup() loops through all these array elements, and performs
+a strcmp on each item. For non explicitly initialized elements this will
+be a null pointer:
+
+This patch swaps the check order in the if statement, thus checks first
+whether dmi_list[i].base is null.
+
+Signed-off-by: James Bates <james.h.bates@yahoo.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- drivers/scsi/qla2xxx/qla_isr.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+Hi
 
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index df1b30b..6c11ab9 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -2836,16 +2836,20 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
- 	for (i = 0; i < ha->msix_count; i++)
- 		entries[i].entry = i;
+As James didn't respond to the last emails, I just rebased the patch and resent
+it. The efi M_xyz constants were moved to x86-sysfb so if anyone wants to remove
+unused bits, please send a separate patch to LKML and x86-ML. This patch just
+fixes the NULL-deref.
+
+Thanks
+David
+
+ drivers/video/efifb.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 7f9ff75..fcb9500 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -108,8 +108,8 @@ static int efifb_setup(char *options)
+ 			if (!*this_opt) continue;
  
--	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--	if (ret) {
-+	ret = pci_msix_table_size(ha->pdev);
-+	if (ret < 0) {
-+		goto msix_failed;
-+	} else {
- 		if (ret < MIN_MSIX_COUNT)
- 			goto msix_failed;
- 
--		ql_log(ql_log_warn, vha, 0x00c6,
--		    "MSI-X: Failed to enable support "
--		    "-- %d/%d\n Retry with %d vectors.\n",
--		    ha->msix_count, ret, ret);
--		ha->msix_count = ret;
-+		if (ret < ha->msix_count) {
-+			ql_log(ql_log_warn, vha, 0x00c6,
-+			    "MSI-X: Failed to enable support "
-+			    "-- %d/%d\n Retry with %d vectors.\n",
-+			    ha->msix_count, ret, ret);
-+			ha->msix_count = ret;
-+		}
- 		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
- 		if (ret) {
- msix_failed:
+ 			for (i = 0; i < M_UNKNOWN; i++) {
+-				if (!strcmp(this_opt, efifb_dmi_list[i].optname) &&
+-				    efifb_dmi_list[i].base != 0) {
++				if (efifb_dmi_list[i].base != 0 &&
++				    !strcmp(this_opt, efifb_dmi_list[i].optname)) {
+ 					screen_info.lfb_base = efifb_dmi_list[i].base;
+ 					screen_info.lfb_linelength = efifb_dmi_list[i].stride;
+ 					screen_info.lfb_width = efifb_dmi_list[i].width;
 -- 
-1.7.7.6
+1.8.4
 
