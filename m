@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3JBVL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:11:57 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:44501 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab3JBVLy (ORCPT
+	id S1754577Ab3JBVMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:12:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49541 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab3JBVMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:11:54 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <87r4c3vavb.fsf@turtle.gmx.de>
-References: <20130925001740.833541979@linuxfoundation.org>
-	<20130925001741.446963782@linuxfoundation.org>
-	<87r4c3vavb.fsf@turtle.gmx.de>
-Date: Wed, 2 Oct 2013 23:11:53 +0200
-Message-ID: <CAKMK7uHGVcEZt16aDgoUCfyRMtcw76geDtOvpd_qzMZ2+a7U_A@mail.gmail.com>
-Subject: Re: [ 005/117] drm/i915: make user mode sync polarity setting explicit
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Imre Deak <imre.deak@intel.com>,
-        "cancan,feng" <cancan.feng@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Oct 2013 17:12:37 -0400
+Date: Wed, 02 Oct 2013 17:12:33 -0400 (EDT)
+Message-Id: <20131002.171233.1409614287842381990.davem@davemloft.net>
+To: sebastian.hesselbarth@gmail.com
+Cc: buytenh@wantstofly.org, jason@lakedaemon.net, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] net: mv643xx_eth: various small fixes for v3.12
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 14:12:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 7:30 PM, Sven Joachim <svenjoac@gmx.de> wrote:
-> See also https://bugs.freedesktop.org/show_bug.cgi?id=65442#c16.
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Date: Wed,  2 Oct 2013 12:57:19 +0200
 
-Oh dear, somehow I've thought the -fixes pull request I've sent with
-the fix for this has a cc: stable, but that must have been lost
-somewhere.
+> This patch set comprises some one-liners to fix issues with repeated
+> loading and unloading of a modular mv643xx_eth driver.
+> 
+> First two patches take care of the periodic port statistic timer, that
+> updates statistics by reading port registers using add_timer/mod_timer.
+> 
+> Patch 1 moves timer re-schedule from mib_counters_update to the timer
+> callback. As mib_counters_update is also called from non-timer context,
+> this ensures the timer is reactivated from timer context only.
+> 
+> Patch 2 moves initial timer schedule from _probe() time to right before
+> the port is actually started as the corresponding del_timer_sync is at
+> _stop() time. This fixes a regression, where unloading the driver from a
+> non-started eth device can cause the timer to access deallocated mem.
+> 
+> Patch 3 adds an assignment of the ports device_node to the corresponding
+> self-created platform_device. This is required to allow fixups based on
+> the device_node's compatible string later. Actually, it is also a potential
+> regression because we already check compatible string for Kirkwood, but
+> does not (yet) rely on the fixup.
+> 
+> All patches are based on v3.12-rc3 and have been tested on Kirkwood-based
+> Seagate Dockstar.
+> 
+> Patches 1 and 2 can also possibly queued up for -stable.
 
-Greg, can you please queue up
-
-commit 1062b81598bc00e2f6620e6f3788f8f8df2f01e7
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Sep 10 11:44:30 2013 +0200
-
-    drm/i915/tv: clear adjusted_mode.flags
-
-for stable kernels? Right now we seem to get about one dupe per day of
-this report ;-)
-
-/me wondered why they kept on coming up ...
-
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Series applied, patch #1 and #2 queued up for -stable, thanks!
