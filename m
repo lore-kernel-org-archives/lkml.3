@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab3JBVHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:07:52 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:36337 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab3JBVHu convert rfc822-to-8bit (ORCPT
+	id S1754285Ab3JBVIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:08:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49448 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab3JBVIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:07:50 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
-References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
-Date: Wed, 2 Oct 2013 14:07:49 -0700
-Message-ID: <CAOesGMijLSoKz9DTmSLr3YY-8=NoB97brhC-rSPj1x8zs1NXKQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Add some missing bits for exynos5250-snow
-From: Olof Johansson <olof@lixom.net>
-To: Sean Paul <seanpaul@chromium.org>
-Cc: dri-devel@lists.freedesktop.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Inki Dae <inki.dae@samsung.com>, airlied@linux.ie
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Wed, 2 Oct 2013 17:08:04 -0400
+Date: Wed, 02 Oct 2013 17:07:57 -0400 (EDT)
+Message-Id: <20131002.170757.855953378869304259.davem@davemloft.net>
+To: mst@redhat.com
+Cc: jasowang@redhat.com, rusty@rustcorp.com.au, edumazet@google.com,
+        jiri@resnulli.us, vyasevic@redhat.com, amwang@redhat.com,
+        alexander.h.duyck@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netif_set_xps_queue: make cpu mask const
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131002061406.GA8809@redhat.com>
+References: <20131002061406.GA8809@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 14:07:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 2 Oct 2013 09:14:06 +0300
 
-On Tue, Oct 1, 2013 at 4:40 PM, Sean Paul <seanpaul@chromium.org> wrote:
-> This set adds some missing devicetree nodes to the exynos5250-snow file as well
-> as adds a drm_bridge driver for the ptn3460 DP-LVDS chip. This chip is used in
-> the exynos5250-snow board.
->
-> Sean
->
->
-> Sean Paul (5):
->  ARM: dts: Add fimd display-timings for exynos5250-snow
->  ARM: dts: Add dp-controller node to exynos5250-snow
->  drm/bridge: Add PTN3460 bridge driver
->  drm/exynos: Initialize ptn3460 if present
->  ARM: dts: Add ptn3460 to exynos5250-snow
->
-> Documentation/devicetree/bindings/drm/bridge/ptn3460.txt |  27 +++++++++++++++++++++++++
-> arch/arm/boot/dts/exynos5250-snow.dts                    |  48 ++++++++++++++++++++++++++++++++++++++++++++
+> virtio wants to pass in cpumask_of(cpu), make parameter
+> const to avoid build warnings.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-This should go in through Kukjin and the arm-soc tree, not through DRM
-(Looking at the actual patch shortly).
-
-> drivers/gpu/drm/Kconfig                                  |   2 ++
-> drivers/gpu/drm/Makefile                                 |   1 +
-> drivers/gpu/drm/bridge/Kconfig                           |   4 ++++
-> drivers/gpu/drm/bridge/Makefile                          |   3 +++
-> drivers/gpu/drm/bridge/ptn3460.c                         | 349 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-Tip: When you generate the diffstat, redirect to a file or size your
-window to something less than, oh, 300 characters wide or so. Maybe
-even down to 80. :)
-
-
--Olof
+Refresh my memory, is to accomodate a change you want to submit to
+'net' or 'net-next'?  This patch only applies to 'net' cleanly.
