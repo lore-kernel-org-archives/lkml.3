@@ -1,259 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab3JBD7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 23:59:37 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:43642 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3JBD7f (ORCPT
+	id S1751636Ab3JBECR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 00:02:17 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56465 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3JBECQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 23:59:35 -0400
-From: =?UTF-8?q?Mathieu=20Rh=C3=A9aume?= <mathieu@codingrhemes.com>
-To: mathieu@codingrhemes.com
-Cc: joe@perches.com, gregkh@linuxfoundation.org, arve@android.com,
-        dan.carpenter@oracle.com, mirsal@mirsal.fr,
-        serban.constantinescu@arm.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Staging : android: binder.c: Prefer seq_puts to seq_printf
-Date: Tue,  1 Oct 2013 23:57:19 -0400
-Message-Id: <1380686239-15208-1-git-send-email-mathieu@codingrhemes.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 2 Oct 2013 00:02:16 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <524B9ABF.6040000@roeck-us.net>
+Date: Tue, 01 Oct 2013 21:02:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Chris Murphy <bugzilla@colorremedies.com>
+CC: Henrik Rydberg <rydberg@euromail.se>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+References: <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131001105526.GA481@polaris.bitmath.org> <20131001151954.GB14887@roeck-us.net> <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com> <20131001162425.GD14887@roeck-us.net> <28FA6820-7FB5-4D33-ABC9-1F2088FA22A6@colorremedies.com> <20131002035156.GA566@roeck-us.net> <CAFC20BD-C5B7-4705-932E-930501159502@colorremedies.com>
+In-Reply-To: <CAFC20BD-C5B7-4705-932E-930501159502@colorremedies.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v2:
- * Fixed the indent problems (2 tab and 1 space) by Joe Perches.
- * Found more calls to convert from seq_printf to seq_puts
+On 10/01/2013 08:55 PM, Chris Murphy wrote:
+>
+> On Oct 1, 2013, at 9:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>
+>> On Tue, Oct 01, 2013 at 07:09:26PM -0600, Chris Murphy wrote:
+>>>
+>>> On Oct 1, 2013, at 10:24 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>
+>>>> On Tue, Oct 01, 2013 at 09:33:13AM -0600, Chris Murphy wrote:
+>>>>>
+>>>>> On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>>
+>>>>>> On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
+>>>>>>>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
+>>>>>>>>>
+>>>>>>>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
+>>>>>>>> Which I guess explains the subsequent memory allocation error in the log.
+>>>>>>>>
+>>>>>>>> Henrik, any idea what might be going on ? Is it possible that the previous
+>>>>>>>> command failure leaves some state machine in a bad state ?
+>>>>>>>
+>>>>>>> I seem to recall a report on another similar state problem on newer
+>>>>>>> machines, so maybe, yes. Older machines seem fine, I have never
+>>>>>>> encountered the problem myself. Here is a patch to test that
+>>>>>>> theory. It has been tested to be pretty harmless on two different
+>>>>>>> generations.
+>>>>>>>
+>>>>>>> I really really do not want to add an 'if (value is insane)' check ;-)
+>>>>>>>
+>>>>>> Chris,
+>>>>>>
+>>>>>> any chance you can load this patch on an affected machine so we can get
+>>>>>> test feedback ? This one is too experimental to submit upstream without
+>>>>>> knowing that it really fixes the problem.
+>>>>>
+>>>>> Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
+>>>>>
+>>>> Only requirement is that it also includes the previous patch, so it would be
+>>>> optimal if you can apply it on top of the previous image.
+>>>
+>>> Patch added on top of 3.12.0-0.rc3.git0.1.fc20.x86_64 and built. But after ~dozen reboots, I'm not triggering the problem. The only items in dmesg with smc in it:
+>>>
+>>> [   13.799819] applesmc: key=261 fan=2 temp=14 index=14 acc=1 lux=2 kbd=1
+>>> [   13.833402] input: applesmc as /devices/platform/applesmc.768/input/input10
+>>>
+>>
+>> Hi Chris,
+>>
+>> That only means that you did not hit the problem. There may be some secondary
+>> trigger (cold boot ? coffee on the cpu ?).
+>>
+>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
+>> I think that is a pre-requisite.
+>
+> I have no idea how to trigger it. I have tried cold and warm boots. Boots between linux and OS X to linux. *shrug* I'll keep trying as I'm doing other testing, maybe I'll stumble onto it.
+>
 
->8------------------------------------------------------8<
+I am sure you didn't pour coffee onto the CPU yet :)
 
-This patch changes seq_printf for seq_puts in binder.c.
-It fixes the warnings emitted by checkpatch.pl.
+Basic rule of testing: You'll only hit the problem again after you are convinced
+that it was magically fixed by a completely unrelated change.
 
-Signed-off-by: Mathieu Rhéaume <mathieu@codingrhemes.com>
----
- drivers/staging/android/binder.c | 111 +++++++++++++++++++++------------------
- 1 file changed, 60 insertions(+), 51 deletions(-)
-
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 09edebb..e805508 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -3272,33 +3272,33 @@ binder_defer_work(struct binder_proc *proc, enum binder_deferred_state defer)
- static void print_binder_transaction(struct seq_file *m, const char *prefix,
- 				     struct binder_transaction *t)
- {
--	seq_printf(m,
--		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
--		   prefix, t->debug_id, t,
--		   t->from ? t->from->proc->pid : 0,
--		   t->from ? t->from->pid : 0,
--		   t->to_proc ? t->to_proc->pid : 0,
--		   t->to_thread ? t->to_thread->pid : 0,
--		   t->code, t->flags, t->priority, t->need_reply);
-+		seq_puts(m, "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
-+			 prefix, t->debug_id, t,
-+			 t->from ? t->from->proc->pid : 0,
-+			 t->from ? t->from->pid : 0,
-+			 t->to_proc ? t->to_proc->pid : 0,
-+			 t->to_thread ? t->to_thread->pid : 0,
-+			 t->code, t->flags, t->priority, t->need_reply);
- 	if (t->buffer == NULL) {
- 		seq_puts(m, " buffer free\n");
- 		return;
- 	}
- 	if (t->buffer->target_node)
--		seq_printf(m, " node %d",
--			   t->buffer->target_node->debug_id);
--	seq_printf(m, " size %zd:%zd data %p\n",
--		   t->buffer->data_size, t->buffer->offsets_size,
--		   t->buffer->data);
-+		seq_puts(m, " node %d",
-+			 t->buffer->target_node->debug_id);
-+		seq_puts(m, " size %zd:%zd data %p\n",
-+			 t->buffer->data_size,
-+			 t->buffer->offsets_size,
-+			 t->buffer->data);
- }
- 
- static void print_binder_buffer(struct seq_file *m, const char *prefix,
- 				struct binder_buffer *buffer)
- {
--	seq_printf(m, "%s %d: %p size %zd:%zd %s\n",
--		   prefix, buffer->debug_id, buffer->data,
--		   buffer->data_size, buffer->offsets_size,
--		   buffer->transaction ? "active" : "delivered");
-+		seq_puts(m, "%s %d: %p size %zd:%zd %s\n",
-+			 prefix, buffer->debug_id, buffer->data,
-+			 buffer->data_size, buffer->offsets_size,
-+			 buffer->transaction ? "active" : "delivered");
- }
- 
- static void print_binder_work(struct seq_file *m, const char *prefix,
-@@ -3314,24 +3314,30 @@ static void print_binder_work(struct seq_file *m, const char *prefix,
- 		print_binder_transaction(m, transaction_prefix, t);
- 		break;
- 	case BINDER_WORK_TRANSACTION_COMPLETE:
--		seq_printf(m, "%stransaction complete\n", prefix);
-+		seq_puts(m, "%stransaction complete\n",
-+			 prefix);
- 		break;
- 	case BINDER_WORK_NODE:
- 		node = container_of(w, struct binder_node, work);
--		seq_printf(m, "%snode work %d: u%p c%p\n",
--			   prefix, node->debug_id, node->ptr, node->cookie);
-+		seq_puts(m, "%snode work %d: u%p c%p\n",
-+			 prefix,
-+			 node->debug_id,
-+			 node->ptr,
-+			 node->cookie);
- 		break;
- 	case BINDER_WORK_DEAD_BINDER:
--		seq_printf(m, "%shas dead binder\n", prefix);
-+		seq_puts(m, "%shas dead binder\n", prefix);
- 		break;
- 	case BINDER_WORK_DEAD_BINDER_AND_CLEAR:
--		seq_printf(m, "%shas cleared dead binder\n", prefix);
-+		seq_puts(m, "%shas cleared dead binder\n", prefix);
- 		break;
- 	case BINDER_WORK_CLEAR_DEATH_NOTIFICATION:
--		seq_printf(m, "%shas cleared death notification\n", prefix);
-+		seq_puts(m, "%shas cleared death notification\n", prefix);
- 		break;
- 	default:
--		seq_printf(m, "%sunknown work: type %d\n", prefix, w->type);
-+		seq_puts(m, "%sunknown work: type %d\n",
-+			 prefix,
-+			 w->type);
- 		break;
- 	}
- }
-@@ -3345,7 +3351,8 @@ static void print_binder_thread(struct seq_file *m,
- 	size_t start_pos = m->count;
- 	size_t header_pos;
- 
--	seq_printf(m, "  thread %d: l %02x\n", thread->pid, thread->looper);
-+	seq_puts(m, "  thread %d: l %02x\n",
-+		 thread->pid, thread->looper);
- 	header_pos = m->count;
- 	t = thread->transaction_stack;
- 	while (t) {
-@@ -3379,11 +3386,11 @@ static void print_binder_node(struct seq_file *m, struct binder_node *node)
- 	hlist_for_each_entry(ref, &node->refs, node_entry)
- 		count++;
- 
--	seq_printf(m, "  node %d: u%p c%p hs %d hw %d ls %d lw %d is %d iw %d",
--		   node->debug_id, node->ptr, node->cookie,
--		   node->has_strong_ref, node->has_weak_ref,
--		   node->local_strong_refs, node->local_weak_refs,
--		   node->internal_strong_refs, count);
-+	seq_puts(m, "  node %d: u%p c%p hs %d hw %d ls %d lw %d is %d iw %d",
-+		 node->debug_id, node->ptr, node->cookie,
-+		 node->has_strong_ref, node->has_weak_ref,
-+		 node->local_strong_refs, node->local_weak_refs,
-+		 node->internal_strong_refs, count);
- 	if (count) {
- 		seq_puts(m, " proc");
- 		hlist_for_each_entry(ref, &node->refs, node_entry)
-@@ -3397,9 +3404,9 @@ static void print_binder_node(struct seq_file *m, struct binder_node *node)
- 
- static void print_binder_ref(struct seq_file *m, struct binder_ref *ref)
- {
--	seq_printf(m, "  ref %d: desc %d %snode %d s %d w %d d %p\n",
--		   ref->debug_id, ref->desc, ref->node->proc ? "" : "dead ",
--		   ref->node->debug_id, ref->strong, ref->weak, ref->death);
-+	seq_puts(m, "  ref %d: desc %d %snode %d s %d w %d d %p\n",
-+		 ref->debug_id, ref->desc, ref->node->proc ? "" : "dead ",
-+		 ref->node->debug_id, ref->strong, ref->weak, ref->death);
- }
- 
- static void print_binder_proc(struct seq_file *m,
-@@ -3410,7 +3417,8 @@ static void print_binder_proc(struct seq_file *m,
- 	size_t start_pos = m->count;
- 	size_t header_pos;
- 
--	seq_printf(m, "proc %d\n", proc->pid);
-+	seq_puts(m, "proc %d\n", 
-+		 proc->pid);
- 	header_pos = m->count;
- 
- 	for (n = rb_first(&proc->threads); n != NULL; n = rb_next(n))
-@@ -3534,20 +3542,22 @@ static void print_binder_proc_stats(struct seq_file *m,
- 	struct rb_node *n;
- 	int count, strong, weak;
- 
--	seq_printf(m, "proc %d\n", proc->pid);
-+	seq_puts(m, "proc %d\n",
-+		 proc->pid);
- 	count = 0;
- 	for (n = rb_first(&proc->threads); n != NULL; n = rb_next(n))
- 		count++;
--	seq_printf(m, "  threads: %d\n", count);
--	seq_printf(m, "  requested threads: %d+%d/%d\n"
--			"  ready threads %d\n"
--			"  free async space %zd\n", proc->requested_threads,
--			proc->requested_threads_started, proc->max_threads,
--			proc->ready_threads, proc->free_async_space);
-+	seq_puts(m, "  threads: %d\n",
-+		 count);
-+	seq_puts(m, "  requested threads: %d+%d/%d\n"
-+		 "  ready threads %d\n"
-+		 "  free async space %zd\n", proc->requested_threads,
-+		 proc->requested_threads_started, proc->max_threads,
-+		 proc->ready_threads, proc->free_async_space);
- 	count = 0;
- 	for (n = rb_first(&proc->nodes); n != NULL; n = rb_next(n))
- 		count++;
--	seq_printf(m, "  nodes: %d\n", count);
-+	seq_puts(m, "  nodes: %d\n", count);
- 	count = 0;
- 	strong = 0;
- 	weak = 0;
-@@ -3558,12 +3568,12 @@ static void print_binder_proc_stats(struct seq_file *m,
- 		strong += ref->strong;
- 		weak += ref->weak;
- 	}
--	seq_printf(m, "  refs: %d s %d w %d\n", count, strong, weak);
-+	seq_puts(m, "  refs: %d s %d w %d\n", count, strong, weak);
- 
- 	count = 0;
- 	for (n = rb_first(&proc->allocated_buffers); n != NULL; n = rb_next(n))
- 		count++;
--	seq_printf(m, "  buffers: %d\n", count);
-+	seq_puts(m, "  buffers: %d\n", count);
- 
- 	count = 0;
- 	list_for_each_entry(w, &proc->todo, entry) {
-@@ -3575,7 +3585,7 @@ static void print_binder_proc_stats(struct seq_file *m,
- 			break;
- 		}
- 	}
--	seq_printf(m, "  pending transactions: %d\n", count);
-+	seq_puts(m, "  pending transactions: %d\n", count);
- 
- 	print_binder_stats(m, "  ", &proc->stats);
- }
-@@ -3656,12 +3666,11 @@ static int binder_proc_show(struct seq_file *m, void *unused)
- static void print_binder_transaction_log_entry(struct seq_file *m,
- 				struct binder_transaction_log_entry *e)
- {
--	seq_printf(m,
--		  "%d: %s from %d:%d to %d:%d node %d handle %d size %d:%d\n",
--		   e->debug_id, (e->call_type == 2) ? "reply" :
--		   ((e->call_type == 1) ? "async" : "call "), e->from_proc,
--		   e->from_thread, e->to_proc, e->to_thread, e->to_node,
--		   e->target_handle, e->data_size, e->offsets_size);
-+	seq_puts(m, "%d: %s from %d:%d to %d:%d node %d handle %d size %d:%d\n",
-+		 e->debug_id, (e->call_type == 2) ? "reply" :
-+		 ((e->call_type == 1) ? "async" : "call "), e->from_proc,
-+		 e->from_thread, e->to_proc, e->to_thread, e->to_node,
-+		 e->target_handle, e->data_size, e->offsets_size);
- }
- 
- static int binder_transaction_log_show(struct seq_file *m, void *unused)
--- 
-1.8.3.1
+Cheers,
+Guenter
 
