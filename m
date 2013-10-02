@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab3JBCgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 22:36:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46628 "EHLO mx1.redhat.com"
+	id S1752743Ab3JBCnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 22:43:32 -0400
+Received: from ozlabs.org ([203.10.76.45]:50519 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650Ab3JBCgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 22:36:06 -0400
-Message-ID: <1380681356.14271.57.camel@ul30vt.home>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Kim Phillips <kim.phillips@linaro.org>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, a.motakis@virtualopensystems.com,
-        agraf@suse.de, stuart.yoder@freescale.com, B07421@freescale.com,
-        B16395@freescale.com, R65777@freescale.com, peter.maydell@linaro.org,
-        santosh.shukla@linaro.org, kvm@vger.kernel.org
-Date: Tue, 01 Oct 2013 20:35:56 -0600
-In-Reply-To: <20131002015355.GD63102@lvm>
-References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
-	 <20131001200054.GA27330@kroah.com>
-	 <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
-	 <20131002015355.GD63102@lvm>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752426Ab3JBCn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 22:43:29 -0400
+Date: Wed, 2 Oct 2013 12:43:24 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20131002024324.GC22748@concordia>
+References: <20130905200608.GA3846@htj.dyndns.org>
+ <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
+ <20130906160621.GF22763@mtj.dyndns.org>
+ <20130906233205.GF12956@google.com>
+ <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
+ <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
+ <20130917143022.GA7707@concordia>
+ <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
+ <20131001075133.GJ17966@concordia>
+ <20131001103526.GA5053@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001103526.GA5053@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 02:53 +0100, Christoffer Dall wrote:
-> On Tue, Oct 01, 2013 at 05:02:44PM -0500, Kim Phillips wrote:
-> > On Tue, 1 Oct 2013 13:00:54 -0700
-> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+On Tue, Oct 01, 2013 at 12:35:27PM +0200, Alexander Gordeev wrote:
+> On Tue, Oct 01, 2013 at 05:51:33PM +1000, Michael Ellerman wrote:
+> > The disadvantage is that any restriction imposed on us above the quota
+> > can only be reported as an error from pci_enable_msix().
 > > 
-> > > On Tue, Oct 01, 2013 at 01:38:31PM -0500, Kim Phillips wrote:
-> > > > Hi,
-> > > > 
-> > > > Santosh and I are having a problem figuring out how to enable binding
-> > > > (and re-binding) platform devices to a platform VFIO driver (see
-> > > > Antonis' WIP: [1]) in an upstream-acceptable manner.
-> > > > 
-> > > > Binding platform drivers currently depends on a string match in the
-> > > > device node's compatible entry.  On an arndale, one can currently
-> > > > rebind the same device to the same driver like so:
-> > > > 
-> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
-> > > > 
-> > > > And one can bind it to the vfio-dt driver, as Antonis instructs, by
-> > > > appending a 'vfio-dt' string to the device tree compatible entry for
-> > > > the device.  Then this would work:
-> > > > 
-> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
-> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
-> > > > 
-> > > > Consequently, the hack patch below [2] allows any platform device to be
-> > > > bound to the vfio-dt driver, without making changes to the device
-> > > > tree.  It's a hack because I don't see having any driver name specific
-> > > > code in drivers/base/bus.c being upstream acceptable.
-> > > 
-> > > You are correct.
-> > > 
-> > > What is wrong with just doing the above unbind/bind things through
-> > > sysfs, that is what it is there for, right?
-> > 
-> > The bind fails because the compatible string in the device tree doesn't
-> > match that of the VFIO platform driver, so driver_match_device always
-> > returns false.
-> > 
-> It sounds like this is not going to be pretty almost no matter what
-> we'll end up doing: Inherently VFIO is going to bind to a device without
-> the device tree entry for that device ever saying anything about VFIO.
+> > The quota code, called from pci_get_msix_limit(), can only do so much to
+> > interogate firmware about the limitations. The ultimate way to check if
+> > firmware will give us enough MSIs is to try and allocate them. But we
+> > can't do that from pci_get_msix_limit() because the driver is not asking
+> > us to enable MSIs, just query them.
 > 
-> How is this solved for PCI?  Can we use some analogy from that work to
-> construct the missing piece?
+> If things are this way then pci_enable_msix() already exposed to this
+> problem internally on pSeries.
+> 
+> I see that even successful quota checks in rtas_msi_check_device() and
+> rtas_setup_msi_irqs() do not guarantee (as you say) that firmware will
+> give enough MSIs. Hence, pci_enable_msix() might fail even though the
+> its quota checks succeeded.
 
-PCI supports a dynamic ID table for driver/device matching, see
-pci_add_dynid().  The problem is that this gets a little sloppy for the
-period where you have multiple drivers that can claim the same device,
-especially in the presence of hotplug.  Thus the desire to improve the
-situation with some kind of direct binding interface.  Thanks,
+Yes, but it can report that failure to the caller, which can then retry.
 
-Alex
+> Therefore, nothing will really change if we make pci_get_msix_limit() check
+> quota and hope the follow-up call to pci_enable_msix() succeeded.
 
+No that's not equivalent. Under your scheme if pci_enable_msix() fails
+then the caller just bails, it will never try again with a lower number.
+
+> (Of course, we could allocate-deallocate MSIs at check time, but I think it
+> is an overkill).
+
+It's not only overkill, it's messing with the device behind the drivers
+back, which is definitely a no-no in my opinion.
+ 
+> > You'll also need to add another arch hook, for the quota check, and
+> > we'll have to add it to our per-platform indirection as well.
+> 
+> Already, in a branch, hidden from Bjorn & Tejun eyes ;)
+> 
+> > All a lot of bother for no real gain IMHO.
+> 
+> Well, I do not have a strong opinion here. I leave it to the ones who have :)
+> But few drivers have became clearer as result of this change (and messy ones
+> are still messy).
+
+Amen.
+
+cheers
