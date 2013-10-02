@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3JBCdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 22:33:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:37109 "EHLO ozlabs.org"
+	id S1752808Ab3JBCgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 22:36:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46628 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab3JBCdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 22:33:44 -0400
-Date: Wed, 2 Oct 2013 12:33:38 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20131002023337.GB22748@concordia>
-References: <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
- <20131001073548.GI17966@concordia>
- <20131001115503.GA23722@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131001115503.GA23722@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752650Ab3JBCgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 22:36:06 -0400
+Message-ID: <1380681356.14271.57.camel@ul30vt.home>
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Kim Phillips <kim.phillips@linaro.org>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, a.motakis@virtualopensystems.com,
+        agraf@suse.de, stuart.yoder@freescale.com, B07421@freescale.com,
+        B16395@freescale.com, R65777@freescale.com, peter.maydell@linaro.org,
+        santosh.shukla@linaro.org, kvm@vger.kernel.org
+Date: Tue, 01 Oct 2013 20:35:56 -0600
+In-Reply-To: <20131002015355.GD63102@lvm>
+References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
+	 <20131001200054.GA27330@kroah.com>
+	 <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+	 <20131002015355.GD63102@lvm>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 07:55:03AM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Oct 01, 2013 at 05:35:48PM +1000, Michael Ellerman wrote:
-> > > > Roughly third of the drivers just do not care and bail out once
-> > > > pci_enable_msix() has not succeeded. Not sure how many of these are
-> > > > mandated by the hardware.
+On Wed, 2013-10-02 at 02:53 +0100, Christoffer Dall wrote:
+> On Tue, Oct 01, 2013 at 05:02:44PM -0500, Kim Phillips wrote:
+> > On Tue, 1 Oct 2013 13:00:54 -0700
+> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > 
+> > > On Tue, Oct 01, 2013 at 01:38:31PM -0500, Kim Phillips wrote:
+> > > > Hi,
+> > > > 
+> > > > Santosh and I are having a problem figuring out how to enable binding
+> > > > (and re-binding) platform devices to a platform VFIO driver (see
+> > > > Antonis' WIP: [1]) in an upstream-acceptable manner.
+> > > > 
+> > > > Binding platform drivers currently depends on a string match in the
+> > > > device node's compatible entry.  On an arndale, one can currently
+> > > > rebind the same device to the same driver like so:
+> > > > 
+> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
+> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
+> > > > 
+> > > > And one can bind it to the vfio-dt driver, as Antonis instructs, by
+> > > > appending a 'vfio-dt' string to the device tree compatible entry for
+> > > > the device.  Then this would work:
+> > > > 
+> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/12ce0000.i2c/driver/unbind
+> > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
+> > > > 
+> > > > Consequently, the hack patch below [2] allows any platform device to be
+> > > > bound to the vfio-dt driver, without making changes to the device
+> > > > tree.  It's a hack because I don't see having any driver name specific
+> > > > code in drivers/base/bus.c being upstream acceptable.
 > > > 
-> > > Yeah, I mean, this type of interface is a trap.  People have to
-> > > actively resist to avoid doing silly stuff which is a lot to ask.
+> > > You are correct.
+> > > 
+> > > What is wrong with just doing the above unbind/bind things through
+> > > sysfs, that is what it is there for, right?
 > > 
-> > I really think you're overstating the complexity here.
+> > The bind fails because the compatible string in the device tree doesn't
+> > match that of the VFIO platform driver, so driver_match_device always
+> > returns false.
 > > 
-> > Functions typically return a boolean   -> nothing to see here
-> > This function returns a tristate value -> brain explosion!
+> It sounds like this is not going to be pretty almost no matter what
+> we'll end up doing: Inherently VFIO is going to bind to a device without
+> the device tree entry for that device ever saying anything about VFIO.
 > 
-> It is an interface which forces the driver writers to write
-> complicated fallback code which won't usually be excercised.  
+> How is this solved for PCI?  Can we use some analogy from that work to
+> construct the missing piece?
 
-It does not force anyone to do anything. That's just bull.
+PCI supports a dynamic ID table for driver/device matching, see
+pci_add_dynid().  The problem is that this gets a little sloppy for the
+period where you have multiple drivers that can claim the same device,
+especially in the presence of hotplug.  Thus the desire to improve the
+situation with some kind of direct binding interface.  Thanks,
 
-Code which is unwilling or unable to cope with the extra complexity
-can simply do:
+Alex
 
-if (pci_enable_msix(..))
-	goto fail;
-
-It's as simple as that.
-
-> > > * Determine the number of MSIs the controller wants.  Don't worry
-> > >   about quotas or limits or anything.  Just determine the number
-> > >   necessary to enable enhanced interrupt handling.
-> > > 	
-> > > * Try allocating that number of MSIs.  If it fails, then just revert
-> > >   to single interrupt mode.  It's not the end of the world and mostly
-> > >   guaranteed to work.  Let's please not even try to do partial
-> > >   multiple interrupts.  I really don't think it's worth the risk or
-> > >   complexity.
-> > 
-> > It will potentially break existing setups on our hardware.
-> 
-> I think it'd be much better to have a separate interface for the
-> drivers which actually require it *in practice* rather than forcing
-> everyone to go "oh this interface supports that, I don't know if I
-> need it but let's implement fallback logic which I won't and have no
-> means of testing".  
-
-Sure, that's easy:
-
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index d5f90d6..48d0252 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -988,6 +988,18 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
- }
- EXPORT_SYMBOL(pci_enable_msix);
- 
-+int pci_enable_msix_or_fail(struct pci_dev *dev, struct msix_entry *entries,
-+                           int nvec)
-+{
-+       int rc;
-+
-+       rc = pci_enable_msix(dev, entries, nvec);
-+       if (rc > 0)
-+               rc = -ENOSPC;
-+
-+       return rc;
-+}
-+
- void pci_msix_shutdown(struct pci_dev *dev)
- {
-        struct msi_desc *entry;
-
-
-> Are we talking about some limited number of device drivers here?  
-
-I don't have a list, but yeah there are certain drivers that folks care about.
-
-> Also, is the quota still necessary for machines in production today?
-
-As far as I know yes. The number of MSIs is growing on modern systems, but so
-is the number of cpus and devices.
-
-cheers
