@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3JBUhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:37:54 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49064 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab3JBUhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:37:53 -0400
-Date: Wed, 02 Oct 2013 16:37:51 -0400 (EDT)
-Message-Id: <20131002.163751.1094931323876276388.davem@davemloft.net>
-To: baker.kernel@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 net-next] fib_trie: avoid a redundant bit judgement
- in inflate
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1380584709-5877-1-git-send-email-baker.kernel@gmail.com>
-References: <1380584709-5877-1-git-send-email-baker.kernel@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754074Ab3JBUjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:39:00 -0400
+Received: from c60.cesmail.net ([216.154.195.49]:10572 "EHLO c60.cesmail.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752949Ab3JBUi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 16:38:59 -0400
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 16:38:59 EDT
+Date: Wed, 2 Oct 2013 16:29:12 -0400
+From: Pavel Roskin <proski@gnu.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86: sysfb: mark simplefb resources as BUSY
+Message-ID: <20131002162912.25cb7f4a@IRBT4585>
+In-Reply-To: <1380724864-1757-1-git-send-email-dh.herrmann@gmail.com>
+References: <1380724864-1757-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 13:37:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: baker.kernel@gmail.com
-Date: Tue,  1 Oct 2013 07:45:09 +0800
+On Wed,  2 Oct 2013 16:41:04 +0200
+David Herrmann <dh.herrmann@gmail.com> wrote:
 
-> From: "baker.zhang" <baker.kernel@gmail.com>
-> 
-> Because 'node' is the i'st child of 'oldnode',
-> thus, here 'i' equals
-> tkey_extract_bits(node->key, oldtnode->pos, oldtnode->bits)
-> 
-> we just get 1 more bit,
-> and need not care the detail value of this bits.
-> 
-> I apologize for the mistake.
-> 
-> I generated the patch on a branch version,
-> and did not notice the put_child has been changed.
-> 
-> I have redone the test on HEAD version with my patch.
+> Tested-by: Pavel Roskin <proski@gnu.org>
 
-Applied, thanks for testing things so thoroughly.
+Tested indeed, on ThinkPad W530 with 32-bit and 64-bit kernels with
+Intel and NVidia graphics enabled.
+
+> Sorry for the delay, but I was in the US for the last 2 weeks and
+> this is really no major issue, just suppresses a warning that says
+> "Your kernel is fine".
+
+It shows a stack trace, so it might confuse (and has confused) users
+into thinking that it's a more important issue than it is.
+
+> Anyhow, thanks to Tom and Pavel for reporting
+> and testing this! This is targeted at 3.12-rc4 as bugfix. I think
+> it's still early/mid rc-stage and is a one-line patch so it should be
+> fine, right?
+
+I second this.
+
+-- 
+Regards,
+Pavel Roskin
