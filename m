@@ -1,137 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3JBSCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:02:17 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:35284 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337Ab3JBSCN (ORCPT
+	id S1755787Ab3JBSDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:03:06 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:35429 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab3JBSDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:02:13 -0400
-Date: Wed, 2 Oct 2013 11:02:06 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Chris Murphy <bugzilla@colorremedies.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20131002180206.GB4811@roeck-us.net>
-References: <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
- <524615B1.6000106@roeck-us.net>
- <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
- <524A4384.4040403@roeck-us.net>
- <20131002035156.GA566@roeck-us.net>
- <20131002095339.GA2716@polaris.bitmath.org>
- <524C1FE1.4050207@roeck-us.net>
- <20131002163418.GA4557@polaris.bitmath.org>
- <20131002164718.GA7392@roeck-us.net>
- <20131002172410.GA381@polaris.bitmath.org>
+	Wed, 2 Oct 2013 14:03:04 -0400
+Message-ID: <524C5FD2.5050406@linaro.org>
+Date: Wed, 02 Oct 2013 11:02:58 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002172410.GA381@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Will Deacon <will.deacon@arm.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Barry Song <Baohua.Song@csr.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jingchang Lu <b35083@freescale.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v4 00/17] 64-bit friendly generic sched_clock()
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <51E88170.3080505@linaro.org> <20131002174700.GF30298@mudshark.cambridge.arm.com>
+In-Reply-To: <20131002174700.GF30298@mudshark.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
-> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
-> > On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
-> > > > >>One thing I have seen in all logs is the earlier "send_byte fail" message, so
-> > > > >>I think that is a pre-requisite.
-> > > > >
-> > > > >Not necessarily - it could be that the patch actually fixes the root
-> > > > >cause. One possible scenario is that on recent SMCs, some of the
-> > > > >commands produce more data than we actually read. This would
-> > > > >eventually lead to both data corruption and overflow somwhere in the
-> > > > >SMC internals.  If the original SMC error is interpreted as a read
-> > > > >buffer overflow, then that problem should be fixed with this patch.
-> > > > >
-> > > > 
-> > > > Good point.
-> > > > 
-> > > > But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
-> > > 
-> > > The explanation I have there is that the (newer) SMC needs the
-> > > application to read the 'no more bytes' or it will get confused. It
-> > > makes sense, if the number of bytes to read is no longer specified.
-> > > 
-> > You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
-> > That might make sense.
-> 
-> It also points at the possibility of a smaller patch to test, but I
-> have not had the time to check this very deeply myself:
-> 
-I like this patch much more than the previous patch. Chris, can you test it ?
+On 10/02/2013 10:47 AM, Will Deacon wrote:
+> On Fri, Jul 19, 2013 at 12:59:44AM +0100, John Stultz wrote:
+>> On 07/18/2013 04:21 PM, Stephen Boyd wrote:
+>>> This patchset adds support for 64 bit counters in the generic
+>>> sched_clock code and converts drivers over to use it. Based
+>>> on v3.11-rc1.
+>>>
+>>> Changes since v3:
+>>>   * Move to use seqcount to fix issues with 64-bit cyc counters
+>>>   * Move to hrtimer to fix underflow/overflow errors in wraparound
+>>>     calculation
+>>>   * Use of 1 hour in clocks_calc_mult_shift
+>>>   * Converted over drivers in drivers/clocksource
+>> I've not been able to take a deep review yet, but this looks pretty much 
+>> like what we discussed last week, so I'm happy with it so far. Has this 
+>> gotten much testing (on both 32 and 64bit systems?)
+>>
+>> One detail: Most of this is likely to go in via tip/timers/core, but the 
+>> 5/17 "arch_timer: Move to generic sched_clock" will need some 
+>> synchronization with Catalin to make sure its ok to go in via tip. Not 
+>> sure what other arm64 changes are pending that would depend or collide 
+>> with that change.
+> I wouldn't expect anything more than a trivial Kconfig clash with the arm64
+> tree, if that.
 
-Thanks,
-Guenter
+So I also have a branch with these changes based on a branch with only
+the prereqs that are already merged, so I can provide a pull request
+that can go in via the aarch64 tree and won't collide with tip. Would
+that be preferrable?
 
-> Thanks,
-> Henrik
-> 
-> From 4451da32414080bd0563ee9e061f19bf90463cc5 Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Wed, 2 Oct 2013 19:15:03 +0200
-> Subject: [PATCH] applesmc remedy take 2
-> 
-> Conjectured problem: there are remnant bytes ready on the data line
-> which corrupts the read after a failure.
-> 
-> Remedy: assuming bit0 is the read valid line, try to flush it before
-> starting a new command.
-> 
-> Tests by Chris suggests reading the status is enough for the problem
-> to go away, which is consistent with a change in the SMC interface,
-> where the number of bytes to read is no longer specified, but found
-> out by reading until end of data.
-> 
-> Tested on a MacBookAir3,1, but the original problem has not been
-> reproduced.
-> ---
->  drivers/hwmon/applesmc.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index 98814d1..c0ff350 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> @@ -230,6 +230,7 @@ static int send_argument(const char *key)
->  
->  static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
->  {
-> +	u8 status, data;
->  	int i;
->  
->  	if (send_command(cmd) || send_argument(key)) {
-> @@ -237,6 +238,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
->  		return -EIO;
->  	}
->  
-> +	/* This has no effect on newer (2012) SMCs */
->  	if (send_byte(len, APPLESMC_DATA_PORT)) {
->  		pr_warn("%.4s: read len fail\n", key);
->  		return -EIO;
-> @@ -250,6 +252,17 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
->  		buffer[i] = inb(APPLESMC_DATA_PORT);
->  	}
->  
-> +	/* Read the data port until bit0 is cleared */
-> +	for (i = 0; i < 16; i++) {
-> +		udelay(APPLESMC_MIN_WAIT);
-> +		status = inb(APPLESMC_CMD_PORT);
-> +		if (!(status & 0x01))
-> +			break;
-> +		data = inb(APPLESMC_DATA_PORT);
-> +	}
-> +	if (i)
-> +		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
-> +
->  	return 0;
->  }
->  
-> -- 
-> 1.8.3.4
-> 
-> 
+thanks
+-john
+
