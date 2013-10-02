@@ -1,145 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3JBUNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:13:14 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:45144 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab3JBUNM (ORCPT
+	id S1754105Ab3JBUOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:14:11 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:54161
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753668Ab3JBUOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:13:12 -0400
-Date: Wed, 2 Oct 2013 21:13:07 +0100
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Kim Phillips <kim.phillips@linaro.org>
-Cc: scottwood@freescale.com, B08248@freescale.com, alex.williamson@redhat.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        a.motakis@virtualopensystems.com, agraf@suse.de, B07421@freescale.com,
-        B16395@freescale.com, R65777@freescale.com, peter.maydell@linaro.org,
-        santosh.shukla@linaro.org, kvm@vger.kernel.org
+	Wed, 2 Oct 2013 16:14:10 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz98dI9371I936eI542I1432I168aJzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1380744842.12932.77.camel@snotra.buserror.net>
 Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131002201307.GA3029@lvm>
+From: Scott Wood <scottwood@freescale.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Yoder Stuart-B08248 <B08248@freescale.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Wed, 2 Oct 2013 15:14:02 -0500
+In-Reply-To: <20131002184330.GC5108@cbox>
 References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
- <20131001200054.GA27330@kroah.com>
- <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
- <20131002015355.GD63102@lvm>
- <1380681356.14271.57.camel@ul30vt.home>
- <20131002151413.GG63102@lvm>
- <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
- <1380738758.12932.43.camel@snotra.buserror.net>
- <20131002184330.GC5108@cbox>
- <20131002150415.458f40ac97cd6ea9de9c590d@linaro.org>
+	 <20131001200054.GA27330@kroah.com>
+	 <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+	 <20131002015355.GD63102@lvm> <1380681356.14271.57.camel@ul30vt.home>
+	 <20131002151413.GG63102@lvm>
+	 <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
+	 <1380738758.12932.43.camel@snotra.buserror.net>
+	 <20131002184330.GC5108@cbox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002150415.458f40ac97cd6ea9de9c590d@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 03:04:15PM -0500, Kim Phillips wrote:
-> On Wed, 2 Oct 2013 11:43:30 -0700
-> Christoffer Dall <christoffer.dall@linaro.org> wrote:
-> 
-> > On Wed, Oct 02, 2013 at 01:32:38PM -0500, Scott Wood wrote:
-> > > On Wed, 2013-10-02 at 13:25 -0500, Yoder Stuart-B08248 wrote:
-> > > > 
-> > > > > -----Original Message-----
-> > > > > From: Christoffer Dall [mailto:christoffer.dall@linaro.org]
-> > > > > Sent: Wednesday, October 02, 2013 10:14 AM
-> > > > > To: Alex Williamson
-> > > > > Cc: Kim Phillips; gregkh@linuxfoundation.org; linux-
-> > > > > kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
-> > > > > Yoder Stuart-B08248; Wood Scott-B07421; Sethi Varun-B16395; Bhushan
-> > > > > Bharat-R65777; peter.maydell@linaro.org; santosh.shukla@linaro.org;
-> > > > > kvm@vger.kernel.org
-> > > > > Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform
-> > > > > device
-> > > > > 
-> > > > > Wouldn't a sysfs file to add compatibility strings to the vfio-platform
-> > > > > driver make driver_match_device return true and make everyone happy?
-> > > > 
-> > > > I had a similar thought.  Why can't we do something like:
-> > > > 
-> > > >   echo "fsl,i2c" > /sys/bus/platform/drivers/vfio-platform/new_compatible
-> > > >   echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-platform/bind
-> > > > 
-> > > > The first steps tell vfio-platform to register itself to handle
-> > > > "fsl,i2c" compatible devices.  The second step does the bind.
+On Wed, 2013-10-02 at 11:43 -0700, Christoffer Dall wrote:
+> On Wed, Oct 02, 2013 at 01:32:38PM -0500, Scott Wood wrote:
+> > On Wed, 2013-10-02 at 13:25 -0500, Yoder Stuart-B08248 wrote:
 > > > 
-> > > Needing to specify the compatible is hacky (we already know what device
-> > > we want to bind; why do we need to scrounge up more information than
-> > > that, and add a new sysfs interface for extending compatible matches,
-> > > and a more flexible data structure to back that up?), and is racy on
-> > > buses that can hotplug (which driver gets the new device?).
-> > 
-> > Why hacky?  It seems quite reasonable to me that the user has to tell a
-> > subsystem that from a certain point it should be capable of handling
-> > some device.
-> 
-> I think what Scott is saying is that the first echo above is somewhat
-> redundant with the second: they're both talking to the vfio-platform
-> driver about an i2c device.
-> 
-
-ok, fair enough, I didn't commit particularly to that interface, but
-having a special hook for checking a flag kind of like the strcmp hack
-you posted, just seems weird to me; it would be better if the vfio
-driver can add the bind string to the list of compatible devices it can
-bind to, and then use the generic bind mechanism in the kernel.  But I'm
-honestly not familiar enough with the implementaiton specific bits of
-the syfs interface to argue how the changes are for one method vs. the
-other.
-
-> > As for the data structure, isn't this a simple linked list?
-> > 
-> > The problem with the race seems to be a common problem that hasn't even
-> > been solved for PCI yet, so I'm wondering if this is not an orthogonal
-> > issue with a separate solution, such as a priority or something like
-> > that.
-> 
-> I agree; adding 'direct'/'atomic' functionality to the existing bind
-> sysfs file, i.e., bind_store() logic to perform device_release_driver()
-> logic if dev->driver != NULL, all under the same device_lock() is an
-> independent problem from binding the VFIO platform driver to a platform
-> device.
-> 
-> > Yes, once you've added the new_compatible to the vfio-platform driver,
-> > it's up for grabs from both the new and the old driver, but that could
-> > be solved by always making sure that the vfio-platform driver is checked
-> > first.
-> 
-> not sure I understand the priority problem here - haven't looked at PCI
-> yet - but, given the above 'atomic bind' functionality described above,
-> the new and old driver wouldn't be requesting to bind to the same
-> device simultaneously, no?
-> 
-
-AFAIU, the problem occurs with hotplug.  If you add the compatibility
-string to a new driver and then hotplug a device with the string, then
-which driver gets the device?
-
-> > (I'm not familiar with these data structures, but I would imagine
-> > something like re-inserting the vfio-platform driver in the
-> > list/tree/... whenever adding a new_compatible value might possibly be
-> > one solution).
-> > 
-> > > What's wrong with a non-vfio-specific flag that a driver can set, that
-> > > indicates that the driver is willing to try to bind to any device on the
-> > > bus if explicitly requested via the existing sysfs bind mechanism?
+> > > > -----Original Message-----
+> > > > From: Christoffer Dall [mailto:christoffer.dall@linaro.org]
+> > > > Sent: Wednesday, October 02, 2013 10:14 AM
+> > > > To: Alex Williamson
+> > > > Cc: Kim Phillips; gregkh@linuxfoundation.org; linux-
+> > > > kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
+> > > > Yoder Stuart-B08248; Wood Scott-B07421; Sethi Varun-B16395; Bhushan
+> > > > Bharat-R65777; peter.maydell@linaro.org; santosh.shukla@linaro.org;
+> > > > kvm@vger.kernel.org
+> > > > Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform
+> > > > device
+> > > > 
+> > > > Wouldn't a sysfs file to add compatibility strings to the vfio-platform
+> > > > driver make driver_match_device return true and make everyone happy?
 > > > 
-> > It sounds more hackish to me to invent some 'generic' flag to solve a
-> > very specific case.  What you're suggesting would let users specify that
-> > a serial driver should handle a NIC hardware, no?  That sounds much much
-> > worse to me.
+> > > I had a similar thought.  Why can't we do something like:
+> > > 
+> > >   echo "fsl,i2c" > /sys/bus/platform/drivers/vfio-platform/new_compatible
+> > >   echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-platform/bind
+> > > 
+> > > The first steps tell vfio-platform to register itself to handle
+> > > "fsl,i2c" compatible devices.  The second step does the bind.
+> > 
+> > Needing to specify the compatible is hacky (we already know what device
+> > we want to bind; why do we need to scrounge up more information than
+> > that, and add a new sysfs interface for extending compatible matches,
+> > and a more flexible data structure to back that up?), and is racy on
+> > buses that can hotplug (which driver gets the new device?).
 > 
-> I thought that was the nature of VFIO drivers...it's a 'meta-' driver,
-> used for enabling userspace drivers at large.
-> 
-Yes, vfio is a meta driver, therefore it needs to be able to do
-something special, but the generic driver/device/bus matching framework
-doesn't need an extra generic feature allowing you to bind driver X to
-device Y for all combinations of X and Y depending on  some flag...
-Someone please correct me if there are more use cases for this and this
-is in fact worth a generic solution.
+> Why hacky?  It seems quite reasonable to me that the user has to tell a
+> subsystem that from a certain point it should be capable of handling
+> some device.
 
--Christoffer
+But the reason that driver can handle the device has nothing to do with
+the compatible -- it can handle any device on the bus (except for
+limitations checked for in the probe function), but it's a policy
+decision whether we want it to handle any particular device (as opposed
+to a particular type of device).
+
+Now, if we end up requiring a device-aware kernel stub for VFIO platform
+devices (as was discussed for handling reset and such), we won't want a
+wildcard match, but we'd still want to say that devices only get bound
+to vfio upon explicit request.  We also would not want userspace adding
+to vfio's compatible list in that case.  So perhaps a flag for "only
+bind on explicit request" should be separate from the ability to supply
+a wildcard match.  VFIO PCI could still use the wildcard match.
+
+> As for the data structure, isn't this a simple linked list?
+
+It could be, but currently it's an array, which is what all the drivers
+are expecting to provide.  Adding a second parallel mechanism (like PCI
+dynid) seems excessive compared to adding a wildcard match (on PCI such
+a mechanism happened to already exist, which made it easy to use for
+this, even if it wasn't necessarily the best approach).  And then what
+happens on non-device-tree platform devices?
+
+> The problem with the race seems to be a common problem that hasn't even
+> been solved for PCI yet, so I'm wondering if this is not an orthogonal
+> issue with a separate solution, such as a priority or something like
+> that.
+>
+> Yes, once you've added the new_compatible to the vfio-platform driver,
+> it's up for grabs from both the new and the old driver, but that could
+> be solved by always making sure that the vfio-platform driver is checked
+> first.
+
+...which is the opposite of what you want if a different device of the
+same type is plugged in after you add the device type ID to vfio.  A
+"bind only by request" flag would avoid that problem.
+
+As for the possibility that the normal driver would claim it (maybe due
+to the bus being rescanned after a hotplug event?), that could be
+addressed with a mechanism to atomically unbind-and-rebind, or (perhaps
+easier) by making it so that once a device has been explicitly unbound,
+it can only be bound again by explicit request (which would also allow a
+user to say "I don't want to use this device at all" without it getting
+rebound later).
+
+Better still would be an independent "don't bind by default" flag that
+the user can set in sysfs (this is different from the driver's "don't
+bind by default" flag that is set by the driver), so that the action is
+reversible, and so a user can set this policy regardless of whether a
+driver has been loaded yet.
+
+> > What's wrong with a non-vfio-specific flag that a driver can set, that
+> > indicates that the driver is willing to try to bind to any device on the
+> > bus if explicitly requested via the existing sysfs bind mechanism?
+> > 
+> It sounds more hackish to me to invent some 'generic' flag to solve a
+> very specific case. 
+
+new_compatible would be to solve an even more specific case, but both
+new_compatible and a don't-bind-by-default flag could have applications
+elsewhere.
+
+> What you're suggesting would let users specify that
+> a serial driver should handle a NIC hardware, no?  That sounds much much
+> worse to me.
+
+The flag (and wildcard match, if applicable) would be set by the driver,
+not by the user.  Whereas PCI's "new_id" and the "new_compatible" being
+suggested in this thread would allow exactly that, assuming the driver
+doesn't reject the device in the probe function.
+
+-Scott
+
+
+
