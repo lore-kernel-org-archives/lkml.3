@@ -1,60 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab3JBTD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:03:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37206 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753877Ab3JBTDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:03:54 -0400
-Message-ID: <524C6D64.8080801@zytor.com>
-Date: Wed, 02 Oct 2013 12:00:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754570Ab3JBTHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:07:00 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36031 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab3JBTG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 15:06:59 -0400
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-References: <cover.1380727889.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1380727889.git.michal.simek@xilinx.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <20131002185723.GA32614@redhat.com>
+References: <CAAeHK+w+8=DGvFeuMAwS50RRvAGw1KkWHcivja5q-wmX8GtH2w@mail.gmail.com>
+	<CAAeHK+wy+vs2PniKh8DbWzZoS99g1eZ-U3mv+6SzoznC8WHW6A@mail.gmail.com>
+	<20131002185723.GA32614@redhat.com>
+Date: Wed, 2 Oct 2013 23:06:58 +0400
+Message-ID: <CAAeHK+xOU-7bCU--fOw2_ebAd6hNnMKHjnp0_c-H1rZ+YCBBwg@mail.gmail.com>
+Subject: Re: Fwd: Potential out-of-bounds in ftrace_regex_release
+From: Andrey Konovalov <andreyknvl@google.com>
+To: Dave Jones <davej@redhat.com>, Andrey Konovalov <andreyknvl@google.com>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, Dmitry Vyukov <dvyukov@google.com>,
+        Kostya Serebryany <kcc@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 08:35 AM, Michal Simek wrote:
-> 
-> Based on my discussion at ELC with Greg KH the new driver should
-> support firmware interface for loading bitstream.
-> 
+On Wed, Oct 2, 2013 at 10:57 PM, Dave Jones <davej@redhat.com> wrote:
+> And that's the cause. I wonder what was being opened.
+> Do you happen to have a trinity-child log for that thread ?
 
-As I have previously stated, I think this is a mistake simply because
-the firmware interface is a bad mapping on requirements for an FPGA,
-especially once you account for the vast number of ways an FPGA can
-get loaded and you take partial reconfiguration into account.  I
-happen to be at a face to face meeting with Greg today, so I'll pick
-his brain a bit.
-
-	-hpa
-
-
+Unfortunately not.
