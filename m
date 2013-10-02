@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3JBPAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:00:34 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42050 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab3JBPAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:00:32 -0400
+	id S1753547Ab3JBPCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:02:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50760 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926Ab3JBPCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 11:02:50 -0400
+Date: Wed, 2 Oct 2013 17:02:45 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Manoj Chourasia <mchourasia@nvidia.com>
+Cc: "Mika Westerberg (mika.westerberg@linux.intel.com)" 
+	<mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: FW: [PATCH] hidraw: close underlying device at removal of last
+ reader
+In-Reply-To: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDD19DD43@BGMAIL02.nvidia.com>
+Message-ID: <alpine.LNX.2.00.1310021702330.29701@pobox.suse.cz>
+References: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDD19DD43@BGMAIL02.nvidia.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqXbx4_Efsb-qUjGZYDr2u1sqc8uhd_R2iDMm-hSBBtWcA@mail.gmail.com>
-References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
-	<CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
-	<CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
-	<CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
-	<CANq1E4QYrQ-YcL9eGAA4LUozVnPaDNisVex8eMe+Xpj8TaWdeA@mail.gmail.com>
-	<CAG-2HqXrpmZCsqXTG7pE9rtgPVrtvkU8gDxngGMtRjkoyqBMHA@mail.gmail.com>
-	<CAG-2HqUG=Ocd6qZuy6LYRA49NvyKnguSdnpDgX1Br17SWvkS1A@mail.gmail.com>
-	<CANq1E4QLCp4xzGsgceuGgX-k7JpiA_ayJy3e0iYoWAMAsc7fCA@mail.gmail.com>
-	<CAG-2HqXbx4_Efsb-qUjGZYDr2u1sqc8uhd_R2iDMm-hSBBtWcA@mail.gmail.com>
-Date: Wed, 2 Oct 2013 17:00:29 +0200
-Message-ID: <CANq1E4QLSLybL1ELJuEbmwA8FenDrm+p7nakb436cFJy7L69cw@mail.gmail.com>
-Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tom
+On Tue, 1 Oct 2013, Manoj Chourasia wrote:
 
-On Sun, Sep 8, 2013 at 11:38 AM, Tom Gundersen <teg@jklm.no> wrote:
-> On Sun, Sep 8, 2013 at 2:13 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> Hi
->>
->> On Sun, Sep 8, 2013 at 1:22 AM, Tom Gundersen <teg@jklm.no> wrote:
->>> Hi David,
->>>
->>> On Sat, Sep 7, 2013 at 11:57 PM, Tom Gundersen <teg@jklm.no> wrote:
->>>> On Sat, Sep 7, 2013 at 4:30 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>>>> Attached are two patches. The first one should fix this issue, the
->>>>> second one is the rebased ioremap_wc() patch from the other thread.
->>>>>
->>>>> Does this fix the issue (and the speed-problems)?
->>>>
->>>> Sadly, no. I added a few printk's to verify that the function you
->>>> added is called (it is), but still the same oops.
->>>
->>> A few more datapoints:
->>>
->>> Triggers:
->>> X86_SYSFB=y and FB_SIMPLE=n (so no fbdev until i915 is loaded)
->>> X86_SYSFB=y and FB_SIMPLE=y
->>>
->>> Does not trigger:
->>> X86_SYSFB=y, FB_EFI=yes, and without the overflow fix (i.e., so we
->>> fall back to efifb)
->>> X86_SYSFB=n and FB_EFI=y
->>> X86_SYSFB=n and FB_EFI=n (so no fbdev until i915 is loaded)
->>>
->>> Does this make any sense?
->>
->> Thanks a lot for these results. I think I got it know. I will write a
->> patch that marks the resource as busy. See:
->>   kernel/resource.c iomem_map_sanity_check()
->> It also contains a hint that we should set this for driver-resources
->> which not directly map to hardware resources (such as veasfb and,
->> obviously, simplefb).
->>
->> Following a diff which hopefully fixes this. The other two patches
->> should still be required, though. I will try to write a proper patch
->> tomorrow.
->>
->> Thanks a lot for these extensive tests, Tom!
->
-> No problem. Thanks for the fix, it works for me!
+> Hi Jiri,
+> 
+> Mika Westerberg mika.westerberg@linux.intel.com reported a bug introduced in hid driver after 
+> commit 212a871a393 (HID: hidraw: correctly deallocate memory on device disconnect) 
+> that hidraw doesn't close the underlying hid device when the device node is closed last time.
+> 
+> I am proposing following patch as fix.  Please review it.  Mika will help in testing.
+> 
+> ----------------------------------------
+> >From b37519b65be0d51b90c5fc177c0dc0cd2f6358b1 Mon Sep 17 00:00:00 2001
+> From: Manoj Chourasia <mchourasia@nvidia.com>
+> Date: Tue, 1 Oct 2013 15:39:00 +0530
+> Subject: [PATCH] HID: hidraw: close underlying device at removal of last reader
+> 
+> Even though device exist bit is set the underlying
+> HW device should be closed when the last reader
+> of the device is closed i.e. open count drops to zero.
+> 
+> Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
 
-I finally got time to send the patches out. You're on CC on all of
-them. They're unmodified so no need to test again.
+Applied, thanks a lot to both of you.
 
-Thanks for the feedback!
-David
+-- 
+Jiri Kosina
+SUSE Labs
