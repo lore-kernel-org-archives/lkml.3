@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3JBMV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:21:57 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:45539 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab3JBMUT (ORCPT
+	id S1754429Ab3JBMWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:22:14 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53572 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754395Ab3JBMWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:20:19 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: eilong@broadcom.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 09/19 v2] net: bnx2x: Change variable type to bool
-Date: Wed,  2 Oct 2013 14:19:49 +0200
-Message-Id: <1380716391-20214-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380716391-20214-1-git-send-email-peter.senna@gmail.com>
-References: <1380716391-20214-1-git-send-email-peter.senna@gmail.com>
+	Wed, 2 Oct 2013 08:22:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19cJ8rNb7u7mUeGcV1tZVeE4ZpCUbX1qAM=
+Date: Wed, 2 Oct 2013 08:22:09 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] net: mv643xx_eth: fix missing device_node for port
+ devices
+Message-ID: <20131002122209.GK31178@titan.lakedaemon.net>
+References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1380711442-24735-4-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380711442-24735-4-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable rc is only assigned the values true and false.
-The function bnx2x_prev_is_path_marked already returns bool.
-Change rc type to bool.
+On Wed, Oct 02, 2013 at 12:57:22PM +0200, Sebastian Hesselbarth wrote:
+> DT-based mv643xx_eth probes and creates platform_devices for the
+> port devices on its own. To allow fixups for ports based on the
+> device_node, we need to set .of_node of the corresponding device
+> with the correct node.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/ethernet/marvell/mv643xx_eth.c |    1 +
+>  1 file changed, 1 insertion(+)
 
-The simplified semantic patch that find this problem is as
-follows (http://coccinelle.lip6.fr/):
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-@exists@
-type T;
-identifier b;
-@@
-- T
-+ bool
-  b = ...;
-  ... when any
-  b = \(true\|false\)
+thx,
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
-Changes from v1:
- - Added subsystem prefix to shortlog
-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index fccfc1d..105cc80 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -9874,7 +9874,7 @@ static int bnx2x_prev_path_mark_eeh(struct bnx2x *bp)
- static bool bnx2x_prev_is_path_marked(struct bnx2x *bp)
- {
- 	struct bnx2x_prev_path_list *tmp_list;
--	int rc = false;
-+	bool rc = false;
- 
- 	if (down_trylock(&bnx2x_prev_sem))
- 		return false;
--- 
-1.8.3.1
-
+Jason.
