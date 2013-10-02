@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3JBCq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 22:46:57 -0400
-Received: from mouse.start.ca ([64.140.120.56]:34667 "EHLO mouse.start.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab3JBCqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 22:46:55 -0400
-Message-ID: <524B8908.8080607@start.ca>
-Date: Tue, 01 Oct 2013 22:46:32 -0400
-From: Mark Lord <kernel@start.ca>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752659Ab3JBC6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 22:58:53 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65223 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309Ab3JBC6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 22:58:50 -0400
+X-AuditID: 9c93016f-b7bc8ae000004e6e-5b-524b8be8c09c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf stat: Set child_pid after perf_evlist__prepare_workload()
+References: <1380531671-28076-1-git-send-email-namhyung@kernel.org>
+	<524980ED.2000507@gmail.com>
+	<20131001165133.GE2920@ghostprotocols.net>
+Date: Wed, 02 Oct 2013 11:58:48 +0900
+In-Reply-To: <20131001165133.GE2920@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 1 Oct 2013 13:51:33 -0300")
+Message-ID: <878uycnztj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-References: <20130905185440.GA13175@dhcp-26-207.brq.redhat.com> <20130905200608.GA3846@htj.dyndns.org> <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com> <20130906160621.GF22763@mtj.dyndns.org> <20130906233205.GF12956@google.com> <20130909152044.GA24962@dhcp-26-207.brq.redhat.com> <20130916102210.GA14102@dhcp-26-207.brq.redhat.com> <20130917143022.GA7707@concordia> <20130918094759.GA2353@dhcp-26-207.brq.redhat.com> <52442975.9000603@start.ca> <20130926130328.GD16774@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20130926130328.GD16774@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-09-26 09:03 AM, Alexander Gordeev wrote:
-> On Thu, Sep 26, 2013 at 08:32:53AM -0400, Mark Lord wrote:
->> On 13-09-18 05:48 AM, Alexander Gordeev wrote:
->>> The last pattern makes most of sense to me and could be updated with a more
->>> clear sequence - a call to (bit modified) pci_msix_table_size() followed
->>> by a call to pci_enable_msix(). I think this pattern can effectively
->>> supersede the currently recommended "loop" practice.
->>
->> The loop is still necessary, because there's a race between those two calls,
->> so that pci_enable_msix() can still fail due to lack of MSIX slots.
-> 
-> Moreover, the existing loop pattern is racy and could fail just as easily ;)
+On Tue, 1 Oct 2013 13:51:33 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Sep 30, 2013 at 07:47:25AM -0600, David Ahern escreveu:
+>> On 9/30/13 3:01 AM, Namhyung Kim wrote:
+>> >From: Namhyung Kim <namhyung.kim@lge.com>
+>> >
+>> >The commit acf2892270dc ("perf stat: Use perf_evlist__prepare/
+>> >start_workload()") converted to use the function but forgot to update
+>> >child_pid.  Fix it.
+>> >
+>> >Cc: David Ahern <dsahern@gmail.com>
+>> >Cc: Stephane Eranian <eranian@google.com>
+>> >Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> >---
+>> >  tools/perf/builtin-stat.c | 1 +
+>> >  1 file changed, 1 insertion(+)
+>> >
+>> >diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+>> >index f686d5ff594e..5098f144b92d 100644
+>> >--- a/tools/perf/builtin-stat.c
+>> >+++ b/tools/perf/builtin-stat.c
+>> >@@ -457,6 +457,7 @@ static int __run_perf_stat(int argc, const char **argv)
+>> >  			perror("failed to prepare workload");
+>> >  			return -1;
+>> >  		}
+>> >+		child_pid = evsel_list->workload.pid;
+>> >  	}
+>> >
+>> >  	if (group)
+>> >
+>> 
+>> Interesting. I can't find a test case where is matters ... perhaps a
+>> convenience of waitpid taking -1.
+>
+> Yeah, the interval part initially used the fork return, then after
+> acf2892270dc used the default value of child_pid, -1, which is ok as it
+> waits for any children, but I wonder what would happen in workloads with
+> multiple children.
 
-Yes, but it then loops again to correct things.
+Hmm.. right.  And in fact what I actually concern was when killing child
+if create_perf_stat_counter() failed.
 
-> But (1) that is something drivers should expect and (2) there is basically
-> nothing to race against - that is probably the reason it has not been a
-> problem for pSeries. So I think we should not care about this.
+	if (child_pid != -1)
+		kill(child_pid, SIGTERM);
 
-I always care about race conditions.
+>
+> But for correctness acf2892270dc should have kept the existing
+> semantics, even if using -1 could in the end be ok.
 
+Agreed.
 
+Thanks,
+Namhyung
