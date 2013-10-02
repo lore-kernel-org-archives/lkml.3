@@ -1,98 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab3JBRXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:23:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49789 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab3JBRXl (ORCPT
+	id S1755056Ab3JBRXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:23:49 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26029 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754263Ab3JBRXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:23:41 -0400
-Date: Wed, 2 Oct 2013 13:22:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Ian Campbell <Ian.Campbell@citrix.com>, rob.herring@calxeda.com
-Subject: Re: [PATCH v6 15/19] swiotlb-xen: call dma_capable only if
- dev->dma_mask is allocated
-Message-ID: <20131002172258.GC24791@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com>
- <1380298207-29151-15-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130930160223.GU3106@phenom.dumpdata.com>
- <alpine.DEB.2.02.1310021811030.26077@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1310021811030.26077@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 2 Oct 2013 13:23:45 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 55/77] ntb: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:49:11 +0200
+Message-Id: <49eb592e15aaec804f9c11ca132d2b85c516aefa.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 06:13:35PM +0100, Stefano Stabellini wrote:
-> The real issue is that some devices (xgmac, I am looking at you), don't
-> set the dma_mask, even though they are perfectly capable of doing dma.
+As result of recent re-design of the MSI/MSI-X interrupts enabling
+pattern this driver has to be updated to use the new technique to
+obtain a optimal number of MSI/MSI-X interrupts required.
 
-So this looks like a bug in the drivers. I thought I saw a huge patchset
-by the ARM maintainer that tries to fix the dma_mask and dma_mask_coherent
-bugs? And also fix the drivers to use the dma mask?
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/ntb/ntb_hw.c |   41 +++++++++++++----------------------------
+ drivers/ntb/ntb_hw.h |    2 --
+ 2 files changed, 13 insertions(+), 30 deletions(-)
 
-> 
-> Maybe I should modify the arm implementation of dma_capable (see
-> http://marc.info/?l=linux-kernel&m=138029832007821&w=2) to ignore the
-> dma_mask.
+diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+index eccd5e5..7776429 100644
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -1032,23 +1032,26 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+ 	struct msix_entry *msix;
+ 	int msix_entries;
+ 	int rc, i;
+-	u16 val;
+ 
+-	if (!pdev->msix_cap) {
+-		rc = -EIO;
++	rc = pci_msix_table_size(pdev);
++	if (rc < 0)
+ 		goto err;
+-	}
+ 
+-	rc = pci_read_config_word(pdev, pdev->msix_cap + PCI_MSIX_FLAGS, &val);
+-	if (rc)
++	/*
++	 * On SNB, the link interrupt is always tied to 4th vector.  If
++	 * we can't get all 4, then we can't use MSI-X.
++	 */
++	if ((rc < SNB_MSIX_CNT) && (ndev->hw_type != BWD_HW)) {
++		rc = -ENOSPC;
+ 		goto err;
+-
+-	msix_entries = msix_table_size(val);
+-	if (msix_entries > ndev->limits.msix_cnt) {
++	}
++	if (rc > ndev->limits.msix_cnt) {
+ 		rc = -EINVAL;
+ 		goto err;
+ 	}
+ 
++	msix_entries = rc;
++
+ 	ndev->msix_entries = kmalloc(sizeof(struct msix_entry) * msix_entries,
+ 				     GFP_KERNEL);
+ 	if (!ndev->msix_entries) {
+@@ -1060,26 +1063,8 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+ 		ndev->msix_entries[i].entry = i;
+ 
+ 	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+-	if (rc < 0)
++	if (rc)
+ 		goto err1;
+-	if (rc > 0) {
+-		/* On SNB, the link interrupt is always tied to 4th vector.  If
+-		 * we can't get all 4, then we can't use MSI-X.
+-		 */
+-		if ((rc < SNB_MSIX_CNT) && (ndev->hw_type != BWD_HW)) {
+-			rc = -EIO;
+-			goto err1;
+-		}
+-
+-		dev_warn(&pdev->dev,
+-			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+-			 rc);
+-		msix_entries = rc;
+-
+-		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+-		if (rc)
+-			goto err1;
+-	}
+ 
+ 	for (i = 0; i < msix_entries; i++) {
+ 		msix = &ndev->msix_entries[i];
+diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
+index 0a31ced..50bd760 100644
+--- a/drivers/ntb/ntb_hw.h
++++ b/drivers/ntb/ntb_hw.h
+@@ -60,8 +60,6 @@
+ #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
+ #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
+ 
+-#define msix_table_size(control)	((control & PCI_MSIX_FLAGS_QSIZE)+1)
+-
+ #ifndef readq
+ static inline u64 readq(void __iomem *addr)
+ {
+-- 
+1.7.7.6
 
-Or fix the 'xgmac'?
-> 
-> On Mon, 30 Sep 2013, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Sep 27, 2013 at 05:10:03PM +0100, Stefano Stabellini wrote:
-> > 
-> > Why? I am looking at X86 and IA64 and I see:
-> > 
-> >  79         if (!dev->dma_mask)                                                     
-> >  80                 return 0;           
-> > 
-> > 
-> > Why not port dma_capable over to ARM?
-> > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > ---
-> > >  drivers/xen/swiotlb-xen.c |    6 +++---
-> > >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > > index 790c2eb..3011736 100644
-> > > --- a/drivers/xen/swiotlb-xen.c
-> > > +++ b/drivers/xen/swiotlb-xen.c
-> > > @@ -512,7 +512,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> > >  	 * buffering it.
-> > >  	 */
-> > >  	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
-> > > -	    dma_capable(dev, dev_addr, size) &&
-> > > +	    dev->dma_mask && dma_capable(dev, dev_addr, size) &&
-> > >  	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
-> > >  		return dev_addr;
-> > >  
-> > > @@ -532,7 +532,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> > >  	/*
-> > >  	 * Ensure that the address returned is DMA'ble
-> > >  	 */
-> > > -	if (!dma_capable(dev, dev_addr, size)) {
-> > > +	if (dev->dma_mask && !dma_capable(dev, dev_addr, size)) {
-> > >  		swiotlb_tbl_unmap_single(dev, map, size, dir);
-> > >  		dev_addr = 0;
-> > >  	}
-> > > @@ -660,7 +660,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> > >  
-> > >  		if (swiotlb_force ||
-> > >  		    xen_feature(XENFEAT_auto_translated_physmap) ||
-> > > -		    !dma_capable(hwdev, dev_addr, sg->length) ||
-> > > +		    (hwdev->dma_mask && !dma_capable(hwdev, dev_addr, sg->length)) ||
-> > >  		    range_straddles_page_boundary(paddr, sg->length)) {
-> > >  			/*
-> > >  			 * Pass the dma_addr of the first slab in the iotlb buffer as
-> > > -- 
-> > > 1.7.2.5
-> > > 
-> > 
