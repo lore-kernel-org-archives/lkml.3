@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab3JBP1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:27:07 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6204 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab3JBP06 (ORCPT
+	id S1753893Ab3JBP1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:27:25 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19271 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab3JBP1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:26:58 -0400
+	Wed, 2 Oct 2013 11:27:03 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 02 Oct 2013 08:26:57 -0700
+	by hqnvupgp08.nvidia.com on Wed, 02 Oct 2013 08:23:09 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <broonie@kernel.org>,
         <linus.walleij@linaro.org>, <akpm@linux-foundation.org>
@@ -17,10 +17,11 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <rtc-linux@googlegroups.com>, <rob.herring@calxeda.com>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
         <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
-        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V5 2/3] pincntrl: add support for ams AS3722 pin control driver
-Date: Wed, 2 Oct 2013 21:20:29 +0530
-Message-ID: <1380729030-25896-3-git-send-email-ldewangan@nvidia.com>
+        <grant.likely@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>,
+        Florian Lobmaier <florian.lobmaier@ams.com>
+Subject: [PATCH V4 3/3] drivers/rtc/rtc-as3722: add RTC driver
+Date: Wed, 2 Oct 2013 21:20:30 +0530
+Message-ID: <1380729030-25896-4-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1380729030-25896-1-git-send-email-ldewangan@nvidia.com>
 References: <1380729030-25896-1-git-send-email-ldewangan@nvidia.com>
@@ -30,709 +31,365 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AS3722 is a compact system PMU suitable for mobile phones, tablets etc.
+The ams AS3722 is a compact system PMU suitable for mobile phones,
+tablets etc.
 
-Add a driver to support accessing the GPIO, pinmux and pin configuration
-of 8 GPIO pins found on the ams AS3722 through pin control driver and
-gpiolib.
-
-The driver will register itself as the pincontrol driver and gpio driver.
+Add a driver to support accessing the RTC found on the ams AS3722
+PMIC using RTC framework.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
 ---
 Changes from V1:
-- Nit cleanups in driver and use module_platform_driver.
-        
+- Get rid of clk32k out configuration from RTC. Will add clock driver.
+
 Changes from V2:
-- Move the gpio driver from gpio folder to pinctnrl driver and register
-  driver as pincontrol driver.
-- Provide pin configuration through pincntrl framework.
+- None. 
 
-Changes from V3: 
-- Added gpio ranges and pinctrl_gpio calls.
-- Used pinctrl_gpio_* calls on gpio chips callback.
-- Remove dummy function which just return not supported.
-- Nit cleanups.
+Changes form V3:
+- Change AMS to ams.
 
-Changes from V4:
-- Drop separate DT binding document as it is moved to mfd/as3722.txt.
+ drivers/rtc/Kconfig      |   10 ++
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-as3722.c |  296 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 307 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-as3722.c
 
- drivers/pinctrl/Kconfig          |   11 +
- drivers/pinctrl/Makefile         |    1 +
- drivers/pinctrl/pinctrl-as3722.c |  630 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 642 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pinctrl/pinctrl-as3722.c
-
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 21db201..85f5462 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -59,6 +59,17 @@ config PINCTRL_ADI2
- 	  future processors. This option is selected automatically when specific
- 	  machine and arch are selected to build.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 9654aa3..d8785d7 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -153,6 +153,16 @@ config RTC_DRV_88PM80X
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-88pm80x.
  
-+config PINCTRL_AS3722
-+	bool "Pinctrl and GPIO driver for ams AS3722 PMIC"
-+	depends on MFD_AS3722 && GPIOLIB
-+	select PINMUX
-+	select GENERIC_PINCONF
++config RTC_DRV_AS3722
++	tristate "ams AS3722 RTC driver"
++	depends on MFD_AS3722
 +	help
-+	  AS3722 device supports the configuration of GPIO pins for different
-+	  functionality. This driver supports the pinmux, push-pull and
-+	  open drain configuration for the GPIO pins of AS3722 devices. It also
-+	  supports the GPIO functionality through gpiolib.
++	  If you say yes here you get support for the RTC of ams AS3722 PMIC
++	  chips.
 +
- config PINCTRL_BF54x
- 	def_bool y if BF54x
- 	select PINCTRL_ADI2
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index bbeb980..3d14cb8 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_PINCTRL_AB8540)	+= pinctrl-ab8540.o
- obj-$(CONFIG_PINCTRL_AB9540)	+= pinctrl-ab9540.o
- obj-$(CONFIG_PINCTRL_AB8505)	+= pinctrl-ab8505.o
- obj-$(CONFIG_PINCTRL_ADI2)	+= pinctrl-adi2.o
-+obj-$(CONFIG_PINCTRL_AS3722)	+= pinctrl-as3722.o
- obj-$(CONFIG_PINCTRL_BF54x)	+= pinctrl-adi2-bf54x.o
- obj-$(CONFIG_PINCTRL_BF60x)	+= pinctrl-adi2-bf60x.o
- obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
-diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-as3722.
++
+ config RTC_DRV_DS1307
+ 	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 2dff3d2..fdb5764 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_RTC_DRV_88PM860X)  += rtc-88pm860x.o
+ obj-$(CONFIG_RTC_DRV_88PM80X)	+= rtc-88pm80x.o
+ obj-$(CONFIG_RTC_DRV_AB3100)	+= rtc-ab3100.o
+ obj-$(CONFIG_RTC_DRV_AB8500)	+= rtc-ab8500.o
++obj-$(CONFIG_RTC_DRV_AS3722)	+= rtc-as3722.o
+ obj-$(CONFIG_RTC_DRV_AT32AP700X)+= rtc-at32ap700x.o
+ obj-$(CONFIG_RTC_DRV_AT91RM9200)+= rtc-at91rm9200.o
+ obj-$(CONFIG_RTC_DRV_AT91SAM9)	+= rtc-at91sam9.o
+diff --git a/drivers/rtc/rtc-as3722.c b/drivers/rtc/rtc-as3722.c
 new file mode 100644
-index 0000000..01bffc1
+index 0000000..430a927
 --- /dev/null
-+++ b/drivers/pinctrl/pinctrl-as3722.c
-@@ -0,0 +1,630 @@
++++ b/drivers/rtc/rtc-as3722.c
+@@ -0,0 +1,296 @@
 +/*
-+ * ams AS3722 pin control and GPIO driver.
++ * rtc-as3722.c - Real Time Clock driver for ams AS3722 PMICs
 + *
-+ * Copyright (c) 2013, NVIDIA Corporation.
++ * Copyright (C) 2013 ams AG
++ * Copyright (c) 2013, NVIDIA Corporation. All rights reserved.
 + *
++ * Author: Florian Lobmaier <florian.lobmaier@ams.com>
 + * Author: Laxman Dewangan <ldewangan@nvidia.com>
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
-+ * whether express or implied; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+ * 02111-1307, USA
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ *
 + */
 +
++#include <linux/bcd.h>
++#include <linux/completion.h>
 +#include <linux/delay.h>
-+#include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/ioctl.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/mfd/as3722.h>
 +#include <linux/of.h>
-+#include <linux/of_device.h>
++#include <linux/of_platform.h>
 +#include <linux/platform_device.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/pinctrl/machine.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinconf-generic.h>
-+#include <linux/pinctrl/pinconf.h>
-+#include <linux/pinctrl/pinmux.h>
-+#include <linux/pm.h>
-+#include <linux/slab.h>
++#include <linux/rtc.h>
++#include <linux/time.h>
 +
-+#include "core.h"
-+#include "pinconf.h"
-+#include "pinctrl-utils.h"
-+
-+#define AS3722_PIN_GPIO0		0
-+#define AS3722_PIN_GPIO1		1
-+#define AS3722_PIN_GPIO2		2
-+#define AS3722_PIN_GPIO3		3
-+#define AS3722_PIN_GPIO4		4
-+#define AS3722_PIN_GPIO5		5
-+#define AS3722_PIN_GPIO6		6
-+#define AS3722_PIN_GPIO7		7
-+#define AS3722_PIN_NUM			(AS3722_PIN_GPIO7 + 1)
-+
-+#define AS3722_GPIO_MODE_PULL_UP           BIT(PIN_CONFIG_BIAS_PULL_UP)
-+#define AS3722_GPIO_MODE_PULL_DOWN         BIT(PIN_CONFIG_BIAS_PULL_DOWN)
-+#define AS3722_GPIO_MODE_HIGH_IMPED        BIT(PIN_CONFIG_BIAS_HIGH_IMPEDANCE)
-+#define AS3722_GPIO_MODE_OPEN_DRAIN        BIT(PIN_CONFIG_DRIVE_OPEN_DRAIN)
-+
-+struct as3722_pin_function {
-+	const char *name;
-+	const char * const *groups;
-+	unsigned ngroups;
-+	int mux_option;
++#define AS3722_RTC_START_YEAR	  2000
++struct as3722_rtc {
++	struct rtc_device	*rtc;
++	struct device		*dev;
++	struct as3722		*as3722;
++	int			alarm_irq;
++	bool			irq_enable;
 +};
 +
-+struct as3722_gpio_pin_control {
-+	bool enable_gpio_invert;
-+	unsigned mode_prop;
-+	int io_function;
-+};
-+
-+struct as3722_pingroup {
-+	const char *name;
-+	const unsigned pins[1];
-+	unsigned npins;
-+};
-+
-+struct as3722_pctrl_info {
-+	struct device *dev;
-+	struct pinctrl_dev *pctl;
-+	struct as3722 *as3722;
-+	struct gpio_chip gpio_chip;
-+	int pins_current_opt[AS3722_PIN_NUM];
-+	const struct as3722_pin_function *functions;
-+	unsigned num_functions;
-+	const struct as3722_pingroup *pin_groups;
-+	int num_pin_groups;
-+	const struct pinctrl_pin_desc *pins;
-+	unsigned num_pins;
-+	struct as3722_gpio_pin_control gpio_control[AS3722_PIN_NUM];
-+};
-+
-+static const struct pinctrl_pin_desc as3722_pins_desc[] = {
-+	PINCTRL_PIN(AS3722_PIN_GPIO0, "gpio0"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO1, "gpio1"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO2, "gpio2"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO3, "gpio3"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO4, "gpio4"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO5, "gpio5"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO6, "gpio6"),
-+	PINCTRL_PIN(AS3722_PIN_GPIO7, "gpio7"),
-+};
-+
-+static const char * const gpio_groups[] = {
-+	"gpio0",
-+	"gpio1",
-+	"gpio2",
-+	"gpio3",
-+	"gpio4",
-+	"gpio5",
-+	"gpio6",
-+	"gpio7",
-+};
-+
-+enum as3722_pinmux_option {
-+	AS3722_PINMUX_GPIO			= 0,
-+	AS3722_PINMUX_INTERRUPT_OUT		= 1,
-+	AS3722_PINMUX_VSUB_VBAT_UNDEB_LOW_OUT	= 2,
-+	AS3722_PINMUX_GPIO_INTERRUPT		= 3,
-+	AS3722_PINMUX_PWM_INPUT			= 4,
-+	AS3722_PINMUX_VOLTAGE_IN_STBY		= 5,
-+	AS3722_PINMUX_OC_PG_SD0			= 6,
-+	AS3722_PINMUX_PG_OUT			= 7,
-+	AS3722_PINMUX_CLK32K_OUT		= 8,
-+	AS3722_PINMUX_WATCHDOG_INPUT		= 9,
-+	AS3722_PINMUX_SOFT_RESET_IN		= 11,
-+	AS3722_PINMUX_PWM_OUTPUT		= 12,
-+	AS3722_PINMUX_VSUB_VBAT_LOW_DEB_OUT	= 13,
-+	AS3722_PINMUX_OC_PG_SD6			= 14,
-+};
-+
-+#define FUNCTION_GROUP(fname, mux)			\
-+	{						\
-+		.name = #fname,				\
-+		.groups = gpio_groups,			\
-+		.ngroups = ARRAY_SIZE(gpio_groups),	\
-+		.mux_option = AS3722_PINMUX_##mux,	\
-+	}
-+
-+static const struct as3722_pin_function as3722_pin_function[] = {
-+	FUNCTION_GROUP(gpio, GPIO),
-+	FUNCTION_GROUP(interrupt-out, INTERRUPT_OUT),
-+	FUNCTION_GROUP(gpio-in-interrupt, GPIO_INTERRUPT),
-+	FUNCTION_GROUP(vsup-vbat-low-undebounce-out, VSUB_VBAT_UNDEB_LOW_OUT),
-+	FUNCTION_GROUP(vsup-vbat-low-debounce-out, VSUB_VBAT_LOW_DEB_OUT),
-+	FUNCTION_GROUP(voltage-in-standby, VOLTAGE_IN_STBY),
-+	FUNCTION_GROUP(oc-pg-sd0, OC_PG_SD0),
-+	FUNCTION_GROUP(oc-pg-sd6, OC_PG_SD6),
-+	FUNCTION_GROUP(powergood-out, PG_OUT),
-+	FUNCTION_GROUP(pwm-in, PWM_INPUT),
-+	FUNCTION_GROUP(pwm-out, PWM_OUTPUT),
-+	FUNCTION_GROUP(clk32k-out, CLK32K_OUT),
-+	FUNCTION_GROUP(watchdog-in, WATCHDOG_INPUT),
-+	FUNCTION_GROUP(soft-reset-in, SOFT_RESET_IN),
-+};
-+
-+#define AS3722_PINGROUP(pg_name, pin_id) \
-+	{								\
-+		.name = #pg_name,					\
-+		.pins = {AS3722_PIN_##pin_id},				\
-+		.npins = 1,						\
-+	}
-+
-+static const struct as3722_pingroup as3722_pingroups[] = {
-+	AS3722_PINGROUP(gpio0,	GPIO0),
-+	AS3722_PINGROUP(gpio1,	GPIO1),
-+	AS3722_PINGROUP(gpio2,	GPIO2),
-+	AS3722_PINGROUP(gpio3,	GPIO3),
-+	AS3722_PINGROUP(gpio4,	GPIO4),
-+	AS3722_PINGROUP(gpio5,	GPIO5),
-+	AS3722_PINGROUP(gpio6,	GPIO6),
-+	AS3722_PINGROUP(gpio7,	GPIO7),
-+};
-+
-+static int as3722_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
++static void as3722_time_to_reg(u8 *rbuff, struct rtc_time *tm)
 +{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return as_pci->num_pin_groups;
++	rbuff[0] = bin2bcd(tm->tm_sec);
++	rbuff[1] = bin2bcd(tm->tm_min);
++	rbuff[2] = bin2bcd(tm->tm_hour);
++	rbuff[3] = bin2bcd(tm->tm_mday);
++	rbuff[4] = bin2bcd(tm->tm_mon);
++	rbuff[5] = bin2bcd(tm->tm_year - (AS3722_RTC_START_YEAR - 1900));
 +}
 +
-+static const char *as3722_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
-+		unsigned group)
++static void as3722_reg_to_time(u8 *rbuff, struct rtc_time *tm)
 +{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return as_pci->pin_groups[group].name;
++	tm->tm_sec = bcd2bin(rbuff[0] & 0x7F);
++	tm->tm_min = bcd2bin(rbuff[1] & 0x7F);
++	tm->tm_hour = bcd2bin(rbuff[2] & 0x3F);
++	tm->tm_mday = bcd2bin(rbuff[3] & 0x3F);
++	tm->tm_mon = bcd2bin(rbuff[4] & 0x1F);
++	tm->tm_year = (AS3722_RTC_START_YEAR - 1900) + bcd2bin(rbuff[5] & 0x7F);
++	return;
 +}
 +
-+static int as3722_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
-+		unsigned group, const unsigned **pins, unsigned *num_pins)
++static int as3722_rtc_read_time(struct device *dev, struct rtc_time *tm)
 +{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	*pins = as_pci->pin_groups[group].pins;
-+	*num_pins = as_pci->pin_groups[group].npins;
-+	return 0;
-+}
-+
-+static const struct pinctrl_ops as3722_pinctrl_ops = {
-+	.get_groups_count = as3722_pinctrl_get_groups_count,
-+	.get_group_name = as3722_pinctrl_get_group_name,
-+	.get_group_pins = as3722_pinctrl_get_group_pins,
-+	.dt_node_to_map = pinconf_generic_dt_node_to_map_pin,
-+	.dt_free_map = pinctrl_utils_dt_free_map,
-+};
-+
-+static int as3722_pinctrl_get_funcs_count(struct pinctrl_dev *pctldev)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return as_pci->num_functions;
-+}
-+
-+static const char *as3722_pinctrl_get_func_name(struct pinctrl_dev *pctldev,
-+			unsigned function)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return as_pci->functions[function].name;
-+}
-+
-+static int as3722_pinctrl_get_func_groups(struct pinctrl_dev *pctldev,
-+		unsigned function, const char * const **groups,
-+		unsigned * const num_groups)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	*groups = as_pci->functions[function].groups;
-+	*num_groups = as_pci->functions[function].ngroups;
-+	return 0;
-+}
-+
-+static int as3722_pinctrl_enable(struct pinctrl_dev *pctldev, unsigned function,
-+		unsigned group)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+	int gpio_cntr_reg = AS3722_GPIOn_CONTROL_REG(group);
-+	u8 val = AS3722_GPIO_IOSF_VAL(as_pci->functions[function].mux_option);
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
++	struct as3722 *as3722 = as3722_rtc->as3722;
++	u8 as_time_array[6];
 +	int ret;
 +
-+	dev_dbg(as_pci->dev, "%s(): GPIO %u pin to function %u and val %u\n",
-+		__func__, group, function, val);
-+
-+	ret = as3722_update_bits(as_pci->as3722, gpio_cntr_reg,
-+			AS3722_GPIO_IOSF_MASK, val);
++	ret = as3722_block_read(as3722, AS3722_RTC_SECOND_REG,
++			6, as_time_array);
 +	if (ret < 0) {
-+		dev_err(as_pci->dev, "GPIO%d_CTRL_REG update failed %d\n",
-+			group, ret);
++		dev_err(dev, "RTC_SECOND reg block read failed %d\n", ret);
 +		return ret;
 +	}
-+	as_pci->gpio_control[group].io_function = function;
++	as3722_reg_to_time(as_time_array, tm);
++	return 0;
++}
++
++static int as3722_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
++	struct as3722 *as3722 = as3722_rtc->as3722;
++	u8 as_time_array[6];
++	int ret;
++
++	if (tm->tm_year < (AS3722_RTC_START_YEAR - 1900))
++		return -EINVAL;
++
++	as3722_time_to_reg(as_time_array, tm);
++	ret = as3722_block_write(as3722, AS3722_RTC_SECOND_REG, 6,
++			as_time_array);
++	if (ret < 0)
++		dev_err(dev, "RTC_SECOND reg block write failed %d\n", ret);
 +	return ret;
 +}
 +
-+static int as3722_pinctrl_gpio_get_mode(unsigned gpio_mode_prop, bool input)
++static int as3722_rtc_alarm_irq_enable(struct device *dev,
++		unsigned int enabled)
 +{
-+	if (gpio_mode_prop & AS3722_GPIO_MODE_HIGH_IMPED)
-+		return -EINVAL;
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
 +
-+	if (gpio_mode_prop & AS3722_GPIO_MODE_OPEN_DRAIN) {
-+		if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_UP)
-+			return AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULL_UP;
-+		return AS3722_GPIO_MODE_IO_OPEN_DRAIN;
-+	}
-+	if (input) {
-+		if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_UP)
-+			return AS3722_GPIO_MODE_INPUT_PULL_UP;
-+		else if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_DOWN)
-+			return AS3722_GPIO_MODE_INPUT_PULL_DOWN;
-+		return AS3722_GPIO_MODE_INPUT;
-+	}
-+	if (gpio_mode_prop & AS3722_GPIO_MODE_PULL_DOWN)
-+		return AS3722_GPIO_MODE_OUTPUT_VDDL;
-+	return AS3722_GPIO_MODE_OUTPUT_VDDH;
-+}
-+
-+static int as3722_pinctrl_gpio_request_enable(struct pinctrl_dev *pctldev,
-+		struct pinctrl_gpio_range *range, unsigned offset)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+
-+	if (as_pci->gpio_control[offset].io_function)
-+		return -EBUSY;
-+	return 0;
-+}
-+
-+static int as3722_pinctrl_gpio_set_direction(struct pinctrl_dev *pctldev,
-+		struct pinctrl_gpio_range *range, unsigned offset, bool input)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+	struct as3722 *as3722 = as_pci->as3722;
-+	int mode;
-+
-+	mode = as3722_pinctrl_gpio_get_mode(
-+			as_pci->gpio_control[offset].mode_prop, input);
-+	if (mode < 0) {
-+		dev_err(as_pci->dev, "%s direction for GPIO %d not supported\n",
-+			(input) ? "Input" : "Output", offset);
-+		return mode;
-+	}
-+
-+	if (as_pci->gpio_control[offset].enable_gpio_invert)
-+		mode |= AS3722_GPIO_INV;
-+
-+	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
-+}
-+
-+static const struct pinmux_ops as3722_pinmux_ops = {
-+	.get_functions_count	= as3722_pinctrl_get_funcs_count,
-+	.get_function_name	= as3722_pinctrl_get_func_name,
-+	.get_function_groups	= as3722_pinctrl_get_func_groups,
-+	.enable			= as3722_pinctrl_enable,
-+	.gpio_request_enable	= as3722_pinctrl_gpio_request_enable,
-+	.gpio_set_direction	= as3722_pinctrl_gpio_set_direction,
-+};
-+
-+static int as3722_pinconf_get(struct pinctrl_dev *pctldev,
-+			unsigned pin, unsigned long *config)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+	enum pin_config_param param = pinconf_to_config_param(*config);
-+	int arg = 0;
-+	u16 prop;
-+
-+	switch (param) {
-+	case PIN_CONFIG_BIAS_DISABLE:
-+		prop = AS3722_GPIO_MODE_PULL_UP |
-+				AS3722_GPIO_MODE_PULL_DOWN;
-+		if (!(as_pci->gpio_control[pin].mode_prop & prop))
-+			arg = 1;
-+		prop = 0;
-+		break;
-+
-+	case PIN_CONFIG_BIAS_PULL_UP:
-+		prop = AS3722_GPIO_MODE_PULL_UP;
-+		break;
-+
-+	case PIN_CONFIG_BIAS_PULL_DOWN:
-+		prop = AS3722_GPIO_MODE_PULL_DOWN;
-+		break;
-+
-+	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-+		prop = AS3722_GPIO_MODE_OPEN_DRAIN;
-+		break;
-+
-+	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-+		prop = AS3722_GPIO_MODE_HIGH_IMPED;
-+		break;
-+
-+	default:
-+		dev_err(as_pci->dev, "Properties not supported\n");
-+		return -ENOTSUPP;
-+	}
-+
-+	if (as_pci->gpio_control[pin].mode_prop & prop)
-+		arg = 1;
-+
-+	*config = pinconf_to_config_packed(param, (u16)arg);
-+	return 0;
-+}
-+
-+static int as3722_pinconf_set(struct pinctrl_dev *pctldev,
-+			unsigned pin, unsigned long *configs,
-+			unsigned num_configs)
-+{
-+	struct as3722_pctrl_info *as_pci = pinctrl_dev_get_drvdata(pctldev);
-+	enum pin_config_param param;
-+	int mode_prop;
-+	int i;
-+
-+	for (i = 0; i < num_configs; i++) {
-+		param = pinconf_to_config_param(configs[i]);
-+		mode_prop = as_pci->gpio_control[pin].mode_prop;
-+
-+		switch (param) {
-+		case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
-+			break;
-+
-+		case PIN_CONFIG_BIAS_DISABLE:
-+			mode_prop &= ~(AS3722_GPIO_MODE_PULL_UP |
-+					AS3722_GPIO_MODE_PULL_DOWN);
-+			break;
-+		case PIN_CONFIG_BIAS_PULL_UP:
-+			mode_prop |= AS3722_GPIO_MODE_PULL_UP;
-+			break;
-+
-+		case PIN_CONFIG_BIAS_PULL_DOWN:
-+			mode_prop |= AS3722_GPIO_MODE_PULL_DOWN;
-+			break;
-+
-+		case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-+			mode_prop |= AS3722_GPIO_MODE_HIGH_IMPED;
-+			break;
-+
-+		case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-+			mode_prop |= AS3722_GPIO_MODE_OPEN_DRAIN;
-+			break;
-+
-+		default:
-+			dev_err(as_pci->dev, "Properties not supported\n");
-+			return -ENOTSUPP;
-+		}
-+
-+		as_pci->gpio_control[pin].mode_prop = mode_prop;
++	if (enabled && !as3722_rtc->irq_enable) {
++		enable_irq(as3722_rtc->alarm_irq);
++		as3722_rtc->irq_enable = true;
++	} else if (!enabled && as3722_rtc->irq_enable)  {
++		disable_irq(as3722_rtc->alarm_irq);
++		as3722_rtc->irq_enable = false;
 +	}
 +	return 0;
 +}
 +
-+static const struct pinconf_ops as3722_pinconf_ops = {
-+	.pin_config_get = as3722_pinconf_get,
-+	.pin_config_set = as3722_pinconf_set,
-+};
-+
-+static struct pinctrl_desc as3722_pinctrl_desc = {
-+	.pctlops = &as3722_pinctrl_ops,
-+	.pmxops = &as3722_pinmux_ops,
-+	.confops = &as3722_pinconf_ops,
-+	.owner = THIS_MODULE,
-+};
-+
-+static inline struct as3722_pctrl_info *to_as_pci(struct gpio_chip *chip)
++static int as3722_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 +{
-+	return container_of(chip, struct as3722_pctrl_info, gpio_chip);
-+}
-+
-+static int as3722_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
-+	struct as3722 *as3722 = as_pci->as3722;
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
++	struct as3722 *as3722 = as3722_rtc->as3722;
++	u8 as_time_array[6];
 +	int ret;
-+	u32 reg;
-+	u32 control;
-+	u32 val;
-+	int mode;
-+	int invert_enable;
 +
-+	ret = as3722_read(as3722, AS3722_GPIOn_CONTROL_REG(offset), &control);
++	ret = as3722_block_read(as3722, AS3722_RTC_ALARM_SECOND_REG, 6,
++			as_time_array);
 +	if (ret < 0) {
-+		dev_err(as_pci->dev,
-+			"GPIO_CONTROL%d_REG read failed: %d\n", offset, ret);
++		dev_err(dev, "RTC_ALARM_SECOND block read failed %d\n", ret);
 +		return ret;
 +	}
 +
-+	invert_enable = !!(control & AS3722_GPIO_INV);
-+	mode = control & AS3722_GPIO_MODE_MASK;
-+	switch (mode) {
-+	case AS3722_GPIO_MODE_INPUT:
-+	case AS3722_GPIO_MODE_INPUT_PULL_UP:
-+	case AS3722_GPIO_MODE_INPUT_PULL_DOWN:
-+	case AS3722_GPIO_MODE_IO_OPEN_DRAIN:
-+	case AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULL_UP:
-+		reg = AS3722_GPIO_SIGNAL_IN_REG;
-+		break;
-+	case AS3722_GPIO_MODE_OUTPUT_VDDH:
-+	case AS3722_GPIO_MODE_OUTPUT_VDDL:
-+		reg = AS3722_GPIO_SIGNAL_OUT_REG;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
++	as3722_reg_to_time(as_time_array, &alrm->time);
++	return 0;
++}
 +
-+	ret = as3722_read(as3722, reg, &val);
++static int as3722_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
++	struct as3722 *as3722 = as3722_rtc->as3722;
++	u8 as_time_array[6];
++	int ret;
++
++	if (alrm->time.tm_year < (AS3722_RTC_START_YEAR - 1900))
++		return -EINVAL;
++
++	ret = as3722_rtc_alarm_irq_enable(dev, 0);
 +	if (ret < 0) {
-+		dev_err(as_pci->dev,
-+			"GPIO_SIGNAL_IN_REG read failed: %d\n", ret);
++		dev_err(dev, "Disable RTC alarm failed\n");
 +		return ret;
 +	}
 +
-+	val = !!(val & AS3722_GPIOn_SIGNAL(offset));
-+	return (invert_enable) ? !val : val;
++	as3722_time_to_reg(as_time_array, &alrm->time);
++	ret = as3722_block_write(as3722, AS3722_RTC_ALARM_SECOND_REG, 6,
++			as_time_array);
++	if (ret < 0) {
++		dev_err(dev, "RTC_ALARM_SECOND block write failed %d\n", ret);
++		return ret;
++	}
++
++	if (alrm->enabled)
++		ret = as3722_rtc_alarm_irq_enable(dev, alrm->enabled);
++	return ret;
 +}
 +
-+static void as3722_gpio_set(struct gpio_chip *chip, unsigned offset,
-+		int value)
++static irqreturn_t as3722_alarm_irq(int irq, void *data)
 +{
-+	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
-+	struct as3722 *as3722 = as_pci->as3722;
-+	int en_invert = as_pci->gpio_control[offset].enable_gpio_invert;
-+	u32 val;
-+	int ret;
++	struct as3722_rtc *as3722_rtc = data;
 +
-+	if (value)
-+		val = (en_invert) ? 0 : AS3722_GPIOn_SIGNAL(offset);
-+	else
-+		val = (en_invert) ? AS3722_GPIOn_SIGNAL(offset) : 0;
-+
-+	ret = as3722_update_bits(as3722, AS3722_GPIO_SIGNAL_OUT_REG,
-+			AS3722_GPIOn_SIGNAL(offset), val);
-+	if (ret < 0)
-+		dev_err(as_pci->dev,
-+			"GPIO_SIGNAL_OUT_REG update failed: %d\n", ret);
++	rtc_update_irq(as3722_rtc->rtc, 1, RTC_IRQF | RTC_AF);
++	return IRQ_HANDLED;
 +}
 +
-+static int as3722_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_gpio_direction_input(chip->base + offset);
-+}
-+
-+static int as3722_gpio_direction_output(struct gpio_chip *chip,
-+		unsigned offset, int value)
-+{
-+	as3722_gpio_set(chip, offset, value);
-+	return pinctrl_gpio_direction_output(chip->base + offset);
-+}
-+
-+static int as3722_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
-+
-+	return as3722_irq_get_virq(as_pci->as3722, offset);
-+}
-+
-+static int as3722_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void as3722_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+}
-+
-+static const struct gpio_chip as3722_gpio_chip = {
-+	.label			= "as3722-gpio",
-+	.owner			= THIS_MODULE,
-+	.request		= as3722_gpio_request,
-+	.free			= as3722_gpio_free,
-+	.get			= as3722_gpio_get,
-+	.set			= as3722_gpio_set,
-+	.direction_input	= as3722_gpio_direction_input,
-+	.direction_output	= as3722_gpio_direction_output,
-+	.to_irq			= as3722_gpio_to_irq,
-+	.can_sleep		= 1,
-+	.ngpio			= AS3722_PIN_NUM,
-+	.base			= -1,
++static const struct rtc_class_ops as3722_rtc_ops = {
++	.read_time = as3722_rtc_read_time,
++	.set_time = as3722_rtc_set_time,
++	.read_alarm = as3722_rtc_read_alarm,
++	.set_alarm = as3722_rtc_set_alarm,
++	.alarm_irq_enable = as3722_rtc_alarm_irq_enable,
 +};
 +
-+static int as3722_pinctrl_probe(struct platform_device *pdev)
++static int as3722_rtc_probe(struct platform_device *pdev)
 +{
-+	struct as3722_pctrl_info *as_pci;
++	struct as3722 *as3722 = dev_get_drvdata(pdev->dev.parent);
++	struct as3722_rtc *as3722_rtc;
++	int val;
 +	int ret;
-+	int tret;
 +
-+	as_pci = devm_kzalloc(&pdev->dev, sizeof(*as_pci), GFP_KERNEL);
-+	if (!as_pci)
++	as3722_rtc = devm_kzalloc(&pdev->dev, sizeof(*as3722_rtc), GFP_KERNEL);
++	if (!as3722_rtc)
 +		return -ENOMEM;
 +
-+	as_pci->dev = &pdev->dev;
-+	as_pci->dev->of_node = pdev->dev.parent->of_node;
-+	as_pci->as3722 = dev_get_drvdata(pdev->dev.parent);
-+	platform_set_drvdata(pdev, as_pci);
++	as3722_rtc->as3722 = as3722;
++	as3722_rtc->dev = &pdev->dev;
++	platform_set_drvdata(pdev, as3722_rtc);
 +
-+	as_pci->pins = as3722_pins_desc;
-+	as_pci->num_pins = ARRAY_SIZE(as3722_pins_desc);
-+	as_pci->functions = as3722_pin_function;
-+	as_pci->num_functions = ARRAY_SIZE(as3722_pin_function);
-+	as_pci->pin_groups = as3722_pingroups;
-+	as_pci->num_pin_groups = ARRAY_SIZE(as3722_pingroups);
-+	as3722_pinctrl_desc.name = dev_name(&pdev->dev);
-+	as3722_pinctrl_desc.pins = as3722_pins_desc;
-+	as3722_pinctrl_desc.npins = ARRAY_SIZE(as3722_pins_desc);
-+	as_pci->pctl = pinctrl_register(&as3722_pinctrl_desc,
-+					&pdev->dev, as_pci);
-+	if (!as_pci->pctl) {
-+		dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
-+		return -EINVAL;
-+	}
-+
-+	as_pci->gpio_chip = as3722_gpio_chip;
-+	as_pci->gpio_chip.dev = &pdev->dev;
-+	as_pci->gpio_chip.of_node = pdev->dev.parent->of_node;
-+	ret = gpiochip_add(&as_pci->gpio_chip);
++	/* Enable the RTC to make sure it is running. */
++	ret = as3722_update_bits(as3722, AS3722_RTC_CONTROL_REG,
++				AS3722_RTC_ON, AS3722_RTC_ON);
 +	if (ret < 0) {
-+		dev_err(&pdev->dev, "Couldn't register gpiochip, %d\n", ret);
-+		goto fail_chip_add;
++		dev_err(&pdev->dev, "RTC_CONTROL reg update failed: %d\n", ret);
++		return ret;
 +	}
 +
-+	ret = gpiochip_add_pin_range(&as_pci->gpio_chip, dev_name(&pdev->dev),
-+				0, 0, AS3722_PIN_NUM);
++	val = AS3722_RTC_ON | AS3722_RTC_ALARM_WAKEUP_EN;
++	ret = as3722_write(as3722, AS3722_RTC_CONTROL_REG, val);
 +	if (ret < 0) {
-+		dev_err(&pdev->dev, "Couldn't add pin range, %d\n", ret);
-+		goto fail_range_add;
++		dev_err(&pdev->dev, "RTC_CONTROL reg write failed: %d\n", ret);
++		return ret;
 +	}
 +
++	device_init_wakeup(&pdev->dev, 1);
++
++	as3722_rtc->rtc = rtc_device_register("as3722", &pdev->dev,
++				&as3722_rtc_ops, THIS_MODULE);
++	if (IS_ERR(as3722_rtc->rtc)) {
++		ret = PTR_ERR(as3722_rtc->rtc);
++		dev_err(&pdev->dev, "RTC register failed: %d\n", ret);
++		return ret;
++	}
++
++	as3722_rtc->alarm_irq = platform_get_irq(pdev, 0);
++	dev_info(&pdev->dev, "RTC interrupt %d\n", as3722_rtc->alarm_irq);
++
++	ret = request_threaded_irq(as3722_rtc->alarm_irq, NULL,
++			as3722_alarm_irq, IRQF_ONESHOT | IRQF_EARLY_RESUME,
++			"rtc-alarm", as3722_rtc);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
++				as3722_rtc->alarm_irq, ret);
++		goto scrub;
++	}
++	disable_irq(as3722_rtc->alarm_irq);
 +	return 0;
-+
-+fail_range_add:
-+	tret = gpiochip_remove(&as_pci->gpio_chip);
-+	if (tret < 0)
-+		dev_warn(&pdev->dev, "Couldn't remove gpio chip, %d\n", tret);
-+
-+fail_chip_add:
-+	pinctrl_unregister(as_pci->pctl);
++scrub:
++	rtc_device_unregister(as3722_rtc->rtc);
 +	return ret;
 +}
 +
-+static int as3722_pinctrl_remove(struct platform_device *pdev)
++static int as3722_rtc_remove(struct platform_device *pdev)
 +{
-+	struct as3722_pctrl_info *as_pci = platform_get_drvdata(pdev);
-+	int ret;
++	struct as3722_rtc *as3722_rtc = platform_get_drvdata(pdev);
 +
-+	ret = gpiochip_remove(&as_pci->gpio_chip);
-+	if (ret < 0)
-+		return ret;
-+	pinctrl_unregister(as_pci->pctl);
++	free_irq(as3722_rtc->alarm_irq, as3722_rtc);
++	rtc_device_unregister(as3722_rtc->rtc);
 +	return 0;
 +}
 +
-+static struct of_device_id as3722_pinctrl_of_match[] = {
-+	{ .compatible = "ams,as3722-pinctrl", },
++#ifdef CONFIG_PM
++static int as3722_rtc_suspend(struct device *dev)
++{
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev))
++		enable_irq_wake(as3722_rtc->alarm_irq);
++
++	return 0;
++}
++
++static int as3722_rtc_resume(struct device *dev)
++{
++	struct as3722_rtc *as3722_rtc = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev))
++		disable_irq_wake(as3722_rtc->alarm_irq);
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops as3722_rtc_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(as3722_rtc_suspend, as3722_rtc_resume)
++};
++
++static const struct of_device_id of_as3722_rtc_match[] = {
++	{ .compatible = "ams,as3722-rtc"},
 +	{ },
 +};
-+MODULE_DEVICE_TABLE(of, as3722_pinctrl_of_match);
++MODULE_DEVICE_TABLE(of, of_as3722_rtc_match);
 +
-+static struct platform_driver as3722_pinctrl_driver = {
++static struct platform_driver as3722_rtc_driver = {
++	.probe = as3722_rtc_probe,
++	.remove = as3722_rtc_remove,
 +	.driver = {
-+		.name = "as3722-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = as3722_pinctrl_of_match,
++		.name = "as3722-rtc",
++		.pm = &as3722_rtc_pm_ops,
++		.of_match_table = of_as3722_rtc_match,
 +	},
-+	.probe = as3722_pinctrl_probe,
-+	.remove = as3722_pinctrl_remove,
 +};
-+module_platform_driver(as3722_pinctrl_driver);
++module_platform_driver(as3722_rtc_driver);
 +
-+MODULE_ALIAS("platform:as3722-pinctrl");
-+MODULE_DESCRIPTION("AS3722 pin control and GPIO driver");
-+MODULE_AUTHOR("Laxman Dewangan<ldewangan@nvidia.com>");
-+MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("RTC driver for AS3722 PMICs");
++MODULE_ALIAS("platform:as3722-rtc");
++MODULE_AUTHOR("Florian Lobmaier <florian.lobmaier@ams.com>");
++MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
++MODULE_LICENSE("GPL");
 -- 
 1.7.1.1
 
