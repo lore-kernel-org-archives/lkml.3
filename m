@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab3JBQlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:41:18 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24722 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754126Ab3JBQlP (ORCPT
+	id S1754546Ab3JBQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:42:27 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:53262 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab3JBQm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:41:15 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 45/77] megaraid: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:49:01 +0200
-Message-Id: <9c28bb824f403b6418840970f2a3b63d9fa9d924.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 12:42:26 -0400
+Date: Wed, 2 Oct 2013 18:42:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Stephen Boyd <sboyd@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>, patches@linaro.org,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH V2] tick: Make sleep length calculation more accurate
+Message-ID: <20131002164221.GI7941@localhost.localdomain>
+References: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org>
+ <CAFTL4hw-yawRUO-8ePsonvh1o2P7T5yb+GFPVop5OHzH6HTobw@mail.gmail.com>
+ <524C4845.5060800@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <524C4845.5060800@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wed, Oct 02, 2013 at 06:22:29PM +0200, Daniel Lezcano wrote:
+> On 10/02/2013 05:57 PM, Frederic Weisbecker wrote:
+> >2013/10/2 Daniel Lezcano <daniel.lezcano@linaro.org>:
+> >>The sleep_length is computed in the tick_nohz_stop_sched_tick function but it
+> >>is used later in the code with in between the local irq enabled.
+> >>
+> >>cpu_idle_loop
+> >>   tick_nohz_idle_enter         [ exits with local irq enabled ]
+> >>    __tick_nohz_idle_enter
+> >>      tick_nohz_stop_sched_tick
+> >>   ...
+> >>
+> >>   arch_cpu_idle
+> >>      menu_select               [ uses here 'sleep_length' ]
+> >>   ...
+> >>
+> >>Between the computation of the sleep length and its usage, some interrupts
+> >>may occur, making the sleep length shorter than actually it is because of the
+> >>interrupt processing
+> >
+> >So, do you mean that the ts->sleep_length would return a value that is too long
+> >given that the CPU already spent some time to service the irqs since we computed
+> >the sleep length in tick_nohz_idle_enter()?
+> >
+> >But then tick_nohz_irq_exit() should take care of that as it calls
+> >again tick_nohz_stop_sched_tick().
+> >So I'm a bit confused.
+> >
+> >>or different if the timer itself expired.
+> >
+> >Same here, if the timer expired, it triggers an interrupt which can do
+> >two things:
+> >
+> >1) reprogram a new timer and this recompute sleep_length
+> >2) set_need_resched() and then exit the idle loop, so arch_cpu_idle() won't even
+> >be called. Or the timer interrupts hlt, but then menu_select() was
+> >called before.
+> >
+> >So I probably missed something here.
+> 
+> No you did not :)
+> 
+> Indeed... At the first glance, this issue sounded so obvious I
+> suspected there must be a trick somewhere but I did not think to
+> look at the irq_exit, the code is very complex. Thanks for
+> clarifying this.
+> 
+> For my personal information, is there any particular reason to set
+> an intermediate 'sleep_length' in tick_nohz_stop_sched_tick instead
+> of doing what does this patch ?
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+May be we could do it that way yeah. Is menu_select() called only there?
+I don't know how much difference that would make.
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index 3020921..b5973e4 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -3727,18 +3727,16 @@ static int megasas_init_fw(struct megasas_instance *instance)
- 					     (unsigned int)num_online_cpus());
- 		for (i = 0; i < instance->msix_vectors; i++)
- 			instance->msixentry[i].entry = i;
--		i = pci_enable_msix(instance->pdev, instance->msixentry,
--				    instance->msix_vectors);
--		if (i >= 0) {
--			if (i) {
--				if (!pci_enable_msix(instance->pdev,
--						     instance->msixentry, i))
--					instance->msix_vectors = i;
--				else
--					instance->msix_vectors = 0;
--			}
--		} else
-+		i = pci_msix_table_size(instance->pdev);
-+		if (i < 0) {
- 			instance->msix_vectors = 0;
-+		} else {
-+			if (!pci_enable_msix(instance->pdev,
-+					     instance->msixentry, i))
-+				instance->msix_vectors = i;
-+			else
-+				instance->msix_vectors = 0;
-+		}
- 
- 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
- 			"<%d> MSIX vector,Online CPUs: <%d>,"
--- 
-1.7.7.6
-
+> 
+> Thanks
+>   -- Daniel
+> 
+> -- 
+>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> 
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+> 
