@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3JBRjt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:39:49 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26541 "EHLO
+	id S1755361Ab3JBRkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:40:39 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26629 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755172Ab3JBRie (ORCPT
+	by vger.kernel.org with ESMTP id S1754950Ab3JBRkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:38:34 -0400
+	Wed, 2 Oct 2013 13:40:35 -0400
+X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 13:40:34 EDT
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -27,9 +28,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
         Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
         "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 47/77] mlx5: Fix memory leak in case not enough MSI-X vectors available
-Date: Wed,  2 Oct 2013 12:49:03 +0200
-Message-Id: <7cb36bb9a3ebfe79d42b9c287c2fe89d616b3190.1380703263.git.agordeev@redhat.com>
+Subject: [PATCH RFC 30/77] hpsa: Update a misleading comment on interrupt usage
+Date: Wed,  2 Oct 2013 12:48:46 +0200
+Message-Id: <3e551608cba10cab0f33f5201a29e67905b3cd02.1380703262.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
 References: <cover.1380703262.git.agordeev@redhat.com>
@@ -39,21 +40,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/mellanox/mlx5/core/main.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/scsi/hpsa.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx5/core/main.c b/drivers/net/ethernet/mellanox/mlx5/core/main.c
-index b47739b..3573ba4 100644
---- a/drivers/net/ethernet/mellanox/mlx5/core/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx5/core/main.c
-@@ -142,6 +142,7 @@ retry:
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 891c86b..393c8db 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -4141,7 +4141,11 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
  	}
- 
- 	mlx5_core_dbg(dev, "received %d MSI vectors out of %d requested\n", err, nvec);
-+	kfree(table->msix_arr);
- 
- 	return 0;
+ default_int_mode:
+ #endif				/* CONFIG_PCI_MSI */
+-	/* if we get here we're going to use the default interrupt mode */
++	/*
++	 * If we get here we're going to use either the
++	 * default interrupt mode or single MSI mode
++	 */
++
+ 	h->intr[h->intr_mode] = h->pdev->irq;
  }
+ 
 -- 
 1.7.7.6
 
