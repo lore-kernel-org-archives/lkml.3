@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab3JBWio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 18:38:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21931 "EHLO mga09.intel.com"
+	id S1754493Ab3JBWis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 18:38:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47427 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754404Ab3JBWin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 18:38:43 -0400
+	id S1754404Ab3JBWip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 18:38:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
-   d="scan'208";a="386975902"
-Subject: [PATCH v8 7/9] MCS Lock: Barrier corrections
+   d="scan'208";a="413212359"
+Subject: [PATCH v8 3/9] rwsem: remove try_reader_grant label do_wake
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -29,8 +29,8 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
 In-Reply-To: <cover.1380748401.git.tim.c.chen@linux.intel.com>
 References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Oct 2013 15:38:38 -0700
-Message-ID: <1380753518.11046.89.camel@schen9-DESK>
+Date: Wed, 02 Oct 2013 15:38:25 -0700
+Message-ID: <1380753505.11046.85.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -38,63 +38,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects the way memory barriers are used in the MCS lock
-and removes ones that are not needed. Also add comments on all barriers.
+That make code simple and more readable
 
-Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- include/linux/mcs_spinlock.h |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+ lib/rwsem.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-index 96f14299..93d445d 100644
---- a/include/linux/mcs_spinlock.h
-+++ b/include/linux/mcs_spinlock.h
-@@ -36,16 +36,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 	node->locked = 0;
- 	node->next   = NULL;
- 
-+	/* xchg() provides a memory barrier */
- 	prev = xchg(lock, node);
- 	if (likely(prev == NULL)) {
- 		/* Lock acquired */
- 		return;
- 	}
- 	ACCESS_ONCE(prev->next) = node;
--	smp_wmb();
- 	/* Wait until the lock holder passes the lock down */
- 	while (!ACCESS_ONCE(node->locked))
- 		arch_mutex_cpu_relax();
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 42f1b1a..a8055cf 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -85,15 +85,17 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ 	adjustment = 0;
+ 	if (wake_type != RWSEM_WAKE_READ_OWNED) {
+ 		adjustment = RWSEM_ACTIVE_READ_BIAS;
+- try_reader_grant:
+-		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+-		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
+-			/* A writer stole the lock. Undo our reader grant. */
++		while (1) {
++			oldcount = rwsem_atomic_update(adjustment, sem)
++								- adjustment;
++			if (likely(oldcount >= RWSEM_WAITING_BIAS))
++				break;
 +
-+	/* Make sure subsequent operations happen after the lock is acquired */
-+	smp_rmb();
- }
- 
- /*
-@@ -58,6 +61,7 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
- 
- 	if (likely(!next)) {
- 		/*
-+		 * cmpxchg() provides a memory barrier.
- 		 * Release the lock by setting it to NULL
- 		 */
- 		if (likely(cmpxchg(lock, node, NULL) == node))
-@@ -65,9 +69,14 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
- 		/* Wait until the next pointer is set */
- 		while (!(next = ACCESS_ONCE(node->next)))
- 			arch_mutex_cpu_relax();
-+	} else {
-+		/*
-+		 * Make sure all operations within the critical section
-+		 * happen before the lock is released.
-+		 */
-+		smp_wmb();
++			 /* A writer stole the lock.  Undo our reader grant. */
+ 			if (rwsem_atomic_update(-adjustment, sem) &
+ 						RWSEM_ACTIVE_MASK)
+ 				return sem;
+ 			/* Last active locker left. Retry waking readers. */
+-			goto try_reader_grant;
+ 		}
  	}
- 	ACCESS_ONCE(next->locked) = 1;
--	smp_wmb();
- }
  
- #endif /* __LINUX_MCS_SPINLOCK_H */
 -- 
 1.7.4.4
 
