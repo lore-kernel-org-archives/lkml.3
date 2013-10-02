@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab3JBFrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:47:40 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:53298 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab3JBFri (ORCPT
+	id S1752923Ab3JBFyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:54:51 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:43076 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab3JBFyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:47:38 -0400
-Date: Tue, 1 Oct 2013 22:47:36 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, mgorman@suse.de, hannes@cmpxchg.org,
-        riel@redhat.com, minchan@kernel.org, Bob Liu <bob.liu@oracle.com>
-Subject: Re: [PATCH] mm: pagevec: cleanup: drop pvec->cold argument in all
- places
-In-Reply-To: <20130930150207.3661b5c146b6ecea84194547@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1310012243220.5682@chino.kir.corp.google.com>
-References: <1380357239-30102-1-git-send-email-bob.liu@oracle.com> <20130930150207.3661b5c146b6ecea84194547@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 2 Oct 2013 01:54:49 -0400
+Date: Wed, 2 Oct 2013 07:54:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "#3.9.." <stable@vger.kernel.org>, Paul Mackerras <paulus@au1.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL v2] irq fix for 3.12-rc
+Message-ID: <20131002055437.GB31122@gmail.com>
+References: <1380552959-9396-1-git-send-email-fweisbec@gmail.com>
+ <CA+55aFy5YJkchyfCjbCKLGQMo34wcba9AVr2JMNPXZa5vKNT3g@mail.gmail.com>
+ <20130930165059.GA9889@localhost.localdomain>
+ <20131001065516.GA19718@gmail.com>
+ <20131001110355.GA24825@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001110355.GA24825@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Sep 2013, Andrew Morton wrote:
 
-> > Nobody uses the pvec->cold argument of pagevec and it's also unreasonable for
-> > pages in pagevec released as cold page, so drop the cold argument from pagevec.
-> 
-> Is it unreasonable?  I'd say it's unreasonable to assume that all pages
-> in all cases are likely to be cache-hot.  Example: what if the pages
-> are being truncated and were found to be on the inactive LRU,
-> unreferenced?
-> 
-> A useful exercise would be to go through all those pagevec_init() sites
-> and convince ourselves that the decision at each place was the correct
-> one.
-> 
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Agreed, and the "cold" argument to release_pages() becomes a no-op if this 
-patch is merged meaning that anything released through it will 
-automatically go to the start of the pcp lists.  If the pages aren't hot 
-then this is exactly the opposite of what we wanted to do; the fact that 
-the pvec length doesn't take into account the size of cpu cache can almost 
-guarantee that everything isn't cache hot.
+> > > Yeah, I did such things sporadically before. Well, it summed up to 
+> > > simply remove the timestamps from backtraces but yeah, then I've 
+> > > become less patient about that and now I simply paste the raw thing.
+> > > 
+> > > I'll take care of that and prune these things on my future patches.
+> > 
+> > Mind fixing your commit log in this tree? The raw oops really 
+> > dominates the changelog unnecessarily.
+> 
+> Ok so I made a new branch that cleans that up by removing the printk 
+> time column and the ip column that were all irrelevant.
+> 
+> I onlt kept the stack pointer value column, which I think is still very 
+> useful because it shows we deal with the same stack throughout the whole 
+> call trace.
+> 
+> And of course the functions symbols.
+> 
+> Here is the new changelog below. The new pullable branch is 
+> irq/urgent-v2
+
+Pulled, thanks a lot Frederic!
+
+	Ingo
