@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab3JBRgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:36:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53001 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3JBRgg (ORCPT
+	id S1754974Ab3JBRh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:37:59 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39767 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3JBRh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:36:36 -0400
-Date: Wed, 2 Oct 2013 19:36:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, eranian@google.com
-Subject: Re: [PATCH 11/11] perf: Avoid uninitialized sample type reference in
- __perf_event__output_id_sample
-Message-ID: <20131002173619.GW3081@twins.programming.kicks-ass.net>
-References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
- <1380572952-30729-12-git-send-email-andi@firstfloor.org>
- <20131002085730.GD12926@twins.programming.kicks-ass.net>
- <20131002172507.GG2125@tassilo.jf.intel.com>
+	Wed, 2 Oct 2013 13:37:58 -0400
+Subject: [PATCH 0/4] fuse: fixes for fuse_writepage_in_flight() and friends
+ -v2
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 02 Oct 2013 21:37:56 +0400
+Message-ID: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002172507.GG2125@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 10:25:07AM -0700, Andi Kleen wrote:
-> > Why are you doing this; also what's up with 11/11?
-> 
-> I was playing with a static checker, and posted some
-> of the fixes from looking at the warnings.
-> There were 11 patches in the series
-> 
-> Only one is perf related.
+Miklos,
 
-It would help to know what the reported 'error' was. It wasn't at all
-clear to me what we were trying to do and why there would be a problem.
+This version implements your suggestion about cropping secondary requests
+in fuse_send_writepage().
+
+> The patch-set fixes a few issues I found while reviewing your
+> recent "fixes for writepages" patch-set.
+>
+> The patches are for writepages.v2. If they are OK, I'll re-check
+> them for for-next.
+
+Thanks,
+Maxim
+
+---
+
+Maxim Patlasov (4):
+      fuse: writepages: roll back changes if request not found
+      fuse: writepages: crop secondary requests
+      fuse: writepage: update bdi writeout when deleting secondary request
+      fuse: writepages: protect secondary requests from fuse file release
+
+
+ fs/fuse/file.c |   64 +++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 51 insertions(+), 13 deletions(-)
+
+-- 
+Signature
