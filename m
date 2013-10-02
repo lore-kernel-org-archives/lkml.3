@@ -1,134 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab3JBOzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:55:14 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:36583 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434Ab3JBOzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:55:10 -0400
-Date: Wed, 2 Oct 2013 15:55:06 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
- file's opener may access task
-Message-ID: <20131002145506.GA2669@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <1380659178-28605-3-git-send-email-tixxdz@opendz.org>
- <524B78A2.40007@amacapital.net>
+	id S1753593Ab3JBO4C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:56:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50363 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753392Ab3JBOz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:55:59 -0400
+Date: Wed, 2 Oct 2013 16:55:39 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Luosong <android@generaltouch.com>
+Subject: Re: [PATCH] HID: multitouch: Fix GeneralTouch products and add more
+ PIDs
+In-Reply-To: <1380705600-11055-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1310021654240.29701@pobox.suse.cz>
+References: <1380705600-11055-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524B78A2.40007@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 06:36:34PM -0700, Andy Lutomirski wrote:
-> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> > Since /proc entries varies at runtime, permission checks need to happen
-> > during each system call.
-> > 
-> > However even with that /proc file descriptors can be passed to a more
-> > privileged process (e.g. a suid-exec) which will pass the classic
-> > ptrace_may_access() permission check. The open() call will be issued in
-> > general by an unprivileged process while the disclosure of sensitive
-> > /proc information will happen using a more privileged process at
-> > read(),write()...
-> > 
-> > Therfore we need a more sophisticated check to detect if the cred of the
-> > process have changed, and if the cred of the original opener that are
-> > stored in the file->f_cred have enough permission to access the task's
-> > /proc entries during read(), write()...
-> > 
-> > Add the proc_allow_access() function that will receive the file->f_cred
-> > as an argument, and tries to check if the opener had enough permission
-> > to access the task's /proc entries.
-> > 
-> > This function should be used with the ptrace_may_access() check.
-> > 
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> > ---
-> >  fs/proc/base.c     | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  fs/proc/internal.h |  2 ++
-> >  2 files changed, 58 insertions(+)
-> > 
-> > diff --git a/fs/proc/base.c b/fs/proc/base.c
-> > index e834946..c29eeae 100644
-> > --- a/fs/proc/base.c
-> > +++ b/fs/proc/base.c
-> > @@ -168,6 +168,62 @@ int proc_same_open_cred(const struct cred *fcred)
-> >  		cap_issubset(cred->cap_permitted, fcred->cap_permitted));
-> >  }
-> >  
-> > +/* Returns 0 on success, -errno on denial. */
-> > +static int __proc_allow_access(const struct cred *cred,
-> > +			       struct task_struct *task, unsigned int mode)
-> > +{
-> > +	int ret = 0;
-> > +	const struct cred *tcred;
-> > +	const struct cred *fcred = cred;
-> > +
-> > +	rcu_read_lock();
-> > +	tcred = __task_cred(task);
-> > +	if (uid_eq(fcred->uid, tcred->euid) &&
-> > +	    uid_eq(fcred->uid, tcred->suid) &&
-> > +	    uid_eq(fcred->uid, tcred->uid)  &&
-> > +	    gid_eq(fcred->gid, tcred->egid) &&
-> > +	    gid_eq(fcred->gid, tcred->sgid) &&
-> > +	    gid_eq(fcred->gid, tcred->gid))
-> > +		goto out;
-> > +
+On Wed, 2 Oct 2013, Benjamin Tissoires wrote:
+
+> From: Luosong <android@generaltouch.com>
 > 
-> What's this for?  Is it supposed to be an optimization?  If so, it looks
-> potentially exploitable, although I don't really understand what you're
-> trying to do.
-This function should be used in addition to the ptrace_may_access() one.
+> GeneralTouch products should use the quirk SLOT_IS_CONTACTID
+> instead of SLOT_IS_CONTACTNUMBER.
+> 
+> Adding PIDs 0101,e100,0102,0106,010a from the new products.
+> 
+> Tested on new and older products by GeneralTouch engineers.
+> 
+> Signed-off-by: Luosong <android@generaltouch.com>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+> 
+> Hi Luosong,
+> 
+> I took the liberty to rewrite the commit message for it to be
+> more compliant with the kernel rules:
+> - there should be a one line title commit message first,
+> - and the rest should detail the patch, tell how it was tested, etc...
+> 
+> If you could just give our ack on this one, Jiri would be able to take it
+> through his tree.
 
-This will help to check if the original process that opened a
-/proc/pid/* file is able to read(),write() to it.
+Thanks Benjamin.
 
-As we have said, the file descriptor can be passed to a more privileged
-process to pass the ptrace_may_access(). If we detect that current's
-cred have changed between ->open() (unprivileged) and ->read()
-(privileged, exec a suid-exec), then we call this helper function to
-check the file's opener cred against the target task during this
-->read(),->write()...
+Luosong, the patch as sent by Benjamin is properly formatted and contains 
+proper changelog. Please make sure that you fix your patch submission 
+workflow for your next submissions.
 
-This should block vulnerabilities like the /proc/pid/mem
-http://lwn.net/Articles/476947/
+Luosong, please let me know that you are find with applying the patch as 
+Benjamin sent it (with attribution to you and your signoff), and I'll 
+proceed.
 
-Since current will not have the same privileges of the process that
-opened the file (cred have changed).
-
-
-So:
-This is not an optimization!
-
-Can you elaborate more on the potentially exploitable please ?
-
-
-It has the same logic of ptrace_may_access(). Didn't want to modifiy
-ptrace_may_access() since it relies on current and its context and if we
-do, we'll have to touch the capability checks also. So just add this one
-here and call it only if current's cred change.
-
-
-> --Andy
+> 
+> Cheers,
+> Benjamin
+> 
+>  drivers/hid/hid-ids.h        |  5 +++++
+>  drivers/hid/hid-multitouch.c | 19 +++++++++++++++++--
+>  2 files changed, 22 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index e60e8d5..9a91dee 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -332,6 +332,11 @@
+>  #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
+>  #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
+>  #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
+> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
+> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
+> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
+> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
+> +#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
+>  
+>  #define USB_VENDOR_ID_GLAB		0x06c2
+>  #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 5e5fe1b..cb3250c 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -250,12 +250,12 @@ static struct mt_class mt_classes[] = {
+>  	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
+>  		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+>  			MT_QUIRK_VALID_IS_INRANGE |
+> -			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
+> +			MT_QUIRK_SLOT_IS_CONTACTID,
+>  		.maxcontacts = 2
+>  	},
+>  	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+>  		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+> -			MT_QUIRK_SLOT_IS_CONTACTNUMBER
+> +			MT_QUIRK_SLOT_IS_CONTACTID
+>  	},
+>  
+>  	{ .name = MT_CLS_FLATFROG,
+> @@ -1173,6 +1173,21 @@ static const struct hid_device_id mt_devices[] = {
+>  	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+>  		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+>  			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
+> +	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
+> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
+> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
+> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
+> +	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+> +			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
+>  
+>  	/* Gametel game controller */
+>  	{ .driver_data = MT_CLS_NSMU,
+> -- 
+> 1.8.3.1
+> 
 
 -- 
-Djalal Harouni
-http://opendz.org
+Jiri Kosina
+SUSE Labs
