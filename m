@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab3JBK7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:59:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41752 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab3JBK7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:59:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1018,1371106800"; 
-   d="scan'208";a="412901875"
-Message-ID: <524BFD92.8030406@linux.intel.com>
-Date: Wed, 02 Oct 2013 14:03:46 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754017Ab3JBLAe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 07:00:34 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34192 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321Ab3JBLAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 07:00:33 -0400
+Subject: [PATCH 0/5] fuse: fixes for fuse_writepage_in_flight() and friends
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 02 Oct 2013 15:00:31 +0400
+Message-ID: <20131002105815.26932.46041.stgit@dhcp-10-30-17-2.sw.ru>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio/lynxpoint: check if the interrupt is enabled in
- IRQ handler
-References: <1380638143-20040-1-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1380638143-20040-1-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 05:35 PM, Mika Westerberg wrote:
-> Checking LP_INT_STAT is not enough in the interrupt handler because its
-> contents get updated regardless of whether the pin has interrupt enabled or
-> not. This causes the driver to loop forever for GPIOs that are pulled up.
->
-> Fix this by checking the interrupt enable bit for the pin as well.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Miklos,
 
-Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+The patch-set fixes a few issues I found while reviewing your
+recent "fixes for writepages" patch-set.
 
+The patches are for writepages.v2. If they are OK, I'll re-check
+them for for-next.
+
+Thanks,
+Maxim
+
+---
+
+Maxim Patlasov (5):
+      fuse: writepages: roll back changes if request not found
+      fuse: writepages: crop secondary requests on send
+      fuse: writepages: crop secondary requests on attach
+      fuse: writepage: update bdi writeout when deleting secondary request
+      fuse: writepages: protect secondary requests from fuse file release
+
+
+ fs/fuse/file.c |   95 +++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 83 insertions(+), 12 deletions(-)
+
+-- 
+Signature
