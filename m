@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3JBP5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:57:21 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:41439 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab3JBP5S (ORCPT
+	id S1754065Ab3JBP5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:57:16 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:44364 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753339Ab3JBP5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:57:18 -0400
+	Wed, 2 Oct 2013 11:57:14 -0400
+Date: Wed, 2 Oct 2013 15:57:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Bird, Tim" <Tim.Bird@sonymobile.com>
+cc: Frank Rowand <frowand.list@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>,
+        =?ISO-8859-15?Q?=22Andersson=2C_Bj=F6rn=22?= 
+	<Bjorn.Andersson@sonymobile.com>
+Subject: RE: [PATCH] slub: Proper kmemleak tracking if CONFIG_SLUB_DEBUG
+ disabled
+In-Reply-To: <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
+Message-ID: <0000014179e31953-a05dd7d1-d0f8-474f-810a-809cd8a724f8-000000@email.amazonses.com>
+References: <5245ECC3.8070200@gmail.com>,<00000141799dd4b3-f6df96c0-1003-427d-9bd8-f6455622f4ea-000000@email.amazonses.com> <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org>
-Date: Wed, 2 Oct 2013 17:57:17 +0200
-Message-ID: <CAFTL4hw-yawRUO-8ePsonvh1o2P7T5yb+GFPVop5OHzH6HTobw@mail.gmail.com>
-Subject: Re: [PATCH V2] tick: Make sleep length calculation more accurate
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Stephen Boyd <sboyd@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>, patches@linaro.org,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.02-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/2 Daniel Lezcano <daniel.lezcano@linaro.org>:
-> The sleep_length is computed in the tick_nohz_stop_sched_tick function but it
-> is used later in the code with in between the local irq enabled.
->
-> cpu_idle_loop
->   tick_nohz_idle_enter         [ exits with local irq enabled ]
->    __tick_nohz_idle_enter
->      tick_nohz_stop_sched_tick
->   ...
->
->   arch_cpu_idle
->      menu_select               [ uses here 'sleep_length' ]
->   ...
->
-> Between the computation of the sleep length and its usage, some interrupts
-> may occur, making the sleep length shorter than actually it is because of the
-> interrupt processing
+On Wed, 2 Oct 2013, Bird, Tim wrote:
 
-So, do you mean that the ts->sleep_length would return a value that is too long
-given that the CPU already spent some time to service the irqs since we computed
-the sleep length in tick_nohz_idle_enter()?
+> The problem child is actually the unconditional call to kmemleak_alloc()
+> in kmalloc_large_node() (in slub.c).  The problem comes because that call
+> is unconditional on CONFIG_SLUB_DEBUG but the kmemleak
+> calls in the hook routines are conditional on CONFIG_SLUB_DEBUG.
+> So if you have CONFIG_SLUB_DEBUG=n but CONFIG_DEBUG_KMEMLEAK=y,
+> you get the false reports.
 
-But then tick_nohz_irq_exit() should take care of that as it calls
-again tick_nohz_stop_sched_tick().
-So I'm a bit confused.
+Right. You need to put the #ifdef CONFIG_SLUB_DEBUG around the hooks that
+need it in the function itself instead of disabling the whole function if
+CONFIG_SLUB_DEUBG is not set.
 
-> or different if the timer itself expired.
+> Now, there are kmemleak calls in kmalloc_large_node() and kfree() that don't
+> follow the "hook" pattern.  Should these be moved to 'hook' routines, to keep
+> all the checks in the hooks?
 
-Same here, if the timer expired, it triggers an interrupt which can do
-two things:
+That would be great.
 
-1) reprogram a new timer and this recompute sleep_length
-2) set_need_resched() and then exit the idle loop, so arch_cpu_idle() won't even
-be called. Or the timer interrupts hlt, but then menu_select() was
-called before.
+> Personally, I like the idea of keeping bookeeping/tracing/debug stuff in hook
+> routines.  I also like de-coupling CONFIG_SLUB_DEBUG and CONFIG_DEBUG_KMEMLEAK,
+> but maybe others have a different opinon.  Unless someone speaks up, we'll
+> move the the currently in-function kmemleak calls into hooks, and all of the
+> kmemleak stuff out from under CONFIG_SLUB_DEBUG.
+> We'll have to see if the ifdefs get a little messy.
 
-So I probably missed something here.
+Decouple of you want. CONFIG_SLUB_DEBUG may duplicate what you already do.
 
-Thanks.
