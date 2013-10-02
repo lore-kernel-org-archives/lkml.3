@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3JBOI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:08:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48321 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447Ab3JBOIy convert rfc822-to-8bit (ORCPT
+	id S1753712Ab3JBOJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:09:46 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:29139 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3JBOJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:08:54 -0400
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on some powernv systems
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1380722275.12149.28.camel@concordia>
-Date: Wed, 2 Oct 2013 16:08:47 +0200
-Cc: Gleb Natapov <gleb@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org, mpm@selenic.com,
-        herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
-Content-Transfer-Encoding: 8BIT
-Message-Id: <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de>
-References: <5243F933.7000907@redhat.com> <20131001083426.GB27484@concordia> <20131001083908.GA17294@redhat.com> <1380620338.645.22.camel@pasglop> <524AAFAA.3010801@redhat.com> <20131002050940.GA25363@drongo> <524BDD73.3020106@redhat.com> <1380704789.645.57.camel@pasglop> <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de> <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de> <20131002100224.GF17294@redhat.com> <1380722275.12149.28.camel@concordia>
-To: Michael Ellerman <michael@ellerman.id.au>
-X-Mailer: Apple Mail (2.1278)
+	Wed, 2 Oct 2013 10:09:43 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH v4 0/3] qrwlock: Introducing a queue read/write lock implementation
+Date: Wed,  2 Oct 2013 10:09:03 -0400
+Message-Id: <1380722946-30468-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+v3->v4:
+ - Optimize the fast path with better cold cache behavior and
+   performance.
+ - Removing some testing code.
+ - Make x86 use queue rwlock with no user configuration.
 
-On 02.10.2013, at 15:57, Michael Ellerman wrote:
+v2->v3:
+ - Make read lock stealing the default and fair rwlock an option with
+   a different initializer.
+ - In queue_read_lock_slowpath(), check irq_count() and force spinning
+   and lock stealing in interrupt context.
+ - Unify the fair and classic read-side code path, and make write-side
+   to use cmpxchg with 2 different writer states. This slows down the
+   write lock fastpath to make the read side more efficient, but is
+   still slightly faster than a spinlock.
 
-> On Wed, 2013-10-02 at 13:02 +0300, Gleb Natapov wrote:
->> On Wed, Oct 02, 2013 at 11:50:50AM +0200, Alexander Graf wrote:
->>> 
->>> On 02.10.2013, at 11:11, Alexander Graf wrote:
->>> 
->>> So how do you solve live migration between a kernel that has this patch and one that doesn't?
->>> 
->> Yes, I alluded to it in my email to Paul and Paolo asked also. How this
->> interface is disabled? 
-> 
-> Yes that is a valid point.
-> 
-> We can't disable the interface at runtime, the guest detects its
-> presence at boot.
-> 
-> What will happen is the hcall will come through to QEMU, which will
-> reject it with H_FUNCTION (~= ENOSYS).
-> 
-> The current pseries-rng driver does not handle that case well, which is
-> exactly why I sent patches to fix it recently.
-> 
-> The only other option would be to feed it with /dev/random.
-> 
->> Also hwrnd is MMIO in a host why guest needs to
->> use hypercall instead of emulating the device (in kernel or somewhere
->> else?). 
-> 
-> Because PAPR is a platform specification and it specifies that the
-> interface is a hypervisor call. We can't just decide we want to do it
-> differently.
-> 
->> Another things is that on a host hwrnd is protected from
->> direct userspace access by virtue of been a device, but guest code (event
->> kernel mode) is userspace as far as hosts security model goes, so by
->> implementing this hypercall in a way that directly access hwrnd you
->> expose hwrnd to a userspace unconditionally. Why is this a good idea? 
-> 
-> I'm not sure I follow you.
-> 
-> The hwrng is accessible by host userspace via /dev/mem.
+v1->v2:
+ - Improve lock fastpath performance.
+ - Optionally provide classic read/write lock behavior for backward
+   compatibility.
+ - Use xadd instead of cmpxchg for fair reader code path to make it
+   immute to reader contention.
+ - Run more performance testing.
 
-A guest should live on the same permission level as a user space application. If you run QEMU as UID 1000 without access to /dev/mem, why should the guest suddenly be able to directly access a memory location (MMIO) it couldn't access directly through a normal user space interface.
+As mentioned in the LWN article http://lwn.net/Articles/364583/,
+the read/write lock suffer from an unfairness problem that it is
+possible for a stream of incoming readers to block a waiting writer
+from getting the lock for a long time. Also, a waiting reader/writer
+contending a rwlock in local memory will have a higher chance of
+acquiring the lock than a reader/writer in remote node.
 
-It's basically a layering violation.
+This patch set introduces a queue-based read/write lock implementation
+that can largely solve this unfairness problem if the lock owners
+choose to use the fair variant of the lock.
 
+The queue rwlock has two variants selected at initialization time
+- unfair (with read lock stealing) and fair (to both readers and
+writers). The unfair rwlock is the default.
 
-Alex
+The read lock slowpath will check if the reader is in an interrupt
+context. If so, it will force lock spinning and stealing without
+waiting in a queue. This is to ensure the read lock will be granted
+as soon as possible.
+
+Even the unfair rwlock is fairer than the current version as there
+is a higher chance for writers to get the lock and is fair among
+the writers.
+
+The queue write lock can also be used as a replacement for ticket
+spinlocks that are highly contended if lock size increase is not
+an issue.
+
+This patch set currently provides queue read/write lock support on
+x86 architecture only. Support for other architectures can be added
+later on once architecture specific support infrastructure is added
+and proper testing is done.
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+
+Waiman Long (3):
+  qrwlock: A queue read/write lock implementation
+  qrwlock x86: Enable x86 to use queue read/write lock
+  qrwlock: Enable fair queue read/write lock
+
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/spinlock.h       |    2 +
+ arch/x86/include/asm/spinlock_types.h |    4 +
+ include/asm-generic/qrwlock.h         |  256 +++++++++++++++++++++++++++++++++
+ include/linux/rwlock.h                |   15 ++
+ include/linux/rwlock_types.h          |   13 ++
+ kernel/Kconfig.locks                  |    7 +
+ lib/Makefile                          |    1 +
+ lib/qrwlock.c                         |  247 +++++++++++++++++++++++++++++++
+ lib/spinlock_debug.c                  |   19 +++
+ 10 files changed, 565 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/qrwlock.h
+ create mode 100644 lib/qrwlock.c
 
