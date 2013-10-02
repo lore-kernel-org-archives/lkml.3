@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab3JBCnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 22:43:32 -0400
-Received: from ozlabs.org ([203.10.76.45]:50519 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab3JBCn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 22:43:29 -0400
-Date: Wed, 2 Oct 2013 12:43:24 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20131002024324.GC22748@concordia>
-References: <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20131001075133.GJ17966@concordia>
- <20131001103526.GA5053@dhcp-26-207.brq.redhat.com>
+	id S1752868Ab3JBCny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 22:43:54 -0400
+Received: from 162-17-110-37-static.hfc.comcastbusiness.net ([162.17.110.37]:54868
+	"EHLO stuffed.shaftnet.org" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752562Ab3JBCnb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 22:43:31 -0400
+X-Greylist: delayed 1203 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Oct 2013 22:43:31 EDT
+Date: Tue, 1 Oct 2013 22:23:21 -0400
+From: Solomon Peachy <pizza@shaftnet.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 70/71] cw1200: Dont perform SPI transfers in interrupt context
+Message-ID: <20131002022320.GB22070@shaftnet.org>
+References: <20130929192643.539596256@linuxfoundation.org>
+ <20130929192648.304161702@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
 Content-Disposition: inline
-In-Reply-To: <20131001103526.GA5053@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20130929192648.304161702@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 12:35:27PM +0200, Alexander Gordeev wrote:
-> On Tue, Oct 01, 2013 at 05:51:33PM +1000, Michael Ellerman wrote:
-> > The disadvantage is that any restriction imposed on us above the quota
-> > can only be reported as an error from pci_enable_msix().
-> > 
-> > The quota code, called from pci_get_msix_limit(), can only do so much to
-> > interogate firmware about the limitations. The ultimate way to check if
-> > firmware will give us enough MSIs is to try and allocate them. But we
-> > can't do that from pci_get_msix_limit() because the driver is not asking
-> > us to enable MSIs, just query them.
-> 
-> If things are this way then pci_enable_msix() already exposed to this
-> problem internally on pSeries.
-> 
-> I see that even successful quota checks in rtas_msi_check_device() and
-> rtas_setup_msi_irqs() do not guarantee (as you say) that firmware will
-> give enough MSIs. Hence, pci_enable_msix() might fail even though the
-> its quota checks succeeded.
 
-Yes, but it can report that failure to the caller, which can then retry.
+--61jdw2sOBCFtR2d/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Therefore, nothing will really change if we make pci_get_msix_limit() check
-> quota and hope the follow-up call to pci_enable_msix() succeeded.
+On Sun, Sep 29, 2013 at 12:28:22PM -0700, Greg Kroah-Hartman wrote:
+> 3.11-stable review patch.  If anyone has any objections, please let me kn=
+ow.
 
-No that's not equivalent. Under your scheme if pci_enable_msix() fails
-then the caller just bails, it will never try again with a lower number.
+If it's not too late, please drop this patch.  Sorry aobut the delay in=20
+responding, I was travelling internationally and had very sporadic=20
+connectivity.
 
-> (Of course, we could allocate-deallocate MSIs at check time, but I think it
-> is an overkill).
+The patch was reverted in this patch:
 
-It's not only overkill, it's messing with the device behind the drivers
-back, which is definitely a no-no in my opinion.
- 
-> > You'll also need to add another arch hook, for the quota check, and
-> > we'll have to add it to our per-platform indirection as well.
-> 
-> Already, in a branch, hidden from Bjorn & Tejun eyes ;)
-> 
-> > All a lot of bother for no real gain IMHO.
-> 
-> Well, I do not have a strong opinion here. I leave it to the ones who have :)
-> But few drivers have became clearer as result of this change (and messy ones
-> are still messy).
+	c4fb19d21b003ec99ec490ba2cb60baffabc73f3
 
-Amen.
+And superceded by this one:
 
-cheers
+	87421cb6010a2f6494938fbe0a95e1b096b3b7af
+
+(Out of Linus's upstream tree)
+
+ - Solomon
+--=20
+Solomon Peachy        		       pizza at shaftnet dot org
+Delray Beach, FL                          ^^ (email/xmpp) ^^
+Quidquid latine dictum sit, altum viditur.
+
+--61jdw2sOBCFtR2d/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iD4DBQFSS4OYPuLgii2759ARAnR0AJdLZT1x8a1CMG4vdE2avBxjcn5QAKC8n/k8
+GGM2t4oyyBrXLmlX8PwgYA==
+=IOwc
+-----END PGP SIGNATURE-----
+
+--61jdw2sOBCFtR2d/--
