@@ -1,125 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3JBR2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:28:19 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26157 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754277Ab3JBR2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:28:15 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 38/77] ixgbe: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:54 +0200
-Message-Id: <5b809a723104ca6350f4aefaae1ca2a44f7e7116.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	id S1755304Ab3JBR21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:28:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49075 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754277Ab3JBR2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:28:24 -0400
+Message-ID: <524C5786.2090008@ti.com>
+Date: Wed, 2 Oct 2013 13:27:34 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
+References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com> <524C5484.5000601@ti.com> <524C565C.8010709@codeaurora.org>
+In-Reply-To: <524C565C.8010709@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wednesday 02 October 2013 01:22 PM, Stephen Boyd wrote:
+> On 10/02/13 10:14, Santosh Shilimkar wrote:
+>> On Wednesday 02 October 2013 01:09 PM, Will Deacon wrote:
+>>> On Wed, Oct 02, 2013 at 05:55:28PM +0100, Santosh Shilimkar wrote:
+>>>> The sched_clock code uses 2 levels of function pointers, sched_clock_func()
+>>>> and read_sched_clock() but the no sched_clock check in postinit() just
+>>>> checks read_sched_clock().
+>>>>
+>>>> This leads to kernel falling back to jiffy based sched clock even in
+>>>> presence of sched_clock_func() which is not desirable.
+>>>>
+>>>> Fix the postinit() check to avoid the issue. Probably the issue is hidden
+>>>> so far on most of the arm SOCs because of already existing sched_clock
+>>>> registrations apart from arch_timer sched_clock. One can reproduce the
+>>>> issue by just have arch_timer as sched_clock
+>>> Isn't this just an issue with the arch timer driver not calling
+>>> setup_sched_clock? Instead, we munge around with sched_clock_func directly,
+>>> which doesn't appear to be the way anybody else deals with this.
+>>>
+>> I thought about that option as well but was not sure since even in that case
+>> the check is not complete. We just ensure that function is popullated.
+> 
+> Yes, nothing is actually broken because sched_clock_func() won't try to
+> use the jiffy based read_sched_clock() function. I'm not sure we
+> actually need this patch besides to remove a useless timer that updates
+> the jiffy epoch. Can we wait until my 64-bit sched_clock patch series
+> lands in 3.13? It looks like I still need an ack from Will or Catalin on
+> the architected timer patch before the clocksource folks pick it up.
+> 
+Really... I have not created patch out of fun.
+Its broken on my keystone machine at least where the sched_clock is
+falling back on jiffy based sched_clock even in presence of arch_timer
+sched_clock.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c |   62 +++++++++++++------------
- 1 files changed, 32 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-index 90b4e10..2444a4d 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-@@ -711,37 +711,39 @@ static void ixgbe_acquire_msix_vectors(struct ixgbe_adapter *adapter,
- 	 * Right now, we simply care about how many we'll get; we'll
- 	 * set them up later while requesting irq's.
- 	 */
--	while (vectors >= vector_threshold) {
--		err = pci_enable_msix(adapter->pdev, adapter->msix_entries,
--				      vectors);
--		if (!err) /* Success in acquiring all requested vectors. */
--			break;
--		else if (err < 0)
--			vectors = 0; /* Nasty failure, quit now */
--		else /* err == number of vectors we should try again with */
--			vectors = err;
--	}
-+	err = pci_msix_table_size(adapter->pdev);
-+	if (err < 0)
-+		goto err_alloc_msix;
- 
--	if (vectors < vector_threshold) {
--		/* Can't allocate enough MSI-X interrupts?  Oh well.
--		 * This just means we'll go with either a single MSI
--		 * vector or fall back to legacy interrupts.
--		 */
--		netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
--			     "Unable to allocate MSI-X interrupts\n");
--		adapter->flags &= ~IXGBE_FLAG_MSIX_ENABLED;
--		kfree(adapter->msix_entries);
--		adapter->msix_entries = NULL;
--	} else {
--		adapter->flags |= IXGBE_FLAG_MSIX_ENABLED; /* Woot! */
--		/*
--		 * Adjust for only the vectors we'll use, which is minimum
--		 * of max_msix_q_vectors + NON_Q_VECTORS, or the number of
--		 * vectors we were allocated.
--		 */
--		vectors -= NON_Q_VECTORS;
--		adapter->num_q_vectors = min(vectors, adapter->max_q_vectors);
--	}
-+	vectors = min(vectors, err);
-+	if (vectors < vector_threshold)
-+		goto err_alloc_msix;
-+
-+	err = pci_enable_msix(adapter->pdev, adapter->msix_entries, vectors);
-+	if (err)
-+		goto err_alloc_msix;
-+
-+	adapter->flags |= IXGBE_FLAG_MSIX_ENABLED; /* Woot! */
-+	/*
-+	 * Adjust for only the vectors we'll use, which is minimum
-+	 * of max_msix_q_vectors + NON_Q_VECTORS, or the number of
-+	 * vectors we were allocated.
-+	 */
-+	vectors -= NON_Q_VECTORS;
-+	adapter->num_q_vectors = min(vectors, adapter->max_q_vectors);
-+
-+	return;
-+
-+err_alloc_msix:
-+	/* Can't allocate enough MSI-X interrupts?  Oh well.
-+	 * This just means we'll go with either a single MSI
-+	 * vector or fall back to legacy interrupts.
-+	 */
-+	netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
-+		     "Unable to allocate MSI-X interrupts\n");
-+	adapter->flags &= ~IXGBE_FLAG_MSIX_ENABLED;
-+	kfree(adapter->msix_entries);
-+	adapter->msix_entries = NULL;
- }
- 
- static void ixgbe_add_ring(struct ixgbe_ring *ring,
--- 
-1.7.7.6
+Regards,
+Santosh
 
