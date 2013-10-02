@@ -1,256 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3JBFEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:04:05 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:60038 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab3JBFED (ORCPT
+	id S1752798Ab3JBFHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:07:23 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:33256 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab3JBFHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:04:03 -0400
-From: =?UTF-8?q?Mathieu=20Rh=C3=A9aume?= <mathieu@codingrhemes.com>
-To: mathieu@codingrhemes.com
-Cc: joe@perches.com, gregkh@linuxfoundation.org, arve@android.com,
-        dan.carpenter@oracle.com, mirsal@mirsal.fr,
-        serban.constantinescu@arm.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] Staging : android: binder.c: Prefer seq_puts to seq_printf
-Date: Wed,  2 Oct 2013 01:02:39 -0400
-Message-Id: <1380690159-17623-1-git-send-email-mathieu@codingrhemes.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 2 Oct 2013 01:07:20 -0400
+Date: Wed, 2 Oct 2013 07:07:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v6 0/7] Kernel base address randomization
+Message-ID: <20131002050714.GA27982@gmail.com>
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380656245-29975-1-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v2:
- * Fixed the indent in the method calls that had too many tab.
 
->8------------------------------------------------------8<
+* Kees Cook <keescook@chromium.org> wrote:
 
-This patch changes seq_printf for seq_puts in binder.c.
-It fixes the warnings emitted by checkpatch.pl.
+> Here is the latest version of the kASLR series. It has much improved 
+> e820 walking code, and expands the window available on 64-bit.
+> 
+> This is rolled out on Chrome OS devices, and working well.
 
-Signed-off-by: Mathieu Rhéaume <mathieu@codingrhemes.com>
----
- drivers/staging/android/binder.c | 109 +++++++++++++++++++++------------------
- 1 file changed, 58 insertions(+), 51 deletions(-)
+There's one kernel debuggability detail that should be discussed I think: 
+should symbolic printouts (in oops messages but also in /proc/kallsyms) 
+and instrumentation interfaces that expose kernel addresses attempt to 
+de-randomize the addresses, stack contents and register values that lie 
+within the random range?
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 09edebb..7c3e7ef 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -3272,33 +3272,33 @@ binder_defer_work(struct binder_proc *proc, enum binder_deferred_state defer)
- static void print_binder_transaction(struct seq_file *m, const char *prefix,
- 				     struct binder_transaction *t)
- {
--	seq_printf(m,
--		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
--		   prefix, t->debug_id, t,
--		   t->from ? t->from->proc->pid : 0,
--		   t->from ? t->from->pid : 0,
--		   t->to_proc ? t->to_proc->pid : 0,
--		   t->to_thread ? t->to_thread->pid : 0,
--		   t->code, t->flags, t->priority, t->need_reply);
-+	seq_puts(m, "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
-+		 prefix, t->debug_id, t,
-+		 t->from ? t->from->proc->pid : 0,
-+		 t->from ? t->from->pid : 0,
-+		 t->to_proc ? t->to_proc->pid : 0,
-+		 t->to_thread ? t->to_thread->pid : 0,
-+		 t->code, t->flags, t->priority, t->need_reply);
- 	if (t->buffer == NULL) {
- 		seq_puts(m, " buffer free\n");
- 		return;
- 	}
- 	if (t->buffer->target_node)
--		seq_printf(m, " node %d",
--			   t->buffer->target_node->debug_id);
--	seq_printf(m, " size %zd:%zd data %p\n",
--		   t->buffer->data_size, t->buffer->offsets_size,
--		   t->buffer->data);
-+		seq_puts(m, " node %d",
-+			 t->buffer->target_node->debug_id);
-+	seq_puts(m, " size %zd:%zd data %p\n",
-+		 t->buffer->data_size,
-+		 t->buffer->offsets_size,
-+		 t->buffer->data);
- }
- 
- static void print_binder_buffer(struct seq_file *m, const char *prefix,
- 				struct binder_buffer *buffer)
- {
--	seq_printf(m, "%s %d: %p size %zd:%zd %s\n",
--		   prefix, buffer->debug_id, buffer->data,
--		   buffer->data_size, buffer->offsets_size,
--		   buffer->transaction ? "active" : "delivered");
-+	seq_puts(m, "%s %d: %p size %zd:%zd %s\n",
-+		 prefix, buffer->debug_id, buffer->data,
-+		 buffer->data_size, buffer->offsets_size,
-+		 buffer->transaction ? "active" : "delivered");
- }
- 
- static void print_binder_work(struct seq_file *m, const char *prefix,
-@@ -3314,24 +3314,30 @@ static void print_binder_work(struct seq_file *m, const char *prefix,
- 		print_binder_transaction(m, transaction_prefix, t);
- 		break;
- 	case BINDER_WORK_TRANSACTION_COMPLETE:
--		seq_printf(m, "%stransaction complete\n", prefix);
-+		seq_puts(m, "%stransaction complete\n",
-+			 prefix);
- 		break;
- 	case BINDER_WORK_NODE:
- 		node = container_of(w, struct binder_node, work);
--		seq_printf(m, "%snode work %d: u%p c%p\n",
--			   prefix, node->debug_id, node->ptr, node->cookie);
-+		seq_puts(m, "%snode work %d: u%p c%p\n",
-+			 prefix,
-+			 node->debug_id,
-+			 node->ptr,
-+			 node->cookie);
- 		break;
- 	case BINDER_WORK_DEAD_BINDER:
--		seq_printf(m, "%shas dead binder\n", prefix);
-+		seq_puts(m, "%shas dead binder\n", prefix);
- 		break;
- 	case BINDER_WORK_DEAD_BINDER_AND_CLEAR:
--		seq_printf(m, "%shas cleared dead binder\n", prefix);
-+		seq_puts(m, "%shas cleared dead binder\n", prefix);
- 		break;
- 	case BINDER_WORK_CLEAR_DEATH_NOTIFICATION:
--		seq_printf(m, "%shas cleared death notification\n", prefix);
-+		seq_puts(m, "%shas cleared death notification\n", prefix);
- 		break;
- 	default:
--		seq_printf(m, "%sunknown work: type %d\n", prefix, w->type);
-+		seq_puts(m, "%sunknown work: type %d\n",
-+			 prefix,
-+			 w->type);
- 		break;
- 	}
- }
-@@ -3345,7 +3351,8 @@ static void print_binder_thread(struct seq_file *m,
- 	size_t start_pos = m->count;
- 	size_t header_pos;
- 
--	seq_printf(m, "  thread %d: l %02x\n", thread->pid, thread->looper);
-+	seq_puts(m, "  thread %d: l %02x\n",
-+		 thread->pid, thread->looper);
- 	header_pos = m->count;
- 	t = thread->transaction_stack;
- 	while (t) {
-@@ -3379,11 +3386,11 @@ static void print_binder_node(struct seq_file *m, struct binder_node *node)
- 	hlist_for_each_entry(ref, &node->refs, node_entry)
- 		count++;
- 
--	seq_printf(m, "  node %d: u%p c%p hs %d hw %d ls %d lw %d is %d iw %d",
--		   node->debug_id, node->ptr, node->cookie,
--		   node->has_strong_ref, node->has_weak_ref,
--		   node->local_strong_refs, node->local_weak_refs,
--		   node->internal_strong_refs, count);
-+	seq_puts(m, "  node %d: u%p c%p hs %d hw %d ls %d lw %d is %d iw %d",
-+		 node->debug_id, node->ptr, node->cookie,
-+		 node->has_strong_ref, node->has_weak_ref,
-+		 node->local_strong_refs, node->local_weak_refs,
-+		 node->internal_strong_refs, count);
- 	if (count) {
- 		seq_puts(m, " proc");
- 		hlist_for_each_entry(ref, &node->refs, node_entry)
-@@ -3397,9 +3404,9 @@ static void print_binder_node(struct seq_file *m, struct binder_node *node)
- 
- static void print_binder_ref(struct seq_file *m, struct binder_ref *ref)
- {
--	seq_printf(m, "  ref %d: desc %d %snode %d s %d w %d d %p\n",
--		   ref->debug_id, ref->desc, ref->node->proc ? "" : "dead ",
--		   ref->node->debug_id, ref->strong, ref->weak, ref->death);
-+	seq_puts(m, "  ref %d: desc %d %snode %d s %d w %d d %p\n",
-+		 ref->debug_id, ref->desc, ref->node->proc ? "" : "dead ",
-+		 ref->node->debug_id, ref->strong, ref->weak, ref->death);
- }
- 
- static void print_binder_proc(struct seq_file *m,
-@@ -3410,7 +3417,7 @@ static void print_binder_proc(struct seq_file *m,
- 	size_t start_pos = m->count;
- 	size_t header_pos;
- 
--	seq_printf(m, "proc %d\n", proc->pid);
-+	seq_puts(m, "proc %d\n", proc->pid);
- 	header_pos = m->count;
- 
- 	for (n = rb_first(&proc->threads); n != NULL; n = rb_next(n))
-@@ -3534,20 +3541,21 @@ static void print_binder_proc_stats(struct seq_file *m,
- 	struct rb_node *n;
- 	int count, strong, weak;
- 
--	seq_printf(m, "proc %d\n", proc->pid);
-+	seq_puts(m, "proc %d\n",
-+		 proc->pid);
- 	count = 0;
- 	for (n = rb_first(&proc->threads); n != NULL; n = rb_next(n))
- 		count++;
--	seq_printf(m, "  threads: %d\n", count);
--	seq_printf(m, "  requested threads: %d+%d/%d\n"
--			"  ready threads %d\n"
--			"  free async space %zd\n", proc->requested_threads,
--			proc->requested_threads_started, proc->max_threads,
--			proc->ready_threads, proc->free_async_space);
-+	seq_puts(m, "  threads: %d\n", count);
-+	seq_puts(m, "  requested threads: %d+%d/%d\n"
-+		 "  ready threads %d\n"
-+		 "  free async space %zd\n", proc->requested_threads,
-+		 proc->requested_threads_started, proc->max_threads,
-+		 proc->ready_threads, proc->free_async_space);
- 	count = 0;
- 	for (n = rb_first(&proc->nodes); n != NULL; n = rb_next(n))
- 		count++;
--	seq_printf(m, "  nodes: %d\n", count);
-+	seq_puts(m, "  nodes: %d\n", count);
- 	count = 0;
- 	strong = 0;
- 	weak = 0;
-@@ -3558,12 +3566,12 @@ static void print_binder_proc_stats(struct seq_file *m,
- 		strong += ref->strong;
- 		weak += ref->weak;
- 	}
--	seq_printf(m, "  refs: %d s %d w %d\n", count, strong, weak);
-+	seq_puts(m, "  refs: %d s %d w %d\n", count, strong, weak);
- 
- 	count = 0;
- 	for (n = rb_first(&proc->allocated_buffers); n != NULL; n = rb_next(n))
- 		count++;
--	seq_printf(m, "  buffers: %d\n", count);
-+	seq_puts(m, "  buffers: %d\n", count);
- 
- 	count = 0;
- 	list_for_each_entry(w, &proc->todo, entry) {
-@@ -3575,7 +3583,7 @@ static void print_binder_proc_stats(struct seq_file *m,
- 			break;
- 		}
- 	}
--	seq_printf(m, "  pending transactions: %d\n", count);
-+	seq_puts(m, "  pending transactions: %d\n", count);
- 
- 	print_binder_stats(m, "  ", &proc->stats);
- }
-@@ -3656,12 +3664,11 @@ static int binder_proc_show(struct seq_file *m, void *unused)
- static void print_binder_transaction_log_entry(struct seq_file *m,
- 				struct binder_transaction_log_entry *e)
- {
--	seq_printf(m,
--		  "%d: %s from %d:%d to %d:%d node %d handle %d size %d:%d\n",
--		   e->debug_id, (e->call_type == 2) ? "reply" :
--		   ((e->call_type == 1) ? "async" : "call "), e->from_proc,
--		   e->from_thread, e->to_proc, e->to_thread, e->to_node,
--		   e->target_handle, e->data_size, e->offsets_size);
-+	seq_puts(m, "%d: %s from %d:%d to %d:%d node %d handle %d size %d:%d\n",
-+		 e->debug_id, (e->call_type == 2) ? "reply" :
-+		 ((e->call_type == 1) ? "async" : "call "), e->from_proc,
-+		 e->from_thread, e->to_proc, e->to_thread, e->to_node,
-+		 e->target_handle, e->data_size, e->offsets_size);
- }
- 
- static int binder_transaction_log_show(struct seq_file *m, void *unused)
--- 
-1.8.3.1
+ - it would be easier to use those addresses and look them up in a vmlinux
+   or in a System.map as well.
 
+ - it would be somewhat safer to post an oops publicly if it did not
+   contain the random offset in an easily identifiable way.
+
+ - oops patterns from distribution kernels that enable randomization would 
+   match up better.
+
+ - this would make it safer to expose /proc/kallsyms to user-space
+   profiling, while keeping the random offset a kernel-internal secret.
+
+ - RIP information in profiling streams would thus not contain the
+   kernel random offset either.
+
+The other approach would be what your series does, to keep all the raw, 
+randomized output and to assume that users who are allowed to access to 
+logs or profiling can learn the random offset.
+
+I tend to lean towards the 'raw' approach that you picked, but an argument 
+can be made for both approaches - and in any case I haven't seen this 
+discussed to conclusion with cons/pros listed and a consensus/decision 
+reached.
+
+Thanks,
+
+	Ingo
