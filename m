@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab3JBTjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:39:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38598 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab3JBTje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754572Ab3JBTjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:39:35 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:39646 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3JBTje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Oct 2013 15:39:34 -0400
-Date: Wed, 2 Oct 2013 21:39:33 +0200
-From: Jan Kara <jack@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 16/26] mm: Provide get_user_pages_unlocked()
-Message-ID: <20131002193933.GC16998@quack.suse.cz>
-References: <1380724087-13927-1-git-send-email-jack@suse.cz>
- <1380724087-13927-17-git-send-email-jack@suse.cz>
- <524C499B.9090707@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524C499B.9090707@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Thierry Reding <thierry.reding@gmail.com>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm: Track the proper DPMS mode of connectors
+Date: Wed,  2 Oct 2013 21:37:46 +0200
+Message-Id: <1380742666-2438-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 02-10-13 12:28:11, KOSAKI Motohiro wrote:
-> (10/2/13 10:27 AM), Jan Kara wrote:
-> > Provide a wrapper for get_user_pages() which takes care of acquiring and
-> > releasing mmap_sem. Using this function reduces amount of places in
-> > which we deal with mmap_sem.
-> > 
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >   include/linux/mm.h | 14 ++++++++++++++
-> >   1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index 8b6e55ee8855..70031ead06a5 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -1031,6 +1031,20 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-> >   		    struct vm_area_struct **vmas);
-> >   int get_user_pages_fast(unsigned long start, int nr_pages, int write,
-> >   			struct page **pages);
-> > +static inline long
-> > +get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
-> > +		 	unsigned long start, unsigned long nr_pages,
-> > +			int write, int force, struct page **pages)
-> > +{
-> > +	long ret;
-> > +
-> > +	down_read(&mm->mmap_sem);
-> > +	ret = get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
-> > +			     NULL);
-> > +	up_read(&mm->mmap_sem);
-> > +	return ret;
-> > +}
-> 
-> Hmmm. I like the idea, but I really dislike this name. I don't like xx_unlocked 
-> function takes a lock. It is a source of confusing, I believe. 
-  Sure, I'm not very happy about the name either. As Christoph wrote
-probably renaming all get_user_pages() variants might be appropriate. I'll
-think about names some more.
+When userspace removes the active framebuffer using DRM_IOCTL_MODE_RMFB,
+or explicitly disables the CRTC (by calling drmModeSetCrtc(..., NULL)
+for example), a NULL framebuffer will be passed to the .set_config()
+implementation of a CRTC. The drm_crtc_helper_set_config() helper will
+decide to disable a CRTC when that happens.
 
-								Honza
+To do so, it calls drm_crtc_helper_disable(), which in turn will iterate
+over all encoders and decouple them from their connectors and finally
+call drm_helper_disable_unused_functions() to clean up and call the
+.disable() or .dpms() implementation for each encoder. However, at no
+point during this sequence does it track the DPMS mode of a connector,
+so it will usually remain on after this.
+
+When a connector is enabled again, drm_helper_connector_dpms() will not
+notice that the DPMS mode actually changed and won't do anything, which
+causes the connector to stay disabled indefinitely.
+
+To prevent this from happening, explicitly set the connector's DPMS mode
+to off when the CRTC is disabled. That way it reflects the correct state
+and can be enabled again.
+
+This solves an issue observed when terminating an X server running on
+the xf86-video-modesetting driver. Without this patch, the connector
+would not be enabled properly and the screen would stay dark.
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/gpu/drm/drm_crtc_helper.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
+index 4280e37..7964948 100644
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -563,6 +563,14 @@ drm_crtc_helper_disable(struct drm_crtc *crtc)
+ 				continue;
+ 
+ 			connector->encoder = NULL;
++
++			/*
++			 * drm_helper_disable_unused_functions() ought to be
++			 * doing this, but since we've decoupled the encoder
++			 * from the connector above, the required connection
++			 * between them is henceforth no longer available.
++			 */
++			connector->dpms = DRM_MODE_DPMS_OFF;
+ 		}
+ 	}
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.4
+
