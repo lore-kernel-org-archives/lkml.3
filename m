@@ -1,183 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3JBRwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:52:17 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:57514 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754511Ab3JBRwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:52:14 -0400
-Date: Wed, 2 Oct 2013 11:46:40 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org
-Subject: Re: [RFC PATCH v2] fpga: Introduce new fpga subsystem
-Message-ID: <20131002174640.GA10287@obsidianresearch.com>
-References: <cover.1380727889.git.michal.simek@xilinx.com>
- <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
+	id S1754098Ab3JBRwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:52:42 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48149 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab3JBRwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:52:40 -0400
+Date: Wed, 2 Oct 2013 10:52:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131002175213.GR5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <7632387.20FXkuCITr@vostro.rjw.lan>
+ <524B0233.8070203@linux.vnet.ibm.com>
+ <20131001173615.GW3657@laptop.programming.kicks-ass.net>
+ <20131001174508.GA17411@redhat.com>
+ <20131001175640.GQ15690@laptop.programming.kicks-ass.net>
+ <20131001180750.GA18261@redhat.com>
+ <20131002090859.GE12926@twins.programming.kicks-ass.net>
+ <20131002121356.GA21581@redhat.com>
+ <20131002133137.GG28601@twins.programming.kicks-ass.net>
+ <20131002140020.GA25256@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
+In-Reply-To: <20131002140020.GA25256@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100217-0928-0000-0000-00000230ADBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 05:35:58PM +0200, Michal Simek wrote:
+On Wed, Oct 02, 2013 at 04:00:20PM +0200, Oleg Nesterov wrote:
+> On 10/02, Peter Zijlstra wrote:
+> >
+> > On Wed, Oct 02, 2013 at 02:13:56PM +0200, Oleg Nesterov wrote:
+> > > In short: unless a gp elapses between _exit() and _enter(), the next
+> > > _enter() does nothing and avoids synchronize_sched().
+> >
+> > That does however make the entire scheme entirely writer biased;
+> 
+> Well, this makes the scheme "a bit more" writer biased, but this is
+> exactly what we want in this case.
+> 
+> We do not block the readers after xxx_exit() entirely, but we do want
+> to keep them in SLOW state and avoid the costly SLOW -> FAST -> SLOW
+> transitions.
 
-> +What:		/sys/class/fpga_manager/fpga<dev-id>/fpga_config_state
-> +Date:		October 2013
-> +KernelVersion:	3.12
-> +Contact:	Michal Simek <michal.simek@xilinx.com>
-> +Description:
-> +		By reading this file you will get current fpga manager state.
-> +		Flag bits are present in include/linux/fpga.h (FPGA_MGR_XX).
-> +		By writing to this file you can change fpga manager state.
-> +		Valid options are: write_init, write_complete, read_init,
-> +		read_complete.
+Yes -- should help -a- -lot- for bulk write-side operations, such as
+onlining all CPUs at boot time.  ;-)
 
-This shouldn't be asymmetric - read/write should be in the same
-format.
+							Thanx, Paul
 
-I strongly encourage you to use text strings to indicate the state of
-the configuration FSM, and I *really* think you should rework things
-to have an explicit configuration FSM rather than trying to bodge one
-together with a bunch of bit flags.
+> Lets even forget about disable_nonboot_cpus(), lets consider
+> percpu_rwsem-like logic "in general".
+> 
+> Yes, it is heavily optimizied for readers. But if the writers come in
+> a batch, or the same writer does down_write + up_write twice or more,
+> I think state == FAST is pointless in between (if we can avoid it).
+> This is the rare case (the writers should be rare), but if it happens
+> it makes sense to optimize the writers too. And again, even
+> 
+> 	for (;;) {
+> 		percpu_down_write();
+> 		percpu_up_write();
+> 	}
+> 
+> should not completely block the readers.
+> 
+> IOW. "turn sync_sched() into call_rcu_sched() in up_write()" is obviously
+> a win. If the next down_write/xxx_enter "knows" that the readers are
+> still in SLOW mode because gp was not completed yet, why should we
+> add the artificial delay?
+> 
+> As for disable_nonboot_cpus(). You are going to move cpu_hotplug_begin()
+> outside of the loop, this is the same thing.
+> 
+> Oleg.
+> 
 
-Plus error handling is missing, failures need to be reported back.
-
-Noticed several typos:
-
-> +
-> +	if (mgr->mops->read_init) {
-> +		ret = mgr->mops->read_init(mgr);
-> +		if (ret) {
-> +			dev_dbg(mgr->dev, "Failed to write_init\n");
-                                                    ^^^^^^^^
-read_init
-
-> +	if (mgr->mops->write) {
-                   ^^^^^^^^^^
-read
-
-> +		ret = mgr->mops->read(mgr, buf, count);
-> +		if (ret) {
-> +			dev_dbg(mgr->dev, "Failed to write\n");
-                                             ^^^^^^^^^^^^^^^^^
-read
-
-> +
-> +	if (mgr->mops->write_complete) {
-                    ^^^^^^^^^^
-read
-> +		ret = mgr->mops->read_complete(mgr);
-> +		if (ret) {
-> +			dev_dbg(mgr->dev, "Failed to write_complete\n");
-  					  	  ^^^^^^^^^^^^
-read
-
-> +static inline int fpga_mgr_write(struct fpga_manager *mgr, const u8 *buf,
-> +				 ssize_t count)
-> +{
-> +	int bit, ret;
-> +
-> +	dev_dbg(mgr->dev, "%s %lx\n", __func__, mgr->flags);
-> +
-> +	/* FPGE init has to be done to be able to continue */
-           ^^^^^^
-FPGA
-
-> +static struct device_attribute fpga_mgr_attrs[] = {
-> +	__ATTR(name, S_IRUGO, fpga_mgr_name_show, NULL),
-> +	__ATTR(firmware, S_IWUSR, NULL, fpga_mgr_attr_write),
-> +	__ATTR(fpga_config_state, S_IRUSR | S_IWUSR,
-> +	       fpga_mgr_status_read, fpga_mgr_status_write),
-> +	__ATTR_NULL
-> +};
-
-AFAIK it is preferred to use DEVICE_ATTR_RO(), ATTRIBUTE_GROUPS()
-and struct class.dev_groups
-
-eg see this note in linux/device.h
-
-struct class {
-        struct device_attribute         *dev_attrs;     /* use dev_groups instead */
-        const struct attribute_group    **dev_groups;
-}
-
-> +	struct fpga_manager *mgr;
-> +	int ret;
-> +
-> +	if (!mops) {
-> +		dev_dbg(&pdev->dev, "Register failed: NO fpga_manager_ops\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!name || !strlen(name)) {
-> +		dev_dbg(&pdev->dev, "Register failed: NO name specific\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	mgr = devm_kzalloc(&pdev->dev, sizeof(*mgr), GFP_KERNEL);
-> +	if (!mgr)
-> +		return -ENOMEM;
-
-I wonder if this is right, it seems like a strange way to make a class
-subsystem, usually the struct fpga_manager would contain the 'struct
-device' (not a pointer, so you can use container_of) and drvdata would
-be reserved for something else.
-
-This seems to create lifetime issues since the devm above will be
-free'd when the platform driver is released, but the class device will
-live on with the stray pointer. Better to allocate everything against
-the class device below.
-
-Plus you need to ensure the device is fully functionally before
-device_register is called, otherwise you race with notifications to
-userspace.
-
-> +/**
-> + * fpga_mgr_unregister: Remove fpga manager
-> + * @pdev: Pointer to the platform device of fpga manager
-> + *
-> + * Function unregister fpga manager and release all temporary structures
-> + *
-> + * Returns 0 for all cases
-> + */
-> +int fpga_mgr_unregister(struct platform_device *pdev)
-> +{
-> +	struct fpga_manager *mgr = platform_get_drvdata(pdev);
-> +
-> +	if (mgr && mgr->mops && mgr->mops->fpga_remove)
-> +		mgr->mops->fpga_remove(mgr);
-> +
-> +	device_unregister(mgr->dev);
-> +
-> +	spin_lock(&fpga_mgr_idr_lock);
-> +	idr_remove(&fpga_mgr_idr, mgr->nr);
-> +	spin_unlock(&fpga_mgr_idr_lock);
-
-What happens when userspace is holding one of the sysfs files open and
-you unload the module? Looks like bad things?
-
-Regards,
-Jason
