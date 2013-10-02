@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3JBK6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:58:35 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:54224 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab3JBK5v (ORCPT
+	id S1753963Ab3JBK7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 06:59:17 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59241 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab3JBK7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:57:51 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] net: mv643xx_eth: update statistics timer from timer context only
-Date: Wed,  2 Oct 2013 12:57:20 +0200
-Message-Id: <1380711442-24735-2-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 2 Oct 2013 06:59:15 -0400
+Message-ID: <524BFC74.6060401@linaro.org>
+Date: Wed, 02 Oct 2013 13:59:00 +0300
+From: Ciprian Barbu <ciprian.barbu@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: tglx@linutronix.de, aarcange@redhat.com
+Subject: CONFIG_TRANSPARENT_HUGEPAGE with PREEMPT_RT_FULL
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each port driver installs a periodic timer to update port statistics
-by calling mib_counters_update. As mib_counters_update is also called
-from non-timer context, we should not reschedule the timer there but
-rather move it to timer-only context.
+Hello Thomas,
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: David Miller <davem@davemloft.net>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/ethernet/marvell/mv643xx_eth.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+(resending due to HTML formatting)
 
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 7fb5677..44a87e4 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -1131,15 +1131,13 @@ static void mib_counters_update(struct mv643xx_eth_private *mp)
- 	p->rx_discard += rdlp(mp, RX_DISCARD_FRAME_CNT);
- 	p->rx_overrun += rdlp(mp, RX_OVERRUN_FRAME_CNT);
- 	spin_unlock_bh(&mp->mib_counters_lock);
--
--	mod_timer(&mp->mib_counters_timer, jiffies + 30 * HZ);
- }
- 
- static void mib_counters_timer_wrapper(unsigned long _mp)
- {
- 	struct mv643xx_eth_private *mp = (void *)_mp;
--
- 	mib_counters_update(mp);
-+	mod_timer(&mp->mib_counters_timer, jiffies + 30 * HZ);
- }
- 
- 
--- 
-1.7.10.4
+I am looking into using CONFIG_TRANSPARENT_HUGEPAGE with PREEMPT_RT_FULL 
+but currently the latest rt patch has it disabled.
 
+What I managed to find on the mailing list so far is that Yong Zhang 
+reported a crash on rt_spin_lock for which you suggested to disable 
+CONFIG_TRANSPARENT_HUGEPAGE until further notice. That was on Jul 24, 
+2011 so I was wondering if you have any more news on that. Is there any 
+hope to get transparent hugepages working with preempt_rt? Any estimate 
+on how difficult a fix for that will be?
+
+Also, we ran some basic ltp mm and ltp hugetlb on an rt image with 
+transparent hugepages, on an ARM arndale, and didn't get any problems. 
+Do you think it's possible that the problem got fixed somewhere along 
+the way?
+
+Thanks and regards,
+Ciprian
