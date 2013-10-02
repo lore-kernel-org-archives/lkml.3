@@ -1,93 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab3JBSsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:48:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753366Ab3JBSsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:48:22 -0400
-Date: Wed, 2 Oct 2013 20:48:03 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
-        kamaleshb@in.ibm.com, hechjie@cn.ibm.com, akpm@linux-foundation.org,
-        dave.hansen@intel.com
-Subject: Re: [RESEND PATCH] x86: add phys addr validity check for /dev/mem
- mmap
-Message-ID: <20131002184803.GB2975@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <20131002160514.GA25471@localhost.localdomain>
- <524C5BFB.5050501@zytor.com>
- <20131002183155.GA2975@localhost.localdomain>
- <524C6799.9060800@zytor.com>
+	id S1755269Ab3JBSsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:48:51 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:37344 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab3JBSsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 14:48:50 -0400
+Date: Wed, 2 Oct 2013 19:48:44 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131002184844.GB3393@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <20131002182206.GB2485@dztty>
+ <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524C6799.9060800@zytor.com>
+In-Reply-To: <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:36:09AM -0700, H. Peter Anvin wrote:
-> On 10/02/2013 11:31 AM, Frantisek Hrbata wrote:
-> > On Wed, Oct 02, 2013 at 10:46:35AM -0700, H. Peter Anvin wrote:
-> >> On 10/02/2013 09:05 AM, Frantisek Hrbata wrote:
-> >>> +
-> >>> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
-> >>> +{
-> >>> +	return addr + count <= __pa(high_memory);
-> >>> +}
-> >>> +
-> >>> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
-> >>> +{
-> >>> +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
-> >>> +	return phys_addr_valid(addr);
-> >>> +}
-> >>>
+On Wed, Oct 02, 2013 at 11:35:45AM -0700, Kees Cook wrote:
+> On Wed, Oct 2, 2013 at 11:22 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Wed, Oct 02, 2013 at 10:48:55AM -0700, Kees Cook wrote:
+> >> On Wed, Oct 2, 2013 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> > On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> >> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
+> >> >>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+> >> >>> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
+> >> >>> > need to happen during each system call.
+> >> >>> >
+> >> >>> > Currently some of these sensitive entries are protected by performing
+> >> >>> > the ptrace_may_access() check. However even with that the /proc file
+> >> >>> > descriptors can be passed to a more privileged process
+> >> >>> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
+> >> >>> > check. In general the ->open() call will be issued by an unprivileged
+> >> >>> > process while the ->read(),->write() calls by a more privileged one.
+> >> >>> >
+> >> >>> > Example of these files are:
+> >> >>> > /proc/*/syscall, /proc/*/stack etc.
+> >> >>> >
+> >> >>> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
+> >> >>> >
+> >> >>> >
+> >> >>> > These files are protected during read() by the ptrace_may_access(),
+> >> >>> > however the file descriptor can be passed to a suid-exec which can be
+> >> >>> > used to read data and bypass ASLR. Of course this was discussed several
+> >> >>> > times on LKML.
+> >> >>>
+> >> >>> Can you elaborate on what it is that you're fixing?  That is, can you
+> >> >>> give a concrete example of what process opens what file and passes the
+> >> >>> fd to what process?
+> >> >> Yes, the references were already given in this email:
+> >> >> https://lkml.org/lkml/2013/8/31/209
+> >> >>
+> >> >> This has been discussed several times on lkml:
+> >> >> https://lkml.org/lkml/2013/8/28/544
+> >> >>
+> >> >> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
+> >> >>
+> >> >>
+> >> >>> I'm having trouble following your description.
+> >> >> Process open a /proc file and pass the fd to a more privilaged process
+> >> >> that will pass the ptrace_may_access() check, while the original process
+> >> >> that opened that file should fail at the ptrace_may_access()
+> >> >
+> >> > So we're talking about two kinds of attacks, right?
 > >>
-> >> The latter has overflow problems.
-> > 
-> > Could you please specify what overflow problems do you mean?
+> >> Correct.
+> >>
+> >> > Type 1: Unprivileged process does something like open("/proc/1/maps",
+> >> > O_RDONLY) and then passes the resulting fd to something privileged.
+> >>
+> >> ... and then leaks contents back to unprivileged process.
+> >>
+> >> > Type 2: Unprivileged process does something like
+> >> > open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
+> >> > execve on something privileged.
+> >>
+> >> ... and then parent snoops on file contents for the privileged child.
+> >>
+> >> (Type 2 is solved currently, IIUC. Type 1 could be reduced in scope by
+> >> changing these file modes back to 0400.)
+> > Kees for 0400 on /proc/*/maps, it was reported that it could break glibc
 > 
-> Consider if pfn + count overflows and wraps around, or if (pfn <<
-> PAGE_SHIFT) pushes bits out to the left.
+> I didn't mean maps should be 0400. The maps file is already handled
+> differently (pinning mm at open time). I didn't think it was one of
+> the problematic files.
+Kees currently all these files can be used to leak data, except for
+/proc/*/{mem,environ}
 
-Ok, maybe I'm missing something, but isn't this handled in
-do_mmap_pgoff?
+These are the only one that pin the mm at open time. But I'm not sure
+that this solution will work for /proc/*/maps since they need vma info
+which will be perhaps freed if task execv,  Need to check it.
 
-	/* offset overflow? */
-	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
-		return -EOVERFLOW;
+> Regardless, glibc uses /proc/self/maps, which would be fine here, right?
+I did not touch /proc/self/maps and others, but I'm planning to fix them
+if this solution is accepted.
 
-Anyway I can take a closer look and if this can really happen I can fix it.
-		       
+I'll do the same thing as in /proc/*/stat for maps, let it be 0444, and
+try to delay the check to ->read(). So during ->read() perform
+ptrace_may_access() on currenct's cred and process_allow_access() on
+file's opener cred. This should work.
+
+> -Kees
 > 
-> >> The former I realize matches the current /dev/mem, but it is still just
-> >> plain wrong in multiple ways.
-> > 
-> > I guess that you are talking about /dev/mem implementation generelly, because
-> > this patch is exactly the same as the first one. All I'm trying to do here is to
-> > fix this simple problem, which was reported by a customer, using IMHO the least
-> > invasive way. Anyway is there any description what is wrong with /dev/mem
-> > implementation? Maybe I can try to take a look.
-> > 
-> 
-> The bottom line is that read/write to /dev/mem should be able to access
-> the same memory that we can mmap().  Having two different tests is
-> ridiculous.
-
-Ok, I can try to look into this. I just want to point out that some other archs
-like arm are doing it the same way. I simply replaced the generic check functions
-in drivers/char/mem.c with x86 specific ones.
-
-Thanks
-
-> 
-> 	-hpa
-> 
-> 
+> -- 
+> Kees Cook
+> Chrome OS Security
 
 -- 
-Frantisek Hrbata
+Djalal Harouni
+http://opendz.org
