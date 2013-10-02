@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3JBHYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:24:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12237 "EHLO mx1.redhat.com"
+	id S1753333Ab3JBH1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:27:16 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4510 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784Ab3JBHYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:24:38 -0400
-Date: Wed, 2 Oct 2013 09:26:30 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Mark Lord <kernel@start.ca>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20131002072629.GB29860@dhcp-26-207.brq.redhat.com>
-References: <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <52442975.9000603@start.ca>
- <20130926130328.GD16774@dhcp-26-207.brq.redhat.com>
- <524B8908.8080607@start.ca>
+	id S1752784Ab3JBH1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 03:27:13 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <524BCAC4.6060209@broadcom.com>
+Date: Wed, 2 Oct 2013 09:27:00 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524B8908.8080607@start.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Joe Perches" <joe@perches.com>, netdev <netdev@vger.kernel.org>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        e1000-devel@lists.sourceforge.net, linux-usb@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
+        wil6210@qca.qualcomm.com, b43-dev@lists.infradead.org,
+        brcm80211-dev-list@broadcom.com, bridge@lists.linux-foundation.org,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Subject: Re: [PATCH net-next] net:drivers/net: Miscellaneous conversions
+ to ETH_ALEN
+References: <1380679480.2081.24.camel@joe-AO722>
+In-Reply-To: <1380679480.2081.24.camel@joe-AO722>
+X-WSS-ID: 7E5515430UO13057374-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 10:46:32PM -0400, Mark Lord wrote:
-> >>> The last pattern makes most of sense to me and could be updated with a more
-> >>> clear sequence - a call to (bit modified) pci_msix_table_size() followed
-> >>> by a call to pci_enable_msix(). I think this pattern can effectively
-> >>> supersede the currently recommended "loop" practice.
-> >>
-> >> The loop is still necessary, because there's a race between those two calls,
-> >> so that pci_enable_msix() can still fail due to lack of MSIX slots.
-> > 
-> > Moreover, the existing loop pattern is racy and could fail just as easily ;)
-> 
-> Yes, but it then loops again to correct things.
+On 10/02/2013 04:04 AM, Joe Perches wrote:
+> Convert the memset/memcpy uses of 6 to ETH_ALEN
+> where appropriate.
+>
+> Also convert some struct definitions and u8 array
+> declarations of [6] to ETH_ALEN.
+>
+For brcmsmac
 
-No. If it failed it should exit the loop.
+Acked-by: Arend van Spriel <arend@broadcom.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>   drivers/net/wireless/brcm80211/brcmsmac/main.c     |  6 +-
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+
