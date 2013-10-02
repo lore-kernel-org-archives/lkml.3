@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3JBMWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:22:14 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53572 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754395Ab3JBMWK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:22:10 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19cJ8rNb7u7mUeGcV1tZVeE4ZpCUbX1qAM=
-Date: Wed, 2 Oct 2013 08:22:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] net: mv643xx_eth: fix missing device_node for port
- devices
-Message-ID: <20131002122209.GK31178@titan.lakedaemon.net>
-References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1380711442-24735-4-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1754102Ab3JBMXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:23:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753532Ab3JBMXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 08:23:47 -0400
+Date: Wed, 2 Oct 2013 14:16:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>, tony.luck@intel.com,
+        bp@alien8.de
+Subject: Re: [PATCH] hotplug: Optimize {get,put}_online_cpus()
+Message-ID: <20131002121625.GB21581@redhat.com>
+References: <20130925175055.GA25914@redhat.com> <20130928144720.GL15690@laptop.programming.kicks-ass.net> <20130928163104.GA23352@redhat.com> <7632387.20FXkuCITr@vostro.rjw.lan> <524B0233.8070203@linux.vnet.ibm.com> <20131001173615.GW3657@laptop.programming.kicks-ass.net> <20131001174508.GA17411@redhat.com> <20131001175640.GQ15690@laptop.programming.kicks-ass.net> <20131001180750.GA18261@redhat.com> <20131001190515.GI5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380711442-24735-4-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131001190515.GI5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:57:22PM +0200, Sebastian Hesselbarth wrote:
-> DT-based mv643xx_eth probes and creates platform_devices for the
-> port devices on its own. To allow fixups for ports based on the
-> device_node, we need to set .of_node of the corresponding device
-> with the correct node.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/ethernet/marvell/mv643xx_eth.c |    1 +
->  1 file changed, 1 insertion(+)
+On 10/01, Paul E. McKenney wrote:
+>
+> On Tue, Oct 01, 2013 at 08:07:50PM +0200, Oleg Nesterov wrote:
+> > On 10/01, Peter Zijlstra wrote:
+> > >
+> > > On Tue, Oct 01, 2013 at 07:45:08PM +0200, Oleg Nesterov wrote:
+> > > >
+> > > > I tend to agree with Srivatsa... Without a strong reason it would be better
+> > > > to preserve the current logic: "some time after" should not be after the
+> > > > next CPU_DOWN/UP*. But I won't argue too much.
+> > >
+> > > Nah, I think breaking it is the right thing :-)
+> >
+> > I don't really agree but I won't argue ;)
+>
+> The authors of arch/x86/kernel/cpu/mcheck/mce.c would seem to be the
+> guys who would need to complain, given that they seem to have the only
+> use in 3.11.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+mce_cpu_callback() is fine, it ignores POST_DEAD if CPU_TASKS_FROZEN.
 
-thx,
+Oleg.
 
-Jason.
