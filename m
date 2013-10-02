@@ -1,105 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab3JBUSn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:18:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40524 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753716Ab3JBUSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:18:41 -0400
-Date: Wed, 2 Oct 2013 22:18:38 +0200
-From: Jan Kara <jack@suse.cz>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 05/26] omap3isp: Make isp_video_buffer_prepare_user() use
- get_user_pages_fast()
-Message-ID: <20131002201838.GE16998@quack.suse.cz>
-References: <1380724087-13927-1-git-send-email-jack@suse.cz>
- <1380724087-13927-6-git-send-email-jack@suse.cz>
- <11048370.rLWI050cLv@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <11048370.rLWI050cLv@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754251Ab3JBUTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:19:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:63976 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754199Ab3JBUTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 16:19:19 -0400
+Message-ID: <1380745082.12351.6.camel@pippen.local.home>
+Subject: Re: Fwd: Potential out-of-bounds in ftrace_regex_release
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Andrey Konovalov <andreyknvl@google.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com,
+        Dmitry Vyukov <dvyukov@google.com>, Kostya Serebryany <kcc@google.com>
+Date: Wed, 02 Oct 2013 16:18:02 -0400
+In-Reply-To: <20131002185723.GA32614@redhat.com>
+References: <CAAeHK+w+8=DGvFeuMAwS50RRvAGw1KkWHcivja5q-wmX8GtH2w@mail.gmail.com>
+	 <CAAeHK+wy+vs2PniKh8DbWzZoS99g1eZ-U3mv+6SzoznC8WHW6A@mail.gmail.com>
+	 <20131002185723.GA32614@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 02-10-13 21:41:10, Laurent Pinchart wrote:
-> Hi Jan,
-> 
-> Thank you for the patch.
-> 
-> On Wednesday 02 October 2013 16:27:46 Jan Kara wrote:
-> > CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > CC: linux-media@vger.kernel.org
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-  Thanks!
-> 
-> Could you briefly explain where you're headed with this ?
-  My motivation is that currently filesystems have to workaround locking
-problems with ->page_mkwrite() (the write page fault handler) being called
-with mmap_sem held. The plan is to provide ability to ->page_mkwrite()
-handler to drop mmap_sem. And that needs an audit of all get_user_pages()
-callers to verify they won't be broken by this locking change. So I've
-started with making this audit simpler.
+On Wed, 2013-10-02 at 14:57 -0400, Dave Jones wrote:
 
-> The V4L2 subsystem has suffered for quite a long time from potentiel
-> AB-BA deadlocks, due the drivers taking the mmap_sem semaphore while
-> holding the V4L2 buffers queue lock in the code path below, and taking
-> them in reverse order in the mmap() path (as the mm core takes the
-> mmap_sem semaphore before calling the mmap() operation).
-  Yeah, I've read about this in some comment in V4L2. Also there are some
-places (drivers/media/platform/omap/omap_vout.c and
-drivers/media/v4l2-core/) which acquire mmap_sem pretty early to avoid lock
-inversion with the queue lock. These are actually causing me quite some
-headache :)
+> And that's the cause. I wonder what was being opened.
+> Do you happen to have a trinity-child log for that thread ?
 
-> We've solved that by releasing the V4L2 buffers queue lock before 
-> taking the mmap_sem lock below and taking it back after releasing the mmap_sem 
-> lock. Having an explicit indication that the mmap_sem lock was taken helped 
-> keeping the problem in mind. I'm not against hiding it in 
-> get_user_pages_fast(), but I'd like to know what the next step is. Maybe it 
-> would also be worth it adding a /* get_user_pages_fast() takes the mmap_sem */ 
-> comment before the call ?
-  OK, I can add the comment. Thanks for review.
+Thanks for the update. This definitely looks like the bug, and explains
+a lot. I'll look into this, as I'm currently at a conference, it may be
+sporadic.
 
-								Honza
+-- Steve
 
-> > ---
-> >  drivers/media/platform/omap3isp/ispqueue.c | 10 +++-------
-> >  1 file changed, 3 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/media/platform/omap3isp/ispqueue.c
-> > b/drivers/media/platform/omap3isp/ispqueue.c index
-> > e15f01342058..bed380395e6c 100644
-> > --- a/drivers/media/platform/omap3isp/ispqueue.c
-> > +++ b/drivers/media/platform/omap3isp/ispqueue.c
-> > @@ -331,13 +331,9 @@ static int isp_video_buffer_prepare_user(struct
-> > isp_video_buffer *buf) if (buf->pages == NULL)
-> >  		return -ENOMEM;
-> > 
-> > -	down_read(&current->mm->mmap_sem);
-> > -	ret = get_user_pages(current, current->mm, data & PAGE_MASK,
-> > -			     buf->npages,
-> > -			     buf->vbuf.type == V4L2_BUF_TYPE_VIDEO_CAPTURE, 0,
-> > -			     buf->pages, NULL);
-> > -	up_read(&current->mm->mmap_sem);
-> > -
-> > +	ret = get_user_pages_fast(data & PAGE_MASK, buf->npages,
-> > +				  buf->vbuf.type == V4L2_BUF_TYPE_VIDEO_CAPTURE,
-> > +				  buf->pages);
-> >  	if (ret != buf->npages) {
-> >  		buf->npages = ret < 0 ? 0 : ret;
-> >  		isp_video_buffer_cleanup(buf);
-> -- 
-> Regards,
-> 
-> Laurent Pinchart
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
