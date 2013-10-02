@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3JBDXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 23:23:46 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:43225 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab3JBDXn (ORCPT
+	id S1752784Ab3JBDwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 23:52:04 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44994 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab3JBDwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 23:23:43 -0400
-Date: Tue, 1 Oct 2013 23:23:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20131002032338.GA2417@htj.dyndns.org>
-References: <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20130918142231.GA21650@mtj.dyndns.org>
- <20131001073548.GI17966@concordia>
- <20131001115503.GA23722@mtj.dyndns.org>
- <20131002023337.GB22748@concordia>
+	Tue, 1 Oct 2013 23:52:01 -0400
+Date: Tue, 1 Oct 2013 20:51:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Chris Murphy <bugzilla@colorremedies.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20131002035156.GA566@roeck-us.net>
+References: <20130927175926.GA6267@roeck-us.net>
+ <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
+ <524615B1.6000106@roeck-us.net>
+ <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
+ <524A4384.4040403@roeck-us.net>
+ <20131001105526.GA481@polaris.bitmath.org>
+ <20131001151954.GB14887@roeck-us.net>
+ <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com>
+ <20131001162425.GD14887@roeck-us.net>
+ <28FA6820-7FB5-4D33-ABC9-1F2088FA22A6@colorremedies.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131002023337.GB22748@concordia>
+In-Reply-To: <28FA6820-7FB5-4D33-ABC9-1F2088FA22A6@colorremedies.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:33:38PM +1000, Michael Ellerman wrote:
-> > It is an interface which forces the driver writers to write
-> > complicated fallback code which won't usually be excercised.  
+On Tue, Oct 01, 2013 at 07:09:26PM -0600, Chris Murphy wrote:
 > 
-> It does not force anyone to do anything. That's just bull.
-
-Yeah, sure, we don't have shitty code in drivers which don't need any
-of that retry logic, right?  What the hell is up with the gratuituous
-escalation?  You really wanna go that way?
-
-> Code which is unwilling or unable to cope with the extra complexity
-> can simply do:
+> On Oct 1, 2013, at 10:24 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 > 
-> if (pci_enable_msix(..))
-> 	goto fail;
+> > On Tue, Oct 01, 2013 at 09:33:13AM -0600, Chris Murphy wrote:
+> >> 
+> >> On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> >> 
+> >>> On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
+> >>>>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
+> >>>>>> 
+> >>>>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
+> >>>>>> 
+> >>>>> 
+> >>>>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
+> >>>>> Which I guess explains the subsequent memory allocation error in the log.
+> >>>>> 
+> >>>>> Henrik, any idea what might be going on ? Is it possible that the previous
+> >>>>> command failure leaves some state machine in a bad state ?
+> >>>> 
+> >>>> I seem to recall a report on another similar state problem on newer
+> >>>> machines, so maybe, yes. Older machines seem fine, I have never
+> >>>> encountered the problem myself. Here is a patch to test that
+> >>>> theory. It has been tested to be pretty harmless on two different
+> >>>> generations.
+> >>>> 
+> >>>> I really really do not want to add an 'if (value is insane)' check ;-)
+> >>>> 
+> >>> Chris,
+> >>> 
+> >>> any chance you can load this patch on an affected machine so we can get
+> >>> test feedback ? This one is too experimental to submit upstream without
+> >>> knowing that it really fixes the problem.
+> >> 
+> >> Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
+> >> 
+> > Only requirement is that it also includes the previous patch, so it would be
+> > optimal if you can apply it on top of the previous image.
 > 
-> It's as simple as that.
-
-You apparently have no clue how people behave.  You give a function
-which indicates complex failure mode, driver writers *will* try to
-handle that whether they actually understand the implication or not.
-That's a natural and correct behavior too because any half-competent
-software eng would design API so that it receives and returns
-information which is relevant to its users.  If there are special
-cases to handle, make the damn interface for it special too so that it
-doesn't confuse the common case.
-
-Driver codes already have generally lower quality than core code, if
-for nothing else, due to the sheer volume, and there are many driver
-writers who aren't too privvy with various kernel subsystems.  They
-usually just copy whatever other similar driver is doing, and this one
-is a lot worse - this thing affects hardware directly.  If you expect
-all the shitty implementations of ahci to handle the different
-variations of multiple MSI config cases, you just don't have any
-experience dealing with cheap commodity hardware.
-
-Driver APIs should be intuitive, clear in its intentions, and don't
-tempt fate with hairy configs for vast majority of cases.
-
-> +int pci_enable_msix_or_fail(struct pci_dev *dev, struct msix_entry *entries,
-> +                           int nvec)
-> +{
-> +       int rc;
-> +
-> +       rc = pci_enable_msix(dev, entries, nvec);
-> +       if (rc > 0)
-> +               rc = -ENOSPC;
-> +
-> +       return rc;
-> +}
-
-Make the *default* case simple and give clearly special interface for
-the special cases.  What's so hard about that?
-
-> > Are we talking about some limited number of device drivers here?  
+> Patch added on top of 3.12.0-0.rc3.git0.1.fc20.x86_64 and built. But after ~dozen reboots, I'm not triggering the problem. The only items in dmesg with smc in it:
 > 
-> I don't have a list, but yeah there are certain drivers that folks care about.
-
-And here's another problem with the current interface.  Because the
-default interface is the unnecessrily complicated one, now we can't
-tell which ones actually need the complicated treatment.
-
-> > Also, is the quota still necessary for machines in production today?
+> [   13.799819] applesmc: key=261 fan=2 temp=14 index=14 acc=1 lux=2 kbd=1
+> [   13.833402] input: applesmc as /devices/platform/applesmc.768/input/input10
 > 
-> As far as I know yes. The number of MSIs is growing on modern systems, but so
-> is the number of cpus and devices.
 
-That's a bummer, but let's please make the default interface simple.
-I really don't wanna see partial allocations for ahci.
+Hi Chris,
 
--- 
-tejun
+That only means that you did not hit the problem. There may be some secondary
+trigger (cold boot ? coffee on the cpu ?).
+
+One thing I have seen in all logs is the earlier "send_byte fail" message, so
+I think that is a pre-requisite.
+
+Thanks,
+Guenter
