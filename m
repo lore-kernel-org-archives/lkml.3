@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab3JBPIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:08:20 -0400
-Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:17981 "EHLO
-	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753046Ab3JBPIR (ORCPT
+	id S1753813Ab3JBPI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:08:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48600 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683Ab3JBPI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:08:17 -0400
-Date: Wed, 2 Oct 2013 15:08:16 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+	Wed, 2 Oct 2013 11:08:26 -0400
+Message-Id: <20131002145655.361606532@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 02 Oct 2013 16:56:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu
- ops
-In-Reply-To: <20130928084412.GC26167@gmail.com>
-Message-ID: <0000014179b65a63-512751f8-346a-4621-b6d1-9abd62e781c9-000000@email.amazonses.com>
-References: <20130924154159.855373283@linux.com> <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com> <20130924171029.GB10261@gmail.com> <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
- <20130925181146.GA16693@gmail.com> <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com> <20130928084412.GC26167@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.81
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 0/3] Optimize the cpu hotplug locking
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Sep 2013, Ingo Molnar wrote:
+The current cpu hotplug lock is a single global lock; therefore excluding
+hotplug is a very expensive proposition even though it is rare occurence under
+normal operation.
 
->
-> * Christoph Lameter <cl@linux.com> wrote:
->
-> > > The blind __this_cpu conversions without proper preempt debugging
-> > > cannot continue without first fixing all the fallout of the missing
-> > > debug checks to begin with.
-> >
-> > That will take some time as the feedback from the other patchset
-> > suggests.
->
-> That's the reason why we insisted on __this_cpu*() primitives growing
-> these essential debug checks early on - which you resisted. I had to bring
-> out NAKs for you to see sense and start fixing the mess already - next
-> time around I'll probably have to NAK your changes earlier to prevent such
-> mishaps.
+There is a desire for a more light weight implementation of
+{get,put}_online_cpus() from both the NUMA scheduling as well as the -RT side.
 
-I pointed out the issues that would have to be addressed when the brought
-up the issue. It seemed that Steven was working on it, I fixed some of the
-problems that he mentioned and then waited. Seems that nothing was
-happening on the issue then. Guess it was not that important to you. That
-was years ago.
+The current hotplug lock is a full reader preference lock -- and thus supports
+reader recursion. However since we're making the read side lock much cheaper it
+is the expectation that it will also be used far more. Which in turn would lead
+to writer starvation.
+
+Therefore the new lock proposed is completely fair; albeit somewhat expensive
+on the write side. This in turn means that we need a per-task nesting count to
+support reader recursion.
+
+This patch-set is in 3 parts;
+
+ 1) The new hotplug lock implementation, very fast on the read side,
+    very expensive on the write side.
+
+ 2) Some new rcu_sync primitive by Oleg
+
+ 3) Employment of the rcy_sync thingy to optimize the write-side of the
+    new hotplug lock.
+
+
+
+
 
