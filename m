@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab3JBQqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:46:18 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24784 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753481Ab3JBQqP (ORCPT
+	id S1754743Ab3JBQqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:46:43 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:40680 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab3JBQql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:46:15 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 46/77] mlx4: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:49:02 +0200
-Message-Id: <b0a9f6f455aa03b7769e6d9cc2e7fdbc06732b2f.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 12:46:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131002151430.GB2669@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <1380659178-28605-7-git-send-email-tixxdz@opendz.org> <524B7934.9070606@amacapital.net>
+ <20131002151430.GB2669@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 2 Oct 2013 17:46:19 +0100
+Message-ID: <CALCETrWWUkqNk_rReGfg+zxmFctFkoydqKs85bgzNk6AuyzyCg@mail.gmail.com>
+Subject: Re: [PATCH v2 6/9] procfs: add permission checks on the file's opener
+ of /proc/*/stat
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        kernel-hardening@lists.openwall.com, Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wed, Oct 2, 2013 at 4:14 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Tue, Oct 01, 2013 at 06:39:00PM -0700, Andy Lutomirski wrote:
+>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+>> > Some fields of the /proc/*/stat are sensitive fields that need
+>> > appropriate protection.
+>> >
+>> > However, /proc file descriptors can be passed to a more privileged
+>> > process (e.g. a suid-exec) which will pass the classic
+>> > ptrace_may_access() permission check during read().
+>> >
+>> > To prevent it, use proc_same_open_cred() to detect if current's cred
+>> > have changed between ->open() and ->read(), if so, call
+>> > proc_allow_access() to check if the original file's opener had enough
+>> > permissions to read these sensitive fields. This will prevent passing
+>> > file descriptors to a more privileged process to leak data.
+>> >
+>> > The patch also adds a previously missing signal->cred_guard_mutex lock.
+>> >
+>> > This patch does not break userspace since it only hides the fields that
+>> > were supposed to be protected.
+>> >
+>> > Cc: Kees Cook <keescook@chromium.org>
+>> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+>> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+>> > ---
+>> >  fs/proc/array.c | 16 ++++++++++++++--
+>> >  1 file changed, 14 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/fs/proc/array.c b/fs/proc/array.c
+>> > index cbd0f1b..f034e05 100644
+>> > --- a/fs/proc/array.c
+>> > +++ b/fs/proc/array.c
+>> > @@ -394,7 +394,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+>> >     char state;
+>> >     pid_t ppid = 0, pgid = -1, sid = -1;
+>> >     int num_threads = 0;
+>> > -   int permitted;
+>> > +   int permitted = 0;
+>> >     struct mm_struct *mm;
+>> >     unsigned long long start_time;
+>> >     unsigned long cmin_flt = 0, cmaj_flt = 0;
+>> > @@ -404,10 +404,22 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+>> >     unsigned long rsslim = 0;
+>> >     char tcomm[sizeof(task->comm)];
+>> >     unsigned long flags;
+>> > +   struct file *file = m->private;
+>> > +   int same_cred = proc_same_open_cred(file->f_cred);
+>> > +   unsigned int ptrace_mode = PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT;
+>> >
+>> >     state = *get_task_state(task);
+>> >     vsize = eip = esp = 0;
+>> > -   permitted = ptrace_may_access(task, PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT);
+>> > +
+>> > +   if (!mutex_lock_killable(&task->signal->cred_guard_mutex)) {
+>> > +           permitted = ptrace_may_access(task, ptrace_mode);
+>> > +           if (permitted && !same_cred)
+>> > +                   permitted = proc_allow_access(file->f_cred,
+>> > +                                                 task, ptrace_mode);
+>> > +
+>> > +           mutex_unlock(&task->signal->cred_guard_mutex);
+>> > +   }
+>> > +
+>>
+>> else permitted = false?
+> permitted is initialized to 0
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/mellanox/mlx4/main.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+Never mind, then -- I read that wrong...
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
-index 60c9f4f..377a5ea 100644
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -1852,8 +1852,16 @@ static void mlx4_enable_msi_x(struct mlx4_dev *dev)
- 	int i;
- 
- 	if (msi_x) {
-+		err = pci_msix_table_size(dev->pdev);
-+		if (err < 0)
-+			goto no_msi;
-+
-+		/* Try if at least 2 vectors are available */
- 		nreq = min_t(int, dev->caps.num_eqs - dev->caps.reserved_eqs,
- 			     nreq);
-+		nreq = min_t(int, nreq, err);
-+		if (nreq < 2)
-+			goto no_msi;
- 
- 		entries = kcalloc(nreq, sizeof *entries, GFP_KERNEL);
- 		if (!entries)
-@@ -1862,17 +1870,8 @@ static void mlx4_enable_msi_x(struct mlx4_dev *dev)
- 		for (i = 0; i < nreq; ++i)
- 			entries[i].entry = i;
- 
--	retry:
- 		err = pci_enable_msix(dev->pdev, entries, nreq);
- 		if (err) {
--			/* Try again if at least 2 vectors are available */
--			if (err > 1) {
--				mlx4_info(dev, "Requested %d vectors, "
--					  "but only %d MSI-X vectors available, "
--					  "trying again\n", nreq, err);
--				nreq = err;
--				goto retry;
--			}
- 			kfree(entries);
- 			goto no_msi;
- 		}
--- 
-1.7.7.6
+>
+> First the original ptrace_may_access() check did not hold
+> cred_guard_mutex, so add it. If we can't grab mutex then let permitted
+> to be zero. Yes this a change in behaviour and I think it's correct, IOW
+> we were not able to perform the ptrace_may_access() check, otherwise
+> permitted will depend on checks result.
+>
+> However, there is still a race here since we set the permitted value
+> before gathering the appropriate info about task. At the read() data moment
+> this target task may have been gone privileged... , acquiring an X lock
+> on target task, will just break/slow things, as it has been shown before...
+> Not to mention that the race window is small...
+>
+>
+>> But surely this would be *much* more comprehensible if you had
+>> proc_allow_access do the entire check.
+> I don't understand what you mean by "do the entire check" ?
 
+I mean to move the entire "check current->cred and f_cred" check into
+its own function rather than duplicating it at each call site.
+
+--Andy
