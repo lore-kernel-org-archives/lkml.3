@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab3JBRm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:42:27 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26718 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754686Ab3JBRmY (ORCPT
+	id S1755557Ab3JBRmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:42:44 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34276 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab3JBRmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:42:24 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
-        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 19/77] csiostor: Do not call pci_disable_msix() if pci_enable_msix() failed
-Date: Wed,  2 Oct 2013 12:48:35 +0200
-Message-Id: <3697708ec423a6b6f3d924ea4af9a56874f5787a.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 13:42:42 -0400
+Message-ID: <524C5B10.20006@codeaurora.org>
+Date: Wed, 02 Oct 2013 10:42:40 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
+References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com> <524C5484.5000601@ti.com> <524C565C.8010709@codeaurora.org> <524C5786.2090008@ti.com>
+In-Reply-To: <524C5786.2090008@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/scsi/csiostor/csio_isr.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+On 10/02/13 10:27, Santosh Shilimkar wrote:
+> On Wednesday 02 October 2013 01:22 PM, Stephen Boyd wrote:
+>> On 10/02/13 10:14, Santosh Shilimkar wrote:
+>>> On Wednesday 02 October 2013 01:09 PM, Will Deacon wrote:
+>>>> On Wed, Oct 02, 2013 at 05:55:28PM +0100, Santosh Shilimkar wrote:
+>>>>> The sched_clock code uses 2 levels of function pointers, sched_clock_func()
+>>>>> and read_sched_clock() but the no sched_clock check in postinit() just
+>>>>> checks read_sched_clock().
+>>>>>
+>>>>> This leads to kernel falling back to jiffy based sched clock even in
+>>>>> presence of sched_clock_func() which is not desirable.
+>>>>>
+>>>>> Fix the postinit() check to avoid the issue. Probably the issue is hidden
+>>>>> so far on most of the arm SOCs because of already existing sched_clock
+>>>>> registrations apart from arch_timer sched_clock. One can reproduce the
+>>>>> issue by just have arch_timer as sched_clock
+>>>> Isn't this just an issue with the arch timer driver not calling
+>>>> setup_sched_clock? Instead, we munge around with sched_clock_func directly,
+>>>> which doesn't appear to be the way anybody else deals with this.
+>>>>
+>>> I thought about that option as well but was not sure since even in that case
+>>> the check is not complete. We just ensure that function is popullated.
+>> Yes, nothing is actually broken because sched_clock_func() won't try to
+>> use the jiffy based read_sched_clock() function. I'm not sure we
+>> actually need this patch besides to remove a useless timer that updates
+>> the jiffy epoch. Can we wait until my 64-bit sched_clock patch series
+>> lands in 3.13? It looks like I still need an ack from Will or Catalin on
+>> the architected timer patch before the clocksource folks pick it up.
+>>
+> Really... I have not created patch out of fun.
+> Its broken on my keystone machine at least where the sched_clock is
+> falling back on jiffy based sched_clock even in presence of arch_timer
+> sched_clock.
 
-diff --git a/drivers/scsi/csiostor/csio_isr.c b/drivers/scsi/csiostor/csio_isr.c
-index 7ee9777..91ba91d 100644
---- a/drivers/scsi/csiostor/csio_isr.c
-+++ b/drivers/scsi/csiostor/csio_isr.c
-@@ -529,10 +529,8 @@ csio_enable_msix(struct csio_hw *hw)
- 			csio_reduce_sqsets(hw, cnt - extra);
- 		}
- 	} else {
--		if (rv > 0) {
--			pci_disable_msix(hw->pdev);
-+		if (rv > 0)
- 			csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
--		}
- 
- 		kfree(entries);
- 		return -ENOMEM;
+How is that possible? sched_clock_func is only assigned by
+arch/arm/kernel/arch_timer.c when the architected timer is detected and
+sched_clock() in kernel/time/sched_clock.c calls that function pointer
+unconditionally. The only way I see this happening is if the architected
+timer rate is zero. I agree we will get two lines in the dmesg about
+sched_clock and its not very clear which one is being used.
+
 -- 
-1.7.7.6
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
