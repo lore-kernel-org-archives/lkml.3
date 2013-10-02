@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3JBFYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:24:18 -0400
-Received: from mout.web.de ([212.227.17.11]:56306 "EHLO mout.web.de"
+	id S1752921Ab3JBFY3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:24:29 -0400
+Received: from mout.web.de ([212.227.15.4]:49750 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab3JBFYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:24:16 -0400
+	id S1752807Ab3JBFYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 01:24:24 -0400
 From: Martin Walch <walch.martin@web.de>
 Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>,
@@ -16,39 +16,46 @@ Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
         Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
         Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4]kconfig: minor cleanups and corrections
-Date: Wed, 02 Oct 2013 07:24:11 +0200
-Message-ID: <2239119.8z7hSRUtxP@tacticalops>
+Subject: [PATCH 1/4] kconfig: add short explanation to SYMBOL_WRITE
+Date: Wed, 02 Oct 2013 07:24:20 +0200
+Message-ID: <4542076.yVG8YKgu5r@tacticalops>
 User-Agent: KMail/4.11.1 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.11.1; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:UFxWv1314kjlKHWYrZMV+/4UWI8liV9EUtiXeCl77bFGBLFRH6p
- KK/8Ss2vLELIoKKcB4sVrsIn94qjsSHM0apd4aoiptfhdTS1lnBpjso5SHanvmslRqbthyc
- Plz4TZZMYJbWooGXlp1ZNKmersTI+Ku3eU86kMKy7OX0uFMQ918pyAkrErJKhA5Wg2sxY+i
- OF8sM1dxxZotB4Xdi7kTg==
+Content-Type: text/plain; charset="UTF-8"
+X-Provags-ID: V03:K0:4uiXwAE3+iEXQTwdnsDOwC+6e1hKqLBsS/uIhkgCUPDgNhShgoB
+ KxyG2e9dIQDI/AFzpIt1lYUgXrhGOpITZpFhMsrq/oAKd+c6IxqJ86X8D/3H7hkwvanYPqZ
+ WMD4aZ5Hf7bjzz3zKeVveqBVyh8j4iTS+vWJ63DxmpiLj2L+QjEJxaOLCtAjBSuQwB7Spki
+ S8bnTqWseRwMfbkv4l2cA==
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Martin Walch <walch.martin@web.de>
+Date: Wed, 2 Oct 2013 06:54:27 +0200
+Subject: [PATCH 1/4] kconfig: add short explanation to SYMBOL_WRITE
 
-these are some simple fixes to correct minor things I came across while reading the code.
+replace the question mark in the comment after SYMBOL_WRITE with an explanation
+Signed-off-by: Martin Walch <walch.martin@web.de>
+---
+ scripts/kconfig/expr.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Martin Walch (4):
-  kconfig: add short explanation to SYMBOL_WRITE
-  kconfig: trivial: fix typos in comments
-  kconfig: adjust warning message for conflicting types
-  kconfig: remove unused definition from scanner
-
- scripts/kconfig/expr.h   | 2 +-
- scripts/kconfig/mconf.c  | 2 +-
- scripts/kconfig/menu.c   | 4 ++--
- scripts/kconfig/symbol.c | 2 +-
- scripts/kconfig/zconf.l  | 1 -
- 5 files changed, 5 insertions(+), 6 deletions(-)
-
+diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+index df198a5..ba663e1 100644
+--- a/scripts/kconfig/expr.h
++++ b/scripts/kconfig/expr.h
+@@ -93,7 +93,7 @@ struct symbol {
+ #define SYMBOL_CHOICEVAL  0x0020  /* used as a value in a choice block */
+ #define SYMBOL_VALID      0x0080  /* set when symbol.curr is calculated */
+ #define SYMBOL_OPTIONAL   0x0100  /* choice is optional - values can be 'n' */
+-#define SYMBOL_WRITE      0x0200  /* ? */
++#define SYMBOL_WRITE      0x0200  /* write symbol to file (KCONFIG_CONFIG) */
+ #define SYMBOL_CHANGED    0x0400  /* ? */
+ #define SYMBOL_AUTO       0x1000  /* value from environment variable */
+ #define SYMBOL_CHECKED    0x2000  /* used during dependency checking */
 -- 
 1.8.1.5
+
 
