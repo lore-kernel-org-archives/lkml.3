@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3JBHIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746Ab3JBHIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:08:07 -0400
-Date: Wed, 2 Oct 2013 09:10:00 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20131002071000.GA29860@dhcp-26-207.brq.redhat.com>
-References: <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
- <20130917143022.GA7707@concordia>
- <20130918094759.GA2353@dhcp-26-207.brq.redhat.com>
- <20131001075133.GJ17966@concordia>
- <20131001103526.GA5053@dhcp-26-207.brq.redhat.com>
- <20131002024324.GC22748@concordia>
+	id S1753257Ab3JBHMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:12:39 -0400
+Received: from services.gouders.net ([141.101.32.176]:50471 "EHLO
+	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab3JBHMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 03:12:36 -0400
+X-Greylist: delayed 1492 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 03:12:35 EDT
+From: Dirk Gouders <dirk@gouders.net>
+To: Martin Walch <walch.martin@web.de>
+Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kconfig: remove unused definition from scanner
+In-Reply-To: <6249343.9Mjtul3lu5@tacticalops> (Martin Walch's message of "Wed,
+	02 Oct 2013 07:24:40 +0200")
+References: <6249343.9Mjtul3lu5@tacticalops>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Wed, 02 Oct 2013 08:42:59 +0200
+Message-ID: <ghk3hwjhqk.fsf@lena.gouders.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002024324.GC22748@concordia>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:43:24PM +1000, Michael Ellerman wrote:
-> On Tue, Oct 01, 2013 at 12:35:27PM +0200, Alexander Gordeev wrote:
-> > On Tue, Oct 01, 2013 at 05:51:33PM +1000, Michael Ellerman wrote:
-> > > The disadvantage is that any restriction imposed on us above the quota
-> > > can only be reported as an error from pci_enable_msix().
-> > > 
-> > > The quota code, called from pci_get_msix_limit(), can only do so much to
-> > > interogate firmware about the limitations. The ultimate way to check if
-> > > firmware will give us enough MSIs is to try and allocate them. But we
-> > > can't do that from pci_get_msix_limit() because the driver is not asking
-> > > us to enable MSIs, just query them.
-> > 
-> > If things are this way then pci_enable_msix() already exposed to this
-> > problem internally on pSeries.
-> > 
-> > I see that even successful quota checks in rtas_msi_check_device() and
-> > rtas_setup_msi_irqs() do not guarantee (as you say) that firmware will
-> > give enough MSIs. Hence, pci_enable_msix() might fail even though the
-> > its quota checks succeeded.
-> 
-> Yes, but it can report that failure to the caller, which can then retry.
+Martin Walch <walch.martin@web.de> writes:
 
-If a driver wants to retry after a failure it is up to the driver (but why?).
-The current guidlines state:
+> From: Martin Walch <walch.martin@web.de>
+> Date: Wed, 2 Oct 2013 06:58:46 +0200
+> Subject: [PATCH 4/4] kconfig: remove unused definition from scanner
+>
+> The definition ws [ \n\t] is not used anywhere. Drop it to avoid confusion.
 
-"If this function returns a negative number, it indicates an error and
-the driver should not attempt to allocate any more MSI-X interrupts for
-this device."
+Hi Martin,
 
-Anyway, what number could the driver retry with after it got a negative errno?
+I think you should also regenerate the scanner and add
+the new zconf.lex.c_shipped to this patch.
 
-> > Therefore, nothing will really change if we make pci_get_msix_limit() check
-> > quota and hope the follow-up call to pci_enable_msix() succeeded.
-> 
-> No that's not equivalent. Under your scheme if pci_enable_msix() fails
-> then the caller just bails, it will never try again with a lower number.
+Dirk
 
-Currently under the very same circumstances (the quota check within
-rtas_setup_msi_irqs() returned Q vectors while the firmware has only F
-vectors to allocate and Q > F) rtas_setup_msi_irqs() fails, pci_enable_msix()
-fails, the caller bails and never try again with a lower number.
-
-Am I missing something here?
-
-> cheers
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> Signed-off-by: Martin Walch <walch.martin@web.de>
+> ---
+>  scripts/kconfig/zconf.l | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/scripts/kconfig/zconf.l b/scripts/kconfig/zconf.l
+> index 6555a47..1a9f53e 100644
+> --- a/scripts/kconfig/zconf.l
+> +++ b/scripts/kconfig/zconf.l
+> @@ -68,7 +68,6 @@ static void alloc_string(const char *str, int size)
+>  }
+>  %}
+>  
+> -ws	[ \n\t]
+>  n	[A-Za-z0-9_]
+>  
+>  %%
