@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab3JBNLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 09:11:36 -0400
-Received: from 6.mo4.mail-out.ovh.net ([188.165.36.253]:57680 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753640Ab3JBNLf (ORCPT
+	id S1754206Ab3JBNNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 09:13:19 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:48376 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab3JBNNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 09:11:35 -0400
-X-Greylist: delayed 2138 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 09:11:34 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 1/3] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare
-Date: Wed,  2 Oct 2013 14:35:20 +0200
-Message-Id: <1380717320-6575-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
-References: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 1371909037269088364
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 2 Oct 2013 09:13:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131002130143.GF28601@twins.programming.kicks-ass.net>
+References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+	<20130930161546.GG3081@twins.programming.kicks-ass.net>
+	<CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+Date: Wed, 2 Oct 2013 15:13:16 +0200
+Message-ID: <CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>> >>  - then there are timing attacks, and someone having access to a PMU
+>> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>> >>    local context can run very accurate and low noise timing attacks...
+>> >>
+>> >>    I don't think the kernel's sha_transform() is hardened against timing
+>> >>    attacks, it's performance optimized so it has variable execution time
+>> >>    highly dependent on plaintext input - which leaks information about the
+>> >>    plaintext.
+>> >
+>> > Typical user doesn't have enough priv to profile kernel space; once you
+>> > do you also have enough priv to see kernel addresses outright (ie.
+>> > kallsyms etc..).
+>> >
+>> I was going to say just that. But that's not the default, paranoid level
+>> is at 1 by default and not 2. So I supposedly can still do:
+>
+> Oh right you are.. so yes that's a very viable avenue.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/clocksource/tcb_clksrc.c |   26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 8a61872..0481562 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable(tcd->clk);
-+		clk_disable_unprepare(tcd->clk);
- 	}
- 
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -265,6 +265,7 @@ static int __init tcb_clksrc_init(void)
- 	int best_divisor_idx = -1;
- 	int clk32k_divisor_idx = -1;
- 	int i;
-+	int ret;
- 
- 	tc = atmel_tc_alloc(CONFIG_ATMEL_TCB_CLKSRC_BLOCK, clksrc.name);
- 	if (!tc) {
-@@ -275,7 +276,11 @@ static int __init tcb_clksrc_init(void)
- 	pdev = tc->pdev;
- 
- 	t0_clk = tc->clk[0];
--	clk_enable(t0_clk);
-+	ret = clk_prepare_enable(t0_clk);
-+	if (ret) {
-+		pr_debug("can't enable T0 clk\n");
-+		goto err_free_tc;
-+	}
- 
- 	/* How fast will we be counting?  Pick something over 5 MHz.  */
- 	rate = (u32) clk_get_rate(t0_clk);
-@@ -313,7 +318,11 @@ static int __init tcb_clksrc_init(void)
- 		/* tclib will give us three clocks no matter what the
- 		 * underlying platform supports.
- 		 */
--		clk_enable(tc->clk[1]);
-+		ret = clk_prepare_enable(tc->clk[1]);
-+		if (ret) {
-+			pr_debug("can't enable T1 clk\n");
-+			goto err_disable_t0;
-+		}
- 		/* setup both channel 0 & 1 */
- 		tcb_setup_dual_chan(tc, best_divisor_idx);
- 	}
-@@ -325,5 +334,12 @@ static int __init tcb_clksrc_init(void)
- 	setup_clkevents(tc, clk32k_divisor_idx);
- 
- 	return 0;
-+
-+err_disable_t0:
-+	clk_disable_unprepare(t0_clk);
-+
-+err_free_tc:
-+	atmel_tc_free(tc);
-+	return ret;
- }
- arch_initcall(tcb_clksrc_init);
--- 
-1.7.9.5
-
+You mean simply encoding the vma->vm_mm as the ino number, for instance.
