@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab3JBTjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:39:35 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:39646 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab3JBTje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:39:34 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm: Track the proper DPMS mode of connectors
-Date: Wed,  2 Oct 2013 21:37:46 +0200
-Message-Id: <1380742666-2438-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
+	id S1754694Ab3JBTki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:40:38 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41389 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753580Ab3JBTkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 15:40:36 -0400
+Date: Wed, 2 Oct 2013 15:40:29 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Eric Dumazet <eric.dumazet@gmail.com>, Tom Herbert <therbert@google.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        jesse.brandeburg@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] random: introduce
+ get_random_bytes_busy_wait_initialized
+Message-ID: <20131002194029.GC31579@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Tom Herbert <therbert@google.com>, davem@davemloft.net,
+	netdev@vger.kernel.org, jesse.brandeburg@intel.com,
+	linux-kernel@vger.kernel.org
+References: <alpine.DEB.2.02.1309231535030.23896@tomh.mtv.corp.google.com>
+ <1379980991.3165.37.camel@edumazet-glaptop>
+ <20130924023038.GA22393@order.stressinduktion.org>
+ <20130924033505.GB22393@order.stressinduktion.org>
+ <1380001118.3165.41.camel@edumazet-glaptop>
+ <20130924054532.GA24446@order.stressinduktion.org>
+ <1380028797.3165.65.camel@edumazet-glaptop>
+ <20130925090034.GC4904@order.stressinduktion.org>
+ <20131002151018.GA31579@thunk.org>
+ <20131002171839.GQ10771@order.stressinduktion.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002171839.GQ10771@order.stressinduktion.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When userspace removes the active framebuffer using DRM_IOCTL_MODE_RMFB,
-or explicitly disables the CRTC (by calling drmModeSetCrtc(..., NULL)
-for example), a NULL framebuffer will be passed to the .set_config()
-implementation of a CRTC. The drm_crtc_helper_set_config() helper will
-decide to disable a CRTC when that happens.
+On Wed, Oct 02, 2013 at 07:18:40PM +0200, Hannes Frederic Sowa wrote:
+> 
+> I agree. I will look if this is easily possible for secure_seq and
+> syncookies but depending on the data structure and its size it is a much
+> harder thing to do. I wanted to try the low-hanging fruits first. ;)
 
-To do so, it calls drm_crtc_helper_disable(), which in turn will iterate
-over all encoders and decouple them from their connectors and finally
-call drm_helper_disable_unused_functions() to clean up and call the
-.disable() or .dpms() implementation for each encoder. However, at no
-point during this sequence does it track the DPMS mode of a connector,
-so it will usually remain on after this.
+To use syncookies as an example, you shouldn't need to store all of
+the old syncookies.  Instead, if every 10 minutes or so, you rekey,
+and you keep both the old and the new secrets around, you could just
+simply check an incoming TCP packet using first the new key, and then
+the old key.  During the transition window it would take a wee bit
+more CPU time, but most of the time, it wouldn't cost anything extra
+in CPU time, and the only extra cost is the space for the old key.
 
-When a connector is enabled again, drm_helper_connector_dpms() will not
-notice that the DPMS mode actually changed and won't do anything, which
-causes the connector to stay disabled indefinitely.
+>From a security perspective it would be much better if we tried to
+make all of the places where we draw randomness and somehow try to
+rekey on a periodic basis.  That way, even if the initial value isn't
+super-secure, that situation will heal itself fairly rapidly.  And it
+also means that even if an adversary can brute-force break a 32-bit
+secret, they would have to do so within 5 or 10 minutes in order for
+it to be useful, and even if they could, it would only be useful for a
+short window of time.
 
-To prevent this from happening, explicitly set the connector's DPMS mode
-to off when the CRTC is disabled. That way it reflects the correct state
-and can be enabled again.
+I know it won't always be possible, but to the extent that we can do
+this, it would be a big improvement from a security perspective.
 
-This solves an issue observed when terminating an X server running on
-the xf86-video-modesetting driver. Without this patch, the connector
-would not be enabled properly and the screen would stay dark.
+Cheers,
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/gpu/drm/drm_crtc_helper.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
-index 4280e37..7964948 100644
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -563,6 +563,14 @@ drm_crtc_helper_disable(struct drm_crtc *crtc)
- 				continue;
- 
- 			connector->encoder = NULL;
-+
-+			/*
-+			 * drm_helper_disable_unused_functions() ought to be
-+			 * doing this, but since we've decoupled the encoder
-+			 * from the connector above, the required connection
-+			 * between them is henceforth no longer available.
-+			 */
-+			connector->dpms = DRM_MODE_DPMS_OFF;
- 		}
- 	}
- 
--- 
-1.8.4
-
+							- Ted
