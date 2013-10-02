@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab3JBKCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:02:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41476 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752963Ab3JBKCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:02:43 -0400
-Date: Wed, 2 Oct 2013 13:02:24 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linux-kernel@vger.kernel.org, mpm@selenic.com,
-        herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
- some powernv systems
-Message-ID: <20131002100224.GF17294@redhat.com>
-References: <5243F933.7000907@redhat.com>
- <20131001083426.GB27484@concordia>
- <20131001083908.GA17294@redhat.com>
- <1380620338.645.22.camel@pasglop>
- <524AAFAA.3010801@redhat.com>
- <20131002050940.GA25363@drongo>
- <524BDD73.3020106@redhat.com>
- <1380704789.645.57.camel@pasglop>
- <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
- <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
+	id S1753496Ab3JBKED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 06:04:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41393 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab3JBKD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 06:03:59 -0400
+Date: Wed, 2 Oct 2013 12:03:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, "Kleen, Andi" <andi.kleen@intel.com>,
+        "Shishkin, Alexander" <alexander.shishkin@intel.com>
+Subject: Re: PERF_EVENT_IOC_SET_OUTPUT
+Message-ID: <20131002100350.GO3081@twins.programming.kicks-ass.net>
+References: <524B1E7C.3070108@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
+In-Reply-To: <524B1E7C.3070108@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:50:50AM +0200, Alexander Graf wrote:
+On Tue, Oct 01, 2013 at 10:11:56PM +0300, Adrian Hunter wrote:
+> Hi
 > 
-> On 02.10.2013, at 11:11, Alexander Graf wrote:
+> It does not seem possible to use set-output between
+> task contexts of different types (e.g. a software event
+> to a hardware event)
 > 
-> > 
-> > On 02.10.2013, at 11:06, Benjamin Herrenschmidt wrote:
-> > 
-> >> On Wed, 2013-10-02 at 10:46 +0200, Paolo Bonzini wrote:
-> >> 
-> >>> 
-> >>> Thanks.  Any chance you can give some numbers of a kernel hypercall and
-> >>> a userspace hypercall on Power, so we have actual data?  For example a
-> >>> hypercall that returns H_PARAMETER as soon as possible.
-> >> 
-> >> I don't have (yet) numbers at hand but we have basically 3 places where
-> >> we can handle hypercalls:
-> >> 
-> >> - Kernel real mode. This is where most of our MMU stuff goes for
-> >> example unless it needs to trigger a page fault in Linux. This is
-> >> executed with translation disabled and the MMU still in guest context.
-> >> This is the fastest path since we don't take out the other threads nor
-> >> perform any expensive context change. This is where we put the
-> >> "accelerated" H_RANDOM as well.
-> >> 
-> >> - Kernel virtual mode. That's a full exit, so all threads are out and
-> >> MMU switched back to host Linux. Things like vhost MMIO emulation goes
-> >> there, page faults, etc...
-> >> 
-> >> - Qemu. This adds the round trip to userspace on top of the above.
-> > 
-> > Right, and the difference for the patch in question is really whether we handle in in kernel virtual mode or in QEMU, so the bulk of the overhead (kicking threads out of  guest context, switching MMU context, etc) happens either way.
-> > 
-> > So the additional overhead when handling it in QEMU here really boils down to the user space roundtrip (plus another random number read roundtrip).
+> If you look at perf_event_set_output():
 > 
-> Ah, sorry, I misread the patch. You're running the handler in real mode of course :).
+>           /*
+>            * If its not a per-cpu rb, it must be the same task.
+>            */
+>           if (output_event->cpu == -1 && output_event->ctx != event->ctx)
+>                   goto out;
 > 
-> So how do you solve live migration between a kernel that has this patch and one that doesn't?
-> 
-Yes, I alluded to it in my email to Paul and Paolo asked also. How this
-interface is disabled? Also hwrnd is MMIO in a host why guest needs to
-use hypercall instead of emulating the device (in kernel or somewhere
-else?). Another things is that on a host hwrnd is protected from
-direct userspace access by virtue of been a device, but guest code (event
-kernel mode) is userspace as far as hosts security model goes, so by
-implementing this hypercall in a way that directly access hwrnd you
-expose hwrnd to a userspace unconditionally. Why is this a good idea? 
+> ctx (perf_event_context) won't be the same for events
+> of different types.  Is this restriction necessary?
 
---
-			Gleb.
+Hmm.. so last night I wrote me a big reply saying we couldn't do it;
+then this morning I reconsidered and thing that something like:
+
+  output_event->ctx->task != event->ctx->task
+
+should actually work.
+
+The reason it should be OK I think is because perf_mmap() will refuse to
+create a buffer for inherited events that have ->cpu == -1.
+
+My initial response was going to say that it wouldn't be possible
+because __perf_event_task_sched_out() could 'break' one ctx while still
+swapping the other, at which point the buffer would have to service two
+different tasks, potentially from different CPUs and with the buffers
+not actually being SMP safe that's a problem.
+
+But like stated, perf_mmap() seems to avoid that issue entirely by not
+allowing inherited events that aren't cpu bound.
+
+Someone please double check this..  :-)
