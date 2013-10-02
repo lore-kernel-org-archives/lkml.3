@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab3JBFNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:13:30 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:35610 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab3JBFNY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:13:24 -0400
-Date: Wed, 2 Oct 2013 07:13:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: spinlock contention of files->file_lock
-Message-ID: <20131002051319.GB27982@gmail.com>
-References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
- <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
- <CA+55aFwWi-RveiuFEManbED3DcA76Cf3CKVXrrs5d5FvNgedOg@mail.gmail.com>
- <1380663718.19002.49.camel@edumazet-glaptop.roam.corp.google.com>
- <20131001220453.GY13318@ZenIV.linux.org.uk>
+	id S1753085Ab3JBFOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:14:17 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40765 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751766Ab3JBFOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 01:14:15 -0400
+Date: Tue, 1 Oct 2013 22:13:34 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        sparclinux@vger.kernel.org, Brad Spengler <spender@grsecurity.net>
+Subject: [PATCH] sparc: fix ldom_reboot buffer overflow harder
+Message-ID: <20131002051334.GA2406@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131001220453.GY13318@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The length argument to strlcpy was still wrong. It could overflow the end of
+full_boot_str by 5 bytes. Instead of strcat and strlcpy, just use snprint.
 
-* Al Viro <viro@ZenIV.linux.org.uk> wrote:
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/sparc/kernel/ds.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-> On Tue, Oct 01, 2013 at 02:41:58PM -0700, Eric Dumazet wrote:
-> > Maybe I am missing something obvious ?
-> 
-> Yes.  do_execve_common() starts with unshare_files(); there can be
-> no other thread capable of modifying that descriptor table.
+diff --git a/arch/sparc/kernel/ds.c b/arch/sparc/kernel/ds.c
+index 4d9ac84..dff60ab 100644
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -849,9 +849,8 @@ void ldom_reboot(const char *boot_command)
+ 	if (boot_command && strlen(boot_command)) {
+ 		unsigned long len;
+ 
+-		strcpy(full_boot_str, "boot ");
+-		strlcpy(full_boot_str + strlen("boot "), boot_command,
+-			sizeof(full_boot_str));
++		snprintf(full_boot_str, sizeof(full_boot_str), "boot %s",
++			 boot_command);
+ 		len = strlen(full_boot_str);
+ 
+ 		if (reboot_data_supported) {
+-- 
+1.7.9.5
 
-Btw., might the Android Binder:
 
-  drivers/staging/android/binder.c:       struct files_struct *files = proc->files;
-...
-  drivers/staging/android/binder.c:               __fd_install(proc->files, fd, file);
-...
-  drivers/staging/android/binder.c:       retval = __close_fd(proc->files, fd);
-
-violate that assumption?
-
-Thanks,
-
-	Ingo
+-- 
+Kees Cook
+Chrome OS Security
