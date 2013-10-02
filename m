@@ -1,363 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab3JBSJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:09:25 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27406 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753380Ab3JBSJW (ORCPT
+	id S1756024Ab3JBSKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:10:19 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:61291 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab3JBSKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:09:22 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
-        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 07/77] PCI/MSI: Re-design MSI/MSI-X interrupts enablement pattern
-Date: Wed,  2 Oct 2013 12:48:23 +0200
-Message-Id: <d8c36203ada6efbfa9f7ce92c2f713ee3b6d6b8d.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 14:10:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
+References: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+	<CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
+	<20131002133759.GH28601@twins.programming.kicks-ass.net>
+	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
+	<CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
+Date: Wed, 2 Oct 2013 11:10:15 -0700
+X-Google-Sender-Auth: 16d6QkshosUd4xccqpIpEkHUAV0
+Message-ID: <CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Kees Cook <keescook@chromium.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently pci_enable_msi_block() and pci_enable_msix() interfaces
-return a error code in case of failure, 0 in case of success and a
-positive value which indicates the number of MSI-X/MSI interrupts
-that could have been allocated. The latter value should be passed
-to a repeated call to the interfaces until a failure or success.
+On Wed, Oct 2, 2013 at 10:49 AM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Oct 2, 2013 at 7:29 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Oct 2, 2013 at 10:20 AM, Stephane Eranian <eranian@google.com> wrote:
+>>> On Wed, Oct 2, 2013 at 7:14 PM, Kees Cook <keescook@chromium.org> wrote:
+>>>> On Wed, Oct 2, 2013 at 6:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>> On Wed, Oct 02, 2013 at 03:13:16PM +0200, Stephane Eranian wrote:
+>>>>>> On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>>> > On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>>>>>> >> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>>> >> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>>>>>> >> >>  - then there are timing attacks, and someone having access to a PMU
+>>>>>> >> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>>>>>> >> >>    local context can run very accurate and low noise timing attacks...
+>>>>>> >> >>
+>>>>>> >> >>    I don't think the kernel's sha_transform() is hardened against timing
+>>>>>> >> >>    attacks, it's performance optimized so it has variable execution time
+>>>>>> >> >>    highly dependent on plaintext input - which leaks information about the
+>>>>>> >> >>    plaintext.
+>>>>>> >> >
+>>>>>> >> > Typical user doesn't have enough priv to profile kernel space; once you
+>>>>>> >> > do you also have enough priv to see kernel addresses outright (ie.
+>>>>>> >> > kallsyms etc..).
+>>>>>> >> >
+>>>>>> >> I was going to say just that. But that's not the default, paranoid level
+>>>>>> >> is at 1 by default and not 2. So I supposedly can still do:
+>>>>>> >>
+>>>>>> >> $ perf record -e cycles ......
+>>>>>> >>
+>>>>>> >> In per-thread mode and collect kernel level addresses.
+>>>>>> >
+>>>>>> > Oh right you are.. so yes that's a very viable avenue.
+>>>>>>
+>>>>>> You mean simply encoding the vma->vm_mm as the ino number, for instance.
+>>>>>
+>>>>> Nah.. I think Kees would very much shoot us on the spot for doing that.
+>>>>> But with the paranoid level defaulting to 1 the PMU attack on the kernel
+>>>>> SHA implenentation is feasible.
+>>>>
+>>>> We already have other kernel address leaks (e.g. heap addresses via
+>>>> INET_DIAG), and I'd like to avoid adding more. It'd be nice if there
+>>>> was a common way to uniquely mask these values that are really just
+>>>> "handles". We could use it both here and in the network code.
+>>>>
+>>>> Would it be possible to just have a "regular" incrementing handle,
+>>>> like fd, or are we talking about doing that map for all VMAs, which
+>>>> would make that mapping unfeasible due to storage needs?
+>>>>
+>>> All we need is a way to report that two vmas point to the same
+>>> vma->vm_mm, i..e, same physical data. If I understand what
+>>> you are suggesting, you'd add some sort of generation number
+>>> to the vm_mm. Each new vm_mm gets a new number. That
+>>> would work, I think. No kernel addresses reported directly nor
+>>> hashed.
+>>
+>> Right. Is that workable? It sounds like this handle is only needed at
+>> inspection time, though. Is this uniqueness test limited to a single
+>> process, or is this uniqueness test across processes?
+>>
+> Each time that vm_mm is allocated we would allocate a new generation
+> number.
 
-This technique proved to be confusing and error-prone. Vast share
-of device drivers simply fail to follow the described guidelines.
+Seems like a simple enough solution. Surely there must be a catch. :)
 
-This update converts pci_enable_msix() and pci_enable_msi_block()
-interfaces to canonical kernel functions and makes them return a
-error code in case of failure or 0 in case of success.
+>
+> Uniqueness is across processes. But that's by construction of the
+> address space.
 
-As result, device drivers will cease to use the overcomplicated
-repeated fallbacks technique and resort to a straightforward
-pattern - determine the number of MSI/MSI-X interrupts required
-before calling pci_enable_msix() and pci_enable_msi_block()
-interfaces.
+Okay, that's what I figured.
 
-Device drivers will use their knowledge of underlying hardware
-to determine the number of MSI/MSI-X interrupts required.
+-Kees
 
-The simplest case would be requesting all available interrupts -
-to obtain that value device drivers will use pci_get_msi_cap()
-interface for MSI and pci_msix_table_size() for MSI-X.
-
-More complex cases would entail matching device capabilities
-with the system environment, i.e. limiting number of hardware
-queues (and hence associated MSI/MSI-X interrupts) to the number
-of online CPUs.
-
-Suggested-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- Documentation/PCI/MSI-HOWTO.txt      |   71 ++++++++++++++++++---------------
- arch/mips/pci/msi-octeon.c           |    2 +-
- arch/powerpc/kernel/msi.c            |    2 +-
- arch/powerpc/platforms/pseries/msi.c |    2 +-
- arch/s390/pci/pci.c                  |    2 +-
- arch/x86/kernel/apic/io_apic.c       |    2 +-
- drivers/pci/msi.c                    |   52 +++++++------------------
- 7 files changed, 58 insertions(+), 75 deletions(-)
-
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index 1f37ce2..40abcfb 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -111,21 +111,27 @@ the device are in the range dev->irq to dev->irq + count - 1.
- 
- If this function returns a negative number, it indicates an error and
- the driver should not attempt to request any more MSI interrupts for
--this device.  If this function returns a positive number, it is
--less than 'count' and indicates the number of interrupts that could have
--been allocated.  In neither case is the irq value updated or the device
--switched into MSI mode.
--
--The device driver must decide what action to take if
--pci_enable_msi_block() returns a value less than the number requested.
--For instance, the driver could still make use of fewer interrupts;
--in this case the driver should call pci_enable_msi_block()
--again.  Note that it is not guaranteed to succeed, even when the
--'count' has been reduced to the value returned from a previous call to
--pci_enable_msi_block().  This is because there are multiple constraints
--on the number of vectors that can be allocated; pci_enable_msi_block()
--returns as soon as it finds any constraint that doesn't allow the
--call to succeed.
-+this device.
-+
-+Device drivers should normally call pci_get_msi_cap() function before
-+calling this function to determine maximum number of MSI interrupts
-+a device can send.
-+
-+A sequence to achieve that might look like:
-+
-+static int foo_driver_enable_msi(struct foo_adapter *adapter, int nvec)
-+{
-+	rc = pci_get_msi_cap(adapter->pdev);
-+	if (rc < 0)
-+		return rc;
-+
-+	nvec = min(nvec, rc);
-+	if (nvec < FOO_DRIVER_MINIMUM_NVEC) {
-+		return -ENOSPC;
-+
-+	rc = pci_enable_msi_block(adapter->pdev, nvec);
-+	return rc;
-+}
- 
- 4.2.3 pci_enable_msi_block_auto
- 
-@@ -218,9 +224,7 @@ interrupts assigned to the MSI-X vectors so it can free them again later.
- 
- If this function returns a negative number, it indicates an error and
- the driver should not attempt to allocate any more MSI-X interrupts for
--this device.  If it returns a positive number, it indicates the maximum
--number of interrupt vectors that could have been allocated. See example
--below.
-+this device.
- 
- This function, in contrast with pci_enable_msi(), does not adjust
- dev->irq.  The device will not generate interrupts for this interrupt
-@@ -229,24 +233,27 @@ number once MSI-X is enabled.
- Device drivers should normally call this function once per device
- during the initialization phase.
- 
--It is ideal if drivers can cope with a variable number of MSI-X interrupts;
--there are many reasons why the platform may not be able to provide the
--exact number that a driver asks for.
-+Device drivers should normally call pci_msix_table_size() function before
-+calling this function to determine maximum number of MSI-X interrupts
-+a device can send.
- 
--A request loop to achieve that might look like:
-+A sequence to achieve that might look like:
- 
- static int foo_driver_enable_msix(struct foo_adapter *adapter, int nvec)
- {
--	while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
--		rc = pci_enable_msix(adapter->pdev,
--				     adapter->msix_entries, nvec);
--		if (rc > 0)
--			nvec = rc;
--		else
--			return rc;
--	}
--
--	return -ENOSPC;
-+	rc = pci_msix_table_size(adapter->pdev);
-+	if (rc < 0)
-+		return rc;
-+
-+	nvec = min(nvec, rc);
-+	if (nvec < FOO_DRIVER_MINIMUM_NVEC) {
-+		return -ENOSPC;
-+
-+	for (i = 0; i < nvec; i++)
-+		adapter->msix_entries[i].entry = i;
-+
-+	rc = pci_enable_msix(adapter->pdev, adapter->msix_entries, nvec);
-+	return rc;
- }
- 
- 4.3.2 pci_disable_msix
-diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
-index d37be36..0ee5f4d 100644
---- a/arch/mips/pci/msi-octeon.c
-+++ b/arch/mips/pci/msi-octeon.c
-@@ -193,7 +193,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	 * override arch_setup_msi_irqs()
- 	 */
- 	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
-+		return -EINVAL;
- 
- 	list_for_each_entry(entry, &dev->msi_list, list) {
- 		ret = arch_setup_msi_irq(dev, entry);
-diff --git a/arch/powerpc/kernel/msi.c b/arch/powerpc/kernel/msi.c
-index 8bbc12d..36d70b9 100644
---- a/arch/powerpc/kernel/msi.c
-+++ b/arch/powerpc/kernel/msi.c
-@@ -22,7 +22,7 @@ int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
- 
- 	/* PowerPC doesn't support multiple MSI yet */
- 	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
-+		return -EINVAL;
- 
- 	if (ppc_md.msi_check_device) {
- 		pr_debug("msi: Using platform check routine.\n");
-diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
-index 009ec73..89648c1 100644
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -348,7 +348,7 @@ static int rtas_msi_check_device(struct pci_dev *pdev, int nvec, int type)
- 	quota = msi_quota_for_device(pdev, nvec);
- 
- 	if (quota && quota < nvec)
--		return quota;
-+		return -ENOSPC;
- 
- 	return 0;
- }
-diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index 61a3c2c..45a1875 100644
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -426,7 +426,7 @@ int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
- 
- 	pr_debug("%s: requesting %d MSI-X interrupts...", __func__, nvec);
- 	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
-+		return -EINVAL;
- 	msi_vecs = min(nvec, ZPCI_MSI_VEC_MAX);
- 	msi_vecs = min_t(unsigned int, msi_vecs, CONFIG_PCI_NR_MSI);
- 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e63a5bd..6126eaf 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3145,7 +3145,7 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 
- 	/* Multiple MSI vectors only supported with interrupt remapping */
- 	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
-+		return -EINVAL;
- 
- 	node = dev_to_node(&dev->dev);
- 	irq_want = nr_irqs_gsi;
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index ca59bfc..583ace1 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -719,7 +719,7 @@ static int msix_capability_init(struct pci_dev *dev,
- 
- 	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSIX);
- 	if (ret)
--		goto out_avail;
-+		goto error;
- 
- 	/*
- 	 * Some devices require MSI-X to be enabled before we can touch the
-@@ -733,7 +733,7 @@ static int msix_capability_init(struct pci_dev *dev,
- 
- 	ret = populate_msi_sysfs(dev);
- 	if (ret)
--		goto out_free;
-+		goto error;
- 
- 	/* Set MSI-X enabled bits and unmask the function */
- 	pci_intx_for_msi(dev, 0);
-@@ -744,24 +744,7 @@ static int msix_capability_init(struct pci_dev *dev,
- 
- 	return 0;
- 
--out_avail:
--	if (ret < 0) {
--		/*
--		 * If we had some success, report the number of irqs
--		 * we succeeded in setting up.
--		 */
--		struct msi_desc *entry;
--		int avail = 0;
--
--		list_for_each_entry(entry, &dev->msi_list, list) {
--			if (entry->irq != 0)
--				avail++;
--		}
--		if (avail != 0)
--			ret = avail;
--	}
--
--out_free:
-+error:
- 	free_msi_irqs(dev);
- 
- 	return ret;
-@@ -832,13 +815,11 @@ EXPORT_SYMBOL(pci_get_msi_cap);
-  * @dev: device to configure
-  * @nvec: number of interrupts to configure
-  *
-- * Allocate IRQs for a device with the MSI capability.
-- * This function returns a negative errno if an error occurs.  If it
-- * is unable to allocate the number of interrupts requested, it returns
-- * the number of interrupts it might be able to allocate.  If it successfully
-- * allocates at least the number of interrupts requested, it returns 0 and
-- * updates the @dev's irq member to the lowest new interrupt number; the
-- * other interrupt numbers allocated to this device are consecutive.
-+ * Allocate IRQs for a device with the MSI capability. This function returns
-+ * a negative errno if an error occurs. If it successfully allocates at least
-+ * the number of interrupts requested, it returns 0 and updates the @dev's
-+ * irq member to the lowest new interrupt number; the other interrupt numbers
-+ * allocated to this device are consecutive.
-  */
- int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
- {
-@@ -848,7 +829,7 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
- 	if (maxvec < 0)
- 		return maxvec;
- 	if (nvec > maxvec)
--		return maxvec;
-+		return -EINVAL;
- 
- 	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
- 	if (status)
-@@ -879,13 +860,11 @@ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
- 	if (maxvec)
- 		*maxvec = ret;
- 
--	do {
--		nvec = ret;
--		ret = pci_enable_msi_block(dev, nvec);
--	} while (ret > 0);
--
--	if (ret < 0)
-+	nvec = ret;
-+	ret = pci_enable_msi_block(dev, nvec);
-+	if (ret)
- 		return ret;
-+
- 	return nvec;
- }
- EXPORT_SYMBOL(pci_enable_msi_block_auto);
-@@ -955,9 +934,6 @@ EXPORT_SYMBOL(pci_msix_table_size);
-  * MSI-X mode enabled on its hardware device function. A return of zero
-  * indicates the successful configuration of MSI-X capability structure
-  * with new allocated MSI-X irqs. A return of < 0 indicates a failure.
-- * Or a return of > 0 indicates that driver request is exceeding the number
-- * of irqs or MSI-X vectors available. Driver should use the returned value to
-- * re-send its request.
-  **/
- int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
- {
-@@ -975,7 +951,7 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
- 	if (nr_entries < 0)
- 		return nr_entries;
- 	if (nvec > nr_entries)
--		return nr_entries;
-+		return -EINVAL;
- 
- 	/* Check for any invalid entries */
- 	for (i = 0; i < nvec; i++) {
 -- 
-1.7.7.6
-
+Kees Cook
+Chrome OS Security
