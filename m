@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab3JBM4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:56:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48092 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab3JBM4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:56:20 -0400
-Date: Wed, 2 Oct 2013 07:55:35 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>, <dwmw2@infradead.org>, <ben@decadent.org.uk>
-CC: Luca Coelho <luca@coelho.fi>, <ben@decadent.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-wireless@vger.kernel.org>, Pavel Machek <pavel@denx.de>
-Subject: [GIT PULL] firmware: wl1251 firmware binary
-Message-ID: <20131002125535.GL1476@radagast>
-Reply-To: <balbi@ti.com>
-References: <1380033894-5007-1-git-send-email-balbi@ti.com>
- <1380107096.4503.8.camel@porter.coelho.fi>
- <1380107278.4503.9.camel@porter.coelho.fi>
- <20130925132359.GE10746@radagast>
- <1380116535.4503.19.camel@porter.coelho.fi>
- <20130925135943.GI10746@radagast>
+	id S1754336Ab3JBM6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:58:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45782 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753655Ab3JBM6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 08:58:41 -0400
+Date: Wed, 2 Oct 2013 14:58:37 +0200
+From: Jan Kara <jack@suse.cz>
+To: Zach Brown <zab@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Ric Wheeler <rwheeler@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20131002125837.GA32181@quack.suse.cz>
+References: <20130927205013.GZ30372@lenny.home.zabbo.net>
+ <CAJfpegtdiQzP7t5hc_OaHjSGTrjdZLfKi6fiKqBQ_+AP2Y0-oQ@mail.gmail.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9467EF2D7@SACEXCMBX04-PRD.hq.netapp.com>
+ <52474839.2080201@redhat.com>
+ <CAJfpegsN7Hu8uecSVQrhax+n+zhq=uUgpzOk=qZ6_n383tdNCQ@mail.gmail.com>
+ <20130930143432.GG16579@fieldses.org>
+ <CAJfpeguMCzv-UhrXrG7e9Q7F_0aEe3_ZMumFwLu3hxcewA_7gA@mail.gmail.com>
+ <52499026.3090802@redhat.com>
+ <CAJfpegtpXuh9070ALGy16Y8kdgioBqSf4JQqBBCF4FHvFJWAWQ@mail.gmail.com>
+ <20131001195817.GE10831@lenny.home.zabbo.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pdSIrcRjgC24tZqG"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130925135943.GI10746@radagast>
+In-Reply-To: <20131001195817.GE10831@lenny.home.zabbo.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pdSIrcRjgC24tZqG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue 01-10-13 12:58:17, Zach Brown wrote:
+> > - app calls splice(from, 0, to, 0, SIZE_MAX)
+> >  1) VFS calls ->direct_splice(from, 0,  to, 0, SIZE_MAX)
+> >     1.a) fs reflinks the whole file in a jiffy and returns the size of the file
+> >     1 b) fs does copy offload of, say, 64MB and returns 64M
+> >  2) VFS does page copy of, say, 1MB and returns 1MB
+> > - app calls splice(from, X, to, X, SIZE_MAX) where X is the new offset
+> 
+> (It's not SIZE_MAX.  It's MAX_RW_COUNT.  INT_MAX with some
+> PAGE_CACHE_SIZE rounding noise.  For fear of weird corners of fs code
+> paths that still use int, one assumes.)
+> 
+> > The point is: the app is always doing the same (incrementing offset
+> > with the return value from splice) and the kernel can decide what is
+> > the best size it can service within a single uninterruptible syscall.
+> > 
+> > Wouldn't that work?
+> 
+> It seems like it should, if people are willing to allow splice() to
+> return partial counts.  Quite a lot of IO syscalls technically do return
+> partial counts today if you try to write > MAX_RW_COUNT :).
+  Yes. Also POSIX says that application must handle such case for read &
+write. But in practice programmers are lazy.
 
-Hi,
+> But returning partial counts on the order of a handful of megs that the
+> file systems make up as the point of diminishing returns is another
+> thing entirely.  I can imagine people being anxious about that.
+> 
+> I guess we'll find out! 
+  Return 4 KB once in a while to screw up buggy applications from the
+start :-p
 
-here's a pull request for wl4 firmware. I'll send a patch for wl1251
-driver updating firmware load path.
-
-The following changes since commit b8ac7c7e27dcd13fa3c843aaf62457e9c57ea4db:
-
-  linux-firmware: Add Brocade FC/FCOE Adapter firmware files (2013-09-30 04=
-:53:32 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/linux-firmware.git wi=
-link4
-
-for you to fetch changes up to d726804dbc8dad88587b6be17716714cd91ed86c:
-
-  ti-connectivity: add wl1251 firmware and license (2013-10-02 06:55:39 -05=
-00)
-
-----------------------------------------------------------------
-Felipe Balbi (1):
-      ti-connectivity: add wl1251 firmware and license
-
- LICENCE.wl1251                 |  59 +++++++++++++++++++++++++++++++++++++=
-++++
- WHENCE                         |  18 +++++++++++++
- ti-connectivity/wl1251-fw.bin  | Bin 0 -> 194180 bytes
- ti-connectivity/wl1251-nvs.bin | Bin 0 -> 752 bytes
- 4 files changed, 77 insertions(+)
- create mode 100644 LICENCE.wl1251
- create mode 100644 ti-connectivity/wl1251-fw.bin
- create mode 100644 ti-connectivity/wl1251-nvs.bin
-
---=20
-balbi
-
---pdSIrcRjgC24tZqG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSTBfGAAoJEIaOsuA1yqREaF8P/AjKcMlM+XhdjWGRzwSLSy6/
-c7yfYCnENqTWvicheSNl0kanY3oMK2WigFU/0pXcLGl25NwqA9GobIk9EksUo4Ya
-i40r4TFskL5Wfikqohl2DEhpzbpgyPQTqTxanceDYFTB4RCC+VgciHpBTso3oD83
-+y9Q4QAHTkTO9DS8IPoQKqYy54+PNgk4iYNndnl6W/kWm6N7H5HTNcQ+Judf0SuL
-0NYAh+Wfvw+0Uc3q7hlICQLuz1I4RRnw8dNVdd8D3ybsjlR15WpRmPPuP6EoXCRl
-MXR1+YHmXHjkRG1rgYTolOtlfT66czSxGP4GQv6QNvPcojH/+UotjG7fZ6U61Ia7
-JJEp4TCLVUwXJ/cYvbcnO7e013K8IVAXcmhgsJNEyRxJ4JtmN5r+38JWhKeogVuf
-lsAUw3yMkf/hIY/8cIFwy7HQ5dDP6aQ4/hYQ11dC53h+zjOUG2mLAWGU7cGGeZ28
-lQveHnQ1bme6NXzwEJ75u+4+6eqxoUAtIbmjSfRtSMp0CJjhUk35HvXEPnnRJJhe
-FdqfpLcHrtloeC5IcwVelTRJI82EDQrIBVIrtLWue2ZW0IoAgMcw2EhBwca2uCpM
-B8D/zko79h4/ikxw8rrJzHQmu2kAhU5KOgz24j1J9xpNaoULvy3VRp9GRTi/GRXC
-lYPB3UHoN+2XuXVZTasS
-=OEhv
------END PGP SIGNATURE-----
-
---pdSIrcRjgC24tZqG--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
