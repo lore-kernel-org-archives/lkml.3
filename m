@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab3JBRPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:15:19 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25875 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754644Ab3JBRPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:15:15 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 12/77] benet: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:28 +0200
-Message-Id: <4a8384c64f822aaed962169532bde927ac382ca0.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	id S1754871Ab3JBRP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:15:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48604 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754164Ab3JBRPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 13:15:24 -0400
+Message-ID: <524C5484.5000601@ti.com>
+Date: Wed, 2 Oct 2013 13:14:44 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
+References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com>
+In-Reply-To: <20131002170917.GB30298@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wednesday 02 October 2013 01:09 PM, Will Deacon wrote:
+> On Wed, Oct 02, 2013 at 05:55:28PM +0100, Santosh Shilimkar wrote:
+>> The sched_clock code uses 2 levels of function pointers, sched_clock_func()
+>> and read_sched_clock() but the no sched_clock check in postinit() just
+>> checks read_sched_clock().
+>>
+>> This leads to kernel falling back to jiffy based sched clock even in
+>> presence of sched_clock_func() which is not desirable.
+>>
+>> Fix the postinit() check to avoid the issue. Probably the issue is hidden
+>> so far on most of the arm SOCs because of already existing sched_clock
+>> registrations apart from arch_timer sched_clock. One can reproduce the
+>> issue by just have arch_timer as sched_clock
+> 
+> Isn't this just an issue with the arch timer driver not calling
+> setup_sched_clock? Instead, we munge around with sched_clock_func directly,
+> which doesn't appear to be the way anybody else deals with this.
+> 
+I thought about that option as well but was not sure since even in that case
+the check is not complete. We just ensure that function is popullated.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/emulex/benet/be_main.c |   38 ++++++++++++++------------
- 1 files changed, 20 insertions(+), 18 deletions(-)
+> I'm not sure of the history though, so perhaps there's a reason for this...
+> 
+Am curious as well.
 
-diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index 3e2c834..84d560d 100644
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -2366,29 +2366,23 @@ static int be_msix_enable(struct be_adapter *adapter)
- 	else
- 		num_vec = adapter->cfg_num_qs;
- 
--	for (i = 0; i < num_vec; i++)
--		adapter->msix_entries[i].entry = i;
-+	status = pci_msix_table_size(adapter->pdev);
-+	if (status < 0)
-+		goto fail;
- 
--	status = pci_enable_msix(adapter->pdev, adapter->msix_entries, num_vec);
--	if (status == 0) {
--		goto done;
--	} else if (status >= MIN_MSIX_VECTORS) {
--		num_vec = status;
--		status = pci_enable_msix(adapter->pdev, adapter->msix_entries,
--					 num_vec);
--		if (!status)
--			goto done;
--	} else (status > 0) {
-+	num_vec = min(num_vec, status);
-+	if (num_vec < MIN_MSIX_VECTORS) {
- 		status = -ENOSPC;
-+		goto fail;
- 	}
- 
--	dev_warn(dev, "MSIx enable failed\n");
-+	for (i = 0; i < num_vec; i++)
-+		adapter->msix_entries[i].entry = i;
-+
-+	status = pci_enable_msix(adapter->pdev, adapter->msix_entries, num_vec);
-+	if (status)
-+		goto fail;
- 
--	/* INTx is not supported in VFs, so fail probe if enable_msix fails */
--	if (!be_physfn(adapter))
--		return status;
--	return 0;
--done:
- 	if (be_roce_supported(adapter) && num_vec > MIN_MSIX_VECTORS) {
- 		adapter->num_msix_roce_vec = num_vec / 2;
- 		dev_info(dev, "enabled %d MSI-x vector(s) for RoCE\n",
-@@ -2400,6 +2394,14 @@ done:
- 	dev_info(dev, "enabled %d MSI-x vector(s) for NIC\n",
- 		 adapter->num_msix_vec);
- 	return 0;
-+
-+fail:
-+	dev_warn(dev, "MSIx enable failed\n");
-+
-+	/* INTx is not supported in VFs, so fail probe if enable_msix fails */
-+	if (!be_physfn(adapter))
-+		return status;
-+	return 0;
- }
- 
- static inline int be_msix_vec_get(struct be_adapter *adapter,
--- 
-1.7.7.6
-
+Regards,
+Santosh
