@@ -1,161 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3JBTHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:07:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40937 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab3JBTHK (ORCPT
+	id S1754076Ab3JBTIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:08:16 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:52705 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab3JBTIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:07:10 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH v2 2/9] clk: Add regmap core helpers for enable/disable/is_enabled
-Date: Wed,  2 Oct 2013 12:06:59 -0700
-Message-Id: <1380740826-29457-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-In-Reply-To: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
-References: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 2 Oct 2013 15:08:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380728477.14271.81.camel@ul30vt.home>
+References: <1380709406-3528-1-git-send-email-andre.o.richter@gmail.com>
+	<20131002103508.GG17294@redhat.com>
+	<1380728477.14271.81.camel@ul30vt.home>
+Date: Wed, 2 Oct 2013 21:08:13 +0200
+Message-ID: <CAKqeN28x_YcjquLfF20ZDgn=fXFxfwmkJdNf2KadnPD6iFnbOw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] virt/kvm/iommu.c: Add leading zeros to device's BDF
+ notation in debug messages
+From: Andre Richter <andre.o.richter@gmail.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock framework already has support for simple gate clocks
-but if drivers want to use the gate clock functionality they need
-to wrap the gate clock in another struct and chain the ops by
-calling the gate ops from their own custom ops. Plus the gate
-clock implementation only supports MMIO accessors so other bus
-type clocks don't benefit from the potential code reuse. Add some
-simple regmap helpers for enable/disable/is_enabled that drivers
-can use as drop in replacements for their clock ops or as simple
-functions they call from their own custom ops.
+2013/10/2 Alex Williamson <alex.williamson@redhat.com>:
+> On Wed, 2013-10-02 at 13:35 +0300, Gleb Natapov wrote:
+>> On Wed, Oct 02, 2013 at 12:23:26PM +0200, Andre Richter wrote:
+>> > When KVM (de)assigns PCI(e) devices to VMs, a debug message is printed
+>> > including the BDF notation of the respective device. Currently, the BDF
+>> > notation does not have the commonly used leading zeros. This produces
+>> > messages like "assign device 0:1:8.0", which look strange at first sight.
+>> >
+>> > The patch fixes this by exchanging the printk(KERN_DEBUG ...) with dev_info()
+>> > and also inserts "kvm" into the debug message, so that it is obvious where
+>> > the message comes from. Also reduces LoC.
+>> Legacy assigned device is deprecated, but this looks nice enough to
+>> apply. Alex can you glance at it?
+>
+> Seems ok to me, my only question would be why are we promoting this from
+> KERN_DEBUG to KERN_INFO.  We could use dev_dbg() to maintain the same
+> kernel log level.  A nice feature of either is that it prints out the
+> attached driver so we can see in dmesg whether the device is attached to
+> a host driver, nothing, or pci-stub.  Thanks,
+>
+> Alex
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk.c            | 70 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-provider.h | 13 ++++++++
- 2 files changed, 83 insertions(+)
+I made it dev_info() because on my test system, dev_dbg() did not show
+up in dmesg, whereas
+the original printk(KERN_DEBUG ...) did. I guess dev_dbg() was
+stripped due to compiling without DEBUG?
+Therefore, I found dev_info() to better mimic the original behavior. I
+can change it to dev_dbg() if you wish?
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 6107daa..7e4519b 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -742,6 +742,76 @@ out:
- 	return best;
- }
- 
-+/**
-+ * clk_is_enabled_regmap - standard is_enabled() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their is_enabled operation, saving some code.
-+ */
-+int clk_is_enabled_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(hw->regmap, hw->enable_reg, &val);
-+	if (ret != 0)
-+		return ret;
-+
-+	if (hw->enable_is_inverted)
-+		return (val & hw->enable_mask) == 0;
-+	else
-+		return (val & hw->enable_mask) != 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_is_enabled_regmap);
-+
-+/**
-+ * clk_enable_regmap - standard enable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their enable() operation, saving some code.
-+ */
-+int clk_enable_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+
-+	if (hw->enable_is_inverted)
-+		val = 0;
-+	else
-+		val = hw->enable_mask;
-+
-+	return regmap_update_bits(hw->regmap, hw->enable_reg,
-+				  hw->enable_mask, val);
-+}
-+EXPORT_SYMBOL_GPL(clk_enable_regmap);
-+
-+/**
-+ * clk_disable_regmap - standard disable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their disable() operation, saving some code.
-+ */
-+void clk_disable_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+
-+	if (hw->enable_is_inverted)
-+		val = hw->enable_mask;
-+	else
-+		val = 0;
-+
-+	regmap_update_bits(hw->regmap, hw->enable_reg, hw->enable_mask, val);
-+}
-+EXPORT_SYMBOL_GPL(clk_disable_regmap);
-+
- /***        clk api        ***/
- 
- void __clk_unprepare(struct clk *clk)
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 6ed62f1..4087a9b 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -177,11 +177,21 @@ struct clk_init_data {
-  * with the common clock framework.
-  *
-  * @regmap: regmap to use for regmap helpers and/or by providers
-+ *
-+ * @enable_reg: register when using regmap enable/disable ops
-+ *
-+ * @enable_mask: mask when using regmap enable/disable ops
-+ *
-+ * @enable_is_inverted: flag to indicate set enable_mask bits to disable
-+ *                      when using clock_enable_regmap and friends APIs.
-  */
- struct clk_hw {
- 	struct clk *clk;
- 	const struct clk_init_data *init;
- 	struct regmap *regmap;
-+	unsigned int enable_reg;
-+	unsigned int enable_mask;
-+	bool enable_is_inverted;
- };
- 
- /*
-@@ -447,6 +457,9 @@ struct clk *__clk_lookup(const char *name);
- long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
- 			      unsigned long *best_parent_rate,
- 			      struct clk **best_parent_p);
-+int clk_is_enabled_regmap(struct clk_hw *hw);
-+int clk_enable_regmap(struct clk_hw *hw);
-+void clk_disable_regmap(struct clk_hw *hw);
- 
- /*
-  * FIXME clock api without lock protection
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Andre
 
+>
+>> >
+>> > Signed-off-by: Andre Richter <andre.o.richter@gmail.com>
+>> > ---
+>> >  virt/kvm/iommu.c | 12 ++----------
+>> >  1 file changed, 2 insertions(+), 10 deletions(-)
+>> >
+>> > diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+>> > index 72a130b..a3b1410 100644
+>> > --- a/virt/kvm/iommu.c
+>> > +++ b/virt/kvm/iommu.c
+>> > @@ -190,11 +190,7 @@ int kvm_assign_device(struct kvm *kvm,
+>> >
+>> >     pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+>> >
+>> > -   printk(KERN_DEBUG "assign device %x:%x:%x.%x\n",
+>> > -           assigned_dev->host_segnr,
+>> > -           assigned_dev->host_busnr,
+>> > -           PCI_SLOT(assigned_dev->host_devfn),
+>> > -           PCI_FUNC(assigned_dev->host_devfn));
+>> > +   dev_info(&pdev->dev, "kvm assign device\n");
+>> >
+>> >     return 0;
+>> >  out_unmap:
+>> > @@ -220,11 +216,7 @@ int kvm_deassign_device(struct kvm *kvm,
+>> >
+>> >     pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+>> >
+>> > -   printk(KERN_DEBUG "deassign device %x:%x:%x.%x\n",
+>> > -           assigned_dev->host_segnr,
+>> > -           assigned_dev->host_busnr,
+>> > -           PCI_SLOT(assigned_dev->host_devfn),
+>> > -           PCI_FUNC(assigned_dev->host_devfn));
+>> > +   dev_info(&pdev->dev, "kvm deassign device\n");
+>> >
+>> >     return 0;
+>> >  }
+>> > --
+>> > 1.8.1.2
+>>
+>> --
+>>                       Gleb.
+>
+>
+>
