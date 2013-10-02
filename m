@@ -1,135 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab3JBRV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:21:59 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26001 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753638Ab3JBRV4 (ORCPT
+	id S1754981Ab3JBRWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:22:36 -0400
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:54677 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab3JBRWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:21:56 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 09/77] ahci: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:25 +0200
-Message-Id: <4cced33c3809e6a53ada2dd8c781fcc5242e19ab.1380703262.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 13:22:35 -0400
+X-SENDER-IP: [85.230.168.69]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmZlAMxVTFJV5qhFPGdsb2JhbABZgweIbbk4gRcXAwEBAQE4NYIlAQEFOhwTAQ8QCAMOAwMBAgEJJQ8FJQoMDhOICr01Fo1ngVQHBoMZgQQDmACGSY5dOg
+X-IronPort-AV: E=Sophos;i="4.90,1019,1371074400"; 
+   d="scan'208";a="626646656"
+Date: Wed, 2 Oct 2013 19:24:10 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Chris Murphy <bugzilla@colorremedies.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20131002172410.GA381@polaris.bitmath.org>
+References: <20130927175926.GA6267@roeck-us.net>
+ <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
+ <524615B1.6000106@roeck-us.net>
+ <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
+ <524A4384.4040403@roeck-us.net>
+ <20131002035156.GA566@roeck-us.net>
+ <20131002095339.GA2716@polaris.bitmath.org>
+ <524C1FE1.4050207@roeck-us.net>
+ <20131002163418.GA4557@polaris.bitmath.org>
+ <20131002164718.GA7392@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002164718.GA7392@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
+> On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
+> > > >>One thing I have seen in all logs is the earlier "send_byte fail" message, so
+> > > >>I think that is a pre-requisite.
+> > > >
+> > > >Not necessarily - it could be that the patch actually fixes the root
+> > > >cause. One possible scenario is that on recent SMCs, some of the
+> > > >commands produce more data than we actually read. This would
+> > > >eventually lead to both data corruption and overflow somwhere in the
+> > > >SMC internals.  If the original SMC error is interpreted as a read
+> > > >buffer overflow, then that problem should be fixed with this patch.
+> > > >
+> > > 
+> > > Good point.
+> > > 
+> > > But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
+> > 
+> > The explanation I have there is that the (newer) SMC needs the
+> > application to read the 'no more bytes' or it will get confused. It
+> > makes sense, if the number of bytes to read is no longer specified.
+> > 
+> You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
+> That might make sense.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+It also points at the possibility of a smaller patch to test, but I
+have not had the time to check this very deeply myself:
+
+Thanks,
+Henrik
+
+>From 4451da32414080bd0563ee9e061f19bf90463cc5 Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Wed, 2 Oct 2013 19:15:03 +0200
+Subject: [PATCH] applesmc remedy take 2
+
+Conjectured problem: there are remnant bytes ready on the data line
+which corrupts the read after a failure.
+
+Remedy: assuming bit0 is the read valid line, try to flush it before
+starting a new command.
+
+Tests by Chris suggests reading the status is enough for the problem
+to go away, which is consistent with a change in the SMC interface,
+where the number of bytes to read is no longer specified, but found
+out by reading until end of data.
+
+Tested on a MacBookAir3,1, but the original problem has not been
+reproduced.
 ---
- drivers/ata/ahci.c |   56 ++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 35 insertions(+), 21 deletions(-)
+ drivers/hwmon/applesmc.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 9d715ae..f1c8838 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1091,26 +1091,40 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
- {}
- #endif
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 98814d1..c0ff350 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -230,6 +230,7 @@ static int send_argument(const char *key)
  
--int ahci_init_interrupts(struct pci_dev *pdev, struct ahci_host_priv *hpriv)
-+int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
-+			 struct ahci_host_priv *hpriv)
+ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
  {
--	int rc;
--	unsigned int maxvec;
-+	int rc, nvec;
++	u8 status, data;
+ 	int i;
  
--	if (!(hpriv->flags & AHCI_HFLAG_NO_MSI)) {
--		rc = pci_enable_msi_block_auto(pdev, &maxvec);
--		if (rc > 0) {
--			if ((rc == maxvec) || (rc == 1))
--				return rc;
--			/*
--			 * Assume that advantage of multipe MSIs is negated,
--			 * so fallback to single MSI mode to save resources
--			 */
--			pci_disable_msi(pdev);
--			if (!pci_enable_msi(pdev))
--				return 1;
--		}
--	}
-+	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
-+		goto intx;
-+
-+	rc = pci_get_msi_cap(pdev);
-+	if (rc < 0)
-+		goto intx;
-+
-+	/*
-+	 * If number of MSIs is less than number of ports then Sharing Last
-+	 * Message mode could be enforced. In this case assume that advantage
-+	 * of multipe MSIs is negated and use single MSI mode instead.
-+	 */
-+	if (rc < n_ports)
-+		goto single_msi;
-+
-+	nvec = rc;
-+	rc = pci_enable_msi_block(pdev, nvec);
-+	if (rc)
-+		goto intx;
+ 	if (send_command(cmd) || send_argument(key)) {
+@@ -237,6 +238,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ 		return -EIO;
+ 	}
  
-+	return nvec;
++	/* This has no effect on newer (2012) SMCs */
+ 	if (send_byte(len, APPLESMC_DATA_PORT)) {
+ 		pr_warn("%.4s: read len fail\n", key);
+ 		return -EIO;
+@@ -250,6 +252,17 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
+ 	}
+ 
++	/* Read the data port until bit0 is cleared */
++	for (i = 0; i < 16; i++) {
++		udelay(APPLESMC_MIN_WAIT);
++		status = inb(APPLESMC_CMD_PORT);
++		if (!(status & 0x01))
++			break;
++		data = inb(APPLESMC_DATA_PORT);
++	}
++	if (i)
++		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
 +
-+single_msi:
-+	rc = pci_enable_msi(pdev);
-+	if (rc)
-+		goto intx;
-+	return 1;
-+
-+intx:
- 	pci_intx(pdev, 1);
  	return 0;
  }
-@@ -1277,10 +1291,6 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
  
- 	hpriv->mmio = pcim_iomap_table(pdev)[ahci_pci_bar];
- 
--	n_msis = ahci_init_interrupts(pdev, hpriv);
--	if (n_msis > 1)
--		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
--
- 	/* save initial config */
- 	ahci_pci_save_initial_config(pdev, hpriv);
- 
-@@ -1335,6 +1345,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 */
- 	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
- 
-+	n_msis = ahci_init_interrupts(pdev, n_ports, hpriv);
-+	if (n_msis > 1)
-+		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
-+
- 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
- 	if (!host)
- 		return -ENOMEM;
 -- 
-1.7.7.6
+1.8.3.4
 
