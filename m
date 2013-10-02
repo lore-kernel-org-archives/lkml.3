@@ -1,74 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab3JBAhS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 20:37:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46725 "EHLO
+	id S1752703Ab3JBAjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 20:39:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56692 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab3JBAhP (ORCPT
+	with ESMTP id S1751336Ab3JBAjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 20:37:15 -0400
-Message-ID: <524B6AB0.6030009@jp.fujitsu.com>
-Date: Tue, 01 Oct 2013 20:37:04 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 1 Oct 2013 20:39:12 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <524B6AEE.90301@jp.fujitsu.com>
+Date: Wed, 02 Oct 2013 09:38:06 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: ccross@android.com
-CC: linux-kernel@vger.kernel.org, penberg@kernel.org, dave.hansen@intel.com,
-        peterz@infradead.org, mingo@kernel.org, oleg@redhat.com,
-        ebiederm@xmission.com, jan.glauber@gmail.com, rob@landley.net,
-        akpm@linux-foundation.org, gorcunov@openvz.org, rientjes@google.com,
-        dave@gnu.org, keescook@chromium.org, xemul@parallels.com,
-        liwanp@linux.vnet.ibm.com, walken@google.com, mgorman@suse.de,
-        riel@redhat.com, jiang.liu@huawei.com, khlebnikov@openvz.org,
-        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, arnd@arndb.de,
-        davej@redhat.com, holt@sgi.com, rafael.j.wysocki@intel.com,
-        shli@fusionio.com, sasha.levin@oracle.com,
-        kosaki.motohiro@jp.fujitsu.com, hughd@google.com, hannes@cmpxchg.org,
-        a.p.zijlstra@chello.nl, linux-doc@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCHv2 2/2] mm: add a field to store names for private anonymous
- memory
-References: <1380658901-11666-1-git-send-email-ccross@android.com> <1380658901-11666-2-git-send-email-ccross@android.com>
-In-Reply-To: <1380658901-11666-2-git-send-email-ccross@android.com>
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <1380656245-29975-7-git-send-email-keescook@chromium.org>
+In-Reply-To: <1380656245-29975-7-git-send-email-keescook@chromium.org>
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static void seq_print_vma_name(struct seq_file *m, struct vm_area_struct *vma)
+(2013/10/02 4:37), Kees Cook wrote:
+> When the system panics, include the kernel offset in the report to assist
+> in debugging.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>   arch/x86/kernel/setup.c |   26 ++++++++++++++++++++++++++
+>   1 file changed, 26 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index f0de629..1708862 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -824,6 +824,20 @@ static void __init trim_low_memory_range(void)
+>   }
+>   	
+>   /*
+> + * Dump out kernel offset information on panic.
+> + */
+> +static int
+> +dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
 > +{
-> +	const char __user *name = vma_get_anon_name(vma);
-> +	struct mm_struct *mm = vma->vm_mm;
-> +
-> +	unsigned long page_start_vaddr;
-> +	unsigned long page_offset;
-> +	unsigned long num_pages;
-> +	unsigned long max_len = NAME_MAX;
-> +	int i;
-> +
-> +	page_start_vaddr = (unsigned long)name & PAGE_MASK;
-> +	page_offset = (unsigned long)name - page_start_vaddr;
-> +	num_pages = DIV_ROUND_UP(page_offset + max_len, PAGE_SIZE);
-> +
-> +	seq_puts(m, "[anon:");
-> +
-> +	for (i = 0; i < num_pages; i++) {
-> +		int len;
-> +		int write_len;
-> +		const char *kaddr;
-> +		long pages_pinned;
-> +		struct page *page;
-> +
-> +		pages_pinned = get_user_pages(current, mm, page_start_vaddr,
-> +				1, 0, 0, &page, NULL);
-> +		if (pages_pinned < 1) {
-> +			seq_puts(m, "<fault>]");
-> +			return;
-> +		}
-> +
-> +		kaddr = (const char *)kmap(page);
-> +		len = min(max_len, PAGE_SIZE - page_offset);
+> +	pr_emerg("Kernel Offset: 0x%lx from 0x%lx "
+> +		 "(relocation range: 0x%lx-0x%lx)\n",
+> +		 (unsigned long)&_text - __START_KERNEL, __START_KERNEL,
+> +		 __START_KERNEL_map, MODULES_VADDR-1);
 
-You can't show the name if the name is placed in end of page.
+Using phys_base seems better.
 
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+>    * Determine if we were loaded by an EFI loader.  If so, then we have also been
+>    * passed the efi memmap, systab, etc., so we should use these data structures
+>    * for initialization.  Note, the efi init code path is determined by the
+> @@ -1242,3 +1256,15 @@ void __init i386_reserve_resources(void)
+>   }
+>   
+>   #endif /* CONFIG_X86_32 */
+> +
+> +static struct notifier_block kernel_offset_notifier = {
+> +	.notifier_call = dump_kernel_offset
+> +};
+> +
+> +static int __init register_kernel_offset_dumper(void)
+> +{
+> +	atomic_notifier_chain_register(&panic_notifier_list,
+> +					&kernel_offset_notifier);
+> +	return 0;
+> +}
+> +__initcall(register_kernel_offset_dumper);
+> 
+
+Panic notifier is not executed if kdump is enabled. Maybe, Chrome OS doesn't use
+kdump? Anyway, kdump related tools now calculate phys_base from memory map
+information passed as ELF PT_LOAD entries like below.
+
+$ LANG=C readelf -l vmcore-rhel6up4
+
+Elf file type is CORE (Core file)
+Entry point 0x0
+There are 5 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset             VirtAddr           PhysAddr
+                 FileSiz            MemSiz              Flags  Align
+  NOTE           0x0000000000000158 0x0000000000000000 0x0000000000000000
+                 0x0000000000000b08 0x0000000000000b08         0
+  LOAD           0x0000000000000c60 0xffffffff81000000 0x0000000001000000
+                 0x000000000103b000 0x000000000103b000  RWE    0
+  LOAD           0x000000000103bc60 0xffff880000001000 0x0000000000001000
+                 0x000000000009cc00 0x000000000009cc00  RWE    0
+  LOAD           0x00000000010d8860 0xffff880000100000 0x0000000000100000
+                 0x0000000002f00000 0x0000000002f00000  RWE    0
+  LOAD           0x0000000003fd8860 0xffff880013000000 0x0000000013000000
+                 0x000000002cffd000 0x000000002cffd000  RWE    0
+
+Each PT_LOAD entry is assigned to virtual and physical address. In this case,
+1st PT_LOAD entry belongs to kernel text mapping region, from which we can
+calculate phys_base value.
+
+Therefore, we already have phys_base information even in case of kdump, and
+as long as using kdump-related tools such as crash utility, we don't need
+to see ELF PT_LOAD headers as I explain here because they calculate the process
+I explain here automatically.
+
+Another idea is to add phys_base value in VMCOREINFO information that is debugging
+information for user-land tools to filter crash dump. This is simple string information
+so you can see the values contained in some crash dump by using strings command to it.
+For example,
+
+$ LANG=C strings vmcore-rhel6up4
+CORE
+CORE
+CORE
+CORE
+VMCOREINFO
+OSRELEASE=2.6.32-345.el6.x86_64
+PAGESIZE=4096
+SYMBOL(init_uts_ns)=ffffffff81a8e940
+SYMBOL(node_online_map)=ffffffff81c09e20
+SYMBOL(swapper_pg_dir)=ffffffff81a85000
+...cut...
+NUMBER(PG_private)=11
+NUMBER(PG_swapcache)=16
+SYMBOL(phys_base)=ffffffff81a8d010
+SYMBOL(init_level4_pgt)=ffffffff81a85000
+SYMBOL(node_data)=ffffffff81c06280
+LENGTH(node_data)=512
+CRASHTIME=1355815389
+
+The problem is that currently phys_base information is somehow exported as virtual address
+assigned to phys_base symbol, not the value of it. User-land tools use this to determine
+if they need to calculate phys_base. But obviously, it's simpler to export phys_base information
+as its value, not the assigned address. Then, as a side-effect, we can check phys_base value
+using strings command to crash dump and this is a little handy.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
