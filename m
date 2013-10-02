@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3JBGfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 02:35:44 -0400
-Received: from smtprelay0173.hostedemail.com ([216.40.44.173]:54074 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752410Ab3JBGfl (ORCPT
+	id S1752895Ab3JBGr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 02:47:28 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52903 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab3JBGrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 02:35:41 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3870:3871:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:7903:8985:9025:10004:10400:10450:10455:10848:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357:13894:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,
-X-HE-Tag: kick68_6b9a9125cc55d
-X-Filterd-Recvd-Size: 1898
-Message-ID: <1380695738.2081.33.camel@joe-AO722>
-Subject: Re: [PATCH] Staging : android: binder.c: Prefer seq_puts to
- seq_printf
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Mathieu =?ISO-8859-1?Q?Rh=E9aume?= <mathieu@codingrhemes.com>,
-        gregkh@linuxfoundation.org, arve@android.com, dan.carpenter@oracle.com,
-        mirsal@mirsal.fr, serban.constantinescu@arm.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Tue, 01 Oct 2013 23:35:38 -0700
-In-Reply-To: <524BAC04.30501@gmail.com>
-References: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
-	 <524BAC04.30501@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 2 Oct 2013 02:47:25 -0400
+X-AuditID: 9c930179-b7bc4ae000001e3e-19-524bc178361b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Ahern <dsahern@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf tools: Speed up git-version test on re-make
+References: <20130912200236.GC11400@ghostprotocols.net>
+	<20130912203116.GD32644@gmail.com> <20130912204313.GA3259@gmail.com>
+	<20130915091029.GA21465@gmail.com> <20130930164210.GA22342@gmail.com>
+	<20130930171220.GC10293@ghostprotocols.net>
+	<CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
+	<20130930175342.GI10293@ghostprotocols.net>
+	<20130930190434.GA3427@gmail.com> <20131001113456.GA31331@gmail.com>
+	<20131001144618.GA8970@gmail.com>
+Date: Wed, 02 Oct 2013 15:47:19 +0900
+In-Reply-To: <20131001144618.GA8970@gmail.com> (Ingo Molnar's message of "Tue,
+	1 Oct 2013 16:46:18 +0200")
+Message-ID: <87txh0mao8.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 15:15 +1000, Ryan Mallon wrote:
-> On 02/10/13 11:57, Mathieu Rhéaume wrote:
-> > This patch changes seq_printf for seq_puts in binder.c.
-> > It fixes the warnings emitted by checkpatch.pl.
-[]
-> Umm, this won't compile. seq_puts() is defined as:
-> 
->   int seq_puts(struct seq_file *m, const char *s);
-> 
-> checkpatch.pl does indeed complain about uses of seq_printf() in
-> drivers/staging/android/binder.c which are passing formatted strings. At
-> a quick glance it looks like checkpatch.pl is only checking for the
-> format string on the same line as seq_printf(), so this files ugly
-> coding style confuses the check. Joe?
+On Tue, 1 Oct 2013 16:46:18 +0200, Ingo Molnar wrote:
 
-True.
+[SNIP]
+>  
+> -$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+> +$(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+>  	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+> +	@touch $(OUTPUT)PERF-VERSION-FILE
+>  
+>  CC = $(CROSS_COMPILE)gcc
+>  AR = $(CROSS_COMPILE)ar
+> @@ -813,7 +814,17 @@ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-c
+>  	$(RM) $(OUTPUT)util/*-flex*
+>  	$(python-clean)
+>  
+> +#
+> +# Trick: if ../../.git does not exist - we are building out of tree for example,
+> +# then force version regeneration:
+> +#
+> +ifeq ($(wildcard ../../.git/HEAD),) 
+> +    GIT-HEAD-PHONY = ../../.git/HEAD
+> +else 
+> +    GIT-HEAD-PHONY =
+> +endif
+> +
+>  .PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
+>  .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+> -.PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
+> +.PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
+>  
 
-This patch should have fixed it.  It's in -next already.
+I found an unrelated bug.  When I tried to build perf out of tree after
+'make perf-targz-src-pkg' it cannot get any version number.
 
-https://lkml.org/lkml/2013/9/13/698
+      GEN common-cmds.h
+      * new build flags or prefix
+  make[1]: *** No rule to make target `kernelversion'.  Stop.
+  PERF_VERSION = 
+      ...
+      AR libperf.a
+      LINK perf
 
-> Anyway, please don't blindly change things in the kernel without at
-> least compile testing them.
+  $ ./perf --version
+  perf version 
 
-Yes, please.
 
+It looks like we should save and pass the result of 'make kernelversion'
+to the tarball.
+
+Thanks,
+Namhyung
