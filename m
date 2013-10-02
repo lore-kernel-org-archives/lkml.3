@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3JBPdR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:33:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49201 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab3JBPdP (ORCPT
+	id S1753838Ab3JBPeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:34:37 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:43750 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab3JBPee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:33:15 -0400
-Date: Wed, 2 Oct 2013 12:33:07 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] perf timechart segfault
-Message-ID: <20131002153307.GL2920@ghostprotocols.net>
-References: <CALkWK0k5sQ9WCGevFQ3D18=Fs3ziS8imVVvasE0QR9e0r91cYA@mail.gmail.com>
- <20131002111958.GC10099@krava.brq.redhat.com>
- <CALkWK0mCbnBZXJNFyX3odoGb1pvGs7ox1mOiFacqX98ewBOGKw@mail.gmail.com>
- <20131002115935.GD10099@krava.brq.redhat.com>
- <20131002121346.GA25568@gmail.com>
+	Wed, 2 Oct 2013 11:34:34 -0400
+Date: Wed, 2 Oct 2013 17:32:46 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>
+Subject: linux-next: Tree for Oct 2
+Message-ID: <20131002153245.GA4273@ulmo.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
 Content-Disposition: inline
-In-Reply-To: <20131002121346.GA25568@gmail.com>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 02, 2013 at 02:13:46PM +0200, Ingo Molnar escreveu:
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Wed, Oct 02, 2013 at 05:03:48PM +0530, Ramkumar Ramachandra wrote:
-> > > Jiri Olsa wrote:
-> > > The log of builtin-timechart.c shows that it was last touched by you
-> > > three months ago: 5936678 (perf timechart: Remove event types
-> > > framework only user, 2013-07-11). Are there some patches awaiting
-> > > merge that I'm missing?
 
-> > looks like you're missing this one:
-> > (git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core)
+--5vNYLRcllDrimb99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > perf tools: Add default handler for mmap2 events
-> > commit e0e3e2d9a522b2230d395922fde9c6ea928ae7f8
-> > Author: David Ahern <dsahern@gmail.com>
+Hi all,
 
-> > Not sure if this one plus some other MMAP2 David's fixies
-> > are on its way up, but if not I guess Arnaldo's planning
-> > to push them out eventually ;-)
+I've uploaded today's linux-next tree to the master branch of the
+repository below:
 
-> Would be nice to get those fixes into perf/urgent ASAP.
+        git://gitorious.org/thierryreding/linux-next.git
 
-Will get a new perf/urgent batch ready today, thanks for pointing those
-out.
+A next-20131002 tag is also provided for convenience.
 
-- Arnaldo
+No new conflicts today. i386, x86_64 and ARM default configurations did
+build fine. Well, the same issue on i.MX is still there, so I added the
+patch on top of today's linux-next tree so others won't have to deal
+with it. I'm assuming it will make it into the i.MX tree eventually.
+
+One small change, I have removed Joern's bcon tree as per his request.
+Furthermore there's now an rr-cache branch in the tree linked to above
+which contains an orphaned branch with the resolutions recorded in the
+.git/rr-cache directory. There's also a new script Next/rr-cache which
+can be used to setup the .git/rr-cache directory from an rr-cache branch
+and manage it using git. In a nutshell: it's a wrapper around git with
+extra handling for the "init" command.
+
+As I already mentioned, Mark has volunteered to do the linux-next tree
+for tomorrow and the day after that. I should be able to resume doing
+them on Monday.
+
+Thierry
+
+--5vNYLRcllDrimb99
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTDydAAoJEN0jrNd/PrOhV3UP/Avm++u8WEL01vja6vXqah9T
+PNKi+WiLs+p6Y19ggzIbLlurn/VDHB3T1FMFz1gsidjasXeAKfPtI8Afpx/aZ0r3
+Nwvxkp3Ub3N419ZVkcuB/1RehbKRXuNz3DkDyvcral4h/BkHk4lNiKTrdv32eqlE
+Bkx7QQC4MoVFKek9qyZ4/iTVQ7s8ceC/Gj0vndN40ZzLsHupRV3MgpyDlWWE9By8
+GXJmTiL1w94eDTO+WVS72XRdyIpW6DoCkID5iH5Mj1MFd33iMlRKLWlq1efQyN4J
+UbSC3Kg9vwEYotpcxN/X2kbG4YYNZvStTre7sVrm4QqSsOexbz+4hCrByfhnTDsL
+OM5Dxrz8ti8x7zla9DGeDr0phfowlWhLDeVLxmICbvD6P28rboHYMLnba6sAj2Ru
+EQomQpbn+DLvTJJKXXkv7VcoTiFrkZdmxbSX28Owgc7QXQnMp2Ru0z1ei1iJm54F
+V1Y9L7VOk8M4hywdMl+fflLuHjvKuUTO4sh+R1cQzOi73cDXLgD6kiX3VSa0VcxW
+4A5eFUSyHR6K0jiZEE6auHmu8s0ayjdcoqygieFeLEAxiXOWMfcoieuCY1RyaP3D
+TBaw2WnxGu9q0zxTLrfd4aUI1+9TydY2ae1Y3vWR3Iq/ssLttwQCwX7CG1Sfu22w
+pvwe3Ph7uKFwKF9fdLZQ
+=tX1W
+-----END PGP SIGNATURE-----
+
+--5vNYLRcllDrimb99--
