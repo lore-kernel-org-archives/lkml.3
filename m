@@ -1,151 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab3JBSZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:25:30 -0400
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:36953
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754271Ab3JBSZX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:25:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Yoder Stuart-B08248 <B08248@freescale.com>
-To: Christoffer Dall <christoffer.dall@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: Kim Phillips <kim.phillips@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: RFC: (re-)binding the VFIO platform driver to a platform device
-Thread-Topic: RFC: (re-)binding the VFIO platform driver to a platform device
-Thread-Index: AQHOvtVyiXjaos/F7ECAilSa5Xx4A5ngRDQAgAAiCgCAAECXgIAAC74AgADT3ICAADSaMA==
-Date: Wed, 2 Oct 2013 18:25:18 +0000
-Message-ID: <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
- <20131001200054.GA27330@kroah.com>
- <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
- <20131002015355.GD63102@lvm> <1380681356.14271.57.camel@ul30vt.home>
- <20131002151413.GG63102@lvm>
-In-Reply-To: <20131002151413.GG63102@lvm>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.82.120.48]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755100Ab3JBS0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:26:50 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:46756 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab3JBS0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 14:26:49 -0400
+Date: Wed, 2 Oct 2013 19:26:43 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131002182643.GC2485@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <CALCETrW05=Jk_nCakZgjwJjbdG-X-f=ssFntB3Xpe1ogxiTMFQ@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrW05=Jk_nCakZgjwJjbdG-X-f=ssFntB3Xpe1ogxiTMFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Christoffer Dall [mailto:christoffer.dall@linaro.org]
-> Sent: Wednesday, October 02, 2013 10:14 AM
-> To: Alex Williamson
-> Cc: Kim Phillips; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
-> Yoder Stuart-B08248; Wood Scott-B07421; Sethi Varun-B16395; Bhushan
-> Bharat-R65777; peter.maydell@linaro.org; santosh.shukla@linaro.org;
-> kvm@vger.kernel.org
-> Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform
-> device
-> 
-> On Tue, Oct 01, 2013 at 08:35:56PM -0600, Alex Williamson wrote:
-> > On Wed, 2013-10-02 at 02:53 +0100, Christoffer Dall wrote:
-> > > On Tue, Oct 01, 2013 at 05:02:44PM -0500, Kim Phillips wrote:
-> > > > On Tue, 1 Oct 2013 13:00:54 -0700
-> > > > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> > > >
-> > > > > On Tue, Oct 01, 2013 at 01:38:31PM -0500, Kim Phillips wrote:
-> > > > > > Hi,
-> > > > > >
-> > > > > > Santosh and I are having a problem figuring out how to enable
-> binding
-> > > > > > (and re-binding) platform devices to a platform VFIO driver
-> (see
-> > > > > > Antonis' WIP: [1]) in an upstream-acceptable manner.
-> > > > > >
-> > > > > > Binding platform drivers currently depends on a string match in
-> the
-> > > > > > device node's compatible entry.  On an arndale, one can
-> currently
-> > > > > > rebind the same device to the same driver like so:
-> > > > > >
-> > > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-
-> i2c/12ce0000.i2c/driver/unbind
-> > > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-i2c/bind
-> > > > > >
-> > > > > > And one can bind it to the vfio-dt driver, as Antonis
-> instructs, by
-> > > > > > appending a 'vfio-dt' string to the device tree compatible
-> entry for
-> > > > > > the device.  Then this would work:
-> > > > > >
-> > > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/s3c-
-> i2c/12ce0000.i2c/driver/unbind
-> > > > > > echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-dt/bind
-> > > > > >
-> > > > > > Consequently, the hack patch below [2] allows any platform
-> device to be
-> > > > > > bound to the vfio-dt driver, without making changes to the
-> device
-> > > > > > tree.  It's a hack because I don't see having any driver name
-> specific
-> > > > > > code in drivers/base/bus.c being upstream acceptable.
-> > > > >
-> > > > > You are correct.
-> > > > >
-> > > > > What is wrong with just doing the above unbind/bind things
-> through
-> > > > > sysfs, that is what it is there for, right?
-> > > >
-> > > > The bind fails because the compatible string in the device tree
-> doesn't
-> > > > match that of the VFIO platform driver, so driver_match_device
-> always
-> > > > returns false.
-> > > >
-> > > It sounds like this is not going to be pretty almost no matter what
-> > > we'll end up doing: Inherently VFIO is going to bind to a device
-> without
-> > > the device tree entry for that device ever saying anything about
-> VFIO.
-> > >
-> > > How is this solved for PCI?  Can we use some analogy from that work
-> to
-> > > construct the missing piece?
+On Wed, Oct 02, 2013 at 11:00:26AM -0700, Andy Lutomirski wrote:
+> On Wed, Oct 2, 2013 at 10:48 AM, Kees Cook <keescook@chromium.org> wrote:
+> > On Wed, Oct 2, 2013 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >>> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
+> >>>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+> >>>> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
+> >>>> > need to happen during each system call.
+> >>>> >
+> >>>> > Currently some of these sensitive entries are protected by performing
+> >>>> > the ptrace_may_access() check. However even with that the /proc file
+> >>>> > descriptors can be passed to a more privileged process
+> >>>> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
+> >>>> > check. In general the ->open() call will be issued by an unprivileged
+> >>>> > process while the ->read(),->write() calls by a more privileged one.
+> >>>> >
+> >>>> > Example of these files are:
+> >>>> > /proc/*/syscall, /proc/*/stack etc.
+> >>>> >
+> >>>> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
+> >>>> >
+> >>>> >
+> >>>> > These files are protected during read() by the ptrace_may_access(),
+> >>>> > however the file descriptor can be passed to a suid-exec which can be
+> >>>> > used to read data and bypass ASLR. Of course this was discussed several
+> >>>> > times on LKML.
+> >>>>
+> >>>> Can you elaborate on what it is that you're fixing?  That is, can you
+> >>>> give a concrete example of what process opens what file and passes the
+> >>>> fd to what process?
+> >>> Yes, the references were already given in this email:
+> >>> https://lkml.org/lkml/2013/8/31/209
+> >>>
+> >>> This has been discussed several times on lkml:
+> >>> https://lkml.org/lkml/2013/8/28/544
+> >>>
+> >>> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
+> >>>
+> >>>
+> >>>> I'm having trouble following your description.
+> >>> Process open a /proc file and pass the fd to a more privilaged process
+> >>> that will pass the ptrace_may_access() check, while the original process
+> >>> that opened that file should fail at the ptrace_may_access()
+> >>
+> >> So we're talking about two kinds of attacks, right?
 > >
-> > PCI supports a dynamic ID table for driver/device matching, see
-> > pci_add_dynid().  The problem is that this gets a little sloppy for the
-> > period where you have multiple drivers that can claim the same device,
-> > especially in the presence of hotplug.  Thus the desire to improve the
-> > situation with some kind of direct binding interface.  Thanks,
+> > Correct.
 > >
-> So that's called on the vfio pci driver?
+> >> Type 1: Unprivileged process does something like open("/proc/1/maps",
+> >> O_RDONLY) and then passes the resulting fd to something privileged.
+> >
+> > ... and then leaks contents back to unprivileged process.
+> >
+> >> Type 2: Unprivileged process does something like
+> >> open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
+> >> execve on something privileged.
+> >
+> > ... and then parent snoops on file contents for the privileged child.
+> >
+> > (Type 2 is solved currently, IIUC. Type 1 could be reduced in scope by
+> > changing these file modes back to 0400.)
+> >
+> >> Can we really not get away with fixing type 1 by preventing these
+> >> files from being opened in the first place and type 2 by revoking all
+> >> of these fds when a privilege-changing exec happens?
+> >
+> > Type 1 can be done via exec as well. Instead of using a priv exec to
+> > read an arbitrary process, read it could read its own.
 > 
-> Wouldn't a sysfs file to add compatibility strings to the vfio-platform
-> driver make driver_match_device return true and make everyone happy?
+> Right.
+> 
+> >
+> > I think revoking the fd would be great. Does that mechanism exist?
+> 
+> There's this thing that never got merged.
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1523331
+> 
+> But doing it more directly should be reasonably straightforward.  Either:
+> 
+> (a) when a process execs and privileges change, find all the old proc
+> inodes, mark them dead, and unlink them, or
+Will take a look at it.
 
-I had a similar thought.  Why can't we do something like:
+> (b) add self_exec_id to all the proc file private_data entries (or
+> somewhere else).  Then just make sure that they're unchanged.  I think
+> the bug last time around was because the self_exec_id and struct pid
+> weren't being compared together.
+The bug was about self_exec_id not beeing unique. self_exec_id stuff
+must be unique during life time as it's done currently in grsecurity
+with exec_id.
 
-  echo "fsl,i2c" > /sys/bus/platform/drivers/vfio-platform/new_compatible
-  echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-platform/bind
-
-The first steps tell vfio-platform to register itself to handle
-"fsl,i2c" compatible devices.  The second step does the bind.
-
-Stuart
-
+-- 
+Djalal Harouni
+http://opendz.org
