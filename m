@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3JBLBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 07:01:36 -0400
-Received: from relay.parallels.com ([195.214.232.42]:34525 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab3JBLBd (ORCPT
+	id S1753748Ab3JBLCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 07:02:22 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:65228 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab3JBLCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 07:01:33 -0400
-Subject: [PATCH 2/5] fuse: writepages: crop secondary requests on send
-To: miklos@szeredi.hu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 02 Oct 2013 15:01:31 +0400
-Message-ID: <20131002110112.26932.68729.stgit@dhcp-10-30-17-2.sw.ru>
-In-Reply-To: <20131002105815.26932.46041.stgit@dhcp-10-30-17-2.sw.ru>
-References: <20131002105815.26932.46041.stgit@dhcp-10-30-17-2.sw.ru>
-User-Agent: StGit/0.16
+	Wed, 2 Oct 2013 07:02:19 -0400
+Message-ID: <524BFD35.5040100@gmail.com>
+Date: Wed, 02 Oct 2013 13:02:13 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@kernel.org>
+CC: Fabio Estevam <festevam@gmail.com>, linux-gpio@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
+References: <1380635719-31171-1-git-send-email-zonque@gmail.com> <CAOMZO5Aq5-bdY3yTD3DqjUVVrTPHZodb7_vfLQcvxfJRXNok4w@mail.gmail.com> <524AD693.6000304@gmail.com> <20131002105723.GA27287@sirena.org.uk>
+In-Reply-To: <20131002105723.GA27287@sirena.org.uk>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If writeback happens while fuse is in FUSE_NOWRITE condition, the request
-will be queued but not processed immediately (see fuse_flush_writepages()).
-Until FUSE_NOWRITE becomes relaxed, more writebacks can happen. They will
-be queued as "secondary" requests to that first ("primary") request.
+On 02.10.2013 12:57, Mark Brown wrote:
+> On Tue, Oct 01, 2013 at 04:05:07PM +0200, Daniel Mack wrote:
+>> On 01.10.2013 16:01, Fabio Estevam wrote:
+> 
+>>> Isn't it the same as the existing 'gpio-key,wakeup' ?
+> 
+>> Of course, I know the gpio-input driver can provide similar
+>> functionality. My intention was just provide a way to wake up the system
+>> without registering an input device for signals nobody is interested in
+>> eventually.
+> 
+>> Don't know if that's reason enough to add a new driver though.
+> 
+> It does seem somewhat sensible - the signal might not have a sensible
+> representation as an input device and the gpio-keys binding needs one.
+> 
 
-When FUSE_NOWRITE is relaxed and fuse_send_writepage() is called, it must
-crop both primary and secondary requests according to the actual i_size.
-Otherwise, if only primary is cropped, an extending write(2) may increase
-i_size soon and then secondary requests won't be cropped properly. The result
-would be stale data written to the server to a file offset where zeros must be.
+That was my intention as well, yes. Also, a system that does not have
+any input devices could in theory disable CONFIG_INPUT alltogether. Not
+sure how realisitic that scenario really is nowadays, but using the gpio
+input driver for purpose of just waking up on LAN seems somewhat abusive.
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
----
- fs/fuse/file.c |   63 ++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 54 insertions(+), 9 deletions(-)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 575e44f..a5d1f87 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1435,6 +1435,50 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
- 	wake_up(&fi->page_waitq);
- }
- 
-+/* Drop list of secondary writepage requests */
-+static void fuse_drop_writepage(struct fuse_conn *fc, struct fuse_req *req)
-+{
-+	struct backing_dev_info *bdi = req->inode->i_mapping->backing_dev_info;
-+
-+	while (req) {
-+		struct fuse_req *next = req->misc.write.next;
-+		dec_bdi_stat(bdi, BDI_WRITEBACK);
-+		dec_zone_page_state(req->pages[0], NR_WRITEBACK_TEMP);
-+		fuse_writepage_free(fc, req);
-+		fuse_put_request(fc, req);
-+		req = next;
-+	}
-+}
-+
-+/* Crop the misc.write.in.size of parent and secondary writepage requests */
-+static bool fuse_crop_writepage(struct fuse_conn *fc, struct fuse_req *req,
-+				loff_t size, struct fuse_req **drop_list)
-+{
-+	if (req->misc.write.in.offset >= size)
-+		return true;
-+
-+	while (req) {
-+		struct fuse_req *next = req->misc.write.next;
-+		struct fuse_write_in *inarg = &req->misc.write.in;
-+		__u64 data_size = inarg->size ? :
-+			req->num_pages * PAGE_CACHE_SIZE;
-+
-+		if (inarg->offset + data_size <= size) {
-+			inarg->size = data_size;
-+		} else if (inarg->offset < size) {
-+			inarg->size = size - inarg->offset;
-+		} else {
-+			/* Got truncated off completely */
-+			req->misc.write.next = *drop_list;
-+			*drop_list = req;
-+		}
-+
-+		req = next;
-+	}
-+
-+	return false;
-+}
-+
- /* Called under fc->lock, may release and reacquire it */
- static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req)
- __releases(fc->lock)
-@@ -1443,29 +1487,30 @@ __acquires(fc->lock)
- 	struct fuse_inode *fi = get_fuse_inode(req->inode);
- 	loff_t size = i_size_read(req->inode);
- 	struct fuse_write_in *inarg = &req->misc.write.in;
--	__u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
-+	struct fuse_req *drop_list = NULL;
- 
- 	if (!fc->connected)
- 		goto out_free;
- 
--	if (inarg->offset + data_size <= size) {
--		inarg->size = data_size;
--	} else if (inarg->offset < size) {
--		inarg->size = size - inarg->offset;
--	} else {
--		/* Got truncated off completely */
--		goto out_free;
--	}
-+	if (fuse_crop_writepage(fc, req, size, &drop_list))
-+		goto out_free; /* drop req and descendants */
- 
- 	req->in.args[1].size = inarg->size;
- 	fi->writectr++;
- 	fuse_request_send_background_locked(fc, req);
-+
-+	if (drop_list) {
-+		spin_unlock(&fc->lock);
-+		fuse_drop_writepage(fc, drop_list);
-+		spin_lock(&fc->lock);
-+	}
- 	return;
- 
-  out_free:
- 	fuse_writepage_finish(fc, req);
- 	spin_unlock(&fc->lock);
- 	fuse_writepage_free(fc, req);
-+	fuse_drop_writepage(fc, req->misc.write.next);
- 	fuse_put_request(fc, req);
- 	spin_lock(&fc->lock);
- }
+Daniel
 
