@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3JBSNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:13:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34454 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753547Ab3JBSNw (ORCPT
+	id S1755358Ab3JBSO2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:14:28 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:45608 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3JBSO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:13:52 -0400
-Date: Wed, 2 Oct 2013 19:13:47 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Barry Song <Baohua.Song@csr.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jingchang Lu <b35083@freescale.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v4 00/17] 64-bit friendly generic sched_clock()
-Message-ID: <20131002181347.GJ30298@mudshark.cambridge.arm.com>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
- <51E88170.3080505@linaro.org>
- <20131002174700.GF30298@mudshark.cambridge.arm.com>
- <524C5FD2.5050406@linaro.org>
+	Wed, 2 Oct 2013 14:14:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524C5FD2.5050406@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <524C5B10.20006@codeaurora.org>
+References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com>
+	<20131002170917.GB30298@mudshark.cambridge.arm.com>
+	<524C5484.5000601@ti.com>
+	<524C565C.8010709@codeaurora.org>
+	<524C5786.2090008@ti.com>
+	<524C5B10.20006@codeaurora.org>
+Date: Wed, 2 Oct 2013 13:14:26 -0500
+Message-ID: <CAL_JsqLYArFsA2aX2fqTepXOenLzwM5HFfmYCDosBVWSaCmC1A@mail.gmail.com>
+Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
+From: Rob Herring <robherring2@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 07:02:58PM +0100, John Stultz wrote:
-> On 10/02/2013 10:47 AM, Will Deacon wrote:
-> > On Fri, Jul 19, 2013 at 12:59:44AM +0100, John Stultz wrote:
-> >> On 07/18/2013 04:21 PM, Stephen Boyd wrote:
-> >>> This patchset adds support for 64 bit counters in the generic
-> >>> sched_clock code and converts drivers over to use it. Based
-> >>> on v3.11-rc1.
-> >>>
-> >>> Changes since v3:
-> >>>   * Move to use seqcount to fix issues with 64-bit cyc counters
-> >>>   * Move to hrtimer to fix underflow/overflow errors in wraparound
-> >>>     calculation
-> >>>   * Use of 1 hour in clocks_calc_mult_shift
-> >>>   * Converted over drivers in drivers/clocksource
-> >> I've not been able to take a deep review yet, but this looks pretty much 
-> >> like what we discussed last week, so I'm happy with it so far. Has this 
-> >> gotten much testing (on both 32 and 64bit systems?)
-> >>
-> >> One detail: Most of this is likely to go in via tip/timers/core, but the 
-> >> 5/17 "arch_timer: Move to generic sched_clock" will need some 
-> >> synchronization with Catalin to make sure its ok to go in via tip. Not 
-> >> sure what other arm64 changes are pending that would depend or collide 
-> >> with that change.
-> > I wouldn't expect anything more than a trivial Kconfig clash with the arm64
-> > tree, if that.
-> 
-> So I also have a branch with these changes based on a branch with only
-> the prereqs that are already merged, so I can provide a pull request
-> that can go in via the aarch64 tree and won't collide with tip. Would
-> that be preferrable?
+On Wed, Oct 2, 2013 at 12:42 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 10/02/13 10:27, Santosh Shilimkar wrote:
+>> On Wednesday 02 October 2013 01:22 PM, Stephen Boyd wrote:
+>>> On 10/02/13 10:14, Santosh Shilimkar wrote:
+>>>> On Wednesday 02 October 2013 01:09 PM, Will Deacon wrote:
+>>>>> On Wed, Oct 02, 2013 at 05:55:28PM +0100, Santosh Shilimkar wrote:
+>>>>>> The sched_clock code uses 2 levels of function pointers, sched_clock_func()
+>>>>>> and read_sched_clock() but the no sched_clock check in postinit() just
+>>>>>> checks read_sched_clock().
+>>>>>>
+>>>>>> This leads to kernel falling back to jiffy based sched clock even in
+>>>>>> presence of sched_clock_func() which is not desirable.
+>>>>>>
+>>>>>> Fix the postinit() check to avoid the issue. Probably the issue is hidden
+>>>>>> so far on most of the arm SOCs because of already existing sched_clock
+>>>>>> registrations apart from arch_timer sched_clock. One can reproduce the
+>>>>>> issue by just have arch_timer as sched_clock
+>>>>> Isn't this just an issue with the arch timer driver not calling
+>>>>> setup_sched_clock? Instead, we munge around with sched_clock_func directly,
+>>>>> which doesn't appear to be the way anybody else deals with this.
+>>>>>
+>>>> I thought about that option as well but was not sure since even in that case
+>>>> the check is not complete. We just ensure that function is popullated.
+>>> Yes, nothing is actually broken because sched_clock_func() won't try to
+>>> use the jiffy based read_sched_clock() function. I'm not sure we
+>>> actually need this patch besides to remove a useless timer that updates
+>>> the jiffy epoch. Can we wait until my 64-bit sched_clock patch series
+>>> lands in 3.13? It looks like I still need an ack from Will or Catalin on
+>>> the architected timer patch before the clocksource folks pick it up.
+>>>
+>> Really... I have not created patch out of fun.
+>> Its broken on my keystone machine at least where the sched_clock is
+>> falling back on jiffy based sched_clock even in presence of arch_timer
+>> sched_clock.
+>
+> How is that possible? sched_clock_func is only assigned by
+> arch/arm/kernel/arch_timer.c when the architected timer is detected and
+> sched_clock() in kernel/time/sched_clock.c calls that function pointer
+> unconditionally. The only way I see this happening is if the architected
+> timer rate is zero. I agree we will get two lines in the dmesg about
+> sched_clock and its not very clear which one is being used.
 
-I think it's simpler for us if you just take the lot via your tree, unless
-you have any objections.
+It does setup a timer to run to handle wrapping which should be
+harmless, but isn't needed.
 
-Cheers,
-
-Will
+Rob
