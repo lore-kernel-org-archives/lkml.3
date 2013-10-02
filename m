@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3JBVZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:25:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43145 "EHLO
+	id S1754545Ab3JBVZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:25:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43161 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab3JBVZI (ORCPT
+	with ESMTP id S1753733Ab3JBVZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:25:08 -0400
-Date: Wed, 2 Oct 2013 14:24:52 -0700
+	Wed, 2 Oct 2013 17:25:56 -0400
+Date: Wed, 2 Oct 2013 14:26:09 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Sven Joachim <svenjoac@gmx.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Imre Deak <imre.deak@intel.com>,
-        "cancan,feng" <cancan.feng@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [ 005/117] drm/i915: make user mode sync polarity setting
- explicit
-Message-ID: <20131002212452.GA12120@kroah.com>
-References: <20130925001740.833541979@linuxfoundation.org>
- <20130925001741.446963782@linuxfoundation.org>
- <87r4c3vavb.fsf@turtle.gmx.de>
- <CAKMK7uHGVcEZt16aDgoUCfyRMtcw76geDtOvpd_qzMZ2+a7U_A@mail.gmail.com>
+To: Solomon Peachy <pizza@shaftnet.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 70/71] cw1200: Dont perform SPI transfers in interrupt context
+Message-ID: <20131002212609.GB12120@kroah.com>
+References: <20130929192643.539596256@linuxfoundation.org>
+ <20130929192648.304161702@linuxfoundation.org>
+ <20131002022320.GB22070@shaftnet.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uHGVcEZt16aDgoUCfyRMtcw76geDtOvpd_qzMZ2+a7U_A@mail.gmail.com>
+In-Reply-To: <20131002022320.GB22070@shaftnet.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:11:53PM +0200, Daniel Vetter wrote:
-> On Wed, Oct 2, 2013 at 7:30 PM, Sven Joachim <svenjoac@gmx.de> wrote:
-> > See also https://bugs.freedesktop.org/show_bug.cgi?id=65442#c16.
+On Tue, Oct 01, 2013 at 10:23:21PM -0400, Solomon Peachy wrote:
+> On Sun, Sep 29, 2013 at 12:28:22PM -0700, Greg Kroah-Hartman wrote:
+> > 3.11-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Oh dear, somehow I've thought the -fixes pull request I've sent with
-> the fix for this has a cc: stable, but that must have been lost
-> somewhere.
+> If it's not too late, please drop this patch.  Sorry aobut the delay in 
+> responding, I was travelling internationally and had very sporadic 
+> connectivity.
 > 
-> Greg, can you please queue up
+> The patch was reverted in this patch:
 > 
-> commit 1062b81598bc00e2f6620e6f3788f8f8df2f01e7
-> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Date:   Tue Sep 10 11:44:30 2013 +0200
+> 	c4fb19d21b003ec99ec490ba2cb60baffabc73f3
 > 
->     drm/i915/tv: clear adjusted_mode.flags
+> And superceded by this one:
 > 
-> for stable kernels? Right now we seem to get about one dupe per day of
-> this report ;-)
+> 	87421cb6010a2f6494938fbe0a95e1b096b3b7af
 > 
-> /me wondered why they kept on coming up ...
+> (Out of Linus's upstream tree)
 
-Now queued up, thanks for letting me know.
+Thanks, I've now applied both of these, which should resolve the issue,
+right?
 
 greg k-h
