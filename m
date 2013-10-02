@@ -1,110 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab3JBIEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 04:04:37 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:60169 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab3JBIE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 04:04:29 -0400
-X-AuditID: 9c93017d-b7b8aae0000050c5-7e-524bd38bf524
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Ahern <dsahern@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1753308Ab3JBISb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 04:18:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14395 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752938Ab3JBIS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 04:18:28 -0400
+Date: Wed, 2 Oct 2013 10:17:57 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf tools: Speed up git-version test on re-make
-References: <20130912204313.GA3259@gmail.com>
-	<20130915091029.GA21465@gmail.com> <20130930164210.GA22342@gmail.com>
-	<20130930171220.GC10293@ghostprotocols.net>
-	<CA+55aFyjtFo2GVAvvUD_BQBN-F6QzOVWzcFo5v_MLhEwpGa03w@mail.gmail.com>
-	<20130930175342.GI10293@ghostprotocols.net>
-	<20130930190434.GA3427@gmail.com> <20131001113456.GA31331@gmail.com>
-	<20131001144618.GA8970@gmail.com> <87txh0mao8.fsf@sejong.aot.lge.com>
-	<20131002065042.GA5097@gmail.com>
-Date: Wed, 02 Oct 2013 17:04:26 +0900
-In-Reply-To: <20131002065042.GA5097@gmail.com> (Ingo Molnar's message of "Wed,
-	2 Oct 2013 08:50:42 +0200")
-Message-ID: <87pprom73p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tools: Separate lbfd check out of NO_DEMANGLE
+ condition
+Message-ID: <20131002081757.GA3496@krava.brq.redhat.com>
+References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+ <1380292332-6518-1-git-send-email-jolsa@redhat.com>
+ <1380437526.1727.10.camel@leonhard>
+ <87d2noo4gn.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87d2noo4gn.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Oct 2013 08:50:42 +0200, Ingo Molnar wrote:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
->
->> On Tue, 1 Oct 2013 16:46:18 +0200, Ingo Molnar wrote:
->> 
->> [SNIP]
->> >  
->> > -$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
->> > +$(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
->> >  	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
->> > +	@touch $(OUTPUT)PERF-VERSION-FILE
->> >  
->> >  CC = $(CROSS_COMPILE)gcc
->> >  AR = $(CROSS_COMPILE)ar
->> > @@ -813,7 +814,17 @@ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-c
->> >  	$(RM) $(OUTPUT)util/*-flex*
->> >  	$(python-clean)
->> >  
->> > +#
->> > +# Trick: if ../../.git does not exist - we are building out of tree for example,
->> > +# then force version regeneration:
->> > +#
->> > +ifeq ($(wildcard ../../.git/HEAD),) 
->> > +    GIT-HEAD-PHONY = ../../.git/HEAD
->> > +else 
->> > +    GIT-HEAD-PHONY =
->> > +endif
->> > +
->> >  .PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
->> >  .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
->> > -.PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
->> > +.PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
->> >  
->> 
->> I found an unrelated bug.  When I tried to build perf out of tree after 
->> 'make perf-targz-src-pkg' it cannot get any version number.
->> 
->>       GEN common-cmds.h
->>       * new build flags or prefix
->>   make[1]: *** No rule to make target `kernelversion'.  Stop.
->>   PERF_VERSION = 
->>       ...
->>       AR libperf.a
->>       LINK perf
->> 
->>   $ ./perf --version
->>   perf version 
->
-> Is this unrelated to my patches?
+On Wed, Oct 02, 2013 at 10:18:32AM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> On Sun, 29 Sep 2013 15:52:06 +0900, Namhyung Kim wrote:
+> > Hi Jiri,
+> >
+> > 2013-09-27 (금), 16:32 +0200, Jiri Olsa:
+> >> We fail build with NO_DEMANGLE with missing -lbfd externals error.
+> >> The reason is that we now use bfd code in srcline object:
+> >>   perf tools: Implement addr2line directly using libbfd
+> >> 
+> >> So we need to check/add -lbfd always now.
+> >> 
+> >> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> >> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> >> Cc: Ingo Molnar <mingo@elte.hu>
+> >> Cc: Namhyung Kim <namhyung@kernel.org>
+> >> Cc: Paul Mackerras <paulus@samba.org>
+> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >> Cc: David Ahern <dsahern@gmail.com>
+> >> ---
+> >>  tools/perf/config/Makefile | 17 ++++++++---------
+> >>  1 file changed, 8 insertions(+), 9 deletions(-)
+> >> 
+> >> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> >> index 8b49a00..40a41c6 100644
+> >> --- a/tools/perf/config/Makefile
+> >> +++ b/tools/perf/config/Makefile
+> >> @@ -360,6 +360,13 @@ else
+> >>    endif
+> >>  endif
+> >>  
+> >> +FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+> >> +has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+> >> +ifeq ($(has_bfd),y)
+> >> +  EXTLIBS += -lbfd
+> >> +  CFLAGS += -DLIBBFD_SUPPORT
+> >> +endif
+> >> +
+> >>  ifdef NO_DEMANGLE
+> >>    CFLAGS += -DNO_DEMANGLE
+> >>  else
+> >> @@ -367,11 +374,7 @@ else
+> >>      EXTLIBS += -liberty
+> >>      CFLAGS += -DHAVE_CPLUS_DEMANGLE
+> >>    else
+> >> -    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+> >> -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+> >> -    ifeq ($(has_bfd),y)
+> >> -      EXTLIBS += -lbfd
+> >> -    else
+> >> +    ifneq ($(has_bfd),y)
+> >>        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+> >>        has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+> >>        ifeq ($(has_bfd_iberty),y)
+> >> @@ -397,10 +400,6 @@ else
+> >>    endif
+> >>  endif
+> >>  
+> >> -ifndef ($(filter -lbfd,$(EXTLIBS)),)
+> >> -  CFLAGS += -DLIBBFD_SUPPORT
+> >> -endif
+> >> -
+> >>  ifndef NO_STRLCPY
+> >>    ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+> >>      CFLAGS += -DHAVE_STRLCPY
+> >
+> > Is it enough to check on -lbfd only?  I guess libbfd can have additional
+> > dependencies to libiberty and libz.  If so, this patch can fail to set
+> > -DLIBBFD_SUPPORT, right?
+> 
+> I tested this on my system.  At first I guessed (without testing) it
+> cannot build SOURCE_BFD with -lbfd only due to additional -liberty and
+> -lz dependency, but it's not.  Actually the libfd.so is a plain text
+> file which contains linker script like this:
+> 
+>   $ file /lib64/libbfd.so
+>   /lib64/libbfd.so: ASCII text
+> 
+>   $ cat /lib64/libbfd.so
+>   /* GNU ld script */
+>   
+>   /* Ensure this .so library will not be used by a link for a different format
+>      on a multi-architecture system.  */
+>   OUTPUT_FORMAT(elf64-x86-64)
+>   
+>   /* The libz dependency is unexpected by legacy build scripts.  */
+>   INPUT ( /usr/lib64/libbfd.a -liberty -lz )
+> 
+> 
+> So it should handle external dependencies.  But it doesn't.
+> 
+>   $ cat bfd.c
+>   #include <bfd.h>
+>   
+>   int main(void)
+>   {
+>   	bfd_demangle(0, 0, 0);
+>   	return 0;
+>   }
+> 
+>   namhyung@sejong:tmp$ gcc bfd.c -lbfd
+>   /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
+>   (.text+0x1ab): undefined reference to `dlopen'
+>   /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
+>   (.text+0x1ca): undefined reference to `dlsym'
+>   /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
+>   (.text+0x263): undefined reference to `dlerror'
+>   collect2: error: ld returned 1 exit status
+> 
+> 
+> It seems that it needs libdl for loading plugins.  Adding -ldl makes
+> above build successfully.  So we need to add -ldl for EXTLIBS IMHO.
+> Without it, make NO_GTK2=1 NO_LIBPERL=1 NO_LIBPYTHON=1 will fail to
+> check libbfd correctly (FYI, libperl and libpython add -ldl to the
+> dependency list).
 
-Yes, I can reproduce it without your patch.
+hum, so on my system -liberty check wins without -lbfd,
+so 'NO_GTK2=1 NO_LIBPERL=1 NO_LIBPYTHON=1' passes
 
->
->> It looks like we should save and pass the result of 'make kernelversion' 
->> to the tarball.
->
-> Or we could simply generate PERF-VERSION-FILE and save it into the 
-> tarball?
->
-> Then it will be the most accurate version we can determine at the point 
-> when the tarball is generated.
+I need to check Ingo's latest changes on this, not sure how
+if this problem is relevant any longer ;-)
 
-Hmm.. I tried to do it, but it's not that simple than I thought.  With
-your patch, the PERF-VERSION-FILE is regenerated everytime if it can't
-find .git/HEAD so saving the file didn't help since it'll be
-overwritten.  Anyway, it also cannot be used with 'make O=...' build.
-
-Thanks,
-Namhyung
+jirka
