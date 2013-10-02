@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3JBQ7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:59:13 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25317 "EHLO
+	id S1754643Ab3JBRAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:00:35 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25420 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753712Ab3JBQ7K (ORCPT
+	by vger.kernel.org with ESMTP id S1753937Ab3JBRAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:59:10 -0400
+	Wed, 2 Oct 2013 13:00:33 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -27,9 +27,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         linux-driver@qlogic.com,
         Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
         "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 40/77] ixgbevf: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:48:56 +0200
-Message-Id: <338c9012577acf694eb23622902185584987bd8f.1380703263.git.agordeev@redhat.com>
+Subject: [PATCH RFC 67/77] rapidio: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:49:23 +0200
+Message-Id: <d73f825db39f969247aa80380da2a9c41c101f09.1380703263.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
 References: <cover.1380703262.git.agordeev@redhat.com>
@@ -43,48 +43,61 @@ obtain a optimal number of MSI/MSI-X interrupts required.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   18 +++++++-----------
- 1 files changed, 7 insertions(+), 11 deletions(-)
+ drivers/rapidio/devices/tsi721.c |   27 +++++++++++++++++----------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index fa0537a..d506a01 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -1749,8 +1749,7 @@ void ixgbevf_reset(struct ixgbevf_adapter *adapter)
- static int ixgbevf_acquire_msix_vectors(struct ixgbevf_adapter *adapter,
- 					int vectors)
- {
--	int err = 0;
--	int vector_threshold;
-+	int err, vector_threshold;
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index ff7cbf2..5edd920 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -734,6 +734,16 @@ static int tsi721_enable_msix(struct tsi721_device *priv)
+ 	int err;
+ 	int i;
  
- 	/* We'll want at least 2 (vector_threshold):
- 	 * 1) TxQ[0] + RxQ[0] handler
-@@ -1763,18 +1762,15 @@ static int ixgbevf_acquire_msix_vectors(struct ixgbevf_adapter *adapter,
- 	 * Right now, we simply care about how many we'll get; we'll
- 	 * set them up later while requesting irq's.
- 	 */
--	while (vectors >= vector_threshold) {
--		err = pci_enable_msix(adapter->pdev, adapter->msix_entries,
--				      vectors);
--		if (!err || err < 0) /* Success or a nasty failure. */
--			break;
--		else /* err == number of vectors we should try again with */
--			vectors = err;
--	}
-+	err = pci_msix_table_size(adapter->pdev);
++	err = pci_msix_table_size(priv->pdev);
 +	if (err < 0)
-+		return err;
- 
-+	vectors = min(vectors, err);
- 	if (vectors < vector_threshold)
--		err = -ENOSPC;
++		goto err_out;
++	if (err < ARRAY_SIZE(entries)) {
++		dev_info(&priv->pdev->dev,
++			 "Only %d MSI-X vectors available, not using MSI-X\n",
++			 err);
 +		return -ENOSPC;
++	}
++
+ 	entries[TSI721_VECT_IDB].entry = TSI721_MSIX_SR2PC_IDBQ_RCV(IDB_QUEUE);
+ 	entries[TSI721_VECT_PWRX].entry = TSI721_MSIX_SRIO_MAC_INT;
  
-+	err = pci_enable_msix(adapter->pdev, adapter->msix_entries, vectors);
- 	if (err) {
- 		dev_err(&adapter->pdev->dev,
- 			"Unable to allocate MSI-X interrupts\n");
+@@ -769,16 +779,8 @@ static int tsi721_enable_msix(struct tsi721_device *priv)
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+ 
+ 	err = pci_enable_msix(priv->pdev, entries, ARRAY_SIZE(entries));
+-	if (err) {
+-		if (err > 0)
+-			dev_info(&priv->pdev->dev,
+-				 "Only %d MSI-X vectors available, "
+-				 "not using MSI-X\n", err);
+-		else
+-			dev_err(&priv->pdev->dev,
+-				"Failed to enable MSI-X (err=%d)\n", err);
+-		return err;
+-	}
++	if (err)
++		goto err_out;
+ 
+ 	/*
+ 	 * Copy MSI-X vector information into tsi721 private structure
+@@ -833,6 +835,11 @@ static int tsi721_enable_msix(struct tsi721_device *priv)
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+ 
+ 	return 0;
++
++err_out:
++	dev_err(&priv->pdev->dev,
++		"Failed to enable MSI-X (err=%d)\n", err);
++	return err;
+ }
+ #endif /* CONFIG_PCI_MSI */
+ 
 -- 
 1.7.7.6
 
