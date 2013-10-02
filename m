@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab3JBFOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:14:17 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:40765 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766Ab3JBFOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:14:15 -0400
-Date: Tue, 1 Oct 2013 22:13:34 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        sparclinux@vger.kernel.org, Brad Spengler <spender@grsecurity.net>
-Subject: [PATCH] sparc: fix ldom_reboot buffer overflow harder
-Message-ID: <20131002051334.GA2406@www.outflux.net>
+	id S1753151Ab3JBFP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:15:57 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:53611 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab3JBFPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 01:15:55 -0400
+Message-ID: <524BAC04.30501@gmail.com>
+Date: Wed, 02 Oct 2013 15:15:48 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: =?UTF-8?B?TWF0aGlldSBSaMOpYXVtZQ==?= <mathieu@codingrhemes.com>
+CC: gregkh@linuxfoundation.org, arve@android.com, dan.carpenter@oracle.com,
+        mirsal@mirsal.fr, serban.constantinescu@arm.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] Staging : android: binder.c: Prefer seq_puts to seq_printf
+References: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
+In-Reply-To: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The length argument to strlcpy was still wrong. It could overflow the end of
-full_boot_str by 5 bytes. Instead of strcat and strlcpy, just use snprint.
+On 02/10/13 11:57, Mathieu Rhéaume wrote:
+> This patch changes seq_printf for seq_puts in binder.c.
+> It fixes the warnings emitted by checkpatch.pl.
+> 
+> Signed-off-by: Mathieu Rhéaume <mathieu@codingrhemes.com>
+> ---
+>  drivers/staging/android/binder.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> index 09edebb..f3d4a1f 100644
+> --- a/drivers/staging/android/binder.c
+> +++ b/drivers/staging/android/binder.c
+> @@ -3272,7 +3272,7 @@ binder_defer_work(struct binder_proc *proc, enum binder_deferred_state defer)
+>  static void print_binder_transaction(struct seq_file *m, const char *prefix,
+>  				     struct binder_transaction *t)
+>  {
+> -	seq_printf(m,
+> +	seq_puts(m,
+>  		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
+>  		   prefix, t->debug_id, t,
+>  		   t->from ? t->from->proc->pid : 0,
 
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/sparc/kernel/ds.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Umm, this won't compile. seq_puts() is defined as:
 
-diff --git a/arch/sparc/kernel/ds.c b/arch/sparc/kernel/ds.c
-index 4d9ac84..dff60ab 100644
---- a/arch/sparc/kernel/ds.c
-+++ b/arch/sparc/kernel/ds.c
-@@ -849,9 +849,8 @@ void ldom_reboot(const char *boot_command)
- 	if (boot_command && strlen(boot_command)) {
- 		unsigned long len;
- 
--		strcpy(full_boot_str, "boot ");
--		strlcpy(full_boot_str + strlen("boot "), boot_command,
--			sizeof(full_boot_str));
-+		snprintf(full_boot_str, sizeof(full_boot_str), "boot %s",
-+			 boot_command);
- 		len = strlen(full_boot_str);
- 
- 		if (reboot_data_supported) {
--- 
-1.7.9.5
+  int seq_puts(struct seq_file *m, const char *s);
 
+checkpatch.pl does indeed complain about uses of seq_printf() in
+drivers/staging/android/binder.c which are passing formatted strings. At
+a quick glance it looks like checkpatch.pl is only checking for the
+format string on the same line as seq_printf(), so this files ugly
+coding style confuses the check. Joe?
 
--- 
-Kees Cook
-Chrome OS Security
+Anyway, please don't blindly change things in the kernel without at
+least compile testing them.
+
+~Ryan
+
