@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab3JBWew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 18:34:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab3JBWeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 18:34:50 -0400
-Date: Wed, 2 Oct 2013 18:34:37 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrey Konovalov <andreyknvl@google.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com,
-        Dmitry Vyukov <dvyukov@google.com>, Kostya Serebryany <kcc@google.com>
-Subject: Re: Fwd: Potential out-of-bounds in ftrace_regex_release
-Message-ID: <20131002223437.GA15728@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Andrey Konovalov <andreyknvl@google.com>,
-	linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com,
-	Dmitry Vyukov <dvyukov@google.com>,
-	Kostya Serebryany <kcc@google.com>
-References: <CAAeHK+w+8=DGvFeuMAwS50RRvAGw1KkWHcivja5q-wmX8GtH2w@mail.gmail.com>
- <CAAeHK+wy+vs2PniKh8DbWzZoS99g1eZ-U3mv+6SzoznC8WHW6A@mail.gmail.com>
- <20131002185723.GA32614@redhat.com>
- <1380745082.12351.6.camel@pippen.local.home>
+	id S1753944Ab3JBWex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 18:34:53 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:60375 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab3JBWev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 18:34:51 -0400
+Date: Wed, 2 Oct 2013 15:34:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: David Miller <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix generic hugetlb pte check return type.
+In-Reply-To: <20131002.142509.1450460988268165850.davem@davemloft.net>
+Message-ID: <alpine.DEB.2.02.1310021531030.18461@chino.kir.corp.google.com>
+References: <20131002.142509.1450460988268165850.davem@davemloft.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380745082.12351.6.camel@pippen.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:18:02PM -0400, Steven Rostedt wrote:
- > On Wed, 2013-10-02 at 14:57 -0400, Dave Jones wrote:
- > 
- > > And that's the cause. I wonder what was being opened.
- > > Do you happen to have a trinity-child log for that thread ?
- > 
- > Thanks for the update. This definitely looks like the bug, and explains
- > a lot. I'll look into this, as I'm currently at a conference, it may be
- > sporadic.
+On Wed, 2 Oct 2013, David Miller wrote:
 
-another potential clue.. I looked over some logs from some crashes, and saw that just before
-the crash, there was a call to unshare(), after which the uid changed from 1000 to 65534.
-Is that something that ftrace is prepared for ?
+> The include/asm-generic/hugetlb.h stubs that just vector huge_pte_*()
+> calls to the pte_*() implementations won't work in certain situations.
+> 
+> x86 and sparc, for example, return "unsigned long" from the bit
+> checks, and just go "return pte_val(pte) & PTE_BIT_FOO;"
+> 
 
-	Dave
+x86 should be safe since it's known that both _PAGE_BIT_RW and 
+_PAGE_BIT_DIRTY are <= 32.
 
+> But since huge_pte_*() returns 'int', if any high bits on 64-bit are
+> relevant, they get chopped off.
+> 
+> The net effect is that we can loop forever trying to COW a huge page,
+> because the huge_pte_write() check signals false all the time.
+> 
+> Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+
+Acked-by: David Rientjes <rientjes@google.com>
+
+> ---
+> 
+> Anyone mind if I push this through the sparc tree?
+> 
+
+Makes sense since it's the only arch that appears affected.
+
+> diff --git a/include/asm-generic/hugetlb.h b/include/asm-generic/hugetlb.h
+> index d06079c..99b490b 100644
+> --- a/include/asm-generic/hugetlb.h
+> +++ b/include/asm-generic/hugetlb.h
+> @@ -6,12 +6,12 @@ static inline pte_t mk_huge_pte(struct page *page, pgprot_t pgprot)
+>  	return mk_pte(page, pgprot);
+>  }
+>  
+> -static inline int huge_pte_write(pte_t pte)
+> +static inline unsigned long huge_pte_write(pte_t pte)
+>  {
+>  	return pte_write(pte);
+>  }
+>  
+> -static inline int huge_pte_dirty(pte_t pte)
+> +static inline unsigned long huge_pte_dirty(pte_t pte)
+>  {
+>  	return pte_dirty(pte);
+>  }
