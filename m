@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab3JBNCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 09:02:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45676 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab3JBNCE (ORCPT
+	id S1754273Ab3JBNCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 09:02:44 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:34024 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab3JBNCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 09:02:04 -0400
-Date: Wed, 2 Oct 2013 15:01:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-Message-ID: <20131002130143.GF28601@twins.programming.kicks-ass.net>
-References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
- <20130930161546.GG3081@twins.programming.kicks-ass.net>
- <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
- <20130930165420.GI3081@twins.programming.kicks-ass.net>
- <CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
- <20131002112316.GP3081@twins.programming.kicks-ass.net>
- <20131002115826.GM26785@twins.programming.kicks-ass.net>
- <20131002123953.GB27811@gmail.com>
- <20131002124610.GD28601@twins.programming.kicks-ass.net>
- <CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	Wed, 2 Oct 2013 09:02:43 -0400
+Message-ID: <524C1964.8090205@gmail.com>
+Date: Wed, 02 Oct 2013 07:02:28 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [QUERY] Why does perf-trace need me to be root?
+References: <CALkWK0mmUZe-Wv2H2Z3y9FN0_kYv9gKaaXkMQ0UD-J9Q+=wFzQ@mail.gmail.com>
+In-Reply-To: <CALkWK0mmUZe-Wv2H2Z3y9FN0_kYv9gKaaXkMQ0UD-J9Q+=wFzQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
-> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
-> >>  - then there are timing attacks, and someone having access to a PMU
-> >>    context and who can trigger this SHA1 computation arbitrarily in task
-> >>    local context can run very accurate and low noise timing attacks...
-> >>
-> >>    I don't think the kernel's sha_transform() is hardened against timing
-> >>    attacks, it's performance optimized so it has variable execution time
-> >>    highly dependent on plaintext input - which leaks information about the
-> >>    plaintext.
-> >
-> > Typical user doesn't have enough priv to profile kernel space; once you
-> > do you also have enough priv to see kernel addresses outright (ie.
-> > kallsyms etc..).
-> >
-> I was going to say just that. But that's not the default, paranoid level
-> is at 1 by default and not 2. So I supposedly can still do:
+On 10/2/13 3:20 AM, Ramkumar Ramachandra wrote:
+> Hi,
+>
+> All the other perf tooling can be used as a normal user. At one point,
+> I had to touch /proc/sys/kernel/perf_event_paranoid to get me numbers
+> on a PMU event without a symbolic name, but that's about it.
+> perf-trace seems to be the exception though:
+>
+>    artagnon|perf-core=:~/src/linux/tools/perf$ perf trace -a -e open
+>    Couldn't read the raw_syscalls tracepoints information!
+>
+> The responsible codepath is:
+>
+>    if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter",
+> trace__sys_enter) ||
+>       perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit",
+> trace__sys_exit)) {
+>
+> I don't understand much of what's going on, but what can be done to
+> improve the situation for users?
 
-Oh right you are.. so yes that's a very viable avenue.
+If you trust your users make the debugfs mount point rx by group,world.
+
+David
+
