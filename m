@@ -1,102 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab3JBTH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:07:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40920 "EHLO
+	id S1755585Ab3JBTHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:07:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40931 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab3JBTHJ (ORCPT
+	with ESMTP id S1754622Ab3JBTHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:07:09 -0400
+	Wed, 2 Oct 2013 15:07:10 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>, devicetree@vger.kernel.org
-Subject: [PATCH v2 0/9] Add support for MSM's mmio clocks
-Date: Wed,  2 Oct 2013 12:06:57 -0700
-Message-Id: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH v2 1/9] clk: Allow drivers to pass in a regmap
+Date: Wed,  2 Oct 2013 12:06:58 -0700
+Message-Id: <1380740826-29457-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
+In-Reply-To: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
+References: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first 3 patches are generic clock framework patches. They add support for
-regmap and for setting the rate and the parent at the same time based on
-patches from James Hogan's remuxing set_rate series.
+Add support to the clock core so that drivers can pass in a
+regmap. If no regmap is specified try to query the device that's
+registering the clock for its regmap. This should allow drivers
+to use the core regmap helpers.
 
-After that we add MSM clock hardware support and SoC specific drivers. The DT
-node additions will be sent through the MSM maintainers once these patches are
-accepted. The GCC 8974 driver is mostly finished but I didn't do the full
-treatment on 8960 just yet.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/clk.c            | 8 ++++++++
+ include/linux/clk-provider.h | 7 +++++++
+ 2 files changed, 15 insertions(+)
 
-Changes since v1:
-
- * Rewrote binding to use #clock-cells=1
- * Reworked library components (pll, rcg, branch) to use regmap
- * Dropped common clock framework patches that did DT parsing
- * New patches for regmap support in common clock framework
-
-Some starter questions:
-
- 1) The clock controller is also a reset and power domain controller.
-    Should we put that code in the drivers under drivers/clk/msm?
-
- 2) Should the directory be renamed to qcom to match the binding?
-
- 3) What is the right place for clock dt binding #defines? clk/ or clock/?
-
-Stephen Boyd (9):
-  clk: Allow drivers to pass in a regmap
-  clk: Add regmap core helpers for enable/disable/is_enabled
-  clk: Add set_rate_and_parent() op
-  clk: msm: Add support for phase locked loops (PLLs)
-  clk: msm: Add support for root clock generators (RCGs)
-  clk: msm: Add support for branches/gate clocks
-  clk: msm: Add support for MSM8960's global clock controller (GCC)
-  clk: msm: Add support for MSM8960's multimedia clock controller (MMCC)
-  clk: msm: Add support for MSM8974's global clock controller (GCC)
-
- Documentation/clk.txt                              |    3 +
- .../devicetree/bindings/clock/qcom,gcc.txt         |   20 +
- .../devicetree/bindings/clock/qcom,mmcc.txt        |   19 +
- drivers/clk/Kconfig                                |    2 +
- drivers/clk/Makefile                               |    1 +
- drivers/clk/clk.c                                  |  156 +-
- drivers/clk/msm/Kconfig                            |   29 +
- drivers/clk/msm/Makefile                           |   10 +
- drivers/clk/msm/clk-branch.c                       |  153 ++
- drivers/clk/msm/clk-branch.h                       |   50 +
- drivers/clk/msm/clk-pll.c                          |  147 ++
- drivers/clk/msm/clk-pll.h                          |   45 +
- drivers/clk/msm/clk-rcg.c                          |  491 ++++
- drivers/clk/msm/clk-rcg.h                          |  149 ++
- drivers/clk/msm/clk-rcg2.c                         |  272 +++
- drivers/clk/msm/gcc-8960.c                         |  381 +++
- drivers/clk/msm/gcc-8974.c                         | 2488 ++++++++++++++++++++
- drivers/clk/msm/mmcc-8960.c                        |  297 +++
- include/dt-bindings/clk/msm-gcc-8960.h             |   28 +
- include/dt-bindings/clk/msm-gcc-8974.h             |  154 ++
- include/dt-bindings/clk/msm-mmcc-8960.h            |   24 +
- include/linux/clk-provider.h                       |   35 +
- 22 files changed, 4935 insertions(+), 19 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,gcc.txt
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,mmcc.txt
- create mode 100644 drivers/clk/msm/Kconfig
- create mode 100644 drivers/clk/msm/Makefile
- create mode 100644 drivers/clk/msm/clk-branch.c
- create mode 100644 drivers/clk/msm/clk-branch.h
- create mode 100644 drivers/clk/msm/clk-pll.c
- create mode 100644 drivers/clk/msm/clk-pll.h
- create mode 100644 drivers/clk/msm/clk-rcg.c
- create mode 100644 drivers/clk/msm/clk-rcg.h
- create mode 100644 drivers/clk/msm/clk-rcg2.c
- create mode 100644 drivers/clk/msm/gcc-8960.c
- create mode 100644 drivers/clk/msm/gcc-8974.c
- create mode 100644 drivers/clk/msm/mmcc-8960.c
- create mode 100644 include/dt-bindings/clk/msm-gcc-8960.h
- create mode 100644 include/dt-bindings/clk/msm-gcc-8974.h
- create mode 100644 include/dt-bindings/clk/msm-mmcc-8960.h
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index a004769..6107daa 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -20,6 +20,7 @@
+ #include <linux/device.h>
+ #include <linux/init.h>
+ #include <linux/sched.h>
++#include <linux/regmap.h>
+ 
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
+@@ -1829,6 +1830,13 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
+ 	clk->num_parents = hw->init->num_parents;
+ 	hw->clk = clk;
+ 
++	if (hw->init->regmap)
++		hw->regmap = hw->init->regmap;
++	else if (dev && dev_get_regmap(dev, NULL))
++		hw->regmap = dev_get_regmap(dev, NULL);
++	else if (dev->parent)
++		hw->regmap = dev_get_regmap(dev->parent, NULL);
++
+ 	/* allocate local copy in case parent_names is __initdata */
+ 	clk->parent_names = kzalloc((sizeof(char*) * clk->num_parents),
+ 			GFP_KERNEL);
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 73bdb69..6ed62f1 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -142,6 +142,8 @@ struct clk_ops {
+ 	void		(*init)(struct clk_hw *hw);
+ };
+ 
++struct regmap;
++
+ /**
+  * struct clk_init_data - holds init data that's common to all clocks and is
+  * shared between the clock provider and the common clock framework.
+@@ -151,6 +153,7 @@ struct clk_ops {
+  * @parent_names: array of string names for all possible parents
+  * @num_parents: number of possible parents
+  * @flags: framework-level hints and quirks
++ * @regmap: regmap to use for regmap helpers and/or by providers
+  */
+ struct clk_init_data {
+ 	const char		*name;
+@@ -158,6 +161,7 @@ struct clk_init_data {
+ 	const char		**parent_names;
+ 	u8			num_parents;
+ 	unsigned long		flags;
++	struct regmap		*regmap;
+ };
+ 
+ /**
+@@ -171,10 +175,13 @@ struct clk_init_data {
+  *
+  * @init: pointer to struct clk_init_data that contains the init data shared
+  * with the common clock framework.
++ *
++ * @regmap: regmap to use for regmap helpers and/or by providers
+  */
+ struct clk_hw {
+ 	struct clk *clk;
+ 	const struct clk_init_data *init;
++	struct regmap *regmap;
+ };
+ 
+ /*
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
