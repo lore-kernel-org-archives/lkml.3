@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab3JBUjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:39:00 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:10572 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab3JBUi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:38:59 -0400
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 16:38:59 EDT
-Date: Wed, 2 Oct 2013 16:29:12 -0400
-From: Pavel Roskin <proski@gnu.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: sysfb: mark simplefb resources as BUSY
-Message-ID: <20131002162912.25cb7f4a@IRBT4585>
-In-Reply-To: <1380724864-1757-1-git-send-email-dh.herrmann@gmail.com>
-References: <1380724864-1757-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754278Ab3JBUjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:39:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42472 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab3JBUje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 16:39:34 -0400
+Date: Wed, 2 Oct 2013 13:39:43 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Scott Wood <scottwood@freescale.com>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+Message-ID: <20131002203943.GB10871@kroah.com>
+References: <20131001200054.GA27330@kroah.com>
+ <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+ <20131002015355.GD63102@lvm>
+ <1380681356.14271.57.camel@ul30vt.home>
+ <20131002151413.GG63102@lvm>
+ <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
+ <1380738758.12932.43.camel@snotra.buserror.net>
+ <20131002184330.GC5108@cbox>
+ <1380744842.12932.77.camel@snotra.buserror.net>
+ <20131002202738.GC3029@lvm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002202738.GC3029@lvm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Oct 2013 16:41:04 +0200
-David Herrmann <dh.herrmann@gmail.com> wrote:
+On Wed, Oct 02, 2013 at 09:27:38PM +0100, Christoffer Dall wrote:
+> > > What you're suggesting would let users specify that
+> > > a serial driver should handle a NIC hardware, no?  That sounds much much
+> > > worse to me.
+> > 
+> > The flag (and wildcard match, if applicable) would be set by the driver,
+> > not by the user.  Whereas PCI's "new_id" and the "new_compatible" being
+> > suggested in this thread would allow exactly that, assuming the driver
+> > doesn't reject the device in the probe function.
+> > 
+> ok, fair enough, but still, I don't see the _generic_ need for having a
+> kernel feature that allows some random driver to bind to a device, but
+> then again, I'm not an authority in this area.
 
-> Tested-by: Pavel Roskin <proski@gnu.org>
+Again, this is already there, and has been for years with no problems,
+so I really don't understand the issue you have with it.
 
-Tested indeed, on ThinkPad W530 with 32-bit and 64-bit kernels with
-Intel and NVidia graphics enabled.
-
-> Sorry for the delay, but I was in the US for the last 2 weeks and
-> this is really no major issue, just suppresses a warning that says
-> "Your kernel is fine".
-
-It shows a stack trace, so it might confuse (and has confused) users
-into thinking that it's a more important issue than it is.
-
-> Anyhow, thanks to Tom and Pavel for reporting
-> and testing this! This is targeted at 3.12-rc4 as bugfix. I think
-> it's still early/mid rc-stage and is a one-line patch so it should be
-> fine, right?
-
-I second this.
-
--- 
-Regards,
-Pavel Roskin
+greg k-h
