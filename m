@@ -1,92 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3JBDwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 23:52:04 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:44994 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab3JBDwB (ORCPT
+	id S1752875Ab3JBDwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 23:52:16 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:42421 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab3JBDwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 23:52:01 -0400
-Date: Tue, 1 Oct 2013 20:51:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Chris Murphy <bugzilla@colorremedies.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20131002035156.GA566@roeck-us.net>
-References: <20130927175926.GA6267@roeck-us.net>
- <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com>
- <524615B1.6000106@roeck-us.net>
- <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
- <524A4384.4040403@roeck-us.net>
- <20131001105526.GA481@polaris.bitmath.org>
- <20131001151954.GB14887@roeck-us.net>
- <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com>
- <20131001162425.GD14887@roeck-us.net>
- <28FA6820-7FB5-4D33-ABC9-1F2088FA22A6@colorremedies.com>
+	Tue, 1 Oct 2013 23:52:12 -0400
+Date: Tue, 1 Oct 2013 20:52:09 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ming Liu <ming.liu@windriver.com>
+cc: akpm@linux-foundation.org, mhocko@suse.cz, rusty@rustcorp.com.au,
+        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] oom: avoid selecting threads sharing mm with init
+In-Reply-To: <5244E7BA.4040408@windriver.com>
+Message-ID: <alpine.DEB.2.02.1310012048170.10383@chino.kir.corp.google.com>
+References: <1380182957-3231-1-git-send-email-ming.liu@windriver.com> <alpine.DEB.2.02.1309261143160.10904@chino.kir.corp.google.com> <5244E7BA.4040408@windriver.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <28FA6820-7FB5-4D33-ABC9-1F2088FA22A6@colorremedies.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 07:09:26PM -0600, Chris Murphy wrote:
-> 
-> On Oct 1, 2013, at 10:24 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > On Tue, Oct 01, 2013 at 09:33:13AM -0600, Chris Murphy wrote:
-> >> 
-> >> On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> 
-> >>> On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
-> >>>>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
-> >>>>>> 
-> >>>>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
-> >>>>>> 
-> >>>>> 
-> >>>>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
-> >>>>> Which I guess explains the subsequent memory allocation error in the log.
-> >>>>> 
-> >>>>> Henrik, any idea what might be going on ? Is it possible that the previous
-> >>>>> command failure leaves some state machine in a bad state ?
-> >>>> 
-> >>>> I seem to recall a report on another similar state problem on newer
-> >>>> machines, so maybe, yes. Older machines seem fine, I have never
-> >>>> encountered the problem myself. Here is a patch to test that
-> >>>> theory. It has been tested to be pretty harmless on two different
-> >>>> generations.
-> >>>> 
-> >>>> I really really do not want to add an 'if (value is insane)' check ;-)
-> >>>> 
-> >>> Chris,
-> >>> 
-> >>> any chance you can load this patch on an affected machine so we can get
-> >>> test feedback ? This one is too experimental to submit upstream without
-> >>> knowing that it really fixes the problem.
-> >> 
-> >> Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
-> >> 
-> > Only requirement is that it also includes the previous patch, so it would be
-> > optimal if you can apply it on top of the previous image.
-> 
-> Patch added on top of 3.12.0-0.rc3.git0.1.fc20.x86_64 and built. But after ~dozen reboots, I'm not triggering the problem. The only items in dmesg with smc in it:
-> 
-> [   13.799819] applesmc: key=261 fan=2 temp=14 index=14 acc=1 lux=2 kbd=1
-> [   13.833402] input: applesmc as /devices/platform/applesmc.768/input/input10
-> 
+On Fri, 27 Sep 2013, Ming Liu wrote:
 
-Hi Chris,
+> I might mislead you, when I talked about init, I meant the pid 1 process but
+> not the idle, and isn't the idle a kthread and has not this risk getting
+> killed by oom?
 
-That only means that you did not hit the problem. There may be some secondary
-trigger (cold boot ? coffee on the cpu ?).
-
-One thing I have seen in all logs is the earlier "send_byte fail" message, so
-I think that is a pre-requisite.
-
-Thanks,
-Guenter
+You can disqualify for p->mm == &init_mm, but the oom killer has been 
+rewritten since 2.6.27 so please post a log from a recent kernel that 
+exhibits the problem.
