@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab3JBVKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:10:22 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:54959 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab3JBVKU (ORCPT
+	id S1754540Ab3JBVK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:10:57 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:52567 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab3JBVKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:10:20 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1380670860-17621-3-git-send-email-seanpaul@chromium.org>
-References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
-	<1380670860-17621-3-git-send-email-seanpaul@chromium.org>
-Date: Wed, 2 Oct 2013 14:10:18 -0700
-Message-ID: <CAOesGMj3142o1B_33BqtLZMbObn2tjfBaBHvAB-2+O+XOuCjSw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] ARM: dts: Add dp-controller node to exynos5250-snow
-From: Olof Johansson <olof@lixom.net>
-To: Sean Paul <seanpaul@chromium.org>
-Cc: dri-devel@lists.freedesktop.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
+	Wed, 2 Oct 2013 17:10:55 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Inki Dae <inki.dae@samsung.com>, airlied@linux.ie
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH 2/5] gpio: samsung: Use CONFIG_ARCH_S3C64XX to check for S3C64xx support
+Date: Wed, 02 Oct 2013 23:10:52 +0200
+Message-ID: <3903161.Vxg4RcbQZc@flatron>
+User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
+In-Reply-To: <CACRpkdZXOGpTspPucd=d0=Ws9Ccx19h4UYTTdgZceoofhuq0Kw@mail.gmail.com>
+References: <1380392497-27406-1-git-send-email-tomasz.figa@gmail.com> <1380392497-27406-2-git-send-email-tomasz.figa@gmail.com> <CACRpkdZXOGpTspPucd=d0=Ws9Ccx19h4UYTTdgZceoofhuq0Kw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 1, 2013 at 4:40 PM, Sean Paul <seanpaul@chromium.org> wrote:
-> This patch adds the dp-controller node to the exynos5250-snow board dts
-> file.
->
-> Signed-off-by: Sean Paul <seanpaul@chromium.org>
-> ---
->  arch/arm/boot/dts/exynos5250-snow.dts | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index e5af3f2..780511a 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -190,6 +190,18 @@
->                 samsung,vbus-gpio = <&gpx1 1 0>;
->         };
->
-> +       dp-controller {
-> +               samsung,color-space = <0>;
-> +               samsung,dynamic-range = <0>;
-> +               samsung,ycbcr-coeff = <0>;
-> +               samsung,color-depth = <1>;
-> +               samsung,link-rate = <0x0a>;
-> +               samsung,lane-count = <2>;
-> +
-> +               pinctrl-names = "default";
-> +               pinctrl-0 = <&dp_hpd>;
-> +       };
+Hi Linus,
 
-This won't actually do what I think you want. Since the dtsi has the
-node name "dp-controller@145B0000", you will end up duplicating a new
-node and not build on top of that one.
+On Wednesday 02 of October 2013 12:46:51 Linus Walleij wrote:
+> On Sat, Sep 28, 2013 at 8:21 PM, Tomasz Figa <tomasz.figa@gmail.com> 
+wrote:
+> > Since CONFIG_PLAT_S3C64XX is going to be removed, this patch modifies
+> > the gpio-samsung driver to use the proper way of checking for S3C64xx
+> > support - CONFIG_ARCH_S3C64XX.
+> > 
+> > Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-There's two ways to do it: Always include the unit address, or create
-a label in the dtsi such that:
+Thanks.
 
-dp_controller: dp-controller@ {....
-}
+> I assume that this will go through ARM SoC?
 
-Then in your dts you can, at the root level:
+I think so.
 
-&dp_controller {
-  ... new stuff and overrides ...
-};
+Best regards,
+Tomasz
 
-
-
--Olof
