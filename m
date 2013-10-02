@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab3JBHA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:00:27 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:40616 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3JBHAY convert rfc822-to-8bit (ORCPT
+	id S1753104Ab3JBHFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:05:24 -0400
+Received: from p-mail1.rd.orange.com ([195.101.245.15]:25208 "EHLO
+	p-mail1.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3JBHFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:00:24 -0400
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat4g9PszuGM
-X-RZG-CLASS-ID: mo00
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
-Date: Wed, 2 Oct 2013 09:00:18 +0200
-Message-Id: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
-Cc: Belisko Marek <marek.belisko@gmail.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-To: Jan Dumon <j.dumon@option.com>
-Mime-Version: 1.0 (Apple Message framework v1085)
-X-Mailer: Apple Mail (2.1085)
+	Wed, 2 Oct 2013 03:05:21 -0400
+X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 03:05:20 EDT
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Dirk Gouders <dirk@gouders.net>
+Subject: Re: [PATCH 4/4] kconfig: remove unused definition from scanner
+Date: Wed, 2 Oct 2013 08:57:54 +0200
+User-Agent: KMail/1.13.5 (Linux/3.10.11-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
+Cc: Martin Walch <walch.martin@web.de>, Michal Marek <mmarek@suse.cz>,
+        Jiri Kosina <trivial@kernel.org>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <6249343.9Mjtul3lu5@tacticalops> <ghk3hwjhqk.fsf@lena.gouders.net>
+In-Reply-To: <ghk3hwjhqk.fsf@lena.gouders.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310020857.54800.yann.morin.1998@free.fr>
+X-OriginalArrivalTime: 02 Oct 2013 06:57:55.0538 (UTC) FILETIME=[B88AF320:01CEBF3C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+Martin, All,
 
-we are using a GTM601 modem (Firmware 1.7) for a while and have spotted an
-issue that under some conditions the modem sends a packed wIndex over USB
-that is rejected by the hso driver making troubles afterwards. Not rejecting makes
-it work fine.
+On Wednesday 02 October 2013 08:42:59 Dirk Gouders wrote:
+> Martin Walch <walch.martin@web.de> writes:
+> 
+> > From: Martin Walch <walch.martin@web.de>
+> > Date: Wed, 2 Oct 2013 06:58:46 +0200
+> > Subject: [PATCH 4/4] kconfig: remove unused definition from scanner
+> >
+> > The definition ws [ \n\t] is not used anywhere. Drop it to avoid confusion.
+> 
+> Hi Martin,
+> 
+> I think you should also regenerate the scanner and add
+> the new zconf.lex.c_shipped to this patch.
 
-BR,
-Nikolaus Schaller
+I think sending the re-generated parser as a separate patch helps
+in reviewing. Ie. I'd prefer a fifth patch.
 
----
+BTW, regenerating the parser can be done with:
+    make REGENERATE_PARSERS=1 config
 
->From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
-From: "H. Nikolaus Schaller" <hns@goldelico.com>
-Date: Thu, 15 Nov 2012 14:40:57 +0100
-Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
- GTM601 during RING indication
+Regards,
+Yann E. MORIN.
 
- It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
- wIndex that has bit 0x04 set instead of being reset as the code expects. So we
- mask it for the error check.
- 
- See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
+> > Signed-off-by: Martin Walch <walch.martin@web.de>
+> > ---
+> >  scripts/kconfig/zconf.l | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/scripts/kconfig/zconf.l b/scripts/kconfig/zconf.l
+> > index 6555a47..1a9f53e 100644
+> > --- a/scripts/kconfig/zconf.l
+> > +++ b/scripts/kconfig/zconf.l
+> > @@ -68,7 +68,6 @@ static void alloc_string(const char *str, int size)
+> >  }
+> >  %}
+> >  
+> > -ws	[ \n\t]
+> >  n	[A-Za-z0-9_]
+> >  
+> >  %%
+> 
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
----
- drivers/net/usb/hso.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index cba1d46..d146e26 100644
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -1503,7 +1503,8 @@ static void tiocmget_intr_callback(struct urb *urb)
- 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
- 	    serial_state_notification->bNotification != B_NOTIFICATION ||
- 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
--	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
-+	    (le16_to_cpu(serial_state_notification->wIndex) & ~0x4) !=
-+		W_INDEX ||
- 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
- 		dev_warn(&usb->dev,
- 			 "hso received invalid serial state notification\n");
 -- 
-1.7.7.4
-
-
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+'------------------------------'-------'------------------'--------------------'
