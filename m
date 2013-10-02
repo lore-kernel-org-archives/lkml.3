@@ -1,39 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab3JBUBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:01:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48632 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab3JBUBW (ORCPT
+	id S1753933Ab3JBUEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:04:20 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:42451 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab3JBUET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:01:22 -0400
-Date: Wed, 02 Oct 2013 16:01:19 -0400 (EDT)
-Message-Id: <20131002.160119.576160745622423553.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: mac@melware.de, isdn@linux-pingi.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isdn: eicon: free pointer after using it in log msg in
- divas_um_idi_delete_entity()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1309302119550.4992@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1309302119550.4992@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 2 Oct 2013 16:04:19 -0400
+Date: Wed, 2 Oct 2013 15:04:15 -0500
+From: Kim Phillips <kim.phillips@linaro.org>
+To: christoffer.dall@linaro.org
+Cc: scottwood@freescale.com, B08248@freescale.com, alex.williamson@redhat.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        a.motakis@virtualopensystems.com, agraf@suse.de, B07421@freescale.com,
+        B16395@freescale.com, R65777@freescale.com, peter.maydell@linaro.org,
+        santosh.shukla@linaro.org, kvm@vger.kernel.org
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+Message-Id: <20131002150415.458f40ac97cd6ea9de9c590d@linaro.org>
+In-Reply-To: <20131002184330.GC5108@cbox>
+References: <20131001133831.6e46e8e00e09d5d9079fde57@linaro.org>
+	<20131001200054.GA27330@kroah.com>
+	<20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+	<20131002015355.GD63102@lvm>
+	<1380681356.14271.57.camel@ul30vt.home>
+	<20131002151413.GG63102@lvm>
+	<9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
+	<1380738758.12932.43.camel@snotra.buserror.net>
+	<20131002184330.GC5108@cbox>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 13:01:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Mon, 30 Sep 2013 21:25:27 +0200 (CEST)
+On Wed, 2 Oct 2013 11:43:30 -0700
+Christoffer Dall <christoffer.dall@linaro.org> wrote:
 
-> Not really a problem, but nice IMHO; the Coverity static analyzer
-> complains that we use the pointer 'e' after it has been freed, so move
-> the freeing below the final use, even if that use is just using the
-> value of the pointer and not actually dereferencing it.
+> On Wed, Oct 02, 2013 at 01:32:38PM -0500, Scott Wood wrote:
+> > On Wed, 2013-10-02 at 13:25 -0500, Yoder Stuart-B08248 wrote:
+> > > 
+> > > > -----Original Message-----
+> > > > From: Christoffer Dall [mailto:christoffer.dall@linaro.org]
+> > > > Sent: Wednesday, October 02, 2013 10:14 AM
+> > > > To: Alex Williamson
+> > > > Cc: Kim Phillips; gregkh@linuxfoundation.org; linux-
+> > > > kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
+> > > > Yoder Stuart-B08248; Wood Scott-B07421; Sethi Varun-B16395; Bhushan
+> > > > Bharat-R65777; peter.maydell@linaro.org; santosh.shukla@linaro.org;
+> > > > kvm@vger.kernel.org
+> > > > Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform
+> > > > device
+> > > > 
+> > > > Wouldn't a sysfs file to add compatibility strings to the vfio-platform
+> > > > driver make driver_match_device return true and make everyone happy?
+> > > 
+> > > I had a similar thought.  Why can't we do something like:
+> > > 
+> > >   echo "fsl,i2c" > /sys/bus/platform/drivers/vfio-platform/new_compatible
+> > >   echo 12ce0000.i2c > /sys/bus/platform/drivers/vfio-platform/bind
+> > > 
+> > > The first steps tell vfio-platform to register itself to handle
+> > > "fsl,i2c" compatible devices.  The second step does the bind.
+> > 
+> > Needing to specify the compatible is hacky (we already know what device
+> > we want to bind; why do we need to scrounge up more information than
+> > that, and add a new sysfs interface for extending compatible matches,
+> > and a more flexible data structure to back that up?), and is racy on
+> > buses that can hotplug (which driver gets the new device?).
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Why hacky?  It seems quite reasonable to me that the user has to tell a
+> subsystem that from a certain point it should be capable of handling
+> some device.
 
-Applied to net-next, thanks.
+I think what Scott is saying is that the first echo above is somewhat
+redundant with the second: they're both talking to the vfio-platform
+driver about an i2c device.
+
+> As for the data structure, isn't this a simple linked list?
+> 
+> The problem with the race seems to be a common problem that hasn't even
+> been solved for PCI yet, so I'm wondering if this is not an orthogonal
+> issue with a separate solution, such as a priority or something like
+> that.
+
+I agree; adding 'direct'/'atomic' functionality to the existing bind
+sysfs file, i.e., bind_store() logic to perform device_release_driver()
+logic if dev->driver != NULL, all under the same device_lock() is an
+independent problem from binding the VFIO platform driver to a platform
+device.
+
+> Yes, once you've added the new_compatible to the vfio-platform driver,
+> it's up for grabs from both the new and the old driver, but that could
+> be solved by always making sure that the vfio-platform driver is checked
+> first.
+
+not sure I understand the priority problem here - haven't looked at PCI
+yet - but, given the above 'atomic bind' functionality described above,
+the new and old driver wouldn't be requesting to bind to the same
+device simultaneously, no?
+
+> (I'm not familiar with these data structures, but I would imagine
+> something like re-inserting the vfio-platform driver in the
+> list/tree/... whenever adding a new_compatible value might possibly be
+> one solution).
+> 
+> > What's wrong with a non-vfio-specific flag that a driver can set, that
+> > indicates that the driver is willing to try to bind to any device on the
+> > bus if explicitly requested via the existing sysfs bind mechanism?
+> > 
+> It sounds more hackish to me to invent some 'generic' flag to solve a
+> very specific case.  What you're suggesting would let users specify that
+> a serial driver should handle a NIC hardware, no?  That sounds much much
+> worse to me.
+
+I thought that was the nature of VFIO drivers...it's a 'meta-' driver,
+used for enabling userspace drivers at large.
+
+Kim
