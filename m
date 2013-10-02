@@ -1,82 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab3JBBJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 21:09:33 -0400
-Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:47714 "EHLO
-	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751230Ab3JBBJc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 21:09:32 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: applesmc oops in 3.10/3.11
-From: Chris Murphy <bugzilla@colorremedies.com>
-In-Reply-To: <20131001162425.GD14887@roeck-us.net>
-Date: Tue, 1 Oct 2013 19:09:26 -0600
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+	id S1752482Ab3JBBSg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 21:18:36 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61968 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab3JBBSe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 21:18:34 -0400
+X-AuditID: 9c93016f-b7bc8ae000004e6e-66-524b7468af0c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tools: Separate lbfd check out of NO_DEMANGLE condition
+References: <1380221754-29865-1-git-send-email-jolsa@redhat.com>
+	<1380292332-6518-1-git-send-email-jolsa@redhat.com>
+	<1380437526.1727.10.camel@leonhard>
+Date: Wed, 02 Oct 2013 10:18:32 +0900
+In-Reply-To: <1380437526.1727.10.camel@leonhard> (Namhyung Kim's message of
+	"Sun, 29 Sep 2013 15:52:06 +0900")
+Message-ID: <87d2noo4gn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <28FA6820-7FB5-4D33-ABC9-1F2088FA22A6@colorremedies.com>
-References: <20130927171256.GA6391@roeck-us.net> <71D92187-2092-4975-A707-17452C48EF5A@colorremedies.com> <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131001105526.GA481@polaris.bitmath.org> <20131001151954.GB14887@roeck-us.net> <C10D98EE-28FE-4BFE-BDE5-1EAABF112AC2@colorremedies.com> <20131001162425.GD14887@roeck-us.net>
-To: Guenter Roeck <linux@roeck-us.net>
-X-Mailer: Apple Mail (2.1510)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - colorremedies.com
-X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiri,
 
-On Oct 1, 2013, at 10:24 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-
-> On Tue, Oct 01, 2013 at 09:33:13AM -0600, Chris Murphy wrote:
+On Sun, 29 Sep 2013 15:52:06 +0900, Namhyung Kim wrote:
+> Hi Jiri,
+>
+> 2013-09-27 (금), 16:32 +0200, Jiri Olsa:
+>> We fail build with NO_DEMANGLE with missing -lbfd externals error.
+>> The reason is that we now use bfd code in srcline object:
+>>   perf tools: Implement addr2line directly using libbfd
 >> 
->> On Oct 1, 2013, at 9:19 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> So we need to check/add -lbfd always now.
 >> 
->>> On Tue, Oct 01, 2013 at 12:55:26PM +0200, Henrik Rydberg wrote:
->>>>>> Warning message triggered with 3.12.0-0.rc3.git0.1.fc21.x86_64.
->>>>>> 
->>>>>> [   10.886016] applesmc: key count changed from 261 to 1174405121
->>>>>> 
->>>>> 
->>>>> Explains the crash, but the new key count is very wrong. 1174405121 = 0x46000001.
->>>>> Which I guess explains the subsequent memory allocation error in the log.
->>>>> 
->>>>> Henrik, any idea what might be going on ? Is it possible that the previous
->>>>> command failure leaves some state machine in a bad state ?
->>>> 
->>>> I seem to recall a report on another similar state problem on newer
->>>> machines, so maybe, yes. Older machines seem fine, I have never
->>>> encountered the problem myself. Here is a patch to test that
->>>> theory. It has been tested to be pretty harmless on two different
->>>> generations.
->>>> 
->>>> I really really do not want to add an 'if (value is insane)' check ;-)
->>>> 
->>> Chris,
->>> 
->>> any chance you can load this patch on an affected machine so we can get
->>> test feedback ? This one is too experimental to submit upstream without
->>> knowing that it really fixes the problem.
+>> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+>> Cc: Ingo Molnar <mingo@elte.hu>
+>> Cc: Namhyung Kim <namhyung@kernel.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+>> Cc: David Ahern <dsahern@gmail.com>
+>> ---
+>>  tools/perf/config/Makefile | 17 ++++++++---------
+>>  1 file changed, 8 insertions(+), 9 deletions(-)
 >> 
->> Yes. What kernel.org source version should I apply it against? I'd use the non-debug config file from an equivalent version Fedora kernel, unless asked otherwise. And also should I test it on other vintages? I have here MBP4,1(2008); MBP8,2(2011), and MBP10,2(2012).
->> 
-> Only requirement is that it also includes the previous patch, so it would be
-> optimal if you can apply it on top of the previous image.
+>> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+>> index 8b49a00..40a41c6 100644
+>> --- a/tools/perf/config/Makefile
+>> +++ b/tools/perf/config/Makefile
+>> @@ -360,6 +360,13 @@ else
+>>    endif
+>>  endif
+>>  
+>> +FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+>> +has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+>> +ifeq ($(has_bfd),y)
+>> +  EXTLIBS += -lbfd
+>> +  CFLAGS += -DLIBBFD_SUPPORT
+>> +endif
+>> +
+>>  ifdef NO_DEMANGLE
+>>    CFLAGS += -DNO_DEMANGLE
+>>  else
+>> @@ -367,11 +374,7 @@ else
+>>      EXTLIBS += -liberty
+>>      CFLAGS += -DHAVE_CPLUS_DEMANGLE
+>>    else
+>> -    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+>> -    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+>> -    ifeq ($(has_bfd),y)
+>> -      EXTLIBS += -lbfd
+>> -    else
+>> +    ifneq ($(has_bfd),y)
+>>        FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+>>        has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+>>        ifeq ($(has_bfd_iberty),y)
+>> @@ -397,10 +400,6 @@ else
+>>    endif
+>>  endif
+>>  
+>> -ifndef ($(filter -lbfd,$(EXTLIBS)),)
+>> -  CFLAGS += -DLIBBFD_SUPPORT
+>> -endif
+>> -
+>>  ifndef NO_STRLCPY
+>>    ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+>>      CFLAGS += -DHAVE_STRLCPY
+>
+> Is it enough to check on -lbfd only?  I guess libbfd can have additional
+> dependencies to libiberty and libz.  If so, this patch can fail to set
+> -DLIBBFD_SUPPORT, right?
 
-Patch added on top of 3.12.0-0.rc3.git0.1.fc20.x86_64 and built. But after ~dozen reboots, I'm not triggering the problem. The only items in dmesg with smc in it:
+I tested this on my system.  At first I guessed (without testing) it
+cannot build SOURCE_BFD with -lbfd only due to additional -liberty and
+-lz dependency, but it's not.  Actually the libfd.so is a plain text
+file which contains linker script like this:
 
-[   13.799819] applesmc: key=261 fan=2 temp=14 index=14 acc=1 lux=2 kbd=1
-[   13.833402] input: applesmc as /devices/platform/applesmc.768/input/input10
+  $ file /lib64/libbfd.so
+  /lib64/libbfd.so: ASCII text
+
+  $ cat /lib64/libbfd.so
+  /* GNU ld script */
+  
+  /* Ensure this .so library will not be used by a link for a different format
+     on a multi-architecture system.  */
+  OUTPUT_FORMAT(elf64-x86-64)
+  
+  /* The libz dependency is unexpected by legacy build scripts.  */
+  INPUT ( /usr/lib64/libbfd.a -liberty -lz )
 
 
-Chris
+So it should handle external dependencies.  But it doesn't.
+
+  $ cat bfd.c
+  #include <bfd.h>
+  
+  int main(void)
+  {
+  	bfd_demangle(0, 0, 0);
+  	return 0;
+  }
+
+  namhyung@sejong:tmp$ gcc bfd.c -lbfd
+  /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
+  (.text+0x1ab): undefined reference to `dlopen'
+  /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
+  (.text+0x1ca): undefined reference to `dlsym'
+  /usr/lib64/libbfd.a(plugin.o): In function `try_load_plugin':
+  (.text+0x263): undefined reference to `dlerror'
+  collect2: error: ld returned 1 exit status
+
+
+It seems that it needs libdl for loading plugins.  Adding -ldl makes
+above build successfully.  So we need to add -ldl for EXTLIBS IMHO.
+Without it, make NO_GTK2=1 NO_LIBPERL=1 NO_LIBPYTHON=1 will fail to
+check libbfd correctly (FYI, libperl and libpython add -ldl to the
+dependency list).
+
+Thanks,
+Namhyung
