@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab3JBSy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:54:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37112 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694Ab3JBSy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:54:56 -0400
-Message-ID: <524C6BCD.2000007@zytor.com>
-Date: Wed, 02 Oct 2013 11:54:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754498Ab3JBS5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:57:04 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:35237 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab3JBS5B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 14:57:01 -0400
+Date: Wed, 02 Oct 2013 13:56:58 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation: "kerneli" typo in description for
+ "Serpent cipher algorithm" Bug #60848
+To: Kevin Mulvey <kevin@kevinmulvey.net>
+Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1380730237-42543-1-git-send-email-kevin@kevinmulvey.net>
+	<1380737551.1974.127@driftwood> <524C645E.9030800@iki.fi>
+	<CAP+oSVsCMiHR1zZ3VV3RDmzJVJ5P=ksGcbmWjFFjgODNXC9fAw@mail.gmail.com>
+In-Reply-To: <CAP+oSVsCMiHR1zZ3VV3RDmzJVJ5P=ksGcbmWjFFjgODNXC9fAw@mail.gmail.com>
+	(from kevin@kevinmulvey.net on Wed Oct  2 13:34:30 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1380740218.1974.130@driftwood>
 MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
-        kamaleshb@in.ibm.com, hechjie@cn.ibm.com, akpm@linux-foundation.org,
-        dave.hansen@intel.com
-Subject: Re: [RESEND PATCH] x86: add phys addr validity check for /dev/mem
- mmap
-References: <20131002160514.GA25471@localhost.localdomain> <524C5BFB.5050501@zytor.com> <20131002183155.GA2975@localhost.localdomain> <524C6799.9060800@zytor.com> <20131002184803.GB2975@localhost.localdomain>
-In-Reply-To: <20131002184803.GB2975@localhost.localdomain>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 11:48 AM, Frantisek Hrbata wrote:
+On 10/02/2013 01:34:30 PM, Kevin Mulvey wrote:
+> sorry, for possible repost but I think my last email got blocked due
+> to html.  It read:
 > 
-> Ok, I can try to look into this. I just want to point out that some other archs
-> like arm are doing it the same way. I simply replaced the generic check functions
-> in drivers/char/mem.c with x86 specific ones.
-> 
+> do you want me to make another patch that does not touch the url?
 
-I know.  It is a longstanding problem.
+It looks like the crypto directory has been merged since forever, so  
+the old website is irrelevant and it should just be removed.
 
-	-hpa
-
-
+Rob
