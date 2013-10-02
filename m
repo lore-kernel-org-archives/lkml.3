@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3JBPib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:38:31 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:30666 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab3JBPi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:38:26 -0400
-From: T Makphaibulchoke <tmac@hp.com>
-To: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: aswin@hp.com, aswin_proj@lists.hp.com, T Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH 0/2] fs/ext4: increase parallelism in updating ext4 orphan list
-Date: Wed,  2 Oct 2013 09:38:02 -0600
-Message-Id: <1380728283-61038-1-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <y>
-References: <y>
+	id S1754157Ab3JBPir (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:38:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52230 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926Ab3JBPip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 11:38:45 -0400
+Date: Wed, 2 Oct 2013 17:38:42 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: Re: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Message-ID: <20131002153842.GD32181@quack.suse.cz>
+References: <1380724087-13927-1-git-send-email-jack@suse.cz>
+ <1380724087-13927-24-git-send-email-jack@suse.cz>
+ <32E1700B9017364D9B60AED9960492BC211AEF75@FMSMSX107.amr.corp.intel.com>
+ <20131002152811.GC32181@quack.suse.cz>
+ <32E1700B9017364D9B60AED9960492BC211AF005@FMSMSX107.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <32E1700B9017364D9B60AED9960492BC211AF005@FMSMSX107.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of allowing only a single atomic update (both in memory and on disk
-orphan lists) of an ext4's orphan list via the s_orphan_lock mutex, this patch
-allows multiple updates of the orphan list, while still maintaing the
-integrity of both the in memory and on disk orphan lists of each update.
+On Wed 02-10-13 15:32:47, Marciniszyn, Mike wrote:
+> > > The risk of GUP fast is the loss of the "force" arg on GUP fast, which
+> > > I don't see as significant give our use case.
+> >   Yes. I was discussing with Roland some time ago whether the force
+> > argument is needed and he said it is. So I kept the arguments of
+> > get_user_pages() intact and just simplified the locking...
+> 
+> The PSM side of the code is a more traditional use of GUP (like direct
+> I/O), so I think it is a different use case than the locking for IB
+> memory regions.
+  Ah, I see. Whatever suits you best. I don't really care as long as
+get_user_pages() locking doesn't leak into IB drivers :)
 
-This is accomplished by using a per inode mutex to serialize the oprhan
-list update of a single inode, and a mutex and a spinlock to serailize
-the on disk and in memory orphan list respectively.
-
-Here are some of the becnhmark results with the changes.
-
-On a 90 core machine:
-
-Here are the performance improvements in some of the aim7 workloads,
-
----------------------------
-|             | % increase |
----------------------------
-| alltests    |      9.56  |
----------------------------
-| custom      |     12.20  |
----------------------------
-| fserver     |     15.99  |
----------------------------
-| new_dbase   |      1.73  |
----------------------------
-| new_fserver |     17.56  |
----------------------------
-| shared      |      6.24  |
----------------------------
-For Swingbench dss workload,
-
--------------------------------------------------------------------------
-| Users         | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  |
--------------------------------------------------------------------------
-| % imprvoment  | 7.67 | 9.43 | 7.30 | 0.58 | 0.53 |-2.62 |-3.72 | 3.77 |
-| without using |      |      |      |      |      |      |      |      |
-| shared memory |      |      |      |      |      |      |      |      |
--------------------------------------------------------------------------
-
-On a 8 core machine:
-
-Here are the performance date from some of the aim7 workloads,
-
----------------------------
-|             | % increase |
----------------------------
-| alltests    |      3.90  |
----------------------------
-| custom      |      1.66  |
----------------------------
-| dbase       |     -2.00  |
----------------------------
-| fserver     |      1.80  |
----------------------------
-| new_dbase   |     -1.90  |
----------------------------
-| new_fserver |      2.18  |
----------------------------
-| shared      |      7.46  |
----------------------------
-For Swingbench dss workload,
-
--------------------------------------------------------------------------
-| Users         | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  |
--------------------------------------------------------------------------
-| % imprvoment  |-1.32 | 6.45 | 1.18 |-3.13 |-1.13 | 4.68 | 5.75 |-0.37 |
-| without using |      |      |      |      |      |      |      |      |
-| shared memory |      |      |      |      |      |      |      |      |
--------------------------------------------------------------------------
-
-T Makphaibulchoke (2):
-  fs/ext4: adding and initalizing new members of ext4_inode_info and
-    ext4_sb_info
-  fs/ext4/namei.c: reducing contention on s_orphan_lock mmutex
-
- fs/ext4/ext4.h  |   5 +-
- fs/ext4/inode.c |   1 +
- fs/ext4/namei.c | 139 ++++++++++++++++++++++++++++++++++++++++----------------
- fs/ext4/super.c |   4 +-
- 4 files changed, 108 insertions(+), 41 deletions(-)
-
+								Honza
 -- 
-1.7.11.3
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
