@@ -1,50 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab3JBH1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:27:16 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4510 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784Ab3JBH1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:27:13 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <524BCAC4.6060209@broadcom.com>
-Date: Wed, 2 Oct 2013 09:27:00 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
+	id S1753207Ab3JBHbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:31:48 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:56134 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab3JBHbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 03:31:46 -0400
+Date: Wed, 2 Oct 2013 09:31:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] tools/perf: Fix double/triple-build of the feature detection
+ logic during 'make install' et al
+Message-ID: <20131002073140.GA6652@gmail.com>
+References: <20130912133855.GA23780@gmail.com>
+ <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Joe Perches" <joe@perches.com>, netdev <netdev@vger.kernel.org>
-cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        e1000-devel@lists.sourceforge.net, linux-usb@vger.kernel.org,
-        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
-        wil6210@qca.qualcomm.com, b43-dev@lists.infradead.org,
-        brcm80211-dev-list@broadcom.com, bridge@lists.linux-foundation.org,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Subject: Re: [PATCH net-next] net:drivers/net: Miscellaneous conversions
- to ETH_ALEN
-References: <1380679480.2081.24.camel@joe-AO722>
-In-Reply-To: <1380679480.2081.24.camel@joe-AO722>
-X-WSS-ID: 7E5515430UO13057374-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 04:04 AM, Joe Perches wrote:
-> Convert the memset/memcpy uses of 6 to ETH_ALEN
-> where appropriate.
->
-> Also convert some struct definitions and u8 array
-> declarations of [6] to ETH_ALEN.
->
-For brcmsmac
 
-Acked-by: Arend van Spriel <arend@broadcom.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->   drivers/net/wireless/brcm80211/brcmsmac/main.c     |  6 +-
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
+> [...]
+> 
+> Another annoyance during that make was that "make install" seems to want 
+> to re-make the thing I just built. That's absolutely horrible, even if 
+> I've seen too many broken projects do that. Now, for perf it's not as 
+> horrible as for some (because you can do "make install" as a normal 
+> user), but it's still a pattern that needs to be called out and needs to 
+> die. It's not just that it slows down "make install", it's also that a 
+> normal pattern *should* be that you build things as a normal user, and 
+> do "make install" as root.
 
+Ok, I think I managed to fix this bug too - see the patch below. Only 
+lightly tested, with the most common usecases.
+
+Thanks,
+
+	Ingo
+
+=========================>
+Subject: tools/perf: Fix double/triple-build of the feature detection logic during 'make install' et al
+From: Ingo Molnar <mingo@kernel.org>
+Date: Wed Oct 2 06:51:27 CEST 2013
+
+Linus reported the following perf build system bug:
+
+  'Another annoyance during that make was that "make install" seems to
+   want to re-make the thing I just built. That's absolutely horrible, [...]'
+
+The targets that got re-built were 'only' the (numerous) feature checks, 
+not the whole project - but still it was mighty annoying as the feature 
+checks took 9+ seconds even on reasonably fast boxes...
+
+Even with the autodep patches where feature detection is much faster 
+double/triple checks waste resources, waste screen real estate and confuse 
+users.
+
+There were two sources for these unnecessary re-builds of the feature 
+checks:
+
+ - Unnecessary nested invocations of $(MAKE), apparently to be able
+   to do conditional compilation dependent on documentation tools
+   presence. Use straight dependencies instead, with no nesting.
+
+ - A direct invocation of $(MAKE) to rebuild the PERF-VERSION-FILE.
+   This is apparently done to be able to include it into the
+   Makefile:
+
+    -include $(OUTPUT)PERF-VERSION-FILE
+
+   but that's entirely pointless for two reasons: 1) the version file
+   gets regenerated by the initial build pass anyway, 2) including it
+   is futile, given its contents:
+
+    #define PERF_VERSION "3.12.rc3.g8510c7"
+
+   'make' will interpret that as a comment line...
+
+   So just remove this part of the doc-generation logic.
+
+With these things fixed a 'make install' now rebuilds only what is needed.
+
+A repeated 'make install' on an already built tree is super fast now, it 
+finishes in under 0.3 seconds:
+
+  #
+  #  After the patch:
+  #
+
+  $ time make install
+
+  ...
+
+  real    0m0.280s
+  user    0m0.162s
+  sys     0m0.054s
+
+Prior all the autodep changes and prior this fix, a repeat 'make install' 
+took 24.1 seconds (!) on the same system:
+
+  #
+  #  Before the patches:
+  #
+
+  $ time make install
+
+  ...
+
+  real    0m24.109s
+  user    0m21.171s
+  sys     0m2.449s
+
+Which almost entirely was caused by fixable build system fat.
+We are now literally ~86 times faster.
+
+A fresh rebuild and install now takes just 11.4 seconds:
+
+  #
+  #  After the patch:
+  #
+
+  $ make clean
+  $ time make -j16 install
+
+  ...
+
+  real    0m11.457s
+  user    1m43.411s
+  sys     0m7.610s
+
+Without the patches it took 27.8 seconds:
+
+  #
+  #  Before the patches:
+  #
+
+  $ make clean
+  $ time make -j16 install
+
+  ...
+
+  real    0m27.801s
+  user    1m59.242s
+  sys     0m9.749s
+
+So even in the complete rebuild case we are now ~2.5 times faster.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/Documentation/Makefile |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
+
+Index: tip/tools/perf/Documentation/Makefile
+===================================================================
+--- tip.orig/tools/perf/Documentation/Makefile
++++ tip/tools/perf/Documentation/Makefile
+@@ -192,13 +192,14 @@ do-install-man: man
+ 
+ install-man: check-man-tools man
+ 
+-try-install-man:
+ ifdef missing_tools
+-	$(warning Please install $(missing_tools) to have the man pages installed)
++  DO_INSTALL_MAN = $(warning Please install $(missing_tools) to have the man pages installed)
+ else
+-	$(MAKE) do-install-man
++  DO_INSTALL_MAN = do-install-man
+ endif
+ 
++try-install-man: $(DO_INSTALL_MAN)
++
+ install-info: info
+ 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
+ 	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
+@@ -216,14 +217,6 @@ install-pdf: pdf
+ #install-html: html
+ #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
+ 
+-ifneq ($(MAKECMDGOALS),clean)
+-ifneq ($(MAKECMDGOALS),tags)
+-$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+-	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
+-
+--include $(OUTPUT)PERF-VERSION-FILE
+-endif
+-endif
+ 
+ #
+ # Determine "include::" file references in asciidoc files.
+@@ -342,5 +335,3 @@ $(patsubst %.txt,%.html,$(wildcard howto
+ 
+ #quick-install-html:
+ #	'$(SHELL_PATH_SQ)' ./install-doc-quick.sh $(HTML_REF) $(DESTDIR)$(htmldir)
+-
+-.PHONY: .FORCE-PERF-VERSION-FILE
