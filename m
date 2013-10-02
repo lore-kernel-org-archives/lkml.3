@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3JBOiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:38:07 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:55558 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab3JBOiF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:38:05 -0400
-Date: Wed, 2 Oct 2013 15:37:59 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
- file->f_cred
-Message-ID: <20131002143759.GA2966@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <524B7999.60806@amacapital.net>
+	id S1754309Ab3JBOiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:38:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753409Ab3JBOiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:38:14 -0400
+Message-ID: <524C2FDB.4080203@redhat.com>
+Date: Wed, 02 Oct 2013 16:38:19 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524B7999.60806@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Graf <agraf@suse.de>
+CC: Michael Ellerman <michael@ellerman.id.au>, Gleb Natapov <gleb@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
+Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
+ some powernv systems
+References: <5243F933.7000907@redhat.com> <20131001083426.GB27484@concordia> <20131001083908.GA17294@redhat.com> <1380620338.645.22.camel@pasglop> <524AAFAA.3010801@redhat.com> <20131002050940.GA25363@drongo> <524BDD73.3020106@redhat.com> <1380704789.645.57.camel@pasglop> <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de> <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de> <20131002100224.GF17294@redhat.com> <1380722275.12149.28.camel@concordia> <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de> <524C2EAE.7090209@redhat.com> <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
+In-Reply-To: <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
-> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
-> > need to happen during each system call.
-> > 
-> > Currently some of these sensitive entries are protected by performing
-> > the ptrace_may_access() check. However even with that the /proc file
-> > descriptors can be passed to a more privileged process
-> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
-> > check. In general the ->open() call will be issued by an unprivileged
-> > process while the ->read(),->write() calls by a more privileged one.
-> > 
-> > Example of these files are:
-> > /proc/*/syscall, /proc/*/stack etc.
-> > 
-> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
-> > 
-> > 
-> > These files are protected during read() by the ptrace_may_access(),
-> > however the file descriptor can be passed to a suid-exec which can be
-> > used to read data and bypass ASLR. Of course this was discussed several
-> > times on LKML.
+Il 02/10/2013 16:36, Alexander Graf ha scritto:
+>> > 
+>> > With Michael's earlier patch in this series, the hwrng is accessible by
+>> > host userspace via /dev/hwrng, no?
+> Yes, but there's not token from user space that gets passed into the
+> kernel to check whether access is ok or not. So while QEMU may not have
+> permission to open /dev/hwrng it could spawn a guest that opens it,
+> drains all entropy out of it and thus stall other processes which try to
+> fetch entropy, no?
 > 
-> Can you elaborate on what it is that you're fixing?  That is, can you
-> give a concrete example of what process opens what file and passes the
-> fd to what process?
-Yes, the references were already given in this email:
-https://lkml.org/lkml/2013/8/31/209
+> Maybe I haven't fully grasped the interface yet though :).
 
-This has been discussed several times on lkml:
-https://lkml.org/lkml/2013/8/28/544
+Yes, that's right.  I don't think it's a huge problem, but it's another
+point in favor of just doing the hypercall in userspace.
 
-https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
-
-
-> I'm having trouble following your description.
-Process open a /proc file and pass the fd to a more privilaged process
-that will pass the ptrace_may_access() check, while the original process
-that opened that file should fail at the ptrace_may_access()
-
-
-> --Andy
-> 
-
--- 
-Djalal Harouni
-http://opendz.org
+Paolo
