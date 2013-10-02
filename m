@@ -1,158 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3JBRp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:45:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33909 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755591Ab3JBRpY (ORCPT
+	id S1755628Ab3JBRpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:45:31 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26806 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755596Ab3JBRp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:45:24 -0400
-Date: Wed, 2 Oct 2013 18:44:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>
-Subject: Re: [PATCH v4 05/17] arch_timer: Move to generic sched_clock
- framework
-Message-ID: <20131002174450.GE30298@mudshark.cambridge.arm.com>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
- <1374189690-10810-6-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374189690-10810-6-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Oct 2013 13:45:27 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
+        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
+        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 71/77] vmxnet3: Return -EINVAL if number of requested MSI-Xs is not enough
+Date: Wed,  2 Oct 2013 12:49:27 +0200
+Message-Id: <e97bde9008434668e2c3f35d43056a4bd1d69ad1.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Fri, Jul 19, 2013 at 12:21:18AM +0100, Stephen Boyd wrote:
-> Register with the generic sched_clock framework now that it
-> supports 64 bits. This fixes two problems with the current
-> sched_clock support for machines using the architected timers.
-> First off, we don't subtract the start value from subsequent
-> sched_clock calls so we can potentially start off with
-> sched_clock returning gigantic numbers. Second, there is no
-> support for suspend/resume handling so problems such as discussed
-> in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock() during
-> suspend, 2012-10-23) can happen without this patch. Finally, it
-> allows us to move the sched_clock setup into drivers clocksource
-> out of the arch ports.
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 7e2788c..5b8ea71 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2738,7 +2738,7 @@ static int
+ vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
+ 			     int vectors)
+ {
+-	int err = 0, vector_threshold;
++	int err = -EINVAL, vector_threshold;
+ 	vector_threshold = VMXNET3_LINUX_MIN_MSIX_VECT;
+ 
+ 	while (vectors >= vector_threshold) {
+-- 
+1.7.7.6
 
-Sorry, this one slipped through the cracks.
-
-> diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
-> index 221f07b..1791f12 100644
-> --- a/arch/arm/kernel/arch_timer.c
-> +++ b/arch/arm/kernel/arch_timer.c
-> @@ -11,7 +11,6 @@
->  #include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/errno.h>
-> -#include <linux/sched_clock.h>
->  
->  #include <asm/delay.h>
->  
-> @@ -22,13 +21,6 @@ static unsigned long arch_timer_read_counter_long(void)
->  	return arch_timer_read_counter();
->  }
->  
-> -static u32 sched_clock_mult __read_mostly;
-> -
-> -static unsigned long long notrace arch_timer_sched_clock(void)
-> -{
-> -	return arch_timer_read_counter() * sched_clock_mult;
-> -}
-> -
->  static struct delay_timer arch_delay_timer;
->  
->  static void __init arch_timer_delay_timer_register(void)
-> @@ -48,11 +40,5 @@ int __init arch_timer_arch_init(void)
->  
->  	arch_timer_delay_timer_register();
->  
-> -	/* Cache the sched_clock multiplier to save a divide in the hot path. */
-> -	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
-> -	sched_clock_func = arch_timer_sched_clock;
-> -	pr_info("sched_clock: ARM arch timer >56 bits at %ukHz, resolution %uns\n",
-> -		arch_timer_rate / 1000, sched_clock_mult);
-> -
->  	return 0;
->  }
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 9737e97..e32b471 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -14,6 +14,7 @@ config ARM64
->  	select GENERIC_IOMAP
->  	select GENERIC_IRQ_PROBE
->  	select GENERIC_IRQ_SHOW
-> +	select GENERIC_SCHED_CLOCK
->  	select GENERIC_SMP_IDLE_THREAD
->  	select GENERIC_TIME_VSYSCALL
->  	select HARDIRQS_SW_RESEND
-> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
-> index 03dc371..29c39d5 100644
-> --- a/arch/arm64/kernel/time.c
-> +++ b/arch/arm64/kernel/time.c
-> @@ -61,13 +61,6 @@ unsigned long profile_pc(struct pt_regs *regs)
->  EXPORT_SYMBOL(profile_pc);
->  #endif
->  
-> -static u64 sched_clock_mult __read_mostly;
-> -
-> -unsigned long long notrace sched_clock(void)
-> -{
-> -	return arch_timer_read_counter() * sched_clock_mult;
-> -}
-> -
->  void __init time_init(void)
->  {
->  	u32 arch_timer_rate;
-> @@ -78,9 +71,6 @@ void __init time_init(void)
->  	if (!arch_timer_rate)
->  		panic("Unable to initialise architected timer.\n");
->  
-> -	/* Cache the sched_clock multiplier to save a divide in the hot path. */
-> -	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
-> -
->  	/* Calibrate the delay loop directly */
->  	lpj_fine = arch_timer_rate / HZ;
->  }
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 053d846..2facf14 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -17,6 +17,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/of_irq.h>
->  #include <linux/io.h>
-> +#include <linux/sched_clock.h>
->  
->  #include <asm/arch_timer.h>
->  #include <asm/virt.h>
-> @@ -281,6 +282,9 @@ static int __init arch_timer_register(void)
->  	timecounter_init(&timecounter, &cyclecounter,
->  			 arch_counter_get_cntvct());
->  
-> +	/* 56 bits minimum, so we assume worst case rollover */
-> +	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
-
-We've got the same assumption elsewhere in the kernel (e.g. vdso) but at
-some point we should probably deal with >56 bits in case somebody makes a
-high-frequency timer with more significant bits.
-
-However, I think this patch is going in the right direction:
-
-  Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
