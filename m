@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3JBUjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:39:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42472 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3JBUje (ORCPT
+	id S1754106Ab3JBUl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 16:41:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40361 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3JBUl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:39:34 -0400
-Date: Wed, 2 Oct 2013 13:39:43 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Scott Wood <scottwood@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131002203943.GB10871@kroah.com>
-References: <20131001200054.GA27330@kroah.com>
- <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
- <20131002015355.GD63102@lvm>
- <1380681356.14271.57.camel@ul30vt.home>
- <20131002151413.GG63102@lvm>
- <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
- <1380738758.12932.43.camel@snotra.buserror.net>
- <20131002184330.GC5108@cbox>
- <1380744842.12932.77.camel@snotra.buserror.net>
- <20131002202738.GC3029@lvm>
+	Wed, 2 Oct 2013 16:41:56 -0400
+Date: Wed, 2 Oct 2013 21:41:41 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>, linux-pci@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] msi: free msi_desc entry only after we've released
+	the kobject
+Message-ID: <20131002204141.GW12758@n2100.arm.linux.org.uk>
+References: <1380189591-1368-1-git-send-email-vfalico@redhat.com> <20130928213727.GC32063@redhat.com> <20131001055346.GA4759@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131002202738.GC3029@lvm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131001055346.GA4759@google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 09:27:38PM +0100, Christoffer Dall wrote:
-> > > What you're suggesting would let users specify that
-> > > a serial driver should handle a NIC hardware, no?  That sounds much much
-> > > worse to me.
-> > 
-> > The flag (and wildcard match, if applicable) would be set by the driver,
-> > not by the user.  Whereas PCI's "new_id" and the "new_compatible" being
-> > suggested in this thread would allow exactly that, assuming the driver
-> > doesn't reject the device in the probe function.
-> > 
-> ok, fair enough, but still, I don't see the _generic_ need for having a
-> kernel feature that allows some random driver to bind to a device, but
-> then again, I'm not an authority in this area.
+On Mon, Sep 30, 2013 at 10:53:46PM -0700, Bjorn Helgaas wrote:
+> I think the current kobject delayed release is too aggressive,
 
-Again, this is already there, and has been for years with no problems,
-so I really don't understand the issue you have with it.
+I don't agree with that statement, but the rest of the sentence I do:
 
-greg k-h
+> in the
+> sense that even after we've released all references, the object can
+> still be in sysfs, which causes future creates to fail.  E.g., this
+> fails:
+> 
+>     kset = kset_create_and_add("kobj_test", NULL, NULL);
+>     kset_unregister(kset);
+>     kset = kset_create_and_add("kobj_test", NULL, NULL);  // FAILS
+> 
+> when I think it should succeed.  We don't have a way for the caller to
+> determine when it's safe to do the second kset_create_and_add().
+
+The reason this happens is that for some reason I can't fathom, the
+sysfs cleanup is done when the release function is called, not when
+the object is unregistered.
+
+I can see why that's done - it is so that when a kobject is unregistered,
+its sysfs entry hangs around until all the children have gone (and hence
+its reference count then hits zero.)
+
+> After we release all references, I think it's OK for the kobject
+> itself to continue to exist, i.e., we can delay calling t->release().
+> But it should be impossible to find a kobject with refcount == 0 via
+> sysfs, so we should be able to create a new one with the same name.
+> 
+> In terms of code, I'm suggesting something like the following:
+
+I think I can give you an ack for this - it looks sensible enough, and
+should still have the intended debugging behaviour.  I haven't tested
+it though.
+
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+Thanks Bjorn.
