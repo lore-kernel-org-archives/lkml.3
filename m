@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab3JBU7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 16:59:47 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:38363 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab3JBU7h (ORCPT
+	id S1754196Ab3JBVF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:05:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49401 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab3JBVFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 16:59:37 -0400
-Date: Wed, 2 Oct 2013 13:59:31 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Chris Murphy <bugzilla@colorremedies.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20131002205931.GA18939@roeck-us.net>
-References: <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com>
- <524A4384.4040403@roeck-us.net>
- <20131002035156.GA566@roeck-us.net>
- <20131002095339.GA2716@polaris.bitmath.org>
- <524C1FE1.4050207@roeck-us.net>
- <20131002163418.GA4557@polaris.bitmath.org>
- <20131002164718.GA7392@roeck-us.net>
- <20131002172410.GA381@polaris.bitmath.org>
- <20131002180206.GB4811@roeck-us.net>
- <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Oct 2013 17:05:24 -0400
+Date: Wed, 02 Oct 2013 17:05:21 -0400 (EDT)
+Message-Id: <20131002.170521.463969346066312216.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, e1000-devel@lists.sourceforge.net,
+        linux-usb@vger.kernel.org, ath10k@lists.infradead.org,
+        linux-wireless@vger.kernel.org, wil6210@qca.qualcomm.com,
+        b43-dev@lists.infradead.org, brcm80211-dev-list@broadcom.com,
+        bridge@lists.linux-foundation.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net-next] net:drivers/net: Miscellaneous conversions to
+ ETH_ALEN
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1380679480.2081.24.camel@joe-AO722>
+References: <1380679480.2081.24.camel@joe-AO722>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 14:05:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:33:00PM -0600, Chris Murphy wrote:
-> 
-> On Oct 2, 2013, at 12:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
-> >> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
-> >>> On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
-> >>>>>>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
-> >>>>>>> I think that is a pre-requisite.
-> >>>>>> 
-> >>>>>> Not necessarily - it could be that the patch actually fixes the root
-> >>>>>> cause. One possible scenario is that on recent SMCs, some of the
-> >>>>>> commands produce more data than we actually read. This would
-> >>>>>> eventually lead to both data corruption and overflow somwhere in the
-> >>>>>> SMC internals.  If the original SMC error is interpreted as a read
-> >>>>>> buffer overflow, then that problem should be fixed with this patch.
-> >>>>>> 
-> >>>>> 
-> >>>>> Good point.
-> >>>>> 
-> >>>>> But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
-> >>>> 
-> >>>> The explanation I have there is that the (newer) SMC needs the
-> >>>> application to read the 'no more bytes' or it will get confused. It
-> >>>> makes sense, if the number of bytes to read is no longer specified.
-> >>>> 
-> >>> You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
-> >>> That might make sense.
-> >> 
-> >> It also points at the possibility of a smaller patch to test, but I
-> >> have not had the time to check this very deeply myself:
-> >> 
-> > I like this patch much more than the previous patch. Chris, can you test it ?
-> 
-> Yes. Building now. What kernel message should I be looking for? At least on 2011 and 2012 laptops I have yet to see an Oops related to smc. The kernel with previous patch at least is not causing problems on them so far, which works well as I can test more on the 2008 model.
-> 
-None, if I understand correctly and if the patch really fixes the root cause
-of the problem.
+From: Joe Perches <joe@perches.com>
+Date: Tue, 01 Oct 2013 19:04:40 -0700
 
-Guenter
+> Convert the memset/memcpy uses of 6 to ETH_ALEN
+> where appropriate.
+> 
+> Also convert some struct definitions and u8 array
+> declarations of [6] to ETH_ALEN.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Looks fine, applied, thanks Joe.
