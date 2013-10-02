@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab3JBOgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 10:36:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48984 "EHLO mx2.suse.de"
+	id S1754126Ab3JBOhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 10:37:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14992 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab3JBO25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 10:28:57 -0400
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, Jan Kara <jack@suse.cz>, linux-scsi@vger.kernel.org,
-        Kai Makisara <Kai.Makisara@kolumbus.fi>
-Subject: [PATCH 07/26] st: Convert sgl_map_user_pages() to use get_user_pages_fast()
-Date: Wed,  2 Oct 2013 16:27:48 +0200
-Message-Id: <1380724087-13927-8-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1380724087-13927-1-git-send-email-jack@suse.cz>
-References: <1380724087-13927-1-git-send-email-jack@suse.cz>
+	id S1753767Ab3JBOhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 10:37:34 -0400
+Date: Wed, 2 Oct 2013 17:37:20 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
+Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
+ some powernv systems
+Message-ID: <20131002143720.GK17294@redhat.com>
+References: <524AAFAA.3010801@redhat.com>
+ <20131002050940.GA25363@drongo>
+ <524BDD73.3020106@redhat.com>
+ <1380704789.645.57.camel@pasglop>
+ <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
+ <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
+ <20131002100224.GF17294@redhat.com>
+ <1380722275.12149.28.camel@concordia>
+ <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de>
+ <524C2EAE.7090209@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524C2EAE.7090209@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: linux-scsi@vger.kernel.org
-CC: Kai Makisara <Kai.Makisara@kolumbus.fi>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- drivers/scsi/st.c | 18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+On Wed, Oct 02, 2013 at 04:33:18PM +0200, Paolo Bonzini wrote:
+> Il 02/10/2013 16:08, Alexander Graf ha scritto:
+> > > The hwrng is accessible by host userspace via /dev/mem.
+> > 
+> > A guest should live on the same permission level as a user space
+> > application. If you run QEMU as UID 1000 without access to /dev/mem, why
+> > should the guest suddenly be able to directly access a memory location
+> > (MMIO) it couldn't access directly through a normal user space interface.
+> > 
+> > It's basically a layering violation.
+> 
+> With Michael's earlier patch in this series, the hwrng is accessible by
+> host userspace via /dev/hwrng, no?
+> 
+Access to which can be controlled by its permission. Permission of
+/dev/kvm may be different. If we route hypercall via userspace and
+configure qemu to get entropy from /dev/hwrng everything will fall
+nicely together (except performance).
 
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index ff44b3c2cff2..ba11299c3740 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -4514,19 +4514,11 @@ static int sgl_map_user_pages(struct st_buffer *STbp,
- 	if ((pages = kmalloc(max_pages * sizeof(*pages), GFP_KERNEL)) == NULL)
- 		return -ENOMEM;
- 
--        /* Try to fault in all of the necessary pages */
--	down_read(&current->mm->mmap_sem);
--        /* rw==READ means read from drive, write into memory area */
--	res = get_user_pages(
--		current,
--		current->mm,
--		uaddr,
--		nr_pages,
--		rw == READ,
--		0, /* don't force */
--		pages,
--		NULL);
--	up_read(&current->mm->mmap_sem);
-+        /*
-+	 * Try to fault in all of the necessary pages. rw==READ means read
-+	 * from drive, write into memory area.
-+	 */
-+	res = get_user_pages_fast(uaddr, nr_pages, rw == READ, pages);
- 
- 	/* Errors and no page mapped should return here */
- 	if (res < nr_pages)
--- 
-1.8.1.4
-
+--
+			Gleb.
