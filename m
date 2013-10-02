@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3JBSAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:00:54 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:53319 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab3JBSAx (ORCPT
+	id S1755617Ab3JBSBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:01:45 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27296 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753500Ab3JBSBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:00:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPcyv4j=Huz8d+00vMJa8mCFCKWeNG9-XAc1u19v89fNruM9kg@mail.gmail.com>
+	Wed, 2 Oct 2013 14:01:43 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
+        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
+        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 73/77] vmxnet3: Return -ENOSPC when not enough MSI-X vectors available
+Date: Wed,  2 Oct 2013 12:49:29 +0200
+Message-Id: <a24303b6fa85cfb01b4e1b6c67ff26825824d7f7.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
 References: <cover.1380703262.git.agordeev@redhat.com>
-	<63caad476ca6b7f3481d5512febcb4ef3db72209.1380703263.git.agordeev@redhat.com>
-	<CAPcyv4j=Huz8d+00vMJa8mCFCKWeNG9-XAc1u19v89fNruM9kg@mail.gmail.com>
-Date: Wed, 2 Oct 2013 11:00:51 -0700
-Message-ID: <CAPcyv4gB7R2_zn=Wvowtxcn4muWNd6aK6rsURss3rnhj0VAyfA@mail.gmail.com>
-Subject: Re: [PATCH RFC 34/77] ioat: Update MSI/MSI-X interrupts enablement code
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jon Mason <jon.mason@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 10:31 AM, Williams, Dan J
-<dan.j.williams@intel.com> wrote:
-> [ dropping all cc's except lkml ]
->
-> On Wed, Oct 2, 2013 at 3:48 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->> As result of recent re-design of the MSI/MSI-X interrupts enabling
->> pattern this driver has to be updated to use the new technique to
->> obtain a optimal number of MSI/MSI-X interrupts required.
->>
->
-> What happens if this patch is not applied.  This changelog does not
-> have enough information for me to judge the patch.  Unless I missed it
-> I do not see a patch 00/77 explaining the background of the change,
-> and a quick search did not turn up a discussion of why drivers now
-> need to call pci_msix_table_size() prior to pci_enable_msix.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-I see patch 00/77 now and I still don't see the need for ioatdma to be
-updated.  If we fail the subsequent request_irq, the driver will still
-fall back to trying less interrupts.
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 3518173..3df7f32 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2752,7 +2752,10 @@ vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
+ 				   "Failed to enable MSI-X, error: %d\n", err);
+ 			return err;
+ 		} else if (err < vector_threshold) {
+-			break;
++			dev_info(&adapter->pdev->dev,
++				 "Number of MSI-Xs which can be allocated "
++				 "is lower than min threshold required.\n");
++			return -ENOSPC;
+ 		} else {
+ 			/* If fails to enable required number of MSI-x vectors
+ 			 * try enabling minimum number of vectors required.
+@@ -2764,9 +2767,6 @@ vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
+ 		}
+ 	}
+ 
+-	dev_info(&adapter->pdev->dev,
+-		 "Number of MSI-X interrupts which can be allocated "
+-		 "is lower than min threshold required.\n");
+ 	return err;
+ }
+ 
+-- 
+1.7.7.6
+
