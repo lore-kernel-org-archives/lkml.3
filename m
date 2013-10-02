@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3JBJ3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 05:29:03 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:40801 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3JBJ27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 05:28:59 -0400
-Date: Wed, 2 Oct 2013 11:28:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] tools/perf/build: Automatically build in parallel, based on
- number of CPUs in the system
-Message-ID: <20131002092856.GA9360@gmail.com>
-References: <20130912133855.GA23780@gmail.com>
- <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
- <20131002073140.GA6652@gmail.com>
+	id S1753187Ab3JBJgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 05:36:46 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:58131 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752837Ab3JBJgn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 05:36:43 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        "kernel@stlinux.com" <kernel@stlinux.com>
+Date: Wed, 2 Oct 2013 11:35:55 +0200
+Subject: Re: [PATCH 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Thread-Topic: [PATCH 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Thread-Index: Ac6/UsuKhEYz6Jg2T76rP5eBUGnNQg==
+Message-ID: <524BE8FB.40000@st.com>
+References: <1380623952-4252-1-git-send-email-maxime.coquelin@st.com>
+ <1380623952-4252-2-git-send-email-maxime.coquelin@st.com>
+ <524B346C.8070607@wwwdotorg.org> <524BDB00.3010508@st.com>
+ <20131002090257.GA3059@katana>
+In-Reply-To: <20131002090257.GA3059@katana>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002073140.GA6652@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patch below fixes another tools/perf build system annoyance: that it 
-does not build in parallel by default.
-
-The effect is that for example 'make install' will build in parallel 
-(dependent on number of CPUs in the system) and then install the result.
+On 10/02/2013 11:02 AM, Wolfram Sang wrote:
+>>>> +Optional properties :
+>>>> +- i2c-min-scl-pulse-width-us : The minimum valid SCL pulse width that is allowed
+>>>> +  through the deglitch circuit. In units of us.
+>>>> +- i2c-min-sda-pulse-width-us : The minimum valid SDA pulse width that is allowed
+>>>> +  through the deglitch circuit. In units of us.
+>>> Are those properties specific to this binding, or intended to be
+>>> generic? If specific to this binding, a vendor prefix should be present
+>>> in the property name. If not, you probably want to document the
+>>> properties in some common file.
+>> Ok.
+>> In last revision, I put this properties as specific to this binding.
+>> Wolfram proposed to make this generic, but it looks like this IP is the
+>> only one
+>> needing such properties.
+>>
+>> Wolfram, what would you advise?
+> It might be the only SoC now, but I could imagine that other will have
+> something similar in the future. I am not perfectly sure, though. So, I
+> asked for opinions from DT experts when I suggested those bindings. We
+> could start with vendor specific bindings and generalize them later if
+> similar ones appear. Yet my experience is that old drivers rarely get
+> converted to the new bindings.
+Ok.
+But if I start with vendor specific bindings, we will have to support it
+forever, right?
+>
+>> If you still prefer to make this properties generics, in which file should I
+>> document it? I don't see any common i2c binding document for now.
+> Yeah, it is missing sadly. That's on my todo-list, like many other
+> things...
+OK :-)
 
 Thanks,
 
-	Ingo
-
-=======================>
-Subject: tools/perf/build: Automatically build in parallel, based on number of CPUs in the system
-From: Ingo Molnar <mingo@kernel.org>
-Date: Wed Oct 2 11:18:28 CEST 2013
-
-Implement automatic parallel builds when building in tools/perf:
-
-  $ time make
-
-  # [ perf build: Doing 'make -j12' parallel build. ]
-
-  Auto-detecting system features:
-
-  ...
-
-  real    0m9.265s
-  user    0m59.888s
-  sys     0m6.082s
-
-On GNU make achieving this is not particularly easy, it requires a separate
-makefile, which then invokes the main Makefile.
-
-( Note: this patch adds Makefile.parallel to show the concept - the two
-  makefiles will be flipped in the next patch to avoid having to specify -f
-  to get parallelism in the default build. )
-
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/Makefile.parallel |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
-
-Index: tip/tools/perf/Makefile.parallel
-===================================================================
---- /dev/null
-+++ tip/tools/perf/Makefile.parallel
-@@ -0,0 +1,26 @@
-+#
-+# Do a parallel build with multiple jobs, based on the number of CPUs online
-+# in this system: 'make -j8' on a 8-CPU system, etc.
-+#
-+# (To override it, run 'make JOBS=1' and similar.)
-+#
-+ifeq ($(JOBS),)
-+  JOBS := $(shell grep -c ^processor /proc/cpuinfo 2>/dev/null)
-+  ifeq ($(JOBS),)
-+    JOBS := 1
-+  endif
-+endif
-+
-+export JOBS
-+
-+$(info $(shell printf '# [ perf build: Doing '\''make \033[33m-j'$(JOBS)'\033[m'\'' parallel build. ]\n'))
-+
-+#
-+# Needed if no target specified:
-+#
-+all:
-+	@$(MAKE) --no-print-directory -j$(JOBS) $@
-+
-+%:
-+	@$(MAKE) --no-print-directory -j$(JOBS) $@
-+
+Maxime
