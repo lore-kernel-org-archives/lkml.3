@@ -1,216 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab3JBHbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:31:48 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:56134 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab3JBHbq (ORCPT
+	id S1753007Ab3JBHs6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:48:58 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:59040 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3JBHsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:31:46 -0400
-Date: Wed, 2 Oct 2013 09:31:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] tools/perf: Fix double/triple-build of the feature detection
- logic during 'make install' et al
-Message-ID: <20131002073140.GA6652@gmail.com>
-References: <20130912133855.GA23780@gmail.com>
- <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+	Wed, 2 Oct 2013 03:48:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <524B6AEE.90301@jp.fujitsu.com>
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org>
+	<1380656245-29975-7-git-send-email-keescook@chromium.org>
+	<524B6AEE.90301@jp.fujitsu.com>
+Date: Wed, 2 Oct 2013 00:48:53 -0700
+X-Google-Sender-Auth: dVQFvyo1nKN6_hoXof0RacD1S1c
+Message-ID: <CAGXu5jLVt13p2X2e1C3ha1izg6U6wbmgSyYW1wa+X4cW8aCFug@mail.gmail.com>
+Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
+From: Kees Cook <keescook@chromium.org>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Aaron Durbin <adurbin@google.com>,
+        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
+        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 1, 2013 at 5:38 PM, HATAYAMA Daisuke
+<d.hatayama@jp.fujitsu.com> wrote:
+> (2013/10/02 4:37), Kees Cook wrote:
+>> When the system panics, include the kernel offset in the report to assist
+>> in debugging.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>   arch/x86/kernel/setup.c |   26 ++++++++++++++++++++++++++
+>>   1 file changed, 26 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index f0de629..1708862 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -824,6 +824,20 @@ static void __init trim_low_memory_range(void)
+>>   }
+>>
+>>   /*
+>> + * Dump out kernel offset information on panic.
+>> + */
+>> +static int
+>> +dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
+>> +{
+>> +     pr_emerg("Kernel Offset: 0x%lx from 0x%lx "
+>> +              "(relocation range: 0x%lx-0x%lx)\n",
+>> +              (unsigned long)&_text - __START_KERNEL, __START_KERNEL,
+>> +              __START_KERNEL_map, MODULES_VADDR-1);
+>
+> Using phys_base seems better.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+phys_base is not changed during relocation. For example, if I print
+out phys_base during this pr_emerg call, it remains 0x0, even though
+the random offset was 0xa200000.
 
-> [...]
-> 
-> Another annoyance during that make was that "make install" seems to want 
-> to re-make the thing I just built. That's absolutely horrible, even if 
-> I've seen too many broken projects do that. Now, for perf it's not as 
-> horrible as for some (because you can do "make install" as a normal 
-> user), but it's still a pattern that needs to be called out and needs to 
-> die. It's not just that it slows down "make install", it's also that a 
-> normal pattern *should* be that you build things as a normal user, and 
-> do "make install" as root.
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/*
+>>    * Determine if we were loaded by an EFI loader.  If so, then we have also been
+>>    * passed the efi memmap, systab, etc., so we should use these data structures
+>>    * for initialization.  Note, the efi init code path is determined by the
+>> @@ -1242,3 +1256,15 @@ void __init i386_reserve_resources(void)
+>>   }
+>>
+>>   #endif /* CONFIG_X86_32 */
+>> +
+>> +static struct notifier_block kernel_offset_notifier = {
+>> +     .notifier_call = dump_kernel_offset
+>> +};
+>> +
+>> +static int __init register_kernel_offset_dumper(void)
+>> +{
+>> +     atomic_notifier_chain_register(&panic_notifier_list,
+>> +                                     &kernel_offset_notifier);
+>> +     return 0;
+>> +}
+>> +__initcall(register_kernel_offset_dumper);
+>>
+>
+> Panic notifier is not executed if kdump is enabled. Maybe, Chrome OS doesn't use
+> kdump? Anyway, kdump related tools now calculate phys_base from memory map
+> information passed as ELF PT_LOAD entries like below.
 
-Ok, I think I managed to fix this bug too - see the patch below. Only 
-lightly tested, with the most common usecases.
+Correct, we are not currently using kdump.
 
-Thanks,
+> $ LANG=C readelf -l vmcore-rhel6up4
+>
+> Elf file type is CORE (Core file)
+> Entry point 0x0
+> There are 5 program headers, starting at offset 64
+>
+> Program Headers:
+>   Type           Offset             VirtAddr           PhysAddr
+>                  FileSiz            MemSiz              Flags  Align
+>   NOTE           0x0000000000000158 0x0000000000000000 0x0000000000000000
+>                  0x0000000000000b08 0x0000000000000b08         0
+>   LOAD           0x0000000000000c60 0xffffffff81000000 0x0000000001000000
+>                  0x000000000103b000 0x000000000103b000  RWE    0
+>   LOAD           0x000000000103bc60 0xffff880000001000 0x0000000000001000
+>                  0x000000000009cc00 0x000000000009cc00  RWE    0
+>   LOAD           0x00000000010d8860 0xffff880000100000 0x0000000000100000
+>                  0x0000000002f00000 0x0000000002f00000  RWE    0
+>   LOAD           0x0000000003fd8860 0xffff880013000000 0x0000000013000000
+>                  0x000000002cffd000 0x000000002cffd000  RWE    0
+>
+> Each PT_LOAD entry is assigned to virtual and physical address. In this case,
+> 1st PT_LOAD entry belongs to kernel text mapping region, from which we can
+> calculate phys_base value.
 
-	Ingo
+It seems like all the information you need would still be available?
+The virtual address is there, so it should be trivial to see the
+offset, IIUC.
 
-=========================>
-Subject: tools/perf: Fix double/triple-build of the feature detection logic during 'make install' et al
-From: Ingo Molnar <mingo@kernel.org>
-Date: Wed Oct 2 06:51:27 CEST 2013
+> Therefore, we already have phys_base information even in case of kdump, and
+> as long as using kdump-related tools such as crash utility, we don't need
+> to see ELF PT_LOAD headers as I explain here because they calculate the process
+> I explain here automatically.
+>
+> Another idea is to add phys_base value in VMCOREINFO information that is debugging
+> information for user-land tools to filter crash dump. This is simple string information
+> so you can see the values contained in some crash dump by using strings command to it.
+> For example,
 
-Linus reported the following perf build system bug:
+Sure, though not phys_base, but rather the offset? I think this is
+similar to coredumps of PIE binaries end up with, though I haven't
+looked very closely at that in a while.
 
-  'Another annoyance during that make was that "make install" seems to
-   want to re-make the thing I just built. That's absolutely horrible, [...]'
+-Kees
 
-The targets that got re-built were 'only' the (numerous) feature checks, 
-not the whole project - but still it was mighty annoying as the feature 
-checks took 9+ seconds even on reasonably fast boxes...
-
-Even with the autodep patches where feature detection is much faster 
-double/triple checks waste resources, waste screen real estate and confuse 
-users.
-
-There were two sources for these unnecessary re-builds of the feature 
-checks:
-
- - Unnecessary nested invocations of $(MAKE), apparently to be able
-   to do conditional compilation dependent on documentation tools
-   presence. Use straight dependencies instead, with no nesting.
-
- - A direct invocation of $(MAKE) to rebuild the PERF-VERSION-FILE.
-   This is apparently done to be able to include it into the
-   Makefile:
-
-    -include $(OUTPUT)PERF-VERSION-FILE
-
-   but that's entirely pointless for two reasons: 1) the version file
-   gets regenerated by the initial build pass anyway, 2) including it
-   is futile, given its contents:
-
-    #define PERF_VERSION "3.12.rc3.g8510c7"
-
-   'make' will interpret that as a comment line...
-
-   So just remove this part of the doc-generation logic.
-
-With these things fixed a 'make install' now rebuilds only what is needed.
-
-A repeated 'make install' on an already built tree is super fast now, it 
-finishes in under 0.3 seconds:
-
-  #
-  #  After the patch:
-  #
-
-  $ time make install
-
-  ...
-
-  real    0m0.280s
-  user    0m0.162s
-  sys     0m0.054s
-
-Prior all the autodep changes and prior this fix, a repeat 'make install' 
-took 24.1 seconds (!) on the same system:
-
-  #
-  #  Before the patches:
-  #
-
-  $ time make install
-
-  ...
-
-  real    0m24.109s
-  user    0m21.171s
-  sys     0m2.449s
-
-Which almost entirely was caused by fixable build system fat.
-We are now literally ~86 times faster.
-
-A fresh rebuild and install now takes just 11.4 seconds:
-
-  #
-  #  After the patch:
-  #
-
-  $ make clean
-  $ time make -j16 install
-
-  ...
-
-  real    0m11.457s
-  user    1m43.411s
-  sys     0m7.610s
-
-Without the patches it took 27.8 seconds:
-
-  #
-  #  Before the patches:
-  #
-
-  $ make clean
-  $ time make -j16 install
-
-  ...
-
-  real    0m27.801s
-  user    1m59.242s
-  sys     0m9.749s
-
-So even in the complete rebuild case we are now ~2.5 times faster.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/Documentation/Makefile |   17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
-
-Index: tip/tools/perf/Documentation/Makefile
-===================================================================
---- tip.orig/tools/perf/Documentation/Makefile
-+++ tip/tools/perf/Documentation/Makefile
-@@ -192,13 +192,14 @@ do-install-man: man
- 
- install-man: check-man-tools man
- 
--try-install-man:
- ifdef missing_tools
--	$(warning Please install $(missing_tools) to have the man pages installed)
-+  DO_INSTALL_MAN = $(warning Please install $(missing_tools) to have the man pages installed)
- else
--	$(MAKE) do-install-man
-+  DO_INSTALL_MAN = do-install-man
- endif
- 
-+try-install-man: $(DO_INSTALL_MAN)
-+
- install-info: info
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
- 	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
-@@ -216,14 +217,6 @@ install-pdf: pdf
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
- 
--ifneq ($(MAKECMDGOALS),clean)
--ifneq ($(MAKECMDGOALS),tags)
--$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
--	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
--
---include $(OUTPUT)PERF-VERSION-FILE
--endif
--endif
- 
- #
- # Determine "include::" file references in asciidoc files.
-@@ -342,5 +335,3 @@ $(patsubst %.txt,%.html,$(wildcard howto
- 
- #quick-install-html:
- #	'$(SHELL_PATH_SQ)' ./install-doc-quick.sh $(HTML_REF) $(DESTDIR)$(htmldir)
--
--.PHONY: .FORCE-PERF-VERSION-FILE
+-- 
+Kees Cook
+Chrome OS Security
