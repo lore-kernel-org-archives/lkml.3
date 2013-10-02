@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab3JBHMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 03:12:39 -0400
-Received: from services.gouders.net ([141.101.32.176]:50471 "EHLO
-	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3JBHMg (ORCPT
+	id S1753075Ab3JBHUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 03:20:04 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:52669 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3JBHUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 03:12:36 -0400
-X-Greylist: delayed 1492 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 03:12:35 EDT
-From: Dirk Gouders <dirk@gouders.net>
-To: Martin Walch <walch.martin@web.de>
-Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Benjamin Poirier <bpoirier@suse.de>, Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kconfig: remove unused definition from scanner
-In-Reply-To: <6249343.9Mjtul3lu5@tacticalops> (Martin Walch's message of "Wed,
-	02 Oct 2013 07:24:40 +0200")
-References: <6249343.9Mjtul3lu5@tacticalops>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Wed, 02 Oct 2013 08:42:59 +0200
-Message-ID: <ghk3hwjhqk.fsf@lena.gouders.net>
+	Wed, 2 Oct 2013 03:20:00 -0400
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
+Subject: [PATCH RFC] fs/binfmt_elf: fix memory map for PIE applications
+Date: Wed,  2 Oct 2013 10:19:55 +0300
+Message-Id: <1380698395-5784-1-git-send-email-timo.teras@iki.fi>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Walch <walch.martin@web.de> writes:
+arch/*/include/asm/elf.h comments say:
+  ELF_ET_DYN_BASE is the location that an ET_DYN program is loaded
+  if exec'ed.  Typical use of this is to invoke "./ld.so someprog"
+  to test out a new version of the loader.  We need to make sure
+  that it is out of the way of the program that it will "exec",
+  and that there is sufficient room for the brk.
 
-> From: Martin Walch <walch.martin@web.de>
-> Date: Wed, 2 Oct 2013 06:58:46 +0200
-> Subject: [PATCH 4/4] kconfig: remove unused definition from scanner
->
-> The definition ws [ \n\t] is not used anywhere. Drop it to avoid confusion.
+In case we have main application linked as PIE, this can cause
+problems as the main program itself is being loaded to this
+alternate address. And this allows limited heap size. While
+this is inevitable when exec'ing the interpreter directly,
+we should do better for PIE applications.
 
-Hi Martin,
+This fixes the loader to detect PIE application by checking if
+elf_interpreter is requested. This images are loaded to beginning
+of the address space instead of the specially crafted place for elf
+interpreter. This allows full heap address space for PIE applications
+and fixes random "out of memory" errors.
 
-I think you should also regenerate the scanner and add
-the new zconf.lex.c_shipped to this patch.
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+---
+ fs/binfmt_elf.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-Dirk
+It might make sense to define ELF_ET_DYN_APP_BASE or similar
+so that architectures can specify the load address of ET_DYN
+applications.
 
-> Signed-off-by: Martin Walch <walch.martin@web.de>
-> ---
->  scripts/kconfig/zconf.l | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/scripts/kconfig/zconf.l b/scripts/kconfig/zconf.l
-> index 6555a47..1a9f53e 100644
-> --- a/scripts/kconfig/zconf.l
-> +++ b/scripts/kconfig/zconf.l
-> @@ -68,7 +68,6 @@ static void alloc_string(const char *str, int size)
->  }
->  %}
->  
-> -ws	[ \n\t]
->  n	[A-Za-z0-9_]
->  
->  %%
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 100edcc..f1508c7 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -802,21 +802,19 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 			 * default mmap base, as well as whatever program they
+ 			 * might try to exec.  This is because the brk will
+ 			 * follow the loader, and is not movable.  */
++			if (elf_interpreter)
++				load_bias = 0x00400000UL;
++			else
++				load_bias = ELF_ET_DYN_BASE;
+ #ifdef CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE
+ 			/* Memory randomization might have been switched off
+ 			 * in runtime via sysctl or explicit setting of
+ 			 * personality flags.
+-			 * If that is the case, retain the original non-zero
+-			 * load_bias value in order to establish proper
+-			 * non-randomized mappings.
+ 			 */
+ 			if (current->flags & PF_RANDOMIZE)
+-				load_bias = 0;
+-			else
+-				load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+-#else
+-			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
++				load_bias += (get_random_int() & STACK_RND_MASK) << PAGE_SHIFT;
+ #endif
++			load_bias = ELF_PAGESTART(vaddr + load_bias);
+ 		}
+ 
+ 		error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,
+-- 
+1.8.4
+
