@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab3JBQtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:49:21 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:49067 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab3JBQtT (ORCPT
+	id S1754564Ab3JBQuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:50:16 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24824 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753716Ab3JBQuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:49:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1472934.KdmdpVCX1h@vostro.rjw.lan>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-	<2382588.IckWbq3JRN@vostro.rjw.lan>
-	<CAKohpomoqp0dtS+TG-Johsh=o6VefeqByD0bM_DLXg+qYhQ5+g@mail.gmail.com>
-	<1472934.KdmdpVCX1h@vostro.rjw.lan>
-Date: Wed, 2 Oct 2013 22:19:18 +0530
-Message-ID: <CAKohpok2iwwhZbAZuawW-Ow4ofbGZpUj6Jn7A-F8C42yQ=rA7Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: make return type of lock_policy_rwsem_{read|write}()
- as void
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jon Medhurst <tixy@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Oct 2013 12:50:13 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 57/77] pmcraid: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:49:13 +0200
+Message-Id: <70ae1192fb37922e07d9efe1448d902a3223921c.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 October 2013 22:08, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, October 02, 2013 02:13:36 PM Viresh Kumar wrote:
->> On 30 September 2013 23:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Monday, September 16, 2013 08:40:17 PM Viresh Kumar wrote:
->> >> lock_policy_rwsem_{read|write}() currently has return type of int but it always
->> >> return zero and hence its return type must be void instead. This patch makes its
->> >> return type void and fixes all users of it as well.
->> >>
->> >> Reported-by: Jon Medhurst<tixy@linaro.org>
->> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->> >
->> > This doesn't apply to bleeding-edge for me any more after I have applied your
->> > series of 44 patches to it.  Care to resend?
->>
->> Done..
->
-> Which one is it?
->
+As result of recent re-design of the MSI/MSI-X interrupts enabling
+pattern this driver has to be updated to use the new technique to
+obtain a optimal number of MSI/MSI-X interrupts required.
 
- [PATCH RESEND 01/11] cpufreq: make return type of
-lock_policy_rwsem_{read|write}() as void
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/scsi/pmcraid.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index 1eb7b028..5c62d22 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -4680,24 +4680,23 @@ pmcraid_register_interrupt_handler(struct pmcraid_instance *pinstance)
+ 
+ 	if ((pmcraid_enable_msix) &&
+ 		(pci_find_capability(pdev, PCI_CAP_ID_MSIX))) {
+-		int num_hrrq = PMCRAID_NUM_MSIX_VECTORS;
+ 		struct msix_entry entries[PMCRAID_NUM_MSIX_VECTORS];
++		int num_hrrq = ARRAY_SIZE(entries);
+ 		int i;
+-		for (i = 0; i < PMCRAID_NUM_MSIX_VECTORS; i++)
+-			entries[i].entry = i;
+-
+-		rc = pci_enable_msix(pdev, entries, num_hrrq);
+-		if (rc < 0)
+-			goto pmcraid_isr_legacy;
+ 
+ 		/* Check how many MSIX vectors are allocated and register
+ 		 * msi-x handlers for each of them giving appropriate buffer
+ 		 */
+-		if (rc > 0) {
+-			num_hrrq = rc;
+-			if (pci_enable_msix(pdev, entries, num_hrrq))
+-				goto pmcraid_isr_legacy;
+-		}
++		rc = pci_msix_table_size(pdev);
++		if (rc < 0)
++			goto pmcraid_isr_legacy;
++
++		num_hrrq = min(num_hrrq, rc);
++		for (i = 0; i < num_hrrq; i++)
++			entries[i].entry = i;
++
++		if (pci_enable_msix(pdev, entries, num_hrrq))
++			goto pmcraid_isr_legacy;
+ 
+ 		for (i = 0; i < num_hrrq; i++) {
+ 			pinstance->hrrq_vector[i].hrrq_id = i;
+-- 
+1.7.7.6
+
