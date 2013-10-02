@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3JBXck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 19:32:40 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:41657 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab3JBXci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 19:32:38 -0400
-Date: Wed, 2 Oct 2013 16:32:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Chris Murphy <bugzilla@colorremedies.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
-        lm-sensors@lm-sensors.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: applesmc oops in 3.10/3.11
-Message-ID: <20131002233232.GA32438@roeck-us.net>
-References: <20131002035156.GA566@roeck-us.net>
- <20131002095339.GA2716@polaris.bitmath.org>
- <524C1FE1.4050207@roeck-us.net>
- <20131002163418.GA4557@polaris.bitmath.org>
- <20131002164718.GA7392@roeck-us.net>
- <20131002172410.GA381@polaris.bitmath.org>
- <20131002180206.GB4811@roeck-us.net>
- <C9769B51-5DE0-4679-8A4E-F4569489F405@colorremedies.com>
- <20131002205931.GA18939@roeck-us.net>
- <A8F36092-DB64-4F4F-AB34-EAE24601A1E8@colorremedies.com>
+	id S1753487Ab3JBXjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 19:39:19 -0400
+Received: from mout.web.de ([212.227.15.4]:58885 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104Ab3JBXjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 19:39:17 -0400
+From: Martin Walch <walch.martin@web.de>
+To: David Rientjes <rientjes@google.com>, linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Dirk Gouders <dirk@gouders.net>,
+        Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] kconfig: add short explanation to SYMBOL_WRITE
+Date: Thu, 03 Oct 2013 01:39:13 +0200
+Message-ID: <2034014.asIXrEbcsn@tacticalops>
+User-Agent: KMail/4.11.1 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.11.1; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.02.1310012236360.5682@chino.kir.corp.google.com>
+References: <4542076.yVG8YKgu5r@tacticalops> <alpine.DEB.2.02.1310012236360.5682@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A8F36092-DB64-4F4F-AB34-EAE24601A1E8@colorremedies.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:u/Zd4mXTmIR0KDoc+LJfYw6v9paOzs1eN2WGnYCUJXJ7P/kr4FU
+ etxxrLvVG0GxgcSdNivo4Nb/wELqDOgmeOC9EIIJ8WcCPc6LQxW7D+aRhS/ASJ61Ktxa3Jh
+ r5QPwkNJ9dF//Twp9JbAEPH5DfxhmL/ZqKGEpomZEYRwQnQN8IueQPma98EAgoy9hL1ziAb
+ 0j0YXL+9f1ZF96pFA3xUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 03:34:41PM -0600, Chris Murphy wrote:
+> > diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+> > index df198a5..ba663e1 100644
+> > --- a/scripts/kconfig/expr.h
+> > +++ b/scripts/kconfig/expr.h
+> > @@ -93,7 +93,7 @@ struct symbol {
+> >  #define SYMBOL_CHOICEVAL  0x0020  /* used as a value in a choice block */
+> >  #define SYMBOL_VALID      0x0080  /* set when symbol.curr is calculated */
+> >  #define SYMBOL_OPTIONAL   0x0100  /* choice is optional - values can be 'n' */
+> > -#define SYMBOL_WRITE      0x0200  /* ? */
+> > +#define SYMBOL_WRITE      0x0200  /* write symbol to file (KCONFIG_CONFIG) */
+> >  #define SYMBOL_CHANGED    0x0400  /* ? */
+> >  #define SYMBOL_AUTO       0x1000  /* value from environment variable */
+> >  #define SYMBOL_CHECKED    0x2000  /* used during dependency checking */
 > 
-> On Oct 2, 2013, at 2:59 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > On Wed, Oct 02, 2013 at 12:33:00PM -0600, Chris Murphy wrote:
-> >> 
-> >> On Oct 2, 2013, at 12:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> 
-> >>> On Wed, Oct 02, 2013 at 07:24:10PM +0200, Henrik Rydberg wrote:
-> >>>> On Wed, Oct 02, 2013 at 09:47:18AM -0700, Guenter Roeck wrote:
-> >>>>> On Wed, Oct 02, 2013 at 06:34:18PM +0200, Henrik Rydberg wrote:
-> >>>>>>>>> One thing I have seen in all logs is the earlier "send_byte fail" message, so
-> >>>>>>>>> I think that is a pre-requisite.
-> >>>>>>>> 
-> >>>>>>>> Not necessarily - it could be that the patch actually fixes the root
-> >>>>>>>> cause. One possible scenario is that on recent SMCs, some of the
-> >>>>>>>> commands produce more data than we actually read. This would
-> >>>>>>>> eventually lead to both data corruption and overflow somwhere in the
-> >>>>>>>> SMC internals.  If the original SMC error is interpreted as a read
-> >>>>>>>> buffer overflow, then that problem should be fixed with this patch.
-> >>>>>>>> 
-> >>>>>>> 
-> >>>>>>> Good point.
-> >>>>>>> 
-> >>>>>>> But shouldn't we at least get the "flushed %d bytes" warning message in this case ?
-> >>>>>> 
-> >>>>>> The explanation I have there is that the (newer) SMC needs the
-> >>>>>> application to read the 'no more bytes' or it will get confused. It
-> >>>>>> makes sense, if the number of bytes to read is no longer specified.
-> >>>>>> 
-> >>>>> You mean that just reading from APPLESMC_CMD_PORT would solve the problem ?
-> >>>>> That might make sense.
-> >>>> 
-> >>>> It also points at the possibility of a smaller patch to test, but I
-> >>>> have not had the time to check this very deeply myself:
-> >>>> 
-> >>> I like this patch much more than the previous patch. Chris, can you test it ?
-> >> 
-> >> Yes. Building now. What kernel message should I be looking for? At least on 2011 and 2012 laptops I have yet to see an Oops related to smc. The kernel with previous patch at least is not causing problems on them so far, which works well as I can test more on the 2008 model.
-> >> 
-> > None, if I understand correctly and if the patch really fixes the root cause
-> > of the problem.
-> 
-> A vast majority of the Ooops I've had are when booting from flash media, testing Fedora installs. Is it possible the much slower kernel load and boot time is a trigger? If so, I'll look into modifying the media to accept the custom kernel and requisite fat initramfs.
-> 
-Yes, that could be a possible trigger. I thought it might be triggered by faster
-boot (as one gets with 3.10 and 3.11), but slow boot is just as likely.
+> Perhaps stating that the choice is writable by the user?
 
-Guenter
+As far as I understand SYMBOL_WRITE, its main purpose is in the function
+conf_write in confdata.c:
+
+>if (!(sym->flags & SYMBOL_WRITE))
+>	goto next;
+>sym->flags &= ~SYMBOL_WRITE;
+>
+>conf_write_symbol(out, sym, &kconfig_printer_cb, NULL);
+
+So, if I have not missed anything, SYMBOL_WRITE decides whether to write a symbol
+to .config or not. This does not necessarily mean that the user can change the value.
+SYMBOL_WRITE may be set and the symbol may be written to .config while the user
+does not even see the corresponding prompt.
