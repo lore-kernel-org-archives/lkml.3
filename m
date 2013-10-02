@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab3JBRPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:15:34 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:15219 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab3JBRPc (ORCPT
+	id S1754726Ab3JBRSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:18:10 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25901 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754294Ab3JBRSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:15:32 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1019,1371081600"; 
-   d="scan'208";a="57044804"
-Date: Wed, 2 Oct 2013 18:14:47 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v6 10/19] xen: introduce xen_alloc/free_coherent_pages
-In-Reply-To: <20131002170747.GG29794@arm.com>
-Message-ID: <alpine.DEB.2.02.1310021814250.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-10-git-send-email-stefano.stabellini@eu.citrix.com> <20130930153143.GQ3106@phenom.dumpdata.com> <DB675896-3FF2-409B-A2C6-24295C197A3F@arm.com>
- <alpine.DEB.2.02.1310021754580.26077@kaball.uk.xensource.com> <20131002170747.GG29794@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	Wed, 2 Oct 2013 13:18:05 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 37/77] ipr: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:48:53 +0200
+Message-Id: <5bc4414bf44d7ded72c38333225b9057b3427869.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Oct 2013, Catalin Marinas wrote:
-> On Wed, Oct 02, 2013 at 06:03:46PM +0100, Stefano Stabellini wrote:
-> > On Tue, 1 Oct 2013, Catalin Marinas wrote:
-> > > On 30 Sep 2013, at 16:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > > > On Fri, Sep 27, 2013 at 05:09:58PM +0100, Stefano Stabellini wrote:
-> > > >> xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
-> > > >> and devices. On native x86 and ARMv8 is sufficient to call
-> > > >> __get_free_pages in order to get a coherent buffer, while on ARM we need
-> > > >> to call the native dma_ops->alloc implementation.
-> > > >> 
-> > > >> When arm64 stops using the swiotlb by default and starts having multiple
-> > > >> dma_ops implementations, we'll use __get_dma_ops there too.
-> > > > 
-> > > > I presume this is a future TODO, not some further patch (in which
-> > > > case you should say in here the title of it). If it is a TODO could
-> > > > you stick that in the sentence here somewhere to make it crytal clear that
-> > > > it is not implemented.
-> > > 
-> > > Thanks for pointing this out.  The arm64 patch shouldn't be different
-> > > from arm here.  I thought a subsequent patch already added
-> > > __get_dma_ops() for arm64.
-> > 
-> > Yes, the arm64 patch already added __get_dma_ops.
-> > 
-> > However I am not using __get_dma_ops to implement
-> > xen_alloc_coherent_pages for arm64 because I can just use
-> > __get_free_pages for the moment:
-> 
-> So why do the work twice when we'll get coherency maintenance in the DMA
-> ops?
+As result of recent re-design of the MSI/MSI-X interrupts enabling
+pattern this driver has to be updated to use the new technique to
+obtain a optimal number of MSI/MSI-X interrupts required.
 
-Yeah, good point.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/scsi/ipr.c |   46 +++++++++++++++++++++++-----------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index 762a93e..86ed0a2 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -9247,45 +9247,45 @@ static int ipr_enable_msix(struct ipr_ioa_cfg *ioa_cfg)
+ 	struct msix_entry entries[IPR_MAX_MSIX_VECTORS];
+ 	int i, err, vectors;
+ 
+-	for (i = 0; i < ARRAY_SIZE(entries); ++i)
+-		entries[i].entry = i;
++	err = pci_msix_table_size(ioa_cfg->pdev);
++	if (err < 0)
++		return err;
+ 
+-	vectors = ipr_number_of_msix;
++	vectors = min_t(int, err, ipr_number_of_msix);
+ 
+-	while ((err = pci_enable_msix(ioa_cfg->pdev, entries, vectors)) > 0)
+-			vectors = err;
++	BUG_ON(vectors > ARRAY_SIZE(entries));
++	for (i = 0; i < vectors; ++i)
++		entries[i].entry = i;
+ 
+-	if (err < 0)
++	err = pci_enable_msix(ioa_cfg->pdev, entries, vectors);
++	if (err)
+ 		return err;
+ 
+-	if (!err) {
+-		for (i = 0; i < vectors; i++)
+-			ioa_cfg->vectors_info[i].vec = entries[i].vector;
+-		ioa_cfg->nvectors = vectors;
+-	}
++	for (i = 0; i < vectors; i++)
++		ioa_cfg->vectors_info[i].vec = entries[i].vector;
++	ioa_cfg->nvectors = vectors;
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	int i, err, vectors;
+ 
+-	vectors = ipr_number_of_msix;
+-
+-	while ((err = pci_enable_msi_block(ioa_cfg->pdev, vectors)) > 0)
+-			vectors = err;
+-
++	err = pci_get_msi_cap(ioa_cfg->pdev);
+ 	if (err < 0)
+ 		return err;
+ 
+-	if (!err) {
+-		for (i = 0; i < vectors; i++)
+-			ioa_cfg->vectors_info[i].vec = ioa_cfg->pdev->irq + i;
+-		ioa_cfg->nvectors = vectors;
+-	}
++	vectors = min_t(int, err, ipr_number_of_msix);
++	err = pci_enable_msi_block(ioa_cfg->pdev, vectors);
++	if (err)
++		return err;
++
++	for (i = 0; i < vectors; i++)
++		ioa_cfg->vectors_info[i].vec = ioa_cfg->pdev->irq + i;
++	ioa_cfg->nvectors = vectors;
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static void name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
+-- 
+1.7.7.6
+
