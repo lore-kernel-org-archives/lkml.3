@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab3JBVK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:10:57 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:52567 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3JBVKz (ORCPT
+	id S1754553Ab3JBVL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:11:57 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:44501 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab3JBVLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:10:55 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 2/5] gpio: samsung: Use CONFIG_ARCH_S3C64XX to check for S3C64xx support
-Date: Wed, 02 Oct 2013 23:10:52 +0200
-Message-ID: <3903161.Vxg4RcbQZc@flatron>
-User-Agent: KMail/4.11.1 (Linux/3.11.1-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <CACRpkdZXOGpTspPucd=d0=Ws9Ccx19h4UYTTdgZceoofhuq0Kw@mail.gmail.com>
-References: <1380392497-27406-1-git-send-email-tomasz.figa@gmail.com> <1380392497-27406-2-git-send-email-tomasz.figa@gmail.com> <CACRpkdZXOGpTspPucd=d0=Ws9Ccx19h4UYTTdgZceoofhuq0Kw@mail.gmail.com>
+	Wed, 2 Oct 2013 17:11:54 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <87r4c3vavb.fsf@turtle.gmx.de>
+References: <20130925001740.833541979@linuxfoundation.org>
+	<20130925001741.446963782@linuxfoundation.org>
+	<87r4c3vavb.fsf@turtle.gmx.de>
+Date: Wed, 2 Oct 2013 23:11:53 +0200
+Message-ID: <CAKMK7uHGVcEZt16aDgoUCfyRMtcw76geDtOvpd_qzMZ2+a7U_A@mail.gmail.com>
+Subject: Re: [ 005/117] drm/i915: make user mode sync polarity setting explicit
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Imre Deak <imre.deak@intel.com>,
+        "cancan,feng" <cancan.feng@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Oct 2, 2013 at 7:30 PM, Sven Joachim <svenjoac@gmx.de> wrote:
+> See also https://bugs.freedesktop.org/show_bug.cgi?id=65442#c16.
 
-On Wednesday 02 of October 2013 12:46:51 Linus Walleij wrote:
-> On Sat, Sep 28, 2013 at 8:21 PM, Tomasz Figa <tomasz.figa@gmail.com> 
-wrote:
-> > Since CONFIG_PLAT_S3C64XX is going to be removed, this patch modifies
-> > the gpio-samsung driver to use the proper way of checking for S3C64xx
-> > support - CONFIG_ARCH_S3C64XX.
-> > 
-> > Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Oh dear, somehow I've thought the -fixes pull request I've sent with
+the fix for this has a cc: stable, but that must have been lost
+somewhere.
 
-Thanks.
+Greg, can you please queue up
 
-> I assume that this will go through ARM SoC?
+commit 1062b81598bc00e2f6620e6f3788f8f8df2f01e7
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Sep 10 11:44:30 2013 +0200
 
-I think so.
+    drm/i915/tv: clear adjusted_mode.flags
 
-Best regards,
-Tomasz
+for stable kernels? Right now we seem to get about one dupe per day of
+this report ;-)
 
+/me wondered why they kept on coming up ...
+
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
