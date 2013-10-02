@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab3JBSlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:41:36 -0400
-Received: from rehue.uct.cl ([164.77.114.3]:41913 "EHLO rehue.uct.cl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab3JBSlf convert rfc822-to-8bit (ORCPT
+	id S1755297Ab3JBSmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:42:00 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:47230 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab3JBSl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:41:35 -0400
-X-Greylist: delayed 3264 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 14:41:35 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 2 Oct 2013 14:41:59 -0400
+Date: Wed, 2 Oct 2013 19:41:54 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131002184154.GA3393@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <CALCETrW05=Jk_nCakZgjwJjbdG-X-f=ssFntB3Xpe1ogxiTMFQ@mail.gmail.com>
+ <20131002182643.GC2485@dztty>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Dear user
-To: Recipients <akik@uct.cl>
-From: "ADMIN" <akik@uct.cl>
-Date: Wed, 02 Oct 2013 18:20:32 +0100
-Reply-To: 647812717@qq.com
-Message-Id: <20131002172052.E5EC2B01280@rehue.uct.cl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002182643.GC2485@dztty>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
+On Wed, Oct 02, 2013 at 07:26:43PM +0100, Djalal Harouni wrote:
+> On Wed, Oct 02, 2013 at 11:00:26AM -0700, Andy Lutomirski wrote:
+> > On Wed, Oct 2, 2013 at 10:48 AM, Kees Cook <keescook@chromium.org> wrote:
+> > > I think revoking the fd would be great. Does that mechanism exist?
+> > 
+> > There's this thing that never got merged.
+> > 
+> > http://thread.gmane.org/gmane.linux.kernel/1523331
+> > 
+> > But doing it more directly should be reasonably straightforward.  Either:
+> > 
+> > (a) when a process execs and privileges change, find all the old proc
+> > inodes, mark them dead, and unlink them, or
+> Will take a look at it.
+> 
+> > (b) add self_exec_id to all the proc file private_data entries (or
+> > somewhere else).  Then just make sure that they're unchanged.  I think
+> > the bug last time around was because the self_exec_id and struct pid
+> > weren't being compared together.
+> The bug was about self_exec_id not beeing unique. self_exec_id stuff
+> must be unique during life time as it's done currently in grsecurity
+> with exec_id.
+I forget to mention that I've already proposed this (b) solution, but after
+the discussion with Eric, I came to the conclusion that we could allow
+the fd to be passed to the process if the original opener had enough
+privileges. In either case we want to check the privileges, otherwise ps
+and other tool will not report data if target tasks do execve.
 
-  your email has exceeded 2 GB, which is created by Webmaster, 
-you are currently running at 2.30GB,you cannot Send or 
-receive new messages until you check your account.
-Complete the form to verify your account.
-
-Please complete the details below to confirm your account
-
-(1) E-mail:
-(2) Name:
-(3) Password:
-(4) Confirm Password:
-
-thank you
-system administrator
+-- 
+Djalal Harouni
+http://opendz.org
