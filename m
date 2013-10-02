@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab3JBQ0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:26:14 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54344 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753593Ab3JBQ0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:26:12 -0400
-Date: Wed, 2 Oct 2013 17:25:28 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Bird, Tim" <Tim.Bird@sonymobile.com>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>,
-        =?iso-8859-1?Q?Andersson=2C_Bj=F6rn?= 
-	<Bjorn.Andersson@sonymobile.com>
-Subject: Re: [PATCH] slub: Proper kmemleak tracking if CONFIG_SLUB_DEBUG
- disabled
-Message-ID: <20131002162528.GD29794@arm.com>
-References: <5245ECC3.8070200@gmail.com>
- <00000141799dd4b3-f6df96c0-1003-427d-9bd8-f6455622f4ea-000000@email.amazonses.com>
- <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
- <0000014179e31953-a05dd7d1-d0f8-474f-810a-809cd8a724f8-000000@email.amazonses.com>
+	id S1754313Ab3JBQ0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:26:42 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57922 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282Ab3JBQ0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 12:26:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Jon Medhurst <tixy@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] cpufreq: make return type of lock_policy_rwsem_{read|write}() as void
+Date: Wed, 02 Oct 2013 18:38:04 +0200
+Message-ID: <1472934.KdmdpVCX1h@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpomoqp0dtS+TG-Johsh=o6VefeqByD0bM_DLXg+qYhQ5+g@mail.gmail.com>
+References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org> <2382588.IckWbq3JRN@vostro.rjw.lan> <CAKohpomoqp0dtS+TG-Johsh=o6VefeqByD0bM_DLXg+qYhQ5+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000014179e31953-a05dd7d1-d0f8-474f-810a-809cd8a724f8-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:57:12PM +0100, Christoph Lameter wrote:
-> On Wed, 2 Oct 2013, Bird, Tim wrote:
+On Wednesday, October 02, 2013 02:13:36 PM Viresh Kumar wrote:
+> On 30 September 2013 23:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, September 16, 2013 08:40:17 PM Viresh Kumar wrote:
+> >> lock_policy_rwsem_{read|write}() currently has return type of int but it always
+> >> return zero and hence its return type must be void instead. This patch makes its
+> >> return type void and fixes all users of it as well.
+> >>
+> >> Reported-by: Jon Medhurst<tixy@linaro.org>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >
+> > This doesn't apply to bleeding-edge for me any more after I have applied your
+> > series of 44 patches to it.  Care to resend?
 > 
-> > The problem child is actually the unconditional call to kmemleak_alloc()
-> > in kmalloc_large_node() (in slub.c).  The problem comes because that call
-> > is unconditional on CONFIG_SLUB_DEBUG but the kmemleak
-> > calls in the hook routines are conditional on CONFIG_SLUB_DEBUG.
-> > So if you have CONFIG_SLUB_DEBUG=n but CONFIG_DEBUG_KMEMLEAK=y,
-> > you get the false reports.
-> 
-> Right. You need to put the #ifdef CONFIG_SLUB_DEBUG around the hooks that
-> need it in the function itself instead of disabling the whole function if
-> CONFIG_SLUB_DEUBG is not set.
+> Done..
 
-If we are to do this, we also need a DEBUG_KMEMLEAK dependency,
-something like:
+Which one is it?
 
-	depends on (SLUB && SLUB_DEBUG) || !SLUB
-
-or
-
-	select SLUB_DEBUG if SLUB
-
-Otherwise you get a lot of false positives.
-
-But with any of the above, #ifdef'ing out kmemleak_* calls wouldn't make
-much difference since they would already be no-ops in kmemleak.h with
-!SLUB_DEBUG.
-
-> > Personally, I like the idea of keeping bookeeping/tracing/debug stuff in hook
-> > routines.  I also like de-coupling CONFIG_SLUB_DEBUG and CONFIG_DEBUG_KMEMLEAK,
-> > but maybe others have a different opinon.  Unless someone speaks up, we'll
-> > move the the currently in-function kmemleak calls into hooks, and all of the
-> > kmemleak stuff out from under CONFIG_SLUB_DEBUG.
-> > We'll have to see if the ifdefs get a little messy.
-> 
-> Decouple of you want. CONFIG_SLUB_DEBUG may duplicate what you already do.
-
-I would prefer the decoupling but I'm fine either way (as long as the
-dependencies are in place).
-
--- 
-Catalin
