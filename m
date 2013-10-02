@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3JBI2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 04:28:23 -0400
-Received: from mout.gmx.net ([212.227.17.20]:49353 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab3JBI2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 04:28:17 -0400
-Message-ID: <524BD91E.5020200@gmx.de>
-Date: Wed, 02 Oct 2013 10:28:14 +0200
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	id S1753406Ab3JBIcs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 04:32:48 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:60721 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895Ab3JBIcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 04:32:46 -0400
+Message-ID: <524BDA2A.7090108@linaro.org>
+Date: Wed, 02 Oct 2013 10:32:42 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Tejun Heo <tj@kernel.org>, Libin <huawei.libin@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Subject: Re: [PATCH] [workqueue] check values of pwq and wq in print_worker_info()
- before use
-References: <20131001203520.GA8248@p100.box>   <20131001204352.GA27149@mtj.dyndns.org> <1380663645.2081.29.camel@dabdike>  <524B47A8.1010701@gmx.de> <1380667842.2081.33.camel@dabdike>
-In-Reply-To: <1380667842.2081.33.camel@dabdike>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ZW039hyhl1L3VcyjRRvHT1+RLZRvUdXKbXK8UNyBhnkXR4hZ5D3
- 7L3qEJc4slvkNG85wsPTMVdruhP3NV5ZB3aBRU/sPLPhV47wz2lfheAJgnfmVX9V5d024MV
- swkrdL5TNTzbLDNZ6RBnUlqTwtJEQrCvETgoPnD760yc6kL99+uYa+gaft9gXwkdTvmQrbi
- Zv5T3b9Mpwt7CUJX9IcQw==
+To: Fan Rong <cinifr@gmail.com>, coosty@163.com,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
+        rob.herring@calxeda.com, linux-sunxi@googlegroups.com
+Subject: Re: [Add SMP support for Allwinner A20: PATCH V4 0/3]
+References: <1380642145-17295-1-git-send-email-cinifr@gmail.com>
+In-Reply-To: <1380642145-17295-1-git-send-email-cinifr@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 12:50 AM, James Bottomley wrote:
-> On Wed, 2013-10-02 at 00:07 +0200, Helge Deller wrote:
->> On 10/01/2013 11:40 PM, James Bottomley wrote:
->>> On Tue, 2013-10-01 at 16:43 -0400, Tejun Heo wrote:
->>>> Hello,
->>>>
->>>> On Tue, Oct 01, 2013 at 10:35:20PM +0200, Helge Deller wrote:
->>>>> print_worker_info() includes no validity check on the pwq and wq
->>>>> pointers before handing them over to the probe_kernel_read() functions.
->>>>>
->>>>> It seems that most architectures don't care about that, but at least on
->>>>> the parisc architecture this leads to a kernel crash since accesses to
->>>>> page zero are protected by the kernel for security reasons.
->>>>>
->>>>> Fix this problem by verifying the contents of pwq and wq before usage.
->>>>> Even if probe_kernel_read() usually prevents such crashes by disabling
->>>>> page faults, clean code should always include such checks. 
->>>>>
->>>>> Without this fix issuing "echo t > /proc/sysrq-trigger" will immediately
->>>>> crash the Linux kernel on the parisc architecture.
->>>>
->>>> Hmm... um had similar problem but the root cause here is that the arch
->>>> isn't implementing probe_kernel_read() properly.  We really have no
->>>> idea what the pointer value may be at the dump point and that's why we
->>>> use probe_kernel_read().  If something like the above is necessary for
->>>> the time being, the correct place would be the arch
->>>> probe_kernel_read() implementation.  James, would it be difficult
->>>> implement proper probe_kernel_read() on parisc?
->>>
->>> The problem seems to be that some traps bypass our exception table
->>> handling.  
->>
->> Yes, that's correct.
->> It's trap #26 and we directly call parisc_terminate() for fault_space==0
->> without checking the exception table.
->> See my patch I posted a few hours ago which fixes this:
->> https://patchwork.kernel.org/patch/2971701/
-> 
-> That doesn't quite look right ... I guessed it was probably access
-> rights, so we should do an exception table fixup, so isn't this the fix?
-> because we shouldn't call do_page_fault if there's no exception table.
+On 10/01/2013 05:42 PM, Fan Rong wrote:
+
+
+> This is the version 4 patch. It use smp_prepare_cpus replacing early_init as cpuconfigure map init funcation caller and use sun7i replacing sunxi7i as funcation name and variable name.
+
+Hi Fan,
+
+your patchset does not have a changelog neither a description. You 
+should fix this first if you want a proper review.
+
+Thanks
+   -- Daniel
+
 >
-> diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
-> index 04e47c6..25a088a 100644
-> --- a/arch/parisc/kernel/traps.c
-> +++ b/arch/parisc/kernel/traps.c
-> @@ -684,6 +684,8 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
->  		/* Fall Through */
->  	case 26: 
->  		/* PCXL: Data memory access rights trap */
-> +		if (!user_mode(regs) && fixup_exception(regs))
-> +			return;
+> Fan Rong (3):
+>    Add smp support for Allwinner A20(sunxi 7i).
+>    Add cpuconfig nodes in dts for smp configure.
+>    Add arch count timer node in dts for Allwinner A20(sunxi 7i).
+>
+>   arch/arm/boot/dts/sun7i-a20.dtsi |  15 ++++++
+>   arch/arm/mach-sunxi/Makefile     |   2 +
+>   arch/arm/mach-sunxi/headsmp.S    |  18 +++++++
+>   arch/arm/mach-sunxi/platsmp.c    | 114 +++++++++++++++++++++++++++++++++++++++
+>   arch/arm/mach-sunxi/sunxi.c      |   3 ++
+>   5 files changed, 152 insertions(+)
+>   create mode 100644 arch/arm/mach-sunxi/headsmp.S
+>   create mode 100644 arch/arm/mach-sunxi/platsmp.c
+>
 
-You need to check for preempt_count()!=0 too, which has been increased by pagefault_disable() inside of probe_kernel_read().
-Otherwise every simple memcpy(dest,NULL,count) (*) will sucessfully be handled here and we won't trap
-on generic invalid memory accesses inside the kernel.
 
-But basically your patch does exactly the same as mine.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Helge
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-(*) memcpy() uses internally pa_memcpy() which defines the fixup tables.
