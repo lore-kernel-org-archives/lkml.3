@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3JBQvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:51:31 -0400
-Received: from sirokuusama.dnainternet.net ([83.102.40.133]:53099 "EHLO
-	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753763Ab3JBQva (ORCPT
+	id S1754707Ab3JBQvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:51:37 -0400
+Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:58583 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754493Ab3JBQve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:51:30 -0400
-X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 12:51:29 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <524C4D0D.1070903@iki.fi>
-Date: Wed, 02 Oct 2013 19:42:53 +0300
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130914 Thunderbird/17.0.9
+	Wed, 2 Oct 2013 12:51:34 -0400
+X-Greylist: delayed 15370 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 12:51:34 EDT
+Message-ID: <524C4CF1.7060407@overkiz.com>
+Date: Wed, 02 Oct 2013 18:42:25 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org,
-        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Olivier Langlois <olivier@trillion01.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/RFT v2 0/4] ALSA: hda - hdmi: ATI/AMD multi-channel and
- HBR support
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi> <s5hli2bu4gs.wl%tiwai@suse.de>
-In-Reply-To: <s5hli2bu4gs.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Yang Wenyou <Wenyou.Yang@atmel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [v2,2/4] watchdog: at91sam9_wdt: update device tree doc
+References: <1371799414-3654-1-git-send-email-b.brezillon@overkiz.com> <20131002155118.GA16703@roeck-us.net>
+In-Reply-To: <20131002155118.GA16703@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 5544494092054001679
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-02.10.2013 17:34, Takashi Iwai kirjoitti:
-> At Tue,  1 Oct 2013 23:30:52 +0300,
-> Anssi Hannula wrote:
-[...]
->> Anssi Hannula (4):
->>       ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
->>       ALSA: hda - hdmi: Add ELD emulation for ATI/AMD codecs
->>       ALSA: hda - hdmi: Add HBR bitstreaming support for ATI/AMD HDMI codecs
->>       ALSA: hda - hdmi: Disable ramp-up/down for non-PCM on AMD codecs
-> 
-> 
-> The patches generally look good, but I'm thinking whether it's cleaner
-> to create a new ops items.  Maybe it can be specific to HDMI codec,
-> e.g.
-> 
-> struct hda_hdmi_ops {
-> 	int (*get_chan_slot)(struct hda_codec *codec, hda_nid_t pin, int slot);
-> 	int (*set_chan_slot)(struct hda_codec *codec, hda_nid_t pin, int setup);
-> 	int (*set_ca)(struct hda_codec *codec, hda_nid_t pin, int ca);
-> 	....
-> }
-> 
-> It's not sexy to have a thing like is_atihdmi() in the common header
-> and see it in everywhere.
-
-OK, will do that for next version.
-
-Regarding hda_eld.c, I guess I'll add struct hda_hdmi_ops to struct
-hdmi_spec, then keep snd_hdmi_ati_get_eld() in hda_eld.c but make it
-non-static, so I can assign the correct _get_eld in patch_hdmi.c?
-
-
-P.S. I asked whether new callbacks should be added in the previous RFC
-message, but I guess that was easy to overlook as the message was a bit
-incoherent... :)
-
---
-Anssi Hannula
-
-> thanks,
-> 
-> Takashi
-> 
+On 02/10/2013 17:51, Guenter Roeck wrote:
+> On Fri, Jun 21, 2013 at 03:23:34PM -0000, Boris BREZILLON wrote:
+>> Add new at91sam9 watchdog properties to the documentation.
 >>
->>  sound/pci/hda/hda_eld.c    | 157 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>  sound/pci/hda/hda_local.h  |   5 +++
->>  sound/pci/hda/patch_hdmi.c | 424 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------
->>  3 files changed, 547 insertions(+), 39 deletions(-)
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> Acked-by: Grant Likely<grant.likely@linaro.org>
 >>
->> -- 
->> Anssi Hannula
+>> ---
+>> .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
+>>   1 file changed, 28 insertions(+), 2 deletions(-)
 >>
+>> diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+>> index fcdd48f..e043106 100644
+>> --- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+>> +++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+>> @@ -9,11 +9,37 @@ Required properties:
+>>   
+>>   Optional properties:
+>>   - timeout-sec: contains the watchdog timeout in seconds.
+>> +- interrupts : Should contain WDT interrupt.
+>> +- atmel,max-heartbeat-sec : Should contain the maximum heartbeat value in
+>> +	seconds. This value should be less than 16. It is used to compute the
+>> +	WDV field.
+>> +- atmel,min-heartbeat-sec : Should contain the minimum heartbeat value in
+>> +	seconds. This value should be less than 4 times the max-heartbeat-sec
+>> +	value. It is used to compute the WDD field.
+> I am a bit at loss about "less than 4 times the max-heartbeat-sec value".
+> Why would a min-timeout larger than the max-timeout make sense under any
+> condition ? Do you mean to say that max-heartbeat should be at least four
+> times the value of min-heartbeat (or that min-heartbeat should be less or
+> equal to one-forth of max-heartbeat) ?
+That's exactely what I meant (should be less or equal to one-forth of 
+max-heartbeat).
+I'll fix it.
 
+> Guenter
+>
+>> +- atmel,watchdog-type : Should be "hardware" or "software". Hardware watchdog
+>> +	use the at91 watchdog reset. Software watchdog use the watchdog
+>> +	interrupt to trigger a software reset.
+>> +- atmel,reset-type : Should be "proc" or "all".
+>> +	"all" : assert peripherals and processor reset signals
+>> +	"proc" : assert the processor reset signal
+>> +	This is valid only when using "hardware" watchdog.
+>> +- atmel,disable : Should be present if you want to disable the watchdog.
+>> +- atmel,idle-halt : Should be present if you want to stop the watchdog when
+>> +	entering idle state.
+>> +- atmel,dbg-halt : Should be present if you want to stop the watchdog when
+>> +	entering debug state.
+>>   
+>>   Example:
+>> -
+>>   	watchdog@fffffd40 {
+>>   		compatible = "atmel,at91sam9260-wdt";
+>>   		reg = <0xfffffd40 0x10>;
+>> -		timeout-sec = <10>;
+>> +		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+>> +		timeout-sec = <15>;
+>> +		atmel,watchdog-type = "hardware";
+>> +		atmel,reset-type = "all";
+>> +		atmel,dbg-halt;
+>> +		atmel,idle-halt;
+>> +		atmel,max-heartbeat-sec = <16>;
+>> +		atmel,min-heartbeat-sec = <0>;
+>> +		status = "okay";
+>>   	};
 
--- 
-Anssi Hannula
