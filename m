@@ -1,104 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3JBBjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 21:39:06 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:57416 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3JBBjD (ORCPT
+	id S1752823Ab3JBBkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 21:40:37 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:63800 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3JBBkf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 21:39:03 -0400
-Message-ID: <524B7934.9070606@amacapital.net>
-Date: Tue, 01 Oct 2013 18:39:00 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	Tue, 1 Oct 2013 21:40:35 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Djalal Harouni <tixxdz@opendz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
-Subject: Re: [PATCH v2 6/9] procfs: add permission checks on the file's opener
- of /proc/*/stat
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org> <1380659178-28605-7-git-send-email-tixxdz@opendz.org>
-In-Reply-To: <1380659178-28605-7-git-send-email-tixxdz@opendz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1380415036-15997-1-git-send-email-tomasz.figa@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+References: <1380415036-15997-1-git-send-email-tomasz.figa@gmail.com>
+Message-ID: <20131002014031.9338.76351@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 1/3] clk: Add error handling to clk_fetch_parent_index()
+Date: Tue, 01 Oct 2013 18:40:31 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> Some fields of the /proc/*/stat are sensitive fields that need
-> appropriate protection.
+Quoting Tomasz Figa (2013-09-28 17:37:14)
+> There are at least two different error cases that can happen in
+> clk_fetch_parent_index() function:
+>  - allocation failure,
+>  - parent clock lookup failure,
+> however it returns only an u8, which is supposed to contain parent clock
+> index.
 > 
-> However, /proc file descriptors can be passed to a more privileged
-> process (e.g. a suid-exec) which will pass the classic
-> ptrace_may_access() permission check during read().
+> This patch modified the function to return full int instead allowing
+> positive clock indices and negative error codes to be returned. All
+> users of this function are adjusted as well to handle the return value
+> correctly.
 > 
-> To prevent it, use proc_same_open_cred() to detect if current's cred
-> have changed between ->open() and ->read(), if so, call
-> proc_allow_access() to check if the original file's opener had enough
-> permissions to read these sensitive fields. This will prevent passing
-> file descriptors to a more privileged process to leak data.
-> 
-> The patch also adds a previously missing signal->cred_guard_mutex lock.
-> 
-> This patch does not break userspace since it only hides the fields that
-> were supposed to be protected.
-> 
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+
+Thanks for the fixes. Taken into clk-next.
+
+Regards,
+Mike
+
 > ---
->  fs/proc/array.c | 16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
+>  drivers/clk/clk.c | 25 ++++++++++++++-----------
+>  1 file changed, 14 insertions(+), 11 deletions(-)
 > 
-> diff --git a/fs/proc/array.c b/fs/proc/array.c
-> index cbd0f1b..f034e05 100644
-> --- a/fs/proc/array.c
-> +++ b/fs/proc/array.c
-> @@ -394,7 +394,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
->  	char state;
->  	pid_t ppid = 0, pgid = -1, sid = -1;
->  	int num_threads = 0;
-> -	int permitted;
-> +	int permitted = 0;
->  	struct mm_struct *mm;
->  	unsigned long long start_time;
->  	unsigned long cmin_flt = 0, cmaj_flt = 0;
-> @@ -404,10 +404,22 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
->  	unsigned long rsslim = 0;
->  	char tcomm[sizeof(task->comm)];
->  	unsigned long flags;
-> +	struct file *file = m->private;
-> +	int same_cred = proc_same_open_cred(file->f_cred);
-> +	unsigned int ptrace_mode = PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT;
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index a004769..9e0a837 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1080,13 +1080,16 @@ unsigned long clk_get_rate(struct clk *clk)
+>  }
+>  EXPORT_SYMBOL_GPL(clk_get_rate);
 >  
->  	state = *get_task_state(task);
->  	vsize = eip = esp = 0;
-> -	permitted = ptrace_may_access(task, PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT);
-> +
-> +	if (!mutex_lock_killable(&task->signal->cred_guard_mutex)) {
-> +		permitted = ptrace_may_access(task, ptrace_mode);
-> +		if (permitted && !same_cred)
-> +			permitted = proc_allow_access(file->f_cred,
-> +						      task, ptrace_mode);
-> +
-> +		mutex_unlock(&task->signal->cred_guard_mutex);
-> +	}
-> +
-
-else permitted = false?
-
-But surely this would be *much* more comprehensible if you had
-proc_allow_access do the entire check.
-
---Andy
-
---Andy
+> -static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+> +static int clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+>  {
+> -       u8 i;
+> +       int i;
+>  
+> -       if (!clk->parents)
+> +       if (!clk->parents) {
+>                 clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
+>                                                                 GFP_KERNEL);
+> +               if (!clk->parents)
+> +                       return -ENOMEM;
+> +       }
+>  
+>         /*
+>          * find index of new parent clock using cached parent ptrs,
+> @@ -1095,15 +1098,15 @@ static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+>          */
+>         for (i = 0; i < clk->num_parents; i++) {
+>                 if (clk->parents && clk->parents[i] == parent)
+> -                       break;
+> +                       return i;
+>                 else if (!strcmp(clk->parent_names[i], parent->name)) {
+>                         if (clk->parents)
+>                                 clk->parents[i] = __clk_lookup(parent->name);
+> -                       break;
+> +                       return i;
+>                 }
+>         }
+>  
+> -       return i;
+> +       return -EINVAL;
+>  }
+>  
+>  static void clk_reparent(struct clk *clk, struct clk *new_parent)
+> @@ -1265,7 +1268,7 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
+>         struct clk *old_parent, *parent;
+>         unsigned long best_parent_rate = 0;
+>         unsigned long new_rate;
+> -       u8 p_index = 0;
+> +       int p_index = 0;
+>  
+>         /* sanity */
+>         if (IS_ERR_OR_NULL(clk))
+> @@ -1306,7 +1309,7 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
+>         /* try finding the new parent index */
+>         if (parent) {
+>                 p_index = clk_fetch_parent_index(clk, parent);
+> -               if (p_index == clk->num_parents) {
+> +               if (p_index < 0) {
+>                         pr_debug("%s: clk %s can not be parent of clk %s\n",
+>                                  __func__, parent->name, clk->name);
+>                         return NULL;
+> @@ -1568,7 +1571,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+>  int clk_set_parent(struct clk *clk, struct clk *parent)
+>  {
+>         int ret = 0;
+> -       u8 p_index = 0;
+> +       int p_index = 0;
+>         unsigned long p_rate = 0;
+>  
+>         if (!clk)
+> @@ -1597,10 +1600,10 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+>         if (parent) {
+>                 p_index = clk_fetch_parent_index(clk, parent);
+>                 p_rate = parent->rate;
+> -               if (p_index == clk->num_parents) {
+> +               if (p_index < 0) {
+>                         pr_debug("%s: clk %s can not be parent of clk %s\n",
+>                                         __func__, parent->name, clk->name);
+> -                       ret = -EINVAL;
+> +                       ret = p_index;
+>                         goto out;
+>                 }
+>         }
+> -- 
+> 1.8.3.2
