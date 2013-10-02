@@ -1,149 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3JBSNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:13:07 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:48651 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab3JBSNE (ORCPT
+	id S1756145Ab3JBSN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:13:28 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:27447 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756008Ab3JBSNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:13:04 -0400
-Date: Wed, 2 Oct 2013 19:12:57 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        kernel-hardening@lists.openwall.com, Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
- file->f_cred
-Message-ID: <20131002181257.GA2485@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <524B7999.60806@amacapital.net>
- <20131002143759.GA2966@dztty>
- <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Oct 2013 14:13:05 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 34/77] ioat: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:48:50 +0200
+Message-Id: <63caad476ca6b7f3481d5512febcb4ef3db72209.1380703263.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 05:51:15PM +0100, Andy Lutomirski wrote:
-> On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
-> >> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> >> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
-> >> > need to happen during each system call.
-> >> >
-> >> > Currently some of these sensitive entries are protected by performing
-> >> > the ptrace_may_access() check. However even with that the /proc file
-> >> > descriptors can be passed to a more privileged process
-> >> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
-> >> > check. In general the ->open() call will be issued by an unprivileged
-> >> > process while the ->read(),->write() calls by a more privileged one.
-> >> >
-> >> > Example of these files are:
-> >> > /proc/*/syscall, /proc/*/stack etc.
-> >> >
-> >> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
-> >> >
-> >> >
-> >> > These files are protected during read() by the ptrace_may_access(),
-> >> > however the file descriptor can be passed to a suid-exec which can be
-> >> > used to read data and bypass ASLR. Of course this was discussed several
-> >> > times on LKML.
-> >>
-> >> Can you elaborate on what it is that you're fixing?  That is, can you
-> >> give a concrete example of what process opens what file and passes the
-> >> fd to what process?
-> > Yes, the references were already given in this email:
-> > https://lkml.org/lkml/2013/8/31/209
-> >
-> > This has been discussed several times on lkml:
-> > https://lkml.org/lkml/2013/8/28/544
-> >
-> > https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
-> >
-> >
-> >> I'm having trouble following your description.
-> > Process open a /proc file and pass the fd to a more privilaged process
-> > that will pass the ptrace_may_access() check, while the original process
-> > that opened that file should fail at the ptrace_may_access()
-> 
-> So we're talking about two kinds of attacks, right?
-Yes,
+As result of recent re-design of the MSI/MSI-X interrupts enabling
+pattern this driver has to be updated to use the new technique to
+obtain a optimal number of MSI/MSI-X interrupts required.
 
-> Type 1: Unprivileged process does something like open("/proc/1/maps",
-> O_RDONLY) and then passes the resulting fd to something privileged.
-Yes,
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/dma/ioat/dma.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-> Type 2: Unprivileged process does something like
-> open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
-> execve on something privileged.
-Correct
-
-> 
-> Can we really not get away with fixing type 1 by preventing these
-> files from being opened in the first place and type 2 by revoking all
-> of these fds when a privilege-changing exec happens?
-Yes for 1) and that's what exactly this series try to do
- * ptrace checks during ->open() for /proc/*/{stack,syscall} and 0400
- * You can't do it for /proc/*/stat otherwise you will break userspace
-  "ps"..., ps must access /proc/1/stat etc... so the proposed solution
-  will work without any side effect.
-  
-  And for /proc/*/maps you will perhaps break glibc under certain
-  situations... so just hold it for the moment and test it
-  later. There have been reports in the past about it.
-
-  So for 1) this series will fix it 
-
-For type 2) yes this series will also handle it, since there were a cred
-change.
-
-
-For fd revoking, yes that perhaps will work and it would be great, but
-it does not exist :-/
-
-Not to mention if the process do not want to revoke and pass the fd ?
-is this compliant with standards ?
-
-> I'm not objecting to your patches so much as thinking that read(2) has
-> no business looking at current->cred *at all*.  But maybe that ship
-> has already sailed.
-No that's not correct.
-
-read(2) and during each system call current->cred must be checked,
-the /proc varies at runtime, you are not sure about what are you
-reading,writing...
-
-
-> --Andy
-> 
-> >
-> >
-> >> --Andy
-> >>
-> >
-> > --
-> > Djalal Harouni
-> > http://opendz.org
-> 
-> 
-> 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
-
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index acee3b2..b352ee6 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -915,15 +915,19 @@ int ioat_dma_setup_interrupts(struct ioatdma_device *device)
+ 
+ msix:
+ 	/* The number of MSI-X vectors should equal the number of channels */
++	err = pci_msix_table_size(pdev);
++	if (err < 0)
++		goto msi;
++	if (err < device->common.chancnt)
++		goto msix_single_vector;
++
+ 	msixcnt = device->common.chancnt;
+ 	for (i = 0; i < msixcnt; i++)
+ 		device->msix_entries[i].entry = i;
+ 
+ 	err = pci_enable_msix(pdev, device->msix_entries, msixcnt);
+-	if (err < 0)
++	if (err)
+ 		goto msi;
+-	if (err > 0)
+-		goto msix_single_vector;
+ 
+ 	for (i = 0; i < msixcnt; i++) {
+ 		msix = &device->msix_entries[i];
 -- 
-Djalal Harouni
-http://opendz.org
+1.7.7.6
+
