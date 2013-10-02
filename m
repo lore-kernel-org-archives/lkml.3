@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3JBJxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 05:53:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41083 "EHLO
+	id S1753458Ab3JBJvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 05:51:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41068 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3JBJvn (ORCPT
+	with ESMTP id S1752837Ab3JBJvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 05:51:43 -0400
-Message-Id: <20131002092528.396949919@infradead.org>
+	Wed, 2 Oct 2013 05:51:41 -0400
+Message-Id: <20131002092528.469616907@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 02 Oct 2013 11:22:24 +0200
+Date: Wed, 02 Oct 2013 11:22:25 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>,
@@ -18,9 +18,9 @@ Cc: Oleg Nesterov <oleg@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 07/16] sched/wait: Collapse __wait_event_interruptible()
+Subject: [PATCH 08/16] sched/wait: Collapse __wait_event_interruptible_timeout()
 References: <20131002092217.784439754@infradead.org>
-Content-Disposition: inline; filename=peterz-wait-deduplicate-3.patch
+Content-Disposition: inline; filename=peterz-wait-deduplicate-4.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,29 +37,30 @@ Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
 --- a/include/linux/wait.h
 +++ b/include/linux/wait.h
-@@ -258,21 +277,8 @@ do {									\
+@@ -298,21 +304,9 @@ do {									\
  })
  
- #define __wait_event_interruptible(wq, condition, ret)			\
+ #define __wait_event_interruptible_timeout(wq, condition, ret)		\
 -do {									\
 -	DEFINE_WAIT(__wait);						\
 -									\
 -	for (;;) {							\
 -		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
--		if (condition)						\
+-		if (___wait_cond_timeout(condition, ret))		\
 -			break;						\
 -		if (signal_pending(current)) {				\
 -			ret = -ERESTARTSYS;				\
 -			break;						\
 -		}							\
--		schedule();						\
+-		ret = schedule_timeout(ret);				\
 -	}								\
 -	finish_wait(&wq, &__wait);					\
 -} while (0)
-+	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, ret,	\
-+		      schedule())
++	___wait_event(wq, ___wait_cond_timeout(condition, ret),		\
++		      TASK_INTERRUPTIBLE, 0, ret,			\
++		      ret = schedule_timeout(ret))
  
  /**
-  * wait_event_interruptible - sleep until a condition gets true
+  * wait_event_interruptible_timeout - sleep until a condition gets true or a timeout elapses
 
 
