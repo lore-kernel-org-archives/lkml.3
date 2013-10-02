@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3JBNze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 09:55:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44580 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339Ab3JBNzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 09:55:32 -0400
-Date: Wed, 2 Oct 2013 15:55:28 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, bp@suse.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/boot] x86/boot: Further compress CPUs bootup message
-Message-ID: <20131002135528.GC20568@pd.tnic>
-References: <20130930095624.GB16383@pd.tnic>
- <tip-a17bce4d1dce8f3cf714bc2e5d8e4bac009dc077@git.kernel.org>
- <20131002115235.GR3081@twins.programming.kicks-ass.net>
- <20131002122020.GN26785@twins.programming.kicks-ass.net>
+	id S1753972Ab3JBN5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 09:57:33 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:50051 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752572Ab3JBN53 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 09:57:29 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        "kernel@stlinux.com" <kernel@stlinux.com>
+Date: Wed, 2 Oct 2013 15:56:39 +0200
+Subject: Re: [PATCH 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Thread-Topic: [PATCH 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Thread-Index: Ac6/dzepuc+3qlbJRB2MCyUnbfry+w==
+Message-ID: <524C2617.5070401@st.com>
+References: <1380623952-4252-1-git-send-email-maxime.coquelin@st.com>
+ <1380623952-4252-2-git-send-email-maxime.coquelin@st.com>
+ <524B346C.8070607@wwwdotorg.org> <524BDB00.3010508@st.com>
+ <20131002090257.GA3059@katana> <524BE8FB.40000@st.com>
+In-Reply-To: <524BE8FB.40000@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131002122020.GN26785@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 02:20:20PM +0200, Peter Zijlstra wrote:
-> > [    0.314494] smpboot: Booting Node   0, Processors  #   1[    0.333365] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
-> >  #   2 #   3 #   4 #   5 OK
-> > [    0.398473] smpboot: Booting Node   1, Processors  #   6 #   7 #   8 #   9 #  10 #  11 OK
-> > [    0.565198] smpboot: Booting Node   0, Processors  #  12 #  13 #  14 #  15 #  16 #  17 OK
-> > [    0.654558] smpboot: Booting Node   1, Processors  #  18 #  19 #  20 #  21 #  22 #  23 OK
-> > [    0.743527] Brought up 24 CPUs
-> 
-> operator error here.. this was from the (old) fallback kernel; the new
-> one didn't actually boot.
+Hi Pawel,
 
-FWIW, this will happen, regardless of what we do:
+On 10/02/2013 11:35 AM, Maxime Coquelin wrote:
+>
+> On 10/02/2013 11:02 AM, Wolfram Sang wrote:
+>>>>> +Optional properties :
+>>>>> +- i2c-min-scl-pulse-width-us : The minimum valid SCL pulse width 
+>>>>> that is allowed
+>>>>> +  through the deglitch circuit. In units of us.
+>>>>> +- i2c-min-sda-pulse-width-us : The minimum valid SDA pulse width 
+>>>>> that is allowed
+>>>>> +  through the deglitch circuit. In units of us.
+>>>> Are those properties specific to this binding, or intended to be
+>>>> generic? If specific to this binding, a vendor prefix should be 
+>>>> present
+>>>> in the property name. If not, you probably want to document the
+>>>> properties in some common file.
+>>> Ok.
+>>> In last revision, I put this properties as specific to this binding.
+>>> Wolfram proposed to make this generic, but it looks like this IP is the
+>>> only one
+>>> needing such properties.
+>>>
+>>> Wolfram, what would you advise?
+>> It might be the only SoC now, but I could imagine that other will have
+>> something similar in the future. I am not perfectly sure, though. So, I
+>> asked for opinions from DT experts when I suggested those bindings. We
+>> could start with vendor specific bindings and generalize them later if
+>> similar ones appear. Yet my experience is that old drivers rarely get
+>> converted to the new bindings.
+> Ok.
+> But if I start with vendor specific bindings, we will have to support it
+> forever, right?
+I would be glad to have your opinion on this.
 
-[    0.089350] x86: Booting SMP configuration:
-[    0.104355] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
-[    0.089427] .... node  #0, CPUs:      #1 #2 #3
-[    0.136301] x86: Booted up 1 node, 4 CPUs
-[    0.136442] smpboot: Total of 4 processors activated (23146.32 BogoMIPS)
+Since there are no other vendors currently having this feature,
+should we put these properties vendor specific?
+Or put them generic in case of someone has the same feature in the future?
 
-as the NMI watchdog thing keeps shouting in-between. Do we still need it
-- I mean, how can I really use the info that NMI watchdog is consuming a
-perf counter? I mean I know how, but do people actually use that info or
-everyone knows already? :-)
+Thanks,
+Maxime
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
