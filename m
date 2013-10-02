@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3JBP5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:57:16 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:44364 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753339Ab3JBP5O (ORCPT
+	id S1753701Ab3JBQB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:01:26 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:65258 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab3JBQBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:57:14 -0400
-Date: Wed, 2 Oct 2013 15:57:12 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Bird, Tim" <Tim.Bird@sonymobile.com>
-cc: Frank Rowand <frowand.list@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>,
-        =?ISO-8859-15?Q?=22Andersson=2C_Bj=F6rn=22?= 
-	<Bjorn.Andersson@sonymobile.com>
-Subject: RE: [PATCH] slub: Proper kmemleak tracking if CONFIG_SLUB_DEBUG
- disabled
-In-Reply-To: <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
-Message-ID: <0000014179e31953-a05dd7d1-d0f8-474f-810a-809cd8a724f8-000000@email.amazonses.com>
-References: <5245ECC3.8070200@gmail.com>,<00000141799dd4b3-f6df96c0-1003-427d-9bd8-f6455622f4ea-000000@email.amazonses.com> <F5184659D418E34EA12B1903EE5EF5FD8538E86615@seldmbx02.corpusers.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 2 Oct 2013 12:01:22 -0400
+Date: Wed, 2 Oct 2013 18:01:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20131002160116.GG7941@localhost.localdomain>
+References: <20130821113551.GA1472@redhat.com>
+ <20130821123311.GA31370@twins.programming.kicks-ass.net>
+ <20130821142356.GC31370@twins.programming.kicks-ass.net>
+ <20130821164146.GA15194@redhat.com>
+ <20131001140525.GE24825@localhost.localdomain>
+ <20131001155633.GR3657@laptop.programming.kicks-ass.net>
+ <20131001164708.GG24825@localhost.localdomain>
+ <20131001165957.GT3657@laptop.programming.kicks-ass.net>
+ <20131002124539.GF7941@localhost.localdomain>
+ <524C2F45.4040401@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.02-54.240.9.70
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524C2F45.4040401@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Oct 2013, Bird, Tim wrote:
+On Wed, Oct 02, 2013 at 07:35:49AM -0700, Arjan van de Ven wrote:
+> On 10/2/2013 5:45 AM, Frederic Weisbecker wrote:
+> >On Tue, Oct 01, 2013 at 06:59:57PM +0200, Peter Zijlstra wrote:
+> >>On Tue, Oct 01, 2013 at 06:47:10PM +0200, Frederic Weisbecker wrote:
+> >>>Yeah thinking more about it, the preempt disable was probably not
+> >>>necessary. Now that's trading 2 atomics + 1 Lock/Unlock with 2 Lock/Unlock.
+> >>
+> >>It trades the current 2 atomics for 2 LOCK/UNLOCK. And on x86_64 that's
+> >>2 atomics.
+> >
+> >Do you mean 2 atomics for LOCK/UNLOCK? Or is that pair optimized somehow
+> >in x86?
+> 
+> unlock is not actually an atomic.
+> 
+> and on some modern machines, neither is the lock, for the uncontended case ;-)
+> 
 
-> The problem child is actually the unconditional call to kmemleak_alloc()
-> in kmalloc_large_node() (in slub.c).  The problem comes because that call
-> is unconditional on CONFIG_SLUB_DEBUG but the kmemleak
-> calls in the hook routines are conditional on CONFIG_SLUB_DEBUG.
-> So if you have CONFIG_SLUB_DEBUG=n but CONFIG_DEBUG_KMEMLEAK=y,
-> you get the false reports.
-
-Right. You need to put the #ifdef CONFIG_SLUB_DEBUG around the hooks that
-need it in the function itself instead of disabling the whole function if
-CONFIG_SLUB_DEUBG is not set.
-
-> Now, there are kmemleak calls in kmalloc_large_node() and kfree() that don't
-> follow the "hook" pattern.  Should these be moved to 'hook' routines, to keep
-> all the checks in the hooks?
-
-That would be great.
-
-> Personally, I like the idea of keeping bookeeping/tracing/debug stuff in hook
-> routines.  I also like de-coupling CONFIG_SLUB_DEBUG and CONFIG_DEBUG_KMEMLEAK,
-> but maybe others have a different opinon.  Unless someone speaks up, we'll
-> move the the currently in-function kmemleak calls into hooks, and all of the
-> kmemleak stuff out from under CONFIG_SLUB_DEBUG.
-> We'll have to see if the ifdefs get a little messy.
-
-Decouple of you want. CONFIG_SLUB_DEBUG may duplicate what you already do.
-
+Yeah, we are never getting short on black magic as the time goes :)
