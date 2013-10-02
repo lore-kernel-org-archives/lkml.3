@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3JBQm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:42:56 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:58754 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434Ab3JBQmy (ORCPT
+	id S1754632Ab3JBQnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:43:40 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:34017 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753659Ab3JBQnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:42:54 -0400
-Message-ID: <524C4CC9.3080402@gmail.com>
-Date: Thu, 03 Oct 2013 00:41:45 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Chen Gang <gang.chen@asianux.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] about calling debug_hotplug_cpu() which enabled
- by 'allmodconfig' for a x86_64 dual core laptop.
-References: <524B8E97.1030707@asianux.com> <1380727725.5429.13.camel@misato.fc.hp.com>
-In-Reply-To: <1380727725.5429.13.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 2 Oct 2013 12:43:39 -0400
+Message-ID: <1380732206.12351.4.camel@pippen.local.home>
+Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 02 Oct 2013 12:43:26 -0400
+In-Reply-To: <20131002141650.GA11305@redhat.com>
+References: <20130828095408.37c3dd83@gandalf.local.home>
+	 <20130828095833.103ccdf0@gandalf.local.home>
+	 <20130828111746.35369b84@gandalf.local.home>
+	 <20130828182710.GA14103@redhat.com> <20130828182902.GB14103@redhat.com>
+	 <20130828152745.18a73c4e@gandalf.local.home>
+	 <20130930171201.GA10474@redhat.com>
+	 <1380599766.16752.6.camel@pippen.local.home>
+	 <20131001042025.GA7038@redhat.com>
+	 <1380630531.16752.9.camel@pippen.local.home>
+	 <20131002141650.GA11305@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 11:28 PM, Toshi Kani wrote:
-> On Wed, 2013-10-02 at 03:10 +0000, Chen Gang wrote:
->> Hello Maintainers:
->>
->> Under my x86_64 dual core laptop, I build kernel next-20130927 with
->> 'allmodconfig', and install it, the machine can not start. Related
->> information is:
->>
->>   after call debug_hotplug_cpu(), output "cpu 0 is offline" .... and then "Failed to execute /init".
->>
->> After remove "_debug_hotplug_cpu(0, 0);", can pass the issue (but will
->> fail in another place). I guess, the reason is my laptop cpu is not
->> 'hotplug', but have to call debug_hotplug_cpu() with allmodconfig.
->>
->>
->> I will continue analyzing, welcome any additional suggestions or
->> completions.
+On Wed, 2013-10-02 at 10:16 -0400, Dave Jones wrote:
+> On Tue, Oct 01, 2013 at 08:28:51AM -0400, Steven Rostedt wrote:
+>  > On Tue, 2013-10-01 at 00:20 -0400, Dave Jones wrote:
+>  > 
+>  > > It seems like trace-cmd needs to be run as root. all hell will break loose if trinity gets root privs.
+>  > 
+>  > Then run this:
+>  > 
+>  > trace-cmd record -e syscalls -B trinity su davej -c 'trinity <args>'
 > 
-> allmodconfig sets CONFIG_DEBUG_HOTPLUG_CPU0 to y (which is defined as
-> "def_bool n"), which puts CPU0 offline during boot for testing.  This
-> debug feature is causing the problem on your laptop.  I am not familiar
-> with allmodconfig, but it seems that it enables all the config options,
-> preferably with 'm'.
+> I feel like I'm peeling an onion.
 > 
-
-Hmm... excuse me, I don't know: for laptop, if cpu0 is offline, whether
-it still can work or not. If any members know about it, please tell me,
-thanks.
-
-In my opinion, if enable DEBUG_HOTPLUG_CPU0, but "should not let cpu0
-offline for laptop", we need let 'offline' operation fail.
-
-And I am analyzing (just constructing environments: KVM, kgdb ...),
-before let kernel start successfully, only according to my current
-proofs, we can not say "let laptop cpu0 offline" must be an issue.
-
-Thanks.
-
-> Thanks,
-> -Toshi
+> I keep hititng that other ftrace bug instead:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> WARNING: CPU: 2 PID: 15596 at kernel/trace/ftrace.c:1701 ftrace_bug+0x206/0x270()
+> Modules linked in: snd_seq_dummy(+) rfcomm hidp bnep nfnetlink scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc can_raw can_bcm bluetooth rfkill can llc2 pppoe ppp
+> ox ppp_generic slhc irda crc_ccitt rds ipt_ULOG af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 coretemp hwmon x86_pkg_temp_thermal kvm_intel xfs kvm libcrc32c snd_hda_codec_hdm
+> i snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq crct10dif_pclmul snd_seq_device crc32c_intel ghash_clmulni_intel snd_pcm e1000e microcode serio_raw pcspkr snd_page_alloc shpch
+> p usb_debug snd_timer ptp snd pps_core soundcore
+> CPU: 2 PID: 15596 Comm: modprobe Not tainted 3.12.0-rc3+ #92 
+>  ffffffff81a2a214 ffff880236abfc30 ffffffff8172a363 0000000000000000
+>  ffff880236abfc68 ffffffff8105523d 0000000000000000 ffffffffa034a000
+>  ffff880239d5b0e0 0000000000000000 ffff880234edb000 ffff880236abfc78
+> Call Trace:
+>  [<ffffffff8172a363>] dump_stack+0x4e/0x82
+>  [<ffffffff8105523d>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffffa034a000>] ? 0xffffffffa0349fff
+>  [<ffffffff8105531a>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff81120776>] ftrace_bug+0x206/0x270
+>  [<ffffffffa034a000>] ? 0xffffffffa0349fff
+>  [<ffffffff81120aec>] ftrace_process_locs+0x30c/0x640
+>  [<ffffffff81120e5e>] ftrace_module_notify_enter+0x3e/0x50
+>  [<ffffffff81738aa6>] notifier_call_chain+0x66/0x150
+>  [<ffffffff8108b197>] __blocking_notifier_call_chain+0x67/0xc0
+>  [<ffffffff8108b206>] blocking_notifier_call_chain+0x16/0x20
+>  [<ffffffff810daddd>] load_module+0x1f7d/0x26a0
 
-Thanks.
--- 
-Chen Gang
+So trinity is loading a module?
+
+>  [<ffffffff810d5f90>] ? store_uevent+0x40/0x40
+>  [<ffffffff810db696>] SyS_finit_module+0x86/0xb0
+>  [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
+> ---[ end trace d2b5caf2401c5667 ]---
+> ftrace faulted on writing [<ffffffffa034a000>] dummy_free+0x0/0x10 [snd_seq_dummy]
+
+Is this module compiled for this kernel? What happened was that the
+address it tried to write to wasn't writable. Does function tracing
+normally work? Speaking of which, the trace-cmd line I gave should not
+have started function tracing, so something else must have done it.
+
+-- Steve
+
+> 
+> 
+> This locks up hard, and then I end up with 0 byte log files when I reboot :-/
+> 
+> 	Dave
+
+
