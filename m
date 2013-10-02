@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab3JBK53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 06:57:29 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49315 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3JBK52 (ORCPT
+	id S1753849Ab3JBK55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 06:57:57 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:36044 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab3JBK5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 06:57:28 -0400
-Date: Wed, 2 Oct 2013 11:57:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Fabio Estevam <festevam@gmail.com>, linux-gpio@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <20131002105723.GA27287@sirena.org.uk>
-References: <1380635719-31171-1-git-send-email-zonque@gmail.com>
- <CAOMZO5Aq5-bdY3yTD3DqjUVVrTPHZodb7_vfLQcvxfJRXNok4w@mail.gmail.com>
- <524AD693.6000304@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
-Content-Disposition: inline
-In-Reply-To: <524AD693.6000304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 2 Oct 2013 06:57:50 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] net: mv643xx_eth: fix missing device_node for port devices
+Date: Wed,  2 Oct 2013 12:57:22 +0200
+Message-Id: <1380711442-24735-4-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+DT-based mv643xx_eth probes and creates platform_devices for the
+port devices on its own. To allow fixups for ports based on the
+device_node, we need to set .of_node of the corresponding device
+with the correct node.
 
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: David Miller <davem@davemloft.net>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-On Tue, Oct 01, 2013 at 04:05:07PM +0200, Daniel Mack wrote:
-> On 01.10.2013 16:01, Fabio Estevam wrote:
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index 2364707..2c210ec 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2533,6 +2533,7 @@ static int mv643xx_eth_shared_of_add_port(struct platform_device *pdev,
+ 	if (!ppdev)
+ 		return -ENOMEM;
+ 	ppdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	ppdev->dev.of_node = pnp;
+ 
+ 	ret = platform_device_add_resources(ppdev, &res, 1);
+ 	if (ret)
+-- 
+1.7.10.4
 
-> > Isn't it the same as the existing 'gpio-key,wakeup' ?
-
-> Of course, I know the gpio-input driver can provide similar
-> functionality. My intention was just provide a way to wake up the system
-> without registering an input device for signals nobody is interested in
-> eventually.
-
-> Don't know if that's reason enough to add a new driver though.
-
-It does seem somewhat sensible - the signal might not have a sensible
-representation as an input device and the gpio-keys binding needs one.
-
---zYM0uCDKw75PZbzx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSS/wQAAoJELSic+t+oim90O4P/i90PuSF3MvjZ7Bp/BMERHIH
-RGMQiwqCXGpjNKNpXb8WuBPJQM1QWYWkOO2CJjOB9u/IkdI9j039TOSbNlucnkrL
-iE/H6ymOksi2jxnrWrSSra04gdBtTgvx8xBnnLfA4seTgiuvwcd4Zw1HwbTeLgHs
-n+14YjMZOE7R6DfvHSww/Cn5aQFX+xN5vq5zmpE4I7S9EnOKavpBstrGONabqjBu
-V8vH3jq/NjGcReAc6xrKGWpVCxlGO3oCJ0psFZQG0P09DthOemOyo90rc06+1YPb
-eLWGAbs3oKlI+qhEqUfVOnQhMdMH/tdNXNLG2LW1q+Wu0L8KEWWG09Ey2Nuqt8bR
-Hs41ic/bBSIqolrmCyzArtTMqQ/r/8yLUDMVmwjpg4wq/qPhzkPe/Jb8IP7x1L8Y
-179JtnfQmRkEDh4N9yCPOEuZ4Krhd6Y4lPrpTLb0mlLD+1LBmU2l1Z1KCuR61S9J
-JO2sGI/F3j2LA/YtJIrBp1oAja34gobz/ToGR6hBijfb6dLd3ghQ1z2MTtQwHjmG
-T1AUcP63nuMZJ4Y3TH66m2QcEtiUTUlKELu0Yz9Cx2mZHnnj8XOwYVT0A8jmvQP7
-m1dDi/8zH1AlL20meu1viJllKk+pT5ZjwcmdvGqbS2L2MgZpB6t6++dYVCZEL+y3
-42iv4o5xJdi2UlE0nQea
-=1poh
------END PGP SIGNATURE-----
-
---zYM0uCDKw75PZbzx--
