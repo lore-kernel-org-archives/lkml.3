@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3JBCTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 22:19:43 -0400
-Received: from smtprelay0185.hostedemail.com ([216.40.44.185]:49834 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751572Ab3JBCTl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 22:19:41 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3872:4321:4823:5007:7652:7903:8603:10004:10400:10848:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pets97_3718a6a24af0a
-X-Filterd-Recvd-Size: 2255
-Message-ID: <1380680377.2081.27.camel@joe-AO722>
-Subject: Re: [PATCH] Staging : android: binder.c: Prefer seq_puts to
- seq_printf
-From: Joe Perches <joe@perches.com>
-To: Mathieu =?ISO-8859-1?Q?Rh=E9aume?= <mathieu@codingrhemes.com>
-Cc: gregkh@linuxfoundation.org, arve@android.com, dan.carpenter@oracle.com,
-        mirsal@mirsal.fr, serban.constantinescu@arm.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Tue, 01 Oct 2013 19:19:37 -0700
-In-Reply-To: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
-References: <1380679056-10175-1-git-send-email-mathieu@codingrhemes.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752743Ab3JBCWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 22:22:40 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:56124 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab3JBCWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Oct 2013 22:22:37 -0400
+Date: Tue, 1 Oct 2013 22:22:27 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch for-3.12] mm, memcg: protect mem_cgroup_read_events for
+ cpu hotplug
+Message-ID: <20131002022227.GR856@cmpxchg.org>
+References: <alpine.DEB.2.02.1310011629350.27758@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1310011629350.27758@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-01 at 21:57 -0400, Mathieu Rhéaume wrote:
-> This patch changes seq_printf for seq_puts in binder.c.
-> It fixes the warnings emitted by checkpatch.pl.
+On Tue, Oct 01, 2013 at 04:31:23PM -0700, David Rientjes wrote:
+> for_each_online_cpu() needs the protection of {get,put}_online_cpus() so
+> cpu_online_mask doesn't change during the iteration.
 
-Please realign function argument to the open parenthesis.
+There is no problem report here.
 
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-[]
-> @@ -3272,7 +3272,7 @@ binder_defer_work(struct binder_proc *proc, enum binder_deferred_state defer)
->  static void print_binder_transaction(struct seq_file *m, const char *prefix,
->  				     struct binder_transaction *t)
->  {
-> -	seq_printf(m,
-> +	seq_puts(m,
->  		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
->  		   prefix, t->debug_id, t,
->  		   t->from ? t->from->proc->pid : 0,
+Is there a crash?
 
-This should be
-	seq_puts(m, "%s..."
-		 prefix, etc...
+If it's just accuracy of the read, why would we care about some
+inaccuracies in counters that can change before you even get the
+results to userspace?  And care to the point where we hold up CPU
+hotplugging for this?
 
-using two tabs then 1 space to align to open parenthesis
+Also, the fact that you directly sent this to Linus suggests there is
+some urgency for this fix.  What's going on?
 
-> @@ -3287,7 +3287,7 @@ static void print_binder_transaction(struct seq_file *m, const char *prefix,
->  	if (t->buffer->target_node)
->  		seq_printf(m, " node %d",
->  			   t->buffer->target_node->debug_id);
-> -	seq_printf(m, " size %zd:%zd data %p\n",
-> +	seq_puts(m, " size %zd:%zd data %p\n",
->  		   t->buffer->data_size, t->buffer->offsets_size,
-
-	seq_puts(m, " size...",
-		 t->buffer->etc...
-
-etc...
-
-
+Thanks,
+Johannes
