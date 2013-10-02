@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab3JBMld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:41:33 -0400
-Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:55341 "EHLO
+	id S1754360Ab3JBMlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:41:45 -0400
+Received: from 10.mo4.mail-out.ovh.net ([188.165.33.109]:49838 "EHLO
 	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753636Ab3JBMlc (ORCPT
+	with ESMTP id S1753882Ab3JBMld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:41:32 -0400
+	Wed, 2 Oct 2013 08:41:33 -0400
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 08:41:32 EDT
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -14,11 +15,13 @@ To: Nicolas Ferre <nicolas.ferre@atmel.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 0/3] ARM: at91/tc/clocksource: various robustness improvements
-Date: Wed,  2 Oct 2013 14:34:25 +0200
-Message-Id: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH 3/3] ARM: at91/tc/clocksource: remove IRQF_DISABLED
+Date: Wed,  2 Oct 2013 14:35:48 +0200
+Message-Id: <1380717348-6650-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 1356990863375562860
+In-Reply-To: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
+References: <1380717265-6497-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 1379790336659322988
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -32,30 +35,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Remove the deprecated IRQF_DISABLED flag.
 
-This series include several improvements regarding the at91 tc clocksource
-driver:
- - use clk_prepare/unprepare_enable/disable functions instead of the
-   clk_enable/disable functions to prepare the transition to the common clk
-   framework
- - check several function return values instead of considering these functions
-   always suceed.
- - remove the deprecated IRQF_DISABLED flag
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/clocksource/tcb_clksrc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Best Regards,
-
-Boris
-
-Boris BREZILLON (3):
-  ARM: at91/tc/clocksource: replace clk_enable/disable with
-    clk_prepare_enable/disable_unprepare
-  ARM: at91/tc/clocksource: improve driver robustness
-  ARM: at91/tc/clocksource: remove IRQF_DISABLED
-
- drivers/clocksource/tcb_clksrc.c |   61 +++++++++++++++++++++++++++++++-------
- 1 file changed, 50 insertions(+), 11 deletions(-)
-
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index 10a5d9e..00fdd11 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -180,7 +180,7 @@ static irqreturn_t ch2_irq(int irq, void *handle)
+ 
+ static struct irqaction tc_irqaction = {
+ 	.name		= "tc_clkevt",
+-	.flags		= IRQF_TIMER | IRQF_DISABLED,
++	.flags		= IRQF_TIMER,
+ 	.handler	= ch2_irq,
+ };
+ 
 -- 
 1.7.9.5
 
