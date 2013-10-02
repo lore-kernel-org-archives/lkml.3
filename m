@@ -1,118 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab3JBRUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:20:06 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:25978 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754404Ab3JBRUC (ORCPT
+	id S1754732Ab3JBRUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:20:38 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:56964 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab3JBRUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:20:02 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 66/77] qlge: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:49:22 +0200
-Message-Id: <5161bfdf162c8edd77d03e96312d48edb54242bc.1380703263.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	Wed, 2 Oct 2013 13:20:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+References: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+	<CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
+	<20131002133759.GH28601@twins.programming.kicks-ass.net>
+	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+Date: Wed, 2 Oct 2013 19:20:28 +0200
+Message-ID: <CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of recent re-design of the MSI/MSI-X interrupts enabling
-pattern this driver has to be updated to use the new technique to
-obtain a optimal number of MSI/MSI-X interrupts required.
+On Wed, Oct 2, 2013 at 7:14 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Oct 2, 2013 at 6:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Wed, Oct 02, 2013 at 03:13:16PM +0200, Stephane Eranian wrote:
+>>> On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> > On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>>> >> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> >> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>>> >> >>  - then there are timing attacks, and someone having access to a PMU
+>>> >> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>>> >> >>    local context can run very accurate and low noise timing attacks...
+>>> >> >>
+>>> >> >>    I don't think the kernel's sha_transform() is hardened against timing
+>>> >> >>    attacks, it's performance optimized so it has variable execution time
+>>> >> >>    highly dependent on plaintext input - which leaks information about the
+>>> >> >>    plaintext.
+>>> >> >
+>>> >> > Typical user doesn't have enough priv to profile kernel space; once you
+>>> >> > do you also have enough priv to see kernel addresses outright (ie.
+>>> >> > kallsyms etc..).
+>>> >> >
+>>> >> I was going to say just that. But that's not the default, paranoid level
+>>> >> is at 1 by default and not 2. So I supposedly can still do:
+>>> >>
+>>> >> $ perf record -e cycles ......
+>>> >>
+>>> >> In per-thread mode and collect kernel level addresses.
+>>> >
+>>> > Oh right you are.. so yes that's a very viable avenue.
+>>>
+>>> You mean simply encoding the vma->vm_mm as the ino number, for instance.
+>>
+>> Nah.. I think Kees would very much shoot us on the spot for doing that.
+>> But with the paranoid level defaulting to 1 the PMU attack on the kernel
+>> SHA implenentation is feasible.
+>
+> We already have other kernel address leaks (e.g. heap addresses via
+> INET_DIAG), and I'd like to avoid adding more. It'd be nice if there
+> was a common way to uniquely mask these values that are really just
+> "handles". We could use it both here and in the network code.
+>
+> Would it be possible to just have a "regular" incrementing handle,
+> like fd, or are we talking about doing that map for all VMAs, which
+> would make that mapping unfeasible due to storage needs?
+>
+All we need is a way to report that two vmas point to the same
+vma->vm_mm, i..e, same physical data. If I understand what
+you are suggesting, you'd add some sort of generation number
+to the vm_mm. Each new vm_mm gets a new number. That
+would work, I think. No kernel addresses reported directly nor
+hashed.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/qlogic/qlge/qlge_main.c |   39 +++++++++++--------------
- 1 files changed, 17 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-index ac54cb0..d6fdd93 100644
---- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-+++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-@@ -3258,45 +3258,40 @@ static void ql_enable_msix(struct ql_adapter *qdev)
- 
- 	/* Get the MSIX vectors. */
- 	if (qlge_irq_type == MSIX_IRQ) {
-+		err = pci_msix_table_size(qdev->pdev);
-+		if (err < 0)
-+			goto msix_fail;
-+
-+		qdev->intr_count = min_t(u32, qdev->intr_count, err);
-+
- 		/* Try to alloc space for the msix struct,
- 		 * if it fails then go to MSI/legacy.
- 		 */
- 		qdev->msi_x_entry = kcalloc(qdev->intr_count,
- 					    sizeof(struct msix_entry),
- 					    GFP_KERNEL);
--		if (!qdev->msi_x_entry) {
--			qlge_irq_type = MSI_IRQ;
--			goto msi;
--		}
-+		if (!qdev->msi_x_entry)
-+			goto msix_fail;
- 
- 		for (i = 0; i < qdev->intr_count; i++)
- 			qdev->msi_x_entry[i].entry = i;
- 
--		/* Loop to get our vectors.  We start with
--		 * what we want and settle for what we get.
--		 */
--		do {
--			err = pci_enable_msix(qdev->pdev,
--				qdev->msi_x_entry, qdev->intr_count);
--			if (err > 0)
--				qdev->intr_count = err;
--		} while (err > 0);
--
--		if (err < 0) {
--			kfree(qdev->msi_x_entry);
--			qdev->msi_x_entry = NULL;
--			netif_warn(qdev, ifup, qdev->ndev,
--				   "MSI-X Enable failed, trying MSI.\n");
--			qlge_irq_type = MSI_IRQ;
--		} else if (err == 0) {
-+		if (!pci_enable_msix(qdev->pdev,
-+				     qdev->msi_x_entry, qdev->intr_count)) {
- 			set_bit(QL_MSIX_ENABLED, &qdev->flags);
- 			netif_info(qdev, ifup, qdev->ndev,
- 				   "MSI-X Enabled, got %d vectors.\n",
- 				   qdev->intr_count);
- 			return;
- 		}
-+
-+		kfree(qdev->msi_x_entry);
-+		qdev->msi_x_entry = NULL;
-+msix_fail:
-+		netif_warn(qdev, ifup, qdev->ndev,
-+			   "MSI-X Enable failed, trying MSI.\n");
-+		qlge_irq_type = MSI_IRQ;
- 	}
--msi:
- 	qdev->intr_count = 1;
- 	if (qlge_irq_type == MSI_IRQ) {
- 		if (!pci_enable_msi(qdev->pdev)) {
--- 
-1.7.7.6
-
+> On the other hand, trying to hide kernel addresses from root is no
+> easy task, especially given that while kptr_restrict has a "2" level,
+> dmesg_restrict does not. Are these kernel-address-leaking perf modes
+> already limited to a specific POSIX capability?
+>
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
