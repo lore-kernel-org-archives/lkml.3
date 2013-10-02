@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab3JBQvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:51:45 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:33625 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab3JBQvg (ORCPT
+	id S1754806Ab3JBQvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:51:50 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24846 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754770Ab3JBQvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:51:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131002143759.GA2966@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <524B7999.60806@amacapital.net> <20131002143759.GA2966@dztty>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 2 Oct 2013 17:51:15 +0100
-Message-ID: <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        kernel-hardening@lists.openwall.com, Djalal Harouni <tixxdz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Oct 2013 12:51:45 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 21/77] csiostor: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:48:37 +0200
+Message-Id: <a4355b8061609e4a4a28104cc5014178e4720bd0.1380703262.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
->> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
->> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
->> > need to happen during each system call.
->> >
->> > Currently some of these sensitive entries are protected by performing
->> > the ptrace_may_access() check. However even with that the /proc file
->> > descriptors can be passed to a more privileged process
->> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
->> > check. In general the ->open() call will be issued by an unprivileged
->> > process while the ->read(),->write() calls by a more privileged one.
->> >
->> > Example of these files are:
->> > /proc/*/syscall, /proc/*/stack etc.
->> >
->> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
->> >
->> >
->> > These files are protected during read() by the ptrace_may_access(),
->> > however the file descriptor can be passed to a suid-exec which can be
->> > used to read data and bypass ASLR. Of course this was discussed several
->> > times on LKML.
->>
->> Can you elaborate on what it is that you're fixing?  That is, can you
->> give a concrete example of what process opens what file and passes the
->> fd to what process?
-> Yes, the references were already given in this email:
-> https://lkml.org/lkml/2013/8/31/209
->
-> This has been discussed several times on lkml:
-> https://lkml.org/lkml/2013/8/28/544
->
-> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
->
->
->> I'm having trouble following your description.
-> Process open a /proc file and pass the fd to a more privilaged process
-> that will pass the ptrace_may_access() check, while the original process
-> that opened that file should fail at the ptrace_may_access()
+As result of recent re-design of the MSI/MSI-X interrupts enabling
+pattern this driver has to be updated to use the new technique to
+obtain a optimal number of MSI/MSI-X interrupts required.
 
-So we're talking about two kinds of attacks, right?
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/scsi/csiostor/csio_isr.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
 
-Type 1: Unprivileged process does something like open("/proc/1/maps",
-O_RDONLY) and then passes the resulting fd to something privileged.
-
-Type 2: Unprivileged process does something like
-open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
-execve on something privileged.
-
-
-Can we really not get away with fixing type 1 by preventing these
-files from being opened in the first place and type 2 by revoking all
-of these fds when a privilege-changing exec happens?
-
-I'm not objecting to your patches so much as thinking that read(2) has
-no business looking at current->cred *at all*.  But maybe that ship
-has already sailed.
-
---Andy
-
->
->
->> --Andy
->>
->
-> --
-> Djalal Harouni
-> http://opendz.org
-
-
-
+diff --git a/drivers/scsi/csiostor/csio_isr.c b/drivers/scsi/csiostor/csio_isr.c
+index abf20ab..b8a840e 100644
+--- a/drivers/scsi/csiostor/csio_isr.c
++++ b/drivers/scsi/csiostor/csio_isr.c
+@@ -512,6 +512,16 @@ csio_enable_msix(struct csio_hw *hw)
+ 	if (hw->flags & CSIO_HWF_USING_SOFT_PARAMS || !csio_is_hw_master(hw))
+ 		cnt = min_t(uint8_t, hw->cfg_niq, cnt);
+ 
++	rv = pci_msix_table_size(hw->pdev);
++	if (rv < 0)
++		return rv;
++
++	cnt = min(cnt, rv);
++	if (cnt < min) {
++		csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
++		return -ENOSPC;
++	}
++
+ 	entries = kzalloc(sizeof(struct msix_entry) * cnt, GFP_KERNEL);
+ 	if (!entries)
+ 		return -ENOMEM;
+@@ -521,19 +531,15 @@ csio_enable_msix(struct csio_hw *hw)
+ 
+ 	csio_dbg(hw, "FW supp #niq:%d, trying %d msix's\n", hw->cfg_niq, cnt);
+ 
+-	while ((rv = pci_enable_msix(hw->pdev, entries, cnt)) >= min)
+-		cnt = rv;
++	rv = pci_enable_msix(hw->pdev, entries, cnt);
+ 	if (!rv) {
+ 		if (cnt < (hw->num_sqsets + extra)) {
+ 			csio_dbg(hw, "Reducing sqsets to %d\n", cnt - extra);
+ 			csio_reduce_sqsets(hw, cnt - extra);
+ 		}
+ 	} else {
+-		if (rv > 0)
+-			csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
+-
+ 		kfree(entries);
+-		return -ENOSPC;
++		return rv;
+ 	}
+ 
+ 	/* Save off vectors */
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.7.6
+
