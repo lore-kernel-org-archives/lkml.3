@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3JBRs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:48:59 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:59296 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3JBRs4 (ORCPT
+	id S1755915Ab3JBRtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:49:10 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:36586 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab3JBRtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:48:56 -0400
+	Wed, 2 Oct 2013 13:49:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
-	<524B7999.60806@amacapital.net>
-	<20131002143759.GA2966@dztty>
-	<CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
-Date: Wed, 2 Oct 2013 10:48:55 -0700
-X-Google-Sender-Auth: zmdygG5tMH9-v0AA-8dMf3rFVzM
-Message-ID: <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Djalal Harouni <tixxdz@opendz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+In-Reply-To: <CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
+References: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+	<CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
+	<20131002133759.GH28601@twins.programming.kicks-ass.net>
+	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
+Date: Wed, 2 Oct 2013 19:49:04 +0200
+Message-ID: <CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
->>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
->>> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
->>> > need to happen during each system call.
->>> >
->>> > Currently some of these sensitive entries are protected by performing
->>> > the ptrace_may_access() check. However even with that the /proc file
->>> > descriptors can be passed to a more privileged process
->>> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
->>> > check. In general the ->open() call will be issued by an unprivileged
->>> > process while the ->read(),->write() calls by a more privileged one.
->>> >
->>> > Example of these files are:
->>> > /proc/*/syscall, /proc/*/stack etc.
->>> >
->>> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
->>> >
->>> >
->>> > These files are protected during read() by the ptrace_may_access(),
->>> > however the file descriptor can be passed to a suid-exec which can be
->>> > used to read data and bypass ASLR. Of course this was discussed several
->>> > times on LKML.
+On Wed, Oct 2, 2013 at 7:29 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Oct 2, 2013 at 10:20 AM, Stephane Eranian <eranian@google.com> wrote:
+>> On Wed, Oct 2, 2013 at 7:14 PM, Kees Cook <keescook@chromium.org> wrote:
+>>> On Wed, Oct 2, 2013 at 6:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>> On Wed, Oct 02, 2013 at 03:13:16PM +0200, Stephane Eranian wrote:
+>>>>> On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>> > On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>>>>> >> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>> >> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>>>>> >> >>  - then there are timing attacks, and someone having access to a PMU
+>>>>> >> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>>>>> >> >>    local context can run very accurate and low noise timing attacks...
+>>>>> >> >>
+>>>>> >> >>    I don't think the kernel's sha_transform() is hardened against timing
+>>>>> >> >>    attacks, it's performance optimized so it has variable execution time
+>>>>> >> >>    highly dependent on plaintext input - which leaks information about the
+>>>>> >> >>    plaintext.
+>>>>> >> >
+>>>>> >> > Typical user doesn't have enough priv to profile kernel space; once you
+>>>>> >> > do you also have enough priv to see kernel addresses outright (ie.
+>>>>> >> > kallsyms etc..).
+>>>>> >> >
+>>>>> >> I was going to say just that. But that's not the default, paranoid level
+>>>>> >> is at 1 by default and not 2. So I supposedly can still do:
+>>>>> >>
+>>>>> >> $ perf record -e cycles ......
+>>>>> >>
+>>>>> >> In per-thread mode and collect kernel level addresses.
+>>>>> >
+>>>>> > Oh right you are.. so yes that's a very viable avenue.
+>>>>>
+>>>>> You mean simply encoding the vma->vm_mm as the ino number, for instance.
+>>>>
+>>>> Nah.. I think Kees would very much shoot us on the spot for doing that.
+>>>> But with the paranoid level defaulting to 1 the PMU attack on the kernel
+>>>> SHA implenentation is feasible.
 >>>
->>> Can you elaborate on what it is that you're fixing?  That is, can you
->>> give a concrete example of what process opens what file and passes the
->>> fd to what process?
->> Yes, the references were already given in this email:
->> https://lkml.org/lkml/2013/8/31/209
->>
->> This has been discussed several times on lkml:
->> https://lkml.org/lkml/2013/8/28/544
->>
->> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
->>
->>
->>> I'm having trouble following your description.
->> Process open a /proc file and pass the fd to a more privilaged process
->> that will pass the ptrace_may_access() check, while the original process
->> that opened that file should fail at the ptrace_may_access()
+>>> We already have other kernel address leaks (e.g. heap addresses via
+>>> INET_DIAG), and I'd like to avoid adding more. It'd be nice if there
+>>> was a common way to uniquely mask these values that are really just
+>>> "handles". We could use it both here and in the network code.
+>>>
+>>> Would it be possible to just have a "regular" incrementing handle,
+>>> like fd, or are we talking about doing that map for all VMAs, which
+>>> would make that mapping unfeasible due to storage needs?
+>>>
+>> All we need is a way to report that two vmas point to the same
+>> vma->vm_mm, i..e, same physical data. If I understand what
+>> you are suggesting, you'd add some sort of generation number
+>> to the vm_mm. Each new vm_mm gets a new number. That
+>> would work, I think. No kernel addresses reported directly nor
+>> hashed.
 >
-> So we're talking about two kinds of attacks, right?
+> Right. Is that workable? It sounds like this handle is only needed at
+> inspection time, though. Is this uniqueness test limited to a single
+> process, or is this uniqueness test across processes?
+>
+Each time that vm_mm is allocated we would allocate a new generation
+number.
 
-Correct.
-
-> Type 1: Unprivileged process does something like open("/proc/1/maps",
-> O_RDONLY) and then passes the resulting fd to something privileged.
-
-... and then leaks contents back to unprivileged process.
-
-> Type 2: Unprivileged process does something like
-> open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
-> execve on something privileged.
-
-... and then parent snoops on file contents for the privileged child.
-
-(Type 2 is solved currently, IIUC. Type 1 could be reduced in scope by
-changing these file modes back to 0400.)
-
-> Can we really not get away with fixing type 1 by preventing these
-> files from being opened in the first place and type 2 by revoking all
-> of these fds when a privilege-changing exec happens?
-
-Type 1 can be done via exec as well. Instead of using a priv exec to
-read an arbitrary process, read it could read its own.
-
-I think revoking the fd would be great. Does that mechanism exist?
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Uniqueness is across processes. But that's by construction of the
+address space.
