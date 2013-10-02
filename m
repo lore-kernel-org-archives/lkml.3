@@ -1,151 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3JBQGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:06:45 -0400
-Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:55366 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753046Ab3JBQGn (ORCPT
+	id S1753628Ab3JBQK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:10:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38248 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab3JBQKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:06:43 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,::::::::::::::::::::::::::::::::::::::::::::::cesarb@cesarb
-X-HE-Tag: drain81_912bb347b1712
-X-Filterd-Recvd-Size: 4653
-Message-ID: <1380729996.2081.59.camel@joe-AO722>
-Subject: Re: [RFC PATCH v2] fpga: Introduce new fpga subsystem
-From: Joe Perches <joe@perches.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org
-Date: Wed, 02 Oct 2013 09:06:36 -0700
-In-Reply-To: <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
-References: <cover.1380727889.git.michal.simek@xilinx.com>
-	 <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Oct 2013 12:10:25 -0400
+Message-ID: <524C456F.4090704@wwwdotorg.org>
+Date: Wed, 02 Oct 2013 10:10:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinctrl: palmas: do not abort pin configuration for
+ BIAS_DEFAULT
+References: <1380199684-20126-1-git-send-email-ldewangan@nvidia.com> <524454F3.8000402@wwwdotorg.org> <52458876.4070205@nvidia.com> <5245AD0C.7070206@wwwdotorg.org> <CACRpkdbuetPbxPzJTpKuM4O-mqpqjh7rgGoanfAwad4M2vbZTQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbuetPbxPzJTpKuM4O-mqpqjh7rgGoanfAwad4M2vbZTQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 17:35 +0200, Michal Simek wrote:
-> This new fpga subsystem core should unify all fpga drivers/managers which
-> do the same things. Load configuration data to fpga or another programmable
-> logic through common interface. It doesn't matter if it is MMIO device,
-> gpio bitbanging, etc. connection. The point is to have the same
-> interface for these drivers.
+On 10/02/2013 04:40 AM, Linus Walleij wrote:
+> On Fri, Sep 27, 2013 at 6:06 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> [Laxman]
+>>> Hmm.. When I added the PIN_DEFAULT, I just though that do not update
+>>> anything in the register and implemented like that.
+>>> There is nothing "default" option in HW.
+>>
+>> The description of that pinconfig option is:
+>>
+>>> 7970cb77 (Heiko Stübner    2013-06-06 16:44:25 +0200  43)  * @PIN_CONFIG_BIAS_PULL_PIN_DEFAULT: the pin will be pulled up or down based
+>>> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  44)  *    on embedded knowledge of the controller hardware, like current mux
+>>> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  45)  *    function. The pull direction and possibly strength too will normally
+>>> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  46)  *    be decided completely inside the hardware block and not be readable
+>>> 70637a6d (Heiko Stübner    2013-06-25 14:55:42 +0200  47)  *    from the kernel side.
+>>> 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  48)  *    If the argument is != 0 pull up/down is enabled, if it is 0, the
+>>> 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  49)  *    configuration is ignored. The proper way to disable it is to use
+>>> 5ca3353b (Linus Walleij    2013-06-16 12:43:06 +0200  50)  *    @PIN_CONFIG_BIAS_DISABLE.
+>>
+>> If the HW doesn't support any concept of a default pull, I think the
+>> driver shouldn't support that option; it should return an error if asked
+>> to program it.
+> 
+> Yes that's how I remember it and how we specified it.
+> Correct Heiko?
+> 
+>> Presumably given this, LinusW shouldn't have actually applied this
+>> patch, since presumably it prevents any other driver from accepting
+>> PIN_CONFIG_BIAS_DISABLE even in cases where it is appropriate?
+> 
+> There are many patches I shouldn't have applied ...
+> 
+> Anyway I'm not quite following, this patch affected the Palmas
+> driver only I think so how can it prevent any other drivers from doing
+> the right thing?
 
-Does this interface support partial reprogramming/configuration
-for FPGAs that can do that?
-
-trivial notes:
-
-There are a _lot_ of dev_dbg statements.
-
-I hope some of these would be removed one day,
-especially the function tracing style ones, because
-there's already a generic kernel mechanism for that.
-
-Maybe perf/trace support could be added eventually.
-
-> diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
-[]
-> +/**
-> + * fpga_mgr_status_write - Write fpga manager status
-> + * @dev: Pointer to the device structure
-> + * @attr: Pointer to the device attribute structure
-> + * @buf: Pointer to the buffer location
-> + * @count: Number of characters in @buf
-> + *
-> + * Returns the number of bytes copied to @buf, a negative error number otherwise
-> + */
-> +static ssize_t fpga_mgr_status_write(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
-> +	int ret;
-> +
-> +	if (test_and_set_bit_lock(FPGA_MGR_DEV_BUSY, &mgr->flags))
-> +		return -EBUSY;
-> +
-> +	ret = strcmp(buf, "write_init");
-> +	if (!ret) {
-> +		ret = fpga_mgr_write_init(mgr);
-> +		goto out;
-> +	}
-> +
-> +	ret = strcmp(buf, "write_complete");
-> +	if (!ret) {
-> +		ret = fpga_mgr_write_complete(mgr);
-> +		goto out;
-> +	}
-> +
-> +	ret = strcmp(buf, "read_init");
-> +	if (!ret) {
-> +		ret = fpga_mgr_read_init(mgr);
-> +		goto out;
-> +	}
-> +
-> +	ret = strcmp(buf, "read_complete");
-> +	if (!ret) {
-> +		ret = fpga_mgr_read_complete(mgr);
-> +		goto out;
-> +	}
-> +
-> +	ret = -EINVAL;
-> +out:
-> +	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
-> +
-> +	return ret ? : count;
-> +}
-
-I think this style is awkward and this would be
-better written as:
-
-	if (!strcmp(buf, "write_init"))
-		ret = fpga_mgr_write_init(mgr);
-	else if (!strcmp(buf, "write_complete"))
-		ret = fpga_mgr_write_complete(mgr);
-	else if (!strcmp(buf, "read_init"))
-		ret = fpga_mgr_read_init(mgr);
-	else if (!strcmp(buf, "read_complete"))
-		ret = fpga_mgr_read_complete(mgr);
-	else
-		ret = -EINVAL;
-
-	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
-
-	if (ret)
-		return ret;
-
-	return count;
-}
-
-Maybe use (strcmp(...) == 0) if you prefer that.
-Both styles are commonly used in linux.
-
-Probably all of the "return ret ?: count;" uses
-would be more easily understood on 3 lines.
-
+Sorry, for some reason I thought this patch was touching core code
+rather than the specific driver:-(
 
