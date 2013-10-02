@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab3JBQek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 12:34:40 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24640 "EHLO
+	id S1754309Ab3JBQg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:36:26 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:24664 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753339Ab3JBQei (ORCPT
+	by vger.kernel.org with ESMTP id S1753527Ab3JBQgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:34:38 -0400
-X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Oct 2013 12:34:37 EDT
+	Wed, 2 Oct 2013 12:36:24 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -28,9 +27,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         linux-driver@qlogic.com,
         Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
         "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH RFC 52/77] niu: Update MSI/MSI-X interrupts enablement code
-Date: Wed,  2 Oct 2013 12:49:08 +0200
-Message-Id: <9808b7b5600043632fab8fa19f5b8e7845637de0.1380703263.git.agordeev@redhat.com>
+Subject: [PATCH RFC 51/77] mthca: Update MSI/MSI-X interrupts enablement code
+Date: Wed,  2 Oct 2013 12:49:07 +0200
+Message-Id: <9d424912ef78993dc75e2af5006cd12913e9e7e7.1380703263.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
 References: <cover.1380703262.git.agordeev@redhat.com>
@@ -44,51 +43,42 @@ obtain a optimal number of MSI/MSI-X interrupts required.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/sun/niu.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/infiniband/hw/mthca/mthca_main.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
-index f28460c..54c41b9 100644
---- a/drivers/net/ethernet/sun/niu.c
-+++ b/drivers/net/ethernet/sun/niu.c
-@@ -9051,26 +9051,28 @@ static void niu_try_msix(struct niu *np, u8 *ldg_num_map)
- 		    (np->port == 0 ? 3 : 1));
- 	BUG_ON(num_irqs > (NIU_NUM_LDG / parent->num_ports));
+diff --git a/drivers/infiniband/hw/mthca/mthca_main.c b/drivers/infiniband/hw/mthca/mthca_main.c
+index 87897b9..3d44ca4 100644
+--- a/drivers/infiniband/hw/mthca/mthca_main.c
++++ b/drivers/infiniband/hw/mthca/mthca_main.c
+@@ -854,17 +854,23 @@ static int mthca_enable_msi_x(struct mthca_dev *mdev)
+ 	struct msix_entry entries[3];
+ 	int err;
  
--retry:
-+	err = pci_msix_table_size(pdev);
++	err = pci_msix_table_size(mdev->pdev);
 +	if (err < 0)
-+		goto fail;
++		return err;
++	if (err < ARRAY_SIZE(entries)) {
++		mthca_info(mdev, "Only %d MSI-X vectors available, "
++			   "not using MSI-X\n", err);
 +
-+	num_irqs = min(num_irqs, err);
- 	for (i = 0; i < num_irqs; i++) {
- 		msi_vec[i].vector = 0;
- 		msi_vec[i].entry = i;
- 	}
++		return -ENOSPC;
++	}
++
+ 	entries[0].entry = 0;
+ 	entries[1].entry = 1;
+ 	entries[2].entry = 2;
  
- 	err = pci_enable_msix(pdev, msi_vec, num_irqs);
--	if (err < 0) {
--		np->flags &= ~NIU_FLAGS_MSIX;
--		return;
--	}
--	if (err > 0) {
--		num_irqs = err;
--		goto retry;
--	}
+ 	err = pci_enable_msix(mdev->pdev, entries, ARRAY_SIZE(entries));
+-	if (err) {
+-		if (err > 0)
+-			mthca_info(mdev, "Only %d MSI-X vectors available, "
+-				   "not using MSI-X\n", err);
 +	if (err)
-+		goto fail;
+ 		return err;
+-	}
  
- 	np->flags |= NIU_FLAGS_MSIX;
- 	for (i = 0; i < num_irqs; i++)
- 		np->ldg[i].irq = msi_vec[i].vector;
- 	np->num_ldg = num_irqs;
-+	return;
-+
-+fail:
-+	np->flags &= ~NIU_FLAGS_MSIX;
- }
- 
- static int niu_n2_irq_init(struct niu *np, u8 *ldg_num_map)
+ 	mdev->eq_table.eq[MTHCA_EQ_COMP ].msi_x_vector = entries[0].vector;
+ 	mdev->eq_table.eq[MTHCA_EQ_ASYNC].msi_x_vector = entries[1].vector;
 -- 
 1.7.7.6
 
