@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3JBAyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Oct 2013 20:54:47 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49512 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3JBAyo (ORCPT
+	id S1752562Ab3JBBHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Oct 2013 21:07:51 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44161 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab3JBBHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Oct 2013 20:54:44 -0400
-X-AuditID: 9c930197-b7b7aae000005bd9-07-524b6ed063b5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Support for Openembedded/Yocto -dbg packages
-References: <1379493790-9554-1-git-send-email-ricardo.ribalda@gmail.com>
-	<20130918092444.GA2778@gmail.com>
-	<CAPybu_2GBymhgxHmtJu63pT2t8ge84EA9Ww54r9mGOA5KH7Hww@mail.gmail.com>
-	<CAPybu_2Wf_p-jo2X4VzSBXrfy3DnHY4PeOvNVLfeoGRFfbDwRA@mail.gmail.com>
-	<20130918101801.GO12926@twins.programming.kicks-ass.net>
-	<20130918130735.GC2240@ghostprotocols.net>
-	<20130918132903.GA4071@gmail.com>
-Date: Wed, 02 Oct 2013 09:54:40 +0900
-In-Reply-To: <20130918132903.GA4071@gmail.com> (Ingo Molnar's message of "Wed,
-	18 Sep 2013 15:29:03 +0200")
-Message-ID: <87had0o5kf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 1 Oct 2013 21:07:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <524B7179.7040104@jp.fujitsu.com>
+Date: Wed, 02 Oct 2013 10:06:01 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <1380656245-29975-7-git-send-email-keescook@chromium.org> <524B6AEE.90301@jp.fujitsu.com>
+In-Reply-To: <524B6AEE.90301@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo and Arnaldo,
+(2013/10/02 9:38), HATAYAMA Daisuke wrote:
+> (2013/10/02 4:37), Kees Cook wrote:
+<cut>
+>> @@ -1242,3 +1256,15 @@ void __init i386_reserve_resources(void)
+>>    }
+>>    
+>>    #endif /* CONFIG_X86_32 */
+>> +
+>> +static struct notifier_block kernel_offset_notifier = {
+>> +	.notifier_call = dump_kernel_offset
+>> +};
+>> +
+>> +static int __init register_kernel_offset_dumper(void)
+>> +{
+>> +	atomic_notifier_chain_register(&panic_notifier_list,
+>> +					&kernel_offset_notifier);
+>> +	return 0;
+>> +}
+>> +__initcall(register_kernel_offset_dumper);
+>>
+> 
+> Panic notifier is not executed if kdump is enabled. Maybe, Chrome OS doesn't use
+> kdump? Anyway, kdump related tools now calculate phys_base from memory map
+> information passed as ELF PT_LOAD entries like below.
 
-On Wed, 18 Sep 2013 15:29:03 +0200, Ingo Molnar wrote:
-> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
->
->> Em Wed, Sep 18, 2013 at 12:18:01PM +0200, Peter Zijlstra escreveu:
->> > On Wed, Sep 18, 2013 at 12:02:12PM +0200, Ricardo Ribalda Delgado wrote:
->> > > Perhaps this is even more clear than v2:
->> 
->> > > len = snprintf(file, size, "%s", symbol_conf.symfs);
->> > > size -= len;
->> > > file += len;
->> > > len = snprintf(file, MIN(size,(last_slash - dso->long_name) + 2),
->> > > "%s",  dso->long_name);
->> > > size -= len;
->> > > file += len;
->> > > len = snprintf(file, size, ".debug%s",  last_slash);
->> 
->> > len = 0;
->> 
->> > len += snprintf(str + len, size - len, ...);
->> > len += snprintf(str + len, size - len, ...);
->> 
->> And avoid snprintf like the plague, use scnprintf instead...  See
->> e7f01d1e3d8d501deb8abeaa269d5d48a703b8b0 for details :-)
->
-> Hm, could we do:
->
-> 	#define snprintf scnprintf
->
-> or:
->
-> 	#define snprintf(x...) BUILD_BUG()
->
-> ?
->
-> I don't think there's any valid code, except printf wrappers (which we 
-> don't have in perf), where the semantics of snprintf() would be needed.
+Another simpler way is to print this information at boot time, not at panic.
 
-There are some places that use snprintf() to query the actual length:
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
-tools/perf/util/srcline.c:245:	size = snprintf(NULL, 0, "%s:%u", file, line) + 1;
-tools/perf/util/values.c:147:		width = snprintf(NULL, 0, "%d", values->pid[i]);
-tools/perf/util/values.c:150:		width = snprintf(NULL, 0, "%d", values->tid[i]);
-tools/perf/util/values.c:154:			width = snprintf(NULL, 0, "%" PRIu64, values->value[i][j]);
-tools/perf/util/values.c:189:		width = snprintf(NULL, 0, "%d", values->pid[i]);
-tools/perf/util/values.c:192:		width = snprintf(NULL, 0, "%d", values->tid[i]);
-tools/perf/util/values.c:200:		width = snprintf(NULL, 0, "%" PRIx64, values->counterrawid[j]);
-tools/perf/util/values.c:206:			width = snprintf(NULL, 0, "%" PRIu64, values->value[i][j]);
-
-
-Thanks,
-Namhyung
