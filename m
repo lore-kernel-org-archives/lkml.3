@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab3JBFNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:13:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58113 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab3JBFNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:13:20 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131002050714.GA27982@gmail.com>
-References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <20131002050714.GA27982@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v6 0/7] Kernel base address randomization
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 01 Oct 2013 22:11:37 -0700
-To: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        kernel-hardening@lists.openwall.com, adurbin@google.com,
-        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
-        Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+	id S1752967Ab3JBFNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:13:30 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:35610 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab3JBFNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 01:13:24 -0400
+Date: Wed, 2 Oct 2013 07:13:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <fcdac020-6b9a-4d36-b424-290597669cb0@email.android.com>
+        Peter Zijlstra <peterz@infradead.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: spinlock contention of files->file_lock
+Message-ID: <20131002051319.GB27982@gmail.com>
+References: <CA+55aFwp-RAKEMVvbMG53C=kTMqS09NPXy1eP4xEUYZpvV8X5Q@mail.gmail.com>
+ <1380589503.5326.13.camel@edumazet-glaptop.roam.corp.google.com>
+ <CA+55aFwWi-RveiuFEManbED3DcA76Cf3CKVXrrs5d5FvNgedOg@mail.gmail.com>
+ <1380663718.19002.49.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131001220453.GY13318@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131001220453.GY13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that the randomization offset would be necessary in order to identify pointers.
 
-Ingo Molnar <mingo@kernel.org> wrote:
->
->* Kees Cook <keescook@chromium.org> wrote:
->
->> Here is the latest version of the kASLR series. It has much improved 
->> e820 walking code, and expands the window available on 64-bit.
->> 
->> This is rolled out on Chrome OS devices, and working well.
->
->There's one kernel debuggability detail that should be discussed I
->think: 
->should symbolic printouts (in oops messages but also in /proc/kallsyms)
->
->and instrumentation interfaces that expose kernel addresses attempt to 
->de-randomize the addresses, stack contents and register values that lie
->
->within the random range?
->
->- it would be easier to use those addresses and look them up in a
->vmlinux
->   or in a System.map as well.
->
-> - it would be somewhat safer to post an oops publicly if it did not
->   contain the random offset in an easily identifiable way.
->
->- oops patterns from distribution kernels that enable randomization
->would 
->   match up better.
->
-> - this would make it safer to expose /proc/kallsyms to user-space
->   profiling, while keeping the random offset a kernel-internal secret.
->
-> - RIP information in profiling streams would thus not contain the
->   kernel random offset either.
->
->The other approach would be what your series does, to keep all the raw,
->
->randomized output and to assume that users who are allowed to access to
->
->logs or profiling can learn the random offset.
->
->I tend to lean towards the 'raw' approach that you picked, but an
->argument 
->can be made for both approaches - and in any case I haven't seen this 
->discussed to conclusion with cons/pros listed and a consensus/decision 
->reached.
->
->Thanks,
->
->	Ingo
+* Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+> On Tue, Oct 01, 2013 at 02:41:58PM -0700, Eric Dumazet wrote:
+> > Maybe I am missing something obvious ?
+> 
+> Yes.  do_execve_common() starts with unshare_files(); there can be
+> no other thread capable of modifying that descriptor table.
+
+Btw., might the Android Binder:
+
+  drivers/staging/android/binder.c:       struct files_struct *files = proc->files;
+...
+  drivers/staging/android/binder.c:               __fd_install(proc->files, fd, file);
+...
+  drivers/staging/android/binder.c:       retval = __close_fd(proc->files, fd);
+
+violate that assumption?
+
+Thanks,
+
+	Ingo
