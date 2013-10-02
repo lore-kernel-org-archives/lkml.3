@@ -1,104 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3JBR3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 13:29:55 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:35213 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755037Ab3JBR3w (ORCPT
+	id S1755346Ab3JBRaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 13:30:05 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:26210 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755037Ab3JBRaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 13:29:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
-References: <CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
-	<20130930165420.GI3081@twins.programming.kicks-ass.net>
-	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
-	<20131002112316.GP3081@twins.programming.kicks-ass.net>
-	<20131002115826.GM26785@twins.programming.kicks-ass.net>
-	<20131002123953.GB27811@gmail.com>
-	<20131002124610.GD28601@twins.programming.kicks-ass.net>
-	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
-	<20131002130143.GF28601@twins.programming.kicks-ass.net>
-	<CABPqkBTdWZaJzv4PA3yBor+o_iaBSmK73CrUQeY1tANR36ah8Q@mail.gmail.com>
-	<20131002133759.GH28601@twins.programming.kicks-ass.net>
-	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
-	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
-Date: Wed, 2 Oct 2013 10:29:51 -0700
-X-Google-Sender-Auth: PzJ9evVsvDa_wDM1O954QNM5hb0
-Message-ID: <CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Kees Cook <keescook@chromium.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Oct 2013 13:30:00 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 06/77] PCI/MSI: Factor out pci_get_msi_cap() interface
+Date: Wed,  2 Oct 2013 12:48:22 +0200
+Message-Id: <9c282c4ab92731c719d161d2db6fc54ce33891d9.1380703262.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 10:20 AM, Stephane Eranian <eranian@google.com> wrote:
-> On Wed, Oct 2, 2013 at 7:14 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Oct 2, 2013 at 6:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>> On Wed, Oct 02, 2013 at 03:13:16PM +0200, Stephane Eranian wrote:
->>>> On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>> > On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
->>>> >> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>> >> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
->>>> >> >>  - then there are timing attacks, and someone having access to a PMU
->>>> >> >>    context and who can trigger this SHA1 computation arbitrarily in task
->>>> >> >>    local context can run very accurate and low noise timing attacks...
->>>> >> >>
->>>> >> >>    I don't think the kernel's sha_transform() is hardened against timing
->>>> >> >>    attacks, it's performance optimized so it has variable execution time
->>>> >> >>    highly dependent on plaintext input - which leaks information about the
->>>> >> >>    plaintext.
->>>> >> >
->>>> >> > Typical user doesn't have enough priv to profile kernel space; once you
->>>> >> > do you also have enough priv to see kernel addresses outright (ie.
->>>> >> > kallsyms etc..).
->>>> >> >
->>>> >> I was going to say just that. But that's not the default, paranoid level
->>>> >> is at 1 by default and not 2. So I supposedly can still do:
->>>> >>
->>>> >> $ perf record -e cycles ......
->>>> >>
->>>> >> In per-thread mode and collect kernel level addresses.
->>>> >
->>>> > Oh right you are.. so yes that's a very viable avenue.
->>>>
->>>> You mean simply encoding the vma->vm_mm as the ino number, for instance.
->>>
->>> Nah.. I think Kees would very much shoot us on the spot for doing that.
->>> But with the paranoid level defaulting to 1 the PMU attack on the kernel
->>> SHA implenentation is feasible.
->>
->> We already have other kernel address leaks (e.g. heap addresses via
->> INET_DIAG), and I'd like to avoid adding more. It'd be nice if there
->> was a common way to uniquely mask these values that are really just
->> "handles". We could use it both here and in the network code.
->>
->> Would it be possible to just have a "regular" incrementing handle,
->> like fd, or are we talking about doing that map for all VMAs, which
->> would make that mapping unfeasible due to storage needs?
->>
-> All we need is a way to report that two vmas point to the same
-> vma->vm_mm, i..e, same physical data. If I understand what
-> you are suggesting, you'd add some sort of generation number
-> to the vm_mm. Each new vm_mm gets a new number. That
-> would work, I think. No kernel addresses reported directly nor
-> hashed.
+This update is needed to facilitate a forthcoming re-design
+MSI/MSI-X interrupts enabling pattern.
 
-Right. Is that workable? It sounds like this handle is only needed at
-inspection time, though. Is this uniqueness test limited to a single
-process, or is this uniqueness test across processes?
+Device drivers will use this interface to obtain maximum number
+of MSI interrupts the device supports and use that value in the
+following call to pci_enable_msi_block() interface.
 
--Kees
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ Documentation/PCI/MSI-HOWTO.txt |   15 +++++++++++++++
+ drivers/pci/msi.c               |   33 +++++++++++++++++++++------------
+ include/linux/pci.h             |    6 ++++++
+ 3 files changed, 42 insertions(+), 12 deletions(-)
 
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index 35b2d64..1f37ce2 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -169,6 +169,21 @@ on any interrupt for which it previously called request_irq().
+ Failure to do so results in a BUG_ON(), leaving the device with
+ MSI enabled and thus leaking its vector.
+ 
++4.2.5 pci_get_msi_cap
++
++int pci_get_msi_cap(struct pci_dev *dev)
++
++This function could be used to retrieve the number of MSI vectors the
++device requested (via the Multiple Message Capable register). The MSI
++specification only allows the returned value to be a power of two,
++up to a maximum of 2^5 (32).
++
++If this function returns a negative number, it indicates the device is
++not capable of sending MSIs.
++
++If this function returns a positive number, it indicates the maximum
++number of MSI interrupt vectors that could be allocated.
++
+ 4.3 Using MSI-X
+ 
+ The MSI-X capability is much more flexible than the MSI capability.
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 875c353..ca59bfc 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -812,6 +812,21 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ 	return 0;
+ }
+ 
++int pci_get_msi_cap(struct pci_dev *dev)
++{
++	int ret;
++	u16 msgctl;
++
++	if (!dev->msi_cap)
++		return -EINVAL;
++
++	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
++	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++
++	return ret;
++}
++EXPORT_SYMBOL(pci_get_msi_cap);
++
+ /**
+  * pci_enable_msi_block - configure device's MSI capability structure
+  * @dev: device to configure
+@@ -828,13 +843,10 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ {
+ 	int status, maxvec;
+-	u16 msgctl;
+ 
+-	if (!dev->msi_cap)
+-		return -EINVAL;
+-
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	maxvec = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++	maxvec = pci_get_msi_cap(dev);
++	if (maxvec < 0)
++		return maxvec;
+ 	if (nvec > maxvec)
+ 		return maxvec;
+ 
+@@ -859,13 +871,10 @@ EXPORT_SYMBOL(pci_enable_msi_block);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+ {
+ 	int ret, nvec;
+-	u16 msgctl;
+ 
+-	if (!dev->msi_cap)
+-		return -EINVAL;
+-
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++	ret = pci_get_msi_cap(dev);
++	if (ret < 0)
++		return ret;
+ 
+ 	if (maxvec)
+ 		*maxvec = ret;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index da172f9..2fa92ef 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1144,6 +1144,11 @@ struct msix_entry {
+ 
+ 
+ #ifndef CONFIG_PCI_MSI
++static inline int pci_get_msi_cap(struct pci_dev *dev)
++{
++	return -1;
++}
++
+ static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ {
+ 	return -1;
+@@ -1185,6 +1190,7 @@ static inline int pci_msi_enabled(void)
+ 	return 0;
+ }
+ #else
++int pci_get_msi_cap(struct pci_dev *dev);
+ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
 -- 
-Kees Cook
-Chrome OS Security
+1.7.7.6
+
