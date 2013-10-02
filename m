@@ -1,145 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3JBXJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 19:09:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29197 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753326Ab3JBXJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 19:09:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
-   d="scan'208";a="413224850"
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Joe Perches <joe@perches.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: Nikhil Rao <nikhil.rao@intel.com>, Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next] misc: mic: Fix build issues in sample daemon.
-Date: Wed,  2 Oct 2013 16:09:00 -0700
-Message-Id: <03258a55f3cfae828b0f0c96b010c8ab6aa2065d.1380735129.git.sudeep.dutt@intel.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1753980Ab3JBXLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 19:11:45 -0400
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:9175
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753933Ab3JBXLo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 19:11:44 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Gleb Natapov <gleb@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Thread-Topic: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+Thread-Index: AQHOqM30I+mkPB2b1kKq/5YqjRysqJnC17CggAAG+ACAABQ5UIAAikAAgABK5hCABkKSgIAAYOzQgACm54CACFRvYIAAMLCAgA6f7HA=
+Date: Wed, 2 Oct 2013 23:11:29 +0000
+Message-ID: <9d0d4edf4b484f6cb581f7316ac24681@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
+ <52325C1E.90101@zytor.com>
+ <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130913095526.GE18381@redhat.com>
+ <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130917135918.GY17294@redhat.com>
+ <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130918054335.GE5657@redhat.com>
+ <2d39849c011b4cc794686a41e45db87a@SN2PR03MB061.namprd03.prod.outlook.com>
+ <5240632F.5070709@zytor.com>
+In-Reply-To: <5240632F.5070709@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::2]
+x-forefront-prvs: 0987ACA2E2
+x-forefront-antispam-report: SFV:NSPM;SFS:(13464003)(51704005)(24454002)(479174003)(377454003)(199002)(189002)(83072001)(65816001)(59766001)(80022001)(63696002)(81542001)(77982001)(54316002)(49866001)(81342001)(47976001)(50986001)(47736001)(56776001)(80976001)(33646001)(74316001)(74366001)(83322001)(19580405001)(53806001)(4396001)(19580395003)(79102001)(69226001)(56816003)(77096001)(74502001)(47446002)(76786001)(76796001)(74662001)(31966008)(54356001)(76482001)(74876001)(81816001)(46102001)(74706001)(81686001)(76576001)(51856001)(85306001)(3826001)(24736002)(15583001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::2;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specifying gcc format function attribute for mpsslog(..) and
-building on 32 bit systems exposed a few build issues in the
-sample MIC daemon which are fixed by this patch. Some of these
-changes were authored by Joe Perches @
-https://lkml.org/lkml/2013/9/27/419
 
-Reported-by: Joe Perches <joe@perches.com>
-Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Signed-off-by: Caz Yokoyama <Caz.Yokoyama@intel.com>
-Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
----
- Documentation/mic/mpssd/mpssd.c | 22 +++++++++++-----------
- Documentation/mic/mpssd/mpssd.h |  1 +
- 2 files changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/mic/mpssd/mpssd.c b/Documentation/mic/mpssd/mpssd.c
-index f9327a2..82c6bc2 100644
---- a/Documentation/mic/mpssd/mpssd.c
-+++ b/Documentation/mic/mpssd/mpssd.c
-@@ -362,9 +362,9 @@ static inline void verify_out_len(struct mic_info *mic,
- 	struct mic_copy_desc *copy)
- {
- 	if (copy->out_len != sum_iovec_len(copy)) {
--		mpsslog("%s %s %d BUG copy->out_len 0x%x len 0x%x\n",
-+		mpsslog("%s %s %d BUG copy->out_len 0x%x len 0x%zx\n",
- 			mic->name, __func__, __LINE__,
--				copy->out_len, sum_iovec_len(copy));
-+			copy->out_len, sum_iovec_len(copy));
- 		assert(copy->out_len == sum_iovec_len(copy));
- 	}
- }
-@@ -377,7 +377,7 @@ disp_iovec(struct mic_info *mic, struct mic_copy_desc *copy,
- 	int i;
- 
- 	for (i = 0; i < copy->iovcnt; i++)
--		mpsslog("%s %s %d copy->iov[%d] addr %p len 0x%lx\n",
-+		mpsslog("%s %s %d copy->iov[%d] addr %p len 0x%zx\n",
- 			mic->name, s, line, i,
- 			copy->iov[i].iov_base, copy->iov[i].iov_len);
- }
-@@ -630,7 +630,7 @@ virtio_net(void *arg)
- 				disp_iovec(mic, &copy, __func__, __LINE__);
- 				mpsslog("%s %s %d read failed %s ", mic->name,
- 					__func__, __LINE__, strerror(errno));
--				mpsslog("cnt %d sum %d\n",
-+				mpsslog("cnt %d sum %zd\n",
- 					copy.iovcnt, sum_iovec_len(&copy));
- 			}
- 		}
-@@ -680,8 +680,8 @@ virtio_net(void *arg)
- 					if (len != sum_iovec_len(&copy)) {
- 						mpsslog("Tun write failed %s ",
- 							strerror(errno));
--						mpsslog("len 0x%x ", len);
--						mpsslog("read_len 0x%x\n",
-+						mpsslog("len 0x%zx ", len);
-+						mpsslog("read_len 0x%zx\n",
- 							sum_iovec_len(&copy));
- 					} else {
- #ifdef DEBUG
-@@ -827,7 +827,7 @@ virtio_console(void *arg)
- 				mpsslog("%s %s %d read failed %s ",
- 					mic->name, __func__, __LINE__,
- 					strerror(errno));
--				mpsslog("cnt %d sum %d\n",
-+				mpsslog("cnt %d sum %zd\n",
- 					copy.iovcnt, sum_iovec_len(&copy));
- 			}
- 		}
-@@ -859,8 +859,8 @@ virtio_console(void *arg)
- 					if (len != sum_iovec_len(&copy)) {
- 						mpsslog("Tun write failed %s ",
- 							strerror(errno));
--						mpsslog("len 0x%x ", len);
--						mpsslog("read_len 0x%x\n",
-+						mpsslog("len 0x%zx ", len);
-+						mpsslog("read_len 0x%zx\n",
- 							sum_iovec_len(&copy));
- 					} else {
- #ifdef DEBUG
-@@ -953,7 +953,7 @@ set_backend_file(struct mic_info *mic)
- 		return false;
- 	mic->mic_virtblk.backend_file = malloc(strlen(evv) + 1);
- 	if (mic->mic_virtblk.backend_file == NULL) {
--		mpsslog("can't allocate memory\n", mic->name, mic->id);
-+		mpsslog("%s %d can't allocate memory\n", mic->name, mic->id);
- 		return false;
- 	}
- 	strcpy(mic->mic_virtblk.backend_file, evv + 1);
-@@ -1026,7 +1026,7 @@ close_backend(struct mic_info *mic)
- static bool
- start_virtblk(struct mic_info *mic, struct mic_vring *vring)
- {
--	if (((__u64)&virtblk_dev_page.blk_config % 8) != 0) {
-+	if (((unsigned long)&virtblk_dev_page.blk_config % 8) != 0) {
- 		mpsslog("%s: blk_config is not 8 byte aligned.\n",
- 			mic->name);
- 		return false;
-diff --git a/Documentation/mic/mpssd/mpssd.h b/Documentation/mic/mpssd/mpssd.h
-index b6dee38..ccd589f 100644
---- a/Documentation/mic/mpssd/mpssd.h
-+++ b/Documentation/mic/mpssd/mpssd.h
-@@ -94,6 +94,7 @@ struct mic_info {
- 	struct mic_info *next;
- };
- 
-+__attribute__((format(printf, 1, 2)))
- void mpsslog(char *format, ...);
- char *readsysfs(char *dir, char *entry);
- int setsysfs(char *dir, char *entry, char *value);
--- 
-1.8.2.1
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Monday, September 23, 2013 8:50 AM
+> To: KY Srinivasan
+> Cc: Gleb Natapov; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> JBeulich@suse.com; bp@alien8.de; dmitry.torokhov@gmail.com
+> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> from the hypervisor
+> 
+> On 09/23/2013 06:02 AM, KY Srinivasan wrote:
+> >
+> > Peter,
+> > Please let me know if there are other issues I need to address here. Now that
+> Dmitry has queued up the
+> > Hyper-V keyboard driver, with this patch we can fully support Linux on our uefi
+> firmware.
+> >
+> 
+> I just got back from Plumber's -- this is on my short list of things to
+> look at.  If you haven't heard anything by Wednesday, ping me.
+
+Ping.
+
+K. Y
+> 
+> 	-hpa
+> 
 
