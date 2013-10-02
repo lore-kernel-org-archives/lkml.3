@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3JBFcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 01:32:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58265 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766Ab3JBFcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 01:32:01 -0400
-Message-ID: <524BAF92.1090705@zytor.com>
-Date: Tue, 01 Oct 2013 22:30:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, kernel-hardening@lists.openwall.com,
-        adurbin@google.com, Eric Northup <digitaleric@google.com>,
-        jln@google.com, wad@google.com,
-        Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752926Ab3JBFdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 01:33:52 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:42941 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab3JBFdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 01:33:50 -0400
+Date: Tue, 1 Oct 2013 22:33:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Martin Walch <walch.martin@web.de>
+cc: Michal Marek <mmarek@suse.cz>, Jiri Kosina <trivial@kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        =?UTF-8?Q?Arve_Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Dirk Gouders <dirk@gouders.net>,
+        Wang YanQing <udknight@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/7] Kernel base address randomization
-References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <20131002050714.GA27982@gmail.com> <fcdac020-6b9a-4d36-b424-290597669cb0@email.android.com> <20131002052531.GA31122@gmail.com>
-In-Reply-To: <20131002052531.GA31122@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] kconfig: adjust warning message for conflicting
+ types
+In-Reply-To: <2865108.QhoiiS6j3s@tacticalops>
+Message-ID: <alpine.DEB.2.02.1310012230090.5682@chino.kir.corp.google.com>
+References: <2865108.QhoiiS6j3s@tacticalops>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2013 10:25 PM, Ingo Molnar wrote:
-> 
-> I mean, for example in an oops message we print data in words: the RIP, 
-> other registers and stack contents. If any of these values lies within the 
-> randomization range then we could de-randomize it.
-> 
-> So instead of exposing randomized values, we could expose de-randomized 
-> values.
-> 
-> ( This isn't fool-proof: if some data value happens to lie within the 
->   random range spuriously then we'll incorrectly transform it. In the 
->   context of oops messages this should not be a big practical problem 
->   though. )
-> 
+On Wed, 2 Oct 2013, Martin Walch wrote:
 
-I don't agree that this isn't a big practical problem.  I often find it
-necessary to pick out "things that look like pointers".  Overall,
-derandomization would make it possible to get really confused when you
-have things like half a pointer overwritten.
+> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+> index b970101..e511df5 100644
+> --- a/scripts/kconfig/menu.c
+> +++ b/scripts/kconfig/menu.c
+> @@ -119,7 +119,7 @@ void menu_set_type(int type)
+>  		sym->type = type;
+>  		return;
+>  	}
+> -	menu_warn(current_entry, "type of '%s' redefined from '%s' to '%s'",
+> +	menu_warn(current_entry, "type of '%s' not redefined from '%s' to '%s'",
+>  	    sym->name ? sym->name : "<choice>",
+>  	    sym_type_name(sym->type), sym_type_name(type));
+>  }
 
-	-hpa
-
-
+The warning is stating that the symbol was attempted to be redefined from 
+one type to another, not that it was successful, so I don't think this 
+patch actually helps make anything clearer.  (gcc warns when a symbol is 
+redefined by saying "redefintion of `blah`".)  Perhaps include that the 
+redefinition was ignored?
