@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3JBT6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:58:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753480Ab3JBT6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:58:20 -0400
-Message-ID: <1380743896.2673.6.camel@ul30vt.home>
-Subject: Re: [PATCH 1/1] virt/kvm/iommu.c: Add leading zeros to device's BDF
- notation in debug messages
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andre Richter <andre.o.richter@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 02 Oct 2013 13:58:16 -0600
-In-Reply-To: <CAKqeN28x_YcjquLfF20ZDgn=fXFxfwmkJdNf2KadnPD6iFnbOw@mail.gmail.com>
-References: <1380709406-3528-1-git-send-email-andre.o.richter@gmail.com>
-	 <20131002103508.GG17294@redhat.com> <1380728477.14271.81.camel@ul30vt.home>
-	 <CAKqeN28x_YcjquLfF20ZDgn=fXFxfwmkJdNf2KadnPD6iFnbOw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754242Ab3JBT7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:59:40 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:33016 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3JBT7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 15:59:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPgLHd_=Y=YwCWSFjcacJ14yKUidmmJTHnKKibU6haoBUeNacA@mail.gmail.com>
+References: <CAPgLHd_=Y=YwCWSFjcacJ14yKUidmmJTHnKKibU6haoBUeNacA@mail.gmail.com>
+Date: Wed, 2 Oct 2013 12:59:38 -0700
+Message-ID: <CAN8TOE96Ax_gyeG5fXHejHE6gCmxNchioy1BrE8a6B83kK7A8g@mail.gmail.com>
+Subject: Re: [PATCH] UBIFS: fix error return code in ubifs_remount_rw() and ubifs_fill_super()
+From: Brian Norris <computersforpeace@gmail.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, yongjun_wei@trendmicro.com.cn,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Wei Yongjun <weiyj.lk@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 21:08 +0200, Andre Richter wrote:
-> 2013/10/2 Alex Williamson <alex.williamson@redhat.com>:
-> > On Wed, 2013-10-02 at 13:35 +0300, Gleb Natapov wrote:
-> >> On Wed, Oct 02, 2013 at 12:23:26PM +0200, Andre Richter wrote:
-> >> > When KVM (de)assigns PCI(e) devices to VMs, a debug message is printed
-> >> > including the BDF notation of the respective device. Currently, the BDF
-> >> > notation does not have the commonly used leading zeros. This produces
-> >> > messages like "assign device 0:1:8.0", which look strange at first sight.
-> >> >
-> >> > The patch fixes this by exchanging the printk(KERN_DEBUG ...) with dev_info()
-> >> > and also inserts "kvm" into the debug message, so that it is obvious where
-> >> > the message comes from. Also reduces LoC.
-> >> Legacy assigned device is deprecated, but this looks nice enough to
-> >> apply. Alex can you glance at it?
-> >
-> > Seems ok to me, my only question would be why are we promoting this from
-> > KERN_DEBUG to KERN_INFO.  We could use dev_dbg() to maintain the same
-> > kernel log level.  A nice feature of either is that it prints out the
-> > attached driver so we can see in dmesg whether the device is attached to
-> > a host driver, nothing, or pci-stub.  Thanks,
-> >
-> > Alex
-> 
-> I made it dev_info() because on my test system, dev_dbg() did not show
-> up in dmesg, whereas
-> the original printk(KERN_DEBUG ...) did. I guess dev_dbg() was
-> stripped due to compiling without DEBUG?
-> Therefore, I found dev_info() to better mimic the original behavior. I
-> can change it to dev_dbg() if you wish?
+Bump, Artem? I'm cleaning out my old email, and this patch looks
+obviously correct.
 
-Ah, dev_dbg is dynamic.  I guess I don't really mind the change, host
-drivers print out more.
-
-Acked-by: Alex Williamson <alex.williamson@redhat.com>
-
-> >
-> >> >
-> >> > Signed-off-by: Andre Richter <andre.o.richter@gmail.com>
-> >> > ---
-> >> >  virt/kvm/iommu.c | 12 ++----------
-> >> >  1 file changed, 2 insertions(+), 10 deletions(-)
-> >> >
-> >> > diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-> >> > index 72a130b..a3b1410 100644
-> >> > --- a/virt/kvm/iommu.c
-> >> > +++ b/virt/kvm/iommu.c
-> >> > @@ -190,11 +190,7 @@ int kvm_assign_device(struct kvm *kvm,
-> >> >
-> >> >     pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-> >> >
-> >> > -   printk(KERN_DEBUG "assign device %x:%x:%x.%x\n",
-> >> > -           assigned_dev->host_segnr,
-> >> > -           assigned_dev->host_busnr,
-> >> > -           PCI_SLOT(assigned_dev->host_devfn),
-> >> > -           PCI_FUNC(assigned_dev->host_devfn));
-> >> > +   dev_info(&pdev->dev, "kvm assign device\n");
-> >> >
-> >> >     return 0;
-> >> >  out_unmap:
-> >> > @@ -220,11 +216,7 @@ int kvm_deassign_device(struct kvm *kvm,
-> >> >
-> >> >     pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-> >> >
-> >> > -   printk(KERN_DEBUG "deassign device %x:%x:%x.%x\n",
-> >> > -           assigned_dev->host_segnr,
-> >> > -           assigned_dev->host_busnr,
-> >> > -           PCI_SLOT(assigned_dev->host_devfn),
-> >> > -           PCI_FUNC(assigned_dev->host_devfn));
-> >> > +   dev_info(&pdev->dev, "kvm deassign device\n");
-> >> >
-> >> >     return 0;
-> >> >  }
-> >> > --
-> >> > 1.8.1.2
-> >>
-> >> --
-> >>                       Gleb.
-> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+On Thu, Jun 6, 2013 at 7:17 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Fix to return -ENOMEM in the kmalloc() and d_make_root() error handling
+> case instead of 0, as done elsewhere in those functions.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  fs/ubifs/super.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+> index f21acf0..673b4bc 100644
+> --- a/fs/ubifs/super.c
+> +++ b/fs/ubifs/super.c
+> @@ -1629,8 +1629,10 @@ static int ubifs_remount_rw(struct ubifs_info *c)
+>         }
+>
+>         c->write_reserve_buf = kmalloc(COMPRESSED_DATA_NODE_BUF_SZ, GFP_KERNEL);
+> -       if (!c->write_reserve_buf)
+> +       if (!c->write_reserve_buf) {
+> +               err = -ENOMEM;
+>                 goto out;
+> +       }
+>
+>         err = ubifs_lpt_init(c, 0, 1);
+>         if (err)
+> @@ -2063,8 +2065,10 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
+>         }
+>
+>         sb->s_root = d_make_root(root);
+> -       if (!sb->s_root)
+> +       if (!sb->s_root) {
+> +               err = -ENOMEM;
+>                 goto out_umount;
+> +       }
+>
+>         mutex_unlock(&c->umount_mutex);
+>         return 0;
+>
+>
