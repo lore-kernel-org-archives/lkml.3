@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab3JBTHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 15:07:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40943 "EHLO
+	id S1755512Ab3JBTHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 15:07:19 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40947 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab3JBTHK (ORCPT
+	with ESMTP id S1754640Ab3JBTHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 15:07:10 -0400
+	Wed, 2 Oct 2013 15:07:11 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH v2 3/9] clk: Add set_rate_and_parent() op
-Date: Wed,  2 Oct 2013 12:07:00 -0700
-Message-Id: <1380740826-29457-4-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v2 4/9] clk: msm: Add support for phase locked loops (PLLs)
+Date: Wed,  2 Oct 2013 12:07:01 -0700
+Message-Id: <1380740826-29457-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
 In-Reply-To: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
 References: <1380740826-29457-1-git-send-email-sboyd@codeaurora.org>
@@ -22,195 +22,274 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of Qualcomm's clocks can change their parent and rate at the
-same time with a single register write. Add support for this
-hardware to the common clock framework by adding a new
-set_rate_and_parent() op. When the clock framework determines
-that both the parent and the rate are going to change during
-clk_set_rate() it will call the .set_rate_and_parent() op if
-available and fall back to calling .set_parent() followed by
-.set_rate() otherwise.
+Add support for MSM's PLLs (phase locked loops). This is
+sufficient enough to be able to determine the rate the PLL is
+running at. We can add rate setting support later when it's
+needed.
 
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- Documentation/clk.txt        |  3 ++
- drivers/clk/clk.c            | 78 +++++++++++++++++++++++++++++++++-----------
- include/linux/clk-provider.h | 15 +++++++++
- 3 files changed, 77 insertions(+), 19 deletions(-)
+ drivers/clk/Kconfig       |   2 +
+ drivers/clk/Makefile      |   1 +
+ drivers/clk/msm/Kconfig   |   5 ++
+ drivers/clk/msm/Makefile  |   3 +
+ drivers/clk/msm/clk-pll.c | 147 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/msm/clk-pll.h |  45 ++++++++++++++
+ 6 files changed, 203 insertions(+)
+ create mode 100644 drivers/clk/msm/Kconfig
+ create mode 100644 drivers/clk/msm/Makefile
+ create mode 100644 drivers/clk/msm/clk-pll.c
+ create mode 100644 drivers/clk/msm/clk-pll.h
 
-diff --git a/Documentation/clk.txt b/Documentation/clk.txt
-index 3aeb5c4..79700ea 100644
---- a/Documentation/clk.txt
-+++ b/Documentation/clk.txt
-@@ -77,6 +77,9 @@ the operations defined in clk.h:
- 		int		(*set_parent)(struct clk_hw *hw, u8 index);
- 		u8		(*get_parent)(struct clk_hw *hw);
- 		int		(*set_rate)(struct clk_hw *hw, unsigned long);
-+		int		(*set_rate_and_parent)(struct clk_hw *hw,
-+					    unsigned long rate,
-+					    unsigned long parent_rate, u8 index);
- 		void		(*init)(struct clk_hw *hw);
- 	};
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 279407a..efb7606 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -93,6 +93,8 @@ config CLK_PPC_CORENET
+ 	  This adds the clock driver support for Freescale PowerPC corenet
+ 	  platforms using common clock framework.
  
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 7e4519b..a814dd1 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1194,10 +1194,9 @@ static void clk_reparent(struct clk *clk, struct clk *new_parent)
- 	clk->parent = new_parent;
- }
- 
--static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
-+static struct clk *__clk_set_parent_before(struct clk *clk, struct clk *parent)
- {
- 	unsigned long flags;
--	int ret = 0;
- 	struct clk *old_parent = clk->parent;
- 
- 	/*
-@@ -1228,6 +1227,34 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
- 	clk_reparent(clk, parent);
- 	clk_enable_unlock(flags);
- 
-+	return old_parent;
-+}
++source "drivers/clk/msm/Kconfig"
 +
-+static void __clk_set_parent_after(struct clk *clk, struct clk *parent,
-+		struct clk *old_parent)
+ endmenu
+ 
+ source "drivers/clk/mvebu/Kconfig"
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 7b11106..6838b07 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+ obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
+ obj-$(CONFIG_COMMON_CLK_VERSATILE) += versatile/
+ obj-$(CONFIG_ARCH_SIRF)		+= clk-prima2.o
++obj-$(CONFIG_COMMON_CLK_MSM)	+= msm/
+ obj-$(CONFIG_PLAT_ORION)	+= mvebu/
+ ifeq ($(CONFIG_COMMON_CLK), y)
+ obj-$(CONFIG_ARCH_MMP)		+= mmp/
+diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
+new file mode 100644
+index 0000000..91558ce
+--- /dev/null
++++ b/drivers/clk/msm/Kconfig
+@@ -0,0 +1,5 @@
++config COMMON_CLK_MSM
++	tristate "Support for Qualcomm's MSM designs"
++	depends on OF
++	select REGMAP_MMIO
++
+diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
+new file mode 100644
+index 0000000..16b750f
+--- /dev/null
++++ b/drivers/clk/msm/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_COMMON_CLK_MSM) += clk-msm.o
++
++clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+diff --git a/drivers/clk/msm/clk-pll.c b/drivers/clk/msm/clk-pll.c
+new file mode 100644
+index 0000000..7470bdd
+--- /dev/null
++++ b/drivers/clk/msm/clk-pll.c
+@@ -0,0 +1,147 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/bug.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/clk-provider.h>
++#include <linux/regmap.h>
++
++#include <asm/div64.h>
++
++#include "clk-pll.h"
++
++#define to_clk_pll(_hw) container_of(_hw, struct clk_pll, hw)
++
++#define PLL_OUTCTRL	BIT(0)
++#define PLL_BYPASSNL	BIT(1)
++#define PLL_RESET_N	BIT(2)
++
++static int clk_pll_enable(struct clk_hw *hw)
 +{
++	struct clk_pll *pll = to_clk_pll(hw);
++	int ret;
++
++	/* Disable PLL bypass mode. */
++	ret = regmap_update_bits(hw->regmap, pll->mode_reg, PLL_BYPASSNL,
++				 PLL_BYPASSNL);
++	if (ret)
++		return ret;
++
 +	/*
-+	 * Finish the migration of prepare state and undo the changes done
-+	 * for preventing a race with clk_enable().
++	 * H/W requires a 5us delay between disabling the bypass and
++	 * de-asserting the reset. Delay 10us just to be safe.
 +	 */
-+	if (clk->prepare_count) {
-+		clk_disable(clk);
-+		clk_disable(old_parent);
-+		__clk_unprepare(old_parent);
-+	}
++	udelay(10);
 +
-+	/* update debugfs with new clk tree topology */
-+	clk_debug_reparent(clk, parent);
++	/* De-assert active-low PLL reset. */
++	ret = regmap_update_bits(hw->regmap, pll->mode_reg, PLL_RESET_N,
++				 PLL_RESET_N);
++	if (ret)
++		return ret;
++
++	/* Wait until PLL is locked. */
++	udelay(50);
++
++	/* Enable PLL output. */
++	ret = regmap_update_bits(hw->regmap, pll->mode_reg, PLL_OUTCTRL,
++				 PLL_OUTCTRL);
++	if (ret)
++		return ret;
++
++	return 0;
 +}
 +
-+static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
++static void clk_pll_disable(struct clk_hw *hw)
 +{
-+	unsigned long flags;
-+	int ret = 0;
-+	struct clk *old_parent;
++	struct clk_pll *pll = to_clk_pll(hw);
++	u32 mask;
 +
-+	old_parent = __clk_set_parent_before(clk, parent);
++	mask = PLL_OUTCTRL | PLL_RESET_N | PLL_BYPASSNL;
++	regmap_update_bits(hw->regmap, pll->mode_reg, mask, 0);
++}
 +
- 	/* change clock input source */
- 	if (parent && clk->ops->set_parent)
- 		ret = clk->ops->set_parent(clk->hw, p_index);
-@@ -1245,18 +1272,8 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
- 		return ret;
- 	}
- 
--	/*
--	 * Finish the migration of prepare state and undo the changes done
--	 * for preventing a race with clk_enable().
--	 */
--	if (clk->prepare_count) {
--		clk_disable(clk);
--		clk_disable(old_parent);
--		__clk_unprepare(old_parent);
--	}
-+	__clk_set_parent_after(clk, parent, old_parent);
- 
--	/* update debugfs with new clk tree topology */
--	clk_debug_reparent(clk, parent);
- 	return 0;
- }
- 
-@@ -1441,17 +1458,32 @@ static void clk_change_rate(struct clk *clk)
- 	struct clk *child;
- 	unsigned long old_rate;
- 	unsigned long best_parent_rate = 0;
-+	bool skip_set_rate = false;
-+	struct clk *old_parent;
- 
- 	old_rate = clk->rate;
- 
--	/* set parent */
--	if (clk->new_parent && clk->new_parent != clk->parent)
--		__clk_set_parent(clk, clk->new_parent, clk->new_parent_index);
--
--	if (clk->parent)
-+	if (clk->new_parent)
-+		best_parent_rate = clk->new_parent->rate;
-+	else if (clk->parent)
- 		best_parent_rate = clk->parent->rate;
- 
--	if (clk->ops->set_rate)
-+	if (clk->new_parent && clk->new_parent != clk->parent) {
-+		old_parent = __clk_set_parent_before(clk, clk->new_parent);
++static unsigned long
++clk_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
++{
++	struct clk_pll *pll = to_clk_pll(hw);
++	u32 l, m, n;
++	unsigned long rate;
++	u64 tmp;
 +
-+		if (clk->ops->set_rate_and_parent) {
-+			skip_set_rate = true;
-+			clk->ops->set_rate_and_parent(clk->hw, clk->new_rate,
-+					best_parent_rate,
-+					clk->new_parent_index);
-+		} else if (clk->ops->set_parent) {
-+			clk->ops->set_parent(clk->hw, clk->new_parent_index);
-+		}
++	regmap_read(hw->regmap, pll->l_reg, &l);
++	regmap_read(hw->regmap, pll->m_reg, &m);
++	regmap_read(hw->regmap, pll->n_reg, &n);
 +
-+		__clk_set_parent_after(clk, clk->new_parent, old_parent);
++	l &= 0x3ff;
++	m &= 0x7ffff;
++	n &= 0x7ffff;
++
++	rate = parent_rate * l;
++	if (n) {
++		tmp = parent_rate;
++		tmp *= m;
++		do_div(tmp, n);
++		rate += tmp;
++	}
++	return rate;
++}
++
++const struct clk_ops clk_pll_ops = {
++	.enable = clk_pll_enable,
++	.disable = clk_pll_disable,
++	.recalc_rate = clk_pll_recalc_rate,
++};
++EXPORT_SYMBOL_GPL(clk_pll_ops);
++
++static int wait_for_pll(struct clk_pll *pll)
++{
++	u32 val;
++	int count;
++	int ret;
++	const char *name = __clk_get_name(pll->hw.clk);
++
++	/* Wait for pll to enable. */
++	for (count = 200; count > 0; count--) {
++		ret = regmap_read(pll->hw.regmap, pll->status_reg, &val);
++		if (ret)
++			return ret;
++		if (val & BIT(pll->status_bit))
++			return 0;
++		udelay(1);
 +	}
 +
-+	if (!skip_set_rate && clk->ops->set_rate)
- 		clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
- 
- 	if (clk->ops->recalc_rate)
-@@ -1743,6 +1775,14 @@ int __clk_init(struct device *dev, struct clk *clk)
- 		goto out;
- 	}
- 
-+	if (clk->ops->set_rate_and_parent &&
-+			!(clk->ops->set_parent && clk->ops->set_rate)) {
-+		pr_warn("%s: %s must implement .set_parent & .set_rate\n",
-+				__func__, clk->name);
-+		ret = -EINVAL;
-+		goto out;
-+	}
++	WARN("%s didn't enable after voting for it!\n", name);
++	return -ETIMEDOUT;
++}
 +
- 	/* throw a WARN if any entries in parent_names are NULL */
- 	for (i = 0; i < clk->num_parents; i++)
- 		WARN(!clk->parent_names[i],
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 4087a9b..2bd6617 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -108,6 +108,18 @@ struct clk_hw;
-  *		which is likely helpful for most .set_rate implementation.
-  *		Returns 0 on success, -EERROR otherwise.
-  *
-+ * @set_rate_and_parent: Change the rate and the parent of this clock. The
-+ *		requested rate is specified by the second argument, which
-+ *		should typically be the return of .round_rate call.  The
-+ *		third argument gives the parent rate which is likely helpful
-+ *		for most .set_rate_and_parent implementation. The fourth
-+ *		argument gives the parent index. This callback is optional (and
-+ *		unnecessary) for clocks with 0 or 1 parents as well as
-+ *		for clocks that can tolerate switching the rate and the parent
-+ *		separately via calls to .set_parent and .set_rate.
-+ *		Returns 0 on success, -EERROR otherwise.
++static int clk_pll_vote_enable(struct clk_hw *hw)
++{
++	int ret;
++	struct clk_pll *p = to_clk_pll(__clk_get_hw(__clk_get_parent(hw->clk)));
++
++	ret = clk_enable_regmap(hw);
++	if (ret)
++		return ret;
++
++	return wait_for_pll(p);
++}
++
++const struct clk_ops clk_pll_vote_ops = {
++	.enable = clk_pll_vote_enable,
++	.disable = clk_disable_regmap,
++};
++EXPORT_SYMBOL_GPL(clk_pll_vote_ops);
+diff --git a/drivers/clk/msm/clk-pll.h b/drivers/clk/msm/clk-pll.h
+new file mode 100644
+index 0000000..a15125c
+--- /dev/null
++++ b/drivers/clk/msm/clk-pll.h
+@@ -0,0 +1,45 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
 + *
-  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-  * implementations to split any work between atomic (enable) and sleepable
-  * (prepare) contexts.  If enabling a clock requires code that might sleep,
-@@ -139,6 +151,9 @@ struct clk_ops {
- 	u8		(*get_parent)(struct clk_hw *hw);
- 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
- 				    unsigned long);
-+	int		(*set_rate_and_parent)(struct clk_hw *hw,
-+				    unsigned long rate,
-+				    unsigned long parent_rate, u8 index);
- 	void		(*init)(struct clk_hw *hw);
- };
- 
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __MSM_CLK_PLL_H__
++#define __MSM_CLK_PLL_H__
++
++#include <linux/clk-provider.h>
++
++/**
++ * struct clk_pll - phase locked loop (PLL)
++ * @l_reg: L register
++ * @m_reg: M register
++ * @n_reg: N register
++ * @config_reg: config register
++ * @mode_reg: mode register
++ * @status_reg: status register
++ * @status_bit: ANDed with @status_reg to determine if PLL is enabled
++ * @hw: handle between common and hardware-specific interfaces
++ */
++struct clk_pll {
++	u32	l_reg;
++	u32	m_reg;
++	u32	n_reg;
++	u32	config_reg;
++	u32	mode_reg;
++	u32	status_reg;
++	u8	status_bit;
++
++	struct clk_hw	hw;
++};
++
++extern const struct clk_ops clk_pll_ops;
++extern const struct clk_ops clk_pll_vote_ops;
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
