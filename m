@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab3JBVOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 17:14:45 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:61793 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab3JBVOo (ORCPT
+	id S1754362Ab3JBVQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 17:16:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42844 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab3JBVQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 17:14:44 -0400
+	Wed, 2 Oct 2013 17:16:19 -0400
+Date: Wed, 2 Oct 2013 14:16:31 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Christoffer Dall <christoffer.dall@linaro.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+Message-ID: <20131002211631.GA11914@kroah.com>
+References: <20131001200054.GA27330@kroah.com>
+ <20131001170244.ff4fb81d9a7a09598c4c6247@linaro.org>
+ <20131002015355.GD63102@lvm>
+ <1380681356.14271.57.camel@ul30vt.home>
+ <20131002151413.GG63102@lvm>
+ <9F6FE96B71CF29479FF1CDC8046E15036D405D@039-SN1MPN1-003.039d.mgd.msft.net>
+ <1380738758.12932.43.camel@snotra.buserror.net>
+ <20131002184330.GC5108@cbox>
+ <20131002203735.GA10871@kroah.com>
+ <1380748121.12932.89.camel@snotra.buserror.net>
 MIME-Version: 1.0
-In-Reply-To: <1380194876-25821-1-git-send-email-josh.wu@atmel.com>
-References: <1380194876-25821-1-git-send-email-josh.wu@atmel.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 2 Oct 2013 14:14:22 -0700
-Message-ID: <CAK5ve-K6wcVPxND8LGHki3ybLYVWEapmkRUfR=N6YH=i4Bssfw@mail.gmail.com>
-Subject: Re: [PATCH][resend] leds-gpio: of: led should not be created if its
- status is disabled
-To: Josh Wu <josh.wu@atmel.com>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380748121.12932.89.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 26, 2013 at 4:27 AM, Josh Wu <josh.wu@atmel.com> wrote:
-> now the leds-gpio driver will create every child led node without
-> checking the status is disabled or not.
->
-> for example, if we have a led node like d3, and its status is disabled:
->         leds {
->                 d3 {
->                         label = "d3";
->                         gpios = <&pioE 24 0>;
->                         status = "disabled";
->                 };
->         };
->
-> we except the d3 should not be created. And the gpios should not be
-> request as well.
->
-> But current driver will create d3 and request its gpio.
->
-> This patch fix this by using for_each_available_child_of_node() and
-> of_get_available_child_count() to enumerate all child nodes. So the
-> disabled node will be inavailable.
->
-Applied to -devel branch of my tree,
-Thanks,
--Bryan
+On Wed, Oct 02, 2013 at 04:08:41PM -0500, Scott Wood wrote:
+> On Wed, 2013-10-02 at 13:37 -0700, gregkh@linuxfoundation.org wrote:
+> > On Wed, Oct 02, 2013 at 11:43:30AM -0700, Christoffer Dall wrote:
+> > > > What's wrong with a non-vfio-specific flag that a driver can set, that
+> > > > indicates that the driver is willing to try to bind to any device on the
+> > > > bus if explicitly requested via the existing sysfs bind mechanism?
+> > > > 
+> > > It sounds more hackish to me to invent some 'generic' flag to solve a
+> > > very specific case.  What you're suggesting would let users specify that
+> > > a serial driver should handle a NIC hardware, no?  That sounds much much
+> > > worse to me.
+> > 
+> > You can do that today, with any PCI driver (or USB driver as well), just
+> > use the bind/unbind files in sysfs and you had better "know" what you
+> > are doing...
+> 
+> sysfs bind won't work if it driver_match_device() fails.  PCI has
+> PCI_ANY_ID, so the missing piece for PCI is a way to say that the driver
+> should not bind to a device except when explicitly requested via sysfs
+> bind.
+> 
+> I don't see any equivalent functionality to PCI_ANY_ID for platform
+> devices.
 
+Nor should it.  If you are wanting to bind platform devices to different
+things based on "ids" or "strings" or something else, then you had
+better not be using a platform device because that is not what you have
+anymore.
 
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> ---
-> resend this patch based on the patch:
->  - http://www.spinics.net/lists/devicetree/msg05903.html
->
->  drivers/leds/leds-gpio.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
-> index e8b01e5..62bfc3a 100644
-> --- a/drivers/leds/leds-gpio.c
-> +++ b/drivers/leds/leds-gpio.c
-> @@ -170,11 +170,11 @@ static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
->         int count, ret;
->
->         /* count LEDs in this device, so we know how much to allocate */
-> -       count = of_get_child_count(np);
-> +       count = of_get_available_child_count(np);
->         if (!count)
->                 return ERR_PTR(-ENODEV);
->
-> -       for_each_child_of_node(np, child)
-> +       for_each_available_child_of_node(np, child)
->                 if (of_get_gpio(child, 0) == -EPROBE_DEFER)
->                         return ERR_PTR(-EPROBE_DEFER);
->
-> @@ -183,7 +183,7 @@ static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
->         if (!priv)
->                 return ERR_PTR(-ENOMEM);
->
-> -       for_each_child_of_node(np, child) {
-> +       for_each_available_child_of_node(np, child) {
->                 struct gpio_led led = {};
->                 enum of_gpio_flags flags;
->                 const char *state;
-> --
-> 1.7.9.5
->
+Yes, I know the OF stuff uses platform devices, and again, it's one
+reason why I don't like it at all.  So fix OF devices "properly",
+creating your own bus and device type, and then you will not have these
+issues.
+
+thanks,
+
+greg "I should never have let platform devices be created" k-h
