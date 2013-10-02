@@ -1,153 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3JBPIC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:08:02 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:43020 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab3JBPIA (ORCPT
+	id S1753658Ab3JBPIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:08:20 -0400
+Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:17981 "EHLO
+	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753046Ab3JBPIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:08:00 -0400
+	Wed, 2 Oct 2013 11:08:17 -0400
+Date: Wed, 2 Oct 2013 15:08:16 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu
+ ops
+In-Reply-To: <20130928084412.GC26167@gmail.com>
+Message-ID: <0000014179b65a63-512751f8-346a-4621-b6d1-9abd62e781c9-000000@email.amazonses.com>
+References: <20130924154159.855373283@linux.com> <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com> <20130924171029.GB10261@gmail.com> <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
+ <20130925181146.GA16693@gmail.com> <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com> <20130928084412.GC26167@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20131002111354.27362.70435.stgit@dhcp-10-30-17-2.sw.ru>
-References: <20131002110112.26932.68729.stgit@dhcp-10-30-17-2.sw.ru>
-	<20131002111354.27362.70435.stgit@dhcp-10-30-17-2.sw.ru>
-Date: Wed, 2 Oct 2013 17:07:59 +0200
-Message-ID: <CAJfpegvdeea0rPTEkNE6bRmYYPzxuJ2aAj0fZ80e53ic+K-jYg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] fuse: writepages: crop secondary requests on send -v2
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 1:17 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
-> If writeback happens while fuse is in FUSE_NOWRITE condition, the request
-> will be queued but not processed immediately (see fuse_flush_writepages()).
-> Until FUSE_NOWRITE becomes relaxed, more writebacks can happen. They will
-> be queued as "secondary" requests to that first ("primary") request.
->
-> When FUSE_NOWRITE is relaxed and fuse_send_writepage() is called, it must
-> crop both primary and secondary requests according to the actual i_size.
-> Otherwise, if only primary is cropped, an extending write(2) may increase
-> i_size soon and then secondary requests won't be cropped properly. The result
-> would be stale data written to the server to a file offset where zeros must be.
->
-> Changed in v2:
->  - avoid NULL pointer dereference in fuse_drop_writepage().
->
-> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-> ---
->  fs/fuse/file.c |   64 ++++++++++++++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 55 insertions(+), 9 deletions(-)
->
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 575e44f..89a2e76 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -1435,6 +1435,51 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
->         wake_up(&fi->page_waitq);
->  }
->
-> +/* Drop list of secondary writepage requests */
-> +static void fuse_drop_writepage(struct fuse_conn *fc, struct fuse_req *req)
-> +{
-> +       struct backing_dev_info *bdi = req ?
-> +               req->inode->i_mapping->backing_dev_info : NULL;
-> +
-> +       while (req) {
-> +               struct fuse_req *next = req->misc.write.next;
-> +               dec_bdi_stat(bdi, BDI_WRITEBACK);
-> +               dec_zone_page_state(req->pages[0], NR_WRITEBACK_TEMP);
-> +               fuse_writepage_free(fc, req);
-> +               fuse_put_request(fc, req);
-> +               req = next;
-> +       }
-> +}
-> +
-> +/* Crop the misc.write.in.size of parent and secondary writepage requests */
-> +static bool fuse_crop_writepage(struct fuse_conn *fc, struct fuse_req *req,
-> +                               loff_t size, struct fuse_req **drop_list)
-> +{
-> +       if (req->misc.write.in.offset >= size)
-> +               return true;
-> +
-> +       while (req) {
-> +               struct fuse_req *next = req->misc.write.next;
-> +               struct fuse_write_in *inarg = &req->misc.write.in;
-> +               __u64 data_size = inarg->size ? :
-> +                       req->num_pages * PAGE_CACHE_SIZE;
-> +
-> +               if (inarg->offset + data_size <= size) {
-> +                       inarg->size = data_size;
-> +               } else if (inarg->offset < size) {
-> +                       inarg->size = size - inarg->offset;
-> +               } else {
-> +                       /* Got truncated off completely */
-> +                       req->misc.write.next = *drop_list;
-> +                       *drop_list = req;
+On Sat, 28 Sep 2013, Ingo Molnar wrote:
 
-This corrupts the list (the req is not taken off the list before being
-added to another).  It could be fixed, but why not check this instead
-in fuse_writepage_end() before queuing the next request?
+>
+> * Christoph Lameter <cl@linux.com> wrote:
+>
+> > > The blind __this_cpu conversions without proper preempt debugging
+> > > cannot continue without first fixing all the fallout of the missing
+> > > debug checks to begin with.
+> >
+> > That will take some time as the feedback from the other patchset
+> > suggests.
+>
+> That's the reason why we insisted on __this_cpu*() primitives growing
+> these essential debug checks early on - which you resisted. I had to bring
+> out NAKs for you to see sense and start fixing the mess already - next
+> time around I'll probably have to NAK your changes earlier to prevent such
+> mishaps.
 
-Thanks,
-Miklos
+I pointed out the issues that would have to be addressed when the brought
+up the issue. It seemed that Steven was working on it, I fixed some of the
+problems that he mentioned and then waited. Seems that nothing was
+happening on the issue then. Guess it was not that important to you. That
+was years ago.
 
-
-> +               }
-> +
-> +               req = next;
-> +       }
-> +
-> +       return false;
-> +}
-> +
->  /* Called under fc->lock, may release and reacquire it */
->  static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req)
->  __releases(fc->lock)
-> @@ -1443,29 +1488,30 @@ __acquires(fc->lock)
->         struct fuse_inode *fi = get_fuse_inode(req->inode);
->         loff_t size = i_size_read(req->inode);
->         struct fuse_write_in *inarg = &req->misc.write.in;
-> -       __u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
-> +       struct fuse_req *drop_list = NULL;
->
->         if (!fc->connected)
->                 goto out_free;
->
-> -       if (inarg->offset + data_size <= size) {
-> -               inarg->size = data_size;
-> -       } else if (inarg->offset < size) {
-> -               inarg->size = size - inarg->offset;
-> -       } else {
-> -               /* Got truncated off completely */
-> -               goto out_free;
-> -       }
-> +       if (fuse_crop_writepage(fc, req, size, &drop_list))
-> +               goto out_free; /* drop req and descendants */
->
->         req->in.args[1].size = inarg->size;
->         fi->writectr++;
->         fuse_request_send_background_locked(fc, req);
-> +
-> +       if (drop_list) {
-> +               spin_unlock(&fc->lock);
-> +               fuse_drop_writepage(fc, drop_list);
-> +               spin_lock(&fc->lock);
-> +       }
->         return;
->
->   out_free:
->         fuse_writepage_finish(fc, req);
->         spin_unlock(&fc->lock);
->         fuse_writepage_free(fc, req);
-> +       fuse_drop_writepage(fc, req->misc.write.next);
->         fuse_put_request(fc, req);
->         spin_lock(&fc->lock);
->  }
->
