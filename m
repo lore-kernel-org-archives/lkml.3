@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3JBQWc (ORCPT <rfc822;w@1wt.eu>);
+	id S1754007Ab3JBQWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 12:22:42 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:55136 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256Ab3JBQWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Oct 2013 12:22:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab3JBQWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 12:22:31 -0400
-Date: Wed, 2 Oct 2013 18:15:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: suravee.suthikulpanit@amd.com
-Cc: fweisbec@gmail.com, mingo@kernel.org, mingo@redhat.com,
-        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
-        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
-Subject: Re: [PATCH V5 0/3] perf/x86/amd: AMD Family 16h Data Breakpoint
-	Extensions
-Message-ID: <20131002161547.GA15390@redhat.com>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+Message-ID: <524C4845.5060800@linaro.org>
+Date: Wed, 02 Oct 2013 18:22:29 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Stephen Boyd <sboyd@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>, patches@linaro.org,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH V2] tick: Make sleep length calculation more accurate
+References: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org> <CAFTL4hw-yawRUO-8ePsonvh1o2P7T5yb+GFPVop5OHzH6HTobw@mail.gmail.com>
+In-Reply-To: <CAFTL4hw-yawRUO-8ePsonvh1o2P7T5yb+GFPVop5OHzH6HTobw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02, suravee.suthikulpanit@amd.com wrote:
+On 10/02/2013 05:57 PM, Frederic Weisbecker wrote:
+> 2013/10/2 Daniel Lezcano <daniel.lezcano@linaro.org>:
+>> The sleep_length is computed in the tick_nohz_stop_sched_tick function but it
+>> is used later in the code with in between the local irq enabled.
+>>
+>> cpu_idle_loop
+>>    tick_nohz_idle_enter         [ exits with local irq enabled ]
+>>     __tick_nohz_idle_enter
+>>       tick_nohz_stop_sched_tick
+>>    ...
+>>
+>>    arch_cpu_idle
+>>       menu_select               [ uses here 'sleep_length' ]
+>>    ...
+>>
+>> Between the computation of the sleep length and its usage, some interrupts
+>> may occur, making the sleep length shorter than actually it is because of the
+>> interrupt processing
 >
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> So, do you mean that the ts->sleep_length would return a value that is too long
+> given that the CPU already spent some time to service the irqs since we computed
+> the sleep length in tick_nohz_idle_enter()?
 >
-> Frederic, this is the rebase of the V4 patch onto the linux-3.12.0-rc3 (linux.git),
-> and retest.
+> But then tick_nohz_irq_exit() should take care of that as it calls
+> again tick_nohz_stop_sched_tick().
+> So I'm a bit confused.
+>
+>> or different if the timer itself expired.
+>
+> Same here, if the timer expired, it triggers an interrupt which can do
+> two things:
+>
+> 1) reprogram a new timer and this recompute sleep_length
+> 2) set_need_resched() and then exit the idle loop, so arch_cpu_idle() won't even
+> be called. Or the timer interrupts hlt, but then menu_select() was
+> called before.
+>
+> So I probably missed something here.
 
-But the code is the same? If yes,
+No you did not :)
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Indeed... At the first glance, this issue sounded so obvious I suspected 
+there must be a trick somewhere but I did not think to look at the 
+irq_exit, the code is very complex. Thanks for clarifying this.
 
+For my personal information, is there any particular reason to set an 
+intermediate 'sleep_length' in tick_nohz_stop_sched_tick instead of 
+doing what does this patch ?
 
-To remind, a range on executable breakpoint is problematic, but I do
-not blame this series. We need to fix the generic code and kill
-HW_BREAKPOINT_X.
+Thanks
+   -- Daniel
 
-And, heh, it would be nice if the hardware could tell us the _exact_
-address (from the range) which should be blamed.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Oleg.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
