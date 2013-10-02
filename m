@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab3JBSDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 14:03:06 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35429 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab3JBSDE (ORCPT
+	id S1755869Ab3JBSDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 14:03:42 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:45833 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754358Ab3JBSDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 14:03:04 -0400
-Message-ID: <524C5FD2.5050406@linaro.org>
-Date: Wed, 02 Oct 2013 11:02:58 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 2 Oct 2013 14:03:40 -0400
+Message-ID: <524C5FFB.6020504@linaro.org>
+Date: Wed, 02 Oct 2013 20:03:39 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Barry Song <Baohua.Song@csr.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jingchang Lu <b35083@freescale.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v4 00/17] 64-bit friendly generic sched_clock()
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <51E88170.3080505@linaro.org> <20131002174700.GF30298@mudshark.cambridge.arm.com>
-In-Reply-To: <20131002174700.GF30298@mudshark.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Stephen Boyd <sboyd@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>, patches@linaro.org,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH V2] tick: Make sleep length calculation more accurate
+References: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org> <CAFTL4hw-yawRUO-8ePsonvh1o2P7T5yb+GFPVop5OHzH6HTobw@mail.gmail.com> <524C4845.5060800@linaro.org> <20131002164221.GI7941@localhost.localdomain>
+In-Reply-To: <20131002164221.GI7941@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 10:47 AM, Will Deacon wrote:
-> On Fri, Jul 19, 2013 at 12:59:44AM +0100, John Stultz wrote:
->> On 07/18/2013 04:21 PM, Stephen Boyd wrote:
->>> This patchset adds support for 64 bit counters in the generic
->>> sched_clock code and converts drivers over to use it. Based
->>> on v3.11-rc1.
+On 10/02/2013 06:42 PM, Frederic Weisbecker wrote:
+> On Wed, Oct 02, 2013 at 06:22:29PM +0200, Daniel Lezcano wrote:
+>> On 10/02/2013 05:57 PM, Frederic Weisbecker wrote:
+>>> 2013/10/2 Daniel Lezcano <daniel.lezcano@linaro.org>:
+>>>> The sleep_length is computed in the tick_nohz_stop_sched_tick function but it
+>>>> is used later in the code with in between the local irq enabled.
+>>>>
+>>>> cpu_idle_loop
+>>>>    tick_nohz_idle_enter         [ exits with local irq enabled ]
+>>>>     __tick_nohz_idle_enter
+>>>>       tick_nohz_stop_sched_tick
+>>>>    ...
+>>>>
+>>>>    arch_cpu_idle
+>>>>       menu_select               [ uses here 'sleep_length' ]
+>>>>    ...
+>>>>
+>>>> Between the computation of the sleep length and its usage, some interrupts
+>>>> may occur, making the sleep length shorter than actually it is because of the
+>>>> interrupt processing
 >>>
->>> Changes since v3:
->>>   * Move to use seqcount to fix issues with 64-bit cyc counters
->>>   * Move to hrtimer to fix underflow/overflow errors in wraparound
->>>     calculation
->>>   * Use of 1 hour in clocks_calc_mult_shift
->>>   * Converted over drivers in drivers/clocksource
->> I've not been able to take a deep review yet, but this looks pretty much 
->> like what we discussed last week, so I'm happy with it so far. Has this 
->> gotten much testing (on both 32 and 64bit systems?)
+>>> So, do you mean that the ts->sleep_length would return a value that is too long
+>>> given that the CPU already spent some time to service the irqs since we computed
+>>> the sleep length in tick_nohz_idle_enter()?
+>>>
+>>> But then tick_nohz_irq_exit() should take care of that as it calls
+>>> again tick_nohz_stop_sched_tick().
+>>> So I'm a bit confused.
+>>>
+>>>> or different if the timer itself expired.
+>>>
+>>> Same here, if the timer expired, it triggers an interrupt which can do
+>>> two things:
+>>>
+>>> 1) reprogram a new timer and this recompute sleep_length
+>>> 2) set_need_resched() and then exit the idle loop, so arch_cpu_idle() won't even
+>>> be called. Or the timer interrupts hlt, but then menu_select() was
+>>> called before.
+>>>
+>>> So I probably missed something here.
 >>
->> One detail: Most of this is likely to go in via tip/timers/core, but the 
->> 5/17 "arch_timer: Move to generic sched_clock" will need some 
->> synchronization with Catalin to make sure its ok to go in via tip. Not 
->> sure what other arm64 changes are pending that would depend or collide 
->> with that change.
-> I wouldn't expect anything more than a trivial Kconfig clash with the arm64
-> tree, if that.
+>> No you did not :)
+>>
+>> Indeed... At the first glance, this issue sounded so obvious I
+>> suspected there must be a trick somewhere but I did not think to
+>> look at the irq_exit, the code is very complex. Thanks for
+>> clarifying this.
+>>
+>> For my personal information, is there any particular reason to set
+>> an intermediate 'sleep_length' in tick_nohz_stop_sched_tick instead
+>> of doing what does this patch ?
+>
+> May be we could do it that way yeah. Is menu_select() called only there?
+> I don't know how much difference that would make.
 
-So I also have a branch with these changes based on a branch with only
-the prereqs that are already merged, so I can provide a pull request
-that can go in via the aarch64 tree and won't collide with tip. Would
-that be preferrable?
+Yes, it is called just one time in all the code. The benefit would be 
+just to cleanup a field in the struct tick_sched.
 
-thanks
--john
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
