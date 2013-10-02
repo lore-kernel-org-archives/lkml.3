@@ -1,160 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab3JBPO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 11:14:29 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42096 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753653Ab3JBPOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 11:14:20 -0400
-Message-Id: <20131002151417.928886849@asylum.americas.sgi.com>
-References: <20131002151417.707425834@asylum.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Wed, 02 Oct 2013 10:14:18 -0500
-From: Mike Travis <travis@sgi.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] KGDB/KDB: add support for external NMI handler to call KGDB/KDB.
-Content-Disposition: inline; filename=kgdb-add-nmi-callin.patch
+	id S1754098Ab3JBPOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 11:14:43 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:47596 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3JBPOj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 11:14:39 -0400
+Date: Wed, 2 Oct 2013 16:14:30 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
+Subject: Re: [PATCH v2 6/9] procfs: add permission checks on the file's
+ opener of /proc/*/stat
+Message-ID: <20131002151430.GB2669@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <1380659178-28605-7-git-send-email-tixxdz@opendz.org>
+ <524B7934.9070606@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524B7934.9070606@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a kgdb_nmicallin() interface that can be used by
-external NMI handlers to call the KGDB/KDB handler.  The primary need
-for this is for those types of NMI interrupts where all the CPUs
-have already received the NMI signal.  Therefore no send_IPI(NMI)
-is required, and in fact it will cause a 2nd unhandled NMI to occur.
-This generates the "Dazed and Confuzed" messages.
+On Tue, Oct 01, 2013 at 06:39:00PM -0700, Andy Lutomirski wrote:
+> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+> > Some fields of the /proc/*/stat are sensitive fields that need
+> > appropriate protection.
+> > 
+> > However, /proc file descriptors can be passed to a more privileged
+> > process (e.g. a suid-exec) which will pass the classic
+> > ptrace_may_access() permission check during read().
+> > 
+> > To prevent it, use proc_same_open_cred() to detect if current's cred
+> > have changed between ->open() and ->read(), if so, call
+> > proc_allow_access() to check if the original file's opener had enough
+> > permissions to read these sensitive fields. This will prevent passing
+> > file descriptors to a more privileged process to leak data.
+> > 
+> > The patch also adds a previously missing signal->cred_guard_mutex lock.
+> > 
+> > This patch does not break userspace since it only hides the fields that
+> > were supposed to be protected.
+> > 
+> > Cc: Kees Cook <keescook@chromium.org>
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> > ---
+> >  fs/proc/array.c | 16 ++++++++++++++--
+> >  1 file changed, 14 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/proc/array.c b/fs/proc/array.c
+> > index cbd0f1b..f034e05 100644
+> > --- a/fs/proc/array.c
+> > +++ b/fs/proc/array.c
+> > @@ -394,7 +394,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+> >  	char state;
+> >  	pid_t ppid = 0, pgid = -1, sid = -1;
+> >  	int num_threads = 0;
+> > -	int permitted;
+> > +	int permitted = 0;
+> >  	struct mm_struct *mm;
+> >  	unsigned long long start_time;
+> >  	unsigned long cmin_flt = 0, cmaj_flt = 0;
+> > @@ -404,10 +404,22 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+> >  	unsigned long rsslim = 0;
+> >  	char tcomm[sizeof(task->comm)];
+> >  	unsigned long flags;
+> > +	struct file *file = m->private;
+> > +	int same_cred = proc_same_open_cred(file->f_cred);
+> > +	unsigned int ptrace_mode = PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT;
+> >  
+> >  	state = *get_task_state(task);
+> >  	vsize = eip = esp = 0;
+> > -	permitted = ptrace_may_access(task, PTRACE_MODE_READ | PTRACE_MODE_NOAUDIT);
+> > +
+> > +	if (!mutex_lock_killable(&task->signal->cred_guard_mutex)) {
+> > +		permitted = ptrace_may_access(task, ptrace_mode);
+> > +		if (permitted && !same_cred)
+> > +			permitted = proc_allow_access(file->f_cred,
+> > +						      task, ptrace_mode);
+> > +
+> > +		mutex_unlock(&task->signal->cred_guard_mutex);
+> > +	}
+> > +
+> 
+> else permitted = false?
+permitted is initialized to 0
 
-Since all the CPUs are getting the NMI at roughly the same time, it's not
-guaranteed that the first CPU that hits the NMI handler will manage to
-enter KGDB and set the dbg_master_lock before the slaves start entering.
-The new argument "send_ready" was added for KGDB to signal the NMI handler
-to release the slave CPUs for entry into KGDB.
+First the original ptrace_may_access() check did not hold
+cred_guard_mutex, so add it. If we can't grab mutex then let permitted
+to be zero. Yes this a change in behaviour and I think it's correct, IOW
+we were not able to perform the ptrace_may_access() check, otherwise
+permitted will depend on checks result.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-Reviewed-by: Hedi Berriche <hedi@sgi.com>
-Acked-by: Jason Wessel <jason.wessel@windriver.com>
----
-v3: make entry into SYSTEM_NMI section more specific
----
- include/linux/kdb.h             |    1 +
- include/linux/kgdb.h            |    1 +
- kernel/debug/debug_core.c       |   30 +++++++++++++++++++++++++++++-
- kernel/debug/debug_core.h       |    1 +
- kernel/debug/kdb/kdb_debugger.c |    5 ++++-
- kernel/debug/kdb/kdb_main.c     |    3 +++
- 6 files changed, 39 insertions(+), 2 deletions(-)
+However, there is still a race here since we set the permitted value
+before gathering the appropriate info about task. At the read() data moment
+this target task may have been gone privileged... , acquiring an X lock
+on target task, will just break/slow things, as it has been shown before...
+Not to mention that the race window is small...
 
---- linux.orig/include/linux/kdb.h
-+++ linux/include/linux/kdb.h
-@@ -109,6 +109,7 @@ typedef enum {
- 	KDB_REASON_RECURSE,	/* Recursive entry to kdb;
- 				 * regs probably valid */
- 	KDB_REASON_SSTEP,	/* Single Step trap. - regs valid */
-+	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
- } kdb_reason_t;
- 
- extern int kdb_trap_printk;
---- linux.orig/include/linux/kgdb.h
-+++ linux/include/linux/kgdb.h
-@@ -310,6 +310,7 @@ extern int
- kgdb_handle_exception(int ex_vector, int signo, int err_code,
- 		      struct pt_regs *regs);
- extern int kgdb_nmicallback(int cpu, void *regs);
-+extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *snd_rdy);
- extern void gdbstub_exit(int status);
- 
- extern int			kgdb_single_step;
---- linux.orig/kernel/debug/debug_core.c
-+++ linux/kernel/debug/debug_core.c
-@@ -575,8 +575,12 @@ return_normal:
- 		raw_spin_lock(&dbg_slave_lock);
- 
- #ifdef CONFIG_SMP
-+	/* If SYSTEM_NMI, slaves are already waiting */
-+	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
-+		atomic_set(ks->send_ready, 1);
-+
- 	/* Signal the other CPUs to enter kgdb_wait() */
--	if ((!kgdb_single_step) && kgdb_do_roundup)
-+	else if ((!kgdb_single_step) && kgdb_do_roundup)
- 		kgdb_roundup_cpus(flags);
- #endif
- 
-@@ -729,6 +733,30 @@ int kgdb_nmicallback(int cpu, void *regs
- 		return 0;
- 	}
- #endif
-+	return 1;
-+}
-+
-+int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *send_ready)
-+{
-+#ifdef CONFIG_SMP
-+	if (!kgdb_io_ready(0) || !send_ready)
-+		return 1;
-+
-+	if (kgdb_info[cpu].enter_kgdb == 0) {
-+		struct kgdb_state kgdb_var;
-+		struct kgdb_state *ks = &kgdb_var;
-+
-+		memset(ks, 0, sizeof(struct kgdb_state));
-+		ks->cpu			= cpu;
-+		ks->ex_vector		= trapnr;
-+		ks->signo		= SIGTRAP;
-+		ks->err_code		= KDB_REASON_SYSTEM_NMI;
-+		ks->linux_regs		= regs;
-+		ks->send_ready		= send_ready;
-+		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+		return 0;
-+	}
-+#endif
- 	return 1;
- }
- 
---- linux.orig/kernel/debug/debug_core.h
-+++ linux/kernel/debug/debug_core.h
-@@ -26,6 +26,7 @@ struct kgdb_state {
- 	unsigned long		threadid;
- 	long			kgdb_usethreadid;
- 	struct pt_regs		*linux_regs;
-+	atomic_t		*send_ready;
- };
- 
- /* Exception state values */
---- linux.orig/kernel/debug/kdb/kdb_debugger.c
-+++ linux/kernel/debug/kdb/kdb_debugger.c
-@@ -69,7 +69,10 @@ int kdb_stub(struct kgdb_state *ks)
- 	if (atomic_read(&kgdb_setting_breakpoint))
- 		reason = KDB_REASON_KEYBOARD;
- 
--	if (in_nmi())
-+	if (ks->err_code == KDB_REASON_SYSTEM_NMI && ks->signo == SIGTRAP)
-+		reason = KDB_REASON_SYSTEM_NMI;
-+
-+	else if (in_nmi())
- 		reason = KDB_REASON_NMI;
- 
- 	for (i = 0, bp = kdb_breakpoints; i < KDB_MAXBPT; i++, bp++) {
---- linux.orig/kernel/debug/kdb/kdb_main.c
-+++ linux/kernel/debug/kdb/kdb_main.c
-@@ -1200,6 +1200,9 @@ static int kdb_local(kdb_reason_t reason
- 			   instruction_pointer(regs));
- 		kdb_dumpregs(regs);
- 		break;
-+	case KDB_REASON_SYSTEM_NMI:
-+		kdb_printf("due to System NonMaskable Interrupt\n");
-+		break;
- 	case KDB_REASON_NMI:
- 		kdb_printf("due to NonMaskable Interrupt @ "
- 			   kdb_machreg_fmt "\n",
+
+> But surely this would be *much* more comprehensible if you had
+> proc_allow_access do the entire check.
+I don't understand what you mean by "do the entire check" ?
+
+the /proc/pid/stat file is used by "ps", "top" ... it's a vital file
+We don't want to break it, otherwise "ps" will hide processes. So just
+do the ptrace_may_access() check correctly with the help of
+proc_allow_access() and set the permitted variable only. The patch did
+not touch /proc/pid/stat fields.
+
+I've done tests on ps and top, and they work fine.
 
 -- 
+Djalal Harouni
+http://opendz.org
