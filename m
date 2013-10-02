@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab3JBMtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 08:49:36 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:52945 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab3JBMte (ORCPT
+	id S1754031Ab3JBMvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 08:51:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45459 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab3JBMvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 08:49:34 -0400
-Message-ID: <1380718169.7307.3.camel@phoenix>
-Subject: [PATCH v2 2/2] regulator: as3722: Fix off-by-one n_voltages setting
- for SDx
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Florian Lobmaier <florian.lobmaier@ams.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 02 Oct 2013 20:49:29 +0800
-In-Reply-To: <1380718076.7307.1.camel@phoenix>
-References: <1380718076.7307.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Oct 2013 08:51:08 -0400
+Date: Wed, 2 Oct 2013 14:50:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20131002125052.GE28601@twins.programming.kicks-ass.net>
+References: <20130821083130.GM3258@twins.programming.kicks-ass.net>
+ <20130821113551.GA1472@redhat.com>
+ <20130821123311.GA31370@twins.programming.kicks-ass.net>
+ <20130821142356.GC31370@twins.programming.kicks-ass.net>
+ <20130821164146.GA15194@redhat.com>
+ <20131001140525.GE24825@localhost.localdomain>
+ <20131001155633.GR3657@laptop.programming.kicks-ass.net>
+ <20131001164708.GG24825@localhost.localdomain>
+ <20131001165957.GT3657@laptop.programming.kicks-ass.net>
+ <20131002124539.GF7941@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002124539.GF7941@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AS3722_SDx_VSEL_MAX means the maximum selecter, the n_voltages should be
-AS3722_SDx_VSEL_MAX + 1.
+On Wed, Oct 02, 2013 at 02:45:41PM +0200, Frederic Weisbecker wrote:
+> On Tue, Oct 01, 2013 at 06:59:57PM +0200, Peter Zijlstra wrote:
+> > On Tue, Oct 01, 2013 at 06:47:10PM +0200, Frederic Weisbecker wrote:
+> > > Yeah thinking more about it, the preempt disable was probably not
+> > > necessary. Now that's trading 2 atomics + 1 Lock/Unlock with 2 Lock/Unlock.
+> > 
+> > It trades the current 2 atomics for 2 LOCK/UNLOCK. And on x86_64 that's
+> > 2 atomics.
+> 
+> Do you mean 2 atomics for LOCK/UNLOCK? Or is that pair optimized somehow
+> in x86?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-v2: no code change, add Laxman's Ack.
+Unlock isn't an atomic on x86_64; it can be on certain i386 builds. See
+UNLOCK_LOCK_PREFIX.
 
- drivers/regulator/as3722-regulator.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+> > 
+> > So all we get is some extra branches; which we must hope for don't
+> > actually mess things up too bad.
+> > 
+> > Ohh.. wait a sec.. we also call local_clock() which includes another
+> > atomic :/ Bugger.. 
+> 
+> Yeah. Anyway, I'm going to try something on top of that. May be we'll get
+> a fresher mind and ideas on how to optimize that all after.
 
-diff --git a/drivers/regulator/as3722-regulator.c b/drivers/regulator/as3722-regulator.c
-index 01a8b17..d7b71a9 100644
---- a/drivers/regulator/as3722-regulator.c
-+++ b/drivers/regulator/as3722-regulator.c
-@@ -99,7 +99,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD0_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD0_CONTROL_REG,
- 		.mode_mask = AS3722_SD0_MODE_FAST,
--		.n_voltages = AS3722_SD0_VSEL_MAX,
-+		.n_voltages = AS3722_SD0_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD1,
-@@ -112,7 +112,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD1_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD1_CONTROL_REG,
- 		.mode_mask = AS3722_SD1_MODE_FAST,
--		.n_voltages = AS3722_SD0_VSEL_MAX,
-+		.n_voltages = AS3722_SD0_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD2,
-@@ -126,7 +126,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD2_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD23_CONTROL_REG,
- 		.mode_mask = AS3722_SD2_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD3,
-@@ -140,7 +140,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD3_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD23_CONTROL_REG,
- 		.mode_mask = AS3722_SD3_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD4,
-@@ -154,7 +154,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD4_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD4_CONTROL_REG,
- 		.mode_mask = AS3722_SD4_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD5,
-@@ -168,7 +168,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD5_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD5_CONTROL_REG,
- 		.mode_mask = AS3722_SD5_MODE_FAST,
--		.n_voltages = AS3722_SD2_VSEL_MAX,
-+		.n_voltages = AS3722_SD2_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_SD6,
-@@ -181,7 +181,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 		.sleep_ctrl_mask = AS3722_SD6_EXT_ENABLE_MASK,
- 		.control_reg = AS3722_SD6_CONTROL_REG,
- 		.mode_mask = AS3722_SD6_MODE_FAST,
--		.n_voltages = AS3722_SD0_VSEL_MAX,
-+		.n_voltages = AS3722_SD0_VSEL_MAX + 1,
- 	},
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_LDO0,
--- 
-1.8.1.2
-
-
-
+Fair enough.
