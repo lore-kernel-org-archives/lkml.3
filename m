@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3JCAxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:53:07 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:62058 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab3JCAw1 (ORCPT
+	id S1754100Ab3JCAw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:52:26 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59239 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab3JCAwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:52:27 -0400
+	Wed, 2 Oct 2013 20:52:23 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Minchan Kim <minchan@kernel.org>,
@@ -26,9 +26,9 @@ Cc: Minchan Kim <minchan@kernel.org>,
         Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 12/14] vrange: Support background purging for vrange-file
-Date: Wed,  2 Oct 2013 17:51:41 -0700
-Message-Id: <1380761503-14509-13-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 10/14] vrange: Add core shrinking logic for swapless system
+Date: Wed,  2 Oct 2013 17:51:39 -0700
+Message-Id: <1380761503-14509-11-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
 References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
@@ -38,10 +38,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Minchan Kim <minchan@kernel.org>
 
-Add support to purge vrange file pages via the shrinker interface.
+This patch adds the core volatile range shrinking logic
+needed to allow volatile range purging to function on
+swapless systems.
 
-This is useful, since some filesystems like shmem/tmpfs use anonymous
-pages, which won't be aged off the page LRU if swap is disabled.
+This patch does not wire in the specific range purging logic,
+but that will be added in the following patches.
+
+The reason I use shrinker is that Dave and Glauber are trying to
+make slab shrinker being aware of node/memcg so if the patchset
+reach on mainline, we also can support node/memcg in vrange, easily.
+
+Another reason I selected slab shrinker is that normally slab shrinker
+is called after normal reclaim of file-backed page(ex, page cache)
+so reclaiming preference would be this, I expect.(TODO: invstigate
+and might need more tunes in reclaim path)
+
+        page cache -> vrange by slab shrinking -> anon page
+
+It does make sense because page cache can have stream data so there is
+no point to shrink vrange pages if there are lots of streaming pages
+in page cache.
+
+In this version, I didn't check it works well but it's design concept
+so we can make it work via modify page reclaim path.
+I will have more experiment.
+
+One of disadvantage with using slab shrink is that slab shrinker isn't
+called in using memcg so memcg-noswap system cannot take advantage of it.
+Hmm, Maybe I will jump into relcaim code to hook some point to control
+vrange page shrinking more freely.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -66,94 +92,135 @@ Cc: Rob Clark <robdclark@gmail.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
-[jstultz: Commit message tweaks]
+[jstultz: Renamed some functions and minor cleanups]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- mm/vrange.c | 56 +++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 49 insertions(+), 7 deletions(-)
+ mm/vrange.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 86 insertions(+), 3 deletions(-)
 
 diff --git a/mm/vrange.c b/mm/vrange.c
-index c6bc32f..3f21dc9 100644
+index 33e3ac1..e7c5a25 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -13,6 +13,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/mm_inline.h>
- #include <linux/migrate.h>
-+#include <linux/pagevec.h>
- 
- static struct kmem_cache *vrange_cachep;
- 
-@@ -854,21 +855,62 @@ out:
- 	return ret;
+@@ -25,11 +25,19 @@ static inline unsigned int vrange_size(struct vrange *range)
+ 	return range->node.last + 1 - range->node.start;
  }
  
-+static int __discard_vrange_file(struct address_space *mapping,
-+			struct vrange *vrange, unsigned int *ret_discard)
-+{
-+	struct pagevec pvec;
-+	pgoff_t index;
-+	int i;
-+	unsigned int nr_discard = 0;
-+	unsigned long start_idx = vrange->node.start;
-+	unsigned long end_idx = vrange->node.last;
-+	const pgoff_t start = start_idx >> PAGE_CACHE_SHIFT;
-+	pgoff_t end = end_idx >> PAGE_CACHE_SHIFT;
-+	LIST_HEAD(pagelist);
++static int shrink_vrange(struct shrinker *s, struct shrink_control *sc);
 +
-+	pagevec_init(&pvec, 0);
-+	index = start;
-+	while (index <= end && pagevec_lookup(&pvec, mapping, index,
-+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
-+		for (i = 0; i < pagevec_count(&pvec); i++) {
-+			struct page *page = pvec.pages[i];
-+			index = page->index;
-+			if (index > end)
-+				break;
-+			if (isolate_lru_page(page))
-+				continue;
-+			list_add(&page->lru, &pagelist);
-+			inc_zone_page_state(page, NR_ISOLATED_ANON);
-+		}
-+		pagevec_release(&pvec);
-+		cond_resched();
-+		index++;
++static struct shrinker vrange_shrinker = {
++	.shrink = shrink_vrange,
++	.seeks = DEFAULT_SEEKS
++};
++
+ static int __init vrange_init(void)
+ {
+ 	INIT_LIST_HEAD(&vrange_list.list);
+ 	mutex_init(&vrange_list.lock);
+ 	vrange_cachep = KMEM_CACHE(vrange, SLAB_PANIC);
++	register_shrinker(&vrange_shrinker);
+ 	return 0;
+ }
+ module_init(vrange_init);
+@@ -58,9 +66,14 @@ static void __vrange_free(struct vrange *range)
+ static inline void __vrange_lru_add(struct vrange *range)
+ {
+ 	mutex_lock(&vrange_list.lock);
+-	WARN_ON(!list_empty(&range->lru));
+-	list_add(&range->lru, &vrange_list.list);
+-	vrange_list.size += vrange_size(range);
++	/*
++	 * We need this check because it could be raced with
++	 * shrink_vrange and vrange_resize
++	 */
++	if (list_empty(&range->lru)) {
++		list_add(&range->lru, &vrange_list.list);
++		vrange_list.size += vrange_size(range);
++	}
+ 	mutex_unlock(&vrange_list.lock);
+ }
+ 
+@@ -84,6 +97,14 @@ static void __vrange_add(struct vrange *range, struct vrange_root *vroot)
+ 	__vrange_lru_add(range);
+ }
+ 
++static inline int __vrange_get(struct vrange *vrange)
++{
++	if (!atomic_inc_not_zero(&vrange->refcount))
++		return 0;
++
++	return 1;
++}
++
+ static inline void __vrange_put(struct vrange *range)
+ {
+ 	if (atomic_dec_and_test(&range->refcount)) {
+@@ -647,3 +668,65 @@ int discard_vpage(struct page *page)
+ 
+ 	return 1;
+ }
++
++static struct vrange *vrange_isolate(void)
++{
++	struct vrange *vrange = NULL;
++	mutex_lock(&vrange_list.lock);
++	while (!list_empty(&vrange_list.list)) {
++		vrange = list_entry(vrange_list.list.prev,
++				struct vrange, lru);
++		list_del_init(&vrange->lru);
++		vrange_list.size -= vrange_size(vrange);
++
++		/* vrange is going to destroy */
++		if (__vrange_get(vrange))
++			break;
++
++		vrange = NULL;
 +	}
 +
-+	if (!list_empty(&pagelist))
-+		nr_discard = discard_vrange_pagelist(&pagelist);
++	mutex_unlock(&vrange_list.lock);
++	return vrange;
++}
 +
-+	*ret_discard = nr_discard;
-+	putback_lru_pages(&pagelist);
-+
++static unsigned int discard_vrange(struct vrange *vrange)
++{
 +	return 0;
 +}
 +
- static int discard_vrange(struct vrange *vrange)
- {
- 	int ret = 0;
--	struct mm_struct *mm;
- 	struct vrange_root *vroot;
- 	unsigned int nr_discard = 0;
- 	vroot = vrange->owner;
- 
--	/* TODO : handle VRANGE_FILE */
--	if (vroot->type != VRANGE_MM)
--		goto out;
-+	if (vroot->type == VRANGE_MM) {
-+		struct mm_struct *mm = vroot->object;
-+		ret = __discard_vrange_anon(mm, vrange, &nr_discard);
-+	} else if (vroot->type == VRANGE_FILE) {
-+		struct address_space *mapping = vroot->object;
-+		ret = __discard_vrange_file(mapping, vrange, &nr_discard);
++static int shrink_vrange(struct shrinker *s, struct shrink_control *sc)
++{
++	struct vrange *range = NULL;
++	long nr_to_scan = sc->nr_to_scan;
++	long size = vrange_list.size;
++
++	if (!nr_to_scan)
++		return size;
++
++	if (sc->nr_to_scan && !(sc->gfp_mask & __GFP_IO))
++		return -1;
++
++	while (size > 0 && nr_to_scan > 0) {
++		range = vrange_isolate();
++		if (!range)
++			break;
++
++		/* range is removing so don't bother */
++		if (!range->owner) {
++			__vrange_put(range);
++			size -= vrange_size(range);
++			nr_to_scan -= vrange_size(range);
++			continue;
++		}
++
++		if (discard_vrange(range) < 0)
++			__vrange_lru_add(range);
++		__vrange_put(range);
++
++		size -= vrange_size(range);
++		nr_to_scan -= vrange_size(range);
 +	}
- 
--	mm = vroot->object;
--	ret = __discard_vrange_anon(mm, vrange, &nr_discard);
--out:
- 	return nr_discard;
- }
- 
++
++	return size;
++}
 -- 
 1.8.1.2
 
