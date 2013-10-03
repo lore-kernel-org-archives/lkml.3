@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab3JCMzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 08:55:41 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:46700 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755Ab3JCMzj (ORCPT
+	id S1754412Ab3JCM4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:56:15 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:57955 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319Ab3JCM4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 08:55:39 -0400
-X-Greylist: delayed 2443 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 08:55:38 EDT
-Date: Thu, 3 Oct 2013 22:14:36 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Rob Landley <rob@landley.net>
-Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Kevin Mulvey <kevin@kevinmulvey.net>, davem@davemloft.net,
-        linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, astor@fast.no
-Subject: Re: Status of "kernel crypto services" patch? Re: [PATCH]
- Documentation: "kerneli" typo in description for "Serpent cipher algorithm"
- Bug #60848
-Message-ID: <20131003121436.GA7651@gondor.apana.org.au>
-References: <1380730237-42543-1-git-send-email-kevin@kevinmulvey.net>
- <1380737551.1974.127@driftwood>
- <524C645E.9030800@iki.fi>
- <1380739738.1974.129@driftwood>
+	Thu, 3 Oct 2013 08:56:13 -0400
+Date: Thu, 3 Oct 2013 13:56:09 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        kernel-hardening@lists.openwall.com, Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131003125609.GB3619@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <20131002181257.GA2485@dztty>
+ <20131003062256.GD25345@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380739738.1974.129@driftwood>
+In-Reply-To: <20131003062256.GD25345@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 01:48:58PM -0500, Rob Landley wrote:
-> On 10/02/2013 01:22:22 PM, Jussi Kivilinna wrote:
-> >On 02.10.2013 21:12, Rob Landley wrote:
-> >> On 10/02/2013 11:10:37 AM, Kevin Mulvey wrote:
-> >>> change kerneli to kernel as well as kerneli.org to kernel.org
-> >>>
-> >>> Signed-off-by: Kevin Mulvey <kevin@kevinmulvey.net>
-> >>
-> >> There's a bug number for this?
-> >>
-> >> Acked, queued. (Although I'm not sure the value of pointing to
-> >www.kernel.org for this.)
-> >
-> >I think kerneli.org is correct.. see old website at
-> >http://web.archive.org/web/20010201085500/http://www.kerneli.org/
+On Thu, Oct 03, 2013 at 08:22:56AM +0200, Ingo Molnar wrote:
 > 
-> Should I have the update link to the archive.org page, or...?
+> * Djalal Harouni <tixxdz@opendz.org> wrote:
 > 
-> The above links to http://www.kernel.org/pub/linux/kernel/crypto
-> which has patches for the 2.5 kernel circa 2003. Did this get
-> merged, or dropped, or what?
+> >  * You can't do it for /proc/*/stat otherwise you will break userspace
+> >   "ps"..., ps must access /proc/1/stat etc... so the proposed solution
+> >   will work without any side effect.
 > 
-> (Documentation maintainership does not mean domain expert in
-> everything, it's somewhere between librarian and janitor. Please
-> tell me what to do here.)
+> The thing is, returning -EINVAL is not the only way to reject access to 
+> privileged information!
 
-The documentation is correct as is so please discard the patch.
+> In the /proc/1/stat case a compatibility quirk can solve the problem: 
+> create a special 'dummy' process inode for invalid accesses and give it to 
+> ps, with all fields present but zero.
+Hmm, we already return zero for the fields that must be protected.
+Already done.
+Not all fields need to be zero ?  If so, yes it could be done as you
+propose and avoid the 'if permitted' test each time... but we don't want
+to do it
 
-Thanks,
+
+> >   And for /proc/*/maps you will perhaps break glibc under certain
+> >   situations... so just hold it for the moment and test it
+> >   later. There have been reports in the past about it.
+> 
+> Same deal: just create a dummy compat-quirk maps inode with constant, zero 
+> information contents to placate old user-space:
+> 
+>  00000000-00000000 ---p 00000000 00:00 0
+> 
+> [ Or whatever line is needed to minimally not break old userspace. ]
+> 
+> But don't leak privileged information!
+> 
+> ( Maybe add a CONFIG_PROC_FS_COMPAT_QUIRKS Kconfig option, default-y for 
+>   now, that new/sane userspace can turn off. )
+Yes, that could work, but I'm not sure (it depends on what glibc is
+doing and what info it needs)
+
+With the right permission checks, and glibc tests, this will be nice!
+
+> Thanks,
+> 
+> 	Ingo
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Djalal Harouni
+http://opendz.org
