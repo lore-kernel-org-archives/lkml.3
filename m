@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3JCRIF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:08:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753981Ab3JCRID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:08:03 -0400
-Date: Thu, 3 Oct 2013 19:00:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131003170052.GA21009@redhat.com>
-References: <20131002145655.361606532@infradead.org> <20131002150518.675931976@infradead.org> <20131003164117.GD5790@linux.vnet.ibm.com>
+	id S1754743Ab3JCRIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:08:18 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:47021 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754246Ab3JCRIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 13:08:15 -0400
+Date: Thu, 3 Oct 2013 14:08:02 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf tool: report user-friendly error from timechart
+Message-ID: <20131003170802.GB2436@ghostprotocols.net>
+References: <1380791146-7465-1-git-send-email-artagnon@gmail.com>
+ <20131003123820.GA12004@gmail.com>
+ <524D7296.3090407@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003164117.GD5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <524D7296.3090407@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Paul E. McKenney wrote:
->
-> How about the something like the following, where ->read_side_check()
-> gets rcu_read_lock_held(), rcu_read_lock_bh_held(), or
-> rcu_read_lock_sched_held(), as appropriate?
->
-> #ifdef CONFIG_PROVE_RCU
-> #define rcu_sync_is_idle_check(rss) BUG_ON(!rss->read_side_check())
-> #else
-> #define rcu_sync_is_idle_check(rss) do { } while (0)
-> #endif
->
-> 	rcu_sync_is_idle_check(rss);
+Em Thu, Oct 03, 2013 at 07:35:18AM -0600, David Ahern escreveu:
+> On 10/3/13 6:38 AM, Ingo Molnar wrote:
+> >
+> >* Ramkumar Ramachandra <artagnon@gmail.com> wrote:
+> >
+> >>+	/* Perform a quick sanity check */
+> >>+	if (!is_valid_tracepoint("power:cpu_frequency")) {
+> >>+		fprintf(stderr, "Error:\tNo permissions to read $debugfs/tracing/events/power/cpu_frequency\n");
+> >>+		fprintf(stderr, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
+> >>+		fprintf(stderr, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
+> >
+> >Is missing permissions the only way how is_valid_tracepoint() can fail?
+> >
+> >What if debugfs has the right permissions but CONFIG_TRACEPOINTS is
+> >disabled in the kernel?
+> 
+> There are a number of reasons that function can fail. The complete
+> solution is to plumb various error numbers and on failure request a
+> string for that failure. Take a look at util/target.[ch] as an
+> example.
+> 
+> The comment applies to the perf-trace patch as well, but it gets
+> more complicated to handle the error paths from perf_evsel__newtp
+> when they dip into the tracepoint code
 
-Agreed!
+See the patch I posted, in that case we can use the old errno way, i.e.
+do nothing and just look at it in the perf_evsel__newtp/
+perf_evlist__add_newtp callers.
 
-but can't we do this in a separate patch? (I will be happy to do
-this trivial exercise ;)
+And is_valid_tracepoint() is a too big hammer, it traverses the whole
+directory looking for a match instead of plain build the path and do an
+access, its one of those things I need to ditch at some point. So far I
+just try to do a perf_evlist__add_newtp and if it fails, look at errno.
 
-This change is trivial, but perhaps it would be better to keep the
-initial patch as simple as possible. And discuss the potential
-"cosmetic" issues (like naming) separately. Say, rcu_lockdep_assert.
-We can't use it directly, we need the new helper.
-
-Oleg.
-
+- Arnaldo
