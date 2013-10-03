@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3JCGtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 02:49:19 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48538 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab3JCGtS (ORCPT
+	id S1752666Ab3JCHEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 03:04:31 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:42836 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab3JCHEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 02:49:18 -0400
-Date: Thu, 3 Oct 2013 08:49:15 +0200
-From: Pavel Machek <pavel@denx.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Alan Tull <atull@altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-Message-ID: <20131003064915.GB17155@amd.pavel.ucw.cz>
-References: <cover.1380727889.git.michal.simek@xilinx.com>
- <524C6D64.8080801@zytor.com>
+	Thu, 3 Oct 2013 03:04:30 -0400
+Date: Thu, 3 Oct 2013 09:04:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] KGDB/KDB: add support for external NMI handler to
+ call KGDB/KDB.
+Message-ID: <20131003070426.GA5320@gmail.com>
+References: <20131002151417.707425834@asylum.americas.sgi.com>
+ <20131002151417.928886849@asylum.americas.sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <524C6D64.8080801@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131002151417.928886849@asylum.americas.sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-10-02 12:00:52, H. Peter Anvin wrote:
-> On 10/02/2013 08:35 AM, Michal Simek wrote:
-> > 
-> > Based on my discussion at ELC with Greg KH the new driver should
-> > support firmware interface for loading bitstream.
-> > 
+
+* Mike Travis <travis@sgi.com> wrote:
+
+> This patch adds a kgdb_nmicallin() interface that can be used by
+> external NMI handlers to call the KGDB/KDB handler.  The primary need
+> for this is for those types of NMI interrupts where all the CPUs
+> have already received the NMI signal.  Therefore no send_IPI(NMI)
+> is required, and in fact it will cause a 2nd unhandled NMI to occur.
+> This generates the "Dazed and Confuzed" messages.
 > 
-> As I have previously stated, I think this is a mistake simply because
-> the firmware interface is a bad mapping on requirements for an FPGA,
-> especially once you account for the vast number of ways an FPGA can
-> get loaded and you take partial reconfiguration into account.  I
-> happen to be at a face to face meeting with Greg today, so I'll pick
-> his brain a bit.
+> Since all the CPUs are getting the NMI at roughly the same time, it's not
+> guaranteed that the first CPU that hits the NMI handler will manage to
+> enter KGDB and set the dbg_master_lock before the slaves start entering.
+> The new argument "send_ready" was added for KGDB to signal the NMI handler
+> to release the slave CPUs for entry into KGDB.
+> 
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+> Reviewed-by: Hedi Berriche <hedi@sgi.com>
+> Acked-by: Jason Wessel <jason.wessel@windriver.com>
+> ---
+> v3: make entry into SYSTEM_NMI section more specific
+> ---
+>  include/linux/kdb.h             |    1 +
+>  include/linux/kgdb.h            |    1 +
+>  kernel/debug/debug_core.c       |   30 +++++++++++++++++++++++++++++-
+>  kernel/debug/debug_core.h       |    1 +
+>  kernel/debug/kdb/kdb_debugger.c |    5 ++++-
+>  kernel/debug/kdb/kdb_main.c     |    3 +++
+>  6 files changed, 39 insertions(+), 2 deletions(-)
+> 
+> --- linux.orig/include/linux/kdb.h
+> +++ linux/include/linux/kdb.h
+> @@ -109,6 +109,7 @@ typedef enum {
+>  	KDB_REASON_RECURSE,	/* Recursive entry to kdb;
+>  				 * regs probably valid */
+>  	KDB_REASON_SSTEP,	/* Single Step trap. - regs valid */
+> +	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
+>  } kdb_reason_t;
 
-Umm. Could the discussion be kept on line?
+Note that this is within an #ifdef CONFIG_KGDB_KDB section.
 
-Yes, more than one bitstream makes sense for fpga, but more than one
-firmware makes sense for most other devices, too... 
+> --- linux.orig/kernel/debug/debug_core.c
+> +++ linux/kernel/debug/debug_core.c
+> @@ -575,8 +575,12 @@ return_normal:
+>  		raw_spin_lock(&dbg_slave_lock);
+>  
+>  #ifdef CONFIG_SMP
+> +	/* If SYSTEM_NMI, slaves are already waiting */
+> +	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
+> +		atomic_set(ks->send_ready, 1);
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+And this then fails to build if CONFIG_KGDB_KDB is turned off:
+
+kernel/debug/debug_core.c:579:22: error: ‘KDB_REASON_SYSTEM_NMI’ undeclared (first use in this function)
+kernel/debug/debug_core.c:753:19: error: ‘KDB_REASON_SYSTEM_NMI’ undeclared (first use in this function)
+
+More fundamentally, I think the way KDB internals added to debug_core.c by 
+this patch violates its relatively layered design.
+
+It would be cleaner to add helper functions defined in kdb and turned into 
+empty inlines in the !CONFIG_KGDB_KDB case, like it's done for a couple of 
+other cases in kdb.h:
+
+static inline void kdb_init(int level) {}
+static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
+                               char *help, short minlen) { return 0; }
+static inline int kdb_register_repeat(char *cmd, kdb_func_t func, char *usage,
+                                      char *help, short minlen,
+                                      kdb_repeat_t repeat) { return 0; }
+static inline int kdb_unregister(char *cmd) { return 0; }
+
+So this needs more work.
+
+Thanks,
+
+	Ingo
