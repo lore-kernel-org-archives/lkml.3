@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3JCEJE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:09:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46794 "EHLO
+	id S1754705Ab3JCEJK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:09:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab3JCEJC (ORCPT
+	with ESMTP id S1754693Ab3JCEJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:09:02 -0400
+	Thu, 3 Oct 2013 00:09:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin B Shelar <pshelar@nicira.com>, Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 15/16] mm: fix aio performance regression for database caused by THP
-Date: Wed,  2 Oct 2013 21:05:39 -0700
-Message-Id: <20131003040446.578571500@linuxfoundation.org>
+        Masoud Sharbiani <msharbiani@twitter.com>,
+        Vinson Lee <vlee@twitter.com>, Robin Holt <holt@sgi.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 01/16] x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
+Date: Wed,  2 Oct 2013 21:05:25 -0700
+Message-Id: <20131003040445.623679070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
 References: <20131003040445.523176877@linuxfoundation.org>
@@ -33,169 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
+From: Masoud Sharbiani <msharbiani@twitter.com>
 
-commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
+commit 4f0acd31c31f03ba42494c8baf6c0465150e2621 upstream.
 
-This patch needed to be backported due to changes to mm/swap.c some time
-after 3.6 kernel.
+Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
 
-I am working with a tool that simulates oracle database I/O workload.
-This tool (orion to be specific -
-<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
-allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
-does aio into these pages from flash disks using various common block
-sizes used by database.  I am looking at performance with two of the most
-common block sizes - 1M and 64K.  aio performance with these two block
-sizes plunged after Transparent HugePages was introduced in the kernel.
-Here are performance numbers:
-
-		pre-THP		2.6.39		3.11-rc5
-1M read		8384 MB/s	5629 MB/s	6501 MB/s
-64K read	7867 MB/s	4576 MB/s	4251 MB/s
-
-I have narrowed the performance impact down to the overheads introduced by
-THP in __get_page_tail() and put_compound_page() routines.  perf top shows
->40% of cycles being spent in these two routines.  Every time direct I/O
-to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
-the pages and calls put_page() when I/O completes to put the reference
-away.  THP introduced significant amount of locking overhead to get_page()
-and put_page() when dealing with compound pages because hugepages can be
-split underneath get_page() and put_page().  It added this overhead
-irrespective of whether it is dealing with hugetlbfs pages or transparent
-hugepages.  This resulted in 20%-45% drop in aio performance when using
-hugetlbfs pages.
-
-Since hugetlbfs pages can not be split, there is no reason to go through
-all the locking overhead for these pages from what I can see.  I added
-code to __get_page_tail() and put_compound_page() to bypass all the
-locking code when working with hugetlbfs pages.  This improved performance
-significantly.  Performance numbers with this patch:
-
-		pre-THP		3.11-rc5	3.11-rc5 + Patch
-1M read		8384 MB/s	6501 MB/s	8371 MB/s
-64K read	7867 MB/s	4251 MB/s	6510 MB/s
-
-Performance with 64K read is still lower than what it was before THP, but
-still a 53% improvement.  It does mean there is more work to be done but I
-will take a 53% improvement for now.
-
-Please take a look at the following patch and let me know if it looks
-reasonable.
-
-[akpm@linux-foundation.org: tweak comments]
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- mm/swap.c |   65 ++++++++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 47 insertions(+), 18 deletions(-)
 
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -40,6 +40,8 @@ static DEFINE_PER_CPU(struct pagevec[NR_
- static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
- static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+---
+ arch/x86/kernel/reboot.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -479,6 +479,22 @@ static struct dmi_system_id __initdata p
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
++	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
+ 	{ }
+ };
  
-+int PageHuge(struct page *page);
-+
- /*
-  * This path almost never happens for VM activity - pages are normally
-  * freed via pagevecs.  But it gets used by networking.
-@@ -68,13 +70,26 @@ static void __put_compound_page(struct p
- {
- 	compound_page_dtor *dtor;
- 
--	__page_cache_release(page);
-+	if (!PageHuge(page))
-+		__page_cache_release(page);
- 	dtor = get_compound_page_dtor(page);
- 	(*dtor)(page);
- }
- 
- static void put_compound_page(struct page *page)
- {
-+	/*
-+	 * hugetlbfs pages can not be split from under us. So if this
-+	 * is a hugetlbfs page, check refcount on head page and release
-+	 * the page if refcount is zero.
-+	 */
-+	if (PageHuge(page)) {
-+		page = compound_head(page);
-+		if (put_page_testzero(page))
-+			__put_compound_page(page);
-+		return;
-+	}
-+
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -157,26 +172,40 @@ bool __get_page_tail(struct page *page)
- 	 * proper PT lock that already serializes against
- 	 * split_huge_page().
- 	 */
--	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
- 
--	if (likely(page != page_head && get_page_unless_zero(page_head))) {
--		/*
--		 * page_head wasn't a dangling pointer but it
--		 * may not be a head page anymore by the time
--		 * we obtain the lock. That is ok as long as it
--		 * can't be freed from under us.
--		 */
--		flags = compound_lock_irqsave(page_head);
--		/* here __split_huge_page_refcount won't run anymore */
--		if (likely(PageTail(page))) {
--			__get_page_tail_foll(page, false);
--			got = true;
-+	/*
-+	 * If this is a hugetlbfs page, it can not be split under
-+	 * us. Simply increment counts for tail page and its head page
-+	 */
-+	if (PageHuge(page)) {
-+		struct page *page_head;
-+
-+		page_head = compound_head(page);
-+		atomic_inc(&page_head->_count);
-+		got = true;
-+	} else {
-+		struct page *page_head = compound_trans_head(page);
-+		unsigned long flags;
-+
-+		if (likely(page != page_head &&
-+					get_page_unless_zero(page_head))) {
-+			/*
-+		 	* page_head wasn't a dangling pointer but it
-+		 	* may not be a head page anymore by the time
-+		 	* we obtain the lock. That is ok as long as it
-+		 	* can't be freed from under us.
-+		 	*/
-+			flags = compound_lock_irqsave(page_head);
-+			/* here __split_huge_page_refcount won't run anymore */
-+			if (likely(PageTail(page))) {
-+				__get_page_tail_foll(page, false);
-+				got = true;
-+			}
-+			compound_unlock_irqrestore(page_head, flags);
-+			if (unlikely(!got))
-+				put_page(page_head);
- 		}
--		compound_unlock_irqrestore(page_head, flags);
--		if (unlikely(!got))
--			put_page(page_head);
- 	}
- 	return got;
- }
 
 
