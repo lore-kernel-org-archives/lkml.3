@@ -1,59 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab3JCUNW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:13:22 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:63453 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab3JCUNT (ORCPT
+	id S1755459Ab3JCUNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:13:43 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:50369 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249Ab3JCUNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:13:19 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Benoit Cousson <bcousson@baylibre.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH V5 0/6] ARM: OMAP3+: support cpufreq-cpu0 for device tree boot
-References: <1368039976-29648-1-git-send-email-nm@ti.com>
-	<87pprmuwxg.fsf@linaro.org> <524DA41C.7000809@ti.com>
-Date: Thu, 03 Oct 2013 13:13:15 -0700
-In-Reply-To: <524DA41C.7000809@ti.com> (Nishanth Menon's message of "Thu, 3
-	Oct 2013 12:06:36 -0500")
-Message-ID: <87d2nmun8k.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 3 Oct 2013 16:13:40 -0400
+Date: Thu, 3 Oct 2013 21:13:32 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131003201332.GA3500@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <1380659178-28605-3-git-send-email-tixxdz@opendz.org>
+ <524B78A2.40007@amacapital.net>
+ <20131002145506.GA2669@dztty>
+ <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
+ <20131003143653.GA32445@dztty>
+ <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
+ <20131003192926.GB2390@dztty>
+ <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> writes:
+On Thu, Oct 03, 2013 at 12:37:49PM -0700, Andy Lutomirski wrote:
+> On Thu, Oct 3, 2013 at 12:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Thu, Oct 03, 2013 at 04:12:37PM +0100, Andy Lutomirski wrote:
+> >> On Thu, Oct 3, 2013 at 3:36 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > On Wed, Oct 02, 2013 at 05:44:17PM +0100, Andy Lutomirski wrote:
+> >> >> On Wed, Oct 2, 2013 at 3:55 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> >> > On Tue, Oct 01, 2013 at 06:36:34PM -0700, Andy Lutomirski wrote:
+> >> >> >> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+> >> >> >> > Since /proc entries varies at runtime, permission checks need to happen
+> >> >> >> > during each system call.
+> >> >> >> >
+> >> >> >> > However even with that /proc file descriptors can be passed to a more
+> >> >> >> > privileged process (e.g. a suid-exec) which will pass the classic
+> >> >> >> > ptrace_may_access() permission check. The open() call will be issued in
+> >> >> >> > general by an unprivileged process while the disclosure of sensitive
+> >> >> >> > /proc information will happen using a more privileged process at
+> >> >> >> > read(),write()...
+> >> >> >> >
+> >> >> >> > Therfore we need a more sophisticated check to detect if the cred of the
+> >> >> >> > process have changed, and if the cred of the original opener that are
+> >> >> >> > stored in the file->f_cred have enough permission to access the task's
+> >> >> >> > /proc entries during read(), write()...
+> >> >> >> >
+> >> >> >> > Add the proc_allow_access() function that will receive the file->f_cred
+> >> >> >> > as an argument, and tries to check if the opener had enough permission
+> >> >> >> > to access the task's /proc entries.
+> >> >> >> >
+> >> >> >> > This function should be used with the ptrace_may_access() check.
+> >> >> >> >
+> >> >> >> > Cc: Kees Cook <keescook@chromium.org>
+> >> >> >> > Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
+> >> >> >> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> >> >> >> > ---
+> >> >> >> >  fs/proc/base.c     | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >> >> >> >  fs/proc/internal.h |  2 ++
+> >> >> >> >  2 files changed, 58 insertions(+)
+> >> >> >> >
+> >> >> >> > diff --git a/fs/proc/base.c b/fs/proc/base.c
+> >> >> >> > index e834946..c29eeae 100644
+> >> >> >> > --- a/fs/proc/base.c
+> >> >> >> > +++ b/fs/proc/base.c
+> >> >> >> > @@ -168,6 +168,62 @@ int proc_same_open_cred(const struct cred *fcred)
+> >> >> >> >             cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+> >> >> >> >  }
+> >> >> >> >
+> >> >> >> > +/* Returns 0 on success, -errno on denial. */
+> >> >> >> > +static int __proc_allow_access(const struct cred *cred,
+> >> >> >> > +                          struct task_struct *task, unsigned int mode)
+> >> >> >> > +{
+> >> >> >> > +   int ret = 0;
+> >> >> >> > +   const struct cred *tcred;
+> >> >> >> > +   const struct cred *fcred = cred;
+> >> >> >> > +
+> >> >> >> > +   rcu_read_lock();
+> >> >> >> > +   tcred = __task_cred(task);
+> >> >> >> > +   if (uid_eq(fcred->uid, tcred->euid) &&
+> >> >> >> > +       uid_eq(fcred->uid, tcred->suid) &&
+> >> >> >> > +       uid_eq(fcred->uid, tcred->uid)  &&
+> >> >> >> > +       gid_eq(fcred->gid, tcred->egid) &&
+> >> >> >> > +       gid_eq(fcred->gid, tcred->sgid) &&
+> >> >> >> > +       gid_eq(fcred->gid, tcred->gid))
+> >> >> >> > +           goto out;
+> >> >> >> > +
+> >> >> >>
+> >> >> >> What's this for?  Is it supposed to be an optimization?  If so, it looks
+> >> >> >> potentially exploitable, although I don't really understand what you're
+> >> >> >> trying to do.
+> >> >> > This function should be used in addition to the ptrace_may_access() one.
+> >> >>
+> >> >> Sorry, I was unclear.  I meant: what are the uid and gid checks for?
+> >> > The uid/gid are checks of the current (reader) on the target task, like
+> >> > the ptrace checks. fcred here is the cred of current at open time.
+> >> >
+> >>
+> >> This isn't a faithful copy of __ptrace_may_access -- the real function
+> >> gives LSMs a chance to veto ptracing.  That's critical even without
+> >> LSMs because cap_ptrace_access_check needs to get called.  (Think
+> >> about setcap'd programs instead of setuid programs.)
+> > Yes, I already did this, not only setuid, capabilities also are handled
+> > See the whole patch, please!
+> >
+> >
+> > Yes, and speaking about LSMs I've mentioned in my patches and doc, that
+> > the proposed function proc_allow_access() should be used after
+> > ptrace_may_access(). proc_allow_access() is not a replacement for
+> > ptrace_may_access(), it should be used *after* it.
+> >
+> > So cap_ptrace_access_check() is called, and before the file->f_cred
+> > checks. The LSM veto is already there.
+> 
+> It's possible that I've misunderstood your patches, but I really don't
+> see where you're calling into LSMs to give them a chance to veto
+> access by *f_cred*.
+Ahh ok, I see, but why you want absolutly to put *f_cred* in this ?
 
-> fixing Benoit's mail ID.
-> On 10/03/2013 11:43 AM, Kevin Hilman wrote:
->> Hi Nishanth,
->> 
->> Nishanth Menon <nm@ti.com> writes:
->> 
->>> The following version 5 of the series arose from trying to use
->>> BeagleBoard-XM (OMAP3 variant) for doing CPU DVFS using cpufreq-cpu0.
->>> This series enables the generic cpufreq-cpu0 driver to be used in
->>> device tree enabled boot while maintaining support of the legacy
->>> omap-cpufreq driver when used in non device tree enabled boot.
->> 
->> What's the status of this series?  Is it still waiting on the clock DT
->> changes?
->
-> yes - i do have a new series lined up at the moment here[1] - trying
-> to ensure everything is dandy before public post. ofcourse, we'd like
-> to ensure we have feedback on tero's series[2]. I am now working on
-> ensuring ABB regulator[3](again depends on Tero's series) fits on top
-> of Mike's voltage notifier series[4]
->
-> So, yep, everything is blocked due to lack of feedback on Tero's
-> series [2].
+That's not its job, LSM veto is handled during read() correctly before
+proc_allow_access() and f_cred check. And if you want to do it correctly
+then f_cred should be handled during its time, during ->open().
+The correct way to handle it: ptrace_may_access() during ->open() and
+each syscall for sensitive files.
 
-OK, thanks for the update. 
+Why add and speak about all this complexity where the correct check is
+just add ptrace_may_access() during ->open() ? using *f_cred* in this
+context and bring it here is not a valid argument IMO.
 
-Kevin
+
+> 
+> > 1) for proc_same_open_cred()
+> >    if (f_cred->user_ns != cred->user_ns)
+> >         return 0
+> >
+> >    return (uid_eq(fcred->uid, cred->uid) &&
+> >                   gid_eq(fcred->gid, cred->gid) &&
+> >                   cap_issubset(cred->cap_permitted, f_cred->cap_permitted));
+> >
+> > So it handles the (1) of cap_ptrace_access_check()
+> 
+> No.  This just means that, if there's a possibility that the caps are
+> wrong, you invoke ptrace_allow_access, which *does not re-check
+> capabilities*.
+Ohh Andy, we do check capabilities, please Andy are you looking to the
+code ?
+
+
+If the uid/gid match fails we do check capability, if it succeed why we
+would check them ? same user!
+
++static int __proc_allow_access(const struct cred *cred,
++                              struct task_struct *task, unsigned int
+mode)
++{
++       int ret = 0;
++       const struct cred *tcred;
++       const struct cred *fcred = cred;
++
++       rcu_read_lock();
++       tcred = __task_cred(task);
++       if (uid_eq(fcred->uid, tcred->euid) &&
++           uid_eq(fcred->uid, tcred->suid) &&
++           uid_eq(fcred->uid, tcred->uid)  &&
++           gid_eq(fcred->gid, tcred->egid) &&
++           gid_eq(fcred->gid, tcred->sgid) &&
++           gid_eq(fcred->gid, tcred->gid))
++               goto out;
++
++       if (mode & PTRACE_MODE_NOAUDIT)
++               ret = security_capable_noaudit(fcred, tcred->user_ns,
++                                              CAP_SYS_PTRACE);
++       else
++               ret = security_capable(fcred, tcred->user_ns,
++                                      CAP_SYS_PTRACE);
++
++out:
++       rcu_read_unlock();
++       return !ret ? ret : -EPERM;
++}
+
+
+The patch was posted, this is a re-post!
+
+> --Andy
+
+-- 
+Djalal Harouni
+http://opendz.org
