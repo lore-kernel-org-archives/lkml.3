@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab3JCFWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:22:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47048 "EHLO
+	id S1755522Ab3JCEPT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab3JCEPZ (ORCPT
+	with ESMTP id S1753870Ab3JCEPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:25 -0400
+	Thu, 3 Oct 2013 00:15:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 34/52] usb: dwc3: pci: add support for BayTrail
-Date: Wed,  2 Oct 2013 21:05:52 -0700
-Message-Id: <20131003040524.502715672@linuxfoundation.org>
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 51/52] ALSA: compress: Fix compress device unregister.
+Date: Wed,  2 Oct 2013 21:06:09 -0700
+Message-Id: <20131003040525.719610740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -27,37 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
 
-commit b62cd96de3161dfb125a769030eec35a4cab3d3a upstream.
+commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
 
-Add PCI id for Intel BayTrail.
+snd_unregister_device() should return the device type and not stream
+direction.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Tested-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/dwc3-pci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/core/compress_offload.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/dwc3-pci.c
-+++ b/drivers/usb/dwc3/dwc3-pci.c
-@@ -48,6 +48,7 @@
- /* FIXME define these in <linux/pci_ids.h> */
- #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
- #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
-+#define PCI_DEVICE_ID_INTEL_BYT		0x0f37
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -837,7 +837,8 @@ static int snd_compress_dev_disconnect(s
+ 	struct snd_compr *compr;
  
- struct dwc3_pci {
- 	struct device		*dev;
-@@ -208,6 +209,7 @@ static DEFINE_PCI_DEVICE_TABLE(dwc3_pci_
- 		PCI_DEVICE(PCI_VENDOR_ID_SYNOPSYS,
- 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
- 	},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
- 	{  }	/* Terminating Entry */
- };
- MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
+ 	compr = device->device_data;
+-	snd_unregister_device(compr->direction, compr->card, compr->device);
++	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
++		compr->device);
+ 	return 0;
+ }
+ 
 
 
