@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3JCEPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47029 "EHLO
+	id S1755538Ab3JCEPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab3JCEPL (ORCPT
+	with ESMTP id S1755524Ab3JCEPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:11 -0400
+	Thu, 3 Oct 2013 00:15:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        jwboyer@fedoraproject.org, Guenter Roeck <linux@roeck-us.net>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [ 50/52] hwmon: (applesmc) Check key count before proceeding
-Date: Wed,  2 Oct 2013 21:06:08 -0700
-Message-Id: <20131003040525.650648639@linuxfoundation.org>
+        Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Subject: [ 33/52] fsl/usb: Resolve PHY_CLK_VLD instability issue for ULPI phy
+Date: Wed,  2 Oct 2013 21:05:51 -0700
+Message-Id: <20131003040524.436287401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -27,53 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Ramneek Mehresh <ramneek.mehresh@freescale.com>
 
-commit 5f4513864304672e6ea9eac60583eeac32e679f2 upstream.
+commit ad1260e9fbf768d6bed227d9604ebee76a84aae3 upstream.
 
-After reports from Chris and Josh Boyer of a rare crash in applesmc,
-Guenter pointed at the initialization problem fixed below. The patch
-has not been verified to fix the crash, but should be applied
-regardless.
+For controller versions greater than 1.6, setting ULPI_PHY_CLK_SEL
+bit when USB_EN bit is already set causes instability issues with
+PHY_CLK_VLD bit. So USB_EN is set only for IP controller version
+below 1.6 before setting ULPI_PHY_CLK_SEL bit
 
-Reported-by: <jwboyer@fedoraproject.org>
-Suggested-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ramneek Mehresh <ramneek.mehresh@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/applesmc.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-fsl.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -525,16 +525,25 @@ static int applesmc_init_smcreg_try(void
- {
- 	struct applesmc_registers *s = &smcreg;
- 	bool left_light_sensor, right_light_sensor;
-+	unsigned int count;
- 	u8 tmp[1];
- 	int ret;
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -130,7 +130,7 @@ static int usb_hcd_fsl_probe(const struc
+ 	}
  
- 	if (s->init_complete)
- 		return 0;
+ 	/* Enable USB controller, 83xx or 8536 */
+-	if (pdata->have_sysif_regs)
++	if (pdata->have_sysif_regs && pdata->controller_ver < FSL_USB_VER_1_6)
+ 		setbits32(hcd->regs + FSL_SOC_USB_CTRL, 0x4);
  
--	ret = read_register_count(&s->key_count);
-+	ret = read_register_count(&count);
- 	if (ret)
- 		return ret;
- 
-+	if (s->cache && s->key_count != count) {
-+		pr_warn("key count changed from %d to %d\n",
-+			s->key_count, count);
-+		kfree(s->cache);
-+		s->cache = NULL;
-+	}
-+	s->key_count = count;
-+
- 	if (!s->cache)
- 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
- 	if (!s->cache)
+ 	/* Don't need to set host mode here. It will be done by tdi_reset() */
+@@ -232,15 +232,9 @@ static int ehci_fsl_setup_phy(struct usb
+ 	case FSL_USB2_PHY_ULPI:
+ 		if (pdata->have_sysif_regs && pdata->controller_ver) {
+ 			/* controller version 1.6 or above */
++			clrbits32(non_ehci + FSL_SOC_USB_CTRL, UTMI_PHY_EN);
+ 			setbits32(non_ehci + FSL_SOC_USB_CTRL,
+-					ULPI_PHY_CLK_SEL);
+-			/*
+-			 * Due to controller issue of PHY_CLK_VALID in ULPI
+-			 * mode, we set USB_CTRL_USB_EN before checking
+-			 * PHY_CLK_VALID, otherwise PHY_CLK_VALID doesn't work.
+-			 */
+-			clrsetbits_be32(non_ehci + FSL_SOC_USB_CTRL,
+-					UTMI_PHY_EN, USB_CTRL_USB_EN);
++				ULPI_PHY_CLK_SEL | USB_CTRL_USB_EN);
+ 		}
+ 		portsc |= PORT_PTS_ULPI;
+ 		break;
 
 
