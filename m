@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980Ab3JCESo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47156 "EHLO
+	id S1756000Ab3JCESu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47159 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548Ab3JCESl (ORCPT
+	with ESMTP id S1755983Ab3JCESq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:41 -0400
+	Thu, 3 Oct 2013 00:18:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 25/57] staging: vt6656: [BUG] iwctl_siwencodeext return if device not open
-Date: Wed,  2 Oct 2013 21:08:51 -0700
-Message-Id: <20131003040638.329362115@linuxfoundation.org>
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Imre Deak <imre.deak@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 26/57] drm/i915/tv: clear adjusted_mode.flags
+Date: Wed,  2 Oct 2013 21:08:52 -0700
+Message-Id: <20131003040638.395884514@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -26,33 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 5e8c3d3e41b0bf241e830a1ee0752405adecc050 upstream.
+commit 1062b81598bc00e2f6620e6f3788f8f8df2f01e7 upstream.
 
-Don't allow entry to iwctl_siwencodeext if device not open.
+The native TV encoder has it's own flags to adjust sync modes and
+enabled interlaced modes which are totally irrelevant for the adjusted
+mode. This worked out nicely since the input modes used by both the
+load detect code and reported in the ->get_modes callbacks all have no
+flags set, and we also don't fill out any of them in the ->get_config
+callback.
 
-This fixes a race condition where wpa supplicant/network manager
-enters the function when the device is already closed.
+This changed with the additional sanitation done with
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0
+Author: Imre Deak <imre.deak@intel.com>
+Date:   Tue Jul 30 13:36:32 2013 +0300
+
+    drm/i915: make user mode sync polarity setting explicit
+
+sinc now the "no flags at all" state wouldn't fit through core code
+any more. So fix this up again by explicitly clearing the flags in the
+->compute_config callback.
+
+Aside: We have zero checking in place to make sure that the requested
+mode is indeed the right input mode we want for the selected TV mode.
+So we'll happily fall over if userspace tries to pull us.  But that's
+definitely work for a different patch series. So just add a FIXME
+comment for now.
+
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Imre Deak <imre.deak@intel.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/iwctl.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_tv.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/staging/vt6656/iwctl.c
-+++ b/drivers/staging/vt6656/iwctl.c
-@@ -1634,6 +1634,9 @@ int iwctl_siwencodeext(struct net_device
- 	if (pMgmt == NULL)
- 		return -EFAULT;
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -918,6 +918,14 @@ intel_tv_compute_config(struct intel_enc
+ 	DRM_DEBUG_KMS("forcing bpc to 8 for TV\n");
+ 	pipe_config->pipe_bpp = 8*3;
  
-+	if (!(pDevice->flags & DEVICE_FLAGS_OPENED))
-+		return -ENODEV;
++	/* TV has it's own notion of sync and other mode flags, so clear them. */
++	pipe_config->adjusted_mode.flags = 0;
 +
- 	buf = kzalloc(sizeof(struct viawget_wpa_param), GFP_KERNEL);
- 	if (buf == NULL)
- 		return -ENOMEM;
++	/*
++	 * FIXME: We don't check whether the input mode is actually what we want
++	 * or whether userspace is doing something stupid.
++	 */
++
+ 	return true;
+ }
+ 
 
 
