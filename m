@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab3JCIbg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 04:31:36 -0400
-Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:59970 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751193Ab3JCIbd (ORCPT
+	id S1753397Ab3JCIfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 04:35:19 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:51078 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab3JCIfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 04:31:33 -0400
-X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 04:31:33 EDT
-Message-ID: <524D296B.2090905@overkiz.com>
-Date: Thu, 03 Oct 2013 10:23:07 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Fabio Porcedda <fabio.porcedda@gmail.com>
-CC: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yang Wenyou <Wenyou.Yang@atmel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        linux-watchdog@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH v2 2/4] watchdog: at91sam9_wdt: update device tree doc
-References: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com> <1371799414-3654-1-git-send-email-b.brezillon@overkiz.com> <CAHkwnC_Q5XVcb5m5gZuG+s7ojgBb6b29pW9_rENA1sBjo4+-7Q@mail.gmail.com>
-In-Reply-To: <CAHkwnC_Q5XVcb5m5gZuG+s7ojgBb6b29pW9_rENA1sBjo4+-7Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 2988419829413345417
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 3 Oct 2013 04:35:16 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf tool: more user-friendly errors from trace
+Date: Thu,  3 Oct 2013 13:58:11 +0530
+Message-Id: <1380788891-31908-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.4.477.g5d89aa9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Fabio,
+Currently, execution of 'perf trace' reports the following cryptic
+message to the user:
 
-On 03/10/2013 10:08, Fabio Porcedda wrote:
-> On Fri, Jun 21, 2013 at 9:23 AM, Boris BREZILLON
-> <b.brezillon@overkiz.com> wrote:
->> Add new at91sam9 watchdog properties to the documentation.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
->>   1 file changed, 28 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
->> index fcdd48f..e043106 100644
->> --- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
->> +++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
->> @@ -9,11 +9,37 @@ Required properties:
->>
->>   Optional properties:
->>   - timeout-sec: contains the watchdog timeout in seconds.
-> Why are you removing the documentation about this property?
+$ perf trace
+Couldn't read the raw_syscalls tracepoints information!
 
-I'm not removing the property: this is an enumeration minus not a diff 
-minus.
+Now, it prints a detailed message:
 
-> Regards
-Regards,
+$ perf trace
+Error:  No permissions to read $debugfs/tracing/events/raw_syscalls
+Hint:   Change the permissions of debugfs: /sys/kernel/debug
+        The directory will be present if your kernel was compiled with debugfs support.
 
-Boris
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/perf/builtin-trace.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 71aa3e3..544707a 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -916,14 +916,18 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 
+ 	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
+ 	    perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit)) {
+-		fprintf(trace->output, "Couldn't read the raw_syscalls tracepoints information!\n");
++		fprintf(trace->output, "Error:\tNo permissions to read $debugfs/tracing/events/raw_syscalls\n");
++		fprintf(trace->output, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
++		fprintf(trace->output, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
+ 		goto out_delete_evlist;
+ 	}
+ 
+ 	if (trace->sched &&
+ 	    perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
+ 				   trace__sched_stat_runtime)) {
+-		fprintf(trace->output, "Couldn't read the sched_stat_runtime tracepoint information!\n");
++		fprintf(trace->output, "Error:\tNo permissions to read $debugfs/tracing/events/sched/sched_stat_runtime\n");
++		fprintf(trace->output, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
++		fprintf(trace->output, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
+ 		goto out_delete_evlist;
+ 	}
+ 
+-- 
+1.8.4.477.g5d89aa9
+
