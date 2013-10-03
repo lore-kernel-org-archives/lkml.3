@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3JCGJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 02:09:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62970 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988Ab3JCGI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 02:08:59 -0400
-Date: Thu, 3 Oct 2013 09:08:40 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        mpm@selenic.com, herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
- some powernv systems
-Message-ID: <20131003060840.GA4017@redhat.com>
-References: <524BDD73.3020106@redhat.com>
- <1380704789.645.57.camel@pasglop>
- <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
- <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
- <20131002100224.GF17294@redhat.com>
- <1380722275.12149.28.camel@concordia>
- <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de>
- <524C2EAE.7090209@redhat.com>
- <20131002143720.GK17294@redhat.com>
- <1380752480.645.74.camel@pasglop>
+	id S1754179Ab3JCGMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 02:12:50 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:38391 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab3JCGMt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 02:12:49 -0400
+Date: Thu, 3 Oct 2013 08:12:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131003061244.GC25345@gmail.com>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <20131002182206.GB2485@dztty>
+ <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
+ <20131002184844.GB3393@dztty>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380752480.645.74.camel@pasglop>
+In-Reply-To: <20131002184844.GB3393@dztty>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 08:21:20AM +1000, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-10-02 at 17:37 +0300, Gleb Natapov wrote:
-> > On Wed, Oct 02, 2013 at 04:33:18PM +0200, Paolo Bonzini wrote:
-> > > Il 02/10/2013 16:08, Alexander Graf ha scritto:
-> > > > > The hwrng is accessible by host userspace via /dev/mem.
-> > > > 
-> > > > A guest should live on the same permission level as a user space
-> > > > application. If you run QEMU as UID 1000 without access to /dev/mem, why
-> > > > should the guest suddenly be able to directly access a memory location
-> > > > (MMIO) it couldn't access directly through a normal user space interface.
-> > > > 
-> > > > It's basically a layering violation.
-> > > 
-> > > With Michael's earlier patch in this series, the hwrng is accessible by
-> > > host userspace via /dev/hwrng, no?
-> > > 
-> > Access to which can be controlled by its permission. Permission of
-> > /dev/kvm may be different. If we route hypercall via userspace and
-> > configure qemu to get entropy from /dev/hwrng everything will fall
-> > nicely together (except performance).
-> 
-> Yes, except abysmall performance and a lot more code for something
-> completely and utterly pointless .... nice.
-> 
-Pointless? You yourself said that fallback to userspace will be required
-for migration, so the code have to be there regardless. About abysmal
-performance this is what you repeatedly refused to prove. All you
-said is that exit to userspace is expensive, we all know that, it is
-slow for all arch and all devices implemented in usrerspace, but we do
-not move all of them to the kernel. We do move some, most performance
-critical, so all you need to show that for typical guest workload having
-device in the kernel speed up things measurably. Why not do that instead
-of writing rude emails?
 
---
-			Gleb.
+* Djalal Harouni <tixxdz@opendz.org> wrote:
+
+> > Regardless, glibc uses /proc/self/maps, which would be fine here, right?
+>
+> I did not touch /proc/self/maps and others, but I'm planning to fix them 
+> if this solution is accepted.
+> 
+> I'll do the same thing as in /proc/*/stat for maps, let it be 0444, and 
+> try to delay the check to ->read(). So during ->read() perform 
+> ptrace_may_access() on currenct's cred and process_allow_access() on 
+> file's opener cred. This should work.
+
+Aren't read() time checks fundamentally unrobust? We generally don't do 
+locking on read()s, so such checks - in the general case - are pretty 
+racy.
+
+Now procfs might be special, as by its nature of a pseudofilesystem it's 
+far more atomic than other filesystems, but still IMHO it's a lot more 
+robust security design wise to revoke access to objects you should not 
+have a reference to when a security boundary is crossed, than letting 
+stuff leak through and sprinking all the potential cases that may leak 
+information with permission checks ...
+
+It's also probably faster: security boundary crossings are relatively rare 
+slowpaths, while read()s are much more common...
+
+So please first get consensus on this fundamental design question before 
+spreading your solution to more areas.
+
+Thanks,
+
+	Ingo
