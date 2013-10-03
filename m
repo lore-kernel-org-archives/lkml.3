@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3JCJq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:46:58 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:36240 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789Ab3JCJqt (ORCPT
+	id S1754128Ab3JCJrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:47:35 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:39152 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3JCJrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:46:49 -0400
+	Thu, 3 Oct 2013 05:47:09 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org, monstr@monstr.eu
 Cc: Russell King <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH 2/9] input: ambakmi: Remove unnecessary amba_set_drvdata()
-Date: Thu,  3 Oct 2013 11:46:24 +0200
-Message-Id: <90c09ded0d4b6b9fbc0dbca7f57deb94384eaf8d.1380793579.git.michal.simek@xilinx.com>
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: [PATCH 9/9] video: amba-clcd: Remove unnecessary amba_set_drvdata()
+Date: Thu,  3 Oct 2013 11:46:31 +0200
+Message-Id: <2f12a1d7caba382efe8d361b373da60c08e70622.1380793579.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
 References: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
 In-Reply-To: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
 References: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-4075-1380793604-0001";
+    boundary="=_mimegpg-monstr-desktop-4165-1380793626-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,7 +33,7 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-4075-1380793604-0001
+--=_mimegpg-monstr-desktop-4165-1380793626-0001
 
 Driver core clears the driver data to NULL after device_release
 or on probe failure, so just remove it from here.
@@ -44,36 +44,36 @@ Driver core change:
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/input/serio/ambakmi.c | 2 --
+ drivers/video/amba-clcd.c | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/drivers/input/serio/ambakmi.c b/drivers/input/serio/ambakmi.c
-index 4e2fd44..b7c206d 100644
---- a/drivers/input/serio/ambakmi.c
-+++ b/drivers/input/serio/ambakmi.c
-@@ -167,8 +167,6 @@ static int amba_kmi_remove(struct amba_device *dev)
+diff --git a/drivers/video/amba-clcd.c b/drivers/video/amba-clcd.c
+index 0a2cce7..0bab6ab 100644
+--- a/drivers/video/amba-clcd.c
++++ b/drivers/video/amba-clcd.c
+@@ -594,8 +594,6 @@ static int clcdfb_remove(struct amba_device *dev)
  {
- 	struct amba_kmi_port *kmi = amba_get_drvdata(dev);
+ 	struct clcd_fb *fb = amba_get_drvdata(dev);
 
 -	amba_set_drvdata(dev, NULL);
 -
- 	serio_unregister_port(kmi->io);
- 	clk_put(kmi->clk);
- 	iounmap(kmi->base);
+ 	clcdfb_disable(fb);
+ 	unregister_framebuffer(&fb->fb);
+ 	if (fb->fb.cmap.len)
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-4075-1380793604-0001
+--=_mimegpg-monstr-desktop-4165-1380793626-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlJNPQQACgkQykllyylKDCH2VACghqYQRBSukqWtCd7fMSycl36i
-7IMAnRVOLi+Gv2phgIKzER2FjYw6J+aj
-=Apdc
+iEYEABECAAYFAlJNPRoACgkQykllyylKDCHcwwCdHLkeyMWDxFyiuUFRn6V6Njg+
+Im4AnRxhoiYE30MftYnQafGuXa4PQ332
+=XSu4
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-4075-1380793604-0001--
+--=_mimegpg-monstr-desktop-4165-1380793626-0001--
