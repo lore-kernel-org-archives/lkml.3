@@ -1,628 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab3JCRjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:39:49 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:52827 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab3JCRjq (ORCPT
+	id S1754477Ab3JCRpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:45:32 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:45255 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab3JCRpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:39:46 -0400
+	Thu, 3 Oct 2013 13:45:30 -0400
+Date: Thu, 3 Oct 2013 14:45:24 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2013-10-03
+Message-ID: <20131003174524.GA22728@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <CAOw6vbLiJLLKn=gb1=j5TBeM0ijEK13+goG-=mw7MZTyNT1kpQ@mail.gmail.com>
-References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
-	<1380670860-17621-4-git-send-email-seanpaul@chromium.org>
-	<CAAQKjZN_r-=-sj=Vb-o-KUS4ab5=cjCq1ni3VZeMeVc3NL=MMg@mail.gmail.com>
-	<CAOw6vbLiJLLKn=gb1=j5TBeM0ijEK13+goG-=mw7MZTyNT1kpQ@mail.gmail.com>
-Date: Fri, 4 Oct 2013 02:39:44 +0900
-X-Google-Sender-Auth: assSm3kL6us3NQg3CY-kiPccjqY
-Message-ID: <CAAQKjZPwyKCpju4Ndd+MB_aN24-zA5xTHFsFsun2617h7YT6dw@mail.gmail.com>
-Subject: Re: [PATCH 3/5] drm/bridge: Add PTN3460 bridge driver
-From: Inki Dae <inki.dae@samsung.com>
-To: Sean Paul <seanpaul@chromium.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/3 Sean Paul <seanpaul@chromium.org>:
-> On Thu, Oct 3, 2013 at 9:55 AM, Inki Dae <inki.dae@samsung.com> wrote:
->> Hi, thank you for your contribution and the below is my short comments,
->>
->> 2013/10/2 Sean Paul <seanpaul@chromium.org>:
->>> This patch adds a drm_bridge driver for the PTN3460 DisplayPort to LVDS
->>> bridge chip.
->>>
->>> Signed-off-by: Sean Paul <seanpaul@chromium.org>
->>> ---
->>>  .../devicetree/bindings/drm/bridge/ptn3460.txt     |  27 ++
->>>  drivers/gpu/drm/Kconfig                            |   2 +
->>>  drivers/gpu/drm/Makefile                           |   1 +
->>>  drivers/gpu/drm/bridge/Kconfig                     |   4 +
->>>  drivers/gpu/drm/bridge/Makefile                    |   3 +
->>>  drivers/gpu/drm/bridge/ptn3460.c                   | 349 +++++++++++++++++++++
->>>  include/drm/bridge/ptn3460.h                       |  36 +++
->>>  7 files changed, 422 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/drm/bridge/ptn3460.txt
->>>  create mode 100644 drivers/gpu/drm/bridge/Kconfig
->>>  create mode 100644 drivers/gpu/drm/bridge/Makefile
->>>  create mode 100644 drivers/gpu/drm/bridge/ptn3460.c
->>>  create mode 100644 include/drm/bridge/ptn3460.h
->>>
->>> diff --git a/Documentation/devicetree/bindings/drm/bridge/ptn3460.txt b/Documentation/devicetree/bindings/drm/bridge/ptn3460.txt
->>> new file mode 100644
->>> index 0000000..c1cd329
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/drm/bridge/ptn3460.txt
->>> @@ -0,0 +1,27 @@
->>> +ptn3460-bridge bindings
->>> +
->>> +Required properties:
->>> +       - compatible: "nxp,ptn3460"
->>> +       - reg: i2c address of the bridge
->>> +       - powerdown-gpio: OF device-tree gpio specification
->>
->> Can a regulator be used instead of gpio in other board case?
->>
->
-> No, not to my knowledge.
->
+Hi John,
 
-Hm.. plz check it out again. the gpio pin is specific to board, and
-the the gpio be used as power source trigger could be replaced with a
-regulator according to board design. So you should consider all
-possibilities even though there are no other cases yet: other board
-could  use a regulator instead.
+A series of patches for 3.12. The big work here is from Marcel and Johan. They
+did a lot of work in the L2CAP, HCI and MGMT layers. The most important ones
+are the addition of a new MGMT command to enable/disable LE advertisement and
+the introduction of the HCI user channel to allow applications to get directly
+and exclusive access to Bluetooth devices.
 
->
->>> +       - reset-gpio: OF device-tree gpio specification
->>> +       - edid-emulation: The EDID emulation entry to use
->>> +               +-------+------------+------------------+
->>> +               | Value | Resolution | Description      |
->>> +               |   0   |  1024x768  | NXP Generic      |
->>> +               |   1   |  1920x1080 | NXP Generic      |
->>> +               |   2   |  1920x1080 | NXP Generic      |
->>> +               |   3   |  1600x900  | Samsung LTM200KT |
->>> +               |   4   |  1920x1080 | Samsung LTM230HT |
->>> +               |   5   |  1366x768  | NXP Generic      |
->>> +               |   6   |  1600x900  | ChiMei M215HGE   |
->>> +               +-------+------------+------------------+
->>> +
->>> +Example:
->>> +       ptn3460-bridge@20 {
->>> +               compatible = "nxp,ptn3460";
->>> +               reg = <0x20>;
->>> +               powerdown-gpio = <&gpy2 5 1 0 0>;
->>> +               reset-gpio = <&gpx1 5 1 0 0>;
->>> +               edid-emulation = <5>;
->>> +       };
->>> diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
->>> index 955555d..cd7bfb3 100644
->>> --- a/drivers/gpu/drm/Kconfig
->>> +++ b/drivers/gpu/drm/Kconfig
->>> @@ -236,3 +236,5 @@ source "drivers/gpu/drm/tilcdc/Kconfig"
->>>  source "drivers/gpu/drm/qxl/Kconfig"
->>>
->>>  source "drivers/gpu/drm/msm/Kconfig"
->>> +
->>> +source "drivers/gpu/drm/bridge/Kconfig"
->>> diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
->>> index f089adf..9234253 100644
->>> --- a/drivers/gpu/drm/Makefile
->>> +++ b/drivers/gpu/drm/Makefile
->>> @@ -56,3 +56,4 @@ obj-$(CONFIG_DRM_TILCDC)      += tilcdc/
->>>  obj-$(CONFIG_DRM_QXL) += qxl/
->>>  obj-$(CONFIG_DRM_MSM) += msm/
->>>  obj-y                  += i2c/
->>> +obj-y                  += bridge/
->>> diff --git a/drivers/gpu/drm/bridge/Kconfig b/drivers/gpu/drm/bridge/Kconfig
->>> new file mode 100644
->>> index 0000000..f8db069
->>> --- /dev/null
->>> +++ b/drivers/gpu/drm/bridge/Kconfig
->>> @@ -0,0 +1,4 @@
->>> +config DRM_PTN3460
->>> +       tristate "PTN3460 DP/LVDS bridge"
->>> +       depends on DRM && I2C
->>> +       ---help---
->>> diff --git a/drivers/gpu/drm/bridge/Makefile b/drivers/gpu/drm/bridge/Makefile
->>> new file mode 100644
->>> index 0000000..b4733e1
->>> --- /dev/null
->>> +++ b/drivers/gpu/drm/bridge/Makefile
->>> @@ -0,0 +1,3 @@
->>> +ccflags-y := -Iinclude/drm
->>> +
->>> +obj-$(CONFIG_DRM_PTN3460) += ptn3460.o
->>> diff --git a/drivers/gpu/drm/bridge/ptn3460.c b/drivers/gpu/drm/bridge/ptn3460.c
->>> new file mode 100644
->>> index 0000000..a9e5c1a
->>> --- /dev/null
->>> +++ b/drivers/gpu/drm/bridge/ptn3460.c
->>> @@ -0,0 +1,349 @@
->>> +/*
->>> + * NXP PTN3460 DP/LVDS bridge driver
->>> + *
->>> + * Copyright (C) 2013 Google, Inc.
->>> + *
->>> + * This software is licensed under the terms of the GNU General Public
->>> + * License version 2, as published by the Free Software Foundation, and
->>> + * may be copied, distributed, and modified under those terms.
->>> + *
->>> + * This program is distributed in the hope that it will be useful,
->>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>> + * GNU General Public License for more details.
->>> + */
->>> +
->>> +#include <linux/module.h>
->>> +#include <linux/of.h>
->>> +#include <linux/of_gpio.h>
->>> +#include <linux/i2c.h>
->>> +#include <linux/gpio.h>
->>> +#include <linux/delay.h>
->>> +
->>> +#include "drmP.h"
->>> +#include "drm_edid.h"
->>> +#include "drm_crtc.h"
->>> +#include "drm_crtc_helper.h"
->>> +
->>> +#include "bridge/ptn3460.h"
->>> +
->>> +#define PTN3460_EDID_ADDR                      0x0
->>> +#define PTN3460_EDID_EMULATION_ADDR            0x84
->>> +#define PTN3460_EDID_ENABLE_EMULATION          0
->>> +#define PTN3460_EDID_EMULATION_SELECTION       1
->>> +#define PTN3460_EDID_SRAM_LOAD_ADDR            0x85
->>> +
->>> +struct ptn3460_bridge {
->>> +       struct drm_connector connector;
->>> +       struct i2c_client *client;
->>> +       struct drm_encoder *encoder;
->>> +       struct drm_bridge *bridge;
->>> +       struct edid *edid;
->>> +       int gpio_pd_n;
->>> +       int gpio_rst_n;
->>> +       u32 edid_emulation;
->>> +       bool enabled;
->>> +};
->>> +
->>> +static int ptn3460_read_bytes(struct ptn3460_bridge *ptn_bridge, char addr,
->>> +               u8 *buf, int len)
->>> +{
->>> +       int ret;
->>> +
->>> +       ret = i2c_master_send(ptn_bridge->client, &addr, 1);
->>> +       if (ret <= 0) {
->>> +               DRM_ERROR("Failed to send i2c command, ret=%d\n", ret);
->>> +               return ret;
->>> +       }
->>> +
->>> +       ret = i2c_master_recv(ptn_bridge->client, buf, len);
->>> +       if (ret <= 0) {
->>> +               DRM_ERROR("Failed to recv i2c data, ret=%d\n", ret);
->>> +               return ret;
->>> +       }
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static int ptn3460_write_byte(struct ptn3460_bridge *ptn_bridge, char addr,
->>> +               char val)
->>> +{
->>> +       int ret;
->>> +       char buf[2];
->>> +
->>> +       buf[0] = addr;
->>> +       buf[1] = val;
->>> +
->>> +       ret = i2c_master_send(ptn_bridge->client, buf, ARRAY_SIZE(buf));
->>> +       if (ret <= 0) {
->>> +               DRM_ERROR("Failed to send i2c command, ret=%d\n", ret);
->>> +               return ret;
->>> +       }
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static int ptn3460_select_edid(struct ptn3460_bridge *ptn_bridge)
->>> +{
->>> +       int ret;
->>> +       char val;
->>> +
->>> +       /* Load the selected edid into SRAM (accessed at PTN3460_EDID_ADDR) */
->>> +       ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_SRAM_LOAD_ADDR,
->>> +                       ptn_bridge->edid_emulation);
->>> +       if (ret) {
->>> +               DRM_ERROR("Failed to transfer edid to sram, ret=%d\n", ret);
->>> +               return ret;
->>> +       }
->>> +
->>> +       /* Enable EDID emulation and select the desired EDID */
->>> +       val = 1 << PTN3460_EDID_ENABLE_EMULATION |
->>> +               ptn_bridge->edid_emulation << PTN3460_EDID_EMULATION_SELECTION;
->>> +
->>> +       ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_EMULATION_ADDR, val);
->>> +       if (ret) {
->>> +               DRM_ERROR("Failed to write edid value, ret=%d\n", ret);
->>> +               return ret;
->>> +       }
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static void ptn3460_pre_enable(struct drm_bridge *bridge)
->>> +{
->>> +       struct ptn3460_bridge *ptn_bridge = bridge->driver_private;
->>> +       int ret;
->>> +
->>> +       if (ptn_bridge->enabled)
->>> +               return;
->>> +
->>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
->>> +               gpio_set_value(ptn_bridge->gpio_pd_n, 1);
->>
->> Ditto.
->>
->>> +
->>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n)) {
->>> +               gpio_set_value(ptn_bridge->gpio_rst_n, 0);
->>> +               udelay(10);
->>> +               gpio_set_value(ptn_bridge->gpio_rst_n, 1);
->>> +       }
->>> +
->>> +       /*
->>> +        * There's a bug in the PTN chip where it falsely asserts hotplug before
->>> +        * it is fully functional. We're forced to wait for the maximum start up
->>> +        * time specified in the chip's datasheet to make sure we're really up.
->>> +        */
->>> +       msleep(90);
->>> +
->>> +       ret = ptn3460_select_edid(ptn_bridge);
->>> +       if (ret)
->>> +               DRM_ERROR("Select edid failed ret=%d\n", ret);
->>> +
->>> +       ptn_bridge->enabled = true;
->>> +}
->>> +
->>> +static void ptn3460_enable(struct drm_bridge *bridge)
->>> +{
->>> +}
->>> +
->>> +static void ptn3460_disable(struct drm_bridge *bridge)
->>> +{
->>> +       struct ptn3460_bridge *ptn_bridge = bridge->driver_private;
->>> +
->>> +       if (!ptn_bridge->enabled)
->>> +               return;
->>> +
->>> +       ptn_bridge->enabled = false;
->>> +
->>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n))
->>> +               gpio_set_value(ptn_bridge->gpio_rst_n, 1);
->>> +
->>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
->>> +               gpio_set_value(ptn_bridge->gpio_pd_n, 0);
->>
->> Ditto.
->>
->>> +}
->>> +
->>> +static void ptn3460_post_disable(struct drm_bridge *bridge)
->>> +{
->>> +}
->>> +
->>> +void ptn3460_bridge_destroy(struct drm_bridge *bridge)
->>> +{
->>> +       struct ptn3460_bridge *ptn_bridge = bridge->driver_private;
->>> +
->>> +       drm_bridge_cleanup(bridge);
->>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
->>> +               gpio_free(ptn_bridge->gpio_pd_n);
->>
->> Ditto.
->>
->>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n))
->>> +               gpio_free(ptn_bridge->gpio_rst_n);
->>> +       /* Nothing else to free, we've got devm allocated memory */
->>> +}
->>> +
->>> +struct drm_bridge_funcs ptn3460_bridge_funcs = {
->>> +       .pre_enable = ptn3460_pre_enable,
->>> +       .enable = ptn3460_enable,
->>> +       .disable = ptn3460_disable,
->>> +       .post_disable = ptn3460_post_disable,
->>> +       .destroy = ptn3460_bridge_destroy,
->>> +};
->>> +
->>> +int ptn3460_get_modes(struct drm_connector *connector)
->>> +{
->>> +       struct ptn3460_bridge *ptn_bridge;
->>> +       u8 *edid;
->>> +       int ret, num_modes;
->>> +       bool power_off;
->>> +
->>> +       ptn_bridge = container_of(connector, struct ptn3460_bridge, connector);
->>> +
->>> +       if (ptn_bridge->edid)
->>> +               return drm_add_edid_modes(connector, ptn_bridge->edid);
->>> +
->>> +       power_off = !ptn_bridge->enabled;
->>> +       ptn3460_pre_enable(ptn_bridge->bridge);
->>> +
->>> +       edid = kmalloc(EDID_LENGTH, GFP_KERNEL);
->>> +       if (!edid) {
->>> +               DRM_ERROR("Failed to allocate edid\n");
->>> +               return 0;
->>> +       }
->>> +
->>> +       ret = ptn3460_read_bytes(ptn_bridge, PTN3460_EDID_ADDR, edid,
->>> +                       EDID_LENGTH);
->>> +       if (ret) {
->>> +               kfree(edid);
->>> +               num_modes = 0;
->>> +               goto out;
->>> +       }
->>> +
->>> +       ptn_bridge->edid = (struct edid *)edid;
->>> +       drm_mode_connector_update_edid_property(connector, ptn_bridge->edid);
->>> +
->>> +       num_modes = drm_add_edid_modes(connector, ptn_bridge->edid);
->>> +
->>> +out:
->>> +       if (power_off)
->>> +               ptn3460_disable(ptn_bridge->bridge);
->>> +
->>> +       return num_modes;
->>> +}
->>> +
->>> +static int ptn3460_mode_valid(struct drm_connector *connector,
->>> +               struct drm_display_mode *mode)
->>> +{
->>> +       return MODE_OK;
->>> +}
->>> +
->>> +struct drm_encoder *ptn3460_best_encoder(struct drm_connector *connector)
->>> +{
->>> +       struct ptn3460_bridge *ptn_bridge;
->>> +
->>> +       ptn_bridge = container_of(connector, struct ptn3460_bridge, connector);
->>> +
->>> +       return ptn_bridge->encoder;
->>> +}
->>> +
->>> +struct drm_connector_helper_funcs ptn3460_connector_helper_funcs = {
->>> +       .get_modes = ptn3460_get_modes,
->>> +       .mode_valid = ptn3460_mode_valid,
->>> +       .best_encoder = ptn3460_best_encoder,
->>> +};
->>> +
->>> +enum drm_connector_status ptn3460_detect(struct drm_connector *connector,
->>> +               bool force)
->>> +{
->>> +       return connector_status_connected;
->>> +}
->>> +
->>> +void ptn3460_connector_destroy(struct drm_connector *connector)
->>> +{
->>> +       drm_connector_cleanup(connector);
->>> +}
->>> +
->>> +struct drm_connector_funcs ptn3460_connector_funcs = {
->>> +       .dpms = drm_helper_connector_dpms,
->>> +       .fill_modes = drm_helper_probe_single_connector_modes,
->>> +       .detect = ptn3460_detect,
->>> +       .destroy = ptn3460_connector_destroy,
->>> +};
->>
->> Why do you try to add a new connector here? We already have the
->> connector for LCD, and also provides some callbacks for it. For this,
->> please see exynos_drm_display_ops of exynos_drm_fimd driver, and you
->> can add new callbacks to there such as init callback for bridge device
->> initialization if needed.
->>
->
-> We add a new connector for 2 reasons:
->
-> 1) We need to override the drm detect() callback to always return true
-> since the DP driver will presumably return its hotplug status which
-> will always be low when the ptn chip is turned off.
-> 2) We want the ability to control the result of get_modes().
->
-> I've got a patch set almost ready to tear the display ops out of fimd
-> and put them in the DP driver.
+Please pull, or let me know of any issues. Thanks!
 
-Really? if so, that is ideal something we want and we should go. But
-isn't the DP driver placed in drivers/video/exynos? How did you take
-care of that? Actually, for this, we planned to use CDF(Common Display
-Framework) if the framework is merged to mainline somehow.
+	Gustavo
 
-> The display ops are better suited
-> there, since it's the actual encoder/connector. I hope to get that
-> posted this week.
->
+--
+The following changes since commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20:
 
-I will look forward to that posting. :)
+  rt2800: change initialization sequence to fix system freeze (2013-09-09 14:44:34 -0400)
 
->
->>> +
->>> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
->>> +               struct i2c_client *client, struct device_node *node)
->>> +{
->>> +       int ret;
->>> +       struct drm_bridge *bridge;
->>> +       struct ptn3460_bridge *ptn_bridge;
->>> +
->>> +       bridge = devm_kzalloc(dev->dev, sizeof(*bridge), GFP_KERNEL);
->>> +       if (!bridge) {
->>> +               DRM_ERROR("Failed to allocate drm bridge\n");
->>> +               return -ENOMEM;
->>> +       }
->>> +
->>> +       ptn_bridge = devm_kzalloc(dev->dev, sizeof(*ptn_bridge), GFP_KERNEL);
->>> +       if (!ptn_bridge) {
->>> +               DRM_ERROR("Failed to allocate ptn bridge\n");
->>> +               return -ENOMEM;
->>> +       }
->>> +
->>> +       ptn_bridge->client = client;
->>> +       ptn_bridge->encoder = encoder;
->>> +       ptn_bridge->bridge = bridge;
->>> +       ptn_bridge->gpio_pd_n = of_get_named_gpio(node, "powerdown-gpio", 0);
->>
->> Also, if a regulator is used instead?
->>
->>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n)) {
->>> +               ret = gpio_request_one(ptn_bridge->gpio_pd_n,
->>> +                               GPIOF_OUT_INIT_HIGH, "PTN3460_PD_N");
->>> +               if (ret) {
->>> +                       DRM_ERROR("Request powerdown-gpio failed (%d)\n", ret);
->>> +                       return ret;
->>> +               }
->>> +       }
->>> +
->>> +       ptn_bridge->gpio_rst_n = of_get_named_gpio(node, "reset-gpio", 0);
->>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n)) {
->>> +               /*
->>> +                * Request the reset pin low to avoid the bridge being
->>> +                * initialized prematurely
->>> +                */
->>> +               ret = gpio_request_one(ptn_bridge->gpio_rst_n,
->>> +                               GPIOF_OUT_INIT_LOW, "PTN3460_RST_N");
->>> +               if (ret) {
->>> +                       DRM_ERROR("Request reset-gpio failed (%d)\n", ret);
->>> +                       gpio_free(ptn_bridge->gpio_pd_n);
->>> +                       return ret;
->>> +               }
->>> +       }
->>> +
->>> +       ret = of_property_read_u32(node, "edid-emulation",
->>> +                       &ptn_bridge->edid_emulation);
->>> +       if (ret) {
->>> +               DRM_ERROR("Can't read edid emulation value\n");
->>> +               goto err;
->>> +       }
->>> +
->>> +       ret = drm_bridge_init(dev, bridge, &ptn3460_bridge_funcs);
->>> +       if (ret) {
->>> +               DRM_ERROR("Failed to initialize bridge with drm\n");
->>> +               goto err;
->>> +       }
->>> +
->>> +       bridge->driver_private = ptn_bridge;
->>> +       encoder->bridge = bridge;
->>> +
->>> +       ret = drm_connector_init(dev, &ptn_bridge->connector,
->>> +                       &ptn3460_connector_funcs, DRM_MODE_CONNECTOR_LVDS);
->>
->> So it seems that here's not right place to call drm_connector_init function.
->>
->> Display pipeline path could be one of,
->>          Display Controller          Display bus
->>          ---------------------------------------------------------------------------
->>                   FIMD---------------------LVDS--------------------LCD,
->>                                                  or
->>                   FIMD----------------------eDP---------------------LCD,
->>                                                  or
->>                   FIMD------------------MIPI-DSI------------------LCD,
->>                                                  or
->>                   FIMD-------------------------------------------------LCD
->>
->> And also in case using image enhancement chip,
->> mDNIe-------------FIMD-LITE between Display Controller and Display
->> bus.
->>
->> So, wouldn't the right place below FIMD driver? :)
->>
->
-> Well, this driver should be considered outside of exynos context since
-> it could be used by any drm driver.
->
-> In the exynos context, the right place to implement it would be in the
-> dp driver, actually. However, the exynos driver has a level of
-> abstraction on top of the crtcs/encoders such that we need to
-> initialize it in the exynos_drm_core. The patchset I mentioned above
-> should help move things in a direction where fimd/mixer implement
-> drm_crtc directly and hdmi/dp implement drm_encoder/drm_connector
-> directly. In that world, DP would initialize the ptn driver.
->
->>
->>> +       if (ret) {
->>> +               DRM_ERROR("Failed to initialize connector with drm\n");
->>> +               goto err;
->>> +       }
->>> +       drm_connector_helper_add(&ptn_bridge->connector,
->>> +                       &ptn3460_connector_helper_funcs);
->>> +       drm_sysfs_connector_add(&ptn_bridge->connector);
->>> +       drm_mode_connector_attach_encoder(&ptn_bridge->connector, encoder);
->>> +
->>> +       return 0;
->>> +
->>> +err:
->>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
->>> +               gpio_free(ptn_bridge->gpio_pd_n);
->>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n))
->>> +               gpio_free(ptn_bridge->gpio_rst_n);
->>> +       return ret;
->>> +}
->>> diff --git a/include/drm/bridge/ptn3460.h b/include/drm/bridge/ptn3460.h
->>> new file mode 100644
->>> index 0000000..157ffa1
->>> --- /dev/null
->>> +++ b/include/drm/bridge/ptn3460.h
->>> @@ -0,0 +1,36 @@
->>> +/*
->>> + * Copyright (C) 2013 Google, Inc.
->>> + *
->>> + * This software is licensed under the terms of the GNU General Public
->>> + * License version 2, as published by the Free Software Foundation, and
->>> + * may be copied, distributed, and modified under those terms.
->>> + *
->>> + * This program is distributed in the hope that it will be useful,
->>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>> + * GNU General Public License for more details.
->>> + */
->>> +
->>> +#ifndef _DRM_BRIDGE_PTN3460_H_
->>> +#define _DRM_BRIDGE_PTN3460_H_
->>> +
->>> +struct drm_device;
->>> +struct drm_encoder;
->>> +struct i2c_client;
->>> +struct device_node;
->>> +
->>> +#ifdef CONFIG_DRM_PTN3460
->>> +
->>> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
->>> +               struct i2c_client *client, struct device_node *node);
->>> +#else
->>> +
->>> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
->>> +               struct i2c_client *client, struct device_node *node)
->>> +{
->>> +       return 0;
->>> +}
->>> +
->>> +#endif
->>> +
->>> +#endif
->>> --
->>> 1.8.4
->>>
->>>
->>> _______________________________________________
->>> linux-arm-kernel mailing list
->>> linux-arm-kernel@lists.infradead.org
->>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
+
+for you to fetch changes up to 4f3e219d95a3c31b916dcd5e2631c4e440736f79:
+
+  Bluetooth: Only one command per L2CAP LE signalling is supported (2013-10-03 16:09:59 +0300)
+
+----------------------------------------------------------------
+Amitkumar Karwar (4):
+      Bluetooth: btmrvl: add btmrvl_send_sync_cmd() function
+      Bluetooth: btmrvl: get rid of struct btmrvl_cmd
+      Bluetooth: btmrvl: add setup handler
+      Bluetooth: btmrvl: add calibration data download support
+
+Andre Guedes (2):
+      Bluetooth: Fix security level for peripheral role
+      Bluetooth: Fix encryption key size for peripheral role
+
+DoHyun Pyun (8):
+      Bluetooth: Add the definition and structure for Set Reserved LT_ADDR
+      Bluetooth: Add the definition and structure for Delete Reserved LT_ADDR
+      Bluetooth: Add the definition and structure for Set CSB Data
+      Bluetooth: Add the structure for Write Sync Train Parameters
+      Bluetooth: Add the definition and structure for Set CSB
+      Bluetooth: Add the definition for Start Synchronization Train
+      Bluetooth: Add the definition and stcuture for Sync Train Complete
+      Bluetooth: Add the definition for Slave Page Response Timeout
+
+Gianluca Anzolin (1):
+      Bluetooth: don't release the port in rfcomm_dev_state_change()
+
+Gustavo Padovan (1):
+      Merge git://git.kernel.org/.../bluetooth/bluetooth
+
+Johan Hedberg (25):
+      Bluetooth: Introduce a new HCI_RFKILLED flag
+      Bluetooth: Fix rfkill functionality during the HCI setup stage
+      Bluetooth: Remove unused event mask struct
+      Bluetooth: Fix double error response for l2cap_create_chan_req
+      Bluetooth: Fix L2CAP error return used for failed channel lookups
+      Bluetooth: Fix L2CAP Disconnect response for unknown CID
+      Bluetooth: Fix L2CAP command reject reason
+      Bluetooth: Fix sending responses to identified L2CAP response packets
+      Bluetooth: Fix responding to invalid L2CAP signaling commands
+      Bluetooth: Fix waiting for clearing of BT_SK_SUSPEND flag
+      Bluetooth: Add synchronization train parameters reading support
+      Bluetooth: Add event mask page 2 setting support
+      Bluetooth: Add clarifying comment to bt_sock_wait_state()
+      Bluetooth: Clean up socket locking in l2cap_sock_recvmsg
+      Bluetooth: Fix busy return for mgmt_set_powered in some cases
+      Bluetooth: Move mgmt response convenience functions to a better location
+      Bluetooth: Use async request for LE enable/disable
+      Bluetooth: Add new mgmt setting for LE advertising
+      Bluetooth: Add new mgmt_set_advertising command
+      Bluetooth: Refactor hci_dev_open to a separate hci_dev_do_open function
+      Bluetooth: Fix workqueue synchronization in hci_dev_open
+      Bluetooth: Introduce a new HCI_BREDR_ENABLED flag
+      Bluetooth: Add a new mgmt_set_bredr command
+      Bluetooth: Fix REJECTED vs NOT_SUPPORTED mgmt responses
+      Bluetooth: Fix advertising data flags with disabled BR/EDR
+
+Ken O'Brien (1):
+      Bluetooth: btusb: Add support for Belkin F8065bf
+
+Marcel Holtmann (35):
+      Bluetooth: Refactor raw socket filter into more readable code
+      Bluetooth: Fix handling of getpeername() for HCI sockets
+      Bluetooth: Fix handling of getsockname() for HCI sockets
+      Bluetooth: Report error for HCI reset ioctl when device is down
+      Bluetooth: Fix error handling for HCI socket options
+      Bluetooth: Restrict ioctls to HCI raw channel sockets
+      Bluetooth: Introduce user channel flag for HCI devices
+      Bluetooth: Introduce new HCI socket channel for user operation
+      Bluetooth: Use devname:vhci module alias for virtual HCI driver
+      Bluetooth: Add support creating virtual AMP controllers
+      Bluetooth: Disable upper layer connections when user channel is active
+      Bluetooth: Use GFP_KERNEL when cloning SKB in a workqueue
+      Bluetooth: Only schedule raw queue when user channel is active
+      Bluetooth: Use only 2 bits for controller type information
+      Bluetooth: Replace BDADDR_LOCAL with BDADDR_NONE
+      Bluetooth: Provide high speed configuration option
+      Bluetooth: Send new settings event when changing high speed option
+      Bluetooth: Require CAP_NET_ADMIN for HCI User Channel operation
+      Bluetooth: Enable -D__CHECK_ENDIAN__ for sparse by default
+      Bluetooth: Restrict disabling of HS when controller is powered off
+      Bluetooth: Add management command for setting static address
+      Bluetooth: Increment management interface revision
+      Bluetooth: Fix memory leak with L2CAP signal channels
+      Bluetooth: Restrict SSP setting changes to BR/EDR enabled controllers
+      Bluetooth: Allow setting static address even if LE is disabled
+      Bluetooth: Restrict loading of link keys to BR/EDR capable controllers
+      Bluetooth: Restrict loading of long term keys to LE capable controllers
+      Bluetooth: Allow changing device class when BR/EDR is disabled
+      Bluetooth: Fix switch statement order for L2CAP fixed channels
+      Bluetooth: Don't copy L2CAP LE signalling to raw sockets
+      Bluetooth: SMP packets are only valid on LE connections
+      Bluetooth: L2CAP connectionless channels are only valid for BR/EDR
+      Bluetooth: Drop packets on ATT fixed channel on BR/EDR
+      Bluetooth: Check minimum length of SMP packets
+      Bluetooth: Only one command per L2CAP LE signalling is supported
+
+Peng Chen (1):
+      Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
+
+Peter Senna Tschudin (1):
+      Bluetooth: Fix assignment of 0/1 to bool variables
+
+Raphael Kubo da Costa (1):
+      Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
+
+Syam Sidhardhan (1):
+      Bluetooth: Fix ACL alive for long in case of non pariable devices
+
+ drivers/bluetooth/Makefile        |   2 +
+ drivers/bluetooth/ath3k.c         |   2 +
+ drivers/bluetooth/btmrvl_drv.h    |  12 +-
+ drivers/bluetooth/btmrvl_main.c   | 269 +++++++++++++++---------
+ drivers/bluetooth/btmrvl_sdio.c   |  15 +-
+ drivers/bluetooth/btmrvl_sdio.h   |   2 +
+ drivers/bluetooth/btusb.c         |   5 +
+ drivers/bluetooth/hci_vhci.c      | 170 ++++++++++-----
+ include/net/bluetooth/bluetooth.h |   5 +-
+ include/net/bluetooth/hci.h       |  82 +++++++-
+ include/net/bluetooth/hci_core.h  |   2 +-
+ include/net/bluetooth/l2cap.h     |   1 +
+ include/net/bluetooth/mgmt.h      |  11 +
+ net/bluetooth/Makefile            |   2 +
+ net/bluetooth/af_bluetooth.c      |  41 ++++
+ net/bluetooth/hci_conn.c          |   4 +
+ net/bluetooth/hci_core.c          | 213 +++++++++++++++----
+ net/bluetooth/hci_event.c         |  23 ++-
+ net/bluetooth/hci_sock.c          | 204 ++++++++++++++----
+ net/bluetooth/l2cap_core.c        | 169 +++++++++------
+ net/bluetooth/l2cap_sock.c        |  20 +-
+ net/bluetooth/mgmt.c              | 562 ++++++++++++++++++++++++++++++++++++++++----------
+ net/bluetooth/rfcomm/sock.c       |   7 +-
+ net/bluetooth/rfcomm/tty.c        |  35 +---
+ net/bluetooth/smp.c               |  15 +-
+ 25 files changed, 1390 insertions(+), 483 deletions(-)
+
+
