@@ -1,104 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab3JCNqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 09:46:09 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49109 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab3JCNqH (ORCPT
+	id S1754215Ab3JCNrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 09:47:45 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:40052 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3JCNrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 09:46:07 -0400
-Message-ID: <524D751D.90007@parallels.com>
-Date: Thu, 3 Oct 2013 17:46:05 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 3 Oct 2013 09:47:43 -0400
+Date: Thu, 3 Oct 2013 09:47:18 -0400 (EDT)
+From: Dave Anderson <anderson@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, kernel-hardening@lists.openwall.com,
+        Aaron Durbin <adurbin@google.com>,
+        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
+        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <1408843968.872421.1380808038820.JavaMail.root@redhat.com>
+In-Reply-To: <524CBB70.2060809@jp.fujitsu.com>
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <1380656245-29975-7-git-send-email-keescook@chromium.org> <524B6AEE.90301@jp.fujitsu.com> <CAGXu5jLVt13p2X2e1C3ha1izg6U6wbmgSyYW1wa+X4cW8aCFug@mail.gmail.com> <524BE3C5.2070302@jp.fujitsu.com> <524CBB70.2060809@jp.fujitsu.com>
+Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <fuse-devel@lists.sourceforge.net>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] fuse: writepage: update bdi writeout when deleting
- secondary request
-References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru> <20131002173837.31188.34247.stgit@dhcp-10-30-17-2.sw.ru> <20131003102614.GC14242@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20131003102614.GC14242@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.17.2]
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
+Thread-Topic: x86, kaslr: report kernel offset on panic
+Thread-Index: BBSr9odZZkZtWWR7Z/zUGHXgcxxw+Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 02:26 PM, Miklos Szeredi wrote:
-> On Wed, Oct 02, 2013 at 09:38:43PM +0400, Maxim Patlasov wrote:
->> BDI_WRITTEN counter is used to estimate bdi bandwidth. It must be incremented
->> every time as bdi ends page writeback. No matter whether it was fulfilled by
->> actual write or by discarding the request (e.g. due to shrunk i_size).
->>
->> Note that even before writepages patches, the case "Got truncated off
->> completely" was handled in fuse_send_writepage() by calling
->> fuse_writepage_finish() which updated BDI_WRITTEN unconditionally.
-> Hmm, I'm not sure I can agree with this.  If BDI_WRITTEN is used for bandwidth
-> estimation, then I think it's more correct not to count rewrites and truncated
-> pages.
-
-I thought about it before submitting the patch, but my understanding is 
-a bit different. Look how balance_dirty_pages and friends juggle with 
-BDI_WRITTEN and BDI_DIRTIED. That layer knows nothing about fuse and its 
-internals. Imagine that right now (if actual backend throughput is about 
-10MB/sec) you believe that dirtying 26 pages per 10 milliseconds is 
-fine, but when they lapsed you discovers that BDI_DIRTIED delta is 26 
-while BDI_WRITTEN delta is only 13. Logically, you must decide to cut 
-dirty-rate by factor two, but the decision would be incorrect in case of 
-unaccounted truncated rewrites.
-
->
-> But I don't see this matter either way since this is just used as a heuristic
-> and the occasional extra or lack of count shouldn't make a significant
-> difference.
-
-I agree, but for another reason. I think it won't make a significant 
-difference because rewrites coinciding with writebacks coinciding with 
-truncations will happen very rare in real life.
-
-Thanks,
-Maxim
 
 
->
-> Thanks,
-> Miklos
->
->> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
->> ---
->>   fs/fuse/file.c |    6 +++++-
->>   1 file changed, 5 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
->> index a3c7123..5d323bd 100644
->> --- a/fs/fuse/file.c
->> +++ b/fs/fuse/file.c
->> @@ -1536,6 +1536,7 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
->>   			drop->inode->i_mapping->backing_dev_info;
->>   		dec_bdi_stat(bdi, BDI_WRITEBACK);
->>   		dec_zone_page_state(drop->pages[0], NR_WRITEBACK_TEMP);
->> +		bdi_writeout_inc(bdi);
->>   		fuse_writepage_free(fc, drop);
->>   		fuse_put_request(fc, drop);
->>   		drop = next;
->> @@ -1706,11 +1707,14 @@ static bool fuse_writepage_in_flight(struct fuse_req *new_req,
->>   
->>   	if (old_req->num_pages == 1 && (old_req->state == FUSE_REQ_INIT ||
->>   					old_req->state == FUSE_REQ_PENDING)) {
->> +		struct backing_dev_info *bdi = page->mapping->backing_dev_info;
->> +
->>   		copy_highpage(old_req->pages[0], page);
->>   		spin_unlock(&fc->lock);
->>   
->> -		dec_bdi_stat(page->mapping->backing_dev_info, BDI_WRITEBACK);
->> +		dec_bdi_stat(bdi, BDI_WRITEBACK);
->>   		dec_zone_page_state(page, NR_WRITEBACK_TEMP);
->> +		bdi_writeout_inc(bdi);
->>   		fuse_writepage_free(fc, new_req);
->>   		fuse_request_free(new_req);
->>   		goto out;
->>
->
+----- Original Message -----
+> (2013/10/02 18:13), HATAYAMA Daisuke wrote:
+> > (2013/10/02 16:48), Kees Cook wrote:
+> <cut>
+> >>>> +
+> >>>> +     return 0;
+> >>>> +}
+> >>>> +
+> >>>> +/*
+> >>>>     * Determine if we were loaded by an EFI loader.  If so, then we have also been
+> >>>>     * passed the efi memmap, systab, etc., so we should use these data structures
+> >>>>     * for initialization.  Note, the efi init code path is determined by the
+> >>>> @@ -1242,3 +1256,15 @@ void __init i386_reserve_resources(void)
+> >>>>    }
+> >>>>
+> >>>>    #endif /* CONFIG_X86_32 */
+> >>>> +
+> >>>> +static struct notifier_block kernel_offset_notifier = {
+> >>>> +     .notifier_call = dump_kernel_offset
+> >>>> +};
+> >>>> +
+> >>>> +static int __init register_kernel_offset_dumper(void)
+> >>>> +{
+> >>>> +     atomic_notifier_chain_register(&panic_notifier_list,
+> >>>> +                                     &kernel_offset_notifier);
+> >>>> +     return 0;
+> >>>> +}
+> >>>> +__initcall(register_kernel_offset_dumper);
+> >>>>
+> >>>
+> >>> Panic notifier is not executed if kdump is enabled. Maybe, Chrome OS doesn't use
+> >>> kdump? Anyway, kdump related tools now calculate phys_base from memory map
+> >>> information passed as ELF PT_LOAD entries like below.
+> >>
+> >> Correct, we are not currently using kdump.
+> >>
+> >>> $ LANG=C readelf -l vmcore-rhel6up4
+> >>>
+> >>> Elf file type is CORE (Core file)
+> >>> Entry point 0x0
+> >>> There are 5 program headers, starting at offset 64
+> >>>
+> >>> Program Headers:
+> >>>    Type           Offset             VirtAddr           PhysAddr
+> >>>                   FileSiz            MemSiz              Flags  Align
+> >>>    NOTE           0x0000000000000158 0x0000000000000000  0x0000000000000000
+> >>>                   0x0000000000000b08 0x0000000000000b08         0
+> >>>    LOAD           0x0000000000000c60 0xffffffff81000000  0x0000000001000000
+> >>>                   0x000000000103b000 0x000000000103b000  RWE    0
+> >>>    LOAD           0x000000000103bc60 0xffff880000001000  0x0000000000001000
+> >>>                   0x000000000009cc00 0x000000000009cc00  RWE    0
+> >>>    LOAD           0x00000000010d8860 0xffff880000100000  0x0000000000100000
+> >>>                   0x0000000002f00000 0x0000000002f00000  RWE    0
+> >>>    LOAD           0x0000000003fd8860 0xffff880013000000  0x0000000013000000
+> >>>                   0x000000002cffd000 0x000000002cffd000  RWE    0
+> >>>
+> >>> Each PT_LOAD entry is assigned to virtual and physical address. In this case,
+> >>> 1st PT_LOAD entry belongs to kernel text mapping region, from which we can
+> >>> calculate phys_base value.
+> >>
+> >> It seems like all the information you need would still be available?
+> >> The virtual address is there, so it should be trivial to see the
+> >> offset, IIUC.
+> >>
+> >
+> > Partially yes. I think OK to analyze crash dump by crash utility, a gdb-based
+> > symbolic debugger for kernel, since phys_base absorbs kernel offset caused by
+> > relocation and phys_base is available in the way I explained above.
+> >
+> > However, the gained phys_base is not correct one, exactly phys_base + offset_by_relocation.
+> > When analyzing crash dump by crash utility, we use debug information generated
+> > during kernel build, which we install as kernel-debuginfo on RHEL for example.
+> > Symbols in debuginfo have statically assigned addresses at build so we see
+> > the statically assigned addresses during debugging and we see
+> > phys_base + offset_by_relocation as phys_base. This would be problematic
+> > if failure on crash dump is relevant to the relocated addresses, though I don't
+> > immediately come up with crash senario where relocated symbol is defitely necessary.
+> >
+> > Still we can get relocated addresses if kallsyms is enabled on the kernel,
+> > but kallsyms and relocatable kernels are authogonal. I don't think it natural
+> > to rely on kallsyms. It seems natural to export relocation information newly
+> > as debugging information.
+> >
+> 
+> I was confused yesterday. As I said above, kdump related tools now don't support
+> relocation on x86_64, phys_base only. kdump related tools think of present kernel
+> offset as phys_base. Then, they reflect kernel offset caused by relocation in
+> physical addresses only, not in virtual addresses. This obviously affects the
+> tools.
+> 
+> BTW, relocation looks more sophisticated than phys_base one. Is it possible to
+> switch from phys_base one to relocation on x86_64? On x86, relocation is used so
+> I guess x86_64 can work in the same way. Is there something missing?
+> Is there what phys_base can but relocation cannot on x86_64?
+> 
+> And, Dave, is there feature for crash utility to treat relocation now?
 
+Well sort of, there are couple guessing-game kludges that can be used.
+
+For 32-bit x86 systems configured with a CONFIG_PHYSICAL_START value 
+that is larger than its CONFIG_PHYSICAL_ALIGN value, such that the 
+vmlinux symbol values do not match their relocated virtual address
+values, there are two options for analyzing dumpfiles:
+
+(1) there is a "--reloc size" command line option, presuming that
+    you know what it is.
+(2) take a snapshot of the /proc/kallsyms file from the crashing
+    system into a file, and put it on the command line, similar
+    to putting a System.map file on the command line in order to
+    override the symbol values in the vmlinux file.
+
+In those cases, we have to alter all of the symbols seen in the
+vmlinux file, and go into a backdoor into the embedded gdb module 
+to patch/modify the symbol values.
+
+On live x86 systems, the two options above are not necessary if
+/proc/kallsyms exists, because its contents can be checked against
+the vmlinux file symbol values, and the relocation calculated.
+
+For x86_64, the --reloc argument has never been needed.  But if
+for whatever reason the "phys_base" value cannot be determined,
+it can be forced with the "--machdep phys_base=addr" option, 
+again presuming you know what it is.   
+
+Dave
+
+> --
+> Thanks.
+> HATAYAMA, Daisuke
+> 
+> 
