@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab3JCETJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:19:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47190 "EHLO
+	id S1756088Ab3JCETP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:19:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756009Ab3JCETF (ORCPT
+	with ESMTP id S1754224Ab3JCETN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:19:05 -0400
+	Thu, 3 Oct 2013 00:19:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Wolter <wolly84@web.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 32/57] xhci: Fix race between ep halt and URB cancellation
-Date: Wed,  2 Oct 2013 21:08:58 -0700
-Message-Id: <20131003040638.800608740@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 34/57] USB: UHCI: accept very late isochronous URBs
+Date: Wed,  2 Oct 2013 21:09:00 -0700
+Message-Id: <20131003040638.935871481@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -28,41 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Wolter <wolly84@web.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
+commit bef073b067a7b1874a6b381e0035bb0516d71a77 upstream.
 
-The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
-user process, because the stopped_td variable was overwritten in the
-handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
-refuse the reset and communication with device can not run over this endpoint.
-https://bugzilla.kernel.org/show_bug.cgi?id=60699
+Commit 24f531371de1 (USB: EHCI: accept very late isochronous URBs)
+changed the isochronous API provided by ehci-hcd.  URBs submitted too
+late, so that the time slots for all their packets have already
+expired, are no longer rejected outright.  Instead the submission is
+accepted, and the URB completes normally with a -EXDEV error for each
+packet.  This is what client drivers expect.
 
-Signed-off-by: Florian Wolter <wolly84@web.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+This patch implements the same policy in uhci-hcd.  It should be
+applied to all kernels containing commit c44b225077bb (UHCI: implement
+new semantics for URB_ISO_ASAP).
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/host/uhci-q.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -857,8 +857,12 @@ remove_finished_td:
- 		/* Otherwise ring the doorbell(s) to restart queued transfers */
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
--	ep->stopped_td = NULL;
--	ep->stopped_trb = NULL;
-+
-+	/* Clear stopped_td and stopped_trb if endpoint is not halted */
-+	if (!(ep->ep_state & EP_HALTED)) {
-+		ep->stopped_td = NULL;
-+		ep->stopped_trb = NULL;
-+	}
+--- a/drivers/usb/host/uhci-q.c
++++ b/drivers/usb/host/uhci-q.c
+@@ -1303,7 +1303,7 @@ static int uhci_submit_isochronous(struc
+ 		}
  
- 	/*
- 	 * Drop the lock and complete the URBs in the cancelled TD list.
+ 		/* Fell behind? */
+-		if (uhci_frame_before_eq(frame, next)) {
++		if (!uhci_frame_before_eq(next, frame)) {
+ 
+ 			/* USB_ISO_ASAP: Round up to the first available slot */
+ 			if (urb->transfer_flags & URB_ISO_ASAP)
+@@ -1311,13 +1311,17 @@ static int uhci_submit_isochronous(struc
+ 						-qh->period;
+ 
+ 			/*
+-			 * Not ASAP: Use the next slot in the stream.  If
+-			 * the entire URB falls before the threshold, fail.
++			 * Not ASAP: Use the next slot in the stream,
++			 * no matter what.
+ 			 */
+ 			else if (!uhci_frame_before_eq(next,
+ 					frame + (urb->number_of_packets - 1) *
+ 						qh->period))
+-				return -EXDEV;
++				dev_dbg(uhci_dev(uhci), "iso underrun %p (%u+%u < %u)\n",
++						urb, frame,
++						(urb->number_of_packets - 1) *
++							qh->period,
++						next);
+ 		}
+ 	}
+ 
 
 
