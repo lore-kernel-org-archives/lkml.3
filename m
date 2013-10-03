@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab3JCENk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:13:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46946 "EHLO
+	id S1757818Ab3JCF14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:27:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab3JCENh (ORCPT
+	with ESMTP id S1755018Ab3JCEMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:13:37 -0400
+	Thu, 3 Oct 2013 00:12:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Wolter <wolly84@web.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 29/52] xhci: Fix race between ep halt and URB cancellation
-Date: Wed,  2 Oct 2013 21:05:47 -0700
-Message-Id: <20131003040524.165248777@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Stephen Warren <swarren@nvidia.com>
+Subject: [ 19/52] serial: tegra: fix tty-kref leak
+Date: Wed,  2 Oct 2013 21:05:37 -0700
+Message-Id: <20131003040523.496519452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -28,41 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Wolter <wolly84@web.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
+commit cfd29aa0e81b791985e8428e6507e80e074e6730 upstream.
 
-The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
-user process, because the stopped_td variable was overwritten in the
-handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
-refuse the reset and communication with device can not run over this endpoint.
-https://bugzilla.kernel.org/show_bug.cgi?id=60699
+Fix potential tty-kref leak in stop_rx path.
 
-Signed-off-by: Florian Wolter <wolly84@web.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/tty/serial/serial-tegra.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -857,8 +857,12 @@ remove_finished_td:
- 		/* Otherwise ring the doorbell(s) to restart queued transfers */
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
--	ep->stopped_td = NULL;
--	ep->stopped_trb = NULL;
-+
-+	/* Clear stopped_td and stopped_trb if endpoint is not halted */
-+	if (!(ep->ep_state & EP_HALTED)) {
-+		ep->stopped_td = NULL;
-+		ep->stopped_trb = NULL;
-+	}
+--- a/drivers/tty/serial/serial-tegra.c
++++ b/drivers/tty/serial/serial-tegra.c
+@@ -726,7 +726,7 @@ static irqreturn_t tegra_uart_isr(int ir
+ static void tegra_uart_stop_rx(struct uart_port *u)
+ {
+ 	struct tegra_uart_port *tup = to_tegra_uport(u);
+-	struct tty_struct *tty = tty_port_tty_get(&tup->uport.state->port);
++	struct tty_struct *tty;
+ 	struct tty_port *port = &u->state->port;
+ 	struct dma_tx_state state;
+ 	unsigned long ier;
+@@ -738,6 +738,8 @@ static void tegra_uart_stop_rx(struct ua
+ 	if (!tup->rx_in_progress)
+ 		return;
  
- 	/*
- 	 * Drop the lock and complete the URBs in the cancelled TD list.
++	tty = tty_port_tty_get(&tup->uport.state->port);
++
+ 	tegra_uart_wait_sym_time(tup, 1); /* wait a character interval */
+ 
+ 	ier = tup->ier_shadow;
 
 
