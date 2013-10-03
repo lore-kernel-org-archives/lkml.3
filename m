@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3JCM1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 08:27:37 -0400
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:51713 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753748Ab3JCM1g (ORCPT
+	id S1754182Ab3JCMaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:30:09 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:46120 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab3JCMaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 08:27:36 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 4/4] ARM: at91/dt: add watchdog properties to kizbox board
-Date: Thu,  3 Oct 2013 14:19:21 +0200
-Message-Id: <1380802761-32279-5-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380802761-32279-1-git-send-email-b.brezillon@overkiz.com>
-References: <1380802761-32279-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7086695488971765988
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 3 Oct 2013 08:30:06 -0400
+Date: Thu, 3 Oct 2013 13:29:59 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131003122959.GA3619@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <20131002182206.GB2485@dztty>
+ <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
+ <20131002184844.GB3393@dztty>
+ <20131003061244.GC25345@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003061244.GC25345@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add watchdog specific config for kizbox board.
+On Thu, Oct 03, 2013 at 08:12:44AM +0200, Ingo Molnar wrote:
+> 
+> * Djalal Harouni <tixxdz@opendz.org> wrote:
+> 
+> > > Regardless, glibc uses /proc/self/maps, which would be fine here, right?
+> >
+> > I did not touch /proc/self/maps and others, but I'm planning to fix them 
+> > if this solution is accepted.
+> > 
+> > I'll do the same thing as in /proc/*/stat for maps, let it be 0444, and 
+> > try to delay the check to ->read(). So during ->read() perform 
+> > ptrace_may_access() on currenct's cred and process_allow_access() on 
+> > file's opener cred. This should work.
+> 
+> Aren't read() time checks fundamentally unrobust? We generally don't do 
+> locking on read()s, so such checks - in the general case - are pretty 
+> racy.
+For procfs yes, read() time checks are unrobust, the general agreement on
+procfs is checks should be performed during each syscall.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/kizbox.dts |    6 ++++++
- 1 file changed, 6 insertions(+)
+For the locking on read()/write() IMHO there should be locking by design
+for /proc/pid/* entries. Here we are speaking about content that varies,
+data attached to other processes, so there is already some locking
+mechanism, and for sensitive stuff, we must hold the cred mutex. This
+is the standard from the old days of procfs.
 
-diff --git a/arch/arm/boot/dts/kizbox.dts b/arch/arm/boot/dts/kizbox.dts
-index 02df191..928f6ee 100644
---- a/arch/arm/boot/dts/kizbox.dts
-+++ b/arch/arm/boot/dts/kizbox.dts
-@@ -53,6 +53,12 @@
- 				status = "okay";
- 			};
- 
-+			watchdog@fffffd40 {
-+				timeout-sec = <15>;
-+				atmel,max-heartbeat-sec = <16>;
-+				atmel,min-heartbeat-sec = <0>;
-+				status = "okay";
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
+
+And yes some of them are racy, but we can improve it, delay the checks.
+
+>From old Linux git history, before the initial git repository build, I
+found that some important checks were done right after gathering the info.
+
+
+> Now procfs might be special, as by its nature of a pseudofilesystem it's 
+> far more atomic than other filesystems, but still IMHO it's a lot more 
+
+
+> robust security design wise to revoke access to objects you should not 
+> have a reference to when a security boundary is crossed, than letting 
+> stuff leak through and sprinking all the potential cases that may leak 
+> information with permission checks ...
+I agree, but those access should also be checked at the beginning, IOW
+during ->open(). revoke will not help if revoke is not involved at all,
+the task /proc entries may still be valide (no execve).
+
+Currently security boundary is crossed for example arbitrary /proc/*/stack
+(and others).
+1) The target task does not do an execve (no revoke).
+2) current task will open these files and *want* and *will* pass the fd to a
+more privileged process to pass the ptrace check which is done only during
+->read().
+
+
+> It's also probably faster: security boundary crossings are relatively rare 
+> slowpaths, while read()s are much more common...
+Hmm, These two are related? can't get rid of permission checks
+especially on this pseudofilesystem!
+
+
+> So please first get consensus on this fundamental design question before 
+> spreading your solution to more areas.
+Of course, I did clean the patchset to prove that it will work, and I
+only implemented full protection for /proc/*/{stack,syscall,stat} other
+files will wait.
+
+But Ingo you can't ignore the fact that:
+/proc/*/{stack,syscall} are 0444 mode
+/proc/*/{stack,syscall} do not have ptrace_may_access() during open()
+/proc/*/{stack,syscall} have the ptrace_may_access() during read()
+
+Every unprivileged process will have an fd on arbitrary privileged
+files, then pass fd to a more privileged process...
+https://lkml.org/lkml/2013/8/28/544
+
+We need 0400 VFS checks, and ptrace capability check during ->open().
+
+
+So here revoke is not invloved at all, we'll have to close these issues.
+Any thoughts please ? patch submitted but... I can split it again to
+try to close these issues. Then wait to see for the file->f_cred or revoke
+design ?
+
+
+
+
+> Thanks,
+> 
+> 	Ingo
+
 -- 
-1.7.9.5
-
+Djalal Harouni
+http://opendz.org
