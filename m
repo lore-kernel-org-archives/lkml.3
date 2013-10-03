@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3JCHOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 03:14:40 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:61938 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab3JCHOh (ORCPT
+	id S1753569Ab3JCHVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 03:21:12 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:52429 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3JCHVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 03:14:37 -0400
-Date: Thu, 3 Oct 2013 10:14:33 +0300
-From: Eli Cohen <eli@dev.mellanox.co.il>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 50/77] mlx5: Update MSI/MSI-X interrupts enablement
- code
-Message-ID: <20131003071433.GA7299@mtldesk30>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <9650a7dfbcfd5f1da21f7b093665abf4b1041071.1380703263.git.agordeev@redhat.com>
+	Thu, 3 Oct 2013 03:21:05 -0400
+Date: Thu, 3 Oct 2013 09:21:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu ops
+Message-ID: <20131003072100.GA5775@gmail.com>
+References: <20130924154159.855373283@linux.com>
+ <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com>
+ <20130924171029.GB10261@gmail.com>
+ <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
+ <20130925181146.GA16693@gmail.com>
+ <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com>
+ <20130928084412.GC26167@gmail.com>
+ <0000014179b65a63-512751f8-346a-4621-b6d1-9abd62e781c9-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9650a7dfbcfd5f1da21f7b093665abf4b1041071.1380703263.git.agordeev@redhat.com>
+In-Reply-To: <0000014179b65a63-512751f8-346a-4621-b6d1-9abd62e781c9-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:49:06PM +0200, Alexander Gordeev wrote:
->  
-> +	err = pci_msix_table_size(dev->pdev);
-> +	if (err < 0)
-> +		return err;
-> +
->  	nvec = dev->caps.num_ports * num_online_cpus() + MLX5_EQ_VEC_COMP_BASE;
->  	nvec = min_t(int, nvec, num_eqs);
-> +	nvec = min_t(int, nvec, err);
->  	if (nvec <= MLX5_EQ_VEC_COMP_BASE)
->  		return -ENOSPC;
 
-Making sure we don't request more vectors then the device's is capable
-of -- looks good.
->  
-> @@ -131,20 +136,15 @@ static int mlx5_enable_msix(struct mlx5_core_dev *dev)
->  	for (i = 0; i < nvec; i++)
->  		table->msix_arr[i].entry = i;
->  
-> -retry:
-> -	table->num_comp_vectors = nvec - MLX5_EQ_VEC_COMP_BASE;
->  	err = pci_enable_msix(dev->pdev, table->msix_arr, nvec);
-> -	if (err <= 0) {
-> +	if (err) {
-> +		kfree(table->msix_arr);
->  		return err;
-> -	} else if (err > MLX5_EQ_VEC_COMP_BASE) {
-> -		nvec = err;
-> -		goto retry;
->  	}
->  
+* Christoph Lameter <cl@linux.com> wrote:
 
-According to latest sources, pci_enable_msix() may still fail so why
-do you want to remove this code?
-
-> -	mlx5_core_dbg(dev, "received %d MSI vectors out of %d requested\n", err, nvec);
-> -	kfree(table->msix_arr);
-> +	table->num_comp_vectors = nvec - MLX5_EQ_VEC_COMP_BASE;
->  
-> -	return -ENOSPC;
-> +	return 0;
->  }
->  
->  static void mlx5_disable_msix(struct mlx5_core_dev *dev)
-> -- 
-> 1.7.7.6
+> On Sat, 28 Sep 2013, Ingo Molnar wrote:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> > * Christoph Lameter <cl@linux.com> wrote:
+> >
+> > > > The blind __this_cpu conversions without proper preempt debugging 
+> > > > cannot continue without first fixing all the fallout of the 
+> > > > missing debug checks to begin with.
+> > >
+> > > That will take some time as the feedback from the other patchset 
+> > > suggests.
+> >
+> > That's the reason why we insisted on __this_cpu*() primitives growing 
+> > these essential debug checks early on - which you resisted. I had to 
+> > bring out NAKs for you to see sense and start fixing the mess already 
+> > - next time around I'll probably have to NAK your changes earlier to 
+> > prevent such mishaps.
+> 
+> I pointed out the issues that would have to be addressed when the 
+> brought up the issue. It seemed that Steven was working on it, I fixed 
+> some of the problems that he mentioned and then waited. Seems that 
+> nothing was happening on the issue then. Guess it was not that important 
+> to you. [...]
+
+It was important to me and other maintainers as well back then and today 
+as well, as me and others complained about it out numerous times.
+
+What we didn't do was to outright NAK your naked __this_cpu changes 
+straight away and thus prevent them from getting upstream.
+
+I can fix that omission easily: consider all your __this_cpu* patches 
+NAK-ed by me until the (trivial) preemption debug checks are upstream 
+worthy:
+
+  - tested
+  - complete
+  - don't produce false warnings when enabled.
+
+Thanks,
+
+	Ingo
