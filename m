@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3JCJrW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:47:22 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:59834 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab3JCJqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:46:52 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH 3/9] ARM: etm: Remove unnecessary amba_set_drvdata()
-Date: Thu,  3 Oct 2013 11:46:25 +0200
-Message-Id: <19b5da63fa3f75504d330c3fc8ead21cc88bd563.1380793579.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-References: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-In-Reply-To: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-References: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-4089-1380793607-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1754250Ab3JCJtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:49:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34838 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753036Ab3JCJq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 05:46:56 -0400
+Date: Thu, 3 Oct 2013 11:46:50 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Egbert Eich <eich@suse.de>, Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org
+Subject: HPD flood warning since b8f102e8b
+Message-ID: <alpine.LNX.2.00.1310031141260.29701@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+During resume from hibernation, I started to see the warning below since
 
---=_mimegpg-monstr-desktop-4089-1380793607-0001
+	commit b8f102e8bf71cacf33326360fdf9dcfd1a63925b
+	Author: Egbert Eich <eich@suse.de>
+	Date:   Fri Jul 26 14:14:24 2013 +0200
 
-Driver core clears the driver data to NULL after device_release
-or on probe failure, so just remove it from here.
+	    drm/i915: Add messages useful for HPD storm detection debugging (v2)
 
-Driver core change:
-"device-core: Ensure drvdata = NULL when no driver is bound"
-(sha1: 0998d0631001288a5974afc0b2a5f568bcdecb4d)
+the system is otherwise working properly, and so far it seems to happen 
+only during hibernation resume.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- arch/arm/kernel/etm.c | 6 ------
- 1 file changed, 6 deletions(-)
+  [13766.703229] WARNING: CPU: 1 PID: 0 at drivers/gpu/drm/i915/i915_irq.c:1001 i965_irq_handler+0x492/0x680 [i915]()
+  [13766.703230] Received HPD interrupt although disabled
+  [13766.703335] Modules linked in: af_packet tun iptable_mangle xt_DSCP nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables rfcomm bn
+  ep btusb bluetooth cpufreq_conservative cpufreq_userspace cpufreq_powersave iTCO_wdt iTCO_vendor_support snd_hda_codec_conexant snd_hda_intel snd_hda_codec kvm_intel snd_hwdep kvm snd_pcm thinkpad_acpi snd_seq iwldvm mac80211 sg snd_timer 
+  iwlwifi snd_seq_device cfg80211 snd i2c_i801 pcspkr rfkill lpc_ich mfd_core e1000e ehci_pci snd_page_alloc ptp pps_core tpm_tis tpm soundcore battery ac wmi tpm_bios acpi_cpufreq autofs4 uhci_hcd ehci_hcd usbcore usb_common i915 drm_kms_he
+  lper drm i2c_algo_bit video button edd fan processor ata_generic thermal thermal_sys
+  [13766.703339] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G        W    3.12.0-rc3 #1
+  [13766.703341] Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+  [13766.703350]  00000000000003e9 ffff88007c283d18 ffffffff81583013 ffff88007c283d58
+  [13766.703357]  ffffffff8104d297 ffff88007c283d98 000000000000000c 0000000000000002
+  [13766.703365]  ffff880037158000 0000000000000004 ffff880037158000 ffff88007c283db8
+  [13766.703367] Call Trace:
+  [13766.703375]  <IRQ>  [<ffffffff81583013>] dump_stack+0x7a/0x97
+  [13766.703382]  [<ffffffff8104d297>] warn_slowpath_common+0x87/0xb0
+  [13766.703388]  [<ffffffff8104d361>] warn_slowpath_fmt+0x41/0x50
+  [13766.703425]  [<ffffffffa00c7be2>] i965_irq_handler+0x492/0x680 [i915]
+  [13766.703436]  [<ffffffff810a40fc>] handle_irq_event_percpu+0xac/0x220
+  [13766.703442]  [<ffffffff810a42b9>] handle_irq_event+0x49/0x70
+  [13766.703449]  [<ffffffff810a7b2f>] handle_edge_irq+0x7f/0x150
+  [13766.703454]  [<ffffffff81004a89>] handle_irq+0x59/0x150
+  [13766.703461]  [<ffffffff8158d371>] ? atomic_notifier_call_chain+0x11/0x20
+  [13766.703466]  [<ffffffff8100403b>] do_IRQ+0x5b/0xe0
+  [13766.703474]  [<ffffffff815895af>] common_interrupt+0x6f/0x6f
+  [13766.703482]  <EOI>  [<ffffffff8146cf74>] ? cpuidle_enter_state+0x54/0xd0
+  [13766.703488]  [<ffffffff8146cf70>] ? cpuidle_enter_state+0x50/0xd0
+  [13766.703496]  [<ffffffff8146d37a>] cpuidle_idle_call+0x10a/0x160
+  [13766.703503]  [<ffffffff8100b7b9>] arch_cpu_idle+0x9/0x30
+  [13766.703509]  [<ffffffff810a35cb>] cpu_idle_loop+0x8b/0x270
+  [13766.703515]  [<ffffffff810a37ce>] cpu_startup_entry+0x1e/0x20
+  [13766.703522]  [<ffffffff8103115e>] start_secondary+0x8e/0x90
+  
 
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 8ff0ecd..131a6ab 100644
---- a/arch/arm/kernel/etm.c
-+++ b/arch/arm/kernel/etm.c
-@@ -385,7 +385,6 @@ out:
- 	return ret;
+It's not a single occurence, it's quite a flood within the same second, 
+ending with
 
- out_unmap:
--	amba_set_drvdata(dev, NULL);
- 	iounmap(t->etb_regs);
+  [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
+  [drm] HPD interrupt storm detected on connector HDMI-A-1: switching from hotplug detection to pollin
 
- out_release:
-@@ -398,8 +397,6 @@ static int etb_remove(struct amba_device *dev)
- {
- 	struct tracectx *t = amba_get_drvdata(dev);
+If this really needs to be enabled unconditionally by default (?), having 
+it to warn only once would be nice.
 
--	amba_set_drvdata(dev, NULL);
--
- 	iounmap(t->etb_regs);
- 	t->etb_regs = NULL;
+If there is anything else I could do to make this go away, please let me 
+know. I don't want to be running Tainted: W kernel from now forever on :)
 
-@@ -588,7 +585,6 @@ out:
- 	return ret;
+This is a standard x200s thinkpad, no fancy development HW.
 
- out_unmap:
--	amba_set_drvdata(dev, NULL);
- 	iounmap(t->etm_regs);
-
- out_release:
-@@ -601,8 +597,6 @@ static int etm_remove(struct amba_device *dev)
- {
- 	struct tracectx *t = amba_get_drvdata(dev);
-
--	amba_set_drvdata(dev, NULL);
--
- 	iounmap(t->etm_regs);
- 	t->etm_regs = NULL;
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-4089-1380793607-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlJNPQcACgkQykllyylKDCGqDACfS6kMEBXnh8cQAgFF5rFcyyqc
-52kAnRC9quDNITpQDxWA13rOX261WsYx
-=NKIm
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-4089-1380793607-0001--
+-- 
+Jiri Kosina
+SUSE Labs
