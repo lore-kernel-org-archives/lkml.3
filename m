@@ -1,149 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3JCTiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:38:12 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:43778 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab3JCTiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:38:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131003192926.GB2390@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <1380659178-28605-3-git-send-email-tixxdz@opendz.org> <524B78A2.40007@amacapital.net>
- <20131002145506.GA2669@dztty> <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
- <20131003143653.GA32445@dztty> <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
- <20131003192926.GB2390@dztty>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 3 Oct 2013 12:37:49 -0700
-Message-ID: <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
- opener may access task
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1755053Ab3JCTjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:39:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50733 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754965Ab3JCTjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 15:39:12 -0400
+Date: Thu, 3 Oct 2013 21:32:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131003193206.GA17796@redhat.com>
+References: <20131002145655.361606532@infradead.org> <20131002150518.675931976@infradead.org> <20131003164117.GD5790@linux.vnet.ibm.com> <20131003184001.GM28601@twins.programming.kicks-ass.net> <20131003184719.GA11996@redhat.com> <20131003192135.GR5790@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003192135.GR5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 12:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> On Thu, Oct 03, 2013 at 04:12:37PM +0100, Andy Lutomirski wrote:
->> On Thu, Oct 3, 2013 at 3:36 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> > On Wed, Oct 02, 2013 at 05:44:17PM +0100, Andy Lutomirski wrote:
->> >> On Wed, Oct 2, 2013 at 3:55 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> >> > On Tue, Oct 01, 2013 at 06:36:34PM -0700, Andy Lutomirski wrote:
->> >> >> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
->> >> >> > Since /proc entries varies at runtime, permission checks need to happen
->> >> >> > during each system call.
->> >> >> >
->> >> >> > However even with that /proc file descriptors can be passed to a more
->> >> >> > privileged process (e.g. a suid-exec) which will pass the classic
->> >> >> > ptrace_may_access() permission check. The open() call will be issued in
->> >> >> > general by an unprivileged process while the disclosure of sensitive
->> >> >> > /proc information will happen using a more privileged process at
->> >> >> > read(),write()...
->> >> >> >
->> >> >> > Therfore we need a more sophisticated check to detect if the cred of the
->> >> >> > process have changed, and if the cred of the original opener that are
->> >> >> > stored in the file->f_cred have enough permission to access the task's
->> >> >> > /proc entries during read(), write()...
->> >> >> >
->> >> >> > Add the proc_allow_access() function that will receive the file->f_cred
->> >> >> > as an argument, and tries to check if the opener had enough permission
->> >> >> > to access the task's /proc entries.
->> >> >> >
->> >> >> > This function should be used with the ptrace_may_access() check.
->> >> >> >
->> >> >> > Cc: Kees Cook <keescook@chromium.org>
->> >> >> > Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
->> >> >> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
->> >> >> > ---
->> >> >> >  fs/proc/base.c     | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
->> >> >> >  fs/proc/internal.h |  2 ++
->> >> >> >  2 files changed, 58 insertions(+)
->> >> >> >
->> >> >> > diff --git a/fs/proc/base.c b/fs/proc/base.c
->> >> >> > index e834946..c29eeae 100644
->> >> >> > --- a/fs/proc/base.c
->> >> >> > +++ b/fs/proc/base.c
->> >> >> > @@ -168,6 +168,62 @@ int proc_same_open_cred(const struct cred *fcred)
->> >> >> >             cap_issubset(cred->cap_permitted, fcred->cap_permitted));
->> >> >> >  }
->> >> >> >
->> >> >> > +/* Returns 0 on success, -errno on denial. */
->> >> >> > +static int __proc_allow_access(const struct cred *cred,
->> >> >> > +                          struct task_struct *task, unsigned int mode)
->> >> >> > +{
->> >> >> > +   int ret = 0;
->> >> >> > +   const struct cred *tcred;
->> >> >> > +   const struct cred *fcred = cred;
->> >> >> > +
->> >> >> > +   rcu_read_lock();
->> >> >> > +   tcred = __task_cred(task);
->> >> >> > +   if (uid_eq(fcred->uid, tcred->euid) &&
->> >> >> > +       uid_eq(fcred->uid, tcred->suid) &&
->> >> >> > +       uid_eq(fcred->uid, tcred->uid)  &&
->> >> >> > +       gid_eq(fcred->gid, tcred->egid) &&
->> >> >> > +       gid_eq(fcred->gid, tcred->sgid) &&
->> >> >> > +       gid_eq(fcred->gid, tcred->gid))
->> >> >> > +           goto out;
->> >> >> > +
->> >> >>
->> >> >> What's this for?  Is it supposed to be an optimization?  If so, it looks
->> >> >> potentially exploitable, although I don't really understand what you're
->> >> >> trying to do.
->> >> > This function should be used in addition to the ptrace_may_access() one.
->> >>
->> >> Sorry, I was unclear.  I meant: what are the uid and gid checks for?
->> > The uid/gid are checks of the current (reader) on the target task, like
->> > the ptrace checks. fcred here is the cred of current at open time.
->> >
->>
->> This isn't a faithful copy of __ptrace_may_access -- the real function
->> gives LSMs a chance to veto ptracing.  That's critical even without
->> LSMs because cap_ptrace_access_check needs to get called.  (Think
->> about setcap'd programs instead of setuid programs.)
-> Yes, I already did this, not only setuid, capabilities also are handled
-> See the whole patch, please!
+On 10/03, Paul E. McKenney wrote:
 >
+> On Thu, Oct 03, 2013 at 08:47:19PM +0200, Oleg Nesterov wrote:
+> >
+> > Yes, but...
+> >
+> > I think it would be better to start with the patch below, this way
+> > it would be easier a) to add the new ops (we need more anyway) and b)
+> > use CONFIG_PROVE_RCU to avoid the unused members even if this is
+> > really minor.
 >
-> Yes, and speaking about LSMs I've mentioned in my patches and doc, that
-> the proposed function proc_allow_access() should be used after
-> ptrace_may_access(). proc_allow_access() is not a replacement for
-> ptrace_may_access(), it should be used *after* it.
->
-> So cap_ptrace_access_check() is called, and before the file->f_cred
-> checks. The LSM veto is already there.
+> I am fine with this as well, but I don't see the code that checks for
+> the required RCU read-side critical section.
 
-It's possible that I've misunderstood your patches, but I really don't
-see where you're calling into LSMs to give them a chance to veto
-access by *f_cred*.
+Because I believe this needs another patch ;) see below, didn't test
+it yet.
 
+(and yes, until I saw the patch from Peter I didn't realize we already
+ have all necessary helpers as functions, somehow I tought that they
+ are macros).
 
-> 1) for proc_same_open_cred()
->    if (f_cred->user_ns != cred->user_ns)
->         return 0
->
->    return (uid_eq(fcred->uid, cred->uid) &&
->                   gid_eq(fcred->gid, cred->gid) &&
->                   cap_issubset(cred->cap_permitted, f_cred->cap_permitted));
->
-> So it handles the (1) of cap_ptrace_access_check()
+Oleg.
 
-No.  This just means that, if there's a possibility that the caps are
-wrong, you invoke ptrace_allow_access, which *does not re-check
-capabilities*.
+rcusync: add the CONFIG_PROVE_RCU checks
 
---Andy
+CHANGELOG
+---
+
+diff --git a/include/linux/rcusync.h b/include/linux/rcusync.h
+index 30c6037..aa7e9e0 100644
+--- a/include/linux/rcusync.h
++++ b/include/linux/rcusync.h
+@@ -7,6 +7,9 @@
+ struct rcu_sync_ops {
+ 	void (*sync)(void);
+ 	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
++#ifdef CONFIG_PROVE_RCU
++	bool (*held)(void);
++#endif
+ };
+ 
+ struct rcu_sync_struct {
+@@ -22,6 +25,9 @@ struct rcu_sync_struct {
+ 
+ static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
+ {
++#ifdef CONFIG_PROVE_RCU
++	WARN_ON(!rss->ops->held());
++#endif
+ 	return !rss->gp_state; /* GP_IDLE */
+ }
+ 
+diff --git a/kernel/rcusync.c b/kernel/rcusync.c
+index 1cefb83..21f191f 100644
+--- a/kernel/rcusync.c
++++ b/kernel/rcusync.c
+@@ -6,18 +6,27 @@ enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
+ 
+ #define	rss_lock	gp_wait.lock
+ 
++#ifdef CONFIG_PROVE_RCU
++#define __INIT_HELD(func)	.held = func,
++#else
++#define	__INIT_HELD(func)
++#endif
++
+ struct rcu_sync_ops rcu_sync_ops_array[] = {
+ 	[RCU_SYNC] = {
+ 		.sync = synchronize_rcu,
+ 		.call = call_rcu,
++		__INIT_HELD(rcu_read_lock_held)
+ 	},
+ 	[RCU_SCHED_SYNC] = {
+ 		.sync = synchronize_sched,
+ 		.call = call_rcu_sched,
++		__INIT_HELD(rcu_read_lock_sched_held)
+ 	},
+ 	[RCU_BH_SYNC] = {
+ 		.sync = synchronize_rcu_bh,
+ 		.call = call_rcu_bh,
++		__INIT_HELD(rcu_read_lock_bh_held)
+ 	},
+ };
+ 
+
