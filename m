@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3JCEPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:34 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:53953 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab3JCEPa (ORCPT
+	id S1755621Ab3JCEPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47062 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab3JCEPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:30 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: alsa-devel@alsa-project.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@tabi.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH] ASoC: fsl_ssi: Fix irq_of_parse_and_map() return value check
-Date: Wed,  2 Oct 2013 21:15:22 -0700
-Message-Id: <1380773722-1295-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Thu, 3 Oct 2013 00:15:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [ 38/52] dm snapshot: workaround for a false positive lockdep warning
+Date: Wed,  2 Oct 2013 21:05:56 -0700
+Message-Id: <20131003040524.820780584@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
+References: <20131003040522.190209641@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_of_parse_and_map() returns 0 on error, not NO_IRQ.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Fix the following xtensa:allmodconfig build error.
+------------------
 
-sound/soc/fsl/fsl_ssi.c:705:26: error: 'NO_IRQ' undeclared (first use in this function)
-make[4]: *** [sound/soc/fsl/fsl_ssi.o] Error 1
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+commit 5ea330a75bd86b2b2a01d7b85c516983238306fb upstream.
+
+The kernel reports a lockdep warning if a snapshot is invalidated because
+it runs out of space.
+
+The lockdep warning was triggered by commit 0976dfc1d0cd80a4e9dfaf87bd87
+("workqueue: Catch more locking problems with flush_work()") in v3.5.
+
+The warning is false positive.  The real cause for the warning is that
+the lockdep engine treats different instances of md->lock as a single
+lock.
+
+This patch is a workaround - we use flush_workqueue instead of flush_work.
+This code path is not performance sensitive (it is called only on
+initialization or invalidation), thus it doesn't matter that we flush the
+whole workqueue.
+
+The real fix for the problem would be to teach the lockdep engine to treat
+different instances of md->lock as separate locks.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Previously submitted by Grant Likely as part of a different patch set.
-See https://lkml.org/lkml/2012/1/11/342.
-Also see https://lkml.org/lkml/2013/7/25/642.
-
- sound/soc/fsl/fsl_ssi.c |    2 +-
+ drivers/md/dm-snap-persistent.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-index c6b7439..6b81d0c 100644
---- a/sound/soc/fsl/fsl_ssi.c
-+++ b/sound/soc/fsl/fsl_ssi.c
-@@ -936,7 +936,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
- 	ssi_private->ssi_phys = res.start;
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -256,7 +256,7 @@ static int chunk_io(struct pstore *ps, v
+ 	 */
+ 	INIT_WORK_ONSTACK(&req.work, do_metadata);
+ 	queue_work(ps->metadata_wq, &req.work);
+-	flush_work(&req.work);
++	flush_workqueue(ps->metadata_wq);
  
- 	ssi_private->irq = irq_of_parse_and_map(np, 0);
--	if (ssi_private->irq == NO_IRQ) {
-+	if (ssi_private->irq == 0) {
- 		dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
- 		return -ENXIO;
- 	}
--- 
-1.7.9.7
+ 	return req.result;
+ }
+
 
