@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab3JCFxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:53:45 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50836 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3JCFxo (ORCPT
+	id S1752920Ab3JCF7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:59:12 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50935 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab3JCF7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 01:53:44 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <524D0663.209@roeck-us.net>
-Date: Wed, 02 Oct 2013 22:53:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 3 Oct 2013 01:59:10 -0400
+Date: Thu, 3 Oct 2013 07:59:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL - resend ] clocksource: new material for 3.13
+Message-ID: <20131003055905.GB25345@gmail.com>
+References: <524BFA57.6070506@linaro.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 00/13] 3.0.99-stable review
-References: <20131003040400.753642257@linuxfoundation.org>
-In-Reply-To: <20131003040400.753642257@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <524BFA57.6070506@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 09:04 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.0.99 release.
-> There are 13 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Oct  5 04:03:47 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.99-rc1.gz
-> and the diffstat can be found below.
->
 
-Heads up: I am getting lots of build failures in 3.0 and 3.4 builds.
+* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
-mm/built-in.o: In function `__put_compound_page':
-slab.c:(.text+0xaa3c): undefined reference to `PageHuge'
-mm/built-in.o: In function `put_compound_page':
-slab.c:(.text+0xaab0): undefined reference to `PageHuge'
-mm/built-in.o: In function `__get_page_tail':
-slab.c:(.text+0xb178): undefined reference to `PageHuge'
-make: *** [.tmp_vmlinux1] Error 1
+> Hi Thomas, Ingo
+> 
+> this pull request has the following content:
+> 
+>  - Soren added FEAT_PERCPU to a clock device when it is local per cpu.
+> This feature prevents the clock framework to choose a per cpu timer as
+> a broadcast timer. This problem arised when the ARM global timer is
+> used when switching to the broadcast timer which is the case now on
+> Xillinx with its cpuidle driver.
+> 
+>  - Stephen extended the generic sched_clock code to support 64bit
+> counters and removes the setup_sched_clock deprecation, as that causes
+> lots of warnings since there's still users in the arch/arm tree. He
+> added also the CLOCK_SOURCE_SUSPEND_NONSTOP flag on the architected
+> timer as they continue counting during suspend.
+> 
+>  - Uwe added some missing __init sections and consolidated the code
+> by moving the of_node_put call from the drivers to the function
+> clocksource_of_init.
+> 
+> Sorry for the last crappy pull request, I hope all is good now.
+> 
+> Thanks !
+> 
+>   -- Daniel
+> 
+> ps: Is it possible to update timers/core to v3.12-rc2/3 ?
+> 
+> The following changes since commit 389e067032fbb96e439abafae848dd447e4cafb4:
+> 
+>   Merge branch 'fortglx/3.12/time' into fortglx/3.13/time
+> (2013-09-16 18:54:07 -0700)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.linaro.org/people/dlezcano/linux.git clockevents/3.13
+> 
+> for you to fetch changes up to 4fbcdc813fb9c0324fcff4c75414e717569d965e:
+> 
+>   clocksource: arm_arch_timer: Use clocksource for suspend
+> timekeeping (2013-10-02 11:43:17 +0200)
+> 
+> ----------------------------------------------------------------
+> John Stultz (1):
+>       Merge remote-tracking branch 'tip/timers/core' into
+> fordlezcano/3.13/sched-clock64-conversion
+> 
+> Soren Brinkmann (4):
+>       clockchips: Add FEAT_PERCPU clockevent flag
+>       clocksource/arm_global_timer: Set FEAT_PERCPU flag
+>       tick: broadcast: Deny per-cpu clockevents from being broadcast
+> sources
+>       arm: zynq: Enable arm_global_timer
+> 
+> Stephen Boyd (11):
+>       clocksource: bcm2835: Switch to sched_clock_register()
+>       clocksource: dbx500-prcmu: Switch to sched_clock_register()
+>       clocksource: dw_apb_timer_of: Switch to sched_clock_register()
+>       clocksource: mxs_timer: Switch to sched_clock_register()
+>       clocksource: nomadik: Switch to sched_clock_register()
+>       clocksource: samsung_pwm_timer: Switch to sched_clock_register()
+>       clocksource: tegra: Switch to sched_clock_register()
+>       clocksource: time-armada-370-xp: Switch to sched_clock_register()
+>       clocksource: sirf: Switch to sched_clock_register() and use 64 bits
+>       clocksource: vf_pit_timer: Switch to sched_clock_register()
+>       clocksource: arm_arch_timer: Use clocksource for suspend timekeeping
+> 
+> Uwe Kleine-König (2):
+>       clocksource: Put nodes passed to CLOCKSOURCE_OF_DECLARE
+> callbacks centrally
+>       clocksource: dw_apb_timer_of: Mark a few more functions as __init
+> 
+>  arch/arm/boot/dts/zynq-7000.dtsi          |    8 ++++++++
+>  arch/arm/mach-msm/timer.c                 |    1 -
+>  arch/arm/mach-zynq/Kconfig                |    1 +
+>  drivers/clocksource/arm_arch_timer.c      |    2 +-
+>  drivers/clocksource/arm_global_timer.c    |    3 ++-
+>  drivers/clocksource/bcm2835_timer.c       |    4 ++--
+>  drivers/clocksource/clksrc-dbx500-prcmu.c |    5 ++---
+>  drivers/clocksource/clksrc-of.c           |    1 +
+>  drivers/clocksource/dw_apb_timer_of.c     |   16 +++++++---------
+>  drivers/clocksource/mxs_timer.c           |    4 ++--
+>  drivers/clocksource/nomadik-mtu.c         |    4 ++--
+>  drivers/clocksource/samsung_pwm_timer.c   |    4 ++--
+>  drivers/clocksource/tegra20_timer.c       |    8 ++------
+>  drivers/clocksource/time-armada-370-xp.c  |    4 ++--
+>  drivers/clocksource/timer-prima2.c        |    6 +++---
+>  drivers/clocksource/vf_pit_timer.c        |    4 ++--
+>  drivers/clocksource/vt8500_timer.c        |    2 --
+>  include/linux/clockchips.h                |    1 +
+>  kernel/time/tick-broadcast.c              |    1 +
+>  19 files changed, 41 insertions(+), 38 deletions(-)
 
-More tomorrow.
+Pulled into tip:timers/core, thanks Daniel!
 
-Guenter
-
+	Ingo
