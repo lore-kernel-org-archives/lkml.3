@@ -1,142 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3JCCqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 22:46:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46116 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab3JCCqB (ORCPT
+	id S1753754Ab3JCCuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 22:50:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41390 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab3JCCuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 22:46:01 -0400
-Date: Wed, 2 Oct 2013 19:33:11 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Jack Wang <jinpu.wang@profitbricks.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Pravin B Shelar <pshelar@nicira.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 092/104] mm: fix aio performance regression for database
- caused by THP
-Message-ID: <20131003023311.GA19176@kroah.com>
-References: <1380535881-9239-1-git-send-email-luis.henriques@canonical.com>
- <1380535881-9239-93-git-send-email-luis.henriques@canonical.com>
- <5249794C.5050204@profitbricks.com>
- <20130930132642.GA7510@kroah.com>
- <52497D37.9020706@oracle.com>
- <20130930150002.GA10424@kroah.com>
+	Wed, 2 Oct 2013 22:50:10 -0400
+Date: Thu, 3 Oct 2013 03:50:07 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Linus Torvalds <torvalds@osdl.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org
+Subject: Re: [rfc] rework aio migrate pages to use aio fs
+Message-ID: <20131003025007.GC13318@ZenIV.linux.org.uk>
+References: <20130913165937.GL2517@kvack.org>
+ <20130913184204.GS13318@ZenIV.linux.org.uk>
+ <20130917141825.GF11526@kvack.org>
+ <20131003022251.GB13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130930150002.GA10424@kroah.com>
+In-Reply-To: <20131003022251.GB13318@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 08:00:02AM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Sep 30, 2013 at 07:31:35AM -0600, Khalid Aziz wrote:
-> > On 09/30/2013 07:26 AM, Greg Kroah-Hartman wrote:
-> > > On Mon, Sep 30, 2013 at 03:14:52PM +0200, Jack Wang wrote:
-> > >> On 09/30/2013 12:11 PM, Luis Henriques wrote:
-> > >>> 3.5.7.22 -stable review patch.  If anyone has any objections, please let me know.
-> > >>>
-> > >>> ------------------
-> > >>>
-> > >>> From: Khalid Aziz <khalid.aziz@oracle.com>
-> > >>>
-> > >>> commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
-> > >>>
-> > >>> I am working with a tool that simulates oracle database I/O workload.
-> > >>> This tool (orion to be specific -
-> > >>> <http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
-> > >>> allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
-> > >>> does aio into these pages from flash disks using various common block
-> > >>> sizes used by database.  I am looking at performance with two of the most
-> > >>> common block sizes - 1M and 64K.  aio performance with these two block
-> > >>> sizes plunged after Transparent HugePages was introduced in the kernel.
-> > >>> Here are performance numbers:
-> > >>>
-> > >>> 		pre-THP		2.6.39		3.11-rc5
-> > >>> 1M read		8384 MB/s	5629 MB/s	6501 MB/s
-> > >>> 64K read	7867 MB/s	4576 MB/s	4251 MB/s
-> > >>>
-> > >>> I have narrowed the performance impact down to the overheads introduced by
-> > >>> THP in __get_page_tail() and put_compound_page() routines.  perf top shows
-> > >>>> 40% of cycles being spent in these two routines.  Every time direct I/O
-> > >>> to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
-> > >>> the pages and calls put_page() when I/O completes to put the reference
-> > >>> away.  THP introduced significant amount of locking overhead to get_page()
-> > >>> and put_page() when dealing with compound pages because hugepages can be
-> > >>> split underneath get_page() and put_page().  It added this overhead
-> > >>> irrespective of whether it is dealing with hugetlbfs pages or transparent
-> > >>> hugepages.  This resulted in 20%-45% drop in aio performance when using
-> > >>> hugetlbfs pages.
-> > >>>
-> > >>> Since hugetlbfs pages can not be split, there is no reason to go through
-> > >>> all the locking overhead for these pages from what I can see.  I added
-> > >>> code to __get_page_tail() and put_compound_page() to bypass all the
-> > >>> locking code when working with hugetlbfs pages.  This improved performance
-> > >>> significantly.  Performance numbers with this patch:
-> > >>>
-> > >>> 		pre-THP		3.11-rc5	3.11-rc5 + Patch
-> > >>> 1M read		8384 MB/s	6501 MB/s	8371 MB/s
-> > >>> 64K read	7867 MB/s	4251 MB/s	6510 MB/s
-> > >>>
-> > >>> Performance with 64K read is still lower than what it was before THP, but
-> > >>> still a 53% improvement.  It does mean there is more work to be done but I
-> > >>> will take a 53% improvement for now.
-> > >>>
-> > >>> Please take a look at the following patch and let me know if it looks
-> > >>> reasonable.
-> > >>>
-> > >>> [akpm@linux-foundation.org: tweak comments]
-> > >>> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-> > >>> Cc: Pravin B Shelar <pshelar@nicira.com>
-> > >>> Cc: Christoph Lameter <cl@linux.com>
-> > >>> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> > >>> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > >>> Cc: Mel Gorman <mel@csn.ul.ie>
-> > >>> Cc: Rik van Riel <riel@redhat.com>
-> > >>> Cc: Minchan Kim <minchan@kernel.org>
-> > >>> Cc: Andi Kleen <andi@firstfloor.org>
-> > >>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > >>> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > >>> [ luis: backported to 3.5: adjusted context ]
-> > >>> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> > >> Hi Greg,
-> > >>
-> > >> I suppose this patch also needed for 3.4, right?
-> > >
-> > > As it didn't originally apply there, I didn't apply it.
-> > >
-> > > If people think it should be applicable for 3.4, I'll take it.
-> > >
-> > > thanks,
-> > >
-> > > greg k-h
-> > >
-> > 
-> > Hi Greg,
-> > 
-> > I did send you a backported version of this patch to apply to 3.0, 3.2 
-> > and 3.4 last Monday and cc'd stable@vger.kernel.org. That patch should 
-> > apply cleanly to those three kernels.
+On Thu, Oct 03, 2013 at 03:22:51AM +0100, Al Viro wrote:
+> > +	/*
+> > +	 * Link the inode to a directory entry by creating a unique name
+> > +	 * using the inode sequence number.
+> > +	 */
+> > +	file = ERR_PTR(-ENOMEM);
+> > +	this.name = name;
+> > +	this.len = strlen(name);
+> > +	this.hash = 0;
 > 
-> Ah, you didn't specifically say that in the patch, so I just thought you
-> were reminding me to apply it to the 3.10 and 3.11 trees.  Please be
-> more explicit in the future.
-> 
-> I'll queue it up for the next round of stable kernels after this one.
+> Umm...  ITYM
+> 	struct qstr this = QSTR_INIT("[aio]", 5);
+> , if not
+> 	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb,
+> 				     &(struct qstr)QSTR_INIT("[aio]", 5));
+> > +	if (!path.dentry)
+> > +		goto err_module;
 
-And I've lost it, I can't find it in my archives anywhere.  Sorry about
-that, can you resend it please?
+and you've leaked that inode, BTW.
 
-thanks,
+Another thing: I'd rather pull everything about setting the inode
+up (aops, size, etc.) in there.
 
-greg k-h
+Anyway, could you take a look at the last couple of commits in
+vfs.git#for-bcrl?  Commit message on the last one is an atrocity,
+of course...
