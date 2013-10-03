@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab3JCPNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:13:54 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:40837 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab3JCPNv (ORCPT
+	id S1754895Ab3JCPNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:13:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53186 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801Ab3JCPNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:13:51 -0400
-Date: Thu, 3 Oct 2013 17:14:32 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] fuse: writepages: crop secondary requests
-Message-ID: <20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu>
-References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru>
- <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru>
- <20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu>
- <524D70FE.5000701@parallels.com>
+	Thu, 3 Oct 2013 11:13:43 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <gregkh@linuxfoundation.org>, <balbi@ti.com>
+CC: <bcousson@baylibre.com>, <tony@atomide.com>, <george.cherian@ti.com>,
+        <kishon@ti.com>, <bigeasy@linutronix.de>,
+        <sergei.shtylyov@cogentembedded.com>, <thomas.langer@lantiq.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v8 8/8] ARM: dts: omap5: update omap-control-usb node
+Date: Thu, 3 Oct 2013 18:12:37 +0300
+Message-ID: <1380813157-22311-9-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1380813157-22311-1-git-send-email-rogerq@ti.com>
+References: <1380813157-22311-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524D70FE.5000701@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 05:28:30PM +0400, Maxim Patlasov wrote:
+Split USB2 PHY and USB3 PHY into separate omap-control-usb
+nodes. Get rid of "ti,type" property.
 
-> 1. There is an in-flight primary request with a chain of secondary ones.
-> 2. User calls ftruncate(2) to extend file; fuse_set_nowrite() makes
-> fi->writectr negative and starts waiting for completion of that
-> in-flight request
-> 3. Userspace fuse daemon ACKs the request and fuse_writepage_end()
-> is called; it calls __fuse_flush_writepages(), but the latter does
-> nothing because fi->writectr < 0
-> 4. fuse_do_setattr() proceeds extending i_size and calling
-> __fuse_release_nowrite(). But now new (increased) i_size will be
-> used as 'crop' arg of __fuse_flush_writepages()
-> 
-> stale data can leak to the server.
+CC: Benoit Cousson <bcousson@baylibre.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/boot/dts/omap5.dtsi |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
-So, lets do this then: skip fuse_flush_writepages() and call
-fuse_send_writepage() directly.  It will ignore the NOWRITE logic, but that's
-okay, this happens rarely and cannot happen more than once in a row.
-
-Does this look good?
-
-Can you actually trigger this path with your testing?
-
-Thanks,
-Miklos
-
-
-Index: linux/fs/fuse/file.c
-===================================================================
---- linux.orig/fs/fuse/file.c	2013-10-03 12:12:33.480918954 +0200
-+++ linux/fs/fuse/file.c	2013-10-03 17:06:23.702510854 +0200
-@@ -1436,12 +1436,12 @@ static void fuse_writepage_finish(struct
- }
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 7cdea1b..c0ec6dc 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -626,12 +626,16 @@
+ 			hw-caps-temp-alert;
+ 		};
  
- /* Called under fc->lock, may release and reacquire it */
--static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req)
-+static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req,
-+				loff_t size)
- __releases(fc->lock)
- __acquires(fc->lock)
- {
- 	struct fuse_inode *fi = get_fuse_inode(req->inode);
--	loff_t size = i_size_read(req->inode);
- 	struct fuse_write_in *inarg = &req->misc.write.in;
- 	__u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
+-		omap_control_usb: omap-control-usb@4a002300 {
+-			compatible = "ti,omap-control-usb";
+-			reg = <0x4a002300 0x4>,
+-			      <0x4a002370 0x4>;
+-			reg-names = "control_dev_conf", "phy_power_usb";
+-			ti,type = <2>;
++		omap_control_usb2phy: control-phy@4a002300 {
++			compatible = "ti,control-phy-usb2";
++			reg = <0x4a002300 0x4>;
++			reg-names = "power";
++		};
++
++		omap_control_usb3phy: control-phy@4a002370 {
++			compatible = "ti,control-phy-pipe3";
++			reg = <0x4a002370 0x4>;
++			reg-names = "power";
+ 		};
  
-@@ -1482,12 +1482,13 @@ __acquires(fc->lock)
- {
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_inode *fi = get_fuse_inode(inode);
-+	size_t crop = i_size_read(inode);
- 	struct fuse_req *req;
+ 		omap_dwc3@4a020000 {
+@@ -662,7 +666,7 @@
+ 			usb2_phy: usb2phy@4a084000 {
+ 				compatible = "ti,omap-usb2";
+ 				reg = <0x4a084000 0x7c>;
+-				ctrl-module = <&omap_control_usb>;
++				ctrl-module = <&omap_control_usb2phy>;
+ 			};
  
- 	while (fi->writectr >= 0 && !list_empty(&fi->queued_writes)) {
- 		req = list_entry(fi->queued_writes.next, struct fuse_req, list);
- 		list_del_init(&req->list);
--		fuse_send_writepage(fc, req);
-+		fuse_send_writepage(fc, req, crop);
- 	}
- }
+ 			usb3_phy: usb3phy@4a084400 {
+@@ -671,7 +675,7 @@
+ 				      <0x4a084800 0x64>,
+ 				      <0x4a084c00 0x40>;
+ 				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+-				ctrl-module = <&omap_control_usb>;
++				ctrl-module = <&omap_control_usb3phy>;
+ 			};
+ 		};
  
-@@ -1499,12 +1500,13 @@ static void fuse_writepage_end(struct fu
- 	mapping_set_error(inode->i_mapping, req->out.h.error);
- 	spin_lock(&fc->lock);
- 	while (req->misc.write.next) {
-+		struct fuse_conn *fc = get_fuse_conn(inode);
-+		struct fuse_write_in *inarg = &req->misc.write.in;
- 		struct fuse_req *next = req->misc.write.next;
- 		req->misc.write.next = next->misc.write.next;
- 		next->misc.write.next = NULL;
- 		list_add(&next->writepages_entry, &fi->writepages);
--		list_add_tail(&next->list, &fi->queued_writes);
--		fuse_flush_writepages(inode);
-+		fuse_send_writepage(fc, next, inarg->offset + inarg->size);
- 	}
- 	fi->writectr--;
- 	fuse_writepage_finish(fc, req);
+-- 
+1.7.4.1
+
