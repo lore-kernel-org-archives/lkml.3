@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab3JCFgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:36:15 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44437 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab3JCFgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 01:36:14 -0400
+	id S1756814Ab3JCFhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:37:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41677 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab3JCFhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 01:37:35 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFwKTJp4giDbT6xHZE_o1bzFwDkBAdPvmB3JTpkAEzgYxA@mail.gmail.com>
+References: <1380643239-16060-1-git-send-email-miklos@szeredi.hu> <524CCF38.9000304@zytor.com> <CA+55aFwKTJp4giDbT6xHZE_o1bzFwDkBAdPvmB3JTpkAEzgYxA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1791712.tJBFGgQvyI@vostro.rjw.lan>
-References: <a0cad3326c6a6c8f0517332dd2230edaf67268e7.1378979483.git.viresh.kumar@linaro.org>
-	<793a5fadad931d04c2adb3a61c64063b7e62d083.1378979483.git.viresh.kumar@linaro.org>
-	<1791712.tJBFGgQvyI@vostro.rjw.lan>
-Date: Thu, 3 Oct 2013 11:06:13 +0530
-Message-ID: <CAKohponHLGsjTXA3XRRGM+CFpMrsgTuCx00YPrCbkST5drB-ng@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: make sure frequency transitions are serialized
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC PATCH 0/7] cross rename
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 02 Oct 2013 22:36:29 -0700
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Miklos Szeredi <miklos@szeredi.hu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, "zab@redhat.com" <zab@redhat.com>,
+        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Message-ID: <f4996ec9-3f0d-469d-8459-c1c4c24f75a7@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2013 00:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> So the problem is real, but the fix seems to be of a "quick and dirty" kind.
+Yes... Al  and I had a brief conversation about the complexities over IRC this evening.
 
-Hmm..
-
-> First of all, it looks like we need a clear "begin transition" call that
-> I suppose drivers should execute from their .target() methods once they have
-> decided to do a transition.  That would increment the "ongoing" counter etc.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>On Wed, Oct 2, 2013 at 6:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> I would suggest it shouldn't be renameat2() but rather renameat3(),
+>i.e.
+>> rename file A -> B, if B exists rename B to C.  It may not be
+>desirable
+>> to expose the stale B in the same namespace as A, but still want it
+>to
+>> be possible to scavenge it.  Obviously, A=C is a valid subcase.
 >
-> Second, we need a corresponding "end transition" call that would be executed
-> whenever appropriate from the driver's perspective.
+>I really *really* prefer to stay with two names. Miklos had an earlier
+>three-name version, and it was hugely more complex, and it does not
+>fit nearly as well in the model.
+>
+>Two directory entries is also what the current rename() effectively
+>always does (clearing one, changing another). So doing the
+>cross-rename model is actually fairly close to a normal rename. A
+>three-way one is not actually at all similar.
+>
+>So I was actually very relieved to see this much simpler and cleaner
+>model, because the alternative really was nasty. This one looks fairly
+>simple and clean and straightforward. The previous was none of that.
+>
+>              Linus
 
-Hmm..
-
-> Clearly, these two things should be independent of the notifiers and the
-> notifications should only be done between "begin transition" and "end
-> transition" and only by whoever called the "begin transition" to start with.
-
-So, we need to have begin/end calls in cpufreq_out_of_sync() as well?
-As that is sending notifications..
-
-> Now, question is what should happen if "begin transition" is called when
-> the previous transition hasn't been completed yet, should it block or should
-> it fail?  There seem to be arguments for both, but I suppose blocking would be
-> easier to implement.
-
-Hmm.. I will repost this once my other patches are in now.. as that will
-change ->target() routine for multiple drivers and things would be simple
-to fix then..
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
