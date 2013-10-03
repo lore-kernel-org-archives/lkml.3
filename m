@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab3JCFXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:23:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47023 "EHLO
+	id S1757658Ab3JCFYD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:24:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46999 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab3JCEPG (ORCPT
+	with ESMTP id S1755376Ab3JCEOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:06 -0400
+	Thu, 3 Oct 2013 00:14:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 49/52] ARM: mxs: stub out mxs_pm_init for !CONFIG_PM
-Date: Wed,  2 Oct 2013 21:06:07 -0700
-Message-Id: <20131003040525.582962146@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>, Nicolas Suzor <nic@suzor.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 43/52] drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
+Date: Wed,  2 Oct 2013 21:06:01 -0700
+Message-Id: <20131003040525.181375813@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,34 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 7a9caf59f60e55a8caf96f856713bd0ef0cc25a7 upstream.
+commit 8d16f258217f2f583af1fd57c5144aa4bbe73e48 upstream.
 
-When building a kernel without CONFIG_PM, we get a link
-error from referencing mxs_pm_init in the machine
-descriptor. This defines a macro to NULL for that case.
+There is no clear cut rules or specs for the retry interval, as there
+are many factors that affect overall response time. Increase the
+interval, and even more so on branch devices which may have limited i2c
+bit rates.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reference: https://bugs.freedesktop.org/show_bug.cgi?id=60263
+Tested-by: Nicolas Suzor <nic@suzor.com>
+Reviewed-by: Todd Previte <tprevite@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mxs/pm.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-mxs/pm.h
-+++ b/arch/arm/mach-mxs/pm.h
-@@ -9,6 +9,10 @@
- #ifndef __ARCH_MXS_PM_H
- #define __ARCH_MXS_PM_H
- 
-+#ifdef CONFIG_PM
- void mxs_pm_init(void);
-+#else
-+#define mxs_pm_init NULL
-+#endif
- 
- #endif
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -604,7 +604,18 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
+ 			DRM_DEBUG_KMS("aux_ch native nack\n");
+ 			return -EREMOTEIO;
+ 		case AUX_NATIVE_REPLY_DEFER:
+-			udelay(100);
++			/*
++			 * For now, just give more slack to branch devices. We
++			 * could check the DPCD for I2C bit rate capabilities,
++			 * and if available, adjust the interval. We could also
++			 * be more careful with DP-to-Legacy adapters where a
++			 * long legacy cable may force very low I2C bit rates.
++			 */
++			if (intel_dp->dpcd[DP_DOWNSTREAMPORT_PRESENT] &
++			    DP_DWN_STRM_PORT_PRESENT)
++				usleep_range(500, 600);
++			else
++				usleep_range(300, 400);
+ 			continue;
+ 		default:
+ 			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
 
 
