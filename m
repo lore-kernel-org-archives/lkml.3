@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab3JCSBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 14:01:35 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59686 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab3JCSBd (ORCPT
+	id S1754705Ab3JCSDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 14:03:10 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:52118 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab3JCSDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 14:01:33 -0400
+	Thu, 3 Oct 2013 14:03:08 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <CAAQKjZPwyKCpju4Ndd+MB_aN24-zA5xTHFsFsun2617h7YT6dw@mail.gmail.com>
-References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
-	<1380670860-17621-4-git-send-email-seanpaul@chromium.org>
-	<CAAQKjZN_r-=-sj=Vb-o-KUS4ab5=cjCq1ni3VZeMeVc3NL=MMg@mail.gmail.com>
-	<CAOw6vbLiJLLKn=gb1=j5TBeM0ijEK13+goG-=mw7MZTyNT1kpQ@mail.gmail.com>
-	<CAAQKjZPwyKCpju4Ndd+MB_aN24-zA5xTHFsFsun2617h7YT6dw@mail.gmail.com>
-Date: Thu, 3 Oct 2013 11:01:30 -0700
-Message-ID: <CAOesGMgKastzdFHYQzyL8gxkBN=86wFZ4jbgP8BHxfkOuZvJxg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] drm/bridge: Add PTN3460 bridge driver
-From: Olof Johansson <olof@lixom.net>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Sean Paul <seanpaul@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20131003175824.GH13318@ZenIV.linux.org.uk>
+References: <20131003163411.GA17101@www.outflux.net>
+	<20131003175824.GH13318@ZenIV.linux.org.uk>
+Date: Thu, 3 Oct 2013 11:03:07 -0700
+X-Google-Sender-Auth: IWrdyYKBRSMOX7TTkY9isQGzLUI
+Message-ID: <CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
+Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
+From: Kees Cook <keescook@chromium.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 10:39 AM, Inki Dae <inki.dae@samsung.com> wrote:
-> 2013/10/3 Sean Paul <seanpaul@chromium.org>:
->> On Thu, Oct 3, 2013 at 9:55 AM, Inki Dae <inki.dae@samsung.com> wrote:
->>> Can a regulator be used instead of gpio in other board case?
->>>
->>
->> No, not to my knowledge.
->>
+On Thu, Oct 3, 2013 at 10:58 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Thu, Oct 03, 2013 at 09:34:11AM -0700, Kees Cook wrote:
+>> In dentry_string_cmp (via__d_lookup_rcu), when CONFIG_DCACHE_WORD_ACCESS
+>> is set, word-width memory reads are performed. However, the string
+>> allocation size may not be a multiple of the word size. To avoid reading
+>> past the end of such an allocation, we must allocate in multiples of
+>> the word size.
 >
-> Hm.. plz check it out again. the gpio pin is specific to board, and
-> the the gpio be used as power source trigger could be replaced with a
-> regulator according to board design. So you should consider all
-> possibilities even though there are no other cases yet: other board
-> could  use a regulator instead.
+> grep ^kmalloc /proc/slabinfo.  Observe the suffix after "kmalloc-"...
+>
+> IOW, kmalloc() does round its argument up.  Seeing that we allocate an
+> external name only when allocation has to be longer than 32 bytes, the
+> sucker is guaranteed to be at least a multiple of 32 by the time we
+> pick the fitting cache (the worst case is when length is between 65
+> and 96; then we use kmalloc-96).
+>
+> When you start a port to a 512-bit architecture, you'll have much nastier
+> problems than this one...
 
-Take a look at the data sheet, it is publicly available.
+Well, this is simply taking advantage of this particular allocator's
+behavior. Instead of depending on this side-effect, why not change the
+allocation so that we never risk a potentially broken read? (Even SLOB
+notes that it may have as low as 2-byte granularity.)
 
-PD_N is not a power supply input, so modelling it as a regulator makes no sense:
+-Kees
 
-"If PD_N is LOW, then the device is in Deep power-down completely,
-even if supply rail is ON; for the device to be able to operate, the
-PD_N pin must be HIGH."
-
-
-
--Olof
+-- 
+Kees Cook
+Chrome OS Security
