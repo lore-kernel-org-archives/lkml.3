@@ -1,345 +1,540 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3JCRyY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:54:24 -0400
-Received: from a14-66.smtp-out.amazonses.com ([54.240.14.66]:50038 "EHLO
-	a14-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754359Ab3JCRyW (ORCPT
+	id S1754742Ab3JCR4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:56:45 -0400
+Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:53799 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754264Ab3JCR4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:54:22 -0400
-X-Greylist: delayed 821 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 13:54:22 EDT
-Date: Thu, 3 Oct 2013 17:40:40 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: vmstat: On demand vmstat workers V3
-Message-ID: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 3 Oct 2013 13:56:42 -0400
+Message-ID: <524DAF78.5040609@overkiz.com>
+Date: Thu, 03 Oct 2013 19:55:04 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.03-54.240.14.66
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH 1/4] watchdog: at91sam9_wdt: better watchdog support
+References: <1380802761-32279-1-git-send-email-b.brezillon@overkiz.com> <1380802761-32279-2-git-send-email-b.brezillon@overkiz.com> <20131003173105.GC31605@roeck-us.net>
+In-Reply-To: <20131003173105.GC31605@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 12644418905142229007
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V2->V3:
-- Introduce a new tick_get_housekeeping_cpu() function. Not sure
-  if that is exactly what we want but it is a start. Thomas?
-- Migrate the shepherd task if the output of
-  tick_get_housekeeping_cpu() changes.
-- Fixes recommended by Andrew.
+Hi Guenter,
 
-V1->V2:
-- Optimize the need_update check by using memchr_inv.
-- Clean up.
+On 03/10/2013 19:31, Guenter Roeck wrote:
+> On Thu, Oct 03, 2013 at 02:19:18PM +0200, Boris BREZILLON wrote:
+>> The at91sam9 watchdog timer can only be configured once, and the current
+>> implementation tries to configure it in a static way:
+>> - 2 seconds timeout
+>> - wdt restart every 500ms
+>>
+>> If the timer has already been configured with different values, it returns an
+>> error and do not create any watchdog device.
+>>
+>> This is not critical if the watchdog is disabled, but if it has been enabled with
+>> different timeout values it will lead to a SoC reset.
+>>
+>> This patch series tries to address this issue by adapting the heartbeat value
+>> according the WDT timer config:
+>> - it first tries to configure the timer as requested.
+>> - if it fails it fallbacks to the current config, adapting its heartbeat timer
+>> to the needs
+>>
+>> This patch series also move to a dynamically allocated at91wdt device instead
+>> of the static instance.
+>>
+>> It adds a new at91 wdt type: software. This new type make use of the at91 wdt
+>> interrupt to trigger a software reboot.
+>>
+>> Finally it adds several properties to the device tree bindings.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Hi Boris,
+>
+> deeper dive this time ...
+>
+>> ---
+>>   drivers/watchdog/at91sam9_wdt.c |  300 ++++++++++++++++++++++++++++-----------
+>>   1 file changed, 217 insertions(+), 83 deletions(-)
+>>
+>> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+>> index be37dde..8f44528 100644
+>> --- a/drivers/watchdog/at91sam9_wdt.c
+>> +++ b/drivers/watchdog/at91sam9_wdt.c
+>> @@ -19,11 +19,13 @@
+>>   
+>>   #include <linux/errno.h>
+>>   #include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>>   #include <linux/io.h>
+>>   #include <linux/kernel.h>
+>>   #include <linux/module.h>
+>>   #include <linux/moduleparam.h>
+>>   #include <linux/platform_device.h>
+>> +#include <linux/reboot.h>
+>>   #include <linux/types.h>
+>>   #include <linux/watchdog.h>
+>>   #include <linux/jiffies.h>
+>> @@ -31,22 +33,33 @@
+>>   #include <linux/bitops.h>
+>>   #include <linux/uaccess.h>
+>>   #include <linux/of.h>
+>> +#include <linux/of_irq.h>
+>>   
+>>   #include "at91sam9_wdt.h"
+>>   
+>>   #define DRV_NAME "AT91SAM9 Watchdog"
+>>   
+>> -#define wdt_read(field) \
+>> -	__raw_readl(at91wdt_private.base + field)
+>> -#define wdt_write(field, val) \
+>> -	__raw_writel((val), at91wdt_private.base + field)
+>> +#define wdt_read(wdt, field) \
+>> +	__raw_readl((wdt)->base + (field))
+>> +#define wdt_write(wtd, field, val) \
+>> +	__raw_writel((val), (wdt)->base + (field))
+>>   
+>>   /* AT91SAM9 watchdog runs a 12bit counter @ 256Hz,
+>>    * use this to convert a watchdog
+>>    * value from/to milliseconds.
+>>    */
+>> -#define ms_to_ticks(t)	(((t << 8) / 1000) - 1)
+>> -#define ticks_to_ms(t)	(((t + 1) * 1000) >> 8)
+>> +#define ticks_to_hz_rounddown(t)	((((t) + 1) * HZ) >> 8)
+>> +#define ticks_to_hz_roundup(t)		(((((t) + 1) * HZ) + 255) >> 8)
+>> +#define ticks_to_secs(t)		(((t) + 1) >> 8)
+>> +#define secs_to_ticks(s)		(((s) << 8) - 1)
+>> +
+>> +#define WDT_MR_RESET	0x3FFF2FFF
+>> +
+>> +/* Watchdog max counter value in ticks */
+>> +#define WDT_COUNTER_MAX_TICKS	0xFFF
+>> +
+>> +/* Watchdog max delta/value in secs */
+>> +#define WDT_COUNTER_MAX_SECS	ticks_to_secs(WDT_COUNTER_MAX_TICKS)
+>>   
+>>   /* Hardware timeout in seconds */
+>>   #define WDT_HW_TIMEOUT 2
+>> @@ -66,23 +79,40 @@ module_param(nowayout, bool, 0);
+>>   MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
+>>   	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+>>   
+>> -static struct watchdog_device at91_wdt_dev;
+>> -static void at91_ping(unsigned long data);
+>> -
+>> -static struct {
+>> +#define to_wdt(wdd) container_of(wdd, struct at91wdt, wdd)
+>> +struct at91wdt {
+>> +	struct watchdog_device wdd;
+>>   	void __iomem *base;
+>>   	unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
+>>   	struct timer_list timer;	/* The timer that pings the watchdog */
+>> -} at91wdt_private;
+>> +	u32 mr;
+>> +	u32 mr_mask;
+>> +	unsigned long heartbeat;	/* WDT heartbeat in jiffies */
+>> +	bool nowayout;
+>> +	unsigned int irq;
+>> +};
+>>   
+>>   /* ......................................................................... */
+>>   
+>> +static irqreturn_t wdt_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct at91wdt *wdt = (struct at91wdt *)dev_id;
+>> +
+>> +	if (wdt_read(wdt, AT91_WDT_SR)) {
+>> +		pr_crit("at91sam9 WDT software reset\n");
+>> +		emergency_restart();
+>> +		pr_crit("Reboot didn't ?????\n");
+>> +	}
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>>   /*
+>>    * Reload the watchdog timer.  (ie, pat the watchdog)
+>>    */
+>> -static inline void at91_wdt_reset(void)
+>> +static inline void at91_wdt_reset(struct at91wdt *wdt)
+>>   {
+>> -	wdt_write(AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
+>> +	wdt_write(wdt, AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
+>>   }
+>>   
+>>   /*
+>> @@ -90,26 +120,20 @@ static inline void at91_wdt_reset(void)
+>>    */
+>>   static void at91_ping(unsigned long data)
+>>   {
+>> -	if (time_before(jiffies, at91wdt_private.next_heartbeat) ||
+>> -	    (!watchdog_active(&at91_wdt_dev))) {
+>> -		at91_wdt_reset();
+>> -		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
+>> +	struct at91wdt *wdt = (struct at91wdt *)data;
+>> +	if (time_before(jiffies, wdt->next_heartbeat) ||
+>> +	    !watchdog_active(&wdt->wdd)) {
+>> +		at91_wdt_reset(wdt);
+>> +		mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
+>>   	} else
+>>   		pr_crit("I will reset your machine !\n");
+>>   }
+>>   
+>>   static int at91_wdt_ping(struct watchdog_device *wdd)
+>>   {
+>> +	struct at91wdt *wdt = to_wdt(wdd);
+>>   	/* calculate when the next userspace timeout will be */
+>> -	at91wdt_private.next_heartbeat = jiffies + wdd->timeout * HZ;
+>> -	return 0;
+>> -}
+>> -
+>> -static int at91_wdt_start(struct watchdog_device *wdd)
+>> -{
+>> -	/* calculate the next userspace timeout and modify the timer */
+>> -	at91_wdt_ping(wdd);
+>> -	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
+>> +	wdt->next_heartbeat = jiffies + wdd->timeout * HZ;
+>>   	return 0;
+>>   }
+>>   
+>> @@ -125,36 +149,84 @@ static int at91_wdt_set_timeout(struct watchdog_device *wdd, unsigned int new_ti
+> at91_wdt_set_timeout only sets the new timeout but does not update
+> next_heartbeat. That is ok if the timeout decreases, but if it is
+> increased (say, from 1 second to 1 minute) it might result in a missed
+> ping as userspace will subsequently believe that the new (larger)
+> timeout was accepted by the driver. So I think you should also call
+> at91_wdt_ping here or set wdt->next_heartbeat directly.
+Absolutely, I'll call at91_wdt_ping (or start as it will be renamed).
 
-vmstat workers are used for folding counter differentials into the
-zone, per node and global counters at certain time intervals.
-They currently run at defined intervals on all processors which will
-cause some holdoff for processors that need minimal intrusion by the
-OS.
+>>   	return 0;
+>>   }
+>>   
+>> -/*
+>> - * Set the watchdog time interval in 1/256Hz (write-once)
+>> - * Counter is 12 bit.
+>> - */
+>> -static int at91_wdt_settimeout(unsigned int timeout)
+>> +static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
+>>   {
+>> -	unsigned int reg;
+>> -	unsigned int mr;
+>> -
+>> -	/* Check if disabled */
+>> -	mr = wdt_read(AT91_WDT_MR);
+>> -	if (mr & AT91_WDT_WDDIS) {
+>> -		pr_err("sorry, watchdog is disabled\n");
+>> -		return -EIO;
+>> +	u32 tmp;
+>> +	u32 delta;
+>> +	u32 value;
+>> +	int err;
+>> +	u32 mask = wdt->mr_mask;
+>> +	unsigned long min_heartbeat = 1;
+>> +
+>> +	tmp = wdt_read(wdt, AT91_WDT_MR);
+>> +	if ((tmp & mask) != (wdt->mr & mask)) {
+>> +		if (tmp == WDT_MR_RESET) {
+>> +			wdt_write(wdt, AT91_WDT_MR, wdt->mr);
+>> +			tmp = wdt_read(wdt, AT91_WDT_MR);
+>> +		}
+>>   	}
+>>   
+>> -	/*
+>> -	 * All counting occurs at SLOW_CLOCK / 128 = 256 Hz
+>> -	 *
+>> -	 * Since WDV is a 12-bit counter, the maximum period is
+>> -	 * 4096 / 256 = 16 seconds.
+>> -	 */
+>> -	reg = AT91_WDT_WDRSTEN	/* causes watchdog reset */
+>> -		/* | AT91_WDT_WDRPROC	causes processor reset only */
+>> -		| AT91_WDT_WDDBGHLT	/* disabled in debug mode */
+>> -		| AT91_WDT_WDD		/* restart at any time */
+>> -		| (timeout & AT91_WDT_WDV);  /* timer value */
+>> -	wdt_write(AT91_WDT_MR, reg);
+>> +	if (tmp & AT91_WDT_WDDIS) {
+>> +		if (wdt->mr & AT91_WDT_WDDIS)
+>> +			return 0;
+>> +		dev_err(wdt->wdd.parent, "watchdog is disabled\n");
+> Took me a while to get why you use "wdt->wdd.parent" :).
+> I would just have passed the 'dev' argument. Your call, though.
 
-The current vmstat_update mechanism depends on a deferrable timer
-firing every other second by default which registers a work queue item
-that runs on the local CPU, with the result that we have 1 interrupt
-and one additional schedulable task on each CPU every 2 seconds
-If a workload indeed causes VM activity or multiple tasks are running
-on a CPU, then there are probably bigger issues to deal with.
+I can't use wdt->wdd.dev, because the watchdog device is not registered yet,
+but I can use &pdev->dev instead.
+What do you prefer ?
 
-However, some workloads dedicate a CPU for a single CPU bound task.
-This is done in high performance computing, in high frequency
-financial applications, in networking (Intel DPDK, EZchip NPS) and with
-the advent of systems with more and more CPUs over time, this may become
-more and more common to do since when one has enough CPUs
-one cares less about efficiently sharing a CPU with other tasks and
-more about efficiently monopolizing a CPU per task.
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	value = tmp & AT91_WDT_WDV;
+>> +	delta = (tmp & AT91_WDT_WDD) >> 16;
+>> +
+>> +	if (delta < value)
+>> +		min_heartbeat = ticks_to_hz_roundup(value - delta);
+>> +
+>> +	wdt->heartbeat = ticks_to_hz_rounddown(value);
+>> +	if (!wdt->heartbeat) {
+>> +		dev_err(wdt->wdd.parent,
+>> +			"heartbeat is too small for the system to handle it correctly\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	if (wdt->heartbeat < min_heartbeat + 3) {
+>> +		wdt->heartbeat = min_heartbeat;
+>> +		dev_warn(wdt->wdd.parent,
+>> +			 "min heartbeat and max heartbeat might be too close for the system to handle it correctly\n");
+>> +		if (wdt->heartbeat < 4)
+>> +			dev_warn(wdt->wdd.parent,
+>> +				 "heartbeat might be too small for the system to handle it correctly\n");
+>> +	} else
+>> +		wdt->heartbeat -= 4;
+> That means heartbeat can be 0, correct (if min_heartbeat == 1) ?
+Yes, this is a mistake. It should be
 
-The difference of having this timer firing and workqueue kernel thread
-scheduled per second can be enormous. An artificial test measuring the
-worst case time to do a simple "i++" in an endless loop on a bare metal
-system and under Linux on an isolated CPU with dynticks and with and
-without this patch, have Linux match the bare metal performance
-(~700 cycles) with this patch and loose by couple of orders of magnitude
-(~200k cycles) without it[*].  The loss occurs for something that just
-calculates statistics. For networking applications, for example, this
-could be the difference between dropping packets or sustaining line rate.
+if (wdt->heartbeat < min_heartbeat + 4) {
+...
+}
 
-Statistics are important and useful, but it would be great if there
-would be a way to not cause statistics gathering produce a huge
-performance difference. This patche does just that.
+> Will that work ?
+Absolutely not :)
+I'll fix it.
 
-This patch creates a vmstat shepherd worker that monitors the
-per cpu differentials on all processors. If there are differentials
-on a processor then a vmstat worker local to the processors
-with the differentials is created. That worker will then start
-folding the diffs in regular intervals. Should the worker
-find that there is no work to be done then it will make the shepherd
-worker monitor the differentials again.
+>
+>> +
+>> +	if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
+>> +		err = request_irq(wdt->irq, wdt_interrupt,
+>> +				  IRQF_SHARED | IRQF_IRQPOLL,
+>> +				  pdev->name, wdt);
+>> +		if (err)
+>> +			return err;
+>> +	}
+>> +
+>> +	if ((tmp & wdt->mr_mask) != (wdt->mr & wdt->mr_mask))
+>> +		dev_warn(wdt->wdd.parent,
+>> +			 "watchdog already configured differently (mr = %x expecting %x)\n",
+>> +			 tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
+>> +
+>> +	setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
+>> +	mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
+>> +
+>> +	/* Try to set timeout from device tree first */
+>> +	if (watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev))
+>> +		watchdog_init_timeout(&wdt->wdd, heartbeat, &pdev->dev);
+>> +	watchdog_set_nowayout(&wdt->wdd, wdt->nowayout);
+>> +	err = watchdog_register_device(&wdt->wdd);
+>> +	if (err)
+>> +		goto out_stop_timer;
+>> +
+>> +	wdt->next_heartbeat = jiffies + wdt->wdd.timeout * HZ;
+>>   
+>>   	return 0;
+>> +
+>> +out_stop_timer:
+>> +	del_timer(&wdt->timer);
+>> +	return err;
+>>   }
+>>   
+>>   /* ......................................................................... */
+>> @@ -167,63 +239,125 @@ static const struct watchdog_info at91_wdt_info = {
+>>   
+>>   static const struct watchdog_ops at91_wdt_ops = {
+>>   	.owner =	THIS_MODULE,
+>> -	.start =	at91_wdt_start,
+>> +	.start =	at91_wdt_ping,
+>>   	.stop =		at91_wdt_stop,
+>>   	.ping =		at91_wdt_ping,
+> Notpick, but you don't need both start and ping. If both are the same, providing
+> start is sufficient. Given this, it might be cleaner to name the function
+> at91_wdt_start and not provide ping.
+I'll change this too.
 
-With this patch it is possible then to have periods longer than
-2 seconds without any OS event on a "cpu" (hardware thread).
+Thanks, for catching these bugs.
 
-Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Regards,
 
+Boris
 
-Index: linux/mm/vmstat.c
-===================================================================
---- linux.orig/mm/vmstat.c	2013-10-03 12:06:06.501932283 -0500
-+++ linux/mm/vmstat.c	2013-10-03 12:27:49.403384459 -0500
-@@ -14,12 +14,14 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/cpumask.h>
- #include <linux/vmstat.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
- #include <linux/writeback.h>
- #include <linux/compaction.h>
- #include <linux/mm_inline.h>
-+#include <linux/tick.h>
+>>   	.set_timeout =	at91_wdt_set_timeout,
+>>   };
+>>   
+>> -static struct watchdog_device at91_wdt_dev = {
+>> -	.info =		&at91_wdt_info,
+>> -	.ops =		&at91_wdt_ops,
+>> -	.timeout =	WDT_HEARTBEAT,
+>> -	.min_timeout =	1,
+>> -	.max_timeout =	0xFFFF,
+>> -};
+>> +#if defined(CONFIG_OF)
+>> +static int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
+>> +{
+>> +	u32 min = 0;
+>> +	u32 max = WDT_COUNTER_MAX_SECS;
+>> +	const char *tmp;
+>> +
+>> +	/* Get the interrupts property */
+>> +	wdt->irq = irq_of_parse_and_map(np, 0);
+>> +	if (!wdt->irq)
+>> +		dev_warn(wdt->wdd.parent, "failed to get IRQ from DT\n");
+>> +
+>> +	if (!of_property_read_u32_index(np, "atmel,max-heartbeat-sec", 0,
+>> +					&max)) {
+>> +		if (!max || max > WDT_COUNTER_MAX_SECS)
+>> +			max = WDT_COUNTER_MAX_SECS;
+>> +
+>> +		if (!of_property_read_u32_index(np, "atmel,min-heartbeat-sec",
+>> +						0, &min)) {
+>> +			if (min >= max)
+>> +				min = max - 1;
+>> +		}
+>> +	}
+>> +
+>> +	min = secs_to_ticks(min);
+>> +	max = secs_to_ticks(max);
+>> +
+>> +	wdt->mr_mask = 0x3FFFFFFF;
+>> +	wdt->mr = 0;
+>> +	if (!of_property_read_string(np, "atmel,watchdog-type", &tmp) &&
+>> +	    !strcmp(tmp, "software")) {
+>> +		wdt->mr |= AT91_WDT_WDFIEN;
+>> +		wdt->mr_mask &= ~AT91_WDT_WDRPROC;
+>> +	} else
+>> +		wdt->mr |= AT91_WDT_WDRSTEN;
+>> +
+>> +	if (!of_property_read_string(np, "atmel,reset-type", &tmp) &&
+>> +	    !strcmp(tmp, "proc"))
+>> +		wdt->mr |= AT91_WDT_WDRPROC;
+>> +
+>> +	if (of_property_read_bool(np, "atmel,disable")) {
+>> +		wdt->mr |= AT91_WDT_WDDIS;
+>> +		wdt->mr_mask &= AT91_WDT_WDDIS;
+>> +	}
+>> +
+>> +	if (of_property_read_bool(np, "atmel,idle-halt"))
+>> +		wdt->mr |= AT91_WDT_WDIDLEHLT;
+>> +
+>> +	if (of_property_read_bool(np, "atmel,dbg-halt"))
+>> +		wdt->mr |= AT91_WDT_WDDBGHLT;
+>> +
+>> +	wdt->mr |= max | ((max - min) << 16);
+>> +
+>> +	return 0;
+>> +}
+>> +#else
+>> +static inline int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
+>> +{
+>> +	return 0;
+>> +}
+>> +#endif
+>>   
+>>   static int __init at91wdt_probe(struct platform_device *pdev)
+>>   {
+>>   	struct resource	*r;
+>> -	int res;
+>> +	int err;
+>> +	struct at91wdt *wdt;
+>>   
+>> -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> -	if (!r)
+>> -		return -ENODEV;
+>> -	at91wdt_private.base = ioremap(r->start, resource_size(r));
+>> -	if (!at91wdt_private.base) {
+>> -		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
+>> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
+>> +	if (!wdt)
+>>   		return -ENOMEM;
+>> -	}
+>>   
+>> -	at91_wdt_dev.parent = &pdev->dev;
+>> -	watchdog_init_timeout(&at91_wdt_dev, heartbeat, &pdev->dev);
+>> -	watchdog_set_nowayout(&at91_wdt_dev, nowayout);
+>> +	wdt->mr = (WDT_HW_TIMEOUT * 256) | AT91_WDT_WDRSTEN | AT91_WDT_WDD |
+>> +		  AT91_WDT_WDDBGHLT | AT91_WDT_WDIDLEHLT;
+>> +	wdt->mr_mask = 0x3FFFFFFF;
+>> +	wdt->nowayout = nowayout;
+>> +	wdt->wdd.parent = &pdev->dev;
+>> +	wdt->wdd.info = &at91_wdt_info;
+>> +	wdt->wdd.ops = &at91_wdt_ops;
+>> +	wdt->wdd.timeout = WDT_HEARTBEAT;
+>> +	wdt->wdd.min_timeout = 1;
+>> +	wdt->wdd.max_timeout = 0xFFFF;
+>>   
+>> -	/* Set watchdog */
+>> -	res = at91_wdt_settimeout(ms_to_ticks(WDT_HW_TIMEOUT * 1000));
+>> -	if (res)
+>> -		return res;
+>> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	wdt->base = devm_ioremap_resource(&pdev->dev, r);
+>> +	if (IS_ERR(wdt->base))
+>> +		return PTR_ERR(wdt->base);
+>> +
+>> +	if (pdev->dev.of_node) {
+>> +		err = of_at91wdt_init(pdev->dev.of_node, wdt);
+>> +		if (err)
+>> +			return err;
+>> +	}
+>>   
+>> -	res = watchdog_register_device(&at91_wdt_dev);
+>> -	if (res)
+>> -		return res;
+>> +	err = at91_wdt_init(pdev, wdt);
+>> +	if (err)
+>> +		return err;
+>>   
+>> -	at91wdt_private.next_heartbeat = jiffies + at91_wdt_dev.timeout * HZ;
+>> -	setup_timer(&at91wdt_private.timer, at91_ping, 0);
+>> -	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
+>> +	platform_set_drvdata(pdev, wdt);
+>>   
+>>   	pr_info("enabled (heartbeat=%d sec, nowayout=%d)\n",
+>> -		at91_wdt_dev.timeout, nowayout);
+>> +		wdt->wdd.timeout, wdt->nowayout);
+>>   
+>>   	return 0;
+>>   }
+>>   
+>>   static int __exit at91wdt_remove(struct platform_device *pdev)
+>>   {
+>> -	watchdog_unregister_device(&at91_wdt_dev);
+>> +	struct at91wdt *wdt = platform_get_drvdata(pdev);
+>> +	watchdog_unregister_device(&wdt->wdd);
+>>   
+>>   	pr_warn("I quit now, hardware will probably reboot!\n");
+>> -	del_timer(&at91wdt_private.timer);
+>> +	del_timer(&wdt->timer);
+>>   
+>>   	return 0;
+>>   }
+>> -- 
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
 
- #include "internal.h"
-
-@@ -417,13 +419,22 @@ void dec_zone_page_state(struct page *pa
- EXPORT_SYMBOL(dec_zone_page_state);
- #endif
-
--static inline void fold_diff(int *diff)
-+
-+/*
-+ * Fold a differential into the global counters.
-+ * Returns the number of counters updated.
-+ */
-+static inline int fold_diff(int *diff)
- {
- 	int i;
-+	int changes = 0;
-
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
--		if (diff[i])
-+		if (diff[i]) {
- 			atomic_long_add(diff[i], &vm_stat[i]);
-+			changes++;
-+	}
-+	return changes;
- }
-
- /*
-@@ -439,12 +450,15 @@ static inline void fold_diff(int *diff)
-  * statistics in the remote zone struct as well as the global cachelines
-  * with the global counters. These could cause remote node cache line
-  * bouncing and will have to be only done when necessary.
-+ *
-+ * The function returns the number of global counters updated.
-  */
--static void refresh_cpu_vm_stats(void)
-+static int refresh_cpu_vm_stats(void)
- {
- 	struct zone *zone;
- 	int i;
- 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
-+	int changes = 0;
-
- 	for_each_populated_zone(zone) {
- 		struct per_cpu_pageset __percpu *p = zone->pageset;
-@@ -484,15 +498,17 @@ static void refresh_cpu_vm_stats(void)
- 			continue;
- 		}
-
--
- 		if (__this_cpu_dec_return(p->expire))
- 			continue;
-
--		if (__this_cpu_read(p->pcp.count))
-+		if (__this_cpu_read(p->pcp.count)) {
- 			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
-+			changes++;
-+		}
- #endif
- 	}
--	fold_diff(global_diff);
-+	changes += fold_diff(global_diff);
-+	return changes;
- }
-
- /*
-@@ -1213,12 +1229,15 @@ static const struct file_operations proc
- #ifdef CONFIG_SMP
- static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
- int sysctl_stat_interval __read_mostly = HZ;
-+static struct cpumask *monitored_cpus;
-
- static void vmstat_update(struct work_struct *w)
- {
--	refresh_cpu_vm_stats();
--	schedule_delayed_work(&__get_cpu_var(vmstat_work),
--		round_jiffies_relative(sysctl_stat_interval));
-+	if (refresh_cpu_vm_stats())
-+		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
-+			round_jiffies_relative(sysctl_stat_interval));
-+	else
-+		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
- }
-
- static void start_cpu_timer(int cpu)
-@@ -1226,7 +1245,70 @@ static void start_cpu_timer(int cpu)
- 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
-
- 	INIT_DEFERRABLE_WORK(work, vmstat_update);
--	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
-+	schedule_delayed_work_on(cpu, work,
-+		__round_jiffies_relative(sysctl_stat_interval, cpu));
-+}
-+
-+/*
-+ * Check if the diffs for a certain cpu indicate that
-+ * an update is needed.
-+ */
-+static bool need_update(int cpu)
-+{
-+	struct zone *zone;
-+
-+	for_each_populated_zone(zone) {
-+		struct per_cpu_pageset *p = per_cpu_ptr(zone->pageset, cpu);
-+
-+		/*
-+		 * The fast way of checking if there are any vmstat diffs.
-+		 * This works because the diffs are byte sized items.
-+		 */
-+		if (memchr_inv(p->vm_stat_diff, 0, NR_VM_ZONE_STAT_ITEMS))
-+			return true;
-+	}
-+	return false;
-+}
-+
-+static void vmstat_shepherd(struct work_struct *w)
-+{
-+	int cpu;
-+	int s = tick_get_housekeeping_cpu();
-+	struct delayed_work *d = per_cpu_ptr(&vmstat_work, s);
-+
-+	refresh_cpu_vm_stats();
-+
-+	for_each_cpu(cpu, monitored_cpus)
-+		if (need_update(cpu)) {
-+			cpumask_clear_cpu(cpu, monitored_cpus);
-+			start_cpu_timer(cpu);
-+		}
-+
-+	if (s != smp_processor_id()) {
-+		/* Timekeeping was moved. Move the shepherd worker */
-+		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
-+		cpumask_clear_cpu(s, monitored_cpus);
-+		cancel_delayed_work_sync(d);
-+		INIT_DEFERRABLE_WORK(d, vmstat_shepherd);
-+	}
-+
-+	schedule_delayed_work_on(s, d,
-+		__round_jiffies_relative(sysctl_stat_interval, s));
-+
-+}
-+
-+static void __init start_shepherd_timer(void)
-+{
-+	int cpu = tick_get_housekeeping_cpu();
-+	struct delayed_work *d = per_cpu_ptr(&vmstat_work, cpu);
-+
-+	INIT_DEFERRABLE_WORK(d, vmstat_shepherd);
-+	monitored_cpus = kmalloc(BITS_TO_LONGS(nr_cpu_ids) * sizeof(long),
-+			GFP_KERNEL);
-+	cpumask_copy(monitored_cpus, cpu_online_mask);
-+	cpumask_clear_cpu(cpu, monitored_cpus);
-+	schedule_delayed_work_on(cpu, d,
-+		__round_jiffies_relative(sysctl_stat_interval, cpu));
- }
-
- /*
-@@ -1243,17 +1325,19 @@ static int vmstat_cpuup_callback(struct
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
- 		refresh_zone_stat_thresholds();
--		start_cpu_timer(cpu);
- 		node_set_state(cpu_to_node(cpu), N_CPU);
-+		cpumask_set_cpu(cpu, monitored_cpus);
- 		break;
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
--		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-+		if (!cpumask_test_cpu(cpu, monitored_cpus))
-+			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-+		cpumask_clear_cpu(cpu, monitored_cpus);
- 		per_cpu(vmstat_work, cpu).work.func = NULL;
- 		break;
- 	case CPU_DOWN_FAILED:
- 	case CPU_DOWN_FAILED_FROZEN:
--		start_cpu_timer(cpu);
-+		cpumask_set_cpu(cpu, monitored_cpus);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-@@ -1272,12 +1356,8 @@ static struct notifier_block vmstat_noti
- static int __init setup_vmstat(void)
- {
- #ifdef CONFIG_SMP
--	int cpu;
--
- 	register_cpu_notifier(&vmstat_notifier);
--
--	for_each_online_cpu(cpu)
--		start_cpu_timer(cpu);
-+	start_shepherd_timer();
- #endif
- #ifdef CONFIG_PROC_FS
- 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
-Index: linux/kernel/time/tick-common.c
-===================================================================
---- linux.orig/kernel/time/tick-common.c	2013-10-03 12:06:06.501932283 -0500
-+++ linux/kernel/time/tick-common.c	2013-10-03 12:06:06.501932283 -0500
-@@ -206,6 +206,24 @@ static void tick_setup_device(struct tic
- 		tick_setup_oneshot(newdev, handler, next_event);
- }
-
-+/*
-+ * Return a cpu number that may be used to run housekeeping
-+ * tasks. This is usually the timekeeping cpu unless that
-+ * is not available. Then we simply fall back to the current
-+ * cpu.
-+ */
-+int tick_get_housekeeping_cpu(void)
-+{
-+	int cpu;
-+
-+	if (system_state < SYSTEM_RUNNING || tick_do_timer_cpu < 0)
-+		cpu = raw_smp_processor_id();
-+	else
-+		cpu = tick_do_timer_cpu;
-+
-+	return cpu;
-+}
-+
- void tick_install_replacement(struct clock_event_device *newdev)
- {
- 	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
-Index: linux/include/linux/tick.h
-===================================================================
---- linux.orig/include/linux/tick.h	2013-10-03 12:06:06.501932283 -0500
-+++ linux/include/linux/tick.h	2013-10-03 12:06:06.501932283 -0500
-@@ -77,6 +77,7 @@ struct tick_sched {
- extern void __init tick_init(void);
- extern int tick_is_oneshot_available(void);
- extern struct tick_device *tick_get_device(int cpu);
-+extern int tick_get_housekeeping_cpu(void);
-
- # ifdef CONFIG_HIGH_RES_TIMERS
- extern int tick_init_highres(void);
