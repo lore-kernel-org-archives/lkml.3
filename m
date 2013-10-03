@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3JCQFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:05:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26915 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991Ab3JCQFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:05:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1026,1371106800"; 
-   d="scan'208";a="413583627"
-Message-ID: <524D9574.20702@linux.intel.com>
-Date: Thu, 03 Oct 2013 09:04:04 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
+	id S1754987Ab3JCQHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:07:25 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:63786 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab3JCQHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 12:07:22 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: alexander.shishkin@linux.intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] usb: chipidea: add Intel Clovertrail pci id
-References: <1380663178-24218-1-git-send-email-david.a.cohen@linux.intel.com> <1380663178-24218-2-git-send-email-david.a.cohen@linux.intel.com> <20131003052134.GA1312@kroah.com>
-In-Reply-To: <20131003052134.GA1312@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOesGMj3142o1B_33BqtLZMbObn2tjfBaBHvAB-2+O+XOuCjSw@mail.gmail.com>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+ <1380670860-17621-3-git-send-email-seanpaul@chromium.org> <CAOesGMj3142o1B_33BqtLZMbObn2tjfBaBHvAB-2+O+XOuCjSw@mail.gmail.com>
+From: Sean Paul <seanpaul@chromium.org>
+Date: Thu, 3 Oct 2013 12:06:59 -0400
+Message-ID: <CAOw6vbJeD396f1LEN8SE5j+Rcc=962EcuUuJpxU87Daxfag=Fg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ARM: dts: Add dp-controller node to exynos5250-snow
+To: Olof Johansson <olof@lixom.net>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On 10/02/2013 10:21 PM, Greg KH wrote:
-> On Tue, Oct 01, 2013 at 02:32:58PM -0700, David Cohen wrote:
->> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
->> ---
->>   drivers/usb/chipidea/ci_hdrc_pci.c | 5 +++++
->>   1 file changed, 5 insertions(+)
+On Wed, Oct 2, 2013 at 5:10 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Tue, Oct 1, 2013 at 4:40 PM, Sean Paul <seanpaul@chromium.org> wrote:
+>> This patch adds the dp-controller node to the exynos5250-snow board dts
+>> file.
 >>
->> diff --git a/drivers/usb/chipidea/ci_hdrc_pci.c b/drivers/usb/chipidea/ci_hdrc_pci.c
->> index 08a724b..d514332 100644
->> --- a/drivers/usb/chipidea/ci_hdrc_pci.c
->> +++ b/drivers/usb/chipidea/ci_hdrc_pci.c
->> @@ -129,6 +129,11 @@ static DEFINE_PCI_DEVICE_TABLE(ci_hdrc_pci_id_table) = {
->>   		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0829),
->>   		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
->>   	},
->> +	{
->> +		/* Intel Clovertrail */
->> +		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe006),
->> +		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
->> +	},
+>> Signed-off-by: Sean Paul <seanpaul@chromium.org>
+>> ---
+>>  arch/arm/boot/dts/exynos5250-snow.dts | 12 ++++++++++++
+>>  1 file changed, 12 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+>> index e5af3f2..780511a 100644
+>> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+>> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+>> @@ -190,6 +190,18 @@
+>>                 samsung,vbus-gpio = <&gpx1 1 0>;
+>>         };
+>>
+>> +       dp-controller {
+>> +               samsung,color-space = <0>;
+>> +               samsung,dynamic-range = <0>;
+>> +               samsung,ycbcr-coeff = <0>;
+>> +               samsung,color-depth = <1>;
+>> +               samsung,link-rate = <0x0a>;
+>> +               samsung,lane-count = <2>;
+>> +
+>> +               pinctrl-names = "default";
+>> +               pinctrl-0 = <&dp_hpd>;
+>> +       };
 >
-> Can this go into 3.12-final, and any other stable kernel releases as
-> well?  Or does this platform also need other fixes that aren't in 3.10
-> and 3.11?
-
-This was tested on 3.10+
-It might work on 3.4 but it's not validated. I can test it if we care 
-about chipidea on 3.4.
-
-Br, David
-
->
-> thanks,
->
-> greg k-h
+> This won't actually do what I think you want. Since the dtsi has the
+> node name "dp-controller@145B0000", you will end up duplicating a new
+> node and not build on top of that one.
 >
 
+Thanks, Olof. I based this off Inki's exynos-drm-next tree which does
+not have the latest from arm-soc, I'll re-upload.
+
+Sean
+
+
+> There's two ways to do it: Always include the unit address, or create
+> a label in the dtsi such that:
+>
+> dp_controller: dp-controller@ {....
+> }
+>
+> Then in your dts you can, at the root level:
+>
+> &dp_controller {
+>   ... new stuff and overrides ...
+> };
+>
+>
+>
+> -Olof
