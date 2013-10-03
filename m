@@ -1,89 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab3JCMFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 08:05:36 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63146 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab3JCMFe (ORCPT
+	id S1754139Ab3JCMGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:06:19 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10276 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab3JCMGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 08:05:34 -0400
-Message-ID: <524D5D88.9020308@baylibre.com>
-Date: Thu, 03 Oct 2013 14:05:28 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 3 Oct 2013 08:06:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 03 Oct 2013 05:02:20 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <mturquette@linaro.org>
+CC: <broonie@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <grant.likely@linaro.org>, <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] clk: palmas: add clock driver for palmas
+Date: Thu, 3 Oct 2013 18:00:07 +0530
+Message-ID: <1380803407-15196-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: balbi@ti.com, tony@atomide.com, p.zabel@pengutronix.de, broonie@kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 05/10] ARM: dts: omap3-beagle: Use reset-gpios for
- hsusb2_reset
-References: <1380012836-29900-1-git-send-email-rogerq@ti.com> <1380012836-29900-6-git-send-email-rogerq@ti.com> <524D483D.9040907@ti.com>
-In-Reply-To: <524D483D.9040907@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+Palmas devices has two clock output CLK32K_KG and CLK32K_KG_AUDIO
+which can be nebale/disable through software.
 
-Yes, I will. I've been waiting for these ones for so long :-)
+Add clock driver support for the Palmas 32k clocks.
 
-Thanks,
-Benoit
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ .../devicetree/bindings/clock/clk-palmas.txt       |   45 +++
+ drivers/clk/Kconfig                                |    7 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/clk-palmas.c                           |  306 ++++++++++++++++++++
+ 4 files changed, 359 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-palmas.txt
+ create mode 100644 drivers/clk/clk-palmas.c
 
-On 03/10/2013 12:34, Roger Quadros wrote:
-> Hi Benoit,
->
-> Could you please take the device tree related patches [5 to 10] in this series?
-> Thanks.
->
-> cheers,
-> -roger
->
-> On 09/24/2013 11:53 AM, Roger Quadros wrote:
->> We no longer need to model the RESET line as a regulator since
->> the USB phy-nop driver accepts "reset-gpios" property.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>   arch/arm/boot/dts/omap3-beagle.dts |   13 +------------
->>   1 files changed, 1 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
->> index dfd8310..71bde47 100644
->> --- a/arch/arm/boot/dts/omap3-beagle.dts
->> +++ b/arch/arm/boot/dts/omap3-beagle.dts
->> @@ -44,17 +44,6 @@
->>   		};
->>   	};
->>
->> -	/* HS USB Port 2 RESET */
->> -	hsusb2_reset: hsusb2_reset_reg {
->> -		compatible = "regulator-fixed";
->> -		regulator-name = "hsusb2_reset";
->> -		regulator-min-microvolt = <3300000>;
->> -		regulator-max-microvolt = <3300000>;
->> -		gpio = <&gpio5 19 0>;	/* gpio_147 */
->> -		startup-delay-us = <70000>;
->> -		enable-active-high;
->> -	};
->> -
->>   	/* HS USB Port 2 Power */
->>   	hsusb2_power: hsusb2_power_reg {
->>   		compatible = "regulator-fixed";
->> @@ -68,7 +57,7 @@
->>   	/* HS USB Host PHY on PORT 2 */
->>   	hsusb2_phy: hsusb2_phy {
->>   		compatible = "usb-nop-xceiv";
->> -		reset-supply = <&hsusb2_reset>;
->> +		reset-gpios = <&gpio5 19 GPIO_ACTIVE_LOW>;	/* gpio_147 */
->>   		vcc-supply = <&hsusb2_power>;
->>   	};
->>
->>
->
+diff --git a/Documentation/devicetree/bindings/clock/clk-palmas.txt b/Documentation/devicetree/bindings/clock/clk-palmas.txt
+new file mode 100644
+index 0000000..c247538
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/clk-palmas.txt
+@@ -0,0 +1,45 @@
++* Palmas 32KHz clocks *
++
++Palmas device has two clock output pins for 32KHz, KG and KG_AUDIO.
++
++This binding uses the common clock binding ./clock-bindings.txt.
++
++Clock 32KHz KG is output 0 of the driver and clock 32KHz is output 1.
++
++Required properties:
++- compatible : shall be "ti,palmas-clk".
++- #clock-cells : from common clock binding; shall be set to 1.
++
++Optional subnode:
++	The clock node has optional subnode to provide the init configuration of
++	clocks like boot enable, sleep control.
++
++	The subnode name is fixed and it should be
++		clk32k_kg for the 32KHz KG clock.
++		clk32k_kg_audio for the 32KHz KG_AUDIO clock.
++
++	Optional subnode properties:
++	ti,clock-boot-enable: Enable clock at the time of booting.
++	ti,external-sleep-control: The clock is enable/disabled by state
++		of external enable input pins ENABLE, ENABLE2 and NSLEEP.
++		The valid value for the external pins are:
++			1 for ENABLE1
++			2 for ENABLE2
++			3 for NSLEEP.
++		Option 0 or missing this property means the clock is
++		enabled/disabled via register access and these pins do
++		not have any control.
++
++Example:
++	clock {
++		compatible = "ti,palmas-clk";
++		#clock-cells = <1>;
++		clk32k_kg {
++			ti,clock-boot-enable;
++			ti,external-sleep-control = <3>;
++		};
++
++		clk32k_kg_audio {
++			ti,clock-boot-enable;
++		};
++	};
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 279407a..6b8c233 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -93,6 +93,13 @@ config CLK_PPC_CORENET
+ 	  This adds the clock driver support for Freescale PowerPC corenet
+ 	  platforms using common clock framework.
+ 
++config COMMON_CLK_PALMAS
++	tristate "Clock driver for TI Palmas devices"
++	depends on MFD_PALMAS
++	---help---
++	  This driver supports TI Palmas devices 32KHz output KG and KG_AUDIO
++	  using common clock framework.
++
+ endmenu
+ 
+ source "drivers/clk/mvebu/Kconfig"
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 7b11106..32e04cf 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -43,3 +43,4 @@ obj-$(CONFIG_COMMON_CLK_SI5351) += clk-si5351.o
+ obj-$(CONFIG_COMMON_CLK_S2MPS11) += clk-s2mps11.o
+ obj-$(CONFIG_CLK_TWL6040)	+= clk-twl6040.o
+ obj-$(CONFIG_CLK_PPC_CORENET)	+= clk-ppc-corenet.o
++obj-$(CONFIG_COMMON_CLK_PALMAS)	+= clk-palmas.o
+diff --git a/drivers/clk/clk-palmas.c b/drivers/clk/clk-palmas.c
+new file mode 100644
+index 0000000..4d34d36
+--- /dev/null
++++ b/drivers/clk/clk-palmas.c
+@@ -0,0 +1,306 @@
++/*
++ * Clock driver for Palmas device.
++ *
++ * Copyright (c) 2013, NVIDIA Corporation.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
++ * whether express or implied; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++ * 02111-1307, USA
++ */
++
++#include <linux/clk.h>
++#include <linux/clkdev.h>
++#include <linux/clk-provider.h>
++#include <linux/mfd/palmas.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++enum PALMAS_CLOCK32K {
++	PALMAS_CLOCK32KG,
++	PALMAS_CLOCK32KG_AUDIO,
++
++	/* Last entry */
++	PALMAS_CLOCK32K_NR,
++};
++
++struct palmas_clks;
++
++struct palmas_clk32k_desc {
++	const char *clk_name;
++	unsigned int control_reg;
++	unsigned int enable_mask;
++	unsigned int sleep_mask;
++	unsigned int sleep_reqstr_id;
++};
++
++struct palmas_clock_info {
++	struct clk *clk;
++	struct clk_hw hw;
++	struct palmas_clk32k_desc *clk_desc;
++	struct palmas_clks *palmas_clk;
++	int ext_control_pin;
++	bool boot_enable;
++};
++
++struct palmas_clks {
++	struct device *dev;
++	struct palmas *palmas;
++	struct palmas_clock_info clk_info[PALMAS_CLOCK32K_NR];
++};
++
++static struct palmas_clk32k_desc palmas_clk32k_descs[] = {
++	{
++		.clk_name = "clk32k_kg",
++		.control_reg = PALMAS_CLK32KG_CTRL,
++		.enable_mask = PALMAS_CLK32KG_CTRL_MODE_ACTIVE,
++		.sleep_mask = PALMAS_CLK32KG_CTRL_MODE_SLEEP,
++		.sleep_reqstr_id = PALMAS_EXTERNAL_REQSTR_ID_CLK32KG,
++	}, {
++		.clk_name = "clk32k_kg_audio",
++		.control_reg = PALMAS_CLK32KGAUDIO_CTRL,
++		.enable_mask = PALMAS_CLK32KG_CTRL_MODE_ACTIVE,
++		.sleep_mask = PALMAS_CLK32KG_CTRL_MODE_SLEEP,
++		.sleep_reqstr_id = PALMAS_EXTERNAL_REQSTR_ID_CLK32KGAUDIO,
++	},
++};
++
++static inline struct palmas_clock_info *to_palmas_clks_info(struct clk_hw *hw)
++{
++	return container_of(hw, struct palmas_clock_info, hw);
++}
++
++static int palmas_clks_prepare(struct clk_hw *hw)
++{
++	struct palmas_clock_info *cinfo = to_palmas_clks_info(hw);
++	struct palmas_clks *palmas_clks = cinfo->palmas_clk;
++	int ret;
++
++	if (cinfo->ext_control_pin)
++		return 0;
++
++	ret = palmas_update_bits(palmas_clks->palmas, PALMAS_RESOURCE_BASE,
++			cinfo->clk_desc->control_reg,
++			cinfo->clk_desc->enable_mask,
++			cinfo->clk_desc->enable_mask);
++	if (ret < 0)
++		dev_err(palmas_clks->dev, "Reg 0x%02x update failed, %d\n",
++			cinfo->clk_desc->control_reg, ret);
++
++	return ret;
++}
++
++static void palmas_clks_unprepare(struct clk_hw *hw)
++{
++	struct palmas_clock_info *cinfo = to_palmas_clks_info(hw);
++	struct palmas_clks *palmas_clks = cinfo->palmas_clk;
++	int ret;
++
++	if (cinfo->ext_control_pin)
++		return;
++
++	ret = palmas_update_bits(palmas_clks->palmas, PALMAS_RESOURCE_BASE,
++			cinfo->clk_desc->control_reg,
++			cinfo->clk_desc->enable_mask, 0);
++	if (ret < 0)
++		dev_err(palmas_clks->dev, "Reg 0x%02x update failed, %d\n",
++			cinfo->clk_desc->control_reg, ret);
++
++}
++
++static int palmas_clks_is_enabled(struct clk_hw *hw)
++{
++	struct palmas_clock_info *cinfo = to_palmas_clks_info(hw);
++	struct palmas_clks *palmas_clks = cinfo->palmas_clk;
++	int ret;
++	u32 val;
++
++	if (cinfo->ext_control_pin)
++		return 1;
++
++	ret = palmas_read(palmas_clks->palmas, PALMAS_RESOURCE_BASE,
++			cinfo->clk_desc->control_reg, &val);
++	if (ret < 0) {
++		dev_err(palmas_clks->dev, "Reg 0x%02x read failed, %d\n",
++				cinfo->clk_desc->control_reg, ret);
++		return ret;
++	}
++	return !!(val & cinfo->clk_desc->enable_mask);
++}
++
++static struct clk_ops palmas_clks_ops = {
++	.prepare	= palmas_clks_prepare,
++	.unprepare	= palmas_clks_unprepare,
++	.is_enabled	= palmas_clks_is_enabled,
++};
++
++static struct clk_init_data palmas_clks_hw_init[PALMAS_CLOCK32K_NR] = {
++	[PALMAS_CLOCK32KG] = {
++		.name = "clk32k_kg",
++		.ops = &palmas_clks_ops,
++		.flags = CLK_IS_ROOT | CLK_IGNORE_UNUSED,
++	},
++	[PALMAS_CLOCK32KG_AUDIO] = {
++		.name = "clk32k_kg_audio",
++		.ops = &palmas_clks_ops,
++		.flags = CLK_IS_ROOT | CLK_IGNORE_UNUSED,
++	},
++};
++
++static int palmas_clks_get_clk_data(struct platform_device *pdev,
++	struct palmas_clks *palmas_clks)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct device_node *child;
++	struct palmas_clock_info *cinfo;
++	unsigned int prop;
++	int ret;
++	int i;
++
++	for (i = 0; i < PALMAS_CLOCK32K_NR; ++i) {
++		child = of_get_child_by_name(node,
++				palmas_clk32k_descs[i].clk_name);
++		if (!child)
++			continue;
++
++		cinfo = &palmas_clks->clk_info[i];
++		cinfo->boot_enable = of_property_read_bool(child,
++						"ti,clock-boot-enable");
++		ret = of_property_read_u32(child, "ti,external-sleep-control",
++					&prop);
++		if (!ret) {
++			switch (prop) {
++			case 1:
++				prop = PALMAS_EXT_CONTROL_ENABLE1;
++				break;
++			case 2:
++				prop = PALMAS_EXT_CONTROL_ENABLE2;
++				break;
++			case 3:
++				prop = PALMAS_EXT_CONTROL_NSLEEP;
++				break;
++			default:
++				WARN_ON(1);
++				dev_warn(&pdev->dev,
++					"%s: Invalid ext control option: %u\n",
++					child->name, prop);
++				prop = 0;
++				break;
++			}
++			cinfo->ext_control_pin = prop;
++		}
++	}
++
++	return 0;
++}
++
++static int palmas_clks_init_configure(struct palmas_clock_info *cinfo)
++{
++	struct palmas_clks *palmas_clks = cinfo->palmas_clk;
++	int ret;
++	unsigned int val = 0;
++	unsigned int mask;
++
++	if (cinfo->boot_enable || cinfo->ext_control_pin)
++		val |= cinfo->clk_desc->enable_mask;
++
++	mask = cinfo->clk_desc->enable_mask |
++			cinfo->clk_desc->sleep_mask;
++
++	ret = palmas_update_bits(palmas_clks->palmas, PALMAS_RESOURCE_BASE,
++			cinfo->clk_desc->control_reg, mask, val);
++	if (ret < 0) {
++		dev_err(palmas_clks->dev, "Reg 0x%02x update failed, %d\n",
++			cinfo->clk_desc->control_reg, ret);
++		return ret;
++	}
++
++	if (cinfo->ext_control_pin) {
++		ret = palmas_ext_control_req_config(palmas_clks->palmas,
++				cinfo->clk_desc->sleep_reqstr_id,
++				cinfo->ext_control_pin, true);
++		if (ret < 0) {
++			dev_err(palmas_clks->dev,
++				"Ext config for %s failed, %d\n",
++				cinfo->clk_desc->clk_name, ret);
++			return ret;
++		}
++	}
++
++	return ret;
++}
++
++static int palmas_clks_probe(struct platform_device *pdev)
++{
++	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
++	struct palmas_clock_info *cinfo;
++	struct palmas_clks *palmas_clks;
++	struct clk *clk;
++	int i, ret;
++
++	palmas_clks = devm_kzalloc(&pdev->dev, sizeof(*palmas_clks),
++				GFP_KERNEL);
++	if (!palmas_clks)
++		return -ENOMEM;
++
++	palmas_clks_get_clk_data(pdev, palmas_clks);
++	platform_set_drvdata(pdev, palmas_clks);
++
++	palmas_clks->dev = &pdev->dev;
++	palmas_clks->palmas = palmas;
++
++	for (i = 0; i < PALMAS_CLOCK32K_NR; i++) {
++		cinfo = &palmas_clks->clk_info[i];
++		cinfo->clk_desc = &palmas_clk32k_descs[i];
++		cinfo->hw.init = &palmas_clks_hw_init[i];
++		cinfo->palmas_clk = palmas_clks;
++		clk = devm_clk_register(&pdev->dev, &cinfo->hw);
++		if (IS_ERR(clk)) {
++			ret = PTR_ERR(clk);
++			dev_err(&pdev->dev, "Fail to register clock %s, %d\n",
++				palmas_clk32k_descs[i].clk_name, ret);
++			return ret;
++		}
++
++		cinfo->clk = clk;
++		palmas_clks_init_configure(cinfo);
++	}
++
++	return 0;
++}
++
++static struct of_device_id of_palmas_clks_match_tbl[] = {
++	{ .compatible = "ti,palmas-clk", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, of_palmas_clks_match_tbl);
++
++static struct platform_driver palmas_clks_driver = {
++	.driver = {
++		.name = "palmas-clk",
++		.owner = THIS_MODULE,
++		.of_match_table = of_palmas_clks_match_tbl,
++	},
++	.probe = palmas_clks_probe,
++};
++
++module_platform_driver(palmas_clks_driver);
++
++MODULE_DESCRIPTION("Clock driver for Palmas Series Devices");
++MODULE_ALIAS("platform:palmas-clk");
++MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.1.1
 
