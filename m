@@ -1,97 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3JCTDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:03:54 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44974 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375Ab3JCTDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:03:53 -0400
-Date: Thu, 3 Oct 2013 12:03:25 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
-        Paul Mackerras <paulus@samba.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: Re: [PATCH 5/9][v5] powerpc: implement is_instr_load_store().
-Message-ID: <20131003190325.GB21561@us.ibm.com>
-References: <1380672911-12812-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1380672911-12812-6-git-send-email-sukadev@linux.vnet.ibm.com>
- <20131003053519.GC17237@concordia>
+	id S1755021Ab3JCTFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:05:12 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20258 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966Ab3JCTFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 15:05:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+sx7dPjlDZgPmfmiaRaQhZYZ0QwARzFfk=
+Date: Thu, 3 Oct 2013 15:04:37 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] ARM: kirkwood: retain MAC address for DT
+ ethernet
+Message-ID: <20131003190437.GY31178@titan.lakedaemon.net>
+References: <1380804294-13726-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1380826568-18587-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20131003190201.GA2504@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003053519.GC17237@concordia>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100319-0320-0000-0000-0000013B0ED1
+In-Reply-To: <20131003190201.GA2504@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Ellerman [michael@ellerman.id.au] wrote:
-| On Tue, Oct 01, 2013 at 05:15:06PM -0700, Sukadev Bhattiprolu wrote:
-| > Implement is_instr_load_store() to detect whether a given instruction
-| > is one of the fixed-point or floating-point load/store instructions.
-| > This function will be used in a follow-on patch to save memory hierarchy
-| > information of the load/store.
-| 
-| The search over the array is a bit of a pity, especially as the worst
-| case penalises you when you haven't hit a load/store.
+On Thu, Oct 03, 2013 at 04:02:02PM -0300, Ezequiel Garcia wrote:
+> On Thu, Oct 03, 2013 at 08:56:08PM +0200, Sebastian Hesselbarth wrote:
+> > Ethernet IP on Kirkwood SoCs loose their MAC address register content
+> > if clock gated. To allow modular ethernet driver setups and gated clocks
+> > also on non-DT capable bootloaders, we fixup port device nodes with no
+> > valid MAC address property. This patch copies MAC address register
+> > contents set up by bootloaders early, notably before ethernet clocks
+> > are gated. While at it, also reorder call sequence in _dt_init.
+> > 
+> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> > ---
+> > Changelog:
+> > v1->v2:
+> > - check for gated clock before accessing eth registers
+> >   (Suggested by Andrew Lunn)
+> > 
+> > TBH, as there is no "official" clk_is_enabled but just the __clk_is_enabled
+> > one, this is close to abuse of CCF API. Actually, there should either be an
+> > clk_is_enabled or we enable the clock, copy a possible invalid MAC address
+> > and disable the clock again. (Added Mike, who might have an opinion about
+> > clk_is_enabled)
+> > 
+> > Cc: Jason Cooper <jason@lakedaemon.net>
+> > Cc: Andrew Lunn <andrew@lunn.ch>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> > Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  arch/arm/mach-kirkwood/board-dt.c |   77 +++++++++++++++++++++++++++++++++++--
+> >  1 file changed, 74 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
+> > index 82d3ad8..f5f35bb 100644
+> > --- a/arch/arm/mach-kirkwood/board-dt.c
+> > +++ b/arch/arm/mach-kirkwood/board-dt.c
+> > @@ -13,6 +13,8 @@
+> >  #include <linux/kernel.h>
+> >  #include <linux/init.h>
+> >  #include <linux/of.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/of_net.h>
+> >  #include <linux/of_platform.h>
+> >  #include <linux/clk-provider.h>
+> >  #include <linux/clocksource.h>
+> > @@ -66,6 +68,76 @@ static void __init kirkwood_legacy_clk_init(void)
+> >  	clk_prepare_enable(clk);
+> >  }
+> >  
+> > +#define MV643XX_ETH_MAC_ADDR_LOW	0x0414
+> > +#define MV643XX_ETH_MAC_ADDR_HIGH	0x0418
+> > +
+> > +static void __init kirkwood_dt_eth_fixup(void)
+> > +{
+> > +	struct device_node *np;
+> > +
+> > +	/*
+> > +	 * The ethernet interfaces forget the MAC address assigned by u-boot
+> > +	 * if the clocks are turned off. Usually, u-boot on kirkwood boards
+> > +	 * has no DT support to properly set local-mac-address property.
+> > +	 * As a workaround, we get the MAC address from mv643xx_eth registers
+> > +	 * and update the port device node if no valid MAC address is set.
+> > +	 */
+> > +	for_each_compatible_node(np, NULL, "marvell,kirkwood-eth-port") {
+> > +		struct device_node *pnp = of_get_parent(np);
+> > +		struct clk *clk;
+> > +		struct property *pmac;
+> > +		void __iomem *io;
+> > +		u8 *macaddr;
+> > +		u32 reg;
+> > +
+> > +		if (!pnp || !of_device_is_available(pnp))
+> > +			continue;
+> > +
+> > +		clk = of_clk_get(pnp, 0);
+> > +		if (!__clk_is_enabled(clk) || of_get_mac_address(np)) {
+> 
+> Mm.. just as you say this usage of __clk_is_enabled is awkard to say the
+> least.
+> 
+> I'm wondering: is the clock really disabled if the device is not
+> available (i.e. status == 'ok')? In other words: isn't the
+> !of_device_is_available() test enough?
 
-Agree. Will try this out.  This is certainly more efficient.
+Well, this stemmed from JasonG's scenario where the second iface is
+shut off by the bootloader.  Although one could argue that the
+bootloader should then update the dtb to mark that node as disabled...
 
-| 
-| I think we can do better. If you look at the opcode maps, and in
-| particular the extended table for opcode 31, you'll see there's a
-| reasonable amount of structure.
-| 
-| The following is only valid for arch 2.06, ie. it will classify reserved
-| opcodes as being load/store, but I think that's fine for the moment. If
-| we need to use it somewhere in future we can update it. But we should
-| add a big comment saying it's only valid in that case.
-| 
-| Anyway, I think the following logic is all we need for opcode 31:
-| 
-| bool is_load_store(int ext_opcode)
+thx,
 
-how about I call this is_load_store_2_06() and add a comment. Horrible
-but minimizes chance of misuse.
-
-| {
-|         upper = ext_opcode >> 5;
-|         lower = ext_opcode & 0x1f;
-| 
-|         /* Short circuit as many misses as we can */
-|         if (lower < 3 || lower > 23)
-|             return false;
-| 
-|         if (lower == 3)
-|             if (upper >= 16)
-|                 return true;
-| 
-|             return false;
-| 
-|         if (lower == 6)
-|             if (upper <= 1)
-|                 return true;
-|             return false;
-| 
-|         if (lower == 7 || lower == 12)
-|             return true;
-| 
-|         if (lower >= 20) /* && lower <= 23 (implicit) */
-|             return true;
-| 
-|         return false;
-| }
-| 
-| 
-| Which is not pretty, but I think it's preferable to the full search over the
-| array.
-| 
-| cheers
-
+Jason.
