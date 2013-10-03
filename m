@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3JCXvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:51:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:22368 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab3JCXvJ (ORCPT
+	id S1753940Ab3JCXyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:54:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56361 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab3JCXyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:51:09 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-ec-524e02e6b8b4
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Laurent Pinchart'" <laurent.pinchart+renesas@ideasonboard.com>,
-        "'Michael Hennerich'" <michael.hennerich@analog.com>,
-        "'Milo Kim'" <milo.kim@ti.com>,
-        "'Daniel Jeong'" <gshark.jeong@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <017f01cebb35$f6a82ac0$e3f88040$%han@samsung.com>
- <20131003162048.d4be6510f36da5c61dc61c43@linux-foundation.org>
-In-reply-to: <20131003162048.d4be6510f36da5c61dc61c43@linux-foundation.org>
-Subject: Re: [PATCH] MAINTAINERS: remove Richard Purdie as backlight maintainer
-Date: Fri, 04 Oct 2013 08:50:57 +0900
-Message-id: <003801cec093$6b3c1bf0$41b453d0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7AjzMSYgrbsLqLSKWLWYor1K51wgAA8OEQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+Zoe4zJr8ggwcPrC3mrF/DZjF5dxer
-	xeWFl1gtJjbdYbE40fcByN01h81iwuHN7BbLf61jsdi96ymrxc9d81gs1s+/xebA7fHqqqPH
-	zll32T1md8xk9Tgx4zeLx575P1g9+rasYvQ4fmM7k8fnTXIBHFFcNimpOZllqUX6dglcGc07
-	LAsOsFZ0bP3G0sC4gqWLkZNDQsBE4n/7PChbTOLCvfVsXYxcHEICyxgldjY/ZYMpOvlkAQtE
-	YjqjxOot/ewQzi9GiRt7DzGBVLEJqEl8+XIYKMHBISKgL9HWogFSwyywnFli/sEXzCA1QgJ1
-	Ejd/fQWr4RTwltjabg4SFhbwl1j3agIriM0ioCqx/E0/WDmvgK3ErJUzGSFsQYkfk++BXcos
-	oCWxeVsTK4QtL7F5zVtmkJESAuoSj/7qgoRFBIwk/vReZocoEZHY9+IdI8g5EgJzOST2dT1i
-	g9glIPFt8iEWiF5ZiU0HmCH+lZQ4uOIGywRGiVlINs9CsnkWks2zkKxYwMiyilE0tSC5oDgp
-	vchUrzgxt7g0L10vOT93EyMk/ifuYLx/wPoQYzLQ+onMUqLJ+cD0kVcSb2hsZmRhamJqbGRu
-	aUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxrlLk4p1ZVr+uz4+z67PvSK+
-	+/2Z3TdDZR+nMRdUaFj9KL984kPo2sI7zrt3L99otjy/emZb0KH4i9MV/p/M3PSTzdSw+f8V
-	czGjwGXPnoTy3auY897mc3jNgpoDG19qLfn54aRU5qNJGbn2EeUZC6dpdrTJ2IfNNgi6tUv1
-	5qVW/QereAxWeiqxFGckGmoxFxUnAgBpP2jdFQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jQd1nTH5BBqsPm1nMWb+GzWLy7i5W
-	i8sLL7FaTGy6w2Jxou8DkLtrDpvFhMOb2S2W/1rHYrF711NWi5+75rFYrJ9/i82B2+PVVUeP
-	nbPusnvM7pjJ6nFixm8Wjz3zf7B69G1Zxehx/MZ2Jo/Pm+QCOKIaGG0yUhNTUosUUvOS81My
-	89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgC5VUihLzCkFCgUkFhcr6dthmhAa
-	4qZrAdMYoesbEgTXY2SABhLWMWY077AsOMBa0bH1G0sD4wqWLkZODgkBE4mTTxZA2WISF+6t
-	Z+ti5OIQEpjOKLF6Sz87hPOLUeLG3kNMIFVsAmoSX74cBkpwcIgI6Eu0tWiA1DALLGeWmH/w
-	BTNIjZBAncTNX1/BajgFvCW2tpuDhIUF/CXWvZrACmKzCKhKLH/TD1bOK2ArMWvlTEYIW1Di
-	x+R7YAcxC2hJbN7WxAphy0tsXvOWGWSkhIC6xKO/uiBhEQEjiT+9l9khSkQk9r14xziBUWgW
-	kkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEJ5dn0jsYVzVYHGIU
-	4GBU4uHdUOwbJMSaWFZcmXuIUYKDWUmE9/QnoBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJLiSbn
-	AxNfXkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwavPnKC5O
-	15HiMr+YVmva65ByeDeX+2x7lgkOtUEKa7qmPTokumSbTNincOmHyxcp8VryeX2Oy7a+u/BZ
-	aHVFplR+SLf7gikSBxrLfG83iU4LEw/I0FvVuyRpnp5qB99aPgNGM+Gu9qa3e6/GTdJY+aTG
-	rczs4tNlvr319t/mvPbQ2S1QPU+JpTgj0VCLuag4EQAbS6PacgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 3 Oct 2013 19:54:51 -0400
+Date: Fri, 4 Oct 2013 00:54:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sudeep Dutt <sudeep.dutt@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>, Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Message-ID: <20131003235419.GG27287@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y/IXGmCbwaJEfeoX"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Build failure after merge of the char-misc tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 04, 2013 8:21 AM, Andrew Morton wrote:
-> On Fri, 27 Sep 2013 12:59:28 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
-> 
-> > Remove Richard Purdie as backlight subsystem maintainer, since he
-> > is not responding for a few years.
-> 
-> It's nice to give a person a ./CREDITS entry when we remove them from
-> ./MAINTAINERS.
 
-However, Richard Purdie still remains as maintainers of other two entries
-as below:
-In this case, is it still necessary give him a ./CREDITS entry?
+--Y/IXGmCbwaJEfeoX
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ARM/CORGI MACHINE SUPPORT
-M:      Richard Purdie <rpurdie@rpsys.net>
+After merging the char-misc tree into -next an x86 allmodconfig build fails
+with:
 
-LED SUBSYSTEM
-M:      Bryan Wu <cooloney@gmail.com>
-M:      Richard Purdie <rpurdie@rpsys.net>
+drivers/misc/mic/host/mic_main.c: In function =E2=80=98mic_probe=E2=80=99:
+drivers/misc/mic/host/mic_main.c:320:3: error: too many arguments to functi=
+on =E2=80=98sysfs_get_dirent=E2=80=99
+   NULL, "state");
+   ^
+In file included from include/linux/kobject.h:21:0,
+                 from include/linux/module.h:16,
+                 from drivers/misc/mic/host/mic_main.c:26:
+include/linux/sysfs.h:465:1: note: declared here
+ sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char
+*name)
+ ^
+make[4]: *** [drivers/misc/mic/host/mic_main.o] Error 1
 
-Best regards,
-Jingoo Han
+caused by an interaction between the addition of the Intel MIC host
+driver and commit 388975cccaaf1 (sysfs: clean up sysfs_get_dirent())
+=66rom the driver-current tree.
 
+I've applied the patch below and can carry it for the time being.
+
+=46rom abbabb4580f45accf74f95aed6fe35b26ae8d009 Mon Sep 17 00:00:00 2001
+=46rom: Mark Brown <broonie@linaro.org>
+Date: Fri, 4 Oct 2013 00:53:01 +0100
+Subject: [PATCH] misc: mic: Update for sysfs_get_dirent() cleanups
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/misc/mic/host/mic_main.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_m=
+ain.c
+index ca06aa9..50c2ea3 100644
+--- a/drivers/misc/mic/host/mic_main.c
++++ b/drivers/misc/mic/host/mic_main.c
+@@ -316,8 +316,7 @@ static int mic_probe(struct pci_dev *pdev,
+ 			"device_create_with_groups failed rc %d\n", rc);
+ 		goto smpt_uninit;
+ 	}
+-	mdev->state_sysfs =3D sysfs_get_dirent(mdev->sdev->kobj.sd,
+-		NULL, "state");
++	mdev->state_sysfs =3D sysfs_get_dirent(mdev->sdev->kobj.sd, "state");
+ 	if (!mdev->state_sysfs) {
+ 		rc =3D -ENODEV;
+ 		dev_err(&pdev->dev, "sysfs_get_dirent failed rc %d\n", rc);
+--=20
+1.8.4.rc3
+
+
+--Y/IXGmCbwaJEfeoX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTgOoAAoJELSic+t+oim9pu4P/A81KazEwflTp2vj009woy6O
+/VcefakTqw7aMzolJCO+yV8hLe4LFX6en/jvGHsg38EksyM+Qa1pBRVkxOlDWQjd
+NMQ0ATUGhte+0tmhBaHZAKKO30LsvjkzRF4QjpLX//7ljFbUUZae/YIjEkjwG6E4
+AbuinSVrBUQxEIk0imfRrGyEZicDSZgp+KouJ02VEDnAU8i8mE//eo2uJ/YrPgo7
+z0uGVcdTxBYCRXdtiilZgUsVuk+gAbxnFMTIEXpBGJv64qIrn+45WiCxCpBdyDLy
+j2p1gWiZ0NnvLcTgloF5g5W26tIGKHneqdiZdjqU+2K6wbyJBwgwr8wI6YVy0zZ+
+hPXiEri2qlhdGgXWf9EZKL2m5WE23Ldu0R2nH/SalytFlSSy/PboOXGh/Wew/TEd
+hnjfRTvryDpo/MLhsN7MSbjyzYOF1hBp+CBZN7oEngRlVSwy43vdreh5OoUvZ6Tx
+YxWxwcRODklKNW/R1WjmMWGTCchju22AlTAx+W3NzlMViEU+fPDWSIZB8POgul7Z
+XgTIYNKfTJHh4A/jRRCeGsmjUdE+kO6Uq9OWg4Cb9VDKtFsvLK4NNEcXi2JOjBRn
+Zr83t2amGjG9s93LIepPPlsOCReUp8qP0Wx20x+NjQ0nDoH+86mlOjXrvrA4NyWy
+S199uDL8ZP13uH/6YFd0
+=K33k
+-----END PGP SIGNATURE-----
+
+--Y/IXGmCbwaJEfeoX--
