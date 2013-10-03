@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab3JCUaR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:30:17 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39294 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360Ab3JCUaP (ORCPT
+	id S1755444Ab3JCUc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:32:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57651 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab3JCUc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:30:15 -0400
-Date: Thu, 3 Oct 2013 16:19:35 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2013-10-03
-Message-ID: <20131003201935.GF3142@tuxdriver.com>
-References: <20131003174524.GA22728@joana>
+	Thu, 3 Oct 2013 16:32:27 -0400
+Date: Thu, 3 Oct 2013 13:32:26 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Christoffer Dall <christoffer.dall@linaro.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+Message-ID: <20131003203226.GB27336@kroah.com>
+References: <1380738758.12932.43.camel@snotra.buserror.net>
+ <20131002184330.GC5108@cbox>
+ <20131002203735.GA10871@kroah.com>
+ <1380748121.12932.89.camel@snotra.buserror.net>
+ <20131002211631.GA11914@kroah.com>
+ <1380749715.12932.109.camel@snotra.buserror.net>
+ <20131002234009.GA27714@kroah.com>
+ <1380825207.12932.151.camel@snotra.buserror.net>
+ <20131003185434.GA26123@kroah.com>
+ <1380827494.12932.161.camel@snotra.buserror.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003174524.GA22728@joana>
+In-Reply-To: <1380827494.12932.161.camel@snotra.buserror.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 02:45:24PM -0300, Gustavo Padovan wrote:
-> Hi John,
+On Thu, Oct 03, 2013 at 02:11:34PM -0500, Scott Wood wrote:
+> On Thu, 2013-10-03 at 11:54 -0700, gregkh@linuxfoundation.org wrote:
+> > On Thu, Oct 03, 2013 at 01:33:27PM -0500, Scott Wood wrote:
+> > > What it looks like we do still want from the driver core is the ability
+> > > for a driver to say that it should not be bound to a device except via
+> > > explicit sysfs bind,
+> > 
+> > You can do that today by not providing any device ids in your driver
+> > structure, relying on the dynamic ids the driver core creates.
 > 
-> A series of patches for 3.12. The big work here is from Marcel and Johan. They
-> did a lot of work in the L2CAP, HCI and MGMT layers. The most important ones
-> are the addition of a new MGMT command to enable/disable LE advertisement and
-> the introduction of the HCI user channel to allow applications to get directly
-> and exclusive access to Bluetooth devices.
-> 
-> Please pull, or let me know of any issues. Thanks!
-> 
-> 	Gustavo
-> 
-> --
-> The following changes since commit f4e1a4d3ecbb9e42bdf8e7869ee8a4ebfa27fb20:
-> 
->   rt2800: change initialization sequence to fix system freeze (2013-09-09 14:44:34 -0400)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
-> 
-> for you to fetch changes up to 4f3e219d95a3c31b916dcd5e2631c4e440736f79:
-> 
->   Bluetooth: Only one command per L2CAP LE signalling is supported (2013-10-03 16:09:59 +0300)
+> I'm not sure what you mean by dynamic ids,
 
-Pulling now...
+The "new_id" file in sysfs for a driver.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> but if the driver doesn't provide any match data, then
+> driver_match_device() will return 0 and bind_store() will fail.
+
+bind/unbind in sysfs can override this, I think, maybe it needs to be
+combined with the new_id file to work properly, it's been a long time
+since I last looked at that code path.
+
+> > > and the ability for a user to say that a device should not be bound to
+> > > a driver except via explicit sysfs bind.
+> > 
+> > That's not going to happen, as how can the kernel know a specific device
+> > is going to want this, before it asks the drivers about it?
+> 
+> This would normally be set by the user prior to unbinding from a
+> different driver, though it would also be nice to be able to set it at
+> boot time (e.g. via the kernel command line).
+
+Do that for your driver then, if you really want this, but it's not
+going into the driver core, sorry.  It should never be parsing kernel
+command lines, nor should you.
+
+> > Or, just don't ever create a driver that matches that device, then rely
+> > on userspace to do the binding explicitly.
+> 
+> That breaks the normal use case where you want the device to be bound to
+> the normal driver without doing anything special.  And again,
+> driver_match_device() will cause the bind to fail.
+
+So, you are asking for something that really is impossible from what I
+can tell.  Please figure out _exactly_ the semantics of what you want,
+as I'm totally confused and am giving up on this thread without seeing a
+patch anywhere.
+
+greg "back to patch review" k-h
