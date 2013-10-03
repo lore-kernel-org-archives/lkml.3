@@ -1,48 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab3JCVP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 17:15:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58151 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab3JCVPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 17:15:25 -0400
-Date: Thu, 3 Oct 2013 14:15:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Stephen Warren <swarren@nvidia.com>, Jens Axboe <axboe@kernel.dk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v3 1/2] init/do_mounts.c: ignore final \n in
- name_to_dev_t
-Message-Id: <20131003141523.8b60ab988799af7e2b2c338b@linux-foundation.org>
-In-Reply-To: <1380834638-24035-2-git-send-email-sebastian.capella@linaro.org>
-References: <1380834638-24035-1-git-send-email-sebastian.capella@linaro.org>
-	<1380834638-24035-2-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755820Ab3JCVR0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 17:17:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755566Ab3JCVRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 17:17:25 -0400
+Date: Thu, 3 Oct 2013 23:10:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131003211009.GA4127@redhat.com>
+References: <20131002145655.361606532@infradead.org> <20131002150518.675931976@infradead.org> <20131003164117.GD5790@linux.vnet.ibm.com> <20131003184001.GM28601@twins.programming.kicks-ass.net> <20131003184719.GA11996@redhat.com> <20131003192135.GR5790@linux.vnet.ibm.com> <20131003193206.GA17796@redhat.com> <20131003193319.GB17796@redhat.com> <20131003195026.GT5790@linux.vnet.ibm.com> <20131003200002.GA23768@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003200002.GA23768@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 Oct 2013 14:10:37 -0700 Sebastian Capella <sebastian.capella@linaro.org> wrote:
+On 10/03, Oleg Nesterov wrote:
+>
+> So unless Peter objects I'll write the changelogs (always nontrivial task),
+> test, and send these 2 patches + "add ops->barr() / rcu_sync_wait_for_cb"
+> tomorrow.
 
-> Enhance name_to_dev_t to handle trailing newline characters
-> on device paths.  Some inputs to name_to_dev_t may come from
-> userspace where oftentimes a '\n' is appended to the path.
-> Added const to the name buffer in both the function
-> declaration and the prototype to reflect input buffer
-> handling.
-> 
-> By handling trailing newlines in name_to_dev_t, userspace
-> buffers may be directly passed to name_to_dev_t without
-> modification.
+And, can't resist, probably another patch below (incomplete, needs the
+obvious change in cpu.c and the new trivial __complete_locked() helper).
 
-We have lib/string.c:strim() - perhaps this patch would be
-neater if it were to use it?
+Hmm. But when I look at wait_for_completion() I think it is buggy. Will
+try to send the fix tomorrow.
+
+Oleg.
+
+rcusync: introduce rcu_sync_struct->exclusive mode
+
+CHANGELOG.
+---
+
+diff --git a/include/linux/rcusync.h b/include/linux/rcusync.h
+index ab787c1..265875c 100644
+--- a/include/linux/rcusync.h
++++ b/include/linux/rcusync.h
+@@ -1,8 +1,8 @@
+ #ifndef _LINUX_RCUSYNC_H_
+ #define _LINUX_RCUSYNC_H_
+ 
+-#include <linux/wait.h>
+ #include <linux/rcupdate.h>
++#include <linux/completion.h>
+ 
+ struct rcu_sync_ops {
+ 	void (*sync)(void);
+@@ -15,11 +15,12 @@ struct rcu_sync_ops {
+ struct rcu_sync_struct {
+ 	int			gp_state;
+ 	int			gp_count;
+-	wait_queue_head_t	gp_wait;
++	struct completion	gp_comp;
+ 
+ 	int			cb_state;
+ 	struct rcu_head		cb_head;
+ 
++	bool			exclusive;
+ 	struct rcu_sync_ops	*ops;
+ };
+ 
+@@ -33,31 +34,33 @@ static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
+ 
+ enum rcu_sync_type { RCU_SYNC, RCU_SCHED_SYNC, RCU_BH_SYNC };
+ 
+-extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
++extern void rcu_sync_init(struct rcu_sync_struct *,
++				enum rcu_sync_type, bool excl);
+ extern void rcu_sync_enter(struct rcu_sync_struct *);
+ extern void rcu_sync_exit(struct rcu_sync_struct *);
+ 
+ extern struct rcu_sync_ops rcu_sync_ops_array[];
+ 
+-#define __RCU_SYNC_INITIALIZER(name, type) {				\
++#define __RCU_SYNC_INITIALIZER(name, type, excl) {			\
+ 		.gp_state = 0,						\
+ 		.gp_count = 0,						\
+-		.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),	\
++		.gp_comp = COMPLETION_INITIALIZER(name.gp_comp),	\
+ 		.cb_state = 0,						\
++		.exclusive = excl,					\
+ 		.ops = rcu_sync_ops_array + (type),			\
+ 	}
+ 
+-#define	__DEFINE_RCU_SYNC(name, type)	\
+-	struct rcu_sync_struct name = __RCU_SYNC_INITIALIZER(name, type)
++#define	__DEFINE_RCU_SYNC(name, type, excl)	\
++	struct rcu_sync_struct name = __RCU_SYNC_INITIALIZER(name, type, excl)
+ 
+-#define DEFINE_RCU_SYNC(name)		\
+-	__DEFINE_RCU_SYNC(name, RCU_SYNC)
++#define DEFINE_RCU_SYNC(name, excl)		\
++	__DEFINE_RCU_SYNC(name, RCU_SYNC, excl)
+ 
+-#define DEFINE_RCU_SCHED_SYNC(name)	\
+-	__DEFINE_RCU_SYNC(name, RCU_SCHED_SYNC)
++#define DEFINE_RCU_SCHED_SYNC(name, excl)	\
++	__DEFINE_RCU_SYNC(name, RCU_SCHED_SYNC, excl)
+ 
+-#define DEFINE_RCU_BH_SYNC(name)	\
+-	__DEFINE_RCU_SYNC(name, RCU_BH_SYNC)
++#define DEFINE_RCU_BH_SYNC(name, excl)		\
++	__DEFINE_RCU_SYNC(name, RCU_BH_SYNC, excl)
+ 
+ #endif /* _LINUX_RCUSYNC_H_ */
+ 
+diff --git a/kernel/rcusync.c b/kernel/rcusync.c
+index 21cde9b..d8068df 100644
+--- a/kernel/rcusync.c
++++ b/kernel/rcusync.c
+@@ -4,7 +4,7 @@
+ enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
+ enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
+ 
+-#define	rss_lock	gp_wait.lock
++#define	rss_lock	gp_comp.wait.lock
+ 
+ #ifdef CONFIG_PROVE_RCU
+ #define __INIT_HELD(func)	.held = func,
+@@ -30,11 +30,13 @@ struct rcu_sync_ops rcu_sync_ops_array[] = {
+ 	},
+ };
+ 
+-void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
++void rcu_sync_init(struct rcu_sync_struct *rss,
++			enum rcu_sync_type type, bool excl)
+ {
+ 	memset(rss, 0, sizeof(*rss));
+-	init_waitqueue_head(&rss->gp_wait);
++	init_completion(&rss->gp_comp);
+ 	rss->ops = rcu_sync_ops_array + type;
++	rss->exclusive = excl;
+ }
+ 
+ void rcu_sync_enter(struct rcu_sync_struct *rss)
+@@ -53,9 +55,13 @@ void rcu_sync_enter(struct rcu_sync_struct *rss)
+ 	if (need_sync) {
+ 		rss->ops->sync();
+ 		rss->gp_state = GP_PASSED;
+-		wake_up_all(&rss->gp_wait);
++		if (!rss->exclusive)
++			wake_up_all(&rss->gp_comp.wait);
+ 	} else if (need_wait) {
+-		wait_event(rss->gp_wait, rss->gp_state == GP_PASSED);
++		if (!rss->exclusive)
++			wait_event(rss->gp_comp.wait, rss->gp_state == GP_PASSED);
++		else
++			wait_for_completion(&rss->gp_comp);
+ 	} else {
+ 		/*
+ 		 * Possible when there's a pending CB from a rcu_sync_exit().
+@@ -110,6 +116,8 @@ void rcu_sync_exit(struct rcu_sync_struct *rss)
+ 		} else if (rss->cb_state == CB_PENDING) {
+ 			rss->cb_state = CB_REPLAY;
+ 		}
++	} else if (rss->exclusive) {
++		__complete_locked(&rss->gp_comp);
+ 	}
+ 	spin_unlock_irq(&rss->rss_lock);
+ }
+
