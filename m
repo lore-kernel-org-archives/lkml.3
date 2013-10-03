@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3JCEPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47035 "EHLO
+	id S1757650Ab3JCFXE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:23:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab3JCEPQ (ORCPT
+	with ESMTP id S1754350Ab3JCEPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:16 -0400
+	Thu, 3 Oct 2013 00:15:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 51/52] ALSA: compress: Fix compress device unregister.
-Date: Wed,  2 Oct 2013 21:06:09 -0700
-Message-Id: <20131003040525.719610740@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 49/52] ARM: mxs: stub out mxs_pm_init for !CONFIG_PM
+Date: Wed,  2 Oct 2013 21:06:07 -0700
+Message-Id: <20131003040525.582962146@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -27,34 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
+commit 7a9caf59f60e55a8caf96f856713bd0ef0cc25a7 upstream.
 
-snd_unregister_device() should return the device type and not stream
-direction.
+When building a kernel without CONFIG_PM, we get a link
+error from referencing mxs_pm_init in the machine
+descriptor. This defines a macro to NULL for that case.
 
-Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Tested-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/compress_offload.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-mxs/pm.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -837,7 +837,8 @@ static int snd_compress_dev_disconnect(s
- 	struct snd_compr *compr;
+--- a/arch/arm/mach-mxs/pm.h
++++ b/arch/arm/mach-mxs/pm.h
+@@ -9,6 +9,10 @@
+ #ifndef __ARCH_MXS_PM_H
+ #define __ARCH_MXS_PM_H
  
- 	compr = device->device_data;
--	snd_unregister_device(compr->direction, compr->card, compr->device);
-+	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
-+		compr->device);
- 	return 0;
- }
++#ifdef CONFIG_PM
+ void mxs_pm_init(void);
++#else
++#define mxs_pm_init NULL
++#endif
  
+ #endif
 
 
