@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab3JCQJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:09:17 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:46986 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab3JCQJP (ORCPT
+	id S1754829Ab3JCQLJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:11:09 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:34570 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab3JCQLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:09:15 -0400
-MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <524D925A.8050402@parallels.com>
-References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru>
-	<20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru>
-	<20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu>
-	<524D70FE.5000701@parallels.com>
-	<20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu>
-	<524D925A.8050402@parallels.com>
-Date: Thu, 3 Oct 2013 18:09:14 +0200
-Message-ID: <CAJfpeguzpFcZnZV7nfbeETRKcu9zn1AA--N6cOA2qF+zMgEANA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] fuse: writepages: crop secondary requests
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Oct 2013 12:11:06 -0400
+Date: Thu, 3 Oct 2013 19:11:00 +0300
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 51/77] mthca: Update MSI/MSI-X interrupts enablement
+ code
+Message-ID: <20131003191100.3e3e3bfd@jpm-OptiPlex-GX620>
+In-Reply-To: <9d424912ef78993dc75e2af5006cd12913e9e7e7.1380703263.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
+	<9d424912ef78993dc75e2af5006cd12913e9e7e7.1380703263.git.agordeev@redhat.com>
+Organization: Mellanox
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 5:50 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
-> On 10/03/2013 07:14 PM, Miklos Szeredi wrote:
->>
->> On Thu, Oct 03, 2013 at 05:28:30PM +0400, Maxim Patlasov wrote:
->>
->>> 1. There is an in-flight primary request with a chain of secondary ones.
->>> 2. User calls ftruncate(2) to extend file; fuse_set_nowrite() makes
->>> fi->writectr negative and starts waiting for completion of that
->>> in-flight request
->>> 3. Userspace fuse daemon ACKs the request and fuse_writepage_end()
->>> is called; it calls __fuse_flush_writepages(), but the latter does
->>> nothing because fi->writectr < 0
->>> 4. fuse_do_setattr() proceeds extending i_size and calling
->>> __fuse_release_nowrite(). But now new (increased) i_size will be
->>> used as 'crop' arg of __fuse_flush_writepages()
->>>
->>> stale data can leak to the server.
->>
->> So, lets do this then: skip fuse_flush_writepages() and call
->> fuse_send_writepage() directly.  It will ignore the NOWRITE logic, but
->> that's
->> okay, this happens rarely and cannot happen more than once in a row.
->>
->> Does this look good?
->
->
-> Yes, but let's at least add a comment explaining why it's safe. There are
-> three different cases and what you write above explains only one of them:
->
-> 1st case (trivial): there are no concurrent activities using
-> fuse_set/release_nowrite. Then we're on safe side because
-> fuse_flush_writepages() would call fuse_send_writepage() anyway.
-> 2nd case: someone called fuse_set_nowrite and it is waiting now for
-> completion of all in-flight requests. Here what you wrote about "happening
-> rarely and no more than once" is applicable.
-> 3rd case: someone (e.g. fuse_do_setattr()) is in the middle of
-> fuse_set_nowrite..fuse_release_nowrite section. The fact that
-> fuse_set_nowrite returned implies that all in-flight requests were completed
-> along with all its secondary requests (because we increment writectr for a
-> secondry before decrementing it for the primary -- that's how
-> fuse_writepage_end is implemeted). Further requests are blocked by negative
-> writectr. Hence there cannot be any in-flight requests and no invocations of
-> fuse_writepage_end while we're in fuse_set_nowrite..fuse_release_nowrite
-> section.
->
-> It looks obvious now, but I'm not sure we'll able to recollect it later.
+On Wed,  2 Oct 2013 12:49:07 +0200
+Alexander Gordeev <agordeev@redhat.com> wrote:
 
-Added your analysis as a comment and all patches pushed to writepages.v2.
+> Subject: [PATCH RFC 51/77] mthca: Update MSI/MSI-X interrupts
+> enablement code Date: Wed,  2 Oct 2013 12:49:07 +0200
+> Sender: linux-rdma-owner@vger.kernel.org
+> X-Mailer: git-send-email 1.7.7.6
+> 
+> As result of recent re-design of the MSI/MSI-X interrupts enabling
+> pattern this driver has to be updated to use the new technique to
+> obtain a optimal number of MSI/MSI-X interrupts required.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
 
->> Can you actually trigger this path with your testing?
->
->
-> No.
+ACK.
 
-Hmm, did you do any testing with the wait-for-page-writeback disabled
-in fuse_mkwrite()?
-
-Thanks,
-Miklos
+-Jack
