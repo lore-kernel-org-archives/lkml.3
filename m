@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab3JCWwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 18:52:01 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:29054 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab3JCWv6 (ORCPT
+	id S1755783Ab3JCWzC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 18:55:02 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:58725 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab3JCWy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 18:51:58 -0400
-Message-ID: <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, <linux-pci@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux390@de.ibm.com>, <linux-s390@vger.kernel.org>, <x86@kernel.org>,
-        <linux-ide@vger.kernel.org>, <iss_storagedev@hp.com>,
-        <linux-nvme@lists.infradead.org>, <linux-rdma@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <e1000-devel@lists.sourceforge.net>,
-        <linux-driver@qlogic.com>,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, <linux-scsi@vger.kernel.org>
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 3 Oct 2013 23:49:45 +0100
-MIME-Version: 1.0
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20192.004
-X-TM-AS-Result: No--21.602200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Thu, 3 Oct 2013 18:54:59 -0400
+X-AuditID: cbfec37b-b7fa96d00000716e-46-524df5c2000b
+Message-id: <524DF5BF.4070305@samsung.com>
+Date: Thu, 03 Oct 2013 16:54:55 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/52] 3.10.15-stable review
+References: <20131003040522.190209641@linuxfoundation.org>
+In-reply-to: <20131003040522.190209641@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX91DX32DDJ5eEbaYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugStj/e51bAVreComn2xhbWB8x9nFyMkhIWAicfjhahYIW0ziwr31bF2MXBxCAssYJbZ+
+	7WeBcHqZJK6dXM0O4WxklFh8t4sRpIVXQEti05/FTF2MHBwsAqoS37+zgoTZBNQlPr/ewQ5i
+	CwnISTQtWc0MYosKREisXPKAFaJVUOLH5Htgm0UEjCX6z84Cq2cWOMYosbDZBMQWFtCW6Fv8
+	kQVijpVE5/o5YKs4Bawl3j7ihCi3llg5aRsjhC0vsXnNW2aIcmWJP5dPgZVLCChKbF9tNYFR
+	ZBaSxbOQdM9C0r2AkXkVo1hpcXJBcVJ6aoWRXnFibnFpXrpecn7uJkZIvFTvYLz71eYQowAH
+	oxIPr0Ctb5AQa2JZcWXuIUYJDmYlEd7Tn4BCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGFUy+b58
+	qdRJlODRfmJV8nzW/8KYhZNNeTgrFhvwyXA8CV1ldvXMQj6lYt5bViL/K9bt5D+ytExR68+0
+	dzPKLXf6etVrygsrxFzM0nqclHFmkduOY4kT7pXeCOU66VNtOG//jhe3XFMCZs2b7hH300Ew
+	dNNb9wRxc835CUXquSfke12eCRXeV2Ipzkg01GIuKk4EAF6f2Vx1AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 12:48 +0200, Alexander Gordeev wrote:
-> This series is against "next" branch in Bjorn's repo:
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
-> 
-> Currently pci_enable_msi_block() and pci_enable_msix() interfaces
-> return a error code in case of failure, 0 in case of success and a
-> positive value which indicates the number of MSI-X/MSI interrupts
-> that could have been allocated. The latter value should be passed
-> to a repeated call to the interfaces until a failure or success:
+On 10/02/2013 10:05 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.15 release.
+> There are 52 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> 
-> 	for (i = 0; i < FOO_DRIVER_MAXIMUM_NVEC; i++)
-> 		adapter->msix_entries[i].entry = i;
-> 
-> 	while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
-> 		rc = pci_enable_msix(adapter->pdev,
-> 				     adapter->msix_entries, nvec);
-> 		if (rc > 0)
-> 			nvec = rc;
-> 		else
-> 			return rc;
-> 	}
-> 
-> 	return -ENOSPC;
-> 
-> 
-> This technique proved to be confusing and error-prone. Vast share
-> of device drivers simply fail to follow the described guidelines.
-> 
-> This update converts pci_enable_msix() and pci_enable_msi_block()
-> interfaces to canonical kernel functions and makes them return a
-> error code in case of failure or 0 in case of success.
-[...]
+> Responses should be made by Sat Oct  5 04:05:08 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.15-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-I think this is fundamentally flawed: pci_msix_table_size() and
-pci_get_msi_cap() can only report the limits of the *device* (which the
-driver usually already knows), whereas MSI allocation can also be
-constrained due to *global* limits on the number of distinct IRQs.
+Patch testing: 3.10.15-rc1 applied cleanly to 3.10.14
+Compile testing: Passed
+Boot testing: Passed
+dmesg regression testing: passed. dmesgs look good. No regressions 
+compared to the previous dmesgs for this release. dmesg emerg, crit, 
+alert, err are clean. No regressions in warn.
 
-Currently pci_enable_msix() will report a positive value if it fails due
-to the global limit.  Your patch 7 removes that.  pci_enable_msi_block()
-unfortunately doesn't appear to do this.
+Test systems:
 
-It seems to me that a more useful interface would take a minimum and
-maximum number of vectors from the driver.  This wouldn't allow the
-driver to specify that it could only accept, say, any even number within
-a certain range, but you could still leave the current functions
-available for any driver that needs that.
+Samsung Series 9 900X4C Intel Corei5
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2 (cross-compile testing)
 
-Ben.
+Cross-compile tests results:
+
+alpha 	defconfig 	Passed
+arm 	defconfig 	Passed
+arm64 	defconfig 	Passed
+blackfin defconfig 	Passed
+c6x 	defconfig 	Passed
+mips 	defconfig 	Passed
+mipsel 	defconfig 	Passed
+powerpc wii_defconfig 	Passed
+sh 	defconfig 	Passed
+sparc 	defconfig 	Passed
+tile 	defconfig	Passed
+
+-- Shuah
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
