@@ -1,60 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab3JCPfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:35:38 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16350 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab3JCPff (ORCPT
+	id S1754635Ab3JCPlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:41:07 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:45249 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977Ab3JCPlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:35:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 03 Oct 2013 08:31:30 -0700
-Date: Thu, 3 Oct 2013 18:35:19 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: PLLE spread spectrum control
-Message-ID: <20131003153519.GT3973@tbergstrom-lnx.Nvidia.com>
-References: <1380209654-25458-1-git-send-email-pdeschrijver@nvidia.com>
- <524B28EA.40702@wwwdotorg.org>
- <20131003105228.GK3973@tbergstrom-lnx.Nvidia.com>
- <524D8C0B.90707@wwwdotorg.org>
+	Thu, 3 Oct 2013 11:41:05 -0400
+Date: Thu, 3 Oct 2013 16:40:58 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
+ file->f_cred
+Message-ID: <20131003154058.GA1210@dztty>
+References: <524B7999.60806@amacapital.net>
+ <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <20131002182206.GB2485@dztty>
+ <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
+ <20131002184844.GB3393@dztty>
+ <20131003061244.GC25345@gmail.com>
+ <20131003122959.GA3619@dztty>
+ <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524D8C0B.90707@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 05:23:55PM +0200, Stephen Warren wrote:
-> On 10/03/2013 04:52 AM, Peter De Schrijver wrote:
-> > On Tue, Oct 01, 2013 at 09:56:26PM +0200, Stephen Warren wrote:
-> >> On 09/26/2013 09:34 AM, Peter De Schrijver wrote:
-> >>> Add spread spectrum control for PLLE in Tegra114.
-> >>
-> >> It would be useful to have some description of the end-user-visible
-> >> benefit of this change; why is it useful?
-> > 
-> > spread spectrum clocking is a technique to reduce EMI caused by the clock
-> > signal by modulating the frequency with a low frequency signal. This should
-> > reduce interference with eg. Wifi or cellular modems on the same board.
+On Thu, Oct 03, 2013 at 04:15:43PM +0100, Andy Lutomirski wrote:
+> On Thu, Oct 3, 2013 at 1:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Thu, Oct 03, 2013 at 08:12:44AM +0200, Ingo Molnar wrote:
+> >> Now procfs might be special, as by its nature of a pseudofilesystem it's
+> >> far more atomic than other filesystems, but still IMHO it's a lot more
+> >
+> >
+> >> robust security design wise to revoke access to objects you should not
+> >> have a reference to when a security boundary is crossed, than letting
+> >> stuff leak through and sprinking all the potential cases that may leak
+> >> information with permission checks ...
+> > I agree, but those access should also be checked at the beginning, IOW
+> > during ->open(). revoke will not help if revoke is not involved at all,
+> > the task /proc entries may still be valide (no execve).
+> >
+> > Currently security boundary is crossed for example arbitrary /proc/*/stack
+> > (and others).
+> > 1) The target task does not do an execve (no revoke).
+> > 2) current task will open these files and *want* and *will* pass the fd to a
+> > more privileged process to pass the ptrace check which is done only during
+> > ->read().
 > 
-> Great. The intent of my request was for that information to be included
-> in the patch description.
+> What does this?  Or are you saying that this is a bad thing?
+I'm not sure to understand you, revoke if implemented correctly is not a
+bad thing! In the other hand, here I try to explain what if the target task
+did not execve, revoke will never be involved, file descriptors are
+still valid!
+
+
+> (And *please* don't write software that *depends* on different
+> processes having different read()/write() permissions on the *same*
+> struct file.  I've already found multiple privilege escalations based
+> on that, and I'm pretty sure I can find some more.)
+Sorry, can't follow you here! examples related to what we discuss here ?
+
+
+> >
+> >
+> >> It's also probably faster: security boundary crossings are relatively rare
+> >> slowpaths, while read()s are much more common...
+> > Hmm, These two are related? can't get rid of permission checks
+> > especially on this pseudofilesystem!
+> >
+> >
+> >> So please first get consensus on this fundamental design question before
+> >> spreading your solution to more areas.
+> > Of course, I did clean the patchset to prove that it will work, and I
+> > only implemented full protection for /proc/*/{stack,syscall,stat} other
+> > files will wait.
+> >
+> > But Ingo you can't ignore the fact that:
+> > /proc/*/{stack,syscall} are 0444 mode
+> > /proc/*/{stack,syscall} do not have ptrace_may_access() during open()
+> > /proc/*/{stack,syscall} have the ptrace_may_access() during read()
 > 
+> I think everyone agrees that this is broken.  We don't agree on the
+> fix check.  (Also, as described in my other email, your approach may
+> be really hard to get right.)
+Well, yes we don't agree perhaps on the fix, but currently there are no
+other fixes, will be happy to see other propositions! these files have
+been vulnerable for years now...
 
-Mike,
+And for the record it's not my approache. Please just read the emails
+correctly. It was proposed and suggested by Eric and perhaps Linus.
 
-Do you want a version 2 for this?
+I did an experiment with it, and found it easy without any extra
+overhead: If cred have changed do extra checkes on the original opener.
+It will let you pass file descritors if cred did not change.
 
-Cheers,
 
-Peter.
+Where is this other email that says this approach is hard?
+It's not hard, very minor change and it works. Perhaps there is a
+better solution yes, but currently it's not implemented!
+
+If you see any bug or if it's not right: then please show us an example,
+that's it.
+
+
+Thanks Andy
+
+> --Andy
+
+-- 
+Djalal Harouni
+http://opendz.org
