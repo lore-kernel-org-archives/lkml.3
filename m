@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab3JCP1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:27:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50920 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754522Ab3JCP1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:27:21 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH v3] mfd: arizona: Correct handling of device tree gpio defaults
-Date: Thu,  3 Oct 2013 16:16:01 +0100
-Message-Id: <1380813361-15400-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1754634Ab3JCP1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:27:50 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:45970 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754595Ab3JCP1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 11:27:49 -0400
+Date: Thu, 3 Oct 2013 08:27:25 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
+        Paul Mackerras <paulus@samba.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: Re: [PATCH 6/9][v5] powerpc/perf: Define big-endian version of
+ perf_mem_data_src
+Message-ID: <20131003152725.GA1383@us.ibm.com>
+References: <1380672911-12812-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1380672911-12812-7-git-send-email-sukadev@linux.vnet.ibm.com>
+ <20131003053944.GD17237@concordia>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003053944.GD17237@concordia>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100315-0320-0000-0000-0000013A514D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting GPIO defaults we are required to make a distinction
-between writing 0x0000 to the registers and leaving them untouched.
+Michael Ellerman [michael@ellerman.id.au] wrote:
+| On Tue, Oct 01, 2013 at 05:15:07PM -0700, Sukadev Bhattiprolu wrote:
+| > perf_mem_data_src is an union that is initialized via the ->val field
+| > and accessed via the bitmap fields. For this to work on big endian
+| > platforms, we also need a big-endian represenation of perf_mem_data_src.
+| > 
+| > diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+| > index ca1d90b..846f399 100644
+| > --- a/include/uapi/linux/perf_event.h
+| > +++ b/include/uapi/linux/perf_event.h
+| > @@ -19,6 +19,50 @@
+| >  #include <asm/byteorder.h>
+| >  
+| >  /*
+| > + * Kernel and userspace check for endianness in incompatible ways.
+| > + * In user space, <endian.h> defines both __BIG_ENDIAN and __LITTLE_ENDIAN
+| > + * but sets __BYTE_ORDER to one or the other. So user space uses checks are:
+| 
+| 
+| Why can't you use __BIG_ENDIAN_BITFIELD ?
 
-When we receive between 0x0000 and 0xFFFF (inclusive) from either
-Platform Data or Device Tree, we should write the provided
-configuration to the device. Conversely, when we receive >0xFFFF we
-should leave the device configuration at its default setting.
+BTW, any clues on why there are so many different ways of checking endianness ?
 
-This patch fixes a bug and ensures that configuration 0x0000 isn't
-mistakenly written when the intention was to keep the default one.
+Any standards related stuff or just evolution ?
 
-Reported-by: Heather Lomond <heather.lomond@wolfsonmicro.com>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
-
-Hi,
-
-Sorry, your explanation is certainly fine with me.
-
-Thanks,
-Charles
-
- drivers/mfd/arizona-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 5ac3aa4..e13355b 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -540,7 +540,7 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
- 		for (i = 0; i < ARRAY_SIZE(arizona->pdata.gpio_defaults); i++) {
- 			if (arizona->pdata.gpio_defaults[i] > 0xffff)
- 				arizona->pdata.gpio_defaults[i] = 0;
--			if (arizona->pdata.gpio_defaults[i] == 0)
-+			else if (arizona->pdata.gpio_defaults[i] == 0)
- 				arizona->pdata.gpio_defaults[i] = 0x10000;
- 		}
- 	} else {
--- 
-1.7.2.5
+Sukadev
 
