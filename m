@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab3JCEGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:06:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46749 "EHLO
+	id S1754309Ab3JCEGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:06:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46737 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab3JCEGO (ORCPT
+	with ESMTP id S1754277Ab3JCEF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:06:14 -0400
+	Thu, 3 Oct 2013 00:05:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Tom Herbert <therbert@google.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 13/13] splice: fix racy pipe->buffers uses
-Date: Wed,  2 Oct 2013 21:04:38 -0700
-Message-Id: <20131003040401.668115834@linuxfoundation.org>
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        Pravin B Shelar <pshelar@nicira.com>, Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 11/13] mm: fix aio performance regression for database caused by THP
+Date: Wed,  2 Oct 2013 21:04:36 -0700
+Message-Id: <20131003040401.533664631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040400.753642257@linuxfoundation.org>
 References: <20131003040400.753642257@linuxfoundation.org>
@@ -28,263 +33,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Khalid Aziz <khalid.aziz@oracle.com>
 
-commit 047fe3605235888f3ebcda0c728cb31937eadfe6 upstream.
+commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
 
-Dave Jones reported a kernel BUG at mm/slub.c:3474! triggered
-by splice_shrink_spd() called from vmsplice_to_pipe()
+This patch needed to be backported due to changes to mm/swap.c some time
+after 3.6 kernel.
 
-commit 35f3d14dbbc5 (pipe: add support for shrinking and growing pipes)
-added capability to adjust pipe->buffers.
+I am working with a tool that simulates oracle database I/O workload.
+This tool (orion to be specific -
+<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
+does aio into these pages from flash disks using various common block
+sizes used by database.  I am looking at performance with two of the most
+common block sizes - 1M and 64K.  aio performance with these two block
+sizes plunged after Transparent HugePages was introduced in the kernel.
+Here are performance numbers:
 
-Problem is some paths don't hold pipe mutex and assume pipe->buffers
-doesn't change for their duration.
+		pre-THP		2.6.39		3.11-rc5
+1M read		8384 MB/s	5629 MB/s	6501 MB/s
+64K read	7867 MB/s	4576 MB/s	4251 MB/s
 
-Fix this by adding nr_pages_max field in struct splice_pipe_desc, and
-use it in place of pipe->buffers where appropriate.
+I have narrowed the performance impact down to the overheads introduced by
+THP in __get_page_tail() and put_compound_page() routines.  perf top shows
+>40% of cycles being spent in these two routines.  Every time direct I/O
+to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
+the pages and calls put_page() when I/O completes to put the reference
+away.  THP introduced significant amount of locking overhead to get_page()
+and put_page() when dealing with compound pages because hugepages can be
+split underneath get_page() and put_page().  It added this overhead
+irrespective of whether it is dealing with hugetlbfs pages or transparent
+hugepages.  This resulted in 20%-45% drop in aio performance when using
+hugetlbfs pages.
 
-splice_shrink_spd() loses its struct pipe_inode_info argument.
+Since hugetlbfs pages can not be split, there is no reason to go through
+all the locking overhead for these pages from what I can see.  I added
+code to __get_page_tail() and put_compound_page() to bypass all the
+locking code when working with hugetlbfs pages.  This improved performance
+significantly.  Performance numbers with this patch:
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Tom Herbert <therbert@google.com>
-Cc: stable <stable@vger.kernel.org> # 2.6.35
-Tested-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+		pre-THP		3.11-rc5	3.11-rc5 + Patch
+1M read		8384 MB/s	6501 MB/s	8371 MB/s
+64K read	7867 MB/s	4251 MB/s	6510 MB/s
+
+Performance with 64K read is still lower than what it was before THP, but
+still a 53% improvement.  It does mean there is more work to be done but I
+will take a 53% improvement for now.
+
+Please take a look at the following patch and let me know if it looks
+reasonable.
+
+[akpm@linux-foundation.org: tweak comments]
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/splice.c            |   35 ++++++++++++++++++++---------------
- include/linux/splice.h |    8 ++++----
- kernel/relay.c         |    5 +++--
- kernel/trace/trace.c   |    6 ++++--
- net/core/skbuff.c      |    3 ++-
- 5 files changed, 33 insertions(+), 24 deletions(-)
+ mm/swap.c |   65 ++++++++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 47 insertions(+), 18 deletions(-)
 
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -274,13 +274,16 @@ static void spd_release_page(struct spli
-  * Check if we need to grow the arrays holding pages and partial page
-  * descriptions.
-  */
--int splice_grow_spd(struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
-+int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
- {
--	if (pipe->buffers <= PIPE_DEF_BUFFERS)
-+	unsigned int buffers = ACCESS_ONCE(pipe->buffers);
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -41,6 +41,8 @@ static DEFINE_PER_CPU(struct pagevec[NR_
+ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+ 
++int PageHuge(struct page *page);
 +
-+	spd->nr_pages_max = buffers;
-+	if (buffers <= PIPE_DEF_BUFFERS)
- 		return 0;
- 
--	spd->pages = kmalloc(pipe->buffers * sizeof(struct page *), GFP_KERNEL);
--	spd->partial = kmalloc(pipe->buffers * sizeof(struct partial_page), GFP_KERNEL);
-+	spd->pages = kmalloc(buffers * sizeof(struct page *), GFP_KERNEL);
-+	spd->partial = kmalloc(buffers * sizeof(struct partial_page), GFP_KERNEL);
- 
- 	if (spd->pages && spd->partial)
- 		return 0;
-@@ -290,10 +293,9 @@ int splice_grow_spd(struct pipe_inode_in
- 	return -ENOMEM;
- }
- 
--void splice_shrink_spd(struct pipe_inode_info *pipe,
--		       struct splice_pipe_desc *spd)
-+void splice_shrink_spd(struct splice_pipe_desc *spd)
- {
--	if (pipe->buffers <= PIPE_DEF_BUFFERS)
-+	if (spd->nr_pages_max <= PIPE_DEF_BUFFERS)
- 		return;
- 
- 	kfree(spd->pages);
-@@ -316,6 +318,7 @@ __generic_file_splice_read(struct file *
- 	struct splice_pipe_desc spd = {
- 		.pages = pages,
- 		.partial = partial,
-+		.nr_pages_max = PIPE_DEF_BUFFERS,
- 		.flags = flags,
- 		.ops = &page_cache_pipe_buf_ops,
- 		.spd_release = spd_release_page,
-@@ -327,7 +330,7 @@ __generic_file_splice_read(struct file *
- 	index = *ppos >> PAGE_CACHE_SHIFT;
- 	loff = *ppos & ~PAGE_CACHE_MASK;
- 	req_pages = (len + loff + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
--	nr_pages = min(req_pages, pipe->buffers);
-+	nr_pages = min(req_pages, spd.nr_pages_max);
- 
- 	/*
- 	 * Lookup the (hopefully) full range of pages we need.
-@@ -498,7 +501,7 @@ fill_it:
- 	if (spd.nr_pages)
- 		error = splice_to_pipe(pipe, &spd);
- 
--	splice_shrink_spd(pipe, &spd);
-+	splice_shrink_spd(&spd);
- 	return error;
- }
- 
-@@ -599,6 +602,7 @@ ssize_t default_file_splice_read(struct
- 	struct splice_pipe_desc spd = {
- 		.pages = pages,
- 		.partial = partial,
-+		.nr_pages_max = PIPE_DEF_BUFFERS,
- 		.flags = flags,
- 		.ops = &default_pipe_buf_ops,
- 		.spd_release = spd_release_page,
-@@ -609,8 +613,8 @@ ssize_t default_file_splice_read(struct
- 
- 	res = -ENOMEM;
- 	vec = __vec;
--	if (pipe->buffers > PIPE_DEF_BUFFERS) {
--		vec = kmalloc(pipe->buffers * sizeof(struct iovec), GFP_KERNEL);
-+	if (spd.nr_pages_max > PIPE_DEF_BUFFERS) {
-+		vec = kmalloc(spd.nr_pages_max * sizeof(struct iovec), GFP_KERNEL);
- 		if (!vec)
- 			goto shrink_ret;
- 	}
-@@ -618,7 +622,7 @@ ssize_t default_file_splice_read(struct
- 	offset = *ppos & ~PAGE_CACHE_MASK;
- 	nr_pages = (len + offset + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
- 
--	for (i = 0; i < nr_pages && i < pipe->buffers && len; i++) {
-+	for (i = 0; i < nr_pages && i < spd.nr_pages_max && len; i++) {
- 		struct page *page;
- 
- 		page = alloc_page(GFP_USER);
-@@ -666,7 +670,7 @@ ssize_t default_file_splice_read(struct
- shrink_ret:
- 	if (vec != __vec)
- 		kfree(vec);
--	splice_shrink_spd(pipe, &spd);
-+	splice_shrink_spd(&spd);
- 	return res;
- 
- err:
-@@ -1618,6 +1622,7 @@ static long vmsplice_to_pipe(struct file
- 	struct splice_pipe_desc spd = {
- 		.pages = pages,
- 		.partial = partial,
-+		.nr_pages_max = PIPE_DEF_BUFFERS,
- 		.flags = flags,
- 		.ops = &user_page_pipe_buf_ops,
- 		.spd_release = spd_release_page,
-@@ -1633,13 +1638,13 @@ static long vmsplice_to_pipe(struct file
- 
- 	spd.nr_pages = get_iovec_page_array(iov, nr_segs, spd.pages,
- 					    spd.partial, flags & SPLICE_F_GIFT,
--					    pipe->buffers);
-+					    spd.nr_pages_max);
- 	if (spd.nr_pages <= 0)
- 		ret = spd.nr_pages;
- 	else
- 		ret = splice_to_pipe(pipe, &spd);
- 
--	splice_shrink_spd(pipe, &spd);
-+	splice_shrink_spd(&spd);
- 	return ret;
- }
- 
---- a/include/linux/splice.h
-+++ b/include/linux/splice.h
-@@ -51,7 +51,8 @@ struct partial_page {
- struct splice_pipe_desc {
- 	struct page **pages;		/* page map */
- 	struct partial_page *partial;	/* pages[] may not be contig */
--	int nr_pages;			/* number of pages in map */
-+	int nr_pages;			/* number of populated pages in map */
-+	unsigned int nr_pages_max;	/* pages[] & partial[] arrays size */
- 	unsigned int flags;		/* splice flags */
- 	const struct pipe_buf_operations *ops;/* ops associated with output pipe */
- 	void (*spd_release)(struct splice_pipe_desc *, unsigned int);
-@@ -85,8 +86,7 @@ extern ssize_t splice_direct_to_actor(st
  /*
-  * for dynamic pipe sizing
-  */
--extern int splice_grow_spd(struct pipe_inode_info *, struct splice_pipe_desc *);
--extern void splice_shrink_spd(struct pipe_inode_info *,
--				struct splice_pipe_desc *);
-+extern int splice_grow_spd(const struct pipe_inode_info *, struct splice_pipe_desc *);
-+extern void splice_shrink_spd(struct splice_pipe_desc *);
+  * This path almost never happens for VM activity - pages are normally
+  * freed via pagevecs.  But it gets used by networking.
+@@ -69,13 +71,26 @@ static void __put_compound_page(struct p
+ {
+ 	compound_page_dtor *dtor;
  
- #endif
---- a/kernel/relay.c
-+++ b/kernel/relay.c
-@@ -1235,6 +1235,7 @@ static ssize_t subbuf_splice_actor(struc
- 	struct splice_pipe_desc spd = {
- 		.pages = pages,
- 		.nr_pages = 0,
-+		.nr_pages_max = PIPE_DEF_BUFFERS,
- 		.partial = partial,
- 		.flags = flags,
- 		.ops = &relay_pipe_buf_ops,
-@@ -1302,8 +1303,8 @@ static ssize_t subbuf_splice_actor(struc
-                 ret += padding;
- 
- out:
--	splice_shrink_spd(pipe, &spd);
--        return ret;
-+	splice_shrink_spd(&spd);
-+	return ret;
+-	__page_cache_release(page);
++	if (!PageHuge(page))
++		__page_cache_release(page);
+ 	dtor = get_compound_page_dtor(page);
+ 	(*dtor)(page);
  }
  
- static ssize_t relay_file_splice_read(struct file *in,
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3364,6 +3364,7 @@ static ssize_t tracing_splice_read_pipe(
- 		.pages		= pages_def,
- 		.partial	= partial_def,
- 		.nr_pages	= 0, /* This gets updated below. */
-+		.nr_pages_max	= PIPE_DEF_BUFFERS,
- 		.flags		= flags,
- 		.ops		= &tracing_pipe_buf_ops,
- 		.spd_release	= tracing_spd_release_pipe,
-@@ -3435,7 +3436,7 @@ static ssize_t tracing_splice_read_pipe(
+ static void put_compound_page(struct page *page)
+ {
++	/*
++	 * hugetlbfs pages can not be split from under us. So if this
++	 * is a hugetlbfs page, check refcount on head page and release
++	 * the page if refcount is zero.
++	 */
++	if (PageHuge(page)) {
++		page = compound_head(page);
++		if (put_page_testzero(page))
++			__put_compound_page(page);
++		return;
++	}
++
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -158,26 +173,40 @@ bool __get_page_tail(struct page *page)
+ 	 * proper PT lock that already serializes against
+ 	 * split_huge_page().
+ 	 */
+-	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
  
- 	ret = splice_to_pipe(pipe, &spd);
- out:
--	splice_shrink_spd(pipe, &spd);
-+	splice_shrink_spd(&spd);
- 	return ret;
- 
- out_err:
-@@ -3848,6 +3849,7 @@ tracing_buffers_splice_read(struct file
- 	struct splice_pipe_desc spd = {
- 		.pages		= pages_def,
- 		.partial	= partial_def,
-+		.nr_pages_max	= PIPE_DEF_BUFFERS,
- 		.flags		= flags,
- 		.ops		= &buffer_pipe_buf_ops,
- 		.spd_release	= buffer_spd_release,
-@@ -3936,7 +3938,7 @@ tracing_buffers_splice_read(struct file
+-	if (likely(page != page_head && get_page_unless_zero(page_head))) {
+-		/*
+-		 * page_head wasn't a dangling pointer but it
+-		 * may not be a head page anymore by the time
+-		 * we obtain the lock. That is ok as long as it
+-		 * can't be freed from under us.
+-		 */
+-		flags = compound_lock_irqsave(page_head);
+-		/* here __split_huge_page_refcount won't run anymore */
+-		if (likely(PageTail(page))) {
+-			__get_page_tail_foll(page, false);
+-			got = true;
++	/*
++	 * If this is a hugetlbfs page, it can not be split under
++	 * us. Simply increment counts for tail page and its head page
++	 */
++	if (PageHuge(page)) {
++		struct page *page_head;
++
++		page_head = compound_head(page);
++		atomic_inc(&page_head->_count);
++		got = true;
++	} else {
++		struct page *page_head = compound_trans_head(page);
++		unsigned long flags;
++
++		if (likely(page != page_head &&
++					get_page_unless_zero(page_head))) {
++			/*
++		 	* page_head wasn't a dangling pointer but it
++		 	* may not be a head page anymore by the time
++		 	* we obtain the lock. That is ok as long as it
++		 	* can't be freed from under us.
++		 	*/
++			flags = compound_lock_irqsave(page_head);
++			/* here __split_huge_page_refcount won't run anymore */
++			if (likely(PageTail(page))) {
++				__get_page_tail_foll(page, false);
++				got = true;
++			}
++			compound_unlock_irqrestore(page_head, flags);
++			if (unlikely(!got))
++				put_page(page_head);
+ 		}
+-		compound_unlock_irqrestore(page_head, flags);
+-		if (unlikely(!got))
+-			put_page(page_head);
  	}
- 
- 	ret = splice_to_pipe(pipe, &spd);
--	splice_shrink_spd(pipe, &spd);
-+	splice_shrink_spd(&spd);
- out:
- 	return ret;
+ 	return got;
  }
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -1535,6 +1535,7 @@ int skb_splice_bits(struct sk_buff *skb,
- 	struct splice_pipe_desc spd = {
- 		.pages = pages,
- 		.partial = partial,
-+		.nr_pages_max = MAX_SKB_FRAGS,
- 		.flags = flags,
- 		.ops = &sock_pipe_buf_ops,
- 		.spd_release = sock_spd_release,
-@@ -1581,7 +1582,7 @@ done:
- 		lock_sock(sk);
- 	}
- 
--	splice_shrink_spd(pipe, &spd);
-+	splice_shrink_spd(&spd);
- 	return ret;
- }
- 
 
 
