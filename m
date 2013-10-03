@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab3JCES4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47171 "EHLO
+	id S1756077Ab3JCETJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:19:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab3JCESx (ORCPT
+	with ESMTP id S1756009Ab3JCETF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:53 -0400
+	Thu, 3 Oct 2013 00:19:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Solomon Peachy <pizza@shaftnet.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 28/57] cw1200: Use a threaded oneshot irq handler for cw1200_spi
-Date: Wed,  2 Oct 2013 21:08:54 -0700
-Message-Id: <20131003040638.529911719@linuxfoundation.org>
+        Florian Wolter <wolly84@web.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 32/57] xhci: Fix race between ep halt and URB cancellation
+Date: Wed,  2 Oct 2013 21:08:58 -0700
+Message-Id: <20131003040638.800608740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,39 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Solomon Peachy <pizza@shaftnet.org>
+From: Florian Wolter <wolly84@web.de>
 
-commit 87421cb6010a2f6494938fbe0a95e1b096b3b7af upstream.
+commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
 
-This supercedes the older patch ("cw1200: Don't perform SPI transfers in
-interrupt context") that badly attempted to fix this problem.
+The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
+user process, because the stopped_td variable was overwritten in the
+handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
+refuse the reset and communication with device can not run over this endpoint.
+https://bugzilla.kernel.org/show_bug.cgi?id=60699
 
-This is a far simpler solution, which has the added benefit of
-actually working.
-
-Signed-off-by: Solomon Peachy <pizza@shaftnet.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Florian Wolter <wolly84@web.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/cw1200/cw1200_spi.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci-ring.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/cw1200/cw1200_spi.c
-+++ b/drivers/net/wireless/cw1200/cw1200_spi.c
-@@ -250,9 +250,10 @@ static int cw1200_spi_irq_subscribe(stru
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -857,8 +857,12 @@ remove_finished_td:
+ 		/* Otherwise ring the doorbell(s) to restart queued transfers */
+ 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ 	}
+-	ep->stopped_td = NULL;
+-	ep->stopped_trb = NULL;
++
++	/* Clear stopped_td and stopped_trb if endpoint is not halted */
++	if (!(ep->ep_state & EP_HALTED)) {
++		ep->stopped_td = NULL;
++		ep->stopped_trb = NULL;
++	}
  
- 	pr_debug("SW IRQ subscribe\n");
- 
--	ret = request_any_context_irq(self->func->irq, cw1200_spi_irq_handler,
--				      IRQF_TRIGGER_HIGH,
--				      "cw1200_wlan_irq", self);
-+	ret = request_threaded_irq(self->func->irq, NULL,
-+				   cw1200_spi_irq_handler,
-+				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-+				   "cw1200_wlan_irq", self);
- 	if (WARN_ON(ret < 0))
- 		goto exit;
- 
+ 	/*
+ 	 * Drop the lock and complete the URBs in the cancelled TD list.
 
 
