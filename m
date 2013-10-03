@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab3JCP6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:58:31 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37853 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3JCP62 (ORCPT
+	id S1755215Ab3JCP6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:58:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55772 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab3JCP6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:58:28 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, daniel.lezcano@linaro.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 13/16] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
-Date: Thu,  3 Oct 2013 21:26:52 +0530
-Message-Id: <61fdca8bd1502d7319bfaad29583013f0fbec6b4.1380815504.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1380815504.git.viresh.kumar@linaro.org>
-References: <cover.1380815504.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1380815504.git.viresh.kumar@linaro.org>
-References: <cover.1380815504.git.viresh.kumar@linaro.org>
+	Thu, 3 Oct 2013 11:58:39 -0400
+Date: Thu, 3 Oct 2013 16:58:16 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Timur Tabi <timur@tabi.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20131003155816.GU27287@sirena.org.uk>
+References: <1380773722-1295-1-git-send-email-linux@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dBMBt2YGaTHbdllf"
+Content-Disposition: inline
+In-Reply-To: <1380773722-1295-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: fsl_ssi: Fix irq_of_parse_and_map() return value
+ check
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loop for states is currently present on callers side and so is replicated at
-several places. It would be better to move that inside cpuidle_free_state_kobj()
-instead.
 
-This patch does it.
+--dBMBt2YGaTHbdllf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+On Wed, Oct 02, 2013 at 09:15:22PM -0700, Guenter Roeck wrote:
+> irq_of_parse_and_map() returns 0 on error, not NO_IRQ.
 
-diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-index e918b6d..ade31a9 100644
---- a/drivers/cpuidle/sysfs.c
-+++ b/drivers/cpuidle/sysfs.c
-@@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
- 	.release = cpuidle_state_sysfs_release,
- };
- 
--static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
-+static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
-+		int count)
- {
--	kobject_put(&device->kobjs[i]->kobj);
--	wait_for_completion(&device->kobjs[i]->kobj_unregister);
--	kfree(device->kobjs[i]);
--	device->kobjs[i] = NULL;
-+	int i;
-+
-+	for (i = 0; i < count; i++) {
-+		kobject_put(&device->kobjs[i]->kobj);
-+		wait_for_completion(&device->kobjs[i]->kobj_unregister);
-+		kfree(device->kobjs[i]);
-+		device->kobjs[i] = NULL;
-+	}
- }
- 
- /**
-@@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
- 	return 0;
- 
- error_state:
--	for (i = i - 1; i >= 0; i--)
--		cpuidle_free_state_kobj(device, i);
-+	cpuidle_free_state_kobj(device, i);
- 	return ret;
- }
- 
-@@ -430,10 +434,7 @@ error_state:
-  */
- static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
- {
--	int i;
--
--	for (i = 0; i < device->state_count; i++)
--		cpuidle_free_state_kobj(device, i);
-+	cpuidle_free_state_kobj(device, device->state_count);
- }
- 
- #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
--- 
-1.7.12.rc2.18.g61b472e
+Applied, thanks.
 
+--dBMBt2YGaTHbdllf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTZQVAAoJELSic+t+oim9JlwP/0Ala1E0M65Sn7xS/CORBpuf
+/602EdUaXZGQW2x4c+WSs8q8TGjiiK+UsJiXTTgFYUsKtJnw0XRjQ3OxuO1GL6TQ
+atp0R4X4mWchwhO3by8k2lonx2aO5pZdoFz4jHBBDJn7dYyjJswX3y5yaZJGYCNM
+7KoV2+xv3LiKcFui3gRO7fBVZr11ptmZ1kJ+w4AGfpinFpYRmxu3JCOuLU7W8pHL
+Aqi8x4aFUkeizcR7h+v6942DgWWNApkIveNavLWTQzwhtAE+wl7+UT2UUFZ2/QEs
+4vwKKm0N15hr62XRh4IcT+sCSQJPppjH5BHfJnMJZBKi4elk3BEYAT8aRJnq1YW3
+JTxEan2OlZ/o3XtaVR4yFhNUWRzF9DbNoIzH+AgCLI88xbAvKSt3ojVU9H0Q3A8R
+GANlsuDUw2ecvrfvPY+t9UdH9HEi9ucBmD9fWEifgP200DTx1t5Nuuy/9Y6pokYv
+k/bhm1gVQPc5Yuo+BAveyAFIFbnHsjs0M23vprDF4N6F/zUNKkBaa3cZrr46X+Kk
+fXOY7B7jZ7vQp3rtQGDHJIHNtNyc5QknK9/3yd+d6Hu4yO0Z1k2ar527eMeXwBYH
+g2BZEo5jM9z8B8WHesakmzt9GCA8stbOYhdAbuDyk6NmZQu39AnQbUmFATvZ+F+C
+G/NLvvg80V2bikvN5JLU
+=UWBo
+-----END PGP SIGNATURE-----
+
+--dBMBt2YGaTHbdllf--
