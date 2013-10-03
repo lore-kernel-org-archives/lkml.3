@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3JCEGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:06:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46737 "EHLO
+	id S1754410Ab3JCEGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:06:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab3JCEF7 (ORCPT
+	with ESMTP id S1754377Ab3JCEGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:05:59 -0400
+	Thu, 3 Oct 2013 00:06:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin B Shelar <pshelar@nicira.com>, Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/13] mm: fix aio performance regression for database caused by THP
-Date: Wed,  2 Oct 2013 21:04:36 -0700
-Message-Id: <20131003040401.533664631@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Giovanni <giovanni.nervi@yahoo.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 04/13] xhci: Fix oops happening after address device timeout
+Date: Wed,  2 Oct 2013 21:04:29 -0700
+Message-Id: <20131003040401.065171549@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040400.753642257@linuxfoundation.org>
 References: <20131003040400.753642257@linuxfoundation.org>
@@ -33,169 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
+commit 284d20552461466b04d6bfeafeb1c47a8891b591 upstream.
 
-This patch needed to be backported due to changes to mm/swap.c some time
-after 3.6 kernel.
+When a command times out, the command ring is first aborted,
+and then stopped. If the command ring is empty when it is stopped
+the stop event will point to next command which is not yet set.
+xHCI tries to handle this next event often causing an oops.
 
-I am working with a tool that simulates oracle database I/O workload.
-This tool (orion to be specific -
-<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
-allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
-does aio into these pages from flash disks using various common block
-sizes used by database.  I am looking at performance with two of the most
-common block sizes - 1M and 64K.  aio performance with these two block
-sizes plunged after Transparent HugePages was introduced in the kernel.
-Here are performance numbers:
+Don't handle command completion events on stopped cmd ring if ring is
+empty.
 
-		pre-THP		2.6.39		3.11-rc5
-1M read		8384 MB/s	5629 MB/s	6501 MB/s
-64K read	7867 MB/s	4576 MB/s	4251 MB/s
+This patch should be backported to kernels as old as 3.7, that contain
+the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
+command ring function"
 
-I have narrowed the performance impact down to the overheads introduced by
-THP in __get_page_tail() and put_compound_page() routines.  perf top shows
->40% of cycles being spent in these two routines.  Every time direct I/O
-to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
-the pages and calls put_page() when I/O completes to put the reference
-away.  THP introduced significant amount of locking overhead to get_page()
-and put_page() when dealing with compound pages because hugepages can be
-split underneath get_page() and put_page().  It added this overhead
-irrespective of whether it is dealing with hugetlbfs pages or transparent
-hugepages.  This resulted in 20%-45% drop in aio performance when using
-hugetlbfs pages.
-
-Since hugetlbfs pages can not be split, there is no reason to go through
-all the locking overhead for these pages from what I can see.  I added
-code to __get_page_tail() and put_compound_page() to bypass all the
-locking code when working with hugetlbfs pages.  This improved performance
-significantly.  Performance numbers with this patch:
-
-		pre-THP		3.11-rc5	3.11-rc5 + Patch
-1M read		8384 MB/s	6501 MB/s	8371 MB/s
-64K read	7867 MB/s	4251 MB/s	6510 MB/s
-
-Performance with 64K read is still lower than what it was before THP, but
-still a 53% improvement.  It does mean there is more work to be done but I
-will take a 53% improvement for now.
-
-Please take a look at the following patch and let me know if it looks
-reasonable.
-
-[akpm@linux-foundation.org: tweak comments]
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reported-by: Giovanni <giovanni.nervi@yahoo.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- mm/swap.c |   65 ++++++++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 47 insertions(+), 18 deletions(-)
 
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -41,6 +41,8 @@ static DEFINE_PER_CPU(struct pagevec[NR_
- static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
- static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
- 
-+int PageHuge(struct page *page);
-+
- /*
-  * This path almost never happens for VM activity - pages are normally
-  * freed via pagevecs.  But it gets used by networking.
-@@ -69,13 +71,26 @@ static void __put_compound_page(struct p
- {
- 	compound_page_dtor *dtor;
- 
--	__page_cache_release(page);
-+	if (!PageHuge(page))
-+		__page_cache_release(page);
- 	dtor = get_compound_page_dtor(page);
- 	(*dtor)(page);
- }
- 
- static void put_compound_page(struct page *page)
- {
-+	/*
-+	 * hugetlbfs pages can not be split from under us. So if this
-+	 * is a hugetlbfs page, check refcount on head page and release
-+	 * the page if refcount is zero.
-+	 */
-+	if (PageHuge(page)) {
-+		page = compound_head(page);
-+		if (put_page_testzero(page))
-+			__put_compound_page(page);
-+		return;
-+	}
-+
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -158,26 +173,40 @@ bool __get_page_tail(struct page *page)
- 	 * proper PT lock that already serializes against
- 	 * split_huge_page().
- 	 */
--	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
- 
--	if (likely(page != page_head && get_page_unless_zero(page_head))) {
--		/*
--		 * page_head wasn't a dangling pointer but it
--		 * may not be a head page anymore by the time
--		 * we obtain the lock. That is ok as long as it
--		 * can't be freed from under us.
--		 */
--		flags = compound_lock_irqsave(page_head);
--		/* here __split_huge_page_refcount won't run anymore */
--		if (likely(PageTail(page))) {
--			__get_page_tail_foll(page, false);
--			got = true;
-+	/*
-+	 * If this is a hugetlbfs page, it can not be split under
-+	 * us. Simply increment counts for tail page and its head page
-+	 */
-+	if (PageHuge(page)) {
-+		struct page *page_head;
-+
-+		page_head = compound_head(page);
-+		atomic_inc(&page_head->_count);
-+		got = true;
-+	} else {
-+		struct page *page_head = compound_trans_head(page);
-+		unsigned long flags;
-+
-+		if (likely(page != page_head &&
-+					get_page_unless_zero(page_head))) {
-+			/*
-+		 	* page_head wasn't a dangling pointer but it
-+		 	* may not be a head page anymore by the time
-+		 	* we obtain the lock. That is ok as long as it
-+		 	* can't be freed from under us.
-+		 	*/
-+			flags = compound_lock_irqsave(page_head);
-+			/* here __split_huge_page_refcount won't run anymore */
-+			if (likely(PageTail(page))) {
-+				__get_page_tail_foll(page, false);
-+				got = true;
-+			}
-+			compound_unlock_irqrestore(page_head, flags);
-+			if (unlikely(!got))
-+				put_page(page_head);
+---
+ drivers/usb/host/xhci-ring.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1377,6 +1377,12 @@ static void handle_cmd_completion(struct
+ 			inc_deq(xhci, xhci->cmd_ring, false);
+ 			return;
  		}
--		compound_unlock_irqrestore(page_head, flags);
--		if (unlikely(!got))
--			put_page(page_head);
++		/* There is no command to handle if we get a stop event when the
++		 * command ring is empty, event->cmd_trb points to the next
++		 * unset command
++		 */
++		if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
++			return;
  	}
- 	return got;
- }
+ 
+ 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
 
 
