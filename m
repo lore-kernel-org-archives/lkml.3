@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab3JCHee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 03:34:34 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:40582 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab3JCHed (ORCPT
+	id S1753660Ab3JCHg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 03:36:59 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41602 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab3JCHg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 03:34:33 -0400
-Date: Thu, 3 Oct 2013 09:34:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [QUERY] Why does perf-trace need me to be root?
-Message-ID: <20131003073429.GD5775@gmail.com>
-References: <CALkWK0mmUZe-Wv2H2Z3y9FN0_kYv9gKaaXkMQ0UD-J9Q+=wFzQ@mail.gmail.com>
- <524C1964.8090205@gmail.com>
- <CALkWK0kzXnBKiRyN5HPE-_nScOG-JKjAnD1ujxA_R8tWQWrxZQ@mail.gmail.com>
- <20131003062505.GE25345@gmail.com>
- <CALkWK0ku=fFpQkd6r6DhwVAALpfgA8K-JkTjLJqSf0y-ysmmkQ@mail.gmail.com>
+	Thu, 3 Oct 2013 03:36:57 -0400
+Message-ID: <524D1D9D.9080908@linux.vnet.ibm.com>
+Date: Thu, 03 Oct 2013 13:02:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0ku=fFpQkd6r6DhwVAALpfgA8K-JkTjLJqSf0y-ysmmkQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 09/11] cpufreq: rewrite cpufreq_driver->flags using
+ shift operator
+References: <cover.1380703248.git.viresh.kumar@linaro.org> <7b34bf61846bed19e4a7e8ee18a55e717c570fef.1380703248.git.viresh.kumar@linaro.org>
+In-Reply-To: <7b34bf61846bed19e4a7e8ee18a55e717c570fef.1380703248.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100307-3864-0000-0000-00000A5C85B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ramkumar Ramachandra <artagnon@gmail.com> wrote:
-
-> Ingo Molnar wrote:
-> >    echo 'kernel.perf_event_paranoid = -1' >> /etc/sysctl.conf
+On 10/02/2013 02:13 PM, Viresh Kumar wrote:
+> Currently cpufreq_driver's flags are defined directly using 0x1, 0x2, 0x4, 0x8,
+> etc.. As the list grows it doesn't stays much readable..
 > 
-> Thanks Ingo. It's called /etc/sysctl.d/* now:
-> https://www.archlinux.org/news/deprecation-of-etcsysctlconf/
+> Lets use bitwise shift operator << to generate these numbers for respective
+> positions.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
 
-That works too, on modern distros.
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Thanks,
+Regards,
+Srivatsa S. Bhat
 
-	Ingo
+>  include/linux/cpufreq.h | 15 ++++++++-------
+>  1 file changed, 8 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index a72bac2..9321059 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -225,13 +225,14 @@ struct cpufreq_driver {
+>  };
+> 
+>  /* flags */
+> -#define CPUFREQ_STICKY		0x01	/* the driver isn't removed even if
+> -					 * all ->init() calls failed */
+> -#define CPUFREQ_CONST_LOOPS	0x02	/* loops_per_jiffy or other kernel
+> -					 * "constants" aren't affected by
+> -					 * frequency transitions */
+> -#define CPUFREQ_PM_NO_WARN	0x04	/* don't warn on suspend/resume speed
+> -					 * mismatches */
+> +#define CPUFREQ_STICKY		(1 << 0)	/* driver isn't removed even if
+> +						   all ->init() calls failed */
+> +#define CPUFREQ_CONST_LOOPS	(1 << 1)	/* loops_per_jiffy or other
+> +						   kernel "constants" aren't
+> +						   affected by frequency
+> +						   transitions */
+> +#define CPUFREQ_PM_NO_WARN	(1 << 2)	/* don't warn on suspend/resume
+> +						   speed mismatches */
+> 
+>  int cpufreq_register_driver(struct cpufreq_driver *driver_data);
+>  int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
+> 
+
+
