@@ -1,205 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab3JCUzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:55:23 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58213 "EHLO smtp.outflux.net"
+	id S1755667Ab3JCU4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:56:38 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:43326 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755047Ab3JCUxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:53:51 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
-        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
-        Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
-Subject: [PATCH 5/7] x86, kaslr: select memory region from e820 maps
-Date: Thu,  3 Oct 2013 13:53:23 -0700
-Message-Id: <1380833605-26313-6-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380833605-26313-1-git-send-email-keescook@chromium.org>
-References: <1380833605-26313-1-git-send-email-keescook@chromium.org>
+	id S1755382Ab3JCU4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 16:56:37 -0400
+Date: Thu, 3 Oct 2013 13:56:29 -0700
+From: Kees Cook <kees@outflux.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Tyler Hicks <tyhicks@canonical.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] LSM: MntRestrict blocks mounts on symlink targets
+Message-ID: <20131003205629.GG5729@outflux.net>
+References: <20130921225959.GA20388@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130921225959.GA20388@www.outflux.net>
+Organization: Outflux
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Counts available alignment positions across all e820 maps, and chooses
-one randomly for the new kernel base address.
+Pinging on this too. Any feedback?
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v2:
- - make sure to exclude e820 regions outside the 32-bit memory range.
----
- arch/x86/boot/compressed/aslr.c |  140 ++++++++++++++++++++++++++++++++++++---
- 1 file changed, 130 insertions(+), 10 deletions(-)
+-Kees
 
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index 5bb7c63..83aee8b 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -2,6 +2,7 @@
- 
- #ifdef CONFIG_RANDOMIZE_BASE
- #include <asm/msr.h>
-+#include <asm/e820.h>
- #include <asm/archrandom.h>
- 
- #define I8254_PORT_CONTROL	0x43
-@@ -102,6 +103,130 @@ static unsigned long find_minimum_location(unsigned long input,
- 	return output;
- }
- 
-+/*
-+ * This routine is used to count how many aligned slots that can hold the
-+ * kernel exist across all e820 entries. It is called in two phases, once
-+ * to count valid memory regions available for the kernel image, and a
-+ * second time to select one from those seen.
-+ *
-+ * It is first called with "counting" set to true, where it expects to be
-+ * called once for each e820 entry. In this mode, it will update *count
-+ * with how many slots are available in the given e820 entry. Once the walk
-+ * across all e820 entries has finished, the caller will have a total count
-+ * of all valid memory regions available for the kernel image.
-+ *
-+ * Once the first pass of entry walking is finished, the caller selects one
-+ * of the possible slots (stored in *count), and performs a second walk,
-+ * with "counting" set to false. In this mode, *count is decremented until
-+ * the corresponding slot is found in a specific e820 region, at which
-+ * point, the function returns that address, and the walk terminates.
-+ */
-+static unsigned long process_e820_entry(struct e820entry *entry, bool counting,
-+					unsigned long minimum,
-+					unsigned long image_size,
-+					unsigned long *count)
-+{
-+	u64 addr, size;
-+	unsigned long alignments;
-+
-+	/* Skip non-RAM entries. */
-+	if (entry->type != E820_RAM)
-+		return 0;
-+
-+	/* Ignore entries entirely above our maximum. */
-+	if (entry->addr >= CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
-+		return 0;
-+
-+	/* Ignore entries entirely below our minimum. */
-+	if (entry->addr + entry->size < minimum)
-+		return 0;
-+
-+	size = entry->size;
-+	addr = entry->addr;
-+
-+	/* Potentially raise address to minimum location. */
-+	if (addr < minimum)
-+		addr = minimum;
-+
-+	/* Potentially raise address to meet alignment requirements. */
-+	addr = ALIGN(addr, CONFIG_PHYSICAL_ALIGN);
-+
-+	/* Did we raise the address above the bounds of this e820 region? */
-+	if (addr > entry->addr + entry->size)
-+		return 0;
-+
-+	/* Reduce size by any delta from the original address. */
-+	size -= addr - entry->addr;
-+
-+	/* Reduce maximum image starting location to maximum limit. */
-+	if (addr + size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
-+		size = CONFIG_RANDOMIZE_BASE_MAX_OFFSET - addr;
-+
-+	/* Ignore entries that cannot hold even a single kernel image. */
-+	if (size < image_size)
-+		return 0;
-+
-+	/*
-+	 * Reduce size by kernel image size so we can see how many aligned
-+	 * starting addresses will fit without running past the end of a
-+	 * region. XXX: adjacent e820 regions are not detected, so up to
-+	 * image_size / CONFIG_PHYSICAL_ALIGN slots may go unused across
-+	 * adjacent regions.
-+	 */
-+	size -= image_size;
-+
-+	/* Now we know how many aligned slots can contain the image. */
-+	alignments = (size / CONFIG_PHYSICAL_ALIGN) + 1;
-+
-+	/* In the first pass, just counting all the e820 entries? */
-+	if (counting) {
-+		*count += alignments;
-+		return 0;
-+	}
-+
-+	/* Otherwise we're counting down to find a specific aligned slot. */
-+	if (*count < alignments) {
-+		/* Desired region is in this entry. */
-+		return addr + (CONFIG_PHYSICAL_ALIGN * *count);
-+	} else {
-+		/* Desired region is beyond this entry. */
-+		*count -= alignments;
-+		return 0;
-+	}
-+}
-+
-+static unsigned long find_random_e820(unsigned long minimum,
-+				      unsigned long size)
-+{
-+	int i;
-+	unsigned long addr, count;
-+
-+	/* Make sure minimum is aligned. */
-+	minimum = ALIGN(minimum, CONFIG_PHYSICAL_ALIGN);
-+
-+	/* Verify potential e820 positions. */
-+	count = 0;
-+	for (i = 0; i < real_mode->e820_entries; i++) {
-+		process_e820_entry(&real_mode->e820_map[i], true, minimum,
-+				   size, &count);
-+	}
-+
-+	/* Handle crazy case of nothing fitting. */
-+	if (count == 0)
-+		return 0;
-+
-+	count = get_random_long() % count;
-+
-+	/* Select desired e820 position. */
-+	for (i = 0; i < real_mode->e820_entries; i++) {
-+		addr = process_e820_entry(&real_mode->e820_map[i], false,
-+					  minimum, size, &count);
-+		if (addr)
-+			return addr;
-+	}
-+	return 0;
-+}
-+
- unsigned char *choose_kernel_location(unsigned char *input,
- 				      unsigned long input_size,
- 				      unsigned char *output,
-@@ -118,16 +243,11 @@ unsigned char *choose_kernel_location(unsigned char *input,
- 	choice = find_minimum_location((unsigned long)input, input_size,
- 				       (unsigned long)output, output_size);
- 
--	/* XXX: Find an appropriate E820 hole, instead of adding offset. */
--	random = get_random_long();
--
--	/* Clip off top of the range. */
--	random &= (CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1);
--	while (random + output_size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
--		random >>= 1;
--
--	/* Clip off bottom of range. */
--	random &= ~(choice - 1);
-+	random = find_random_e820(choice, output_size);
-+	if (!random) {
-+		debug_putstr("KASLR could not find suitable E820 region...\n");
-+		goto out;
-+	}
- 
- 	/* Always enforce the minimum. */
- 	if (random < choice)
+On Sat, Sep 21, 2013 at 03:59:59PM -0700, Kees Cook wrote:
+> On systems where certain filesystem contents cannot be entirely trusted,
+> it is beneficial to block mounts on symlinks. This makes sure that
+> malicious filesystem contents cannot trigger the over-mounting of trusted
+> filesystems. (For example, a bind-mounted subdirectory of /var cannot be
+> redirected to mount on /etc via a symlink: a daemon cannot elevate privs
+> to uid-0.)
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  security/Kconfig                   |    6 ++++
+>  security/Makefile                  |    2 ++
+>  security/mntrestrict/Kconfig       |   13 ++++++++
+>  security/mntrestrict/Makefile      |    1 +
+>  security/mntrestrict/mntrestrict.c |   63 ++++++++++++++++++++++++++++++++++++
+>  5 files changed, 85 insertions(+)
+>  create mode 100644 security/mntrestrict/Kconfig
+>  create mode 100644 security/mntrestrict/Makefile
+>  create mode 100644 security/mntrestrict/mntrestrict.c
+> 
+> diff --git a/security/Kconfig b/security/Kconfig
+> index e9c6ac7..84d41f4 100644
+> --- a/security/Kconfig
+> +++ b/security/Kconfig
+> @@ -121,6 +121,7 @@ source security/selinux/Kconfig
+>  source security/smack/Kconfig
+>  source security/tomoyo/Kconfig
+>  source security/apparmor/Kconfig
+> +source security/mntrestrict/Kconfig
+>  source security/yama/Kconfig
+>  
+>  source security/integrity/Kconfig
+> @@ -131,6 +132,7 @@ choice
+>  	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
+>  	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
+>  	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
+> +	default DEFAULT_SECURITY_MNTRESTRICT if SECURITY_MNTRESTRICT
+>  	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
+>  	default DEFAULT_SECURITY_DAC
+>  
+> @@ -150,6 +152,9 @@ choice
+>  	config DEFAULT_SECURITY_APPARMOR
+>  		bool "AppArmor" if SECURITY_APPARMOR=y
+>  
+> +	config DEFAULT_SECURITY_MNTRESTRICT
+> +		bool "MntRestrict" if SECURITY_MNTRESTRICT=y
+> +
+>  	config DEFAULT_SECURITY_YAMA
+>  		bool "Yama" if SECURITY_YAMA=y
+>  
+> @@ -164,6 +169,7 @@ config DEFAULT_SECURITY
+>  	default "smack" if DEFAULT_SECURITY_SMACK
+>  	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
+>  	default "apparmor" if DEFAULT_SECURITY_APPARMOR
+> +	default "mntrestrict" if DEFAULT_SECURITY_MNTRESTRICT
+>  	default "yama" if DEFAULT_SECURITY_YAMA
+>  	default "" if DEFAULT_SECURITY_DAC
+>  
+> diff --git a/security/Makefile b/security/Makefile
+> index c26c81e..33f38b1 100644
+> --- a/security/Makefile
+> +++ b/security/Makefile
+> @@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)	+= selinux
+>  subdir-$(CONFIG_SECURITY_SMACK)		+= smack
+>  subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
+>  subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
+> +subdir-$(CONFIG_SECURITY_MNTRESTRICT)	+= mntrestrict
+>  subdir-$(CONFIG_SECURITY_YAMA)		+= yama
+>  
+>  # always enable default capabilities
+> @@ -22,6 +23,7 @@ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
+>  obj-$(CONFIG_AUDIT)			+= lsm_audit.o
+>  obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
+>  obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
+> +obj-$(CONFIG_SECURITY_MNTRESTRICT)	+= mntrestrict/built-in.o
+>  obj-$(CONFIG_SECURITY_YAMA)		+= yama/built-in.o
+>  obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
+>  
+> diff --git a/security/mntrestrict/Kconfig b/security/mntrestrict/Kconfig
+> new file mode 100644
+> index 0000000..9a7310d
+> --- /dev/null
+> +++ b/security/mntrestrict/Kconfig
+> @@ -0,0 +1,13 @@
+> +config SECURITY_MNTRESTRICT
+> +	bool "Restrict mounts on symlinks system-wide"
+> +	depends on SECURITY
+> +	help
+> +	  Enforces that rule that symlinks cannot be used as mount
+> +	  destinations across the entire system. This is to make sure
+> +	  it is never possible to redirect locations using symlinks
+> +	  when the process doing the mount may not be able to strictly
+> +	  trust the contents of the filesystem where it is happening. For
+> +	  example, making sure a bind mounted subdirectory in /var is not
+> +	  redirected into /etc: stops a daemon without full privileges
+> +	  from elevating to uid-0 by tricking the system init filesystem
+> +	  mounting infrastructure.
+> diff --git a/security/mntrestrict/Makefile b/security/mntrestrict/Makefile
+> new file mode 100644
+> index 0000000..340be1f
+> --- /dev/null
+> +++ b/security/mntrestrict/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_SECURITY_MNTRESTRICT) += mntrestrict.o
+> diff --git a/security/mntrestrict/mntrestrict.c b/security/mntrestrict/mntrestrict.c
+> new file mode 100644
+> index 0000000..257ae69
+> --- /dev/null
+> +++ b/security/mntrestrict/mntrestrict.c
+> @@ -0,0 +1,63 @@
+> +/*
+> + * Mount Restriction Security Module
+> + *
+> + * Copyright 2011-2013 Google Inc.
+> + *
+> + * Authors:
+> + *      Stephan Uphoff  <ups@google.com>
+> + *      Kees Cook       <keescook@chromium.org>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#define pr_fmt(fmt) "MntRestrict LSM: " fmt
+> +
+> +#include <linux/module.h>
+> +#include <linux/security.h>
+> +#include <linux/sched.h>
+> +#include <linux/fs.h>
+> +#include <linux/fs_struct.h>
+> +#include <linux/mount.h>
+> +#include <linux/path.h>
+> +#include <linux/root_dev.h>
+> +
+> +static int mntrestrict_sb_mount(const char *dev_name, struct path *path,
+> +				const char *type, unsigned long flags,
+> +				void *data)
+> +{
+> +	int error = current->total_link_count ? -ELOOP : 0;
+> +
+> +	if (error) {
+> +		pr_notice("Mount path with symlinks prohibited - pid=%d\n",
+> +			task_pid_nr(current));
+> +	}
+> +
+> +	return error;
+> +}
+> +
+> +static struct security_operations mntrestrict_ops = {
+> +	.name	= "mntrestrict",
+> +	.sb_mount = mntrestrict_sb_mount,
+> +};
+> +
+> +static int __init mntrestrict_init(void)
+> +{
+> +	int error;
+> +
+> +	error = register_security(&mntrestrict_ops);
+> +
+> +	if (error)
+> +		panic("Could not register MntRestrict security module");
+> +
+> +	pr_info("symlink destinations will be blocked.\n");
+> +
+> +	return error;
+> +}
+> +security_initcall(mntrestrict_init);
+> -- 
+> 1.7.9.5
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.7.9.5
-
+Kees Cook                                            @outflux.net
