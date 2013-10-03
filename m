@@ -1,185 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab3JCHNY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 03:13:24 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51367 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3JCHNW (ORCPT
+	id S1754174Ab3JCHOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 03:14:40 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:61938 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab3JCHOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 03:13:22 -0400
-Message-ID: <524D1815.2070809@linux.vnet.ibm.com>
-Date: Thu, 03 Oct 2013 12:39:09 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 3 Oct 2013 03:14:37 -0400
+Date: Thu, 3 Oct 2013 10:14:33 +0300
+From: Eli Cohen <eli@dev.mellanox.co.il>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 50/77] mlx5: Update MSI/MSI-X interrupts enablement
+ code
+Message-ID: <20131003071433.GA7299@mtldesk30>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <9650a7dfbcfd5f1da21f7b093665abf4b1041071.1380703263.git.agordeev@redhat.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 01/11] cpufreq: make return type of lock_policy_rwsem_{read|write}()
- as void
-References: <cover.1380703248.git.viresh.kumar@linaro.org> <b361f4df33e414ecd2e8a25959746e84da789d6a.1380703248.git.viresh.kumar@linaro.org>
-In-Reply-To: <b361f4df33e414ecd2e8a25959746e84da789d6a.1380703248.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100307-5564-0000-0000-000009FDD44B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9650a7dfbcfd5f1da21f7b093665abf4b1041071.1380703263.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 02:13 PM, Viresh Kumar wrote:
-> lock_policy_rwsem_{read|write}() currently has return type of int but it always
-> return zero and hence its return type must be void instead. This patch makes its
-> return type void and fixes all users of it as well.
-> 
-> Reported-by: Jon Medhurst<tixy@linaro.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
-Regards,
-Srivatsa S. Bhat
-
->  drivers/cpufreq/cpufreq.c | 38 +++++++++++---------------------------
->  1 file changed, 11 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 04548f7..eb993d9 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -67,13 +67,11 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
->  static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
-> 
->  #define lock_policy_rwsem(mode, cpu)					\
-> -static int lock_policy_rwsem_##mode(int cpu)				\
-> +static void lock_policy_rwsem_##mode(int cpu)				\
->  {									\
->  	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);	\
->  	BUG_ON(!policy);						\
->  	down_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));		\
-> -									\
-> -	return 0;							\
->  }
-> 
->  lock_policy_rwsem(read, cpu);
-> @@ -653,13 +651,12 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
->  {
->  	struct cpufreq_policy *policy = to_policy(kobj);
->  	struct freq_attr *fattr = to_attr(attr);
-> -	ssize_t ret = -EINVAL;
-> +	ssize_t ret;
-> 
->  	if (!down_read_trylock(&cpufreq_rwsem))
-> -		goto exit;
-> +		return -EINVAL;
-> 
-> -	if (lock_policy_rwsem_read(policy->cpu) < 0)
-> -		goto up_read;
-> +	lock_policy_rwsem_read(policy->cpu);
-> 
->  	if (fattr->show)
->  		ret = fattr->show(policy, buf);
-> @@ -667,10 +664,8 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
->  		ret = -EIO;
-> 
->  	unlock_policy_rwsem_read(policy->cpu);
-> -
-> -up_read:
->  	up_read(&cpufreq_rwsem);
-> -exit:
+On Wed, Oct 02, 2013 at 12:49:06PM +0200, Alexander Gordeev wrote:
+>  
+> +	err = pci_msix_table_size(dev->pdev);
+> +	if (err < 0)
+> +		return err;
 > +
->  	return ret;
->  }
-> 
-> @@ -689,8 +684,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
->  	if (!down_read_trylock(&cpufreq_rwsem))
->  		goto unlock;
-> 
-> -	if (lock_policy_rwsem_write(policy->cpu) < 0)
-> -		goto up_read;
-> +	lock_policy_rwsem_write(policy->cpu);
-> 
->  	if (fattr->store)
->  		ret = fattr->store(policy, buf, count);
-> @@ -699,7 +693,6 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
-> 
->  	unlock_policy_rwsem_write(policy->cpu);
-> 
-> -up_read:
->  	up_read(&cpufreq_rwsem);
->  unlock:
->  	put_online_cpus();
-> @@ -1147,7 +1140,7 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
->  	if (ret) {
->  		pr_err("%s: Failed to move kobj: %d", __func__, ret);
-> 
-> -		WARN_ON(lock_policy_rwsem_write(old_cpu));
-> +		lock_policy_rwsem_write(old_cpu);
->  		cpumask_set_cpu(old_cpu, policy->cpus);
->  		unlock_policy_rwsem_write(old_cpu);
-> 
-> @@ -1243,7 +1236,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
->  		return -EINVAL;
->  	}
-> 
-> -	WARN_ON(lock_policy_rwsem_write(cpu));
-> +	lock_policy_rwsem_write(cpu);
->  	cpus = cpumask_weight(policy->cpus);
-> 
->  	if (cpus > 1)
-> @@ -1466,14 +1459,11 @@ unsigned int cpufreq_get(unsigned int cpu)
->  	if (!down_read_trylock(&cpufreq_rwsem))
->  		return 0;
-> 
-> -	if (unlikely(lock_policy_rwsem_read(cpu)))
-> -		goto out_policy;
-> +	lock_policy_rwsem_read(cpu);
-> 
->  	ret_freq = __cpufreq_get(cpu);
-> 
->  	unlock_policy_rwsem_read(cpu);
-> -
-> -out_policy:
->  	up_read(&cpufreq_rwsem);
-> 
->  	return ret_freq;
-> @@ -1697,14 +1687,12 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
->  {
->  	int ret = -EINVAL;
-> 
-> -	if (unlikely(lock_policy_rwsem_write(policy->cpu)))
-> -		goto fail;
-> +	lock_policy_rwsem_write(policy->cpu);
-> 
->  	ret = __cpufreq_driver_target(policy, target_freq, relation);
-> 
->  	unlock_policy_rwsem_write(policy->cpu);
-> 
-> -fail:
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(cpufreq_driver_target);
-> @@ -1995,10 +1983,7 @@ int cpufreq_update_policy(unsigned int cpu)
->  		goto no_policy;
->  	}
-> 
-> -	if (unlikely(lock_policy_rwsem_write(cpu))) {
-> -		ret = -EINVAL;
-> -		goto fail;
-> -	}
-> +	lock_policy_rwsem_write(cpu);
-> 
->  	pr_debug("updating policy for CPU %u\n", cpu);
->  	memcpy(&new_policy, policy, sizeof(*policy));
-> @@ -2027,7 +2012,6 @@ int cpufreq_update_policy(unsigned int cpu)
-> 
->  	unlock_policy_rwsem_write(cpu);
-> 
-> -fail:
->  	cpufreq_cpu_put(policy);
->  no_policy:
->  	return ret;
-> 
+>  	nvec = dev->caps.num_ports * num_online_cpus() + MLX5_EQ_VEC_COMP_BASE;
+>  	nvec = min_t(int, nvec, num_eqs);
+> +	nvec = min_t(int, nvec, err);
+>  	if (nvec <= MLX5_EQ_VEC_COMP_BASE)
+>  		return -ENOSPC;
 
+Making sure we don't request more vectors then the device's is capable
+of -- looks good.
+>  
+> @@ -131,20 +136,15 @@ static int mlx5_enable_msix(struct mlx5_core_dev *dev)
+>  	for (i = 0; i < nvec; i++)
+>  		table->msix_arr[i].entry = i;
+>  
+> -retry:
+> -	table->num_comp_vectors = nvec - MLX5_EQ_VEC_COMP_BASE;
+>  	err = pci_enable_msix(dev->pdev, table->msix_arr, nvec);
+> -	if (err <= 0) {
+> +	if (err) {
+> +		kfree(table->msix_arr);
+>  		return err;
+> -	} else if (err > MLX5_EQ_VEC_COMP_BASE) {
+> -		nvec = err;
+> -		goto retry;
+>  	}
+>  
+
+According to latest sources, pci_enable_msix() may still fail so why
+do you want to remove this code?
+
+> -	mlx5_core_dbg(dev, "received %d MSI vectors out of %d requested\n", err, nvec);
+> -	kfree(table->msix_arr);
+> +	table->num_comp_vectors = nvec - MLX5_EQ_VEC_COMP_BASE;
+>  
+> -	return -ENOSPC;
+> +	return 0;
+>  }
+>  
+>  static void mlx5_disable_msix(struct mlx5_core_dev *dev)
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
