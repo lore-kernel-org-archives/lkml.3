@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab3JCUkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:40:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22866 "EHLO mx1.redhat.com"
+	id S1755283Ab3JCUku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:40:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57571 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429Ab3JCUkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:40:45 -0400
-Date: Thu, 3 Oct 2013 16:40:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Paul Moore <paul@paul-moore.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
-        james.l.morris@oracle.com, selinux@tycho.nsa.gov
-Subject: Re: [PATCH] conditionally reschedule while loading selinux policy.
-Message-ID: <20131003204031.GA25515@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
-	Stephen Smalley <sds@tycho.nsa.gov>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
-	james.l.morris@oracle.com, selinux@tycho.nsa.gov
-References: <20130916173036.GA17950@redhat.com>
- <5249B6F1.4050507@tycho.nsa.gov>
- <20130930211342.GA24001@redhat.com>
- <2297933.rECKfqAcWT@sifl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2297933.rECKfqAcWT@sifl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754429Ab3JCUks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 16:40:48 -0400
+Message-ID: <1380832842.2673.80.camel@ul30vt.home>
+Subject: Re: [PATCH v2 4/4] kvm: Add VFIO device for handling IOMMU cache
+ coherency
+From: Alex Williamson <alex.williamson@redhat.com>
+To: gleb@redhat.com
+Cc: aik@ozlabs.ru, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Thu, 03 Oct 2013 14:40:42 -0600
+In-Reply-To: <20131003025134.8850.97617.stgit@bling.home>
+References: <20131001201524.31715.4300.stgit@bling.home>
+	 <20131003025134.8850.97617.stgit@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 04:36:10PM -0400, Paul Moore wrote:
- > On Monday, September 30, 2013 05:13:42 PM Dave Jones wrote:
- > > On Mon, Sep 30, 2013 at 01:37:53PM -0400, Stephen Smalley wrote:
- > >  > > With that patch applied, the problem seems to have moved elsewhere..
- > >  >
- > >  > Sorry, what locks are we holding there?  You ought to be able to do a
- > >  > cond_resched() anywhere during policydb_read() AFAIK; it is loading the
- > >  > policy into a new structure that isn't being accessed by anything else
- > >  > yet and the policy_rwlock is only held by security_load_policy after
- > >  > calling policydb_read and only to switch it into place as the active
- > >  > policydb.
- > > 
- > > Hmm, I thought I had tried this already, and got a lot of spew, but it turns
- > > out for some reason I had previously patched hashtab_search instead.
- > > 
- > > I'll try running with this for a while..
- > 
- > Hi Dave,
- > 
- > Just checking to see if this patch solved your problem ... ?
- > 
- > > diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
- > > index 933e735..2cc4961 100644
- > > --- a/security/selinux/ss/hashtab.c
- > > +++ b/security/selinux/ss/hashtab.c
- > > @@ -6,6 +6,7 @@
- > >  #include <linux/kernel.h>
- > >  #include <linux/slab.h>
- > >  #include <linux/errno.h>
- > > +#include <linux/sched.h>
- > >  #include "hashtab.h"
- > > 
- > >  struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const
- > > void *key), @@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void
- > > *key, void *datum) u32 hvalue;
- > >  	struct hashtab_node *prev, *cur, *newnode;
- > > 
- > > +	cond_resched();
- > > +
- > >  	if (!h || h->nel == HASHTAB_MAX_NODES)
- > >  		return -EINVAL;
+On Wed, 2013-10-02 at 20:55 -0600, Alex Williamson wrote:
+> So far we've succeeded at making KVM and VFIO mostly unaware of each
+> other, but there's an important point where that breaks down.  Intel
+> VT-d hardware may or may not support snoop control.  When snoop
+> control is available, intel-iommu promotes No-Snoop transactions on
+> PCIe to be cache coherent.  That allows KVM to handle things like the
+> x86 WBINVD opcode as a nop.  When the hardware does not support this,
+> KVM must implement a hardware visible WBINVD for the guest.
+> 
+> We could simply let userspace tell KVM how to handle WBINVD, but it's
+> privileged for a reason.  Allowing an arbitrary user to enable
+> physical WBINVD gives them more access to the hardware.  Previously,
+> this has only been enabled for guests supporting legacy PCI device
+> assignment.  In such cases it's necessary for proper guest execution.
+> We therefore create a new KVM-VFIO virtual device.  The user can add
+> and remove VFIO groups to this device via file descriptors.  KVM
+> makes use of the VFIO external user interface to validate that the
+> user has access to physical hardware and, for now, assumes the I/O
+> is noncoherent.  Eventually we'll add an interface to allow KVM to
+> determine the conherency of the domain as noted in the TODO.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+> v2: Patches 1-3 of v1 series remain the same, not resent
+>   - Fix cast warning from (int32_t *)u64 from get_user calls
+>   - Add a Kconfig variable to protect kvm_vfio_ops for archs
+>     not (yet) building virt/kvm/vfio.c
 
-I couldn't get a backtrace when I downgraded, and reupgraded my policy,
-but that said, I didn't when I tested that way on my first patch either.
-It wasn't until I got a newer policy that I saw the 2nd spew.
-I was planning on sitting on this until the next policy update just
-to confirm.
+There might be another option for my particular need of this.  The
+device PCIe capability has a bit in the Device Control register that
+enables a device to do NoSnoop transactions.  Therefore it seems like by
+clearing this bit on the physical device and emulating it as read-only
+in the guest, we can prevent the NoSnoop at the device rather than at
+the IOMMU.  If we can prevent NoSnoop, then I don't think we need to
+worry about things like WBINVD emulation in KVM.  Let me work on this a
+bit more before applying.  Thanks,
 
-	Dave
+Alex
 
