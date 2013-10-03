@@ -1,131 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3JCVu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 17:50:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58338 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab3JCVu4 (ORCPT
+	id S1755794Ab3JCVvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 17:51:39 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37537 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755684Ab3JCVvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 17:50:56 -0400
-Date: Thu, 3 Oct 2013 14:50:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jason Baron <jbaron@akamai.com>
-Cc: normalperson@yhbt.net, nzimmer@sgi.com, viro@zeniv.linux.org.uk,
-        nelhage@nelhage.com, davidel@xmailserver.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] epoll: Do not take global 'epmutex' for simple
- topologies
-Message-Id: <20131003145054.efcf3f4ffc64abcc7e09a87f@linux-foundation.org>
-In-Reply-To: <355cdd8dc79b7bcca59509999a972cc9d6b4b673.1380645717.git.jbaron@akamai.com>
-References: <cover.1380645717.git.jbaron@akamai.com>
-	<355cdd8dc79b7bcca59509999a972cc9d6b4b673.1380645717.git.jbaron@akamai.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Oct 2013 17:51:38 -0400
+Message-ID: <524DE6DB.1070003@pengutronix.de>
+Date: Thu, 03 Oct 2013 23:51:23 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH|RFC] of: let of_match_device() always return best match
+References: <1380826284-18381-1-git-send-email-mkl@pengutronix.de> <524DD5A6.6020204@gmail.com>
+In-Reply-To: <524DD5A6.6020204@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="v0KE8CsolDMopliL9MsIlFSXoq8g7LH74"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Oct 2013 17:08:14 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--v0KE8CsolDMopliL9MsIlFSXoq8g7LH74
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> When calling EPOLL_CTL_ADD for an epoll file descriptor that is attached
-> directly to a wakeup source, we do not need to take the global 'epmutex',
-> unless the epoll file descriptor is nested. The purpose of taking
-> the 'epmutex' on add is to prevent complex topologies such as loops and
-> deep wakeup paths from forming in parallel through multiple EPOLL_CTL_ADD
-> operations. However, for the simple case of an epoll file descriptor
-> attached directly to a wakeup source (with no nesting), we do not need
-> to hold the 'epmutex'.
-> 
-> This patch along with 'epoll: optimize EPOLL_CTL_DEL using rcu' improves
-> scalability on larger systems. Quoting Nathan Zimmer's mail on SPECjbb
-> performance:
-> 
-> "
-> On the 16 socket run the performance went from 35k jOPS to 125k jOPS.
-> In addition the benchmark when from scaling well on 10 sockets to scaling well
-> on just over 40 sockets.
-> 
-> ...
-> 
-> Currently the benchmark stops scaling at around 40-44 sockets but it seems like
-> I found a second unrelated bottleneck.
-> "
+On 10/03/2013 10:37 PM, Rob Herring wrote:
+> On 10/03/2013 01:51 PM, Marc Kleine-Budde wrote:
+>> The function of_match_device() should tell if a struct device matches =
+an
+>> of_device_id list and return the specific entry of that table matches =
+the
+>> device best.
+>>
+>> The underlying __of_match_node() implements the wrong search algorithm=
+=2E It
+>> iterates over the list of of_device_ids, comparing the first compatibl=
+e with
+>> _all_ compatibles of the struct device, then the second compatible of
+>> of_device_id and so on.
+>>
+>> This leads to a problem, if the device has more than one compatible th=
+at match
+>> the of_device_id list. The implemented search algorithm may find not t=
+he "best"
+>> match. As the compatible list in the device is sorted from most to lea=
+st
+>> specific.
+>>
+>> For example:
+>>
+>> The imx28.dtsi gives this compatible string for its CAN core:
+>>
+>>> 	compatible =3D "fsl,imx28-flexcan", "fsl,p1010-flexcan";
+>>
+>> The flexcan driver defines:
+>>
+>>> static const struct of_device_id flexcan_of_match[] =3D {
+>>> 	{ .compatible =3D "fsl,p1010-flexcan", .data =3D &fsl_p1010_devtype_=
+data, },
+>>> 	{ .compatible =3D "fsl,imx28-flexcan", .data =3D &fsl_imx28_devtype_=
+data, },
+>>> 	{ .compatible =3D "fsl,imx6q-flexcan", .data =3D &fsl_imx6q_devtype_=
+data, },
+>>> 	{ /* sentinel */ },
+>>> };
+>>
+>> The "p1010" was the first Freescale SoC with the flexcan core. But thi=
+s SoC has
+>> a bug, so a workaround has to be enabled in the driver. The mx28 has t=
+his bug
+>> fixed, so we don't need this quite costly workaround.
+>>
+>> The __of_match_node() will compare:
+>>
+>>     from  of_device_id		from device
+>>     fsl,p1010-flexcan		fsl,imx28-flexcan
+>>     fsl,p1010-flexcan		fsl,p1010-flexcan	-> MATCH
+>>
+>> The of_match_device() function as it currently is implemented will alw=
+ays
+>> return p1010 not the mx28.
+>>
+>> This patch fixes the problem by exchanging outer and inner loop. The f=
+irst
+>> compatible of a device is compared against all compatible from the of_=
+device_id
+>> list, then the second device compatible and so on.
+>=20
+> This has been an issue for some time. A fix has been attempted before
+> and reverted if you look at the git history:
 
-I couldn't resist fiddling.  Please review:
+=2E.should have done this before creating the patch.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: epoll-do-not-take-global-epmutex-for-simple-topologies-fix
+> commit bc51b0c22cebf5c311a6f1895fcca9f78efd0478
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Tue Jul 10 12:49:32 2012 -0700
+>=20
+>     Revert "of: match by compatible property first"
+>=20
+>     This reverts commit 107a84e61cdd3406c842a0e4be7efffd3a05dba6.
+>=20
+>     Meelis Roos reports a regression since 3.5-rc5 that stops Sun Fire =
+V100
+>     and Sun Netra X1 sparc64 machines from booting, hanging after enabl=
+ing
+>     serial console.  He bisected it to commit 107a84e61cdd.
+>=20
+>     Rob Herring explains:
+>      "The problem is match combinations of compatible plus name and/or =
+type
+>       fail to match correctly.  I have a fix for this, but given how la=
+te it
+>       is for 3.5 I think it is best to revert this for now.  There coul=
+d be
+>       other cases that rely on the current although wrong behavior.  I =
+will
+>       post an updated version for 3.6."
+>=20
+>     Bisected-and-reported-by: Meelis Roos <mroos@linux.ee>
+>     Requested-by: Rob Herring <rob.herring@calxeda.com>
+>     Cc: Thierry Reding <thierry.reding@avionic-design.de>
+>     Cc: Grant Likely <grant.likely@secretlab.ca>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>=20
+> There was also a fix attempted for this and the discussion here:
+>=20
+> http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg60163.html=
 
-- use `bool' for boolean variables
-- remove unneeded/undesirable cast of void*
-- add missed ep_scan_ready_list() kerneldoc 
+>=20
+> You patch would hit the same issues I believe.
 
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Eric Wong <normalperson@yhbt.net>
-Cc: Jason Baron <jbaron@akamai.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Nelson Elhage <nelhage@nelhage.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+Yes probably, are the OF patterns from the failing sparcs available
+somewhere, so that we can test a better implementation?
 
- fs/eventpoll.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+I'll rearrange the drivers instead. BTW: what about the patch you
+mentioned in the above revert?
 
-diff -puN fs/eventpoll.c~epoll-do-not-take-global-epmutex-for-simple-topologies-fix fs/eventpoll.c
---- a/fs/eventpoll.c~epoll-do-not-take-global-epmutex-for-simple-topologies-fix
-+++ a/fs/eventpoll.c
-@@ -589,13 +589,14 @@ static inline void ep_pm_stay_awake_rcu(
-  * @sproc: Pointer to the scan callback.
-  * @priv: Private opaque data passed to the @sproc callback.
-  * @depth: The current depth of recursive f_op->poll calls.
-+ * @ep_locked: caller already holds ep->mtx
-  *
-  * Returns: The same integer error code returned by the @sproc callback.
-  */
- static int ep_scan_ready_list(struct eventpoll *ep,
- 			      int (*sproc)(struct eventpoll *,
- 					   struct list_head *, void *),
--			      void *priv, int depth, int ep_locked)
-+			      void *priv, int depth, bool ep_locked)
- {
- 	int error, pwake = 0;
- 	unsigned long flags;
-@@ -836,12 +837,12 @@ static void ep_ptable_queue_proc(struct
- 
- struct readyevents_arg {
- 	struct eventpoll *ep;
--	int locked;
-+	bool locked;
- };
- 
- static int ep_poll_readyevents_proc(void *priv, void *cookie, int call_nests)
- {
--	struct readyevents_arg *arg = (struct readyevents_arg *)priv;
-+	struct readyevents_arg *arg = priv;
- 
- 	return ep_scan_ready_list(arg->ep, ep_read_events_proc, NULL,
- 				  call_nests + 1, arg->locked);
-@@ -857,7 +858,7 @@ static unsigned int ep_eventpoll_poll(st
- 	 * During ep_insert() we already hold the ep->mtx for the tfile.
- 	 * Prevent re-aquisition.
- 	 */
--	arg.locked = ((wait && (wait->_qproc == ep_ptable_queue_proc)) ? 1 : 0);
-+	arg.locked = wait && (wait->_qproc == ep_ptable_queue_proc);
- 	arg.ep = ep;
- 
- 	/* Insert inside our poll wait queue */
-@@ -1563,7 +1564,7 @@ static int ep_send_events(struct eventpo
- 	esed.maxevents = maxevents;
- 	esed.events = events;
- 
--	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0, 0);
-+	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0, false);
- }
- 
- static inline struct timespec ep_set_mstimeout(long ms)
-_
+tnx,
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
+
+--v0KE8CsolDMopliL9MsIlFSXoq8g7LH74
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlJN5tsACgkQjTAFq1RaXHOlGACfTqGAYQCUP3yKPaJTZ/7DDL/f
+BUMAn3dn/4YaenVPbbMBUyNHzzCt8IYj
+=MSye
+-----END PGP SIGNATURE-----
+
+--v0KE8CsolDMopliL9MsIlFSXoq8g7LH74--
