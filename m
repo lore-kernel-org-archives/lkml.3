@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3JCERl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:17:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47106 "EHLO
+	id S1755838Ab3JCERq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47115 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791Ab3JCERj (ORCPT
+	with ESMTP id S1755791Ab3JCERn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:17:39 -0400
+	Thu, 3 Oct 2013 00:17:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinson Lee <vlee@twitter.com>, Borislav Petkov <bp@suse.de>,
-        Vinson Lee <vlee@freedesktop.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 14/57] tools lib lk: Uninclude linux/magic.h in debugfs.c
-Date: Wed,  2 Oct 2013 21:08:40 -0700
-Message-Id: <20131003040637.586167776@linuxfoundation.org>
+        Bryan ODonoghue <bryan.odonoghue.lkml@nexus-software.ie>,
+        Tom Zanussi <tom.zanussi@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 15/57] x86, efi: Dont map Boot Services on i386
+Date: Wed,  2 Oct 2013 21:08:41 -0700
+Message-Id: <20131003040637.653446614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -28,55 +33,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinson Lee <vlee@twitter.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit ce7eebe5c3deef8e19c177c24ee75843256e69ca upstream.
+commit 700870119f49084da004ab588ea2b799689efaf7 upstream.
 
-The compilation only looks for linux/magic.h from the default include
-paths, which does not include the source tree. This results in a build
-error if linux/magic.h is not available or not installed.
+Add patch to fix 32bit EFI service mapping (rhbz 726701)
 
-For example, this build error occurs on CentOS 5.
+Multiple people are reporting hitting the following WARNING on i386,
 
-$ make -C tools/lib/lk V=1
-[...]
-gcc -o debugfs.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
--D_FORTIFY_SOURCE=2 -Wbad-function-cast -Wdeclaration-after-statement
--Wformat-security -Wformat-y2k -Winit-self -Wmissing-declarations
--Wmissing-prototypes -Wnested-externs -Wno-system-headers
--Wold-style-definition -Wpacked -Wredundant-decls -Wshadow
--Wstrict-aliasing=3 -Wstrict-prototypes -Wswitch-default -Wswitch-enum
--Wundef -Wwrite-strings -Wformat  -fPIC  -D_LARGEFILE64_SOURCE
--D_FILE_OFFSET_BITS=64 debugfs.c
-debugfs.c:8:25: error: linux/magic.h: No such file or directory
+  WARNING: at arch/x86/mm/ioremap.c:102 __ioremap_caller+0x3d3/0x440()
+  Modules linked in:
+  Pid: 0, comm: swapper Not tainted 3.9.0-rc7+ #95
+  Call Trace:
+   [<c102b6af>] warn_slowpath_common+0x5f/0x80
+   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
+   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
+   [<c102b6ed>] warn_slowpath_null+0x1d/0x20
+   [<c1023fb3>] __ioremap_caller+0x3d3/0x440
+   [<c106007b>] ? get_usage_chars+0xfb/0x110
+   [<c102d937>] ? vprintk_emit+0x147/0x480
+   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
+   [<c102406a>] ioremap_cache+0x1a/0x20
+   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
+   [<c1418593>] efi_enter_virtual_mode+0x1e4/0x3de
+   [<c1407984>] start_kernel+0x286/0x2f4
+   [<c1407535>] ? repair_env_string+0x51/0x51
+   [<c1407362>] i386_start_kernel+0x12c/0x12f
 
-The only symbol from linux/magic.h needed by debugfs.c is DEBUGFS_MAGIC,
-and that is already defined in debugfs.h. linux/magic.h isn't providing
-any extra symbols and can unincluded. This is similar to the approach by
-perf, which has its own magic.h wrapper at
-tools/perf/util/include/linux/magic.h
+Due to the workaround described in commit 916f676f8 ("x86, efi: Retain
+boot service code until after switching to virtual mode") EFI Boot
+Service regions are mapped for a period during boot. Unfortunately, with
+the limited size of the i386 direct kernel map it's possible that some
+of the Boot Service regions will not be directly accessible, which
+causes them to be ioremap()'d, triggering the above warning as the
+regions are marked as E820_RAM in the e820 memmap.
 
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Vinson Lee <vlee@freedesktop.org>
-Link: http://lkml.kernel.org/r/1379546200-17028-1-git-send-email-vlee@freedesktop.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+There are currently only two situations where we need to map EFI Boot
+Service regions,
+
+  1. To workaround the firmware bug described in 916f676f8
+  2. To access the ACPI BGRT image
+
+but since we haven't seen an i386 implementation that requires either,
+this simple fix should suffice for now.
+
+[ Added to changelog - Matt ]
+
+Reported-by: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
+Acked-by: Tom Zanussi <tom.zanussi@intel.com>
+Acked-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/lib/lk/debugfs.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/platform/efi/efi.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/tools/lib/lk/debugfs.c
-+++ b/tools/lib/lk/debugfs.c
-@@ -5,7 +5,6 @@
- #include <stdbool.h>
- #include <sys/vfs.h>
- #include <sys/mount.h>
--#include <linux/magic.h>
- #include <linux/kernel.h>
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -912,10 +912,13 @@ void __init efi_enter_virtual_mode(void)
  
- #include "debugfs.h"
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
+-		    md->type != EFI_BOOT_SERVICES_CODE &&
+-		    md->type != EFI_BOOT_SERVICES_DATA)
+-			continue;
++		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
++#ifdef CONFIG_X86_64
++			if (md->type != EFI_BOOT_SERVICES_CODE &&
++			    md->type != EFI_BOOT_SERVICES_DATA)
++#endif
++				continue;
++		}
+ 
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
 
 
