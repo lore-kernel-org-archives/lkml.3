@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab3JCEVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:21:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47742 "EHLO
+	id S1756762Ab3JCEVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:21:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47704 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756740Ab3JCEVT (ORCPT
+	with ESMTP id S1756673Ab3JCEVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:21:19 -0400
+	Thu, 3 Oct 2013 00:21:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 52/57] drm/radeon: disable tests/benchmarks if accel is disabled
-Date: Wed,  2 Oct 2013 21:09:18 -0700
-Message-Id: <20131003040640.153611862@linuxfoundation.org>
+Subject: [ 51/57] drm/radeon: dont set default clocks for SI when DPM is disabled
+Date: Wed,  2 Oct 2013 21:09:17 -0700
+Message-Id: <20131003040640.084589996@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -28,47 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4a1132a023eb48cf10522d84c5908d43b612c041 upstream.
+commit 360991867d83e10827d907ef67206986a98953b3 upstream.
 
-The tests are only usable if the acceleration engines have
-been successfully initialized.
+This is a partial revert of c6cf7777a32da874fabec4fd1c2a579f0ba4e4dd.
 
-Based on an initial patch from: Alex Ivanov <gnidorah@p0n4ik.tk>
+We need to take into account the clk voltage dependencies of the
+board.  Not doing so can lead to stability issues on certain
+boards if the clks exceed the levels in the dep tables.
+
+DPM already takes that into account, so for optimal performance,
+use DPM.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1297,13 +1297,22 @@ int radeon_device_init(struct radeon_dev
- 			return r;
- 	}
- 	if ((radeon_testing & 1)) {
--		radeon_test_moves(rdev);
-+		if (rdev->accel_working)
-+			radeon_test_moves(rdev);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping move tests\n");
- 	}
- 	if ((radeon_testing & 2)) {
--		radeon_test_syncing(rdev);
-+		if (rdev->accel_working)
-+			radeon_test_syncing(rdev);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping sync tests\n");
- 	}
- 	if (radeon_benchmarking) {
--		radeon_benchmark(rdev, radeon_benchmarking);
-+		if (rdev->accel_working)
-+			radeon_benchmark(rdev, radeon_benchmarking);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping benchmarks\n");
- 	}
- 	return 0;
- }
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -919,7 +919,7 @@ static void radeon_pm_resume_old(struct
+ {
+ 	/* set up the default clocks if the MC ucode is loaded */
+ 	if ((rdev->family >= CHIP_BARTS) &&
+-	    (rdev->family <= CHIP_HAINAN) &&
++	    (rdev->family <= CHIP_CAYMAN) &&
+ 	    rdev->mc_fw) {
+ 		if (rdev->pm.default_vddc)
+ 			radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
+@@ -963,7 +963,7 @@ static void radeon_pm_resume_dpm(struct
+ 	if (ret) {
+ 		DRM_ERROR("radeon: dpm resume failed\n");
+ 		if ((rdev->family >= CHIP_BARTS) &&
+-		    (rdev->family <= CHIP_HAINAN) &&
++		    (rdev->family <= CHIP_CAYMAN) &&
+ 		    rdev->mc_fw) {
+ 			if (rdev->pm.default_vddc)
+ 				radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
+@@ -1014,7 +1014,7 @@ static int radeon_pm_init_old(struct rad
+ 		radeon_pm_init_profile(rdev);
+ 		/* set up the default clocks if the MC ucode is loaded */
+ 		if ((rdev->family >= CHIP_BARTS) &&
+-		    (rdev->family <= CHIP_HAINAN) &&
++		    (rdev->family <= CHIP_CAYMAN) &&
+ 		    rdev->mc_fw) {
+ 			if (rdev->pm.default_vddc)
+ 				radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
+@@ -1099,7 +1099,7 @@ static int radeon_pm_init_dpm(struct rad
+ 	if (ret) {
+ 		rdev->pm.dpm_enabled = false;
+ 		if ((rdev->family >= CHIP_BARTS) &&
+-		    (rdev->family <= CHIP_HAINAN) &&
++		    (rdev->family <= CHIP_CAYMAN) &&
+ 		    rdev->mc_fw) {
+ 			if (rdev->pm.default_vddc)
+ 				radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
 
 
