@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab3JCEQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:16:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47072 "EHLO
+	id S1755740Ab3JCEQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:16:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47079 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab3JCEQq (ORCPT
+	with ESMTP id S1755721Ab3JCEQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:16:46 -0400
+	Thu, 3 Oct 2013 00:16:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Hannes Reinecke <hare@suse.de>
-Subject: [ 40/52] dm mpath: disable WRITE SAME if it fails
-Date: Wed,  2 Oct 2013 21:05:58 -0700
-Message-Id: <20131003040524.980274351@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [ 32/52] USB: Fix breakage in ffs_fs_mount()
+Date: Wed,  2 Oct 2013 21:05:50 -0700
+Message-Id: <20131003040524.365367001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -28,152 +27,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit f84cb8a46a771f36a04a02c61ea635c968ed5f6a upstream.
+commit 2606b28aabd7dea1766c23a105e1124c95409c96 upstream.
 
-Workaround the SCSI layer's problematic WRITE SAME heuristics by
-disabling WRITE SAME in the DM multipath device's queue_limits if an
-underlying device disabled it.
+	There's a bunch of failure exits in ffs_fs_mount() with
+seriously broken recovery logics.  Most of that appears to stem
+from misunderstanding of the ->kill_sb() semantics; unlike
+->put_super() it is called for *all* superblocks of given type,
+no matter how (in)complete the setup had been.  ->put_super()
+is called only if ->s_root is not NULL; any failure prior to
+setting ->s_root will have the call of ->put_super() skipped.
+->kill_sb(), OTOH, awaits every superblock that has come from
+sget().
 
-The WRITE SAME heuristics, with both the original commit 5db44863b6eb
-("[SCSI] sd: Implement support for WRITE SAME") and the updated commit
-66c28f971 ("[SCSI] sd: Update WRITE SAME heuristics"), default to enabling
-WRITE SAME(10) even without successfully determining it is supported.
-After the first failed WRITE SAME the SCSI layer will disable WRITE SAME
-for the device (by setting sdkp->device->no_write_same which results in
-'max_write_same_sectors' in device's queue_limits to be set to 0).
+Current behaviour of ffs_fs_mount():
 
-When a device is stacked ontop of such a SCSI device any changes to that
-SCSI device's queue_limits do not automatically propagate up the stack.
-As such, a DM multipath device will not have its WRITE SAME support
-disabled.  This causes the block layer to continue to issue WRITE SAME
-requests to the mpath device which causes paths to fail and (if mpath IO
-isn't configured to queue when no paths are available) it will result in
-actual IO errors to the upper layers.
+We have struct ffs_sb_fill_data data on stack there.  We do
+	ffs_dev = functionfs_acquire_dev_callback(dev_name);
+and store that in data.private_data.  Then we call mount_nodev(),
+passing it ffs_sb_fill() as a callback.  That will either fail
+outright, or manage to call ffs_sb_fill().  There we allocate an
+instance of struct ffs_data, slap the value of ffs_dev (picked
+from data.private_data) into ffs->private_data and overwrite
+data.private_data by storing ffs into an overlapping member
+(data.ffs_data).  Then we store ffs into sb->s_fs_info and attempt
+to set the rest of the things up (root inode, root dentry, then
+create /ep0 there).  Any of those might fail.  Should that
+happen, we get ffs_fs_kill_sb() called before mount_nodev()
+returns.  If mount_nodev() fails for any reason whatsoever,
+we proceed to
+	functionfs_release_dev_callback(data.ffs_data);
 
-This fix doesn't help configurations that have additional devices
-stacked ontop of the mpath device (e.g. LVM created linear DM devices
-ontop).  A proper fix that restacks all the queue_limits from the bottom
-of the device stack up will need to be explored if SCSI will continue to
-use this model of optimistically allowing op codes and then disabling
-them after they fail for the first time.
+That's broken in a lot of ways.  Suppose the thing has failed in
+allocation of e.g. root inode or dentry.  We have
+	functionfs_release_dev_callback(ffs);
+	ffs_data_put(ffs);
+done by ffs_fs_kill_sb() (ffs accessed via sb->s_fs_info), followed by
+	functionfs_release_dev_callback(ffs);
+from ffs_fs_mount() (via data.ffs_data).  Note that the second
+functionfs_release_dev_callback() has every chance to be done to freed memory.
 
-Before this patch:
+Suppose we fail *before* root inode allocation.  What happens then?
+ffs_fs_kill_sb() doesn't do anything to ffs (it's either not called at all,
+or it doesn't have a pointer to ffs stored in sb->s_fs_info).  And
+	functionfs_release_dev_callback(data.ffs_data);
+is called by ffs_fs_mount(), but here we are in nasal daemon country - we
+are reading from a member of union we'd never stored into.  In practice,
+we'll get what we used to store into the overlapping field, i.e. ffs_dev.
+And then we get screwed, since we treat it (struct gfs_ffs_obj * in
+disguise, returned by functionfs_acquire_dev_callback()) as struct
+ffs_data *, pick what would've been ffs_data ->private_data from it
+(*well* past the actual end of the struct gfs_ffs_obj - struct ffs_data
+is much bigger) and poke in whatever it points to.
 
-EXT4-fs (dm-6): mounted filesystem with ordered data mode. Opts: (null)
-device-mapper: multipath: XXX snitm debugging: got -EREMOTEIO (-121)
-device-mapper: multipath: XXX snitm debugging: failing WRITE SAME IO with error=-121
-end_request: critical target error, dev dm-6, sector 528
-dm-6: WRITE SAME failed. Manually zeroing.
-device-mapper: multipath: Failing path 8:112.
-end_request: I/O error, dev dm-6, sector 4616
-dm-6: WRITE SAME failed. Manually zeroing.
-end_request: I/O error, dev dm-6, sector 4616
-end_request: I/O error, dev dm-6, sector 5640
-end_request: I/O error, dev dm-6, sector 6664
-end_request: I/O error, dev dm-6, sector 7688
-end_request: I/O error, dev dm-6, sector 524288
-Buffer I/O error on device dm-6, logical block 65536
-lost page write due to I/O error on dm-6
-JBD2: Error -5 detected when updating journal superblock for dm-6-8.
-end_request: I/O error, dev dm-6, sector 524296
-Aborting journal on device dm-6-8.
-end_request: I/O error, dev dm-6, sector 524288
-Buffer I/O error on device dm-6, logical block 65536
-lost page write due to I/O error on dm-6
-JBD2: Error -5 detected when updating journal superblock for dm-6-8.
+FWIW, there's a minor leak on top of all that in case if ffs_sb_fill()
+fails on kstrdup() - ffs is obviously forgotten.
 
-# cat /sys/block/sdh/queue/write_same_max_bytes
-0
-# cat /sys/block/dm-6/queue/write_same_max_bytes
-33553920
+The thing is, there is no point in playing all those games with union.
+Just allocate and initialize ffs_data *before* calling mount_nodev() and
+pass a pointer to it via data.ffs_data.  And once it's stored in
+sb->s_fs_info, clear data.ffs_data, so that ffs_fs_mount() knows that
+it doesn't need to kill the sucker manually - from that point on
+we'll have it done by ->kill_sb().
 
-After this patch:
-
-EXT4-fs (dm-6): mounted filesystem with ordered data mode. Opts: (null)
-device-mapper: multipath: XXX snitm debugging: got -EREMOTEIO (-121)
-device-mapper: multipath: XXX snitm debugging: WRITE SAME I/O failed with error=-121
-end_request: critical target error, dev dm-6, sector 528
-dm-6: WRITE SAME failed. Manually zeroing.
-
-# cat /sys/block/sdh/queue/write_same_max_bytes
-0
-# cat /sys/block/dm-6/queue/write_same_max_bytes
-0
-
-It should be noted that WRITE SAME support wasn't enabled in DM
-multipath until v3.10.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-mpath.c         |   11 ++++++++++-
- drivers/md/dm.c               |   11 +++++++++++
- include/linux/device-mapper.h |    3 ++-
- 3 files changed, 23 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/f_fs.c |   60 +++++++++++++++++++---------------------------
+ 1 file changed, 26 insertions(+), 34 deletions(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1284,8 +1284,17 @@ static int do_end_io(struct multipath *m
- 	if (!error && !clone->errors)
- 		return 0;	/* I/O complete */
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1034,37 +1034,19 @@ struct ffs_sb_fill_data {
+ 	struct ffs_file_perms perms;
+ 	umode_t root_mode;
+ 	const char *dev_name;
+-	union {
+-		/* set by ffs_fs_mount(), read by ffs_sb_fill() */
+-		void *private_data;
+-		/* set by ffs_sb_fill(), read by ffs_fs_mount */
+-		struct ffs_data *ffs_data;
+-	};
++	struct ffs_data *ffs_data;
+ };
  
--	if (error == -EOPNOTSUPP || error == -EREMOTEIO || error == -EILSEQ)
-+	if (error == -EOPNOTSUPP || error == -EREMOTEIO || error == -EILSEQ) {
-+		if ((clone->cmd_flags & REQ_WRITE_SAME) &&
-+		    !clone->q->limits.max_write_same_sectors) {
-+			struct queue_limits *limits;
-+
-+			/* device doesn't really support WRITE SAME, disable it */
-+			limits = dm_get_queue_limits(dm_table_get_md(m->ti->table));
-+			limits->max_write_same_sectors = 0;
-+		}
- 		return error;
-+	}
+ static int ffs_sb_fill(struct super_block *sb, void *_data, int silent)
+ {
+ 	struct ffs_sb_fill_data *data = _data;
+ 	struct inode	*inode;
+-	struct ffs_data	*ffs;
++	struct ffs_data	*ffs = data->ffs_data;
  
- 	if (mpio->pgpath)
- 		fail_path(mpio->pgpath);
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2219,6 +2219,17 @@ struct target_type *dm_get_immutable_tar
+ 	ENTER();
+ 
+-	/* Initialise data */
+-	ffs = ffs_data_new();
+-	if (unlikely(!ffs))
+-		goto Enomem;
+-
+ 	ffs->sb              = sb;
+-	ffs->dev_name        = kstrdup(data->dev_name, GFP_KERNEL);
+-	if (unlikely(!ffs->dev_name))
+-		goto Enomem;
+-	ffs->file_perms      = data->perms;
+-	ffs->private_data    = data->private_data;
+-
+-	/* used by the caller of this function */
+-	data->ffs_data       = ffs;
+-
++	data->ffs_data       = NULL;
+ 	sb->s_fs_info        = ffs;
+ 	sb->s_blocksize      = PAGE_CACHE_SIZE;
+ 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
+@@ -1080,17 +1062,14 @@ static int ffs_sb_fill(struct super_bloc
+ 				  &data->perms);
+ 	sb->s_root = d_make_root(inode);
+ 	if (unlikely(!sb->s_root))
+-		goto Enomem;
++		return -ENOMEM;
+ 
+ 	/* EP0 file */
+ 	if (unlikely(!ffs_sb_create_file(sb, "ep0", ffs,
+ 					 &ffs_ep0_operations, NULL)))
+-		goto Enomem;
++		return -ENOMEM;
+ 
+ 	return 0;
+-
+-Enomem:
+-	return -ENOMEM;
  }
  
- /*
-+ * The queue_limits are only valid as long as you have a reference
-+ * count on 'md'.
-+ */
-+struct queue_limits *dm_get_queue_limits(struct mapped_device *md)
-+{
-+	BUG_ON(!atomic_read(&md->holders));
-+	return &md->queue->limits;
-+}
-+EXPORT_SYMBOL_GPL(dm_get_queue_limits);
-+
-+/*
-  * Fully initialize a request-based queue (->elevator, ->request_fn, etc).
-  */
- static int dm_init_request_based_queue(struct mapped_device *md)
---- a/include/linux/device-mapper.h
-+++ b/include/linux/device-mapper.h
-@@ -405,13 +405,14 @@ int dm_noflush_suspending(struct dm_targ
- union map_info *dm_get_mapinfo(struct bio *bio);
- union map_info *dm_get_rq_mapinfo(struct request *rq);
+ static int ffs_fs_parse_opts(struct ffs_sb_fill_data *data, char *opts)
+@@ -1193,6 +1172,7 @@ ffs_fs_mount(struct file_system_type *t,
+ 	struct dentry *rv;
+ 	int ret;
+ 	void *ffs_dev;
++	struct ffs_data	*ffs;
  
-+struct queue_limits *dm_get_queue_limits(struct mapped_device *md);
-+
- /*
-  * Geometry functions.
-  */
- int dm_get_geometry(struct mapped_device *md, struct hd_geometry *geo);
- int dm_set_geometry(struct mapped_device *md, struct hd_geometry *geo);
+ 	ENTER();
  
+@@ -1200,18 +1180,30 @@ ffs_fs_mount(struct file_system_type *t,
+ 	if (unlikely(ret < 0))
+ 		return ERR_PTR(ret);
+ 
++	ffs = ffs_data_new();
++	if (unlikely(!ffs))
++		return ERR_PTR(-ENOMEM);
++	ffs->file_perms = data.perms;
++
++	ffs->dev_name = kstrdup(dev_name, GFP_KERNEL);
++	if (unlikely(!ffs->dev_name)) {
++		ffs_data_put(ffs);
++		return ERR_PTR(-ENOMEM);
++	}
++
+ 	ffs_dev = functionfs_acquire_dev_callback(dev_name);
+-	if (IS_ERR(ffs_dev))
+-		return ffs_dev;
++	if (IS_ERR(ffs_dev)) {
++		ffs_data_put(ffs);
++		return ERR_CAST(ffs_dev);
++	}
++	ffs->private_data = ffs_dev;
++	data.ffs_data = ffs;
+ 
+-	data.dev_name = dev_name;
+-	data.private_data = ffs_dev;
+ 	rv = mount_nodev(t, flags, &data, ffs_sb_fill);
 -
- /*-----------------------------------------------------------------
-  * Functions for manipulating device-mapper tables.
-  *---------------------------------------------------------------*/
+-	/* data.ffs_data is set by ffs_sb_fill */
+-	if (IS_ERR(rv))
++	if (IS_ERR(rv) && data.ffs_data) {
+ 		functionfs_release_dev_callback(data.ffs_data);
+-
++		ffs_data_put(data.ffs_data);
++	}
+ 	return rv;
+ }
+ 
 
 
