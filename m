@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab3JCER4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:17:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47123 "EHLO
+	id S1755846Ab3JCERv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3JCERw (ORCPT
+	with ESMTP id S1753360Ab3JCERs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:17:52 -0400
+	Thu, 3 Oct 2013 00:17:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [ 17/57] mei: bus: stop wait for read during cl state transition
-Date: Wed,  2 Oct 2013 21:08:43 -0700
-Message-Id: <20131003040637.790715440@linuxfoundation.org>
+Subject: [ 16/57] mei: make me client counters less error prone
+Date: Wed,  2 Oct 2013 21:08:42 -0700
+Message-Id: <20131003040637.721042045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -28,82 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit e2b31644e999e8bfe3efce880fb32840299abf41 upstream.
+commit 1aee351a739153529fbb98ee461777b2abd5e1c9 upstream.
 
-Bus layer omitted check for client state transition while waiting
-for read completion
-The client state transition may occur for example as result
-of firmware initiated reset
+1. u8 counters are prone to hard to detect overflow:
+ make them unsigned long to match bit_ functions argument type
 
-Add mei_cl_is_transitioning wrapper to reduce the code
-repetition.:
+2. don't check me_clients_num for negativity, it is unsigned.
+
+3. init all the me client counters from one place
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/bus.c    |    5 ++++-
- drivers/misc/mei/client.h |    6 ++++++
- drivers/misc/mei/main.c   |   11 ++++-------
- 3 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/misc/mei/hbm.c     |   10 ++++++----
+ drivers/misc/mei/mei_dev.h |    6 +++---
+ 2 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -295,10 +295,13 @@ int __mei_cl_recv(struct mei_cl *cl, u8
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -35,11 +35,15 @@ static void mei_hbm_me_cl_allocate(struc
+ 	struct mei_me_client *clients;
+ 	int b;
  
- 	if (cl->reading_state != MEI_READ_COMPLETE &&
- 	    !waitqueue_active(&cl->rx_wait)) {
++	dev->me_clients_num = 0;
++	dev->me_client_presentation_num = 0;
++	dev->me_client_index = 0;
 +
- 		mutex_unlock(&dev->device_lock);
+ 	/* count how many ME clients we have */
+ 	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
+ 		dev->me_clients_num++;
  
- 		if (wait_event_interruptible(cl->rx_wait,
--				(MEI_READ_COMPLETE == cl->reading_state))) {
-+				cl->reading_state == MEI_READ_COMPLETE  ||
-+				mei_cl_is_transitioning(cl))) {
-+
- 			if (signal_pending(current))
- 				return -EINTR;
- 			return -ERESTARTSYS;
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -76,6 +76,12 @@ static inline bool mei_cl_cmp_id(const s
- 		(cl1->host_client_id == cl2->host_client_id) &&
- 		(cl1->me_client_id == cl2->me_client_id);
- }
-+static inline bool mei_cl_is_transitioning(struct mei_cl *cl)
-+{
-+	return (MEI_FILE_INITIALIZING == cl->state ||
-+		MEI_FILE_DISCONNECTED == cl->state ||
-+		MEI_FILE_DISCONNECTING == cl->state);
-+}
+-	if (dev->me_clients_num <= 0)
++	if (dev->me_clients_num == 0)
+ 		return;
+ 
+ 	kfree(dev->me_clients);
+@@ -221,7 +225,7 @@ static int mei_hbm_prop_req(struct mei_d
+ 	struct hbm_props_request *prop_req;
+ 	const size_t len = sizeof(struct hbm_props_request);
+ 	unsigned long next_client_index;
+-	u8 client_num;
++	unsigned long client_num;
  
  
- int mei_cl_flow_ctrl_creds(struct mei_cl *cl);
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -249,19 +249,16 @@ static ssize_t mei_read(struct file *fil
- 		mutex_unlock(&dev->device_lock);
+ 	client_num = dev->me_client_presentation_num;
+@@ -677,8 +681,6 @@ void mei_hbm_dispatch(struct mei_device
+ 		if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
+ 		    dev->hbm_state == MEI_HBM_ENUM_CLIENTS) {
+ 				dev->init_clients_timer = 0;
+-				dev->me_client_presentation_num = 0;
+-				dev->me_client_index = 0;
+ 				mei_hbm_me_cl_allocate(dev);
+ 				dev->hbm_state = MEI_HBM_CLIENT_PROPERTIES;
  
- 		if (wait_event_interruptible(cl->rx_wait,
--			(MEI_READ_COMPLETE == cl->reading_state ||
--			 MEI_FILE_INITIALIZING == cl->state ||
--			 MEI_FILE_DISCONNECTED == cl->state ||
--			 MEI_FILE_DISCONNECTING == cl->state))) {
-+				MEI_READ_COMPLETE == cl->reading_state ||
-+				mei_cl_is_transitioning(cl))) {
-+
- 			if (signal_pending(current))
- 				return -EINTR;
- 			return -ERESTARTSYS;
- 		}
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -396,9 +396,9 @@ struct mei_device {
+ 	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
+ 	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
+ 	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
+-	u8 me_clients_num;
+-	u8 me_client_presentation_num;
+-	u8 me_client_index;
++	unsigned long me_clients_num;
++	unsigned long me_client_presentation_num;
++	unsigned long me_client_index;
  
- 		mutex_lock(&dev->device_lock);
--		if (MEI_FILE_INITIALIZING == cl->state ||
--		    MEI_FILE_DISCONNECTED == cl->state ||
--		    MEI_FILE_DISCONNECTING == cl->state) {
-+		if (mei_cl_is_transitioning(cl)) {
- 			rets = -EBUSY;
- 			goto out;
- 		}
+ 	struct mei_cl wd_cl;
+ 	enum mei_wd_states wd_state;
 
 
