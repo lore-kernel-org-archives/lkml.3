@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab3JCL6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 07:58:20 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:55975 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab3JCL6T (ORCPT
+	id S1753991Ab3JCMAF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:00:05 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:51410 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab3JCMAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 07:58:19 -0400
-Message-ID: <524D5BD9.6040807@linaro.org>
-Date: Thu, 03 Oct 2013 13:58:17 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 3 Oct 2013 08:00:03 -0400
+Date: Thu, 3 Oct 2013 12:59:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Correct handling of device tree gpio
+ defaults
+Message-ID: <20131003115958.GQ9048@lee--X1>
+References: <1380796936-1174-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 21/21] cpuidle: change governor from within cpuidle_replace_governor()
-References: <cover.1379779777.git.viresh.kumar@linaro.org>	<5b758e21eeb97f5f68191819c0820673692b6b75.1379779777.git.viresh.kumar@linaro.org>	<524368CF.4030803@linaro.org>	<CAKohpom_BTYC4DZLP93VzFqfnCudPb9whugPigh-jO0MpHurtw@mail.gmail.com>	<5243EE3B.1050600@linaro.org> <CAKohpomiJtmpnudWQekc8A6kPPkVNVJw3fFHFiM_6fMiwkupcw@mail.gmail.com>
-In-Reply-To: <CAKohpomiJtmpnudWQekc8A6kPPkVNVJw3fFHFiM_6fMiwkupcw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380796936-1174-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 12:36 PM, Viresh Kumar wrote:
-> On 26 September 2013 13:50, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->> Rafael is pretty busy ATM but may be he can give his feedback on this later.
->
-> For now I will resend it and maybe later you can get it cleaned up even more..
-> Or maybe I will do it once I have better hold on cpuidle core :)
->
-> Can I have your Ack for now? (As discussed on IRC) :)
+On Thu, 03 Oct 2013, Charles Keepax wrote:
 
-Actually the functions cpuidle_unregister_governor and 
-cpuidle_replace_governor are dead code since the governors are no longer 
-modules (commit 137b944e100278d696826cf25c83014ac17473fe), so you can 
-remove the code instead.
+> The intention is that all out of range values should cause the chips
+> default settings to be used and a value of zero should be treated
+> literally. Currently all out of range values will hit the second if and
+> be treated as a literal zero. This patch adds an else to fix this issue.
 
+Code looks good. I'm not sure I understand the commit message within
+the current context.
+
+> Reported-by: Heather Lomond <heather.lomond@wolfsonmicro.com>
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> index 5ac3aa4..e13355b 100644
+> --- a/drivers/mfd/arizona-core.c
+> +++ b/drivers/mfd/arizona-core.c
+> @@ -540,7 +540,7 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
+>  		for (i = 0; i < ARRAY_SIZE(arizona->pdata.gpio_defaults); i++) {
+>  			if (arizona->pdata.gpio_defaults[i] > 0xffff)
+>  				arizona->pdata.gpio_defaults[i] = 0;
+> -			if (arizona->pdata.gpio_defaults[i] == 0)
+> +			else if (arizona->pdata.gpio_defaults[i] == 0)
+>  				arizona->pdata.gpio_defaults[i] = 0x10000;
+>  		}
+>  	} else {
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
