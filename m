@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3JCED6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:03:58 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28044 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662Ab3JCED4 (ORCPT
+	id S1753791Ab3JCEEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:04:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46681 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab3JCEEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:03:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX188nkQqqqrcNf3bNlAhzZH8
-Date: Wed, 2 Oct 2013 21:03:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: balbi@ti.com, bcousson@baylibre.com, p.zabel@pengutronix.de,
-        broonie@kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 04/10] ARM: OMAP2+: usb-host: Adapt to USB phy-nop
- RESET line changes
-Message-ID: <20131003040346.GI8949@atomide.com>
-References: <1380012836-29900-1-git-send-email-rogerq@ti.com>
- <1380012836-29900-5-git-send-email-rogerq@ti.com>
- <524BF354.3000502@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524BF354.3000502@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Oct 2013 00:04:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/13] 3.0.99-stable review
+Date: Wed,  2 Oct 2013 21:04:25 -0700
+Message-Id: <20131003040400.753642257@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [131002 03:28]:
-> Hi Tony,
-> 
-> On 09/24/2013 11:53 AM, Roger Quadros wrote:
-> > The USB phy-nop nop driver expects the RESET line information
-> > to be sent as a GPIO number via platform data. Adapt to that.
-> > 
-> > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> Need your Ack on this one as well.
+This is the start of the stable review cycle for the 3.0.99 release.
+There are 13 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Responses should be made by Sat Oct  5 04:03:47 UTC 2013.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.99-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.99-rc1
+
+Eric Dumazet <edumazet@google.com>
+    splice: fix racy pipe->buffers uses
+
+Henrik Rydberg <rydberg@euromail.se>
+    hwmon: (applesmc) Silence uninitialized warnings
+
+Khalid Aziz <khalid.aziz@oracle.com>
+    mm: fix aio performance regression for database caused by THP
+
+Henrik Rydberg <rydberg@euromail.se>
+    hwmon: (applesmc) Check key count before proceeding
+
+Jani Nikula <jani.nikula@intel.com>
+    drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
+
+Mikulas Patocka <mpatocka@redhat.com>
+    dm-snapshot: fix performance degradation due to small hash size
+
+Mikulas Patocka <mpatocka@redhat.com>
+    dm snapshot: workaround for a false positive lockdep warning
+
+Kurt Garloff <kurt@garloff.de>
+    usb/core/devio.c: Don't reject control message to endpoint with wrong direction bit
+
+Florian Wolter <wolly84@web.de>
+    xhci: Fix race between ep halt and URB cancellation
+
+Mathias Nyman <mathias.nyman@linux.intel.com>
+    xhci: Fix oops happening after address device timeout
+
+Malcolm Priestley <tvboxspy@gmail.com>
+    staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
+
+Josh Boyer <jwboyer@redhat.com>
+    x86, efi: Don't map Boot Services on i386
+
+Masoud Sharbiani <msharbiani@twitter.com>
+    x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
+
+
+-------------
+
+Diffstat:
+
+ Makefile                          |  4 +--
+ arch/x86/kernel/reboot.c          | 16 ++++++++++
+ arch/x86/platform/efi/efi.c       | 11 ++++---
+ drivers/gpu/drm/i915/intel_dp.c   | 13 +++++++-
+ drivers/hwmon/applesmc.c          | 19 ++++++++++--
+ drivers/md/dm-snap-persistent.c   |  2 +-
+ drivers/md/dm-snap.c              |  5 ++-
+ drivers/staging/vt6656/main_usb.c |  3 +-
+ drivers/usb/core/devio.c          | 16 ++++++++++
+ drivers/usb/host/xhci-ring.c      | 14 +++++++--
+ fs/splice.c                       | 35 ++++++++++++---------
+ include/linux/splice.h            |  8 ++---
+ kernel/relay.c                    |  5 +--
+ kernel/trace/trace.c              |  6 ++--
+ mm/swap.c                         | 65 ++++++++++++++++++++++++++++-----------
+ net/core/skbuff.c                 |  3 +-
+ 16 files changed, 166 insertions(+), 59 deletions(-)
+
+
