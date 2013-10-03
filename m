@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3JCEMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:12:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46890 "EHLO
+	id S1755024Ab3JCEMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:12:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab3JCEL6 (ORCPT
+	with ESMTP id S1754337Ab3JCEMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:11:58 -0400
+	Thu, 3 Oct 2013 00:12:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [ 16/52] mei: bus: stop wait for read during cl state transition
-Date: Wed,  2 Oct 2013 21:05:34 -0700
-Message-Id: <20131003040523.296523196@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [ 18/52] tty: Fix SIGTTOU not sent with tcflush()
+Date: Wed,  2 Oct 2013 21:05:36 -0700
+Message-Id: <20131003040523.429710719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,84 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit e2b31644e999e8bfe3efce880fb32840299abf41 upstream.
+commit 5cec7bf699c61d14f0538345076480bb8c8ebfbb upstream.
 
-Bus layer omitted check for client state transition while waiting
-for read completion
-The client state transition may occur for example as result
-of firmware initiated reset
+Commit 'e7f3880cd9b98c5bf9391ae7acdec82b75403776'
+  tty: Fix recursive deadlock in tty_perform_flush()
+introduced a regression where tcflush() does not generate
+SIGTTOU for background process groups.
 
-Add mei_cl_is_transitioning wrapper to reduce the code
-repetition.:
+Make sure ioctl(TCFLSH) calls tty_check_change() when
+invoked from the line discipline.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/bus.c    |    5 ++++-
- drivers/misc/mei/client.h |    6 ++++++
- drivers/misc/mei/main.c   |   11 ++++-------
- 3 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/tty/tty_ioctl.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -295,10 +295,13 @@ int __mei_cl_recv(struct mei_cl *cl, u8
- 
- 	if (cl->reading_state != MEI_READ_COMPLETE &&
- 	    !waitqueue_active(&cl->rx_wait)) {
-+
- 		mutex_unlock(&dev->device_lock);
- 
- 		if (wait_event_interruptible(cl->rx_wait,
--				(MEI_READ_COMPLETE == cl->reading_state))) {
-+				cl->reading_state == MEI_READ_COMPLETE  ||
-+				mei_cl_is_transitioning(cl))) {
-+
- 			if (signal_pending(current))
- 				return -EINTR;
- 			return -ERESTARTSYS;
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -76,6 +76,12 @@ static inline bool mei_cl_cmp_id(const s
- 		(cl1->host_client_id == cl2->host_client_id) &&
- 		(cl1->me_client_id == cl2->me_client_id);
- }
-+static inline bool mei_cl_is_transitioning(struct mei_cl *cl)
-+{
-+	return (MEI_FILE_INITIALIZING == cl->state ||
-+		MEI_FILE_DISCONNECTED == cl->state ||
-+		MEI_FILE_DISCONNECTING == cl->state);
-+}
- 
- 
- int mei_cl_flow_ctrl_creds(struct mei_cl *cl);
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -262,19 +262,16 @@ static ssize_t mei_read(struct file *fil
- 		mutex_unlock(&dev->device_lock);
- 
- 		if (wait_event_interruptible(cl->rx_wait,
--			(MEI_READ_COMPLETE == cl->reading_state ||
--			 MEI_FILE_INITIALIZING == cl->state ||
--			 MEI_FILE_DISCONNECTED == cl->state ||
--			 MEI_FILE_DISCONNECTING == cl->state))) {
-+				MEI_READ_COMPLETE == cl->reading_state ||
-+				mei_cl_is_transitioning(cl))) {
-+
- 			if (signal_pending(current))
- 				return -EINTR;
- 			return -ERESTARTSYS;
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -1201,6 +1201,9 @@ int n_tty_ioctl_helper(struct tty_struct
  		}
- 
- 		mutex_lock(&dev->device_lock);
--		if (MEI_FILE_INITIALIZING == cl->state ||
--		    MEI_FILE_DISCONNECTED == cl->state ||
--		    MEI_FILE_DISCONNECTING == cl->state) {
-+		if (mei_cl_is_transitioning(cl)) {
- 			rets = -EBUSY;
- 			goto out;
- 		}
+ 		return 0;
+ 	case TCFLSH:
++		retval = tty_check_change(tty);
++		if (retval)
++			return retval;
+ 		return __tty_perform_flush(tty, arg);
+ 	default:
+ 		/* Try the mode commands */
 
 
