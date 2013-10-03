@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3JCWbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 18:31:16 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56872 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643Ab3JCWbO (ORCPT
+	id S1755910Ab3JCWfz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 18:35:55 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:44991 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659Ab3JCWfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 18:31:14 -0400
-From: Ping Cheng <pinglinux@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se,
-        benjamin.tissoires@gmail.com, linux-kernel@vger.kernel.org,
-        Ping Cheng <pingc@wacom.com>
-Subject: [PATCH] input - input.h: Add a new switch event
-Date: Thu,  3 Oct 2013 15:31:07 -0700
-Message-Id: <1380839467-27264-1-git-send-email-pingc@wacom.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 3 Oct 2013 18:35:53 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1380839303-4834-1-git-send-email-seanpaul@chromium.org>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+	<1380839303-4834-1-git-send-email-seanpaul@chromium.org>
+Date: Thu, 3 Oct 2013 15:35:52 -0700
+Message-ID: <CAOesGMhjBGWVXs5VXdc9mFpKWE2-MSAG6BWB0GAzxLGd6Sph=A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] Add some missing bits for exynos5250-snow
+From: Olof Johansson <olof@lixom.net>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Inki Dae <inki.dae@samsung.com>, airlied@linux.ie
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of Wacom's pen and touch capable models added a switch for
-users to turn on/off touch events. We need to report the state of
-this switch to userland. But, there is no existing switch event
-defined for this purpose. Luckily enough, there is a room for a
-new switch event.
+On Thu, Oct 3, 2013 at 3:28 PM, Sean Paul <seanpaul@chromium.org> wrote:
+> This set adds some missing devicetree nodes to the exynos5250-snow file as well
+> as adds a drm_bridge driver for the ptn3460 DP-LVDS chip. This chip is used in
+> the exynos5250-snow board.
+>
+> Sean
 
-Signed-off-by: Ping Cheng <pingc@wacom.com>
----
- include/uapi/linux/input.h | 1 +
- 1 file changed, 1 insertion(+)
+Series:
 
-diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
-index d08abf9..d4097b0 100644
---- a/include/uapi/linux/input.h
-+++ b/include/uapi/linux/input.h
-@@ -855,6 +855,7 @@ struct input_keymap_entry {
- #define SW_FRONT_PROXIMITY	0x0b  /* set = front proximity sensor active */
- #define SW_ROTATE_LOCK		0x0c  /* set = rotate locked/disabled */
- #define SW_LINEIN_INSERT	0x0d  /* set = inserted */
-+#define SW_TOUCH_ENABLED	0x0e  /* set = touch switch turned on (touch events off) */
- #define SW_MAX			0x0f
- #define SW_CNT			(SW_MAX+1)
- 
--- 
-1.8.1.2
+Acked-by: Olof Johansson <olof@lixom.net>
 
+
+-Olof
