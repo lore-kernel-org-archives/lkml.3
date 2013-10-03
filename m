@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab3JCERh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:17:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47095 "EHLO
+	id S1755823Ab3JCERl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791Ab3JCERd (ORCPT
+	with ESMTP id S1755791Ab3JCERj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:17:33 -0400
+	Thu, 3 Oct 2013 00:17:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masoud Sharbiani <msharbiani@twitter.com>,
-        Vinson Lee <vlee@twitter.com>, Robin Holt <holt@sgi.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 13/57] x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
-Date: Wed,  2 Oct 2013 21:08:39 -0700
-Message-Id: <20131003040637.513176604@linuxfoundation.org>
+        Vinson Lee <vlee@twitter.com>, Borislav Petkov <bp@suse.de>,
+        Vinson Lee <vlee@freedesktop.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 14/57] tools lib lk: Uninclude linux/magic.h in debugfs.c
+Date: Wed,  2 Oct 2013 21:08:40 -0700
+Message-Id: <20131003040637.586167776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -29,49 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masoud Sharbiani <msharbiani@twitter.com>
+From: Vinson Lee <vlee@twitter.com>
 
-commit 4f0acd31c31f03ba42494c8baf6c0465150e2621 upstream.
+commit ce7eebe5c3deef8e19c177c24ee75843256e69ca upstream.
 
-Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
+The compilation only looks for linux/magic.h from the default include
+paths, which does not include the source tree. This results in a build
+error if linux/magic.h is not available or not installed.
 
-Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+For example, this build error occurs on CentOS 5.
+
+$ make -C tools/lib/lk V=1
+[...]
+gcc -o debugfs.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
+-D_FORTIFY_SOURCE=2 -Wbad-function-cast -Wdeclaration-after-statement
+-Wformat-security -Wformat-y2k -Winit-self -Wmissing-declarations
+-Wmissing-prototypes -Wnested-externs -Wno-system-headers
+-Wold-style-definition -Wpacked -Wredundant-decls -Wshadow
+-Wstrict-aliasing=3 -Wstrict-prototypes -Wswitch-default -Wswitch-enum
+-Wundef -Wwrite-strings -Wformat  -fPIC  -D_LARGEFILE64_SOURCE
+-D_FILE_OFFSET_BITS=64 debugfs.c
+debugfs.c:8:25: error: linux/magic.h: No such file or directory
+
+The only symbol from linux/magic.h needed by debugfs.c is DEBUGFS_MAGIC,
+and that is already defined in debugfs.h. linux/magic.h isn't providing
+any extra symbols and can unincluded. This is similar to the approach by
+perf, which has its own magic.h wrapper at
+tools/perf/util/include/linux/magic.h
+
 Signed-off-by: Vinson Lee <vlee@twitter.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Vinson Lee <vlee@freedesktop.org>
+Link: http://lkml.kernel.org/r/1379546200-17028-1-git-send-email-vlee@freedesktop.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/reboot.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ tools/lib/lk/debugfs.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -358,6 +358,22 @@ static struct dmi_system_id __initdata r
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell PowerEdge C6100",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-+		},
-+	},
-+	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell PowerEdge C6100",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-+		},
-+	},
- 	{ }
- };
+--- a/tools/lib/lk/debugfs.c
++++ b/tools/lib/lk/debugfs.c
+@@ -5,7 +5,6 @@
+ #include <stdbool.h>
+ #include <sys/vfs.h>
+ #include <sys/mount.h>
+-#include <linux/magic.h>
+ #include <linux/kernel.h>
  
+ #include "debugfs.h"
 
 
