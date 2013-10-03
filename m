@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3JCENW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:13:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46927 "EHLO
+	id S1755188Ab3JCENZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:13:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46934 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab3JCENS (ORCPT
+	with ESMTP id S1753556Ab3JCENW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:13:18 -0400
+	Thu, 3 Oct 2013 00:13:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Imre Deak <imre.deak@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 25/52] drm/i915/tv: clear adjusted_mode.flags
-Date: Wed,  2 Oct 2013 21:05:43 -0700
-Message-Id: <20131003040523.897577703@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 26/52] xhci: Ensure a command structure points to the correct trb on the command ring
+Date: Wed,  2 Oct 2013 21:05:44 -0700
+Message-Id: <20131003040523.965067243@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -29,63 +27,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 1062b81598bc00e2f6620e6f3788f8f8df2f01e7 upstream.
+commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
 
-The native TV encoder has it's own flags to adjust sync modes and
-enabled interlaced modes which are totally irrelevant for the adjusted
-mode. This worked out nicely since the input modes used by both the
-load detect code and reported in the ->get_modes callbacks all have no
-flags set, and we also don't fill out any of them in the ->get_config
-callback.
+If a command on the command ring needs to be cancelled before it is handled
+it can be turned to a no-op operation when the ring is stopped.
+We want to store the command ring enqueue pointer in the command structure
+when the command in enqueued for the cancellation case.
 
-This changed with the additional sanitation done with
+Some commands used to store the command ring dequeue pointers instead of enqueue
+(these often worked because enqueue happends to equal dequeue quite often)
 
-commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0
-Author: Imre Deak <imre.deak@intel.com>
-Date:   Tue Jul 30 13:36:32 2013 +0300
+Other commands correctly used the enqueue pointer but did not check if it pointed
+to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
+xhci_stop_device() in about 2% of suspend/resume cases.
 
-    drm/i915: make user mode sync polarity setting explicit
+This should also solve some weird behavior happening in command cancellation cases.
 
-sinc now the "no flags at all" state wouldn't fit through core code
-any more. So fix this up again by explicitly clearing the flags in the
-->compute_config callback.
+This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
+then forgotten:
+    http://marc.info/?l=linux-usb&m=136269803207465&w=2
 
-Aside: We have zero checking in place to make sure that the requested
-mode is indeed the right input mode we want for the selected TV mode.
-So we'll happily fall over if userspace tries to pull us.  But that's
-definitely work for a different patch series. So just add a FIXME
-comment for now.
+This patch should be backported to kernels as old as 3.7, that contain
+the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
+command ring function"
 
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Imre Deak <imre.deak@intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_tv.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/xhci-hub.c  |    2 +-
+ drivers/usb/host/xhci-ring.c |   10 ++++++++++
+ drivers/usb/host/xhci.c      |   25 +++++--------------------
+ drivers/usb/host/xhci.h      |    1 +
+ 4 files changed, 17 insertions(+), 21 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -921,6 +921,14 @@ intel_tv_compute_config(struct intel_enc
- 	DRM_DEBUG_KMS("forcing bpc to 8 for TV\n");
- 	pipe_config->pipe_bpp = 8*3;
- 
-+	/* TV has it's own notion of sync and other mode flags, so clear them. */
-+	pipe_config->adjusted_mode.flags = 0;
-+
-+	/*
-+	 * FIXME: We don't check whether the input mode is actually what we want
-+	 * or whether userspace is doing something stupid.
-+	 */
-+
- 	return true;
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -286,7 +286,7 @@ static int xhci_stop_device(struct xhci_
+ 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+ 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+ 	}
+-	cmd->command_trb = xhci->cmd_ring->enqueue;
++	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xh
+ 	return TRB_TYPE_LINK_LE32(link->control);
  }
  
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
++{
++	/* Enqueue pointer can be left pointing to the link TRB,
++	 * we must handle that
++	 */
++	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
++		return ring->enq_seg->next->trbs;
++	return ring->enqueue;
++}
++
+ /* Updates trb to point to the next TRB in the ring, and updates seg if the next
+  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
+  * effect the ring dequeue or enqueue pointers.
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2592,15 +2592,7 @@ static int xhci_configure_endpoint(struc
+ 	if (command) {
+ 		cmd_completion = command->completion;
+ 		cmd_status = &command->status;
+-		command->command_trb = xhci->cmd_ring->enqueue;
+-
+-		/* Enqueue pointer can be left pointing to the link TRB,
+-		 * we must handle that
+-		 */
+-		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
+-			command->command_trb =
+-				xhci->cmd_ring->enq_seg->next->trbs;
+-
++		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+ 	} else {
+ 		cmd_completion = &virt_dev->cmd_completion;
+@@ -2608,7 +2600,7 @@ static int xhci_configure_endpoint(struc
+ 	}
+ 	init_completion(cmd_completion);
+ 
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -3393,14 +3385,7 @@ int xhci_discover_or_reset_device(struct
+ 
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
+-
+-	/* Enqueue pointer can be left pointing to the link TRB,
+-	 * we must handle that
+-	 */
+-	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
+-		reset_device_cmd->command_trb =
+-			xhci->cmd_ring->enq_seg->next->trbs;
++	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 
+ 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, slot_id);
+@@ -3604,7 +3589,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3731,7 +3716,7 @@ int xhci_address_device(struct usb_hcd *
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1821,6 +1821,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhc
+ 		union xhci_trb *cmd_trb);
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ 		unsigned int ep_index, unsigned int stream_id);
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
+ 
+ /* xHCI roothub code */
+ void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
 
 
