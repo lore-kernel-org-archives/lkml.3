@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3JCJwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:52:31 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:53866 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751587Ab3JCJw3 (ORCPT
+	id S1753036Ab3JCJ5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:57:10 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:36976 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3JCJ5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:52:29 -0400
-Date: Thu, 3 Oct 2013 10:52:24 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Roy Franz <roy.franz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
-        linux@arm.linux.org.uk, leif.lindholm@linaro.org,
-        grant.likely@linaro.org, dave.martin@arm.com, msalter@redhat.com
-Subject: Re: [PATCH 2/6] Add shared update_fdt() function for ARM/ARM64
-Message-ID: <20131003095224.GX21381@console-pimps.org>
-References: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
- <1380385403-31904-3-git-send-email-roy.franz@linaro.org>
+	Thu, 3 Oct 2013 05:57:08 -0400
+Date: Thu, 3 Oct 2013 11:57:49 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] fuse: writepages: crop secondary requests
+Message-ID: <20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu>
+References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380385403-31904-3-git-send-email-roy.franz@linaro.org>
+In-Reply-To: <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Sep, at 09:23:19AM, Roy Franz wrote:
-> Both ARM and ARM64 stubs will update the device tree
-> that they pass to the kernel.  In both cases they
-> primarily need to add the same UEFI related information,
-> so the function can be shared.
+On Wed, Oct 02, 2013 at 09:38:32PM +0400, Maxim Patlasov wrote:
+> If writeback happens while fuse is in FUSE_NOWRITE condition, the request
+> will be queued but not processed immediately (see fuse_flush_writepages()).
+> Until FUSE_NOWRITE becomes relaxed, more writebacks can happen. They will
+> be queued as "secondary" requests to that first ("primary") request.
 > 
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
-> ---
->  drivers/firmware/efi/efi-stub-helper.c |   86 ++++++++++++++++++++++++++++++++
->  1 file changed, 86 insertions(+)
+> Existing implementation crops only primary request. This is not correct
+> because a subsequent extending write(2) may increase i_size and then secondary
+> requests won't be cropped properly. The result would be stale data written to
+> the server to a file offset where zeros must be.
 > 
-> diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-> index cc0581d..d3448a9 100644
-> --- a/drivers/firmware/efi/efi-stub-helper.c
-> +++ b/drivers/firmware/efi/efi-stub-helper.c
-> @@ -4,6 +4,7 @@
->   * implementation files.
->   *
->   * Copyright 2011 Intel Corporation; author Matt Fleming
-> + * Copyright 2013 Linaro Limited; author Roy Franz
->   *
->   * This file is part of the Linux kernel, and is made available
->   * under the terms of the GNU General Public License version 2.
-> @@ -636,3 +637,88 @@ static char *efi_convert_cmdline_to_ascii(efi_system_table_t *sys_table_arg,
->  	*cmd_line_len = options_size;
->  	return (char *)cmdline_addr;
->  }
-> +
-> +#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
-> +static efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
-> +			       void *fdt, int new_fdt_size, char *cmdline_ptr,
-> +			       u64 initrd_addr, u64 initrd_size,
-> +			       efi_memory_desc_t *memory_map,
-> +			       unsigned long map_size, unsigned long desc_size,
-> +			       u32 desc_ver)
+> Similar problem may happen if secondary requests are attached to an in-flight
+> request that was already cropped.
+> 
+> The patch solves the issue by cropping all secondary requests in
+> fuse_writepage_end(). Thanks to Miklos for idea.
 
-Hmm... does this function really belong in efi-stub-helper.c? That file
-should be for architecture independent functionality only.
+How about this, even simpler, one?
 
-While it currently does include this little snippet,
+Thanks,
+Miklos
 
-#ifdef CONFIG_ARM
-	/*
-	 * For ARM, allocate at a high address to avoid reserved
-	 * regions at low addresses that we don't know the specfics of
-	 * at the time we are processing the command line.
-	 */
-	status = efi_high_alloc(sys_table_arg, options_size, 0,
-			    &cmdline_addr, 0xfffff000);
-#else
-	status = efi_low_alloc(sys_table_arg, options_size, 0,
-			    &cmdline_addr);
-#endif
 
-I think that single #ifdef is justifiable. But including entire
-functions that are only used by ARM/ARM64 or x86 isn't.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Index: linux/fs/fuse/file.c
+===================================================================
+--- linux.orig/fs/fuse/file.c	2013-10-03 11:27:00.597084704 +0200
++++ linux/fs/fuse/file.c	2013-10-03 11:53:30.477208467 +0200
+@@ -1436,12 +1436,12 @@ static void fuse_writepage_finish(struct
+ }
+ 
+ /* Called under fc->lock, may release and reacquire it */
+-static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req)
++static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req,
++				loff_t size)
+ __releases(fc->lock)
+ __acquires(fc->lock)
+ {
+ 	struct fuse_inode *fi = get_fuse_inode(req->inode);
+-	loff_t size = i_size_read(req->inode);
+ 	struct fuse_write_in *inarg = &req->misc.write.in;
+ 	__u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
+ 
+@@ -1476,7 +1476,7 @@ __acquires(fc->lock)
+  *
+  * Called with fc->lock
+  */
+-void fuse_flush_writepages(struct inode *inode)
++void __fuse_flush_writepages(struct inode *inode, loff_t crop)
+ __releases(fc->lock)
+ __acquires(fc->lock)
+ {
+@@ -1487,9 +1487,15 @@ __acquires(fc->lock)
+ 	while (fi->writectr >= 0 && !list_empty(&fi->queued_writes)) {
+ 		req = list_entry(fi->queued_writes.next, struct fuse_req, list);
+ 		list_del_init(&req->list);
+-		fuse_send_writepage(fc, req);
++		fuse_send_writepage(fc, req, crop);
+ 	}
+ }
++void fuse_flush_writepages(struct inode *inode)
++__releases(fc->lock)
++__acquires(fc->lock)
++{
++	__fuse_flush_writepages(inode, i_size_read(inode));
++}
+ 
+ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
+ {
+@@ -1499,12 +1505,13 @@ static void fuse_writepage_end(struct fu
+ 	mapping_set_error(inode->i_mapping, req->out.h.error);
+ 	spin_lock(&fc->lock);
+ 	while (req->misc.write.next) {
++		struct fuse_write_in *inarg = &req->misc.write.in;
+ 		struct fuse_req *next = req->misc.write.next;
+ 		req->misc.write.next = next->misc.write.next;
+ 		next->misc.write.next = NULL;
+ 		list_add(&next->writepages_entry, &fi->writepages);
+ 		list_add_tail(&next->list, &fi->queued_writes);
+-		fuse_flush_writepages(inode);
++		__fuse_flush_writepages(inode, inarg->offset + inarg->size);
+ 	}
+ 	fi->writectr--;
+ 	fuse_writepage_finish(fc, req);
