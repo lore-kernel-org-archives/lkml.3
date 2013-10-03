@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab3JCEhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:37:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47652 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab3JCEVJ (ORCPT
+	id S1757319Ab3JCEh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:37:58 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:46275 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab3JCEh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:21:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 48/57] drm/radeon/cik: fix overflow in vram fetch
-Date: Wed,  2 Oct 2013 21:09:14 -0700
-Message-Id: <20131003040639.881487106@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
-References: <20131003040636.600441214@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 3 Oct 2013 00:37:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380370138-3513-11-git-send-email-sachin.kamat@linaro.org>
+References: <1380370138-3513-1-git-send-email-sachin.kamat@linaro.org>
+	<1380370138-3513-11-git-send-email-sachin.kamat@linaro.org>
+Date: Thu, 3 Oct 2013 10:07:55 +0530
+Message-ID: <CAKohpon=PO+U2DGJQJKa+9MhxoVC3ALnJYjv8_DEUDMivGZREQ@mail.gmail.com>
+Subject: Re: [PATCH 11/11] pinctrl: plgpio: Remove redundant of_match_ptr
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On 28 September 2013 17:38, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> The data structure of_match_ptr() protects is always compiled in.
 
-------------------
+of_match_ptr() isn't a data structure.. And also what does "protects" mean here?
 
-From: Alex Deucher <alexander.deucher@amd.com>
+> Hence of_match_ptr() is not needed.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/pinctrl/spear/pinctrl-plgpio.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
+> index 0a7f0bdb..ff2940e 100644
+> --- a/drivers/pinctrl/spear/pinctrl-plgpio.c
+> +++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
+> @@ -735,7 +735,7 @@ static struct platform_driver plgpio_driver = {
+>                 .owner = THIS_MODULE,
+>                 .name = "spear-plgpio",
+>                 .pm = &plgpio_dev_pm_ops,
+> -               .of_match_table = of_match_ptr(plgpio_of_match),
+> +               .of_match_table = plgpio_of_match,
+>         },
+>  };
 
-commit 13c5bfdad758bddc199850c22246ddf26adcec1f upstream.
-
-Missing ULL when calculating the amount of vram
-leads to an overflow when the amount of vram is >= 4G.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/radeon/cik.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -4225,8 +4225,8 @@ static int cik_mc_init(struct radeon_dev
- 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
- 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
- 	/* size in MB on si */
--	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
--	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
-+	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
-+	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
- 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
- 	si_vram_gtt_location(rdev, &rdev->mc);
- 	radeon_update_bandwidth_info(rdev);
-
-
+Patch is okay otherwise.
