@@ -1,67 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab3JCUws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:52:48 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:54134 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab3JCUwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:52:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131003204142.GL13318@ZenIV.linux.org.uk>
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
-	<CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
-	<20131003105130.GE13318@ZenIV.linux.org.uk>
-	<CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
-	<20131003174439.GG13318@ZenIV.linux.org.uk>
-	<CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
-	<20131003194351.GK13318@ZenIV.linux.org.uk>
-	<CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
-	<20131003204142.GL13318@ZenIV.linux.org.uk>
-Date: Thu, 3 Oct 2013 13:52:45 -0700
-X-Google-Sender-Auth: 9V_CTYappPYIUIWxnuYPv4FtR5U
-Message-ID: <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755429Ab3JCUxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:53:53 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:52227 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754587Ab3JCUxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 16:53:50 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
+Subject: [PATCH 4/7] x86, kaslr: select random base offset
+Date: Thu,  3 Oct 2013 13:53:22 -0700
+Message-Id: <1380833605-26313-5-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380833605-26313-1-git-send-email-keescook@chromium.org>
+References: <1380833605-26313-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 1:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> The problem is this:
-> A = 1, B = 1
-> CPU1:
-> A = 0
-> <full barrier>
-> synchronize_rcu()
-> read B
->
-> CPU2:
-> rcu_read_lock()
-> B = 0
-> read A
->
-> Are we guaranteed that we won't get both of them seeing ones, in situation
-> when that rcu_read_lock() comes too late to be noticed by synchronize_rcu()?
+Select a random location when CONFIG_RANDOMIZE_BASE is used, bounded
+by CONFIG_RANDOMIZE_BASE_MAX_OFFSET. Sources of randomness currently
+include RDRAND, RDTSC, or the i8254.
 
-Yeah, I think we should be guaranteed that, because the
-synchronize_rcu() will guarantee that all other CPU's go through an
-idle period. So the "read A" on CPU2 cannot possibly see a 1 _unless_
-it happens so early that synchronize_rcu() definitely sees it (ie it's
-a "preexisting reader" by definition), in which case synchronize_rcu()
-will be waiting for a subsequent idle period, in which case the B=0 on
-CPU2 is not only guaranteed to happen but also be visible out, so the
-"read B" on CPU1 will see 0. And that's true even if CPU2 doesn't have
-an explicit memory barrier, because the "RCU idle" state implies that
-it has gone through a barrier.
+This moves the pre-alternatives inline rdrand function into the header so
+both pieces of code can use it. Availability of RDRAND is then controlled
+by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
 
-So I don't see how they could possibly see ones. Modulo terminal bugs
-in synchronize_barrier() (which can be very slow, but for umount I
-wouldn't worry). Or modulo my brain being fried.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v7:
+ - move rdrand_long into header to avoid code duplication; HPA.
+v3:
+ - fall back to reading the i8254 when no TSC; HPA.
+v2:
+ - use rdtscl from msr.h; Mathias Krause.
+---
+ arch/x86/boot/compressed/aslr.c   |   70 ++++++++++++++++++++++++++++++++++++-
+ arch/x86/boot/compressed/misc.h   |    2 ++
+ arch/x86/include/asm/archrandom.h |   21 +++++++++++
+ arch/x86/kernel/cpu/rdrand.c      |   14 --------
+ 4 files changed, 92 insertions(+), 15 deletions(-)
 
-                  Linus
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index ed7e9f0..5bb7c63 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -1,6 +1,59 @@
+ #include "misc.h"
+ 
+ #ifdef CONFIG_RANDOMIZE_BASE
++#include <asm/msr.h>
++#include <asm/archrandom.h>
++
++#define I8254_PORT_CONTROL	0x43
++#define I8254_PORT_COUNTER0	0x40
++#define I8254_CMD_READBACK	0xC0
++#define I8254_SELECT_COUNTER0	0x02
++#define I8254_STATUS_NOTREADY	0x40
++static inline u16 i8254(void)
++{
++	u16 status, timer;
++
++	do {
++		outb(I8254_PORT_CONTROL,
++		     I8254_CMD_READBACK | I8254_SELECT_COUNTER0);
++		status = inb(I8254_PORT_COUNTER0);
++		timer  = inb(I8254_PORT_COUNTER0);
++		timer |= inb(I8254_PORT_COUNTER0) << 8;
++	} while (status & I8254_STATUS_NOTREADY);
++
++	return timer;
++}
++
++static unsigned long get_random_long(void)
++{
++	unsigned long random;
++
++	if (has_cpuflag(X86_FEATURE_RDRAND)) {
++		debug_putstr("KASLR using RDRAND...\n");
++		if (rdrand_long(&random))
++			return random;
++	}
++
++	if (has_cpuflag(X86_FEATURE_TSC)) {
++		uint32_t raw;
++
++		debug_putstr("KASLR using RDTSC...\n");
++		rdtscl(raw);
++
++		/* Only use the low bits of rdtsc. */
++		random = raw & 0xffff;
++	} else {
++		debug_putstr("KASLR using i8254...\n");
++		random = i8254();
++	}
++
++	/* Extend timer bits poorly... */
++	random |= (random << 16);
++#ifdef CONFIG_X86_64
++	random |= (random << 32);
++#endif
++	return random;
++}
+ 
+ static unsigned long find_minimum_location(unsigned long input,
+ 					   unsigned long input_size,
+@@ -55,6 +108,7 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long output_size)
+ {
+ 	unsigned long choice = (unsigned long)output;
++	unsigned long random;
+ 
+ 	if (cmdline_find_option_bool("nokaslr")) {
+ 		debug_putstr("KASLR disabled...\n");
+@@ -64,8 +118,22 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 	choice = find_minimum_location((unsigned long)input, input_size,
+ 				       (unsigned long)output, output_size);
+ 
+-	/* XXX: choose random location. */
++	/* XXX: Find an appropriate E820 hole, instead of adding offset. */
++	random = get_random_long();
++
++	/* Clip off top of the range. */
++	random &= (CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1);
++	while (random + output_size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
++		random >>= 1;
++
++	/* Clip off bottom of range. */
++	random &= ~(choice - 1);
++
++	/* Always enforce the minimum. */
++	if (random < choice)
++		goto out;
+ 
++	choice = random;
+ out:
+ 	return (unsigned char *)choice;
+ }
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 42f71bb..24e3e56 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -60,6 +60,8 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long input_size,
+ 				      unsigned char *output,
+ 				      unsigned long output_size);
++/* cpuflags.c */
++bool has_cpuflag(int flag);
+ #else
+ static inline
+ unsigned char *choose_kernel_location(unsigned char *input,
+diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
+index 0d9ec77..e6a9245 100644
+--- a/arch/x86/include/asm/archrandom.h
++++ b/arch/x86/include/asm/archrandom.h
+@@ -39,6 +39,20 @@
+ 
+ #ifdef CONFIG_ARCH_RANDOM
+ 
++/* Instead of arch_get_random_long() when alternatives haven't run. */
++static inline int rdrand_long(unsigned long *v)
++{
++	int ok;
++	asm volatile("1: " RDRAND_LONG "\n\t"
++		     "jc 2f\n\t"
++		     "decl %0\n\t"
++		     "jnz 1b\n\t"
++		     "2:"
++		     : "=r" (ok), "=a" (*v)
++		     : "0" (RDRAND_RETRY_LOOPS));
++	return ok;
++}
++
+ #define GET_RANDOM(name, type, rdrand, nop)			\
+ static inline int name(type *v)					\
+ {								\
+@@ -68,6 +82,13 @@ GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
+ 
+ #endif /* CONFIG_X86_64 */
+ 
++#else
++
++static inline int rdrand_long(unsigned long *v)
++{
++	return 0;
++}
++
+ #endif  /* CONFIG_ARCH_RANDOM */
+ 
+ extern void x86_init_rdrand(struct cpuinfo_x86 *c);
+diff --git a/arch/x86/kernel/cpu/rdrand.c b/arch/x86/kernel/cpu/rdrand.c
+index 88db010..384df51 100644
+--- a/arch/x86/kernel/cpu/rdrand.c
++++ b/arch/x86/kernel/cpu/rdrand.c
+@@ -31,20 +31,6 @@ static int __init x86_rdrand_setup(char *s)
+ }
+ __setup("nordrand", x86_rdrand_setup);
+ 
+-/* We can't use arch_get_random_long() here since alternatives haven't run */
+-static inline int rdrand_long(unsigned long *v)
+-{
+-	int ok;
+-	asm volatile("1: " RDRAND_LONG "\n\t"
+-		     "jc 2f\n\t"
+-		     "decl %0\n\t"
+-		     "jnz 1b\n\t"
+-		     "2:"
+-		     : "=r" (ok), "=a" (*v)
+-		     : "0" (RDRAND_RETRY_LOOPS));
+-	return ok;
+-}
+-
+ /*
+  * Force a reseed cycle; we are architecturally guaranteed a reseed
+  * after no more than 512 128-bit chunks of random data.  This also
+-- 
+1.7.9.5
+
