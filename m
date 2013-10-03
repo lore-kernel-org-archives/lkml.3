@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3JCTMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:12:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755190Ab3JCTMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:12:42 -0400
-Date: Thu, 3 Oct 2013 21:05:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] hotplug: Optimize cpu_hotplug_{begin,done}() using
-	rcu_sync
-Message-ID: <20131003190535.GB11996@redhat.com>
-References: <20131002145655.361606532@infradead.org> <20131002150518.748974359@infradead.org> <20131003164838.GF5790@linux.vnet.ibm.com> <20131003184151.GN28601@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131003184151.GN28601@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755320Ab3JCTN3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:13:29 -0400
+Received: from 1.mo4.mail-out.ovh.net ([178.33.248.196]:57982 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754792Ab3JCTN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 15:13:27 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PATCH v4 4/4] ARM: at91/dt: add watchdog properties to kizbox board
+Date: Thu,  3 Oct 2013 21:04:43 +0200
+Message-Id: <1380827083-6872-5-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380827083-6872-1-git-send-email-b.brezillon@overkiz.com>
+References: <1380827083-6872-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 13940892648352544996
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Peter Zijlstra wrote:
->
-> On Thu, Oct 03, 2013 at 09:48:38AM -0700, Paul E. McKenney wrote:
-> > > -enum { readers_fast = 0, readers_slow, readers_block };
-> > > +enum { readers_slow, readers_block };
-> >
-> > It took me a bit to realize that readers_fast is obsoleted by the
-> > rcu_sync_is_idle() above.  ;-)
->
-> Yeah.. I pondered changing/adding to the rcu_sync interface to allow
-> using gp_count like status to avoid the extra variable, but decided
-> against it for now.
+Add watchdog specific config for kizbox board.
 
-Agreed, it looks simple enough even if get/put has to read ->gp_state
-or/and cpuhp_state.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/boot/dts/kizbox.dts |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-But, just is case, this is one example of why it probably makes sense
-to rcu_sync_struct->state_changed(new_state, void *data) callback. In
-this case it could simply do
-
-	static void cpuhp_rcu_sync_state_cb(state, ...)
-	{
-		switch (state) {
-		case GP_IDLE:
-			cpuhp_state = readers_fast;
-			break;
-		case GP_PENDING:
-			cpuhp_state = readers_slow;
-			break;
-		}
-	}
-
-Doesn't make sense in this particular case, but perhaps in general.
-
-Oleg.
+diff --git a/arch/arm/boot/dts/kizbox.dts b/arch/arm/boot/dts/kizbox.dts
+index 02df191..928f6ee 100644
+--- a/arch/arm/boot/dts/kizbox.dts
++++ b/arch/arm/boot/dts/kizbox.dts
+@@ -53,6 +53,12 @@
+ 				status = "okay";
+ 			};
+ 
++			watchdog@fffffd40 {
++				timeout-sec = <15>;
++				atmel,max-heartbeat-sec = <16>;
++				atmel,min-heartbeat-sec = <0>;
++				status = "okay";
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
+-- 
+1.7.9.5
 
