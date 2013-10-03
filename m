@@ -1,137 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab3JCTSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:18:50 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:52356 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab3JCTSs (ORCPT
+	id S1755085Ab3JCTVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:21:42 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37302 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab3JCTVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:18:48 -0400
-From: Andrea Merello <andrea.merello@gmail.com>
-To: jie.yang@atheros.com, xiong.huang@atheros.com
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrea Merello <andrea.merello@gmail.com>
-Subject: [PATCH] atl1e: enable support for NETIF_F_RXALL and NETIF_F_RXCRC features
-Date: Thu,  3 Oct 2013 21:18:37 +0200
-Message-Id: <1380827917-22992-1-git-send-email-andrea.merello@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 3 Oct 2013 15:21:41 -0400
+Date: Thu, 3 Oct 2013 12:21:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131003192135.GR5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131002145655.361606532@infradead.org>
+ <20131002150518.675931976@infradead.org>
+ <20131003164117.GD5790@linux.vnet.ibm.com>
+ <20131003184001.GM28601@twins.programming.kicks-ass.net>
+ <20131003184719.GA11996@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003184719.GA11996@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100319-6688-0000-0000-000002371672
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows (optionally, via ethtool) the atl1e NIC to:
-- Receive bad frames (runt, bad-fcs, etc..)
-- Receive full frames without stripping the FCS.
+On Thu, Oct 03, 2013 at 08:47:19PM +0200, Oleg Nesterov wrote:
+> On 10/03, Peter Zijlstra wrote:
+> >
+> > On Thu, Oct 03, 2013 at 09:41:17AM -0700, Paul E. McKenney wrote:
+> > > On Wed, Oct 02, 2013 at 04:56:57PM +0200, Peter Zijlstra wrote:
+> > > #ifdef CONFIG_PROVE_RCU
+> > > #define rcu_sync_is_idle_check(rss) BUG_ON(!rss->read_side_check())
+> > > #else
+> > > #define rcu_sync_is_idle_check(rss) do { } while (0)
+> > > #endif
+> > >
+> > > 	rcu_sync_is_idle_check(rss);
+> >
+> > The below actually seems to build, although I didn't test the config
+> > permutations, only defconfig.
+> 
+> Yes, but...
+> 
+> I think it would be better to start with the patch below, this way
+> it would be easier a) to add the new ops (we need more anyway) and b)
+> use CONFIG_PROVE_RCU to avoid the unused members even if this is
+> really minor.
 
-This has been tested on my board by injecting runt and bad-fcs
-frames with a FPGA-based device.
+I am fine with this as well, but I don't see the code that checks for
+the required RCU read-side critical section.
 
-The particular scenario of receiving very short frames (<4 bytes)
-without passing FCS to the upper layer has been also tested:
-This could be potentially dangerous because the driver performs a
-4 byte subtraction on the frame length, but I finally have NOT
-added anything to avoid this because it seems the NIC always
-discards frames so much short..
-If someone still have some reason to worry about this, please
-tell me.. I will add an explicit SW check..
+							Thanx, Paul
 
-Signed-off-by: Andrea Merello <andrea.merello@gmail.com>
----
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 46 ++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-index 1966444..7a73f3a 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -313,6 +313,34 @@ static void atl1e_set_multi(struct net_device *netdev)
- 	}
- }
- 
-+static void __atl1e_rx_mode(netdev_features_t features, u32 *mac_ctrl_data)
-+{
-+
-+	if (features & NETIF_F_RXALL) {
-+		/* enable RX of ALL frames */
-+		*mac_ctrl_data |= MAC_CTRL_DBG;
-+	} else {
-+		/* disable RX of ALL frames */
-+		*mac_ctrl_data &= ~MAC_CTRL_DBG;
-+	}
-+}
-+
-+static void atl1e_rx_mode(struct net_device *netdev,
-+	netdev_features_t features)
-+{
-+	struct atl1e_adapter *adapter = netdev_priv(netdev);
-+	u32 mac_ctrl_data = 0;
-+
-+	netdev_dbg(adapter->netdev, "%s\n", __func__);
-+
-+	atl1e_irq_disable(adapter);
-+	mac_ctrl_data = AT_READ_REG(&adapter->hw, REG_MAC_CTRL);
-+	__atl1e_rx_mode(features, &mac_ctrl_data);
-+	AT_WRITE_REG(&adapter->hw, REG_MAC_CTRL, mac_ctrl_data);
-+	atl1e_irq_enable(adapter);
-+}
-+
-+
- static void __atl1e_vlan_mode(netdev_features_t features, u32 *mac_ctrl_data)
- {
- 	if (features & NETIF_F_HW_VLAN_CTAG_RX) {
-@@ -394,6 +422,10 @@ static int atl1e_set_features(struct net_device *netdev,
- 	if (changed & NETIF_F_HW_VLAN_CTAG_RX)
- 		atl1e_vlan_mode(netdev, features);
- 
-+	if (changed & NETIF_F_RXALL)
-+		atl1e_rx_mode(netdev, features);
-+
-+
- 	return 0;
- }
- 
-@@ -1057,7 +1089,8 @@ static void atl1e_setup_mac_ctrl(struct atl1e_adapter *adapter)
- 		value |= MAC_CTRL_PROMIS_EN;
- 	if (netdev->flags & IFF_ALLMULTI)
- 		value |= MAC_CTRL_MC_ALL_EN;
--
-+	if (netdev->features & NETIF_F_RXALL)
-+		value |= MAC_CTRL_DBG;
- 	AT_WRITE_REG(hw, REG_MAC_CTRL, value);
- }
- 
-@@ -1405,7 +1438,8 @@ static void atl1e_clean_rx_irq(struct atl1e_adapter *adapter, u8 que,
- 			rx_page_desc[que].rx_nxseq++;
- 
- 			/* error packet */
--			if (prrs->pkt_flag & RRS_IS_ERR_FRAME) {
-+			if ((prrs->pkt_flag & RRS_IS_ERR_FRAME) &&
-+			    !(netdev->features & NETIF_F_RXALL)) {
- 				if (prrs->err_flag & (RRS_ERR_BAD_CRC |
- 					RRS_ERR_DRIBBLE | RRS_ERR_CODE |
- 					RRS_ERR_TRUNC)) {
-@@ -1418,7 +1452,10 @@ static void atl1e_clean_rx_irq(struct atl1e_adapter *adapter, u8 que,
- 			}
- 
- 			packet_size = ((prrs->word1 >> RRS_PKT_SIZE_SHIFT) &
--					RRS_PKT_SIZE_MASK) - 4; /* CRC */
-+					RRS_PKT_SIZE_MASK);
-+			if (likely(!(netdev->features & NETIF_F_RXFCS)))
-+				packet_size -= 4; /* CRC */
-+
- 			skb = netdev_alloc_skb_ip_align(netdev, packet_size);
- 			if (skb == NULL)
- 				goto skip_pkt;
-@@ -2245,7 +2282,8 @@ static int atl1e_init_netdev(struct net_device *netdev, struct pci_dev *pdev)
- 			      NETIF_F_HW_VLAN_CTAG_RX;
- 	netdev->features = netdev->hw_features | NETIF_F_LLTX |
- 			   NETIF_F_HW_VLAN_CTAG_TX;
--
-+	/* not enabled by default */
-+	netdev->hw_features |= NETIF_F_RXALL | NETIF_F_RXFCS;
- 	return 0;
- }
- 
--- 
-1.8.1.2
+> Oleg.
+> 
+> rcusync: introdude struct rcu_sync_ops
+> 
+> CHANGELOG
+> 
+> ---
+>  include/linux/rcusync.h |   63 +++++++++++++++++++++--------------------------
+>  kernel/rcusync.c        |   40 ++++++++++++++---------------
+>  2 files changed, 47 insertions(+), 56 deletions(-)
+> 
+> diff --git a/include/linux/rcusync.h b/include/linux/rcusync.h
+> index 7858491..30c6037 100644
+> --- a/include/linux/rcusync.h
+> +++ b/include/linux/rcusync.h
+> @@ -4,6 +4,11 @@
+>  #include <linux/wait.h>
+>  #include <linux/rcupdate.h>
+> 
+> +struct rcu_sync_ops {
+> +	void (*sync)(void);
+> +	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> +};
+> +
+>  struct rcu_sync_struct {
+>  	int			gp_state;
+>  	int			gp_count;
+> @@ -12,43 +17,9 @@ struct rcu_sync_struct {
+>  	int			cb_state;
+>  	struct rcu_head		cb_head;
+> 
+> -	void (*sync)(void);
+> -	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> +	struct rcu_sync_ops	*ops;
+>  };
+> 
+> -#define ___RCU_SYNC_INIT(name)						\
+> -	.gp_state = 0,							\
+> -	.gp_count = 0,							\
+> -	.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),		\
+> -	.cb_state = 0
+> -
+> -#define __RCU_SCHED_SYNC_INIT(name) {					\
+> -	___RCU_SYNC_INIT(name),						\
+> -	.sync = synchronize_sched,					\
+> -	.call = call_rcu_sched,						\
+> -}
+> -
+> -#define __RCU_BH_SYNC_INIT(name) {					\
+> -	___RCU_SYNC_INIT(name),						\
+> -	.sync = synchronize_rcu_bh,					\
+> -	.call = call_rcu_bh,						\
+> -}
+> -
+> -#define __RCU_SYNC_INIT(name) {						\
+> -	___RCU_SYNC_INIT(name),						\
+> -	.sync = synchronize_rcu,					\
+> -	.call = call_rcu,						\
+> -}
+> -
+> -#define DEFINE_RCU_SCHED_SYNC(name)					\
+> -	struct rcu_sync_struct name = __RCU_SCHED_SYNC_INIT(name)
+> -
+> -#define DEFINE_RCU_BH_SYNC(name)					\
+> -	struct rcu_sync_struct name = __RCU_BH_SYNC_INIT(name)
+> -
+> -#define DEFINE_RCU_SYNC(name)						\
+> -	struct rcu_sync_struct name = __RCU_SYNC_INIT(name)
+> -
+>  static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
+>  {
+>  	return !rss->gp_state; /* GP_IDLE */
+> @@ -60,5 +31,27 @@ extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
+>  extern void rcu_sync_enter(struct rcu_sync_struct *);
+>  extern void rcu_sync_exit(struct rcu_sync_struct *);
+> 
+> +extern struct rcu_sync_ops rcu_sync_ops_array[];
+> +
+> +#define __RCU_SYNC_INITIALIZER(name, type) {				\
+> +		.gp_state = 0,						\
+> +		.gp_count = 0,						\
+> +		.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),	\
+> +		.cb_state = 0,						\
+> +		.ops = rcu_sync_ops_array + (type),			\
+> +	}
+> +
+> +#define	__DEFINE_RCU_SYNC(name, type)	\
+> +	struct rcu_sync_struct name = __RCU_SYNC_INITIALIZER(name, type)
+> +
+> +#define DEFINE_RCU_SYNC(name)		\
+> +	__DEFINE_RCU_SYNC(name, RCU_SYNC)
+> +
+> +#define DEFINE_RCU_SCHED_SYNC(name)	\
+> +	__DEFINE_RCU_SYNC(name, RCU_SCHED_SYNC)
+> +
+> +#define DEFINE_RCU_BH_SYNC(name)	\
+> +	__DEFINE_RCU_SYNC(name, RCU_BH_SYNC)
+> +
+>  #endif /* _LINUX_RCUSYNC_H_ */
+> 
+> diff --git a/kernel/rcusync.c b/kernel/rcusync.c
+> index f84176a..1cefb83 100644
+> --- a/kernel/rcusync.c
+> +++ b/kernel/rcusync.c
+> @@ -1,4 +1,3 @@
+> -
+>  #include <linux/rcusync.h>
+>  #include <linux/sched.h>
+> 
+> @@ -7,27 +6,26 @@ enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
+> 
+>  #define	rss_lock	gp_wait.lock
+> 
+> +struct rcu_sync_ops rcu_sync_ops_array[] = {
+> +	[RCU_SYNC] = {
+> +		.sync = synchronize_rcu,
+> +		.call = call_rcu,
+> +	},
+> +	[RCU_SCHED_SYNC] = {
+> +		.sync = synchronize_sched,
+> +		.call = call_rcu_sched,
+> +	},
+> +	[RCU_BH_SYNC] = {
+> +		.sync = synchronize_rcu_bh,
+> +		.call = call_rcu_bh,
+> +	},
+> +};
+> +
+>  void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
+>  {
+>  	memset(rss, 0, sizeof(*rss));
+>  	init_waitqueue_head(&rss->gp_wait);
+> -
+> -	switch (type) {
+> -	case RCU_SYNC:
+> -		rss->sync = synchronize_rcu;
+> -		rss->call = call_rcu;
+> -		break;
+> -
+> -	case RCU_SCHED_SYNC:
+> -		rss->sync = synchronize_sched;
+> -		rss->call = call_rcu_sched;
+> -		break;
+> -
+> -	case RCU_BH_SYNC:
+> -		rss->sync = synchronize_rcu_bh;
+> -		rss->call = call_rcu_bh;
+> -		break;
+> -	}
+> +	rss->ops = rcu_sync_ops_array + type;
+>  }
+> 
+>  void rcu_sync_enter(struct rcu_sync_struct *rss)
+> @@ -44,7 +42,7 @@ void rcu_sync_enter(struct rcu_sync_struct *rss)
+>  	BUG_ON(need_wait && need_sync);
+> 
+>  	if (need_sync) {
+> -		rss->sync();
+> +		rss->ops->sync();
+>  		rss->gp_state = GP_PASSED;
+>  		wake_up_all(&rss->gp_wait);
+>  	} else if (need_wait) {
+> @@ -81,7 +79,7 @@ static void rcu_sync_func(struct rcu_head *rcu)
+>  		 * to catch a later GP.
+>  		 */
+>  		rss->cb_state = CB_PENDING;
+> -		rss->call(&rss->cb_head, rcu_sync_func);
+> +		rss->ops->call(&rss->cb_head, rcu_sync_func);
+>  	} else {
+>  		/*
+>  		 * We're at least a GP after rcu_sync_exit(); eveybody will now
+> @@ -99,7 +97,7 @@ void rcu_sync_exit(struct rcu_sync_struct *rss)
+>  	if (!--rss->gp_count) {
+>  		if (rss->cb_state == CB_IDLE) {
+>  			rss->cb_state = CB_PENDING;
+> -			rss->call(&rss->cb_head, rcu_sync_func);
+> +			rss->ops->call(&rss->cb_head, rcu_sync_func);
+>  		} else if (rss->cb_state == CB_PENDING) {
+>  			rss->cb_state = CB_REPLAY;
+>  		}
+> 
 
