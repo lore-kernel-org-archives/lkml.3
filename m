@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3JCAw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:52:28 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:56995 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab3JCAwU (ORCPT
+	id S1754205Ab3JCAwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:52:37 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:36946 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569Ab3JCAwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:52:20 -0400
+	Wed, 2 Oct 2013 20:52:32 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Minchan Kim <minchan@kernel.org>,
@@ -26,9 +26,9 @@ Cc: Minchan Kim <minchan@kernel.org>,
         Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 09/14] vrange: Add vrange LRU list for purging
-Date: Wed,  2 Oct 2013 17:51:38 -0700
-Message-Id: <1380761503-14509-10-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 14/14] vrange: Add vmstat counter about purged page
+Date: Wed,  2 Oct 2013 17:51:43 -0700
+Message-Id: <1380761503-14509-15-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
 References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
@@ -38,17 +38,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Minchan Kim <minchan@kernel.org>
 
-This patch adds vrange LRU list for managing vranges to purge by
-something (In this implementation, I will use slab shrinker introduced
-by upcoming patches).
-
-This is necessary to purge vranges on swapless system because currently
-the VM only ages anonymous pages if the system has a swap device.
-
-In this case, because we would otherwise be duplicating the page LRUs
-tracking of hot/cold pages, we utilize a vrange LRU, to manage the
-shrinking order. Thus the shrinker will discard the entire vrange at
-once, and vranges are purged in the order they are marked volatile.
+This patch adds the number of purged page in vmstat so admin can see
+how many of volatile pages are discarded by VM until now.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -75,159 +66,65 @@ Cc: linux-mm@kvack.org <linux-mm@kvack.org>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/vrange_types.h |  2 ++
- mm/vrange.c                  | 61 ++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 58 insertions(+), 5 deletions(-)
+ include/linux/vm_event_item.h |  2 ++
+ mm/vmstat.c                   |  2 ++
+ mm/vrange.c                   | 10 ++++++++++
+ 3 files changed, 14 insertions(+)
 
-diff --git a/include/linux/vrange_types.h b/include/linux/vrange_types.h
-index 0d48b42..d7d451c 100644
---- a/include/linux/vrange_types.h
-+++ b/include/linux/vrange_types.h
-@@ -20,6 +20,8 @@ struct vrange {
- 	struct interval_tree_node node;
- 	struct vrange_root *owner;
- 	int purged;
-+	struct list_head lru;
-+	atomic_t refcount;
- };
- #endif
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index bd6cf61..c4aea92 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -25,6 +25,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGALLOC),
+ 		PGFREE, PGACTIVATE, PGDEACTIVATE,
+ 		PGFAULT, PGMAJFAULT,
++		PGDISCARD_DIRECT,
++		PGDISCARD_KSWAPD,
+ 		FOR_ALL_ZONES(PGREFILL),
+ 		FOR_ALL_ZONES(PGSTEAL_KSWAPD),
+ 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 20c2ef4..4f35f46 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -756,6 +756,8 @@ const char * const vmstat_text[] = {
  
+ 	"pgfault",
+ 	"pgmajfault",
++	"pgdiscard_direct",
++	"pgdiscard_kswapd",
+ 
+ 	TEXTS_FOR_ZONES("pgrefill")
+ 	TEXTS_FOR_ZONES("pgsteal_kswapd")
 diff --git a/mm/vrange.c b/mm/vrange.c
-index c19a966..33e3ac1 100644
+index c30e3dd..8931fab 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -14,8 +14,21 @@
+@@ -894,6 +894,10 @@ int discard_vpage(struct page *page)
  
- static struct kmem_cache *vrange_cachep;
- 
-+static struct vrange_list {
-+	struct list_head list;
-+	unsigned long size;
-+	struct mutex lock;
-+} vrange_list;
-+
-+static inline unsigned int vrange_size(struct vrange *range)
-+{
-+	return range->node.last + 1 - range->node.start;
-+}
-+
- static int __init vrange_init(void)
- {
-+	INIT_LIST_HEAD(&vrange_list.list);
-+	mutex_init(&vrange_list.lock);
- 	vrange_cachep = KMEM_CACHE(vrange, SLAB_PANIC);
- 	return 0;
- }
-@@ -27,19 +40,56 @@ static struct vrange *__vrange_alloc(gfp_t flags)
- 	if (!vrange)
- 		return vrange;
- 	vrange->owner = NULL;
-+	INIT_LIST_HEAD(&vrange->lru);
-+	atomic_set(&vrange->refcount, 1);
-+
- 	return vrange;
- }
- 
- static void __vrange_free(struct vrange *range)
- {
- 	WARN_ON(range->owner);
-+	WARN_ON(atomic_read(&range->refcount) != 0);
-+	WARN_ON(!list_empty(&range->lru));
-+
- 	kmem_cache_free(vrange_cachep, range);
- }
- 
-+static inline void __vrange_lru_add(struct vrange *range)
-+{
-+	mutex_lock(&vrange_list.lock);
-+	WARN_ON(!list_empty(&range->lru));
-+	list_add(&range->lru, &vrange_list.list);
-+	vrange_list.size += vrange_size(range);
-+	mutex_unlock(&vrange_list.lock);
-+}
-+
-+static inline void __vrange_lru_del(struct vrange *range)
-+{
-+	mutex_lock(&vrange_list.lock);
-+	if (!list_empty(&range->lru)) {
-+		list_del_init(&range->lru);
-+		vrange_list.size -= vrange_size(range);
-+		WARN_ON(range->owner);
-+	}
-+	mutex_unlock(&vrange_list.lock);
-+}
-+
- static void __vrange_add(struct vrange *range, struct vrange_root *vroot)
- {
- 	range->owner = vroot;
- 	interval_tree_insert(&range->node, &vroot->v_rb);
-+
-+	WARN_ON(atomic_read(&range->refcount) <= 0);
-+	__vrange_lru_add(range);
-+}
-+
-+static inline void __vrange_put(struct vrange *range)
-+{
-+	if (atomic_dec_and_test(&range->refcount)) {
-+		__vrange_lru_del(range);
-+		__vrange_free(range);
-+	}
- }
- 
- static void __vrange_remove(struct vrange *range)
-@@ -64,6 +114,7 @@ static inline void __vrange_resize(struct vrange *range,
- 	bool purged = range->purged;
- 
- 	__vrange_remove(range);
-+	__vrange_lru_del(range);
- 	__vrange_set(range, start_idx, end_idx, purged);
- 	__vrange_add(range, vroot);
- }
-@@ -100,7 +151,7 @@ static int vrange_add(struct vrange_root *vroot,
- 		range = vrange_from_node(node);
- 		/* old range covers new range fully */
- 		if (node->start <= start_idx && node->last >= end_idx) {
--			__vrange_free(new_range);
-+			__vrange_put(new_range);
- 			goto out;
+ 		if (page_freeze_refs(page, 1)) {
+ 			unlock_page(page);
++			if (current_is_kswapd())
++				count_vm_event(PGDISCARD_KSWAPD);
++			else
++				count_vm_event(PGDISCARD_DIRECT);
+ 			return 0;
  		}
- 
-@@ -109,7 +160,7 @@ static int vrange_add(struct vrange_root *vroot,
- 		purged |= range->purged;
- 
- 		__vrange_remove(range);
--		__vrange_free(range);
-+		__vrange_put(range);
- 
- 		node = next;
  	}
-@@ -150,7 +201,7 @@ static int vrange_remove(struct vrange_root *vroot,
- 		if (start_idx <= node->start && end_idx >= node->last) {
- 			/* argumented range covers the range fully */
- 			__vrange_remove(range);
--			__vrange_free(range);
-+			__vrange_put(range);
- 		} else if (node->start >= start_idx) {
- 			/*
- 			 * Argumented range covers over the left of the
-@@ -181,7 +232,7 @@ static int vrange_remove(struct vrange_root *vroot,
- 	vrange_unlock(vroot);
- 
- 	if (!used_new)
--		__vrange_free(new_range);
-+		__vrange_put(new_range);
- 
- 	return 0;
- }
-@@ -204,7 +255,7 @@ void vrange_root_cleanup(struct vrange_root *vroot)
- 	while ((node = rb_first(&vroot->v_rb))) {
- 		range = vrange_entry(node);
- 		__vrange_remove(range);
--		__vrange_free(range);
-+		__vrange_put(range);
+@@ -1144,6 +1148,12 @@ static int discard_vrange(struct vrange *vrange)
+ 		ret = __discard_vrange_file(mapping, vrange, &nr_discard);
  	}
- 	vrange_unlock(vroot);
- }
+ 
++	if (!ret) {
++		if (current_is_kswapd())
++			count_vm_events(PGDISCARD_KSWAPD, nr_discard);
++		else
++			count_vm_events(PGDISCARD_DIRECT, nr_discard);
++	}
+ out:
+ 	__vroot_put(vroot);
+ 	return nr_discard;
 -- 
 1.8.1.2
 
