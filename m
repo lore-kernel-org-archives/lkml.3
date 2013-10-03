@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab3JCQLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:11:09 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:34570 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab3JCQLG (ORCPT
+	id S1754973Ab3JCQLU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:11:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55451 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754731Ab3JCQLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:11:06 -0400
-Date: Thu, 3 Oct 2013 19:11:00 +0300
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 51/77] mthca: Update MSI/MSI-X interrupts enablement
- code
-Message-ID: <20131003191100.3e3e3bfd@jpm-OptiPlex-GX620>
-In-Reply-To: <9d424912ef78993dc75e2af5006cd12913e9e7e7.1380703263.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
-	<9d424912ef78993dc75e2af5006cd12913e9e7e7.1380703263.git.agordeev@redhat.com>
-Organization: Mellanox
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Oct 2013 12:11:16 -0400
+Date: Thu, 3 Oct 2013 17:11:14 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [RFC PATCH] regulator: core: Add ability to create a lookup
+	alias for supply
+Message-ID: <20131003161114.GA3635@opensource.wolfsonmicro.com>
+References: <1380716219-32039-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20131002195029.GH27287@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002195029.GH27287@sirena.org.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Oct 2013 12:49:07 +0200
-Alexander Gordeev <agordeev@redhat.com> wrote:
+On Wed, Oct 02, 2013 at 08:50:29PM +0100, Mark Brown wrote:
+> Bulk versions of the API would also make sense - it's likely that more
+> than one supply will need to be mapped - and please also add managed
+> versions so people don't have to write cleanup code.
 
-> Subject: [PATCH RFC 51/77] mthca: Update MSI/MSI-X interrupts
-> enablement code Date: Wed,  2 Oct 2013 12:49:07 +0200
-> Sender: linux-rdma-owner@vger.kernel.org
-> X-Mailer: git-send-email 1.7.7.6
+For the bulk API would you prefer taking a single src and alias
+device and a list of supplies, or lists for all three?
+
+I would go for a list just for the supplies, as lists of devices
+would probably need to be filled in by a loop on the user end
+anyway negating the point of the bulk API some what and a lot of
+the use-cases will like have the same device on both sides for
+all the supplies.
+
+> > I have a couple of patches that update the Arizona driver to
+> > use this that I will send in if you think this looks along
+> > the lines of what you were suggesting.
 > 
-> As result of recent re-design of the MSI/MSI-X interrupts enabling
-> pattern this driver has to be updated to use the new technique to
-> obtain a optimal number of MSI/MSI-X interrupts required.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
+> This seems like someting that should be in the MFD core, or at least
+> that there should be helpers in the core.  Something like a set of
+> mappings in the mfd_cell so it's all data to the drivers.
 
-ACK.
+Looks like a simple enough addition to the MFD core, I will
+submit a patch doing it this way and see where we get to.
 
--Jack
+> Please use a more meaningful name for dev.  It might also be worth
+> allowing rewriting of the supply name since we'll probably find other
+> applications for things like modular board designs where name rewriting
+> is useful; since it's a function call with a parameter list it's harder
+> to add later than it would be with a struct.
+
+Seems that it could be useful to change the supply name, I will
+add this in as well.
+
+Thanks,
+Charles
+
