@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3JCG3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 02:29:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab3JCG3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 02:29:16 -0400
-Date: Thu, 3 Oct 2013 09:28:59 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexander Graf <agraf@suse.de>, Paolo Bonzini <pbonzini@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linux-kernel@vger.kernel.org, mpm@selenic.com,
-        herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
-Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
- some powernv systems
-Message-ID: <20131003062859.GV17294@redhat.com>
-References: <20131001083908.GA17294@redhat.com>
- <1380620338.645.22.camel@pasglop>
- <524AAFAA.3010801@redhat.com>
- <20131002050940.GA25363@drongo>
- <524BDD73.3020106@redhat.com>
- <1380704789.645.57.camel@pasglop>
- <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
- <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
- <20131002100224.GF17294@redhat.com>
- <1380751642.645.71.camel@pasglop>
-MIME-Version: 1.0
+	id S1755385Ab3JCGaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 02:30:07 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33616 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab3JCGaE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 02:30:04 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380751642.645.71.camel@pasglop>
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: [PATCH v2 03/15] KVM: MMU: lazily drop large spte
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+In-Reply-To: <20130930223957.GA3262@amt.cnet>
+Date: Thu, 3 Oct 2013 14:29:51 +0800
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D6EACCBB-237A-485B-8128-B25545A59EB0@gmail.com>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1378376958-27252-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130930223957.GA3262@amt.cnet>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 08:07:22AM +1000, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-10-02 at 13:02 +0300, Gleb Natapov wrote:
-> 
-> > Yes, I alluded to it in my email to Paul and Paolo asked also. How this
-> > interface is disabled? Also hwrnd is MMIO in a host why guest needs to
-> > use hypercall instead of emulating the device (in kernel or somewhere
-> > else?). Another things is that on a host hwrnd is protected from
-> > direct userspace access by virtue of been a device, but guest code (event
-> > kernel mode) is userspace as far as hosts security model goes, so by
-> > implementing this hypercall in a way that directly access hwrnd you
-> > expose hwrnd to a userspace unconditionally. Why is this a good idea? 
-> 
-> BTW. Is this always going to be like this ?
-> 
-If something questionable will be noticed explanation will be required.
-It is like that for all arches and all parts of kernel.
 
-> Every *single* architectural or design decision we make for our
-> architecture has to be justified 30 times over, every piece of code bike
-> shedded to oblivion for month, etc... ?
-> 
-This is simply not true, most powerpc patches go in without any comments.
+On Oct 1, 2013, at 6:39 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-> Do we always have to finally get to some kind of agreement on design, go
-> to the 6 month bike-shedding phase, just to have somebody else come up
-> and start re-questioning the whole original design (without any
-> understanding of our specific constraints of course) ?
+> On Thu, Sep 05, 2013 at 06:29:06PM +0800, Xiao Guangrong wrote:
+>> Currently, kvm zaps the large spte if write-protected is needed, the later
+>> read can fault on that spte. Actually, we can make the large spte readonly
+>> instead of making them un-present, the page fault caused by read access can
+>> be avoided
+>> 
+>> The idea is from Avi:
+>> | As I mentioned before, write-protecting a large spte is a good idea,
+>> | since it moves some work from protect-time to fault-time, so it reduces
+>> | jitter.  This removes the need for the return value.
+>> 
+>> This version has fixed the issue reported in 6b73a9606, the reason of that
+>> issue is that fast_page_fault() directly sets the readonly large spte to
+>> writable but only dirty the first page into the dirty-bitmap that means
+>> other pages are missed. Fixed it by only the normal sptes (on the
+>> PT_PAGE_TABLE_LEVEL level) can be fast fixed
+>> 
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>> arch/x86/kvm/mmu.c | 36 ++++++++++++++++++++----------------
+>> arch/x86/kvm/x86.c |  8 ++++++--
+>> 2 files changed, 26 insertions(+), 18 deletions(-)
+>> 
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 869f1db..88107ee 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1177,8 +1177,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+>> 
+>> /*
+>>  * Write-protect on the specified @sptep, @pt_protect indicates whether
+>> - * spte writ-protection is caused by protecting shadow page table.
+>> - * @flush indicates whether tlb need be flushed.
+>> + * spte write-protection is caused by protecting shadow page table.
+>>  *
+>>  * Note: write protection is difference between drity logging and spte
+>>  * protection:
+>> @@ -1187,10 +1186,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+>>  * - for spte protection, the spte can be writable only after unsync-ing
+>>  *   shadow page.
+>>  *
+>> - * Return true if the spte is dropped.
+>> + * Return true if tlb need be flushed.
+>>  */
+>> -static bool
+>> -spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+>> +static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
+>> {
+>> 	u64 spte = *sptep;
+>> 
+>> @@ -1200,17 +1198,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+>> 
+>> 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+>> 
+>> -	if (__drop_large_spte(kvm, sptep)) {
+>> -		*flush |= true;
+>> -		return true;
+>> -	}
+>> -
+>> 	if (pt_protect)
+>> 		spte &= ~SPTE_MMU_WRITEABLE;
+>> 	spte = spte & ~PT_WRITABLE_MASK;
+>> 
+>> -	*flush |= mmu_spte_update(sptep, spte);
+>> -	return false;
+>> +	return mmu_spte_update(sptep, spte);
+>> }
 > 
-Do you really think that nobody here understands that exit to userspace
-is slow?
+> Is it necessary for kvm_mmu_unprotect_page to search for an entire range large 
+> page range now, instead of a 4k page?
 
-> You guys are the most horrendous community I have ever got to work with.
-> It's simply impossible to get anything done in any reasonable time
-> frame .
-> 
-> At this stage, it would have taken us an order of magnitude less time to
-> simply rewrite an entire hypervisor from scratch.
-Of course, it is always much easier to ignore other people input and do
-everything your way. Why listen to people who deal with migration issues
-for many years if you can commit the patch and forget about it until
-migration fails, but who cares, you got there in an order of magnitude
-less time and this is what counts.
+It is unnecessary. kvm_mmu_unprotect_page is used to delete the gfn's shadow pages
+then vcpu will try to re-fault. If any gfn in the large range has shadow page, it will stop using large
+mapping, so that the mapping will be split to small mappings when vcpu re-fault again.
 
-> 
-> This is sad.
-> 
-Agree.
 
---
-			Gleb.
