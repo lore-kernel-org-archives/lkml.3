@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab3JCJQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:16:41 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:4682 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab3JCJQj (ORCPT
+	id S1752504Ab3JCJWV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:22:21 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39690 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab3JCJWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:16:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 03 Oct 2013 02:12:43 -0700
-Date: Thu, 3 Oct 2013 12:16:36 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 00/12] Introduce common infra for tegra clocks
-Message-ID: <20131003091636.GJ3973@tbergstrom-lnx.Nvidia.com>
-References: <1379946381-20125-1-git-send-email-pdeschrijver@nvidia.com>
- <524B08BD.2020902@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <524B08BD.2020902@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Oct 2013 05:22:20 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf tool: add example to perf-timechart documentation
+Date: Thu,  3 Oct 2013 14:45:16 +0530
+Message-Id: <1380791716-10325-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.4.477.g5d89aa9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 01, 2013 at 07:39:09PM +0200, Stephen Warren wrote:
-> On 09/23/2013 08:24 AM, Peter De Schrijver wrote:
-> > This patchset introduces common infrastructure for clocks which exist in
-> > several Tegra SoCs. We also move Tegra114 to this new infrastructure.
-> > Tegra20 and Tegra30 will be moved later in separate patchsets.
-> > 
-> > Changes since v1:
-> > + move common clks allocation to patch 2
-> > + adapt also Tegra20 and Tegra30 to the changes in patch 2
-> > 
-> > Boottested on dalmore, beaverboard and seaboard.
-> 
-> What commit is this series based on? I applied the two pre-requisites:
-> 
+While at it, update the synopsis to show both forms.
 
-9f186fbe58c749e2d4c0b334818705aa622fc76b Add linux-next specific files for 20130822
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/perf/Documentation/perf-timechart.txt | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-Cheers,
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index 1632b0e..3ff8bd4 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -8,7 +8,8 @@ perf-timechart - Tool to visualize total system behavior during a workload
+ SYNOPSIS
+ --------
+ [verse]
+-'perf timechart' {record}
++'perf timechart' record <command>
++'perf timechart' [<options>]
+ 
+ DESCRIPTION
+ -----------
+@@ -41,6 +42,18 @@ OPTIONS
+ --symfs=<directory>::
+         Look for files with symbols relative to this directory.
+ 
++EXAMPLES
++--------
++
++$ perf timechart record git pull
++
++  [ perf record: Woken up 13 times to write data ]
++  [ perf record: Captured and wrote 4.253 MB perf.data (~185801 samples) ]
++
++$ perf timechart
++
++  Written 10.2 seconds of trace to output.svg.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1]
+-- 
+1.8.4.477.g5d89aa9
 
-Peter.
