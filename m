@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab3JCJOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:14:00 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:54202 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3JCJN6 (ORCPT
+	id S1753728Ab3JCJOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:14:34 -0400
+Received: from [207.46.163.24] ([207.46.163.24]:6149 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753551Ab3JCJOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:13:58 -0400
+	Thu, 3 Oct 2013 05:14:30 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VPS2(zzbb2dI98dI9371I1432I4015Idbb0izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1d7338h1de098h177df4h17326ah1de097h186068h8275bh8275dhz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh19b6n1155h192ch)
+Date: Thu, 3 Oct 2013 11:13:05 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20131003090347.GB3081@twins.programming.kicks-ass.net>
-References: <20131002133759.GH28601@twins.programming.kicks-ass.net>
-	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
-	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
-	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
-	<CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
-	<CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
-	<20131002190001.GX3081@twins.programming.kicks-ass.net>
-	<CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
-	<20131002203107.GY3081@twins.programming.kicks-ass.net>
-	<CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
-	<20131003090347.GB3081@twins.programming.kicks-ass.net>
-Date: Thu, 3 Oct 2013 11:13:57 +0200
-Message-ID: <CABPqkBQ5zEwcUHRBSAx6MPSamen9XjV3MoVPmCjaqCTL-DjO1Q@mail.gmail.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <monstr@monstr.eu>, Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Ball <cjb@laptop.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <linux-spi@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH] amba: Ensure drvdata is NULL
+References: <1b2479137287fa8dfda3089ca0cb9fba8c4b1f1d.1380524337.git.michal.simek@xilinx.com> <20131002202521.GU12758@n2100.arm.linux.org.uk>
+In-Reply-To: <20131002202521.GU12758@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <d5a0aab9-f023-4464-b4a1-f7055e6c82d5@CO9EHSMHS010.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 11:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Oct 03, 2013 at 10:55:28AM +0200, Stephane Eranian wrote:
->> I don't know the MM code but I assume that that vm_mm struct is
->> allocated dynamically
->> and maybe you already grabbing a lock while doing this. Could we
->> leverage that lock
->> to increment a global generation number?
->
-> Sure; something like so.. I just don't like global state nor adding to
-> mm_struct for just this.
->
-I understand, I don't like global state either. I see you already
-have uprobes state in there. Thus to me, the perf situation is
-not much worse in terms of usefulness (frequency of use).
+On 10/02/2013 10:25 PM, Russell King - ARM Linux wrote:
+> On Mon, Sep 30, 2013 at 08:59:06AM +0200, Michal Simek wrote:
+>> This patch is inpired by the patch for drvdata
+>> "device-core: Ensure drvdata = NULL when no driver is bound"
+>> (sha1: 0998d0631001288a5974afc0b2a5f568bcdecb4d)
+>>
+>> Also it fixes all occurences in drivers.
+>>
+>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> ---
+>> This patch has been sent as RFC in this thread.
+>> http://lkml.org/lkml/2013/9/4/393
+> 
+> Why not have the driver core do this?  Then it gets applied to all bus
+> types uniformly.
 
-Thanks.
+ok - I have checked that path and it should be already done
+in really_probe function which calls amba_probe() and then driver probe function.
 
-> ---
->  include/linux/mm_types.h | 1 +
->  kernel/fork.c            | 6 ++++++
->  2 files changed, 7 insertions(+)
->
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index d9851eeb6e1d..3877b1e72a5b 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -436,6 +436,7 @@ struct mm_struct {
->         int first_nid;
->  #endif
->         struct uprobes_state uprobes_state;
-> +       u64 mm_id;
->  };
->
->  /* first nid will either be a valid NID or one of these values */
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 086fe73ad6bd..b315f6227629 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -523,6 +523,8 @@ static void mm_init_aio(struct mm_struct *mm)
->  #endif
->  }
->
-> +static u64 global_mm_id;
-> +
->  static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
->  {
->         atomic_set(&mm->mm_users, 1);
-> @@ -537,6 +539,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
->         spin_lock_init(&mm->page_table_lock);
->         mm_init_aio(mm);
->         mm_init_owner(mm, p);
-> +       mm->mm_id = 0;
->
->         if (likely(!mm_alloc_pgd(mm))) {
->                 mm->def_flags = 0;
-> @@ -1422,6 +1425,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->          */
->         write_lock_irq(&tasklist_lock);
->
-> +       if (p->mm && !p->mm->mm_id)
-> +               p->mm->mm_id = ++global_mm_id;
-> +
->         /* CLONE_PARENT re-uses the old parent */
->         if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
->                 p->real_parent = current->real_parent;
+It means that the patch should contain just "amba_set_drvdata(dev, NULL);"
+removal and not touching bus.c file.
+
+Thanks,
+Michal
+
+
