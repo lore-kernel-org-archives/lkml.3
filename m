@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3JCJru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:47:50 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:56422 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab3JCJrr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:47:47 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1024,1371081600"; 
-   d="scan'208";a="57273291"
-Message-ID: <524D3D40.4040907@citrix.com>
-Date: Thu, 3 Oct 2013 10:47:44 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1754175Ab3JCJrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:47:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15782 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753855Ab3JCJrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 05:47:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1024,1371106800"; 
+   d="scan'208";a="410872795"
+Message-ID: <524D3ED8.2030109@intel.com>
+Date: Thu, 03 Oct 2013 12:54:32 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Frediano Ziglio <frediano.ziglio@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector corruption
-References: <1380788677.30462.1.camel@hamster.uk.xensource.com>
-In-Reply-To: <1380788677.30462.1.camel@hamster.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [BUG] perf tests: Test converting perf time to TSC
+References: <20131002132308.GB20396@krava.brq.redhat.com> <524C23D3.6020300@intel.com> <20131003081737.GB993@krava.brq.redhat.com> <524D2E06.5020801@intel.com> <20131003085625.GA3081@twins.programming.kicks-ass.net> <20131003085807.GO26785@twins.programming.kicks-ass.net>
+In-Reply-To: <20131003085807.GO26785@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/13 09:24, Frediano Ziglio wrote:
-> Due to the way kernel is initialized under Xen is possible that the ring1
-> selector used by the kernel for the boot cpu end up to be copied to
-> userspace leading to segmentation fault in the userspace.
+On 03/10/13 11:58, Peter Zijlstra wrote:
+> On Thu, Oct 03, 2013 at 10:56:25AM +0200, Peter Zijlstra wrote:
+>>> No the ABI is broken in that case - better to crash.
+>>
+>> No; neither case should crash.
 > 
+> OK; previously we would report cap_usr_time = 1 even though we might not
+> have written stuff into the fields; which would indeed explain the
+> crash.
 > 
-> Xen code in the kernel initialize no-boot cpus with correct selectors (ds
-> and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
-> On task context switch (switch_to) we assume that ds, es and cs already
-> point to __USER_DS and __KERNEL_CSso these selector are not changed.
-> 
-> If processor is an Intel that support sysenter instruction sysenter/sysexit
-> is used so ds and es are not restored switching back from kernel to
-> userspace. In the case the selectors point to a ring1 instead of __USER_DS
-> the userspace code will crash on first memory access attempt (to be
-> precise Xen on the emulated iret used to do sysexit will detect and set ds
-> and es to zero which lead to GPF anyway).
-> 
-> Now if an userspace process call kernel using sysenter and get rescheduled
-> (for me it happen on a specific init calling wait4) could happen that the
-> ring1 selector is set to ds and es.
-> 
-> This is quite hard to detect cause after a while these selectors are fixed
-> (__USER_DS seems sticky).
-> 
-> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
-> to be the first one that have this issue.
-> 
-> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+> However; Jiri actually has the patch; as the code he posted had 'user' not
+> 'usr'
 
-Looks okay to me but I don't really understand it...
+Where do you see that?
 
-David
