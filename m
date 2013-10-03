@@ -1,255 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab3JCSKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 14:10:35 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39374 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab3JCSKc (ORCPT
+	id S1754648Ab3JCSMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 14:12:06 -0400
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:60335 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab3JCSME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 14:10:32 -0400
+	Thu, 3 Oct 2013 14:12:04 -0400
+Message-ID: <524DB377.2070909@gmail.com>
+Date: Thu, 03 Oct 2013 14:12:07 -0400
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAOw6vbKtmsmRJRUrCwe+RgGQWNJLziYKDkh1VA_WsnvHUrjzGw@mail.gmail.com>
-References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
-	<1380670860-17621-5-git-send-email-seanpaul@chromium.org>
-	<CAAQKjZPgtKf5UWZhHV-+Vv2c4uwuEUhZHV=r14es8eFC07PONg@mail.gmail.com>
-	<CAOw6vbJVH4ePsJ5cOT0KcsZDBdM+MtqgTwmvYiM0EAExSLWWhQ@mail.gmail.com>
-	<CAAQKjZPPWh1dzDxR+iH_TpTCj3mjjJgA5tSVZT2JXk5ZMDzAqA@mail.gmail.com>
-	<CAOw6vbKtmsmRJRUrCwe+RgGQWNJLziYKDkh1VA_WsnvHUrjzGw@mail.gmail.com>
-Date: Fri, 4 Oct 2013 03:10:30 +0900
-X-Google-Sender-Auth: R5XUVxlP0IESqsbdoq-eq2dLZec
-Message-ID: <CAAQKjZOw-eVS5QU5y2We+2xEQHFVCZmsAH5Gk=Tu_44bay3tqQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] drm/exynos: Initialize ptn3460 if present
-From: Inki Dae <inki.dae@samsung.com>
-To: Sean Paul <seanpaul@chromium.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@redhat.com>
+Subject: Re: [PATCH 1/1] x86_64: add config options to optimize for newer
+ AMD processors
+References: <52486938.4090009@gmail.com> <20130929180101.GB5490@pd.tnic> <5248905E.8000801@gmail.com> <20130929205051.GD5426@pd.tnic> <52489A59.7040108@gmail.com> <20130929213026.GF5426@pd.tnic> <524D5DAC.3000004@gmail.com> <CA+55aFwuV4u3ky-XT_P_sCOYjqUW1EvA3Q2NuZ=+LZ5O06jS3g@mail.gmail.com> <20131003165740.GA17417@pd.tnic>
+In-Reply-To: <20131003165740.GA17417@pd.tnic>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/4 Sean Paul <seanpaul@chromium.org>:
-> On Thu, Oct 3, 2013 at 1:18 PM, Inki Dae <inki.dae@samsung.com> wrote:
->> 2013/10/4 Sean Paul <seanpaul@chromium.org>:
->>> On Thu, Oct 3, 2013 at 10:43 AM, Inki Dae <inki.dae@samsung.com> wrote:
->>>> 2013/10/2 Sean Paul <seanpaul@chromium.org>:
->>>>> This patch adds code to look for the ptn3460 in the device tree file on
->>>>> exynos initialization. If ptn node is found, the driver will initialize
->>>>> the ptn3460 driver and skip creating a DP connector (since the bridge
->>>>> driver will register its own connector).
->>>>>
->>>>> Signed-off-by: Sean Paul <seanpaul@chromium.org>
->>>>> ---
->>>>>  drivers/gpu/drm/exynos/exynos_drm_core.c | 44 +++++++++++++++++++++++++++++++-
->>>>>  1 file changed, 43 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_core.c b/drivers/gpu/drm/exynos/exynos_drm_core.c
->>>>> index 1bef6dc..9cf4476 100644
->>>>> --- a/drivers/gpu/drm/exynos/exynos_drm_core.c
->>>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_core.c
->>>>> @@ -12,7 +12,9 @@
->>>>>   * option) any later version.
->>>>>   */
->>>>>
->>>>> +#include <linux/of_i2c.h>
->>>>>  #include <drm/drmP.h>
->>>>> +#include <drm/bridge/ptn3460.h>
->>>>>  #include "exynos_drm_drv.h"
->>>>>  #include "exynos_drm_encoder.h"
->>>>>  #include "exynos_drm_connector.h"
->>>>> @@ -20,6 +22,40 @@
->>>>>
->>>>>  static LIST_HEAD(exynos_drm_subdrv_list);
->>>>>
->>>>> +struct bridge_init {
->>>>> +       struct i2c_client *client;
->>>>> +       struct device_node *node;
->>>>> +};
->>>>> +
->>>>> +static bool find_bridge(const char *name, struct bridge_init *bridge)
->>>>> +{
->>>>> +       bridge->client = NULL;
->>>>> +       bridge->node = of_find_node_by_name(NULL, name);
->>>>
->>>> Not clear to me. Why do you try to handle device tree here, not real
->>>> device driver?. How about adding a output property to board specific
->>>> fimd dt node: i.e. output = <&ptn3460_bridge>?
+On 2013-10-03 12:57, Borislav Petkov wrote:> On Thu, Oct 03, 2013 at 09:27:45AM -0700, Linus Torvalds wrote:
+>> On Thu, Oct 3, 2013 at 5:06 AM, Austin S Hemmelgarn
+>> <ahferroin7@gmail.com> wrote:
+>>> improved.  Building kernel 3.12-rc2 with allmodconfig using 8 jobs on a FX-8320 takes
 >>>
->>> The problem doing something like this is that we won't have a handle
->>> to drm_device if it's just a standalone driver, and so we won't be
->>> able to register the bridge or connector. We need this init call one
->>> way or another.
->>>
+>>> 22 minutes and 57 seconds on a kernel with CONFIG_MK8,
+>>> 21 minutes and 35 seconds on a kernel with CONFIG_GENERIC, and
+>>> 19 minutes and 11 seconds on a kernel with CONFIG_PILEDRIVER.
 >>
->> At least, dt binding shoul be done in real device driver so this way
->> is not good. Let's find a better way.
+>> That's certainly noticeable. Surprisingly so. What makes MK8 so bad in
+>> particular, I wonder?
 >>
->
-> Right, so this is kind of tricky. If you do it in a "real" device
-> driver, you end up parsing the dt stuff in the probe, and then racing
-> the init callback. I figured it would be best just to do everything in
-> one place without races.
->
-> Hopefully I'm just missing a good way to solve this problem, any concrete ideas?
->
->>>
->>>> Actually, the output
->>>> device of fimd hw could be one of MIPI-DSI, eDP, mDNIe, LVDS bridge,
->>>> or LCD. And then, let's find ptn3460-bridge node in the fimd driver,
->>>> and initialize the ptn3460 bridge driver, and get power on or off
->>>> through  exynos_drm_display_ops of the fimd driver. And all these
->>>> codes could be hided from fimd driver by moving them into
->>>> exynos_drm_display_ops. Of course, for this, you would need additional
->>>> works. So let's do it if needed.
->>>>
->>>> The below is the outline of device tree I recommend,
->>>>
->>>> In board dts,
->>>>        i2c@I2CD000 {
->>>>              ptn3460_bridge: prn3460-bridge@20 {
->>>>                     ...
->>>>              }
->>>>         }
->>>>
->>>>         fimd@11c00000 {
->>>>              ...
->>>>              output_dev = <&ptn3460_bridge>;
->>>>         }
->>>>
->>>> With this, I believe that you can do all things you want for
->>>> controlling the LVDS bridge in fimd driver.
->>>>
->>>
->>> No, this isn't what I want to do. The bridge should not hang off fimd
->>> since it's a crtc. The bridge should only be initialized by the DP
->>> driver (it doesn't make sense to initialize ptn when you're using
->>> MIPI/LVDS/whatever).
->>
->> I don't mean that the bridge device should be initialized by fimd
->> directly but the fimd driver provides just interfaces abstracted to
->> control the bridge device. And basically, the exynos_drm_display_ops
->> shouldn't be in fimd driver but in real connector driver; i.e. lcd
->> panel or LVDS driver. The reason I placed the exynos_drm_display_ops
->> in fimd driver is that lcd panel driver is controlled by lcd class
->> depended on Linux framebuffer, and I thought the panel driver should
->> be shared with drm driver in case of ARM SoC. The
->> exynos_drm_display_ops should be moved into right place if something
->> better exists some time or other.
->>
->> So how can the DP driver control the bridge device as of now? the DP
->> you mentioned would be eDP, and the eDP driver is placed in
->> drivers/video/exynos/, and also MIPI-DSI driver.
->>
->
-> It can't. The DP driver just operates on its own and display either
-> comes up or it doesn't depending on whether fimd happens to be
-> initialized first.
+>> Just out of interest, have you done any profiles on the kernel cost
+>> here to see what it is that makes such a big difference. Because
+>> normally on a kernel build, I see most of the overhead in path lookup.
+>> But that's only true for otherwise optimized builds that don't have
+>> system call auditing etc debugging that spreads the costs out over
+>> everything..
+> 
+> Yeah, I was having some doubts about the numbers above so I ran my own
+> benchmarking, machine is a Piledriver box:
+> 
+> vendor_id       : AuthenticAMD
+> cpu family      : 21
+> model           : 2
+> model name      : AMD FX(tm)-8350 Eight-Core Processor
+> stepping        : 0
+> 
+> and I don't really see any of those improvements above. Actually,
+> -march=bdver2 is even slightly worse in comparison to mk8.
+> 
+> And the workload is of building a config specific to that machine but
+> allmodconfig looks very similar, the numbers being simply higher.
+> 
+> $ zgrep MK8 /proc/config.gz
+> CONFIG_MK8=y
+> 
+> /home/boris/bin/perf stat --repeat 10 -a --sync --pre /home/boris/kernel/pre-build-kernel.sh make -s -j64 bzImage
+> 
+>  Performance counter stats for 'make -s -j64 bzImage' (10 runs):
+> 
+>     1081808.628840 task-clock                #    7.996 CPUs utilized            ( +-  0.06% ) [100.00%]
+>          1,203,753 context-switches          #    0.001 M/sec                    ( +-  0.04% ) [100.00%]
+>             48,748 cpu-migrations            #    0.045 K/sec                    ( +-  0.59% ) [100.00%]
+>         31,145,439 page-faults               #    0.029 M/sec                    ( +-  0.00% )
+>  3,836,736,801,500 cycles                    #    3.547 GHz                      ( +-  0.03% ) [100.00%]
+>    957,386,966,493 stalled-cycles-frontend   #   24.95% frontend cycles idle     ( +-  0.06% ) [100.00%]
+>    218,581,249,251 stalled-cycles-backend    #    5.70% backend  cycles idle     ( +-  0.06% ) [100.00%]
+>  2,466,632,641,972 instructions              #    0.64  insns per cycle
+>                                              #    0.39  stalled cycles per insn  ( +-  0.00% ) [100.00%]
+>    537,749,333,838 branches                  #  497.084 M/sec                    ( +-  0.00% ) [100.00%]
+>     27,802,940,176 branch-misses             #    5.17% of all branches          ( +-  0.00% )
+> 
+>      135.292843025 seconds time elapsed                                          ( +-  0.06% )
+> 
+> 
+> $ zgrep PILEDRIVER /proc/config.gz
+> CONFIG_MPILEDRIVER=y
+> 
+> /home/boris/bin/perf stat --repeat 10 -a --sync --pre /home/boris/kernel/pre-build-kernel.sh make -s -j64 bzImage
+> 
+>  Performance counter stats for 'make -s -j64 bzImage' (10 runs):
+> 
+>     1085723.230470 task-clock                #    7.996 CPUs utilized            ( +-  0.10% ) [100.00%]
+>          1,204,355 context-switches          #    0.001 M/sec                    ( +-  0.10% ) [100.00%]
+>             49,143 cpu-migrations            #    0.045 K/sec                    ( +-  0.76% ) [100.00%]
+>         31,196,575 page-faults               #    0.029 M/sec                    ( +-  0.00% )
+>  3,851,255,065,133 cycles                    #    3.547 GHz                      ( +-  0.02% ) [100.00%]
+>    958,840,197,117 stalled-cycles-frontend   #   24.90% frontend cycles idle     ( +-  0.09% ) [100.00%]
+>    220,260,399,411 stalled-cycles-backend    #    5.72% backend  cycles idle     ( +-  0.04% ) [100.00%]
+>  2,466,701,295,156 instructions              #    0.64  insns per cycle
+>                                              #    0.39  stalled cycles per insn  ( +-  0.00% ) [100.00%]
+>    537,992,040,195 branches                  #  495.515 M/sec                    ( +-  0.00% ) [100.00%]
+>     27,860,290,286 branch-misses             #    5.18% of all branches          ( +-  0.00% )
+> 
+>      135.784111961 seconds time elapsed                                          ( +-  0.10% )
+> 
 
-Ok, I don't know the DP hardware well. But, MIPI-DSI driver is
-depending on fimd on/off ordering. ie. to enable display hw pipe, the
-ordering should be FIMD----MIPI-DSI-----LCD because initial commands
-_cannot be set_ to lcd panel if fimd is off. And to disable that, the
-ordering should be LCD-------MIPI-DSI-------FIMD in same reason: to
-get lcd panel off, off commands should be set to lcd panel. In similar
-reason, I had posted FB_EARLY_EVENT_BLANK feature to mainline and that
-have been merged.
+Part of the difference between our results may be that I have my entire userspace built with -mtune=bdver2, so less of the time is spent in userspace.  Also, the part about using many more threads than cpu cores was with regards to sysbench, not the kernel build, for that I just used 8 jobs in make.
 
-> As I mentioned earlier, I have a patch set which
-> moves DP driver into drm/exynos and removes the display_ops from fimd.
-> That will fix this issue.
+With regards to the differences shown above relative to CONFIG_MK8, that does actually make sense; with CONFIG_MK8, gcc makes very minimal use of extension instructions (afaik, only MMX, SSE, and 3Dnow!), this improves performance slightly on bulldozer derivatives because there are only half as many SSE and FP units as CPU cores (and the scheduler isn't as smart as it could be with regards to that, but that is something for another patch as far as I am concerned).
 
-Ah... as you may know I mentioned about this issue some time ago;
-moving eDP driver(maybe??) into drm/exynos.  At that time, I had
-rejected it because I thought we should share these bus drivers with
-Linux framebuffer driver: actually, I planned to use CDF for this.
-But....  I'm not sure even CDF as of now. So let's have a discussion
-about this issue with other people: it doesn't mean I oppose your
-patch set.
 
->
-> Sean
->
->
->>>
->>> Since the actual crtc/encoder drivers are abstracted through
->>> exynos_drm_core/crtc/encoder, we need to initialize the ptn driver in
->>> the abstraction layers in order to hook it directly into drm.
->>>
->>> Sean
->>>
->>>
->>>> Thanks,
->>>> Inki Dae
->>>>
->>>>> +       if (!bridge->node)
->>>>> +               return false;
->>>>> +
->>>>> +       bridge->client = of_find_i2c_device_by_node(bridge->node);
->>>>> +       if (!bridge->client)
->>>>> +               return false;
->>>>> +
->>>>> +       return true;
->>>>> +}
->>>>> +
->>>>> +/* returns the number of bridges attached */
->>>>> +static int exynos_drm_attach_lcd_bridge(struct drm_device *dev,
->>>>> +               struct drm_encoder *encoder)
->>>>> +{
->>>>> +       struct bridge_init bridge;
->>>>> +       int ret;
->>>>> +
->>>>> +       if (find_bridge("ptn3460-bridge", &bridge)) {
->>>>> +               ret = ptn3460_init(dev, encoder, bridge.client, bridge.node);
->>>>> +               if (!ret)
->>>>> +                       return 1;
->>>>> +       }
->>>>> +       return 0;
->>>>> +}
->>>>> +
->>>>>  static int exynos_drm_create_enc_conn(struct drm_device *dev,
->>>>>                                         struct exynos_drm_subdrv *subdrv)
->>>>>  {
->>>>> @@ -36,6 +72,13 @@ static int exynos_drm_create_enc_conn(struct drm_device *dev,
->>>>>                 DRM_ERROR("failed to create encoder\n");
->>>>>                 return -EFAULT;
->>>>>         }
->>>>> +       subdrv->encoder = encoder;
->>>>> +
->>>>> +       if (subdrv->manager->display_ops->type == EXYNOS_DISPLAY_TYPE_LCD) {
->>>>> +               ret = exynos_drm_attach_lcd_bridge(dev, encoder);
->>>>> +               if (ret)
->>>>> +                       return 0;
->>>>> +       }
->>>>>
->>>>>         /*
->>>>>          * create and initialize a connector for this sub driver and
->>>>> @@ -48,7 +91,6 @@ static int exynos_drm_create_enc_conn(struct drm_device *dev,
->>>>>                 goto err_destroy_encoder;
->>>>>         }
->>>>>
->>>>> -       subdrv->encoder = encoder;
->>>>>         subdrv->connector = connector;
->>>>>
->>>>>         return 0;
->>>>> --
->>>>> 1.8.4
->>>>>
->>>>>
->>>>> _______________________________________________
->>>>> linux-arm-kernel mailing list
->>>>> linux-arm-kernel@lists.infradead.org
->>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>> _______________________________________________
->>> dri-devel mailing list
->>> dri-devel@lists.freedesktop.org
->>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
