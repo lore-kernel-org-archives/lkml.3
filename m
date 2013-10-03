@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab3JCFPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:15:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47228 "EHLO
+	id S1758582Ab3JCFQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:16:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab3JCEUI (ORCPT
+	with ESMTP id S1756067Ab3JCETI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:20:08 -0400
+	Thu, 3 Oct 2013 00:19:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [ 41/57] dm snapshot: workaround for a false positive lockdep warning
-Date: Wed,  2 Oct 2013 21:09:07 -0700
-Message-Id: <20131003040639.404511210@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 33/57] USB: OHCI: accept very late isochronous URBs
+Date: Wed,  2 Oct 2013 21:08:59 -0700
+Message-Id: <20131003040638.867435357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,47 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 5ea330a75bd86b2b2a01d7b85c516983238306fb upstream.
+commit a8693424c751b8247ee19bd8b857f1d4f432b972 upstream.
 
-The kernel reports a lockdep warning if a snapshot is invalidated because
-it runs out of space.
+Commit 24f531371de1 (USB: EHCI: accept very late isochronous URBs)
+changed the isochronous API provided by ehci-hcd.  URBs submitted too
+late, so that the time slots for all their packets have already
+expired, are no longer rejected outright.  Instead the submission is
+accepted, and the URB completes normally with a -EXDEV error for each
+packet.  This is what client drivers expect.
 
-The lockdep warning was triggered by commit 0976dfc1d0cd80a4e9dfaf87bd87
-("workqueue: Catch more locking problems with flush_work()") in v3.5.
+This patch implements the same policy in ohci-hcd.  The change is more
+complicated than it was in ehci-hcd, because ohci-hcd doesn't scan for
+isochronous completions in the same way as ehci-hcd does.  Rather, it
+depends on the hardware adding completed TDs to a "done queue".  Some
+OHCI controller don't handle this properly when a TD's time slot has
+already expired, so we have to avoid adding such TDs to the schedule
+in the first place.  As a result, if the URB was submitted too late
+then none of its TDs will get put on the schedule, so none of them
+will end up on the done queue, so the driver will never realize that
+the URB should be completed.
 
-The warning is false positive.  The real cause for the warning is that
-the lockdep engine treats different instances of md->lock as a single
-lock.
+To solve this problem, the patch adds one to urb_priv->td_cnt for such
+URBs, making it larger than urb_priv->length (td_cnt already gets set
+to the number of TD's that had to be skipped because their slots have
+expired).  Each time an URB is given back, the finish_urb() routine
+looks to see if urb_priv->td_cnt for the next URB on the same endpoint
+is marked in this way.  If so, it gives back the next URB right away.
 
-This patch is a workaround - we use flush_workqueue instead of flush_work.
-This code path is not performance sensitive (it is called only on
-initialization or invalidation), thus it doesn't matter that we flush the
-whole workqueue.
+This should be applied to all kernels containing commit 815fa7b91761
+(USB: OHCI: fix logic for scheduling isochronous URBs).
 
-The real fix for the problem would be to teach the lockdep engine to treat
-different instances of md->lock as separate locks.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-snap-persistent.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ohci-hcd.c |   22 ++++++++++++----------
+ drivers/usb/host/ohci-q.c   |   26 ++++++++++++++++++++++----
+ 2 files changed, 34 insertions(+), 14 deletions(-)
 
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -256,7 +256,7 @@ static int chunk_io(struct pstore *ps, v
- 	 */
- 	INIT_WORK_ONSTACK(&req.work, do_metadata);
- 	queue_work(ps->metadata_wq, &req.work);
--	flush_work(&req.work);
-+	flush_workqueue(ps->metadata_wq);
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -216,31 +216,26 @@ static int ohci_urb_enqueue (
+ 			frame &= ~(ed->interval - 1);
+ 			frame |= ed->branch;
+ 			urb->start_frame = frame;
++			ed->last_iso = frame + ed->interval * (size - 1);
+ 		}
+ 	} else if (ed->type == PIPE_ISOCHRONOUS) {
+ 		u16	next = ohci_frame_no(ohci) + 1;
+ 		u16	frame = ed->last_iso + ed->interval;
++		u16	length = ed->interval * (size - 1);
  
- 	return req.result;
+ 		/* Behind the scheduling threshold? */
+ 		if (unlikely(tick_before(frame, next))) {
+ 
+-			/* USB_ISO_ASAP: Round up to the first available slot */
++			/* URB_ISO_ASAP: Round up to the first available slot */
+ 			if (urb->transfer_flags & URB_ISO_ASAP) {
+ 				frame += (next - frame + ed->interval - 1) &
+ 						-ed->interval;
+ 
+ 			/*
+-			 * Not ASAP: Use the next slot in the stream.  If
+-			 * the entire URB falls before the threshold, fail.
++			 * Not ASAP: Use the next slot in the stream,
++			 * no matter what.
+ 			 */
+ 			} else {
+-				if (tick_before(frame + ed->interval *
+-					(urb->number_of_packets - 1), next)) {
+-					retval = -EXDEV;
+-					usb_hcd_unlink_urb_from_ep(hcd, urb);
+-					goto fail;
+-				}
+-
+ 				/*
+ 				 * Some OHCI hardware doesn't handle late TDs
+ 				 * correctly.  After retiring them it proceeds
+@@ -251,9 +246,16 @@ static int ohci_urb_enqueue (
+ 				urb_priv->td_cnt = DIV_ROUND_UP(
+ 						(u16) (next - frame),
+ 						ed->interval);
++				if (urb_priv->td_cnt >= urb_priv->length) {
++					++urb_priv->td_cnt;	/* Mark it */
++					ohci_dbg(ohci, "iso underrun %p (%u+%u < %u)\n",
++							urb, frame, length,
++							next);
++				}
+ 			}
+ 		}
+ 		urb->start_frame = frame;
++		ed->last_iso = frame + length;
+ 	}
+ 
+ 	/* fill the TDs and link them to the ed; and
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -41,9 +41,13 @@ finish_urb(struct ohci_hcd *ohci, struct
+ __releases(ohci->lock)
+ __acquires(ohci->lock)
+ {
+-	 struct device *dev = ohci_to_hcd(ohci)->self.controller;
++	struct device *dev = ohci_to_hcd(ohci)->self.controller;
++	struct usb_host_endpoint *ep = urb->ep;
++	struct urb_priv *urb_priv;
++
+ 	// ASSERT (urb->hcpriv != 0);
+ 
++ restart:
+ 	urb_free_priv (ohci, urb->hcpriv);
+ 	urb->hcpriv = NULL;
+ 	if (likely(status == -EINPROGRESS))
+@@ -80,6 +84,21 @@ __acquires(ohci->lock)
+ 		ohci->hc_control &= ~(OHCI_CTRL_PLE|OHCI_CTRL_IE);
+ 		ohci_writel (ohci, ohci->hc_control, &ohci->regs->control);
+ 	}
++
++	/*
++	 * An isochronous URB that is sumitted too late won't have any TDs
++	 * (marked by the fact that the td_cnt value is larger than the
++	 * actual number of TDs).  If the next URB on this endpoint is like
++	 * that, give it back now.
++	 */
++	if (!list_empty(&ep->urb_list)) {
++		urb = list_first_entry(&ep->urb_list, struct urb, urb_list);
++		urb_priv = urb->hcpriv;
++		if (urb_priv->td_cnt > urb_priv->length) {
++			status = 0;
++			goto restart;
++		}
++	}
  }
+ 
+ 
+@@ -546,7 +565,6 @@ td_fill (struct ohci_hcd *ohci, u32 info
+ 		td->hwCBP = cpu_to_hc32 (ohci, data & 0xFFFFF000);
+ 		*ohci_hwPSWp(ohci, td, 0) = cpu_to_hc16 (ohci,
+ 						(data & 0x0FFF) | 0xE000);
+-		td->ed->last_iso = info & 0xffff;
+ 	} else {
+ 		td->hwCBP = cpu_to_hc32 (ohci, data);
+ 	}
+@@ -996,7 +1014,7 @@ rescan_this:
+ 			urb_priv->td_cnt++;
+ 
+ 			/* if URB is done, clean up */
+-			if (urb_priv->td_cnt == urb_priv->length) {
++			if (urb_priv->td_cnt >= urb_priv->length) {
+ 				modified = completed = 1;
+ 				finish_urb(ohci, urb, 0);
+ 			}
+@@ -1086,7 +1104,7 @@ static void takeback_td(struct ohci_hcd
+ 	urb_priv->td_cnt++;
+ 
+ 	/* If all this urb's TDs are done, call complete() */
+-	if (urb_priv->td_cnt == urb_priv->length)
++	if (urb_priv->td_cnt >= urb_priv->length)
+ 		finish_urb(ohci, urb, status);
+ 
+ 	/* clean schedule:  unlink EDs that are no longer busy */
 
 
