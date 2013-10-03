@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab3JCUTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:19:19 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:61217 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab3JCUTR (ORCPT
+	id S1755441Ab3JCUTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:19:55 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57267 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab3JCUTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:19:17 -0400
+	Thu, 3 Oct 2013 16:19:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131003194351.GK13318@ZenIV.linux.org.uk>
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
-	<CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
-	<20131003105130.GE13318@ZenIV.linux.org.uk>
-	<CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
-	<20131003174439.GG13318@ZenIV.linux.org.uk>
-	<CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
-	<20131003194351.GK13318@ZenIV.linux.org.uk>
-Date: Thu, 3 Oct 2013 13:19:16 -0700
-X-Google-Sender-Auth: 95FV1YxxsbePVGwbufzxsZWK9sY
-Message-ID: <CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20131002204141.GW12758@n2100.arm.linux.org.uk>
+References: <1380189591-1368-1-git-send-email-vfalico@redhat.com>
+ <20130928213727.GC32063@redhat.com> <20131001055346.GA4759@google.com> <20131002204141.GW12758@n2100.arm.linux.org.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 3 Oct 2013 14:19:31 -0600
+Message-ID: <CAErSpo4VOz=8EWPtzEDPnSt6kp77ZYptCahkDLkozcwzsgMaSw@mail.gmail.com>
+Subject: Re: [PATCH v2] msi: free msi_desc entry only after we've released the kobject
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Veaceslav Falico <vfalico@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 12:43 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Wed, Oct 2, 2013 at 2:41 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Sep 30, 2013 at 10:53:46PM -0700, Bjorn Helgaas wrote:
+>> I think the current kobject delayed release is too aggressive,
 >
-> In the common case it's ->mnt_ns is *not* NULL; that's what we get if
-> the damn thing is still mounted.
+> I don't agree with that statement, but the rest of the sentence I do:
 
-Yeah, I misread the profile assembly code. The point being that the
-nice fast case now has the smp_mb() in it, and it accounts for about
-60% of the cost of that function on my performance profile.
+I think you're right.  I think we need to keep the delayed release the
+way it is, and pay more attention to the way we remove things from
+sysfs.
 
-> What we need to avoid is this:
+>> in the
+>> sense that even after we've released all references, the object can
+>> still be in sysfs, which causes future creates to fail.  E.g., this
+>> fails:
+>>
+>>     kset = kset_create_and_add("kobj_test", NULL, NULL);
+>>     kset_unregister(kset);
+>>     kset = kset_create_and_add("kobj_test", NULL, NULL);  // FAILS
+>>
+>> when I think it should succeed.  We don't have a way for the caller to
+>> determine when it's safe to do the second kset_create_and_add().
 >
-> mnt_ns non-NULL, mnt_count is 2
-> CPU1: umount -l                                 CPU2: mntput
-> umount_tree() clears mnt_ns
-> drop mount_lock.lock
-> namespace_unlock() calls mntput()
-> decrement mnt_count
-> see that mnt_ns is NULL
-> grab mount_lock.lock
-> check mnt_count
->                                                 decrement mnt_count
->                                                 see old value of mnt_ns
->                                                 decide to bugger off
-> see it equal to 1 (i.e. miss decrement on CPU2)
-> decide to bugger off
+> The reason this happens is that for some reason I can't fathom, the
+> sysfs cleanup is done when the release function is called, not when
+> the object is unregistered.
+
+Right.  I think we might want to have kset_unregister() call
+kobject_del() explicitly.  That way the kset is removed from sysfs
+immediately even if the release is delayed, and it is safe to create
+another kset with the same name as soon as kset_register() returns.
+
+Part of my confusion has been that I didn't connect "kobject_del()"
+with the removal from sysfs (even though this is well-documented in
+Documentation/kobject.txt).  I think using kobject_del()an important
+part of fixing not only this MSI issue, but also races in the PCI
+device removal path.  A name like "kobject_sysfs_unlink()" might be
+more descriptive and help convey the idea that this is the point where
+we prevent any future references via sysfs.
+
+> I can see why that's done - it is so that when a kobject is unregistered,
+> its sysfs entry hangs around until all the children have gone (and hence
+> its reference count then hits zero.)
 >
-> The barrier in mntput() is to prevent that combination, so that either CPU2
-> would see mnt_ns cleared by CPU1, or CPU1 would see mnt_count decrement done
-> by CPU2.  Its counterpart on CPU1 is provided by spin_unlock/spin_lock we've
-> done between clearing mnt_ns and checking mnt_count.  Note that
-> synchronize_rcu() in namespace_unlock() and rcu_read_lock() in mntput() are
-> irrelevant here - the latter on CPU2 might very well have happened after the
-> former on CPU1, so umount -l did *not* wait for CPU2 to do anything.
+>> After we release all references, I think it's OK for the kobject
+>> itself to continue to exist, i.e., we can delay calling t->release().
+>> But it should be impossible to find a kobject with refcount == 0 via
+>> sysfs, so we should be able to create a new one with the same name.
+>>
+>> In terms of code, I'm suggesting something like the following:
 >
-> Any suggestions re getting rid of that barrier?
+> I think I can give you an ack for this - it looks sensible enough, and
+> should still have the intended debugging behaviour.  I haven't tested
+> it though.
+>
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Hmm. The CPU2 mntput can only happen under RCU readlock, right? After
-the RCU grace period _and_ if the umount is going ahead, nothing
-should have a mnt pointer, right?
+Thanks.  I think I'm going to propose something like the patch below
+instead.  It solves the kset_create_and_add(), kset_unregister(),
+kset_create_and_add() problem as well.  I think we'll have to address
+the MSI issue by adding kobject_del() in the appropriate places.
 
-So I'm wondering if you couldn't just have a synchronize_rcu() in that
-umount path, after clearing mnt_ns. At that point you _know_ you're
-the only one that should have access to the mnt.
-
-You'd need to drop the mount-hash lock for that. But I think you can
-do it in umount_tree(), right? IOW, you could make the rule be that
-umount_tree() must be called with the namespace lock and the
-mount-hash lock, and it will drop both. Or does that get too painful
-too?
-
-                Linus
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 9621751..9098992 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -753,6 +753,7 @@ void kset_unregister(struct kset *k)
+ {
+        if (!k)
+                return;
++       kobject_del(&k->kobj);
+        kobject_put(&k->kobj);
+ }
