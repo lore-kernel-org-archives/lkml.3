@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3JCEUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:20:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47218 "EHLO
+	id S1756183Ab3JCEUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:20:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab3JCET6 (ORCPT
+	with ESMTP id S1753960Ab3JCEUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:19:58 -0400
+	Thu, 3 Oct 2013 00:20:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/57] bcache: Fix a dumb journal discard bug
-Date: Wed,  2 Oct 2013 21:08:29 -0700
-Message-Id: <20131003040636.840325380@linuxfoundation.org>
+        Benson Leung <bleung@chromium.org>, Ming Lei <ming.lei@canonical.com>
+Subject: [ 40/57] driver core : Fix use after free of dev->parent in device_shutdown
+Date: Wed,  2 Oct 2013 21:09:06 -0700
+Message-Id: <20131003040639.337797840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,31 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Benson Leung <bleung@chromium.org>
 
-commit 6d9d21e35fbfa2934339e96934f862d118abac23 upstream.
+commit f123db8e9d6c84c863cb3c44d17e61995dc984fb upstream.
 
-That switch statement was obviously wrong, leading to some sort of weird
-spinning on rare occasion with discards enabled...
+The put_device(dev) at the bottom of the loop of device_shutdown
+may result in the dev being cleaned up. In device_create_release,
+the dev is kfreed.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+However, device_shutdown attempts to use the dev pointer again after
+put_device by referring to dev->parent.
+
+Copy the parent pointer instead to avoid this condition.
+
+This bug was found on Chromium OS's chromeos-3.8, which is based on v3.8.11.
+See bug report : https://code.google.com/p/chromium/issues/detail?id=297842
+This can easily be reproduced when shutting down with
+hidraw devices that report battery condition.
+Two examples are the HP Bluetooth Mouse X4000b and the Apple Magic Mouse.
+For example, with the magic mouse :
+The dev in question is "hidraw0"
+dev->parent is "magicmouse"
+
+In the course of the shutdown for this device, the input event cleanup calls
+a put on hidraw0, decrementing its reference count.
+When we finally get to put_device(dev) in device_shutdown, kobject_cleanup
+is called and device_create_release does kfree(dev).
+dev->parent is no longer valid, and we may crash in
+put_device(dev->parent).
+
+This change should be applied on any kernel with this change :
+d1c6c030fcec6f860d9bb6c632a3ebe62e28440b
+
+Signed-off-by: Benson Leung <bleung@chromium.org>
+Reviewed-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/journal.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/core.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -428,7 +428,7 @@ static void do_journal_discard(struct ca
- 		return;
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -2033,7 +2033,7 @@ EXPORT_SYMBOL_GPL(device_move);
+  */
+ void device_shutdown(void)
+ {
+-	struct device *dev;
++	struct device *dev, *parent;
+ 
+ 	spin_lock(&devices_kset->list_lock);
+ 	/*
+@@ -2050,7 +2050,7 @@ void device_shutdown(void)
+ 		 * prevent it from being freed because parent's
+ 		 * lock is to be held
+ 		 */
+-		get_device(dev->parent);
++		parent = get_device(dev->parent);
+ 		get_device(dev);
+ 		/*
+ 		 * Make sure the device is off the kset list, in the
+@@ -2060,8 +2060,8 @@ void device_shutdown(void)
+ 		spin_unlock(&devices_kset->list_lock);
+ 
+ 		/* hold lock to avoid race with probe/release */
+-		if (dev->parent)
+-			device_lock(dev->parent);
++		if (parent)
++			device_lock(parent);
+ 		device_lock(dev);
+ 
+ 		/* Don't allow any more runtime suspends */
+@@ -2079,11 +2079,11 @@ void device_shutdown(void)
+ 		}
+ 
+ 		device_unlock(dev);
+-		if (dev->parent)
+-			device_unlock(dev->parent);
++		if (parent)
++			device_unlock(parent);
+ 
+ 		put_device(dev);
+-		put_device(dev->parent);
++		put_device(parent);
+ 
+ 		spin_lock(&devices_kset->list_lock);
  	}
- 
--	switch (atomic_read(&ja->discard_in_flight) == DISCARD_IN_FLIGHT) {
-+	switch (atomic_read(&ja->discard_in_flight)) {
- 	case DISCARD_IN_FLIGHT:
- 		return;
- 
 
 
