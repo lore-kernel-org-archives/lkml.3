@@ -1,49 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3JCKXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 06:23:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51280 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752898Ab3JCKXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 06:23:04 -0400
-X-Sasl-enc: 2Tzga0QaZj3etynqKsNbKCnUtBExIGnhNfdUahsQ+/bg 1380795778
-Date: Thu, 3 Oct 2013 07:22:55 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Stephan von Krawczynski <skraw@ithnet.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NUMA processor numbering
-Message-ID: <20131003102255.GA2086@khazad-dum.debian.net>
-References: <20131003120514.36128d85.skraw@ithnet.com>
+	id S1753878Ab3JCKXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:23:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23675 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752898Ab3JCKXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 06:23:08 -0400
+Date: Thu, 3 Oct 2013 13:23:05 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 2/7] KVM: mmu: remove uninteresting MMU "new_cr3"
+ callbacks
+Message-ID: <20131003102305.GC17294@redhat.com>
+References: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
+ <1380725776-14948-3-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003120514.36128d85.skraw@ithnet.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380725776-14948-3-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Oct 2013, Stephan von Krawczynski wrote:
-> Does the above output mean that the cores are numbered right across the two
-> physical cpus? Does this mean one has to pin processes to 0,2,4,... to stay in
-> "short distance" to node 0 RAM?
+On Wed, Oct 02, 2013 at 04:56:11PM +0200, Paolo Bonzini wrote:
+> The new_cr3 MMU callback has been a wrapper for mmu_free_roots since commit
+> e676505 (KVM: MMU: Force cr3 reload with two dimensional paging on mov
+> cr3 emulation, 2012-07-08).
+> 
+> The commit message mentioned that "mmu_free_roots() is somewhat of an overkill,
+> but fixing that is more complicated and will be done after this minimal fix".
+> One year has passed, and no one really felt the need to do a different fix.
+> Wrap the call with a kvm_mmu_new_cr3 function for clarity, but remove the
+> callback.
+> 
+Well the reason for it is because whoever knew about the problem found
+other things to do meanwhile :) But do we really need something smarter
+here anyway? The situation described in e676505 should be extremely rare
+even on non unrestricted guest HW and it happens during slow emulation
+anyway, so optimization will likely not be noticeable.
 
-...
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |  2 +-
+>  arch/x86/kvm/mmu.c              | 13 +------------
+>  arch/x86/kvm/x86.c              |  2 +-
+>  3 files changed, 3 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 3ea4d40..00a0e4c 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -253,7 +253,6 @@ struct kvm_pio_request {
+>   * mode.
+>   */
+>  struct kvm_mmu {
+> -	void (*new_cr3)(struct kvm_vcpu *vcpu);
+>  	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
+>  	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
+>  	u64 (*get_pdptr)(struct kvm_vcpu *vcpu, int index);
+> @@ -921,6 +920,7 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu);
+>  int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t gva, u32 error_code,
+>  		       void *insn, int insn_len);
+>  void kvm_mmu_invlpg(struct kvm_vcpu *vcpu, gva_t gva);
+> +void kvm_mmu_new_cr3(struct kvm_vcpu *vcpu);
+>  
+>  void kvm_enable_tdp(void);
+>  void kvm_disable_tdp(void);
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 1c4d580..dff856c 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2570,11 +2570,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+>  	kvm_release_pfn_clean(pfn);
+>  }
+>  
+> -static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+> -{
+> -	mmu_free_roots(vcpu);
+> -}
+> -
+>  static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
+>  				     bool no_dirty_log)
+>  {
+> @@ -3427,7 +3422,6 @@ out_unlock:
+>  static int nonpaging_init_context(struct kvm_vcpu *vcpu,
+>  				  struct kvm_mmu *context)
+>  {
+> -	context->new_cr3 = nonpaging_new_cr3;
+>  	context->page_fault = nonpaging_page_fault;
+>  	context->gva_to_gpa = nonpaging_gva_to_gpa;
+>  	context->sync_page = nonpaging_sync_page;
+> @@ -3448,9 +3442,8 @@ void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu)
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_mmu_flush_tlb);
+>  
+> -static void paging_new_cr3(struct kvm_vcpu *vcpu)
+> +void kvm_mmu_new_cr3(struct kvm_vcpu *vcpu)
+>  {
+> -	pgprintk("%s: cr3 %lx\n", __func__, kvm_read_cr3(vcpu));
+>  	mmu_free_roots(vcpu);
+>  }
+>  
+> @@ -3666,7 +3659,6 @@ static int paging64_init_context_common(struct kvm_vcpu *vcpu,
+>  	update_last_pte_bitmap(vcpu, context);
+>  
+>  	ASSERT(is_pae(vcpu));
+> -	context->new_cr3 = paging_new_cr3;
+>  	context->page_fault = paging64_page_fault;
+>  	context->gva_to_gpa = paging64_gva_to_gpa;
+>  	context->sync_page = paging64_sync_page;
+> @@ -3694,7 +3686,6 @@ static int paging32_init_context(struct kvm_vcpu *vcpu,
+>  	update_permission_bitmask(vcpu, context, false);
+>  	update_last_pte_bitmap(vcpu, context);
+>  
+> -	context->new_cr3 = paging_new_cr3;
+>  	context->page_fault = paging32_page_fault;
+>  	context->gva_to_gpa = paging32_gva_to_gpa;
+>  	context->sync_page = paging32_sync_page;
+> @@ -3717,7 +3708,6 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+>  	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+>  
+>  	context->base_role.word = 0;
+> -	context->new_cr3 = nonpaging_new_cr3;
+>  	context->page_fault = tdp_page_fault;
+>  	context->sync_page = nonpaging_sync_page;
+>  	context->invlpg = nonpaging_invlpg;
+> @@ -3792,7 +3782,6 @@ int kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context,
+>  	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
+>  
+>  	context->nx = true;
+> -	context->new_cr3 = paging_new_cr3;
+>  	context->page_fault = ept_page_fault;
+>  	context->gva_to_gpa = ept_gva_to_gpa;
+>  	context->sync_page = ept_sync_page;
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 187f824..4a33fdb 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -684,7 +684,7 @@ int kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3)
+>  
+>  	vcpu->arch.cr3 = cr3;
+>  	__set_bit(VCPU_EXREG_CR3, (ulong *)&vcpu->arch.regs_avail);
+> -	vcpu->arch.mmu.new_cr3(vcpu);
+> +	kvm_mmu_new_cr3(vcpu);
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_set_cr3);
+> -- 
+> 1.8.3.1
+> 
 
-> If so, it would be a lot better to have them numbered 0-15 and 16-31 for pinning.
-> Is there a way to achieve this?
-
-Yes, use hwloc to get the pinning masks for whatever property you want (e.g.
-all threads in a given core, all threads in a given node, all threads that
-share a given L3 cache...).
-
-http://www.open-mpi.org/projects/hwloc/
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+--
+			Gleb.
