@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab3JCEG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:06:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46758 "EHLO
+	id S1754547Ab3JCEHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:07:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415Ab3JCEGY (ORCPT
+	with ESMTP id S1754513Ab3JCEHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:06:24 -0400
+	Thu, 3 Oct 2013 00:07:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>, Nicolas Suzor <nic@suzor.com>,
-        Todd Previte <tprevite@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 10/16] drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
-Date: Wed,  2 Oct 2013 21:05:34 -0700
-Message-Id: <20131003040446.243245338@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 11/16] drm/radeon: disable tests/benchmarks if accel is disabled
+Date: Wed,  2 Oct 2013 21:05:35 -0700
+Message-Id: <20131003040446.310147315@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
 References: <20131003040445.523176877@linuxfoundation.org>
@@ -28,47 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8d16f258217f2f583af1fd57c5144aa4bbe73e48 upstream.
+commit 4a1132a023eb48cf10522d84c5908d43b612c041 upstream.
 
-There is no clear cut rules or specs for the retry interval, as there
-are many factors that affect overall response time. Increase the
-interval, and even more so on branch devices which may have limited i2c
-bit rates.
+The tests are only usable if the acceleration engines have
+been successfully initialized.
 
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reference: https://bugs.freedesktop.org/show_bug.cgi?id=60263
-Tested-by: Nicolas Suzor <nic@suzor.com>
-Reviewed-by: Todd Previte <tprevite@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Based on an initial patch from: Alex Ivanov <gnidorah@p0n4ik.tk>
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_device.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -625,7 +625,18 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
- 			DRM_DEBUG_KMS("aux_ch native nack\n");
- 			return -EREMOTEIO;
- 		case AUX_NATIVE_REPLY_DEFER:
--			udelay(100);
-+			/*
-+			 * For now, just give more slack to branch devices. We
-+			 * could check the DPCD for I2C bit rate capabilities,
-+			 * and if available, adjust the interval. We could also
-+			 * be more careful with DP-to-Legacy adapters where a
-+			 * long legacy cable may force very low I2C bit rates.
-+			 */
-+			if (intel_dp->dpcd[DP_DOWNSTREAMPORT_PRESENT] &
-+			    DP_DWN_STRM_PORT_PRESENT)
-+				usleep_range(500, 600);
-+			else
-+				usleep_range(300, 400);
- 			continue;
- 		default:
- 			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -835,13 +835,22 @@ int radeon_device_init(struct radeon_dev
+ 			return r;
+ 	}
+ 	if ((radeon_testing & 1)) {
+-		radeon_test_moves(rdev);
++		if (rdev->accel_working)
++			radeon_test_moves(rdev);
++		else
++			DRM_INFO("radeon: acceleration disabled, skipping move tests\n");
+ 	}
+ 	if ((radeon_testing & 2)) {
+-		radeon_test_syncing(rdev);
++		if (rdev->accel_working)
++			radeon_test_syncing(rdev);
++		else
++			DRM_INFO("radeon: acceleration disabled, skipping sync tests\n");
+ 	}
+ 	if (radeon_benchmarking) {
+-		radeon_benchmark(rdev, radeon_benchmarking);
++		if (rdev->accel_working)
++			radeon_benchmark(rdev, radeon_benchmarking);
++		else
++			DRM_INFO("radeon: acceleration disabled, skipping benchmarks\n");
+ 	}
+ 	return 0;
+ }
 
 
