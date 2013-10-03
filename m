@@ -1,282 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3JCODL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 10:03:11 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:56502 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab3JCODJ (ORCPT
+	id S1754515Ab3JCOEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 10:04:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:62105 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab3JCOEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 10:03:09 -0400
-X-Nat-Received: from [202.181.97.72]:54204 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1380808943.26976
-To: peterz@infradead.org, maarten.lankhorst@canonical.com
-Cc: imirkin@alum.mit.edu, linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch,
-        robdclark@gmail.com, mingo@kernel.org
-Subject: [PATCH for 3.12-rcX] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <522C312A.7050705@canonical.com>
-	<201309082053.FDB24195.FVOOJMStFQFLHO@I-love.SAKURA.ne.jp>
-	<522CDFC8.9020903@canonical.com>
-	<201309092056.GDH56750.OOMJtOHQVFFLSF@I-love.SAKURA.ne.jp>
-	<20130909125841.GZ31370@twins.programming.kicks-ass.net>
-In-Reply-To: <20130909125841.GZ31370@twins.programming.kicks-ass.net>
-Message-Id: <201310032302.EHJ58858.FOVHJOFLtSOMQF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 3 Oct 2013 23:02:18 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 03102013 #11167147, status: clean
+	Thu, 3 Oct 2013 10:04:34 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-04-524d7970ca7f
+From: Sangjung Woo <sangjung.woo@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>
+Subject: [PATCH] fbdev: sh_mobile_hdmi: Use devm_kzalloc()
+Date: Thu, 03 Oct 2013 23:04:27 +0900
+Message-id: <1380809067-4245-1-git-send-email-sangjung.woo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsWyRsSkRLeg0jfIYMY1c4s569ewWXROXMJu
+	cXnXHDaLBXtKLNbPv8XmwOoxu2Mmq8eJGb9ZPPq2rGL0OH5jO5PH501yAaxRXDYpqTmZZalF
+	+nYJXBk3NvxkKVjHXXHixw32BsZVnF2MHBwSAiYSD57LdTFyApliEhfurWfrYuTiEBJYyijx
+	ZtUkRoiEicS9O1OZIRLTGSXuzdvMAuG0MUlcurSTFaSKTUBX4smBy8wgtohAuMSjo7NYQYqY
+	BRoZJa5fOQGWEBawkujd0Q5mswioSsyd/YMdxOYVcJc4/+s+K8RJChJzJtmA9EoIfGeTWHu7
+	DapeQOLb5EMsEDWyEpsOMENcJylxcMUNlgmMggsYGVYxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn
+	525iBAbo6X/Pencw3j5gfYgxGWjcRGYp0eR8YIDnlcQbGpsZWZiamBobmVuakSasJM6r1mId
+	KCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoEx0H+fz6bZ7xQ0HdMXT+6+fyA3RaOvwpxto5yn
+	V5haefmuOo74eubF20xvLjAvDlaxntqgtG7WIyfBa08Xe14N/mvos/M+c6J27JId6cYnQrn0
+	/c59+37Zcp7+t6BeESkR8Yn+R/b+u9jiIp52bKXP9j2PjjVu+2itt2mm5o3rR1RNZeZqhn1S
+	YinOSDTUYi4qTgQAJqfcjGYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t9jQd2CSt8gg3Xf9S3mrF/DZtE5cQm7
+	xeVdc9gsFuwpsVg//xabA6vH7I6ZrB4nZvxm8ejbsorR4/iN7UwenzfJBbBGNTDaZKQmpqQW
+	KaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAtV1IoS8wpBQoFJBYX
+	K+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm3Njwk6VgHXfFiR832BsYV3F2MXJySAiYSNy7
+	M5UZwhaTuHBvPVsXIxeHkMB0Rol78zazQDhtTBKXLu1kBaliE9CVeHLgMliHiEC4xKOjs1hB
+	ipgFGhklrl85AZYQFrCS6N3RDmazCKhKzJ39gx3E5hVwlzj/6z5QAwfQOgWJOZNsJjByL2Bk
+	WMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHAHPpHYwrmywOMQowMGoxMNroOQTJMSaWFZc
+	mXuIUYKDWUmEd02xb5AQb0piZVVqUX58UWlOavEhxmSg5ROZpUST84HRmVcSb2hsYmZkaWRu
+	aGFkbE6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjDGfj8Q8yBea6mIXN2nSeefUV2uk
+	rCpXLOv4osB5x/XsYxm1BTdX2OnKd1geu267aMtq3k1KPAUL7ihaXf+713fK1Xvr/F6++sD7
+	N439043bXYnaMt1L+VakTepP3pg3L4v1/58tzBrvDs5k6Xrpc1KDq6dSxEM1S8zS2H5dqkip
+	94FTAhc5ViqxFGckGmoxFxUnAgBFDR49xAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Mon, Sep 09, 2013 at 08:56:53PM +0900, Tetsuo Handa wrote:
-> > From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> > Date: Mon, 9 Sep 2013 20:48:13 +0900
-> > Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
-> > 
-> > Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
-> > "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
-> > correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
-> > 
-> > Fix it by explicitly passing a bool which tells whether p != NULL or not.
-> > 
-> > Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> > Cc: <stable@kernel.org> [3.11+]
-> > ---
-> >  kernel/mutex.c |   32 ++++++++++++++++----------------
-> >  1 files changed, 16 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/kernel/mutex.c b/kernel/mutex.c
-> > index a52ee7bb..a2b80f1 100644
-> > --- a/kernel/mutex.c
-> > +++ b/kernel/mutex.c
-> > @@ -408,7 +408,7 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
-> >  static __always_inline int __sched
-> >  __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		    struct lockdep_map *nest_lock, unsigned long ip,
-> > -		    struct ww_acquire_ctx *ww_ctx)
-> > +		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
-> >  {
-> >  	struct task_struct *task = current;
-> >  	struct mutex_waiter waiter;
-> > @@ -448,7 +448,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		struct task_struct *owner;
-> >  		struct mspin_node  node;
-> >  
-> > -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-> > +		if (use_ww_ctx && ww_ctx->acquired > 0) {
-> >  			struct ww_mutex *ww;
-> >  
-> >  			ww = container_of(lock, struct ww_mutex, base);
-> > @@ -478,7 +478,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		if ((atomic_read(&lock->count) == 1) &&
-> >  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
-> >  			lock_acquired(&lock->dep_map, ip);
-> > -			if (!__builtin_constant_p(ww_ctx == NULL)) {
-> > +			if (use_ww_ctx) {
-> >  				struct ww_mutex *ww;
-> >  				ww = container_of(lock, struct ww_mutex, base);
-> >  
-> > @@ -548,7 +548,7 @@ slowpath:
-> >  			goto err;
-> >  		}
-> >  
-> > -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-> > +		if (use_ww_ctx && ww_ctx->acquired > 0) {
-> >  			ret = __mutex_lock_check_stamp(lock, ww_ctx);
-> >  			if (ret)
-> >  				goto err;
-> > @@ -568,7 +568,7 @@ done:
-> >  	mutex_remove_waiter(lock, &waiter, current_thread_info());
-> >  	mutex_set_owner(lock);
-> >  
-> > -	if (!__builtin_constant_p(ww_ctx == NULL)) {
-> > +	if (use_ww_ctx) {
-> >  		struct ww_mutex *ww = container_of(lock,
-> >  						      struct ww_mutex,
-> >  						      base);
-> > @@ -618,7 +618,7 @@ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
-> >  {
-> >  	might_sleep();
-> >  	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
-> > -			    subclass, NULL, _RET_IP_, NULL);
-> > +			    subclass, NULL, _RET_IP_, NULL, 0);
-> >  }
-> >  
-> >  EXPORT_SYMBOL_GPL(mutex_lock_nested);
-> 
-> This is a sad patch, but provided it actually generates similar code I
-> suppose its the best we can do bar whole sale deprecating gcc-3.
-> 
+Use devm_kzalloc() instead of kzalloc() in order to be free
+automatically. This makes cleanup paths more simple.
 
-Can the patch below go to 3.12-rcX (and the patch above to 3.11-stable which
-does the same thing)?
-
-Regards.
-----------
->From a1b01c858143c2c2c92b17e7df096042bfe0df6b Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 24 Sep 2013 23:44:17 +0900
-Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
-
-Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
-"!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
-correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
-
-Fix it by explicitly passing a bool which tells whether p != NULL or not.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
 ---
- kernel/mutex.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/video/sh_mobile_hdmi.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 6d647ae..d24105b 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -410,7 +410,7 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
- static __always_inline int __sched
- __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		    struct lockdep_map *nest_lock, unsigned long ip,
--		    struct ww_acquire_ctx *ww_ctx)
-+		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
- {
- 	struct task_struct *task = current;
- 	struct mutex_waiter waiter;
-@@ -450,7 +450,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		struct task_struct *owner;
- 		struct mspin_node  node;
- 
--		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-+		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			struct ww_mutex *ww;
- 
- 			ww = container_of(lock, struct ww_mutex, base);
-@@ -480,7 +480,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		if ((atomic_read(&lock->count) == 1) &&
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
- 			lock_acquired(&lock->dep_map, ip);
--			if (!__builtin_constant_p(ww_ctx == NULL)) {
-+			if (use_ww_ctx) {
- 				struct ww_mutex *ww;
- 				ww = container_of(lock, struct ww_mutex, base);
- 
-@@ -551,7 +551,7 @@ slowpath:
- 			goto err;
+diff --git a/drivers/video/sh_mobile_hdmi.c b/drivers/video/sh_mobile_hdmi.c
+index bfe4728..64bd0bf 100644
+--- a/drivers/video/sh_mobile_hdmi.c
++++ b/drivers/video/sh_mobile_hdmi.c
+@@ -1290,7 +1290,7 @@ static int __init sh_hdmi_probe(struct platform_device *pdev)
  		}
+ 	}
  
--		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-+		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			ret = __mutex_lock_check_stamp(lock, ww_ctx);
- 			if (ret)
- 				goto err;
-@@ -575,7 +575,7 @@ skip_wait:
- 	lock_acquired(&lock->dep_map, ip);
- 	mutex_set_owner(lock);
+-	hdmi = kzalloc(sizeof(*hdmi), GFP_KERNEL);
++	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+ 	if (!hdmi) {
+ 		dev_err(&pdev->dev, "Cannot allocate device data\n");
+ 		return -ENOMEM;
+@@ -1304,7 +1304,7 @@ static int __init sh_hdmi_probe(struct platform_device *pdev)
+ 	if (IS_ERR(hdmi->hdmi_clk)) {
+ 		ret = PTR_ERR(hdmi->hdmi_clk);
+ 		dev_err(&pdev->dev, "Unable to get clock: %d\n", ret);
+-		goto egetclk;
++		return ret;
+ 	}
  
--	if (!__builtin_constant_p(ww_ctx == NULL)) {
-+	if (use_ww_ctx) {
- 		struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
- 		struct mutex_waiter *cur;
+ 	/* select register access functions */
+@@ -1407,8 +1407,6 @@ ereqreg:
+ 	clk_disable(hdmi->hdmi_clk);
+ erate:
+ 	clk_put(hdmi->hdmi_clk);
+-egetclk:
+-	kfree(hdmi);
  
-@@ -615,7 +615,7 @@ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
--			    subclass, NULL, _RET_IP_, NULL);
-+			    subclass, NULL, _RET_IP_, NULL, 0);
+ 	return ret;
  }
+@@ -1433,7 +1431,6 @@ static int __exit sh_hdmi_remove(struct platform_device *pdev)
+ 		iounmap(hdmi->htop1);
+ 	iounmap(hdmi->base);
+ 	release_mem_region(res->start, resource_size(res));
+-	kfree(hdmi);
  
- EXPORT_SYMBOL_GPL(mutex_lock_nested);
-@@ -625,7 +625,7 @@ _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
- {
- 	might_sleep();
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
--			    0, nest, _RET_IP_, NULL);
-+			    0, nest, _RET_IP_, NULL, 0);
+ 	return 0;
  }
- 
- EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
-@@ -635,7 +635,7 @@ mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_KILLABLE,
--				   subclass, NULL, _RET_IP_, NULL);
-+				   subclass, NULL, _RET_IP_, NULL, 0);
- }
- EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
- 
-@@ -644,7 +644,7 @@ mutex_lock_interruptible_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
--				   subclass, NULL, _RET_IP_, NULL);
-+				   subclass, NULL, _RET_IP_, NULL, 0);
- }
- 
- EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
-@@ -682,7 +682,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- 
- 	might_sleep();
- 	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
--				   0, &ctx->dep_map, _RET_IP_, ctx);
-+				   0, &ctx->dep_map, _RET_IP_, ctx, 1);
- 	if (!ret && ctx->acquired > 1)
- 		return ww_mutex_deadlock_injection(lock, ctx);
- 
-@@ -697,7 +697,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- 
- 	might_sleep();
- 	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
--				  0, &ctx->dep_map, _RET_IP_, ctx);
-+				  0, &ctx->dep_map, _RET_IP_, ctx, 1);
- 
- 	if (!ret && ctx->acquired > 1)
- 		return ww_mutex_deadlock_injection(lock, ctx);
-@@ -809,28 +809,28 @@ __mutex_lock_slowpath(atomic_t *lock_count)
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
--			    NULL, _RET_IP_, NULL);
-+			    NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __mutex_lock_killable_slowpath(struct mutex *lock)
- {
- 	return __mutex_lock_common(lock, TASK_KILLABLE, 0,
--				   NULL, _RET_IP_, NULL);
-+				   NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __mutex_lock_interruptible_slowpath(struct mutex *lock)
- {
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, NULL);
-+				   NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __ww_mutex_lock_slowpath(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- {
- 	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, ctx);
-+				   NULL, _RET_IP_, ctx, 1);
- }
- 
- static noinline int __sched
-@@ -838,7 +838,7 @@ __ww_mutex_lock_interruptible_slowpath(struct ww_mutex *lock,
- 					    struct ww_acquire_ctx *ctx)
- {
- 	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, ctx);
-+				   NULL, _RET_IP_, ctx, 1);
- }
- 
- #endif
 -- 
-1.7.1
+1.7.9.5
+
