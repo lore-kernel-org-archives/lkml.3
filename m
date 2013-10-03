@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab3JCEOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:14:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47006 "EHLO
+	id S1751852Ab3JCEPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab3JCEOp (ORCPT
+	with ESMTP id S1754116Ab3JCEO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:14:45 -0400
+	Thu, 3 Oct 2013 00:14:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        =?UTF-8?q?Dieter=20N=C3=BCtzel?= <Dieter@nuetzel-hh.de>
-Subject: [ 44/52] drm/radeon: avoid UVD corruption on AGP cards using GPU gart
-Date: Wed,  2 Oct 2013 21:06:02 -0700
-Message-Id: <20131003040525.248314352@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Subject: [ 47/52] drm/radeon: add missing hdmi callbacks for rv6xx
+Date: Wed,  2 Oct 2013 21:06:05 -0700
+Message-Id: <20131003040525.448441201@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -33,31 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4ca5a6cba53e13b8fd153b0762b4128fab6a3cfb upstream.
+commit 99d79aa2f3b7729e7290e8bda5d0dd8b0240ec62 upstream.
 
-If the user has forced the driver to use the internal GPU gart
-rather than AGP on an AGP card, force the buffers to vram
-as well.
+When dpm was merged, I added a new asic struct for
+rv6xx, but it never got properly updated when the
+hdmi callbacks were added due to the two patch sets
+being developed in parallel.
+
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=69729
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Reviewed-by: Christian König <christian.koenig@amd.com>
-Tested-by: Dieter Nützel <Dieter@nuetzel-hh.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_asic.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -84,7 +84,7 @@ static int radeon_cs_parser_relocs(struc
- 		   VRAM, also but everything into VRAM on AGP cards to avoid
- 		   image corruptions */
- 		if (p->ring == R600_RING_TYPE_UVD_INDEX &&
--		    (i == 0 || p->rdev->flags & RADEON_IS_AGP)) {
-+		    (i == 0 || drm_pci_device_is_agp(p->rdev->ddev))) {
- 			/* TODO: is this still needed for NI+ ? */
- 			p->relocs[i].lobj.domain =
- 				RADEON_GEM_DOMAIN_VRAM;
+--- a/drivers/gpu/drm/radeon/radeon_asic.c
++++ b/drivers/gpu/drm/radeon/radeon_asic.c
+@@ -892,6 +892,8 @@ static struct radeon_asic r520_asic = {
+ 		.wait_for_vblank = &avivo_wait_for_vblank,
+ 		.set_backlight_level = &atombios_set_backlight_level,
+ 		.get_backlight_level = &atombios_get_backlight_level,
++		.hdmi_enable = &r600_hdmi_enable,
++		.hdmi_setmode = &r600_hdmi_setmode,
+ 	},
+ 	.copy = {
+ 		.blit = &r100_copy_blit,
 
 
