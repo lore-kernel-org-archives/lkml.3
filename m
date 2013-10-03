@@ -1,115 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab3JCJ7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:59:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40918 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3JCJ7t (ORCPT
+	id S1753921Ab3JCKEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:04:37 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:22767 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab3JCKEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:59:49 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <bcousson@baylibre.com>
-CC: <tony@atomide.com>, <george.cherian@ti.com>, <kishon@ti.com>,
-        <bigeasy@linutronix.de>, <sergei.shtylyov@cogentembedded.com>,
-        <thomas.langer@lantiq.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v8 0/8] phy: omap-usb: Support multiple instances and new types
-Date: Thu, 3 Oct 2013 12:58:58 +0300
-Message-ID: <1380794346-30185-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 3 Oct 2013 06:04:35 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1024,1371081600"; 
+   d="scan'208";a="57276323"
+Message-ID: <524D4132.3000809@citrix.com>
+Date: Thu, 3 Oct 2013 11:04:34 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Frediano Ziglio <frediano.ziglio@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector corruption
+References: <1380788677.30462.1.camel@hamster.uk.xensource.com>
+In-Reply-To: <1380788677.30462.1.camel@hamster.uk.xensource.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/10/13 09:24, Frediano Ziglio wrote:
+> Due to the way kernel is initialized under Xen is possible that the ring1
+> selector used by the kernel for the boot cpu end up to be copied to
+> userspace leading to segmentation fault in the userspace.
+>
+>
+> Xen code in the kernel initialize no-boot cpus with correct selectors (ds
+> and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
+> On task context switch (switch_to) we assume that ds, es and cs already
+> point to __USER_DS and __KERNEL_CSso these selector are not changed.
+>
+> If processor is an Intel that support sysenter instruction sysenter/sysexit
+> is used so ds and es are not restored switching back from kernel to
+> userspace. In the case the selectors point to a ring1 instead of __USER_DS
+> the userspace code will crash on first memory access attempt (to be
+> precise Xen on the emulated iret used to do sysexit will detect and set ds
+> and es to zero which lead to GPF anyway).
+>
+> Now if an userspace process call kernel using sysenter and get rescheduled
+> (for me it happen on a specific init calling wait4) could happen that the
+> ring1 selector is set to ds and es.
+>
+> This is quite hard to detect cause after a while these selectors are fixed
+> (__USER_DS seems sticky).
+>
+> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
+> to be the first one that have this issue.
+>
+> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
 
-This patchset does the following:
+In terms of the correctness of the fix,
 
-* Get rid of omap_control_usb platform data as we support DT only.
+Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
 
-* Restructure and add support for new PHY types. We now support the following
-four types
+However, I am not sure the comment is necessary.  The prevailing style
+is for no justification of loads of segment selectors on boot, and the
+comment itself refers simply to an interaction issue of 32bit on Xen
+when making use of sysenter.
 
- TYPE_OTGHS - if it has otghs_control mailbox register (e.g. on OMAP4)
- TYPE_USB2 - if it has Power down bit in control_dev_conf register. e.g. USB2 PHY
- TYPE_PIPE3 - if it has DPLL and individual Rx & Tx power control. e.g. USB3 PHY or SATA PHY
- TYPE_DRA7USB2 - if it has both power down and power aux registers. e.g. USB2 PHY on DRA7
-
-* Get rid of "ti,type" DT property and introduce compatible strings for each type.
-
-* Have only one power control API "omap_control_usb_phy_power()" instead of a
-different one for each PHY type.
-
-* Get rid of omap_get_control_dev() so that we can support multiple instances
-of the control device. We take advantage of the fact that omap control USB device
-is only present on OMAP4 onwards and hence only supports DT boot. The users
-of control USB device can get a reference to it from the device node's phandle.
-
-Patches are based on greg/usb-next.
-
-Smoke tested on OMAP4 panda with MUSB in gadget mode (g_zero).
-
-You can find the patches in branch
- usb-control-module
-in git tree
- git://github.com/rogerq/linux.git
-
-v8:
-- Rebased on top of greg/usb-next to avoid conflicts
-- Removed patches 9 and 10 as they are not applicable
-
-v7:
-- Rebased on v3.12-rc1
-- Updated DT compatibility ID for better readability
-- Renamed TYPE_OMAP4 to TYPE_OTGHS, TYPE_USB3 to TYPE_PIPE3 and TYPE_DRA7 to
-  TYPE_DRA7USB2
-
-v6:
-- addressed review comment about usage of control_usb before allocation.
-
-v5:
-- fixed whitespace alignment issues.
-
-v4:
-- removed "ti,has-mailbox" from omap-usb binding document example.
-
-v3:
-- return -EINVAL instead of -ENODEV on probe failure.
-- pass device type data through of_device_id table.
-- get rid of "ti,mailbox" property and "has_mailbox" from musb platform data.
-
-v2:
-- get rid of "ti,type" property and introduce compatible strings for each device type.
-
-cheers,
--roger
-
-Roger Quadros (8):
-  usb: phy: omap-control: Get rid of platform data
-  usb: phy: omap: Add new device types and remove
-    omap_control_usb3_phy_power()
-  usb: phy: omap-usb2: Don't use omap_get_control_dev()
-  usb: phy: omap-usb3: Don't use omap_get_control_dev()
-  usb: musb: omap2430: Don't use omap_get_control_dev()
-  ARM: dts: omap4: update omap-control-usb nodes
-  usb: phy: omap: get rid of omap_get_control_dev()
-  ARM: dts: omap5: update omap-control-usb node
-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   34 ++--
- arch/arm/boot/dts/omap4.dtsi                       |   20 ++-
- arch/arm/boot/dts/omap5.dtsi                       |   20 ++-
- drivers/phy/phy-omap-usb2.c                        |   31 +++-
- drivers/usb/musb/omap2430.c                        |   25 ++-
- drivers/usb/phy/phy-omap-control.c                 |  208 ++++++++++---------
- drivers/usb/phy/phy-omap-usb3.c                    |   32 +++-
- include/linux/usb/musb.h                           |    2 -
- include/linux/usb/omap_control_usb.h               |   33 ++--
- 9 files changed, 220 insertions(+), 185 deletions(-)
-
--- 
-1.7.4.1
+> ---
+>  arch/x86/xen/smp.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+>
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index d1e4777..2a47241 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -278,6 +278,18 @@ static void __init xen_smp_prepare_boot_cpu(void)
+>  		   old memory can be recycled */
+>  		make_lowmem_page_readwrite(xen_initial_gdt);
+>  
+> +#ifdef CONFIG_X86_32
+> +		/*
+> +		 * Assure we use segments with user level access.
+> +		 * During switching of task these segments got not reloaded
+> +		 * so it could happen that userspace tasks get Xen ring1
+> +		 * selector causing exit with sysenter failures on next
+> +		 * userspace memory operation.
+> +		 */
+> +		loadsegment(ds, __USER_DS);
+> +		loadsegment(es, __USER_DS);
+> +#endif
+> +
+>  		xen_filter_cpu_maps();
+>  		xen_setup_vcpu_info_placement();
+>  	}
 
