@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab3JCEbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:31:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47701 "EHLO
+	id S1756651Ab3JCEVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:21:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47520 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756672Ab3JCEVO (ORCPT
+	with ESMTP id S1756452Ab3JCEUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:21:14 -0400
+	Thu, 3 Oct 2013 00:20:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Ivanov <gnidorah@p0n4ik.tk>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 50/57] drm/radeon: Make r100_cp_ring_info() and radeon_ring_gfx() safe (v2)
-Date: Wed,  2 Oct 2013 21:09:16 -0700
-Message-Id: <20131003040640.016832573@linuxfoundation.org>
+        Meelis Roos <mroos@ut.ee>, Chris Wilson <chris@chris-wilson.co.uk>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 44/57] drm/i915: preserve pipe A quirk in i9xx_set_pipeconf
+Date: Wed,  2 Oct 2013 21:09:10 -0700
+Message-Id: <20131003040639.607282223@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,59 +32,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Ivanov <gnidorah@p0n4ik.tk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0eb3448aa6b31fbf24c31756aba7940cac5ad6b8 upstream.
+commit 67c72a12254101d4e8d9b9f3a02646ba0be84a2d upstream.
 
-Prevent NULL pointer dereference in case when radeon_ring_fini() did it's job.
+This regression has been introduced in
 
-Reading of r100_cp_ring_info and radeon_ring_gfx debugfs entries will lead to a KP if ring buffer was deallocated, e.g. on failed ring test.
-Seen on PA-RISC machine having "radeon: ring test failed (scratch(0x8504)=0xCAFEDEAD)" issue.
+commit 9f11a9e4e50006b615ba94722dfc33ced89664cf
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Thu Jun 13 00:54:58 2013 +0200
 
-v2: agd5f: add some parens around ring->ready check
+    drm/i915: set up PIPECONF explicitly for i9xx/vlv platforms
 
-Signed-off-by: Alex Ivanov <gnidorah@p0n4ik.tk>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Ville brough up the idea that this is just the pipe A quirk gone
+wrong.
+
+Note that after resume the bios might or might not have enabled pipe A
+already.  We have a bit of magic to make sure that on resume we set up
+a decent mode for pipe A, but I fear if I just smash pipe A to always
+on we'd enable it in a bogus state and hang the hw. Hence the
+readback.
+
+v2: Clarify the logic a bit as suggested by Chris. Also amend the
+commit message to clarify why we don't unconditionally enable the
+pipe.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66462
+References: https://lkml.org/lkml/2013/8/26/238
+Cc: Meelis Roos <mroos@ut.ee>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Use |= instead of = as suggested by Chris.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r100.c        |    8 +++++---
- drivers/gpu/drm/radeon/radeon_ring.c |    8 +++++---
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -2926,9 +2926,11 @@ static int r100_debugfs_cp_ring_info(str
- 	seq_printf(m, "CP_RB_RPTR 0x%08x\n", rdp);
- 	seq_printf(m, "%u free dwords in ring\n", ring->ring_free_dw);
- 	seq_printf(m, "%u dwords in ring\n", count);
--	for (j = 0; j <= count; j++) {
--		i = (rdp + j) & ring->ptr_mask;
--		seq_printf(m, "r[%04d]=0x%08x\n", i, ring->ring[i]);
-+	if (ring->ready) {
-+		for (j = 0; j <= count; j++) {
-+			i = (rdp + j) & ring->ptr_mask;
-+			seq_printf(m, "r[%04d]=0x%08x\n", i, ring->ring[i]);
-+		}
- 	}
- 	return 0;
- }
---- a/drivers/gpu/drm/radeon/radeon_ring.c
-+++ b/drivers/gpu/drm/radeon/radeon_ring.c
-@@ -846,9 +846,11 @@ static int radeon_debugfs_ring_info(stru
- 	 * packet that is the root issue
- 	 */
- 	i = (ring->rptr + ring->ptr_mask + 1 - 32) & ring->ptr_mask;
--	for (j = 0; j <= (count + 32); j++) {
--		seq_printf(m, "r[%5d]=0x%08x\n", i, ring->ring[i]);
--		i = (i + 1) & ring->ptr_mask;
-+	if (ring->ready) {
-+		for (j = 0; j <= (count + 32); j++) {
-+			seq_printf(m, "r[%5d]=0x%08x\n", i, ring->ring[i]);
-+			i = (i + 1) & ring->ptr_mask;
-+		}
- 	}
- 	return 0;
- }
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4735,6 +4735,10 @@ static void i9xx_set_pipeconf(struct int
+ 
+ 	pipeconf = 0;
+ 
++	if (dev_priv->quirks & QUIRK_PIPEA_FORCE &&
++	    I915_READ(PIPECONF(intel_crtc->pipe)) & PIPECONF_ENABLE)
++		pipeconf |= PIPECONF_ENABLE;
++
+ 	if (intel_crtc->pipe == 0 && INTEL_INFO(dev)->gen < 4) {
+ 		/* Enable pixel doubling when the dot clock is > 90% of the (display)
+ 		 * core speed.
 
 
