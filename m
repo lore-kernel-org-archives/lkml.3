@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab3JCPNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:13:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39675 "EHLO bear.ext.ti.com"
+	id S1754911Ab3JCPNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:13:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44589 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754554Ab3JCPNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:13:35 -0400
+	id S1754805Ab3JCPNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 11:13:43 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <gregkh@linuxfoundation.org>, <balbi@ti.com>
 CC: <bcousson@baylibre.com>, <tony@atomide.com>, <george.cherian@ti.com>,
@@ -14,9 +14,9 @@ CC: <bcousson@baylibre.com>, <tony@atomide.com>, <george.cherian@ti.com>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v8 2/8] usb: phy: omap: Add new device types and remove omap_control_usb3_phy_power()
-Date: Thu, 3 Oct 2013 18:12:31 +0300
-Message-ID: <1380813157-22311-3-git-send-email-rogerq@ti.com>
+Subject: [PATCH v8 5/8] usb: musb: omap2430: Don't use omap_get_control_dev()
+Date: Thu, 3 Oct 2013 18:12:34 +0300
+Message-ID: <1380813157-22311-6-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1380813157-22311-1-git-send-email-rogerq@ti.com>
 References: <1380813157-22311-1-git-send-email-rogerq@ti.com>
@@ -26,415 +26,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for new device types and in the process rid of "ti,type"
-device tree property. The correct type of device will be determined
-from the compatible string instead.
+omap_get_control_dev() is being deprecated as it doesn't support
+multiple instances. As control device is present only from OMAP4
+onwards which supports DT only, we use phandles to get the
+reference to the control device.
 
-Introduce a compatible string for each device type. At the moment
-we support 4 types OTGHS, USB2, PIPE3 (e.g. USB3) and DRA7USB2.
-
-Update DT binding information to reflect these changes.
-
-Also get rid of omap_control_usb3_phy_power(). Just one function
-i.e. omap_control_usb_phy_power() will now take care of all PHY types.
+Also get rid of "ti,has-mailbox" property as it is redundant and
+we can determine that from whether "ctrl-module" property is present
+or not. Get rid of has_mailbox from musb_hdrc_platform_data as well.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- Documentation/devicetree/bindings/usb/omap-usb.txt |   30 ++--
- drivers/usb/phy/phy-omap-control.c                 |  173 +++++++++++--------
- drivers/usb/phy/phy-omap-usb3.c                    |    6 +-
- include/linux/usb/omap_control_usb.h               |   24 ++--
- 4 files changed, 130 insertions(+), 103 deletions(-)
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    4 ---
+ drivers/usb/musb/omap2430.c                        |   25 +++++++++++--------
+ include/linux/usb/musb.h                           |    2 -
+ 3 files changed, 14 insertions(+), 17 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index 661cb06..9add35c 100644
+index 9add35c..090e5e2 100644
 --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
 +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -83,22 +83,22 @@ omap_dwc3 {
- OMAP CONTROL USB
+@@ -3,9 +3,6 @@ OMAP GLUE AND OTHER OMAP SPECIFIC COMPONENTS
+ OMAP MUSB GLUE
+  - compatible : Should be "ti,omap4-musb" or "ti,omap3-musb"
+  - ti,hwmods : must be "usb_otg_hs"
+- - ti,has-mailbox : to specify that omap uses an external mailbox
+-   (in control module) to communicate with the musb core during device connect
+-   and disconnect.
+  - multipoint : Should be "1" indicating the musb controller supports
+    multipoint. This is a MUSB configuration-specific setting.
+  - num-eps : Specifies the number of endpoints. This is also a
+@@ -31,7 +28,6 @@ SOC specific device node entry
+ usb_otg_hs: usb_otg_hs@4a0ab000 {
+ 	compatible = "ti,omap4-musb";
+ 	ti,hwmods = "usb_otg_hs";
+-	ti,has-mailbox;
+ 	multipoint = <1>;
+ 	num-eps = <16>;
+ 	ram-bits = <12>;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index d0fc4d9..9eab645 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -38,6 +38,7 @@
+ #include <linux/delay.h>
+ #include <linux/usb/musb-omap.h>
+ #include <linux/usb/omap_control_usb.h>
++#include <linux/of_platform.h>
  
- Required properties:
-- - compatible: Should be "ti,omap-control-usb"
-+ - compatible: Should be one of
-+ "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
-+ "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
-+			e.g. USB2_PHY on OMAP5.
-+ "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
-+			e.g. USB3 PHY and SATA PHY on OMAP5.
-+ "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
-+			DRA7 platform.
-  - reg : Address and length of the register set for the device. It contains
--   the address of "control_dev_conf" and "otghs_control" or "phy_power_usb"
--   depending upon omap4 or omap5.
-- - reg-names: The names of the register addresses corresponding to the registers
--   filled in "reg".
-- - ti,type: This is used to differentiate whether the control module has
--   usb mailbox or usb3 phy power. omap4 has usb mailbox in control module to
--   notify events to the musb core and omap5 has usb3 phy power register to
--   power on usb3 phy. Should be "1" if it has mailbox and "2" if it has usb3
--   phy power.
-+   the address of "otghs_control" for control-phy-otghs or "power" register
-+   for other types.
-+ - reg-names: should be "otghs_control" control-phy-otghs and "power" for
-+   other types.
+ #include "musb_core.h"
+ #include "omap2430.h"
+@@ -524,8 +525,12 @@ static int omap2430_probe(struct platform_device *pdev)
+ 	glue->dev			= &pdev->dev;
+ 	glue->musb			= musb;
+ 	glue->status			= OMAP_MUSB_UNKNOWN;
++	glue->control_otghs = ERR_PTR(-ENODEV);
  
- omap_control_usb: omap-control-usb@4a002300 {
--	compatible = "ti,omap-control-usb";
--	reg = <0x4a002300 0x4>,
--	      <0x4a00233c 0x4>;
--	reg-names = "control_dev_conf", "otghs_control";
--	ti,type = <1>;
-+	compatible = "ti,control-phy-otghs";
-+	reg = <0x4a00233c 0x4>;
-+	reg-names = "otghs_control";
- };
-diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
-index 9772592..1c8a7c5 100644
---- a/drivers/usb/phy/phy-omap-control.c
-+++ b/drivers/usb/phy/phy-omap-control.c
-@@ -20,6 +20,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/err.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-@@ -46,61 +47,70 @@ struct device *omap_get_control_dev(void)
- EXPORT_SYMBOL_GPL(omap_get_control_dev);
- 
- /**
-- * omap_control_usb3_phy_power - power on/off the serializer using control
-- *	module
-+ * omap_control_usb_phy_power - power on/off the phy using control module reg
-  * @dev: the control module device
-- * @on: 0 to off and 1 to on based on powering on or off the PHY
-- *
-- * usb3 PHY driver should call this API to power on or off the PHY.
-+ * @on: 0 or 1, based on powering on or off the PHY
-  */
--void omap_control_usb3_phy_power(struct device *dev, bool on)
-+void omap_control_usb_phy_power(struct device *dev, int on)
- {
- 	u32 val;
- 	unsigned long rate;
--	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+	struct omap_control_usb	*control_usb;
- 
--	if (control_usb->type != OMAP_CTRL_DEV_TYPE2)
-+	if (IS_ERR(dev) || !dev) {
-+		pr_err("%s: invalid device\n", __func__);
- 		return;
-+	}
- 
--	rate = clk_get_rate(control_usb->sys_clk);
--	rate = rate/1000000;
--
--	val = readl(control_usb->phy_power);
--
--	if (on) {
--		val &= ~(OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK |
--			OMAP_CTRL_USB_PWRCTL_CLK_FREQ_MASK);
--		val |= OMAP_CTRL_USB3_PHY_TX_RX_POWERON <<
--			OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
--		val |= rate << OMAP_CTRL_USB_PWRCTL_CLK_FREQ_SHIFT;
--	} else {
--		val &= ~OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK;
--		val |= OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF <<
--			OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
-+	control_usb = dev_get_drvdata(dev);
-+	if (!control_usb) {
-+		dev_err(dev, "%s: invalid control usb device\n", __func__);
-+		return;
- 	}
- 
--	writel(val, control_usb->phy_power);
--}
--EXPORT_SYMBOL_GPL(omap_control_usb3_phy_power);
-+	if (control_usb->type == OMAP_CTRL_TYPE_OTGHS)
-+		return;
- 
--/**
-- * omap_control_usb_phy_power - power on/off the phy using control module reg
-- * @dev: the control module device
-- * @on: 0 or 1, based on powering on or off the PHY
-- */
--void omap_control_usb_phy_power(struct device *dev, int on)
--{
--	u32 val;
--	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+	val = readl(control_usb->power);
+ 	if (np) {
++		struct device_node *control_node;
++		struct platform_device *control_pdev;
 +
-+	switch (control_usb->type) {
-+	case OMAP_CTRL_TYPE_USB2:
-+		if (on)
-+			val &= ~OMAP_CTRL_DEV_PHY_PD;
-+		else
-+			val |= OMAP_CTRL_DEV_PHY_PD;
-+		break;
+ 		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+ 		if (!pdata) {
+ 			dev_err(&pdev->dev,
+@@ -554,22 +559,20 @@ static int omap2430_probe(struct platform_device *pdev)
+ 		of_property_read_u32(np, "ram-bits", (u32 *)&config->ram_bits);
+ 		of_property_read_u32(np, "power", (u32 *)&pdata->power);
+ 		config->multipoint = of_property_read_bool(np, "multipoint");
+-		pdata->has_mailbox = of_property_read_bool(np,
+-		    "ti,has-mailbox");
  
--	val = readl(control_usb->dev_conf);
-+	case OMAP_CTRL_TYPE_PIPE3:
-+		rate = clk_get_rate(control_usb->sys_clk);
-+		rate = rate/1000000;
-+
-+		if (on) {
-+			val &= ~(OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK |
-+					OMAP_CTRL_USB_PWRCTL_CLK_FREQ_MASK);
-+			val |= OMAP_CTRL_USB3_PHY_TX_RX_POWERON <<
-+				OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
-+			val |= rate << OMAP_CTRL_USB_PWRCTL_CLK_FREQ_SHIFT;
-+		} else {
-+			val &= ~OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK;
-+			val |= OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF <<
-+				OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
-+		}
-+		break;
- 
--	if (on)
--		val &= ~OMAP_CTRL_DEV_PHY_PD;
--	else
--		val |= OMAP_CTRL_DEV_PHY_PD;
-+	case OMAP_CTRL_TYPE_DRA7USB2:
-+		if (on)
-+			val &= ~OMAP_CTRL_USB2_PHY_PD;
-+		else
-+			val |= OMAP_CTRL_USB2_PHY_PD;
-+		break;
-+	default:
-+		dev_err(dev, "%s: type %d not recognized\n",
-+					__func__, control_usb->type);
-+		break;
-+	}
- 
--	writel(val, control_usb->dev_conf);
-+	writel(val, control_usb->power);
- }
- EXPORT_SYMBOL_GPL(omap_control_usb_phy_power);
- 
-@@ -172,7 +182,7 @@ void omap_control_usb_set_mode(struct device *dev,
- {
- 	struct omap_control_usb	*ctrl_usb;
- 
--	if (IS_ERR(dev) || control_usb->type != OMAP_CTRL_DEV_TYPE1)
-+	if (IS_ERR(dev) || control_usb->type != OMAP_CTRL_TYPE_OTGHS)
- 		return;
- 
- 	ctrl_usb = dev_get_drvdata(dev);
-@@ -193,10 +203,45 @@ void omap_control_usb_set_mode(struct device *dev,
- }
- EXPORT_SYMBOL_GPL(omap_control_usb_set_mode);
- 
-+#ifdef CONFIG_OF
-+
-+static const enum omap_control_usb_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
-+static const enum omap_control_usb_type usb2_data = OMAP_CTRL_TYPE_USB2;
-+static const enum omap_control_usb_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
-+static const enum omap_control_usb_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
-+
-+static const struct of_device_id omap_control_usb_id_table[] = {
-+	{
-+		.compatible = "ti,control-phy-otghs",
-+		.data = &otghs_data,
-+	},
-+	{
-+		.compatible = "ti,control-phy-usb2",
-+		.data = &usb2_data,
-+	},
-+	{
-+		.compatible = "ti,control-phy-pipe3",
-+		.data = &pipe3_data,
-+	},
-+	{
-+		.compatible = "ti,control-phy-dra7usb2",
-+		.data = &dra7usb2_data,
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
-+#endif
-+
-+
- static int omap_control_usb_probe(struct platform_device *pdev)
- {
- 	struct resource	*res;
--	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *of_id;
-+
-+	of_id = of_match_device(of_match_ptr(omap_control_usb_id_table),
-+								&pdev->dev);
-+	if (!of_id)
-+		return -EINVAL;
- 
- 	control_usb = devm_kzalloc(&pdev->dev, sizeof(*control_usb),
- 		GFP_KERNEL);
-@@ -205,36 +250,27 @@ static int omap_control_usb_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	if (np)
--		of_property_read_u32(np, "ti,type", &control_usb->type);
--	else
--		return -EINVAL;	/* We only support DT boot */
--
--	control_usb->dev	= &pdev->dev;
-+	control_usb->dev = &pdev->dev;
-+	control_usb->type = *(enum omap_control_usb_type *)of_id->data;
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
--		"control_dev_conf");
--	control_usb->dev_conf = devm_ioremap_resource(&pdev->dev, res);
--	if (IS_ERR(control_usb->dev_conf))
--		return PTR_ERR(control_usb->dev_conf);
--
--	if (control_usb->type == OMAP_CTRL_DEV_TYPE1) {
-+	if (control_usb->type == OMAP_CTRL_TYPE_OTGHS) {
- 		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
- 			"otghs_control");
- 		control_usb->otghs_control = devm_ioremap_resource(
- 			&pdev->dev, res);
- 		if (IS_ERR(control_usb->otghs_control))
- 			return PTR_ERR(control_usb->otghs_control);
+ 		pdata->board_data	= data;
+ 		pdata->config		= config;
 -	}
--
--	if (control_usb->type == OMAP_CTRL_DEV_TYPE2) {
-+	} else {
- 		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
--			"phy_power_usb");
--		control_usb->phy_power = devm_ioremap_resource(
--			&pdev->dev, res);
--		if (IS_ERR(control_usb->phy_power))
--			return PTR_ERR(control_usb->phy_power);
-+				"power");
-+		control_usb->power = devm_ioremap_resource(&pdev->dev, res);
-+		if (IS_ERR(control_usb->power)) {
-+			dev_err(&pdev->dev, "Couldn't get power register\n");
-+			return PTR_ERR(control_usb->power);
-+		}
-+	}
  
-+	if (control_usb->type == OMAP_CTRL_TYPE_PIPE3) {
- 		control_usb->sys_clk = devm_clk_get(control_usb->dev,
- 			"sys_clkin");
- 		if (IS_ERR(control_usb->sys_clk)) {
-@@ -243,20 +279,11 @@ static int omap_control_usb_probe(struct platform_device *pdev)
+-	if (pdata->has_mailbox) {
+-		glue->control_otghs = omap_get_control_dev();
+-		if (IS_ERR(glue->control_otghs)) {
+-			dev_vdbg(&pdev->dev, "Failed to get control device\n");
+-			ret = PTR_ERR(glue->control_otghs);
+-			goto err2;
++		control_node = of_parse_phandle(np, "ctrl-module", 0);
++		if (control_node) {
++			control_pdev = of_find_device_by_node(control_node);
++			if (!control_pdev) {
++				dev_err(&pdev->dev, "Failed to get control device\n");
++				ret = -EINVAL;
++				goto err2;
++			}
++			glue->control_otghs = &control_pdev->dev;
  		}
+-	} else {
+-		glue->control_otghs = ERR_PTR(-ENODEV);
  	}
+ 	pdata->platform_ops		= &omap2430_ops;
  
+diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
+index 053c268..eb50525 100644
+--- a/include/linux/usb/musb.h
++++ b/include/linux/usb/musb.h
+@@ -99,8 +99,6 @@ struct musb_hdrc_platform_data {
+ 	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */
+ 	u8		mode;
+ 
+-	u8		has_mailbox:1;
 -
- 	dev_set_drvdata(control_usb->dev, control_usb);
+ 	/* for clk_get() */
+ 	const char	*clock;
  
- 	return 0;
- }
- 
--#ifdef CONFIG_OF
--static const struct of_device_id omap_control_usb_id_table[] = {
--	{ .compatible = "ti,omap-control-usb" },
--	{}
--};
--MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
--#endif
--
- static struct platform_driver omap_control_usb_driver = {
- 	.probe		= omap_control_usb_probe,
- 	.driver		= {
-diff --git a/drivers/usb/phy/phy-omap-usb3.c b/drivers/usb/phy/phy-omap-usb3.c
-index 4e8a040..0824be4 100644
---- a/drivers/usb/phy/phy-omap-usb3.c
-+++ b/drivers/usb/phy/phy-omap-usb3.c
-@@ -100,7 +100,7 @@ static int omap_usb3_suspend(struct usb_phy *x, int suspend)
- 			udelay(1);
- 		} while (--timeout);
- 
--		omap_control_usb3_phy_power(phy->control_dev, 0);
-+		omap_control_usb_phy_power(phy->control_dev, 0);
- 
- 		phy->is_suspended	= 1;
- 	} else if (!suspend && phy->is_suspended) {
-@@ -189,7 +189,7 @@ static int omap_usb3_init(struct usb_phy *x)
- 	if (ret)
- 		return ret;
- 
--	omap_control_usb3_phy_power(phy->control_dev, 1);
-+	omap_control_usb_phy_power(phy->control_dev, 1);
- 
- 	return 0;
- }
-@@ -245,7 +245,7 @@ static int omap_usb3_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	omap_control_usb3_phy_power(phy->control_dev, 0);
-+	omap_control_usb_phy_power(phy->control_dev, 0);
- 	usb_add_phy_dev(&phy->phy);
- 
- 	platform_set_drvdata(pdev, phy);
-diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-index e2416b4..61b889a 100644
---- a/include/linux/usb/omap_control_usb.h
-+++ b/include/linux/usb/omap_control_usb.h
-@@ -19,16 +19,23 @@
- #ifndef __OMAP_CONTROL_USB_H__
- #define __OMAP_CONTROL_USB_H__
- 
-+enum omap_control_usb_type {
-+	OMAP_CTRL_TYPE_OTGHS = 1,	/* Mailbox OTGHS_CONTROL */
-+	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
-+	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
-+	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
-+};
-+
- struct omap_control_usb {
- 	struct device *dev;
- 
--	u32 __iomem *dev_conf;
- 	u32 __iomem *otghs_control;
--	u32 __iomem *phy_power;
-+	u32 __iomem *power;
-+	u32 __iomem *power_aux;
- 
- 	struct clk *sys_clk;
- 
--	u32 type;
-+	enum omap_control_usb_type type;
- };
- 
- enum omap_control_usb_mode {
-@@ -38,10 +45,6 @@ enum omap_control_usb_mode {
- 	USB_MODE_DISCONNECT,
- };
- 
--/* To differentiate ctrl module IP having either mailbox or USB3 PHY power */
--#define	OMAP_CTRL_DEV_TYPE1		0x1
--#define	OMAP_CTRL_DEV_TYPE2		0x2
--
- #define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
- 
- #define	OMAP_CTRL_DEV_AVALID		BIT(0)
-@@ -59,10 +62,11 @@ enum omap_control_usb_mode {
- #define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
- #define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
- 
-+#define OMAP_CTRL_USB2_PHY_PD		BIT(28)
-+
- #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
- extern struct device *omap_get_control_dev(void);
- extern void omap_control_usb_phy_power(struct device *dev, int on);
--extern void omap_control_usb3_phy_power(struct device *dev, bool on);
- extern void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode);
- #else
-@@ -75,10 +79,6 @@ static inline void omap_control_usb_phy_power(struct device *dev, int on)
- {
- }
- 
--static inline void omap_control_usb3_phy_power(struct device *dev, int on)
--{
--}
--
- static inline void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode)
- {
 -- 
 1.7.4.1
 
