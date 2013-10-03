@@ -1,106 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3JCAue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:50:34 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:38702 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab3JCAud (ORCPT
+	id S1753714Ab3JCAwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:52:03 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63998 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3JCAwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:50:33 -0400
-X-Spam-Score: -100.9
-Message-ID: <524CBF19.2030708@asianux.com>
-Date: Thu, 03 Oct 2013 08:49:29 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] about calling debug_hotplug_cpu() which enabled
- by 'allmodconfig' for a x86_64 dual core laptop.
-References: <524B8E97.1030707@asianux.com>  <1380727725.5429.13.camel@misato.fc.hp.com> <524C4CC9.3080402@gmail.com> <1380742391.5429.37.camel@misato.fc.hp.com>
-In-Reply-To: <1380742391.5429.37.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Oct 2013 20:52:00 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 00/14] Volatile Ranges v9
+Date: Wed,  2 Oct 2013 17:51:29 -0700
+Message-Id: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 03:33 AM, Toshi Kani wrote:
-> On Thu, 2013-10-03 at 00:41 +0800, Chen Gang F T wrote:
->> On 10/02/2013 11:28 PM, Toshi Kani wrote:
->>> On Wed, 2013-10-02 at 03:10 +0000, Chen Gang wrote:
->>>> Hello Maintainers:
->>>>
->>>> Under my x86_64 dual core laptop, I build kernel next-20130927 with
->>>> 'allmodconfig', and install it, the machine can not start. Related
->>>> information is:
->>>>
->>>>   after call debug_hotplug_cpu(), output "cpu 0 is offline" .... and then "Failed to execute /init".
->>>>
->>>> After remove "_debug_hotplug_cpu(0, 0);", can pass the issue (but will
->>>> fail in another place). I guess, the reason is my laptop cpu is not
->>>> 'hotplug', but have to call debug_hotplug_cpu() with allmodconfig.
->>>>
->>>>
->>>> I will continue analyzing, welcome any additional suggestions or
->>>> completions.
->>>
->>> allmodconfig sets CONFIG_DEBUG_HOTPLUG_CPU0 to y (which is defined as
->>> "def_bool n"), which puts CPU0 offline during boot for testing.  This
->>> debug feature is causing the problem on your laptop.  I am not familiar
->>> with allmodconfig, but it seems that it enables all the config options,
->>> preferably with 'm'.
->>>
->>
->> Hmm... excuse me, I don't know: for laptop, if cpu0 is offline, whether
->> it still can work or not. If any members know about it, please tell me,
->> thanks.
-> 
-> CPU online/offline works on laptops as long as they have more than one
-> CPU.  You can boot with other kernel and test this feature
-> with /sys/devices/system/cpu/cpuX/online on your laptop.  cpu0 is a
-> special case and you may need to specify "cpu0_hotplug" boot option.
-> 
+So its been awhile since the last release of the volatile ranges
+patches, and while Minchan and I have been busy with other things,
+we have been slowly chipping away at issues and differences
+trying to get a patchset that we both agree on.
 
-Thank you for your confirmation, "for dual core (although laptop), after
-system boot up, can let cpu0 offline". :-)
+There's still a few smaller issues, but we figured any further
+polishing of the patch series in private would be unproductive
+and it would be much better to send the patches out for review
+and comment and get some wider opinions.
 
->> In my opinion, if enable DEBUG_HOTPLUG_CPU0, but "should not let cpu0
->> offline for laptop", we need let 'offline' operation fail.
-> 
-> Whether it is a laptop or not should not be a matter here.  But I agree
-> with you that enabling CONFIG_DEBUG_HOTPLUG_CPU0 is not useful (and can
-> be harmful) unless a user really intends to test this feature.
-> 
+Whats new in v9:
+* Updated to v3.11
+* Added vrange purging logic to purge anonymous pages on
+  swapless systems
+* Added logic to allocate the vroot structure dynamically
+  to avoid added overhead to mm and address_space structures
+* Lots of minor tweaks, changes and cleanups
 
-Hmm... I will continue analyzing. After finish analyzing (let kernel
-boot up OK), I should give a confirmation: "during boot up, can we still
-let cpu0 offline for dual core?".
+Still TODO:
+* Sort out better solution for clearing volatility on new mmaps
+	- Minchan has a different approach here
+* Sort out apparent shrinker livelock that occasionally crops
+  up under severe pressure
+ 
+Feedback or thoughts here would be particularly helpful!
 
-In fact, 'allmodconfig' is just a mad user which often does useless
-things to intend to find issues.
+As is apparent from the author list, Minchan has really been the
+one doing the heavy lifting here, and I've only been finding and
+fixing a few bugs, refactoring the code for readability, and
+trying to clarify commit messages. So many many thanks to Minchan
+here for all his great work, and putting up with my sometimes
+misguided "editing".
 
-Thanks.
+Also, thanks to Dhaval for his maintaining and vastly improving
+the volatile ranges test suite, which can be found here:
+	https://github.com/volatile-ranges-test/vranges-test
 
-> Thanks,
-> -Toshi
-> 
->> And I am analyzing (just constructing environments: KVM, kgdb ...),
->> before let kernel start successfully, only according to my current
->> proofs, we can not say "let laptop cpu0 offline" must be an issue.
-> 
-> 
-> 
-> 
-> 
 
+These patches can also be pulled from git here:
+    git://git.linaro.org/people/jstultz/android-dev.git dev/vrange-v9
+
+We'd really welcome any feedback and comments on the patch series. 
+
+thanks
+-john
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rob Clark <robdclark@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+
+
+John Stultz (2):
+  vrange: Clear volatility on new mmaps
+  vrange: Add support for volatile ranges on file mappings
+
+Minchan Kim (12):
+  vrange: Add basic data structure and functions
+  vrange: Add vrange support to mm_structs
+  vrange: Add new vrange(2) system call
+  vrange: Add basic functions to purge volatile pages
+  vrange: Purge volatile pages when memory is tight
+  vrange: Send SIGBUS when user try to access purged page
+  vrange: Add vrange LRU list for purging
+  vrange: Add core shrinking logic for swapless system
+  vrange: Purging vrange-anon pages from shrinker
+  vrange: Support background purging for vrange-file
+  vrange: Allocate vroot dynamically
+  vrange: Add vmstat counter about purged page
+
+ arch/x86/syscalls/syscall_64.tbl       |    1 +
+ fs/inode.c                             |    4 +
+ include/linux/fs.h                     |    4 +
+ include/linux/mm_types.h               |    4 +
+ include/linux/rmap.h                   |   11 +-
+ include/linux/swap.h                   |    6 +-
+ include/linux/syscalls.h               |    2 +
+ include/linux/vm_event_item.h          |    2 +
+ include/linux/vrange.h                 |   84 +++
+ include/linux/vrange_types.h           |   28 +
+ include/uapi/asm-generic/mman-common.h |    3 +
+ kernel/fork.c                          |   12 +
+ kernel/sys_ni.c                        |    1 +
+ lib/Makefile                           |    2 +-
+ mm/Makefile                            |    2 +-
+ mm/internal.h                          |    2 -
+ mm/ksm.c                               |    2 +-
+ mm/memory.c                            |   27 +
+ mm/mincore.c                           |    5 +-
+ mm/mmap.c                              |    5 +
+ mm/rmap.c                              |   28 +-
+ mm/vmscan.c                            |   17 +-
+ mm/vmstat.c                            |    2 +
+ mm/vrange.c                            | 1196 ++++++++++++++++++++++++++++++++
+ 24 files changed, 1429 insertions(+), 21 deletions(-)
+ create mode 100644 include/linux/vrange.h
+ create mode 100644 include/linux/vrange_types.h
+ create mode 100644 mm/vrange.c
 
 -- 
-Chen Gang
+1.8.1.2
+
