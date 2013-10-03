@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab3JCXEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:04:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58929 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab3JCXEG (ORCPT
+	id S1753969Ab3JCXGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:06:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34072 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab3JCXGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:04:06 -0400
-Date: Thu, 3 Oct 2013 16:04:05 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/52] 3.10.15-stable review
-Message-ID: <20131003230405.GC19442@kroah.com>
-References: <20131003040522.190209641@linuxfoundation.org>
- <524DF5BF.4070305@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524DF5BF.4070305@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Oct 2013 19:06:11 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH 0/4]Re-organize DEBUG_UART for MSM and add support for MSM8974
+Date: Thu,  3 Oct 2013 16:05:53 -0700
+Message-Id: <1380841557-2673-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 04:54:55PM -0600, Shuah Khan wrote:
-> On 10/02/2013 10:05 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.10.15 release.
-> >There are 52 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Sat Oct  5 04:05:08 UTC 2013.
-> >Anything received after that time might be too late.
-> >
-> >The whole patch series can be found in one patch at:
-> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.15-rc1.gz
-> >and the diffstat can be found below.
-> >
-> >thanks,
-> >
-> >greg k-h
-> >
-> 
-> Patch testing: 3.10.15-rc1 applied cleanly to 3.10.14
-> Compile testing: Passed
-> Boot testing: Passed
-> dmesg regression testing: passed. dmesgs look good. No regressions
-> compared to the previous dmesgs for this release. dmesg emerg, crit,
-> alert, err are clean. No regressions in warn.
+As a pre-cursor, this series cleans-up the DEBUG_UART configs for msm and
+includes patches to add basic board support for MSM8974 and debug uart support
+for it as well.
+The debug uart patches will be added to Russell's patch tracker and hence were
+separated from the MSM8974 patch.
 
-Great, thanks for testing and letting me know.
+Rohit Vaswani (4):
+  ARM: debug: Create CONFIG_DEBUG_MSM_UART and re-organize the selects
+    for MSM
+  ARM: msm: Add support for APQ8074 Dragonboard
+  ARM: debug: msm: Add DEBUG_LL support for ARCH_MSM8974
+  defconfig: msm_defconfig: Enable CONFIG_ARCH_MSM8974
 
-greg k-h
+ arch/arm/Kconfig.debug                         | 24 ++++++++++++++----
+ arch/arm/boot/dts/Makefile                     |  3 ++-
+ arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
+ arch/arm/boot/dts/qcom-msm8974.dtsi            | 35 ++++++++++++++++++++++++++
+ arch/arm/configs/msm_defconfig                 |  1 +
+ arch/arm/include/debug/msm.S                   |  5 ++++
+ arch/arm/mach-msm/Kconfig                      | 13 ++++++++++
+ arch/arm/mach-msm/board-dt.c                   |  9 +++++++
+ 8 files changed, 90 insertions(+), 6 deletions(-)
+ create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+ create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
