@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab3JCVOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 17:14:51 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44067 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544Ab3JCVOt (ORCPT
+	id S1755784Ab3JCVP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 17:15:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58151 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab3JCVPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 17:14:49 -0400
-Date: Thu, 3 Oct 2013 22:14:48 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-Message-ID: <20131003211448.GN13318@ZenIV.linux.org.uk>
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
- <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
- <20131003105130.GE13318@ZenIV.linux.org.uk>
- <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
- <20131003174439.GG13318@ZenIV.linux.org.uk>
- <CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
- <20131003194351.GK13318@ZenIV.linux.org.uk>
- <CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
- <20131003204142.GL13318@ZenIV.linux.org.uk>
- <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Oct 2013 17:15:25 -0400
+Date: Thu, 3 Oct 2013 14:15:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Stephen Warren <swarren@nvidia.com>, Jens Axboe <axboe@kernel.dk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v3 1/2] init/do_mounts.c: ignore final \n in
+ name_to_dev_t
+Message-Id: <20131003141523.8b60ab988799af7e2b2c338b@linux-foundation.org>
+In-Reply-To: <1380834638-24035-2-git-send-email-sebastian.capella@linaro.org>
+References: <1380834638-24035-1-git-send-email-sebastian.capella@linaro.org>
+	<1380834638-24035-2-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 01:52:45PM -0700, Linus Torvalds wrote:
+On Thu,  3 Oct 2013 14:10:37 -0700 Sebastian Capella <sebastian.capella@linaro.org> wrote:
 
-> Yeah, I think we should be guaranteed that, because the
-> synchronize_rcu() will guarantee that all other CPU's go through an
-> idle period. So the "read A" on CPU2 cannot possibly see a 1 _unless_
-> it happens so early that synchronize_rcu() definitely sees it (ie it's
-> a "preexisting reader" by definition), in which case synchronize_rcu()
-> will be waiting for a subsequent idle period, in which case the B=0 on
-> CPU2 is not only guaranteed to happen but also be visible out, so the
-> "read B" on CPU1 will see 0. And that's true even if CPU2 doesn't have
-> an explicit memory barrier, because the "RCU idle" state implies that
-> it has gone through a barrier.
+> Enhance name_to_dev_t to handle trailing newline characters
+> on device paths.  Some inputs to name_to_dev_t may come from
+> userspace where oftentimes a '\n' is appended to the path.
+> Added const to the name buffer in both the function
+> declaration and the prototype to reflect input buffer
+> handling.
 > 
-> So I don't see how they could possibly see ones. Modulo terminal bugs
-> in synchronize_barrier() (which can be very slow, but for umount I
-> wouldn't worry). Or modulo my brain being fried.
+> By handling trailing newlines in name_to_dev_t, userspace
+> buffers may be directly passed to name_to_dev_t without
+> modification.
 
-There's one more place similar to that - kern_unmount().  There we also
-go from "longterm vfsmount, mntput() doesn't need to bother checking"
-to NULL ->mnt_ns.  We can, of course, slap synchronize_rcu() there as
-well, but that might make pid_ns and ipc_ns destruction slow...
+We have lib/string.c:strim() - perhaps this patch would be
+neater if it were to use it?
