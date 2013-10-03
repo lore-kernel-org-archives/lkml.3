@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3JCKr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 06:47:56 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:39934 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab3JCKry (ORCPT
+	id S1753921Ab3JCKwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:52:33 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8472 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab3JCKwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 06:47:54 -0400
-Message-ID: <524D4B58.8070206@linaro.org>
-Date: Thu, 03 Oct 2013 12:47:52 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 3 Oct 2013 06:52:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 03 Oct 2013 03:48:35 -0700
+Date: Thu, 3 Oct 2013 13:52:28 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: PLLE spread spectrum control
+Message-ID: <20131003105228.GK3973@tbergstrom-lnx.Nvidia.com>
+References: <1380209654-25458-1-git-send-email-pdeschrijver@nvidia.com>
+ <524B28EA.40702@wwwdotorg.org>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 19/21] cpuidle: create list of registered drivers
-References: <cover.1379779777.git.viresh.kumar@linaro.org>	<7e9565e323c1e065eeb2a2a1075967bd21ee6066.1379779777.git.viresh.kumar@linaro.org>	<5243641B.6050604@linaro.org>	<CAKohpo=3qFQ+gD+3u__NtZEL4xu51FBN+og+_UE7aTR26XvRng@mail.gmail.com>	<5243EE02.9020207@linaro.org>	<20130928213343.GA19582@linux.vnet.ibm.com>	<5249C4FB.1060705@linaro.org> <CAKohpomcnRrkKmBtrVDyCUx0E00roD2R=XMS3WH9QTpOF9AJjQ@mail.gmail.com>
-In-Reply-To: <CAKohpomcnRrkKmBtrVDyCUx0E00roD2R=XMS3WH9QTpOF9AJjQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <524B28EA.40702@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 06:38 AM, Viresh Kumar wrote:
-> On 1 October 2013 00:07, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->> Interesting, thanks for the pointer.
->
-> So, should I keep this patch with SRCU?
+On Tue, Oct 01, 2013 at 09:56:26PM +0200, Stephen Warren wrote:
+> On 09/26/2013 09:34 AM, Peter De Schrijver wrote:
+> > Add spread spectrum control for PLLE in Tegra114.
+> 
+> It would be useful to have some description of the end-user-visible
+> benefit of this change; why is it useful?
 
-IMHO, we should, for now, keep the code as it is and then focus on the 
-lock/refcount for drivers in a separate series.
+spread spectrum clocking is a technique to reduce EMI caused by the clock
+signal by modulating the frequency with a low frequency signal. This should
+reduce interference with eg. Wifi or cellular modems on the same board.
 
+Cheers,
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Peter.
