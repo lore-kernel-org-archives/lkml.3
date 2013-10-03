@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab3JCEMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:12:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46893 "EHLO
+	id S1755046Ab3JCEMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:12:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab3JCEMB (ORCPT
+	with ESMTP id S1754337Ab3JCEML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:12:01 -0400
+	Thu, 3 Oct 2013 00:12:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [ 17/52] mei: cancel stall timers in mei_reset
-Date: Wed,  2 Oct 2013 21:05:35 -0700
-Message-Id: <20131003040523.363142607@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 01/52] block: Fix bio_copy_data()
+Date: Wed,  2 Oct 2013 21:05:19 -0700
+Message-Id: <20131003040522.291012764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -27,44 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit 4a704575cc1afb3b848f096778fa9b8d7b3d5813 upstream.
+commit 2f6cf0de0281d210061ce976f2d42d246adc75bb upstream.
 
-Unset init_clients_timer and amthif_stall_timers
-in mei_reset in order to cancel timer ticking and hence
-avoid recursive reset calls.
+The memcpy() in bio_copy_data() was using the wrong offset vars, leading
+to data corruption in weird unusual setups.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/amthif.c |    1 +
- drivers/misc/mei/init.c   |    3 +++
- 2 files changed, 4 insertions(+)
+ fs/bio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -57,6 +57,7 @@ void mei_amthif_reset_params(struct mei_
- 	dev->iamthif_ioctl = false;
- 	dev->iamthif_state = MEI_IAMTHIF_IDLE;
- 	dev->iamthif_timer = 0;
-+	dev->iamthif_stall_timer = 0;
- }
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -917,8 +917,8 @@ void bio_copy_data(struct bio *dst, stru
+ 		src_p = kmap_atomic(src_bv->bv_page);
+ 		dst_p = kmap_atomic(dst_bv->bv_page);
  
- /**
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -164,6 +164,9 @@ void mei_reset(struct mei_device *dev, i
- 		memset(&dev->wr_ext_msg, 0, sizeof(dev->wr_ext_msg));
- 	}
+-		memcpy(dst_p + dst_bv->bv_offset,
+-		       src_p + src_bv->bv_offset,
++		memcpy(dst_p + dst_offset,
++		       src_p + src_offset,
+ 		       bytes);
  
-+	/* we're already in reset, cancel the init timer */
-+	dev->init_clients_timer = 0;
-+
- 	dev->me_clients_num = 0;
- 	dev->rd_msg_hdr = 0;
- 	dev->wd_pending = false;
+ 		kunmap_atomic(dst_p);
 
 
