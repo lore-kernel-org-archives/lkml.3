@@ -1,77 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab3JCQmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:42:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16555 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754206Ab3JCQl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:41:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1027,1371106800"; 
-   d="scan'208";a="302754816"
-Message-ID: <1380818515.18862.0.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/7] UBI: fix refill_wl_user_pool()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: richard.genoud@gmail.com, linux-mtd@lists.infradead.org,
+	id S1754689Ab3JCQmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:42:14 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49013 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab3JCQmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 12:42:12 -0400
+Date: Thu, 3 Oct 2013 09:42:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Date: Thu, 03 Oct 2013 19:41:55 +0300
-In-Reply-To: <524D9CE1.8040600@nod.at>
-References: <1380376516-30144-1-git-send-email-richard@nod.at>
-	    <1380376516-30144-2-git-send-email-richard@nod.at>
-	   <1380812414.27358.440.camel@sauron.fi.intel.com>
-	 <524D8879.1030203@nod.at>  <1380814071.27358.444.camel@sauron.fi.intel.com>
-	 <524D92E8.1030704@nod.at> <1380816035.27358.447.camel@sauron.fi.intel.com>
-	 <524D9CE1.8040600@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131003164205.GE5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131002145655.361606532@infradead.org>
+ <20131002150518.675931976@infradead.org>
+ <20131002154901.GA13389@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002154901.GA13389@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100316-1344-0000-0000-00000222241E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-03 at 18:35 +0200, Richard Weinberger wrote:
-> Am 03.10.2013 18:00, schrieb Artem Bityutskiy:
-> > On Thu, 2013-10-03 at 17:53 +0200, Richard Weinberger wrote:
-> >> Am 03.10.2013 17:27, schrieb Artem Bityutskiy:
-> >>> On Thu, 2013-10-03 at 17:08 +0200, Richard Weinberger wrote:
-> >>>> Am 03.10.2013 17:00, schrieb Artem Bityutskiy:
-> >>>>> On Sat, 2013-09-28 at 15:55 +0200, Richard Weinberger wrote:
-> >>>>>> If no free PEBs are available refill_wl_user_pool() must not
-> >>>>>> return with -ENOSPC immediately.
-> >>>>>> It has to block till produce_free_peb() produced a free PEB.
-> >>>>>>
-> >>>>>> Reported-and-Tested-by: Richard Genoud <richard.genoud@gmail.com>
-> >>>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
-> >>>>>
-> >>>>> What is pool size, I wonder?
-> >>>>
-> >>>> Currently it's 25 (UBI_FM_WL_POOL_SIZE).
-> >>>> If experience shows that 25 is too low/big we can change this constant.
-> >>>> Maybe it's also worth making them configurable...
-> >>>
-> >>> I if it is a possible scenario that this function will not return until
-> >>> 25 (or even 10) PEBs are erased? 
-> >>>
-> >>
-> >> Sure. It will try to gain up to 25 PEBs but return if it gets less.
-> >> That's why a pool has a current and a max size.
-> > 
-> > So if erasing speed is say, 250ms, then it would take 6.25 seconds?
+On Wed, Oct 02, 2013 at 05:49:01PM +0200, Oleg Nesterov wrote:
+> On 10/02, Peter Zijlstra wrote:
+> >
+> > From: Oleg Nesterov <oleg@redhat.com>
 > 
-> Only in the very worst case if we have to call 25 times produce_free_peb().
+> Thanks! I was writing the patch, and I chose almost the same naming ;)
 > 
-> Of course we could add a check to return immediately if produce_free_peb()
-> got called a few times in series.
-> But I really would like to wait with such performance tweaks until fastmap
-> is more mature.
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> 
+> In fact I'd like to add my sob to 1/3 and 3/3 as well.
+> 
+> 
+> Paul, to remind, this is only the first step. I am going to send
+> the following improvements:
+> 
+> 	1. Add rcu_sync->exlusive. The change is simple, just we
+> 	   need s/wait_queue_head_t/completion/ in rcu_sync_struct
+> 	   and a couple of "if (rss->exclusive)" checks in enter/exit.
+> 
+> 	2. rcu_sync_enter() should return !!need_sync. This can help
+> 	   in exclusive mode.
+> 
+> 	3. rcu_sync_struct needs more function pointers (perhaps we
+> 	   should add a single rcu_sync_struct->ops pointer but this
+> 	   is minor). See below.
+> 
+> But let me repeat just in case, we should do this later.
+> And once this series is applied, I'll change percpu_rw_semaphore.
 
-OK, but how about at least adding a comment talking about this unlikely
-scenario?
+I took this into account in my review, the upgrades would be good!  ;-)
 
--- 
-Best Regards,
-Artem Bityutskiy
+							Thanx, Paul
+
+> > +struct rcu_sync_struct {
+> > +	int			gp_state;
+> > +	int			gp_count;
+> > +	wait_queue_head_t	gp_wait;
+> > +
+> > +	int			cb_state;
+> > +	struct rcu_head		cb_head;
+> > +
+> > +	void (*sync)(void);
+> > +	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> 
+> Yes, and we also need rcu_sync_struct->barrier(). From the patch I was
+> working on:
+> 
+> 	void rcu_sync_wait_for_callback(struct rcu_sync *sync)
+> 	{
+> 		int cb_state;
+> 
+> 		BUG_ON(sync->gp_count);
+> 
+> 		spin_lock_irq(&sync->state_lock);
+> 		if (sync->cb_state == CB_REPLAY)
+> 			sync->cb_state = CB_PENDING;
+> 		cb_state = sync->cb_state;
+> 		spin_unlock_irq(&sync->state_lock);
+> 
+> 		if (cb_state != CB_IDLE) {
+> 			rcu_barrier_sched();
+> 			BUG_ON(sync->cb_state != CB_IDLE);
+> 		}
+> 	}
+> 
+> It should be called if you are going to kfree the object.
+> 
+> Perhaps another rcu_sync_struct->state_change(new_state) callback (set
+> by the user) makes sense too, this can help (for example) to implement
+> the array of semaphores with a single rcu_sync_struct (freeze_super).
+> 
+> Thanks.
+> 
+> Oleg.
+> 
 
