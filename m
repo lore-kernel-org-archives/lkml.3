@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab3JCT2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:28:06 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:49556 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab3JCT2E (ORCPT
+	id S1755293Ab3JCT3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:29:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38176 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988Ab3JCT3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:28:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131003142721.GB2781@console-pimps.org>
-References: <1380385403-31904-1-git-send-email-roy.franz@linaro.org>
-	<1380385403-31904-3-git-send-email-roy.franz@linaro.org>
-	<20131003095224.GX21381@console-pimps.org>
-	<1380807804.17503.9.camel@deneb.redhat.com>
-	<20131003142721.GB2781@console-pimps.org>
-Date: Thu, 3 Oct 2013 12:28:03 -0700
-Message-ID: <CAFECyb-=2osh_j_9FCnWjAjLX-xbzanQeFjCLNTz4JKAk5d30w@mail.gmail.com>
-Subject: Re: [PATCH 2/6] Add shared update_fdt() function for ARM/ARM64
-From: Roy Franz <roy.franz@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Mark Salter <msalter@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        matt.fleming@intel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Martin <dave.martin@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Oct 2013 15:29:09 -0400
+Date: Thu, 03 Oct 2013 15:29:07 -0400 (EDT)
+Message-Id: <20131003.152907.2144013596237714581.davem@davemloft.net>
+To: hns@goldelico.com
+Cc: j.dumon@option.com, marek.belisko@gmail.com, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by
+ OPTION GTM601 during RING indication
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
+References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 03 Oct 2013 12:29:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 7:27 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Thu, 03 Oct, at 09:43:24AM, Mark Salter wrote:
->> On Thu, 2013-10-03 at 10:52 +0100, Matt Fleming wrote:
->> > > +#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
->> > > +static efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
->> > > +                            void *fdt, int new_fdt_size, char *cmdline_ptr,
->> > > +                            u64 initrd_addr, u64 initrd_size,
->> > > +                            efi_memory_desc_t *memory_map,
->> > > +                            unsigned long map_size, unsigned long desc_size,
->> > > +                            u32 desc_ver)
->> >
->> > Hmm... does this function really belong in efi-stub-helper.c? That file
->> > should be for architecture independent functionality only.
->> >
->>
->> It isn't really arm-specific although arm is the only user right now.
->> We're using the FDT to pass EFI boot info that is passed in the boot
->> params block on x86. So potentially other architectures could use the
->> same code.
->
-> It's not EFI-specific either, apart from the fdt property names.
->
->> How about making it someting like:
->>
->> #ifdef ARCH_NEEDS_EFI_FDT
->> static efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
->> ...
->> #endif
->>
->> so the architecture can decide whether to include it or not.
->
-> Is one implementation of this function going to fit all architectures?
-> Can we be sure of that ahead of time?
->
-> I'd prefer this to be kept in arch/ for now, and possibly moved into
-> efi-stub-helper.c at a later date if indeed it turns out to be generally
-> useful.
->
-> --
-> Matt Fleming, Intel Open Source Technology Center
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Date: Wed, 2 Oct 2013 09:00:18 +0200
 
-Hi Matt,
+> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
+> From: "H. Nikolaus Schaller" <hns@goldelico.com>
+> Date: Thu, 15 Nov 2012 14:40:57 +0100
+> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
+>  GTM601 during RING indication
+> 
+>  It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
+>  wIndex that has bit 0x04 set instead of being reset as the code expects. So we
+>  mask it for the error check.
+>  
+>  See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
 
-   This  function is shared between ARM and ARM64, which are separate
-architectures so to keep this in arch code would require it to be
-duplicated for ARM/ARM64.  Would moving this function to a new
-"efi-stub-fdt.c" file be satisfactory?  This file would just be used
-the ARM and ARM64, so this would remove
-the need for the top-level #ifdefs.
-
-Thanks,
-Roy
+I think we should look more deeply into what this bit might mean
+and why the firmware might be setting it before we even consider
+applying a patch like this one.
