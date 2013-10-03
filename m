@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3JCERv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:17:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47120 "EHLO
+	id S1755869Ab3JCER7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47126 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3JCERs (ORCPT
+	with ESMTP id S1755859Ab3JCER5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:17:48 -0400
+	Thu, 3 Oct 2013 00:17:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [ 16/57] mei: make me client counters less error prone
-Date: Wed,  2 Oct 2013 21:08:42 -0700
-Message-Id: <20131003040637.721042045@linuxfoundation.org>
+Subject: [ 18/57] mei: cancel stall timers in mei_reset
+Date: Wed,  2 Oct 2013 21:08:44 -0700
+Message-Id: <20131003040637.858388712@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -26,76 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 1aee351a739153529fbb98ee461777b2abd5e1c9 upstream.
+commit 4a704575cc1afb3b848f096778fa9b8d7b3d5813 upstream.
 
-1. u8 counters are prone to hard to detect overflow:
- make them unsigned long to match bit_ functions argument type
+Unset init_clients_timer and amthif_stall_timers
+in mei_reset in order to cancel timer ticking and hence
+avoid recursive reset calls.
 
-2. don't check me_clients_num for negativity, it is unsigned.
-
-3. init all the me client counters from one place
-
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hbm.c     |   10 ++++++----
- drivers/misc/mei/mei_dev.h |    6 +++---
- 2 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/misc/mei/amthif.c |    1 +
+ drivers/misc/mei/init.c   |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -35,11 +35,15 @@ static void mei_hbm_me_cl_allocate(struc
- 	struct mei_me_client *clients;
- 	int b;
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -57,6 +57,7 @@ void mei_amthif_reset_params(struct mei_
+ 	dev->iamthif_ioctl = false;
+ 	dev->iamthif_state = MEI_IAMTHIF_IDLE;
+ 	dev->iamthif_timer = 0;
++	dev->iamthif_stall_timer = 0;
+ }
  
-+	dev->me_clients_num = 0;
-+	dev->me_client_presentation_num = 0;
-+	dev->me_client_index = 0;
+ /**
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -169,6 +169,9 @@ void mei_reset(struct mei_device *dev, i
+ 		memset(&dev->wr_ext_msg, 0, sizeof(dev->wr_ext_msg));
+ 	}
+ 
++	/* we're already in reset, cancel the init timer */
++	dev->init_clients_timer = 0;
 +
- 	/* count how many ME clients we have */
- 	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
- 		dev->me_clients_num++;
- 
--	if (dev->me_clients_num <= 0)
-+	if (dev->me_clients_num == 0)
- 		return;
- 
- 	kfree(dev->me_clients);
-@@ -221,7 +225,7 @@ static int mei_hbm_prop_req(struct mei_d
- 	struct hbm_props_request *prop_req;
- 	const size_t len = sizeof(struct hbm_props_request);
- 	unsigned long next_client_index;
--	u8 client_num;
-+	unsigned long client_num;
- 
- 
- 	client_num = dev->me_client_presentation_num;
-@@ -677,8 +681,6 @@ void mei_hbm_dispatch(struct mei_device
- 		if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
- 		    dev->hbm_state == MEI_HBM_ENUM_CLIENTS) {
- 				dev->init_clients_timer = 0;
--				dev->me_client_presentation_num = 0;
--				dev->me_client_index = 0;
- 				mei_hbm_me_cl_allocate(dev);
- 				dev->hbm_state = MEI_HBM_CLIENT_PROPERTIES;
- 
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -396,9 +396,9 @@ struct mei_device {
- 	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
- 	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
- 	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
--	u8 me_clients_num;
--	u8 me_client_presentation_num;
--	u8 me_client_index;
-+	unsigned long me_clients_num;
-+	unsigned long me_client_presentation_num;
-+	unsigned long me_client_index;
- 
- 	struct mei_cl wd_cl;
- 	enum mei_wd_states wd_state;
+ 	dev->me_clients_num = 0;
+ 	dev->rd_msg_hdr = 0;
+ 	dev->wd_pending = false;
 
 
