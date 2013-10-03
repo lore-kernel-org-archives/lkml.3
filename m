@@ -1,155 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3JCKXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 06:23:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23675 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898Ab3JCKXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 06:23:08 -0400
-Date: Thu, 3 Oct 2013 13:23:05 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 2/7] KVM: mmu: remove uninteresting MMU "new_cr3"
- callbacks
-Message-ID: <20131003102305.GC17294@redhat.com>
-References: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
- <1380725776-14948-3-git-send-email-pbonzini@redhat.com>
+	id S1753983Ab3JCKZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:25:35 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:60025 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab3JCKZc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 06:25:32 -0400
+Date: Thu, 3 Oct 2013 12:26:14 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] fuse: writepage: update bdi writeout when deleting
+ secondary request
+Message-ID: <20131003102614.GC14242@tucsk.piliscsaba.szeredi.hu>
+References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131002173837.31188.34247.stgit@dhcp-10-30-17-2.sw.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380725776-14948-3-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <20131002173837.31188.34247.stgit@dhcp-10-30-17-2.sw.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:56:11PM +0200, Paolo Bonzini wrote:
-> The new_cr3 MMU callback has been a wrapper for mmu_free_roots since commit
-> e676505 (KVM: MMU: Force cr3 reload with two dimensional paging on mov
-> cr3 emulation, 2012-07-08).
+On Wed, Oct 02, 2013 at 09:38:43PM +0400, Maxim Patlasov wrote:
+> BDI_WRITTEN counter is used to estimate bdi bandwidth. It must be incremented
+> every time as bdi ends page writeback. No matter whether it was fulfilled by
+> actual write or by discarding the request (e.g. due to shrunk i_size).
 > 
-> The commit message mentioned that "mmu_free_roots() is somewhat of an overkill,
-> but fixing that is more complicated and will be done after this minimal fix".
-> One year has passed, and no one really felt the need to do a different fix.
-> Wrap the call with a kvm_mmu_new_cr3 function for clarity, but remove the
-> callback.
-> 
-Well the reason for it is because whoever knew about the problem found
-other things to do meanwhile :) But do we really need something smarter
-here anyway? The situation described in e676505 should be extremely rare
-even on non unrestricted guest HW and it happens during slow emulation
-anyway, so optimization will likely not be noticeable.
+> Note that even before writepages patches, the case "Got truncated off
+> completely" was handled in fuse_send_writepage() by calling
+> fuse_writepage_finish() which updated BDI_WRITTEN unconditionally.
 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Hmm, I'm not sure I can agree with this.  If BDI_WRITTEN is used for bandwidth
+estimation, then I think it's more correct not to count rewrites and truncated
+pages.
+
+But I don't see this matter either way since this is just used as a heuristic
+and the occasional extra or lack of count shouldn't make a significant
+difference.
+
+Thanks,
+Miklos
+
+> 
+> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 > ---
->  arch/x86/include/asm/kvm_host.h |  2 +-
->  arch/x86/kvm/mmu.c              | 13 +------------
->  arch/x86/kvm/x86.c              |  2 +-
->  3 files changed, 3 insertions(+), 14 deletions(-)
+>  fs/fuse/file.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 3ea4d40..00a0e4c 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -253,7 +253,6 @@ struct kvm_pio_request {
->   * mode.
->   */
->  struct kvm_mmu {
-> -	void (*new_cr3)(struct kvm_vcpu *vcpu);
->  	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
->  	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
->  	u64 (*get_pdptr)(struct kvm_vcpu *vcpu, int index);
-> @@ -921,6 +920,7 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu);
->  int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t gva, u32 error_code,
->  		       void *insn, int insn_len);
->  void kvm_mmu_invlpg(struct kvm_vcpu *vcpu, gva_t gva);
-> +void kvm_mmu_new_cr3(struct kvm_vcpu *vcpu);
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index a3c7123..5d323bd 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -1536,6 +1536,7 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
+>  			drop->inode->i_mapping->backing_dev_info;
+>  		dec_bdi_stat(bdi, BDI_WRITEBACK);
+>  		dec_zone_page_state(drop->pages[0], NR_WRITEBACK_TEMP);
+> +		bdi_writeout_inc(bdi);
+>  		fuse_writepage_free(fc, drop);
+>  		fuse_put_request(fc, drop);
+>  		drop = next;
+> @@ -1706,11 +1707,14 @@ static bool fuse_writepage_in_flight(struct fuse_req *new_req,
 >  
->  void kvm_enable_tdp(void);
->  void kvm_disable_tdp(void);
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 1c4d580..dff856c 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2570,11 +2570,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  	kvm_release_pfn_clean(pfn);
->  }
+>  	if (old_req->num_pages == 1 && (old_req->state == FUSE_REQ_INIT ||
+>  					old_req->state == FUSE_REQ_PENDING)) {
+> +		struct backing_dev_info *bdi = page->mapping->backing_dev_info;
+> +
+>  		copy_highpage(old_req->pages[0], page);
+>  		spin_unlock(&fc->lock);
 >  
-> -static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-> -{
-> -	mmu_free_roots(vcpu);
-> -}
-> -
->  static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
->  				     bool no_dirty_log)
->  {
-> @@ -3427,7 +3422,6 @@ out_unlock:
->  static int nonpaging_init_context(struct kvm_vcpu *vcpu,
->  				  struct kvm_mmu *context)
->  {
-> -	context->new_cr3 = nonpaging_new_cr3;
->  	context->page_fault = nonpaging_page_fault;
->  	context->gva_to_gpa = nonpaging_gva_to_gpa;
->  	context->sync_page = nonpaging_sync_page;
-> @@ -3448,9 +3442,8 @@ void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu)
->  }
->  EXPORT_SYMBOL_GPL(kvm_mmu_flush_tlb);
->  
-> -static void paging_new_cr3(struct kvm_vcpu *vcpu)
-> +void kvm_mmu_new_cr3(struct kvm_vcpu *vcpu)
->  {
-> -	pgprintk("%s: cr3 %lx\n", __func__, kvm_read_cr3(vcpu));
->  	mmu_free_roots(vcpu);
->  }
->  
-> @@ -3666,7 +3659,6 @@ static int paging64_init_context_common(struct kvm_vcpu *vcpu,
->  	update_last_pte_bitmap(vcpu, context);
->  
->  	ASSERT(is_pae(vcpu));
-> -	context->new_cr3 = paging_new_cr3;
->  	context->page_fault = paging64_page_fault;
->  	context->gva_to_gpa = paging64_gva_to_gpa;
->  	context->sync_page = paging64_sync_page;
-> @@ -3694,7 +3686,6 @@ static int paging32_init_context(struct kvm_vcpu *vcpu,
->  	update_permission_bitmask(vcpu, context, false);
->  	update_last_pte_bitmap(vcpu, context);
->  
-> -	context->new_cr3 = paging_new_cr3;
->  	context->page_fault = paging32_page_fault;
->  	context->gva_to_gpa = paging32_gva_to_gpa;
->  	context->sync_page = paging32_sync_page;
-> @@ -3717,7 +3708,6 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
->  	struct kvm_mmu *context = vcpu->arch.walk_mmu;
->  
->  	context->base_role.word = 0;
-> -	context->new_cr3 = nonpaging_new_cr3;
->  	context->page_fault = tdp_page_fault;
->  	context->sync_page = nonpaging_sync_page;
->  	context->invlpg = nonpaging_invlpg;
-> @@ -3792,7 +3782,6 @@ int kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context,
->  	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
->  
->  	context->nx = true;
-> -	context->new_cr3 = paging_new_cr3;
->  	context->page_fault = ept_page_fault;
->  	context->gva_to_gpa = ept_gva_to_gpa;
->  	context->sync_page = ept_sync_page;
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 187f824..4a33fdb 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -684,7 +684,7 @@ int kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3)
->  
->  	vcpu->arch.cr3 = cr3;
->  	__set_bit(VCPU_EXREG_CR3, (ulong *)&vcpu->arch.regs_avail);
-> -	vcpu->arch.mmu.new_cr3(vcpu);
-> +	kvm_mmu_new_cr3(vcpu);
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(kvm_set_cr3);
-> -- 
-> 1.8.3.1
+> -		dec_bdi_stat(page->mapping->backing_dev_info, BDI_WRITEBACK);
+> +		dec_bdi_stat(bdi, BDI_WRITEBACK);
+>  		dec_zone_page_state(page, NR_WRITEBACK_TEMP);
+> +		bdi_writeout_inc(bdi);
+>  		fuse_writepage_free(fc, new_req);
+>  		fuse_request_free(new_req);
+>  		goto out;
 > 
-
---
-			Gleb.
