@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3JCQ1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:27:35 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42812 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab3JCQ1e (ORCPT
+	id S1754617Ab3JCQ1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:27:48 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:64455 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab3JCQ1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:27:34 -0400
-Date: Thu, 3 Oct 2013 09:27:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] hotplug: Optimize {get,put}_online_cpus()
-Message-ID: <20131003162728.GC5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131002145655.361606532@infradead.org>
- <20131002150518.600557855@infradead.org>
- <20131003140150.GL28601@twins.programming.kicks-ass.net>
+	Thu, 3 Oct 2013 12:27:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131003140150.GL28601@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100316-0928-0000-0000-0000021E3DC3
+In-Reply-To: <524D5DAC.3000004@gmail.com>
+References: <52486938.4090009@gmail.com>
+	<20130929180101.GB5490@pd.tnic>
+	<5248905E.8000801@gmail.com>
+	<20130929205051.GD5426@pd.tnic>
+	<52489A59.7040108@gmail.com>
+	<20130929213026.GF5426@pd.tnic>
+	<524D5DAC.3000004@gmail.com>
+Date: Thu, 3 Oct 2013 09:27:45 -0700
+X-Google-Sender-Auth: eRDQFnvAj-tFKwjZruw8BpZGh50
+Message-ID: <CA+55aFwuV4u3ky-XT_P_sCOYjqUW1EvA3Q2NuZ=+LZ5O06jS3g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86_64: add config options to optimize for newer AMD processors
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linux-Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 04:01:50PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 02, 2013 at 04:56:56PM +0200, Peter Zijlstra wrote:
-> > +	if (atomic_dec_and_test(&cpuhp_waitcount))
-> > +		wake_up(&cpuhp_writer);
-> > +
-> > +	goto again:
-> >  }
-> 
-> > +
-> > +#define per_cpu_sum(var)						\
-> > +({ 									\
-> > + 	typeof(var) __sum = 0;						\
-> > + 	int cpu;							\
-> > + 	for_each_possible_cpu(cpu)					\
-> > + 		__sum += per_cpu(var, cpu);				\
-> > + 	__sum;								\
-> > +)}
-> >  
-> 
-> I just noticed I forgot a refresh..
+On Thu, Oct 3, 2013 at 5:06 AM, Austin S Hemmelgarn
+<ahferroin7@gmail.com> wrote:
+> improved.  Building kernel 3.12-rc2 with allmodconfig using 8 jobs on a FX-8320 takes
+>
+> 22 minutes and 57 seconds on a kernel with CONFIG_MK8,
+> 21 minutes and 35 seconds on a kernel with CONFIG_GENERIC, and
+> 19 minutes and 11 seconds on a kernel with CONFIG_PILEDRIVER.
 
-And including these changes as well.  ;-)
+That's certainly noticeable. Surprisingly so. What makes MK8 so bad in
+particular, I wonder?
 
-							Thanx, Paul
+Just out of interest, have you done any profiles on the kernel cost
+here to see what it is that makes such a big difference. Because
+normally on a kernel build, I see most of the overhead in path lookup.
+But that's only true for otherwise optimized builds that don't have
+system call auditing etc debugging that spreads the costs out over
+everything..
 
-> +++ b/kernel/cpu.c
-> @@ -120,7 +120,7 @@ void __get_online_cpus(void)
->         if (atomic_dec_and_test(&cpuhp_waitcount))
->                 wake_up(&cpuhp_writer);
-> 
-> -       goto again:
-> +       goto again;
->  }
->  EXPORT_SYMBOL_GPL(__get_online_cpus);
-> 
-> @@ -146,7 +146,7 @@ EXPORT_SYMBOL_GPL(__put_online_cpus);
->         for_each_possible_cpu(cpu)                                      \
->                 __sum += per_cpu(var, cpu);                             \
->         __sum;                                                          \
-> -)}
-> +})
-> 
->  /*
->   * See srcu_readers_active_idx_check() for a rather more detailed explanation.
-> 
-
+             Linus
