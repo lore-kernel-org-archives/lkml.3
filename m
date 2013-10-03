@@ -1,178 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3JCRMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:12:34 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:13090 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab3JCRMd (ORCPT
+	id S1754510Ab3JCRO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:14:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60668 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab3JCRO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:12:33 -0400
-Message-ID: <1380820350.2310.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2] ipc/sem.c: synchronize semop and semctl with IPC_RMID
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Date: Thu, 03 Oct 2013 10:12:30 -0700
-In-Reply-To: <1380806806-3722-1-git-send-email-manfred@colorfullife.com>
-References: <1380806806-3722-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Oct 2013 13:14:56 -0400
+Date: Thu, 3 Oct 2013 18:14:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        Imre Deak <imre.deak@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
+Message-ID: <20131003171440.GD27287@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Hmb9n29fjuiORm2l"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Build failure after merge of the drm-intel tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-03 at 15:26 +0200, Manfred Spraul wrote:
-> After acquiring the semlock spinlock, operations must test that the
-> array is still valid.
-> 
-> - semctl() and exit_sem() would walk stale linked lists (ugly, but should
->   be ok: all lists are empty)
-> 
-> - semtimedop() would sleep forever - and if woken up due to a signal -
->   access memory after free.
-> 
-> The patch also:
-> - standardizes the tests for .deleted, so that all tests in one
->   function leave the function with the same approach.
-> - unconditionally tests for .deleted immediately after every call to
->   sem_lock - even it it means that for semctl(GETALL), .deleted will be
->   tested twice.
-> 
-> Both changes make the review simpler: After every sem_lock, there must
-> be a test of .deleted, followed by a goto to the cleanup code (if the
-> function uses "goto cleanup").
-> The only exception is semctl_down(): If sem_ids().rwsem is locked, then
-> the presence in ids->ipcs_idr is equivalent to !.deleted, thus no additional
-> test is required.
-> 
-> Davidlohr: What do you think?
-> 
 
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+--Hmb9n29fjuiORm2l
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-> ---
->  ipc/sem.c | 42 +++++++++++++++++++++++++++++-------------
->  1 file changed, 29 insertions(+), 13 deletions(-)
-> 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 8c4f59b..db9d241 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -1282,6 +1282,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
->  
->  	sem_lock(sma, NULL, -1);
->  
-> +	if (sma->sem_perm.deleted) {
-> +		sem_unlock(sma, -1);
-> +		rcu_read_unlock();
-> +		return -EIDRM;
-> +	}
-> +
->  	curr = &sma->sem_base[semnum];
->  
->  	ipc_assert_locked_object(&sma->sem_perm);
-> @@ -1336,12 +1342,14 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  		int i;
->  
->  		sem_lock(sma, NULL, -1);
-> +		if (sma->sem_perm.deleted) {
-> +			err = -EIDRM;
-> +			goto out_unlock;
-> +		}
->  		if(nsems > SEMMSL_FAST) {
->  			if (!ipc_rcu_getref(sma)) {
-> -				sem_unlock(sma, -1);
-> -				rcu_read_unlock();
->  				err = -EIDRM;
-> -				goto out_free;
-> +				goto out_unlock;
->  			}
->  			sem_unlock(sma, -1);
->  			rcu_read_unlock();
-> @@ -1354,10 +1362,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  			rcu_read_lock();
->  			sem_lock_and_putref(sma);
->  			if (sma->sem_perm.deleted) {
-> -				sem_unlock(sma, -1);
-> -				rcu_read_unlock();
->  				err = -EIDRM;
-> -				goto out_free;
-> +				goto out_unlock;
->  			}
->  		}
->  		for (i = 0; i < sma->sem_nsems; i++)
-> @@ -1375,8 +1381,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  		struct sem_undo *un;
->  
->  		if (!ipc_rcu_getref(sma)) {
-> -			rcu_read_unlock();
-> -			return -EIDRM;
-> +			err = -EIDRM;
-> +			goto out_rcu_wakeup;
->  		}
->  		rcu_read_unlock();
->  
-> @@ -1404,10 +1410,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  		rcu_read_lock();
->  		sem_lock_and_putref(sma);
->  		if (sma->sem_perm.deleted) {
-> -			sem_unlock(sma, -1);
-> -			rcu_read_unlock();
->  			err = -EIDRM;
-> -			goto out_free;
-> +			goto out_unlock;
->  		}
->  
->  		for (i = 0; i < nsems; i++)
-> @@ -1431,6 +1435,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  		goto out_rcu_wakeup;
->  
->  	sem_lock(sma, NULL, -1);
-> +	if (sma->sem_perm.deleted) {
-> +		err = -EIDRM;
-> +		goto out_unlock;
-> +	}
->  	curr = &sma->sem_base[semnum];
->  
->  	switch (cmd) {
-> @@ -1836,6 +1844,10 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
->  	if (error)
->  		goto out_rcu_wakeup;
->  
-> +	error = -EIDRM;
-> +	locknum = sem_lock(sma, sops, nsops);
-> +	if (sma->sem_perm.deleted)
-> +		goto out_unlock_free;
->  	/*
->  	 * semid identifiers are not unique - find_alloc_undo may have
->  	 * allocated an undo structure, it was invalidated by an RMID
-> @@ -1843,8 +1855,6 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
->  	 * This case can be detected checking un->semid. The existence of
->  	 * "un" itself is guaranteed by rcu.
->  	 */
-> -	error = -EIDRM;
-> -	locknum = sem_lock(sma, sops, nsops);
->  	if (un && un->semid == -1)
->  		goto out_unlock_free;
->  
-> @@ -2057,6 +2067,12 @@ void exit_sem(struct task_struct *tsk)
->  		}
->  
->  		sem_lock(sma, NULL, -1);
-> +		/* exit_sem raced with IPC_RMID, nothing to do */
-> +		if (sma->sem_perm.deleted) {
-> +			sem_unlock(sma, -1);
-> +			rcu_read_unlock();
-> +			continue;
-> +		}
->  		un = __lookup_undo(ulp, semid);
->  		if (un == NULL) {
->  			/* exit_sem raced with IPC_RMID+semget() that created
+After merging the drm-intel tree into -next an x86 allmodconfig build fails
+with:
+
+In file included from include/linux/kobject.h:29:0,
+                 from include/linux/cpufreq.h:16,
+                 from drivers/gpu/drm/i915/intel_pm.c:28:
+drivers/gpu/drm/i915/intel_pm.c: In function =E2=80=98intel_pm_init=E2=80=
+=99:
+drivers/gpu/drm/i915/intel_pm.c:5883:34: error: =E2=80=98struct intel_gen6_=
+power_mgmt=E2=80=99 has no member named =E2=80=98vlv_work=E2=80=99
+  INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
+                                  ^
+include/linux/workqueue.h:216:16: note: in definition of macro =E2=80=98__I=
+NIT_WORK=E2=80=99
+   __init_work((_work), _onstack);    \
+                ^
+include/linux/workqueue.h:244:3: note: in expansion of macro =E2=80=98INIT_=
+WORK=E2=80=99
+   INIT_WORK(&(_work)->work, (_func));   \
+   ^
+include/linux/workqueue.h:260:2: note: in expansion of macro =E2=80=98__INI=
+T_DELAYED_WORK=E2=80=99
+  __INIT_DELAYED_WORK(_work, _func, 0)
+  ^
+drivers/gpu/drm/i915/intel_pm.c:5883:2: note: in expansion of macro =E2=80=
+=98INIT_DELAYED_WORK=E2=80=99
+  INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
+  ^
+drivers/gpu/drm/i915/intel_pm.c:5883:34: error: =E2=80=98struct intel_gen6_=
+power_mgmt=E2=80=99 has no member named =E2=80=98vlv_work=E2=80=99
+  INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
+                                  ^
+and so on caused by 671952a2a290a (drm/i915: fix rps.vlv_work
+initialization) in the drm-intel-fixes tree interacting with ac3a48b3036
+(drm/i915: Boost RPS frequency for CPU stalls) from the drm-intel tree.
+
+I have used the fix below for today:
+
+=46rom 4f4dccef92d64393e2a7e867f7c2755c09178c48 Mon Sep 17 00:00:00 2001
+=46rom: Mark Brown <broonie@linaro.org>
+Date: Thu, 3 Oct 2013 18:10:55 +0100
+Subject: [PATCH] drm/i915: Resolve interaction with drm-fixes tree
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/gpu/drm/i915/intel_pm.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_p=
+m.c
+index 7cdac0b..0b4de57 100644
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -5879,7 +5879,5 @@ void intel_pm_init(struct drm_device *dev)
+=20
+ 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
+ 			  intel_gen6_powersave_work);
+-
+-	INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
+ }
+=20
+--=20
+1.8.4.rc3
 
 
+--Hmb9n29fjuiORm2l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTaX9AAoJELSic+t+oim97ngP+wQN0VYuA79Zf8sTDdGXmr3z
+qTyoZJvOWfbOwnbD5Swlwu8amgGuIdLqhLXzN6CB80ujNZUBXNEj+v6oRIWqXyhP
+2IDidwuZ7ksQWr552688kvxREiTokpfohIjOSHkwCBseSm0uYelDvl97LKkPV0tA
+A+CTXETR7AJymHam2miY5LlTAIlV+4UxCBAocxo8Pxcvedaycc7VeLBELrl3OPrI
+IsHPxbzUkJSIz8a9EmrkOiiLlGOe4ev2asS1rkZsqzCVdXZePIjX1VQ0q4WdH5mj
+9iTSE5h/YXxV+n7BqgFtWHBYtY1SlMp35+8uLL0RumoqN/mv6Y3fCZvbvZC0xwnV
+P60zdAfe35YkPu/xApitF5dckn6tQug5+xXQ85KQ8EkzIjU+uxTObAKjE5dNVpGe
+lsbDZTbRHpL+oNASAg6/D4KFYbqffhQcIrJIf+DsMt3VAu9O0oRDrHFqS3W5huQK
+51/IF7xepBlDVcCXMbi9QTiHuBDBgYzDShr6YBlIBG2cKSum7/s0XFjjZ18znPkb
+Y/Ez8NlRRZJ/A9NWFPgOSXvLu2R6ND3Rt3IQvYFiHC06mEkNzKRFKLI1MeYsoeTB
+7rXkOxzq4emWDMsKdW+l6H0jcjouzFYNi/Vfy+4qjLVnXZgFdos1o6IfvkLB9H4D
+FypFV3Abc7IcK8A3Wq8n
+=ROso
+-----END PGP SIGNATURE-----
+
+--Hmb9n29fjuiORm2l--
