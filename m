@@ -1,91 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3JCTVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:21:45 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:51913 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3JCTVn (ORCPT
+	id S1755109Ab3JCTZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:25:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45828 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab3JCTZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:21:43 -0400
+	Thu, 3 Oct 2013 15:25:39 -0400
+Message-ID: <524DC4B1.4050100@codeaurora.org>
+Date: Thu, 03 Oct 2013 12:25:37 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20131003172142.GA20660@hmsreliant.think-freely.org>
-References: <1380300815-1864-1-git-send-email-nhorman@tuxdriver.com> <20131003172142.GA20660@hmsreliant.think-freely.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 3 Oct 2013 13:21:22 -0600
-Message-ID: <CAErSpo7fzSNGShWocpLQf6LwQZ84u+9zRX0oMJyNrRfe+87mxg@mail.gmail.com>
-Subject: Re: [PATCH] iommu: Remove stack trace from broken irq remapping warning
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] hwrng: msm: Add PRNG support for MSM SoC's
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <1380811955-18085-3-git-send-email-svarbanov@mm-sol.com>
+In-Reply-To: <1380811955-18085-3-git-send-email-svarbanov@mm-sol.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 11:21 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> On Fri, Sep 27, 2013 at 12:53:35PM -0400, Neil Horman wrote:
->> The warning for the irq remapping broken check in intel_irq_remapping.c is
->> pretty pointless.  We need the warning, but we know where its comming from, the
->> stack trace will always be the same, and it needlessly triggers things like
->> Abrt.  This changes the warning to just print a text warning about BIOS being
->> broken, without the stack trace, then sets the appropriate taint bit.  Since we
->> automatically disable irq remapping, theres no need to contiue making Abrt jump
->> at this problem
->>
->> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
->> CC: Joerg Roedel <joro@8bytes.org>
->> CC: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Andy Lutomirski <luto@amacapital.net>
->> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
->> ---
->>  drivers/iommu/intel_irq_remapping.c | 13 +++++++------
->>  1 file changed, 7 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
->> index f71673d..b97d70b 100644
->> --- a/drivers/iommu/intel_irq_remapping.c
->> +++ b/drivers/iommu/intel_irq_remapping.c
->> @@ -525,12 +525,13 @@ static int __init intel_irq_remapping_supported(void)
->>       if (disable_irq_remap)
->>               return 0;
->>       if (irq_remap_broken) {
->> -             WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
->> -                        "This system BIOS has enabled interrupt remapping\n"
->> -                        "on a chipset that contains an erratum making that\n"
->> -                        "feature unstable.  To maintain system stability\n"
->> -                        "interrupt remapping is being disabled.  Please\n"
->> -                        "contact your BIOS vendor for an update\n");
->> +             printk(KERN_WARNING
->> +                     "This system BIOS has enabled interrupt remapping\n"
->> +                     "on a chipset that contains an erratum making that\n"
->> +                     "feature unstable.  To maintain system stability\n"
->> +                     "interrupt remapping is being disabled.  Please\n"
->> +                     "contact your BIOS vendor for an update\n");
->> +             add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
->>               disable_irq_remap = 1;
->>               return 0;
->>       }
->> --
->> 1.8.3.1
->>
->>
->
-> Ping Bjorn, Jeorg, any thoughts here?
+On 10/03/13 07:52, Stanimir Varbanov wrote:
+> +#define PRNG_CONFIG_MASK	0x00000002
+> +#define PRNG_CONFIG_HW_ENABLE	BIT(1)
 
-This is in drivers/iommu, so I'd prefer that Joerg handle this.
+These two are the same so please drop the PRNG_CONFIG_MASK define and
+just use the PRNG_CONFIG_HW_ENABLE define.
 
-My opinion is that this patch does the right thing in dropping the
-backtrace and keeping the taint.
+> +#define PRNG_STATUS_DATA_AVAIL	BIT(0)
+> +
+> +#define MAX_HW_FIFO_DEPTH	16
+> +#define MAX_HW_FIFO_SIZE	(MAX_HW_FIFO_DEPTH * 4)
+> +#define WORD_SZ			4
+> +
+> +struct msm_rng {
+> +	void __iomem *base;
+> +	struct clk *clk;
+> +};
+> +
+> +static int msm_rng_enable(struct msm_rng *rng, int enable)
+> +{
+> +	u32 val;
+> +	int ret;
+> +
+> +	ret = clk_prepare_enable(rng->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (enable) {
+> +		/* Enable PRNG only if it is not already enabled */
+> +		val = readl_relaxed(rng->base + PRNG_CONFIG);
+> +		if (val & PRNG_CONFIG_HW_ENABLE)
+> +			goto already_enabled;
+> +
+> +		/* PRNG is not enabled */
+> +		val = readl_relaxed(rng->base + PRNG_LFSR_CFG);
+> +		val &= ~PRNG_LFSR_CFG_MASK;
+> +		val |= PRNG_LFSR_CFG_CLOCKS;
+> +		writel(val, rng->base + PRNG_LFSR_CFG);
+> +
+> +		val = readl_relaxed(rng->base + PRNG_CONFIG);
+> +		val &= ~PRNG_CONFIG_MASK;
+> +		val |= PRNG_CONFIG_HW_ENABLE;
+> +		writel(val, rng->base + PRNG_CONFIG);
 
-I tend to agree with Andy that we should also consider a second patch
-that drops the taint, because this is basically just a quirk that
-avoids broken chipset functionality, but as far as I can tell, there's
-no reason to fear an undebuggable problem related to disabling
-interrupt remapping.  We don't taint the kernel for other similar
-quirks, so I don't see why we should here.
+This could just be
 
-Bjorn
+		val = readl_relaxed(rng->base + PRNG_CONFIG);
+		val |= PRNG_CONFIG_HW_ENABLE;
+		writel(val, rng->base + PRNG_CONFIG);
+
+
+> +	} else {
+> +		val = readl_relaxed(rng->base + PRNG_CONFIG);
+> +		val &= ~PRNG_CONFIG_MASK;
+> +		writel(val, rng->base + PRNG_CONFIG);
+> +	}
+> +
+> +already_enabled:
+> +	clk_disable_unprepare(rng->clk);
+> +	return 0;
+> +}
+> +
+[...]
+> +static int msm_rng_probe(struct platform_device *pdev)
+> +{
+> +	struct msm_rng *rng;
+> +	struct device_node *np;
+> +	struct resource res;
+> +	int ret;
+> +
+> +	np = of_node_get(pdev->dev.of_node);
+> +	if (!np)
+> +		return -ENODEV;
+
+This is unnecessary.
+
+> +
+> +	rng = devm_kzalloc(&pdev->dev, sizeof(*rng), GFP_KERNEL);
+> +	if (!rng) {
+> +		ret = -ENOMEM;
+> +		goto err_exit;
+> +	}
+> +
+> +	ret = of_address_to_resource(np, 0, &res);
+> +	if (ret)
+> +		goto err_exit;
+
+We should just do
+
+  res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+  rng->base = devm_ioremap_resource(&pdev->dev, res);
+  if (IS_ERR(rng->base))
+            return PTR_ERR(rng->base);
+
+> +
+> +	rng->base = devm_ioremap_resource(&pdev->dev, &res);
+> +	if (IS_ERR(rng->base)) {
+> +		ret = PTR_ERR(rng->base);
+> +		goto err_exit;
+> +	}
+> +
+> +	rng->clk = devm_clk_get(&pdev->dev, "prng");
+> +	if (IS_ERR(rng->clk)) {
+> +		ret = PTR_ERR(rng->clk);
+> +		goto err_exit;
+> +	}
+> +
+> +	msm_rng_ops.priv = (unsigned long) rng;
+> +	ret = hwrng_register(&msm_rng_ops);
+> +	if (ret)
+> +		dev_err(&pdev->dev, "failed to register hwrng\n");
+> +
+> +err_exit:
+
+Doing all that should make this goto exit path unnecessary.
+
+> +	of_node_put(np);
+> +	return ret;
+> +}
+> +
+> +static int msm_rng_remove(struct platform_device *pdev)
+> +{
+> +	hwrng_unregister(&msm_rng_ops);
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id msm_rng_of_match[] = {
+
+const?
+
+> +	{ .compatible = "qcom,prng", },
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(of, msm_rng_of_match);
+> +
+> +static struct platform_driver msm_rng_driver = {
+> +	.probe = msm_rng_probe,
+> +	.remove = msm_rng_remove,
+> +	.driver = {
+> +		.name = KBUILD_MODNAME,
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = of_match_ptr(msm_rng_of_match),
+> +	}
+> +};
+> +module_platform_driver(msm_rng_driver);
+> +
+> +MODULE_AUTHOR("The Linux Foundation");
+> +MODULE_DESCRIPTION("Qualcomm MSM random number generator driver");
+> +MODULE_LICENSE("GPL v2");
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
