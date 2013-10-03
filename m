@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab3JCEPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47066 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab3JCEPr (ORCPT
+	id S1755575Ab3JCEPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:34 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:53953 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755562Ab3JCEPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:47 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [ 39/52] dm-snapshot: fix performance degradation due to small hash size
-Date: Wed,  2 Oct 2013 21:05:57 -0700
-Message-Id: <20131003040524.905762980@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
-References: <20131003040522.190209641@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 3 Oct 2013 00:15:30 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: alsa-devel@alsa-project.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Timur Tabi <timur@tabi.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH] ASoC: fsl_ssi: Fix irq_of_parse_and_map() return value check
+Date: Wed,  2 Oct 2013 21:15:22 -0700
+Message-Id: <1380773722-1295-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+irq_of_parse_and_map() returns 0 on error, not NO_IRQ.
 
-------------------
+Fix the following xtensa:allmodconfig build error.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+sound/soc/fsl/fsl_ssi.c:705:26: error: 'NO_IRQ' undeclared (first use in this function)
+make[4]: *** [sound/soc/fsl/fsl_ssi.o] Error 1
 
-commit 60e356f381954d79088d0455e357db48cfdd6857 upstream.
-
-LVM2, since version 2.02.96, creates origin with zero size, then loads
-the snapshot driver and then loads the origin.  Consequently, the
-snapshot driver sees the origin size zero and sets the hash size to the
-lower bound 64.  Such small hash table causes performance degradation.
-
-This patch changes it so that the hash size is determined by the size of
-snapshot volume, not minimum of origin and snapshot size.  It doesn't
-make sense to set the snapshot size significantly larger than the origin
-size, so we do not need to take origin size into account when
-calculating the hash size.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/md/dm-snap.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Previously submitted by Grant Likely as part of a different patch set.
+See https://lkml.org/lkml/2012/1/11/342.
+Also see https://lkml.org/lkml/2013/7/25/642.
 
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -725,17 +725,16 @@ static int calc_max_buckets(void)
-  */
- static int init_hash_tables(struct dm_snapshot *s)
- {
--	sector_t hash_size, cow_dev_size, origin_dev_size, max_buckets;
-+	sector_t hash_size, cow_dev_size, max_buckets;
- 
- 	/*
- 	 * Calculate based on the size of the original volume or
- 	 * the COW volume...
- 	 */
- 	cow_dev_size = get_dev_size(s->cow->bdev);
--	origin_dev_size = get_dev_size(s->origin->bdev);
- 	max_buckets = calc_max_buckets();
- 
--	hash_size = min(origin_dev_size, cow_dev_size) >> s->store->chunk_shift;
-+	hash_size = cow_dev_size >> s->store->chunk_shift;
- 	hash_size = min(hash_size, max_buckets);
- 
- 	if (hash_size < 64)
+ sound/soc/fsl/fsl_ssi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index c6b7439..6b81d0c 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -936,7 +936,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
+ 	ssi_private->ssi_phys = res.start;
+ 
+ 	ssi_private->irq = irq_of_parse_and_map(np, 0);
+-	if (ssi_private->irq == NO_IRQ) {
++	if (ssi_private->irq == 0) {
+ 		dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
+ 		return -ENXIO;
+ 	}
+-- 
+1.7.9.7
 
