@@ -1,139 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab3JCPNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:13:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44589 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805Ab3JCPNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:13:43 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <gregkh@linuxfoundation.org>, <balbi@ti.com>
-CC: <bcousson@baylibre.com>, <tony@atomide.com>, <george.cherian@ti.com>,
-        <kishon@ti.com>, <bigeasy@linutronix.de>,
-        <sergei.shtylyov@cogentembedded.com>, <thomas.langer@lantiq.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v8 5/8] usb: musb: omap2430: Don't use omap_get_control_dev()
-Date: Thu, 3 Oct 2013 18:12:34 +0300
-Message-ID: <1380813157-22311-6-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1380813157-22311-1-git-send-email-rogerq@ti.com>
-References: <1380813157-22311-1-git-send-email-rogerq@ti.com>
+	id S1754936Ab3JCPNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:13:54 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:40837 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab3JCPNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 11:13:51 -0400
+Date: Thu, 3 Oct 2013 17:14:32 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] fuse: writepages: crop secondary requests
+Message-ID: <20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu>
+References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu>
+ <524D70FE.5000701@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524D70FE.5000701@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap_get_control_dev() is being deprecated as it doesn't support
-multiple instances. As control device is present only from OMAP4
-onwards which supports DT only, we use phandles to get the
-reference to the control device.
+On Thu, Oct 03, 2013 at 05:28:30PM +0400, Maxim Patlasov wrote:
 
-Also get rid of "ti,has-mailbox" property as it is redundant and
-we can determine that from whether "ctrl-module" property is present
-or not. Get rid of has_mailbox from musb_hdrc_platform_data as well.
+> 1. There is an in-flight primary request with a chain of secondary ones.
+> 2. User calls ftruncate(2) to extend file; fuse_set_nowrite() makes
+> fi->writectr negative and starts waiting for completion of that
+> in-flight request
+> 3. Userspace fuse daemon ACKs the request and fuse_writepage_end()
+> is called; it calls __fuse_flush_writepages(), but the latter does
+> nothing because fi->writectr < 0
+> 4. fuse_do_setattr() proceeds extending i_size and calling
+> __fuse_release_nowrite(). But now new (increased) i_size will be
+> used as 'crop' arg of __fuse_flush_writepages()
+> 
+> stale data can leak to the server.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- Documentation/devicetree/bindings/usb/omap-usb.txt |    4 ---
- drivers/usb/musb/omap2430.c                        |   25 +++++++++++--------
- include/linux/usb/musb.h                           |    2 -
- 3 files changed, 14 insertions(+), 17 deletions(-)
+So, lets do this then: skip fuse_flush_writepages() and call
+fuse_send_writepage() directly.  It will ignore the NOWRITE logic, but that's
+okay, this happens rarely and cannot happen more than once in a row.
 
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index 9add35c..090e5e2 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -3,9 +3,6 @@ OMAP GLUE AND OTHER OMAP SPECIFIC COMPONENTS
- OMAP MUSB GLUE
-  - compatible : Should be "ti,omap4-musb" or "ti,omap3-musb"
-  - ti,hwmods : must be "usb_otg_hs"
-- - ti,has-mailbox : to specify that omap uses an external mailbox
--   (in control module) to communicate with the musb core during device connect
--   and disconnect.
-  - multipoint : Should be "1" indicating the musb controller supports
-    multipoint. This is a MUSB configuration-specific setting.
-  - num-eps : Specifies the number of endpoints. This is also a
-@@ -31,7 +28,6 @@ SOC specific device node entry
- usb_otg_hs: usb_otg_hs@4a0ab000 {
- 	compatible = "ti,omap4-musb";
- 	ti,hwmods = "usb_otg_hs";
--	ti,has-mailbox;
- 	multipoint = <1>;
- 	num-eps = <16>;
- 	ram-bits = <12>;
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index d0fc4d9..9eab645 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -38,6 +38,7 @@
- #include <linux/delay.h>
- #include <linux/usb/musb-omap.h>
- #include <linux/usb/omap_control_usb.h>
-+#include <linux/of_platform.h>
+Does this look good?
+
+Can you actually trigger this path with your testing?
+
+Thanks,
+Miklos
+
+
+Index: linux/fs/fuse/file.c
+===================================================================
+--- linux.orig/fs/fuse/file.c	2013-10-03 12:12:33.480918954 +0200
++++ linux/fs/fuse/file.c	2013-10-03 17:06:23.702510854 +0200
+@@ -1436,12 +1436,12 @@ static void fuse_writepage_finish(struct
+ }
  
- #include "musb_core.h"
- #include "omap2430.h"
-@@ -524,8 +525,12 @@ static int omap2430_probe(struct platform_device *pdev)
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
- 	glue->status			= OMAP_MUSB_UNKNOWN;
-+	glue->control_otghs = ERR_PTR(-ENODEV);
+ /* Called under fc->lock, may release and reacquire it */
+-static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req)
++static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req,
++				loff_t size)
+ __releases(fc->lock)
+ __acquires(fc->lock)
+ {
+ 	struct fuse_inode *fi = get_fuse_inode(req->inode);
+-	loff_t size = i_size_read(req->inode);
+ 	struct fuse_write_in *inarg = &req->misc.write.in;
+ 	__u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
  
- 	if (np) {
-+		struct device_node *control_node;
-+		struct platform_device *control_pdev;
-+
- 		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 		if (!pdata) {
- 			dev_err(&pdev->dev,
-@@ -554,22 +559,20 @@ static int omap2430_probe(struct platform_device *pdev)
- 		of_property_read_u32(np, "ram-bits", (u32 *)&config->ram_bits);
- 		of_property_read_u32(np, "power", (u32 *)&pdata->power);
- 		config->multipoint = of_property_read_bool(np, "multipoint");
--		pdata->has_mailbox = of_property_read_bool(np,
--		    "ti,has-mailbox");
+@@ -1482,12 +1482,13 @@ __acquires(fc->lock)
+ {
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
++	size_t crop = i_size_read(inode);
+ 	struct fuse_req *req;
  
- 		pdata->board_data	= data;
- 		pdata->config		= config;
--	}
- 
--	if (pdata->has_mailbox) {
--		glue->control_otghs = omap_get_control_dev();
--		if (IS_ERR(glue->control_otghs)) {
--			dev_vdbg(&pdev->dev, "Failed to get control device\n");
--			ret = PTR_ERR(glue->control_otghs);
--			goto err2;
-+		control_node = of_parse_phandle(np, "ctrl-module", 0);
-+		if (control_node) {
-+			control_pdev = of_find_device_by_node(control_node);
-+			if (!control_pdev) {
-+				dev_err(&pdev->dev, "Failed to get control device\n");
-+				ret = -EINVAL;
-+				goto err2;
-+			}
-+			glue->control_otghs = &control_pdev->dev;
- 		}
--	} else {
--		glue->control_otghs = ERR_PTR(-ENODEV);
+ 	while (fi->writectr >= 0 && !list_empty(&fi->queued_writes)) {
+ 		req = list_entry(fi->queued_writes.next, struct fuse_req, list);
+ 		list_del_init(&req->list);
+-		fuse_send_writepage(fc, req);
++		fuse_send_writepage(fc, req, crop);
  	}
- 	pdata->platform_ops		= &omap2430_ops;
+ }
  
-diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
-index 053c268..eb50525 100644
---- a/include/linux/usb/musb.h
-+++ b/include/linux/usb/musb.h
-@@ -99,8 +99,6 @@ struct musb_hdrc_platform_data {
- 	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */
- 	u8		mode;
- 
--	u8		has_mailbox:1;
--
- 	/* for clk_get() */
- 	const char	*clock;
- 
--- 
-1.7.4.1
-
+@@ -1499,12 +1500,13 @@ static void fuse_writepage_end(struct fu
+ 	mapping_set_error(inode->i_mapping, req->out.h.error);
+ 	spin_lock(&fc->lock);
+ 	while (req->misc.write.next) {
++		struct fuse_conn *fc = get_fuse_conn(inode);
++		struct fuse_write_in *inarg = &req->misc.write.in;
+ 		struct fuse_req *next = req->misc.write.next;
+ 		req->misc.write.next = next->misc.write.next;
+ 		next->misc.write.next = NULL;
+ 		list_add(&next->writepages_entry, &fi->writepages);
+-		list_add_tail(&next->list, &fi->queued_writes);
+-		fuse_flush_writepages(inode);
++		fuse_send_writepage(fc, next, inarg->offset + inarg->size);
+ 	}
+ 	fi->writectr--;
+ 	fuse_writepage_finish(fc, req);
