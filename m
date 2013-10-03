@@ -1,125 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3JCI1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 04:27:14 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:50089 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab3JCI1H convert rfc822-to-8bit (ORCPT
+	id S1752764Ab3JCIbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 04:31:36 -0400
+Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:59970 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751193Ab3JCIbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 04:27:07 -0400
-Date: Thu, 3 Oct 2013 11:27:02 +0300
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org,
-        ogerlitz@mellanox.com, eli@mellanox.com
-Subject: Re: [PATCH RFC 46/77] mlx4: Update MSI/MSI-X interrupts enablement
- code
-Message-ID: <20131003112702.6f3210b0@jpm-OptiPlex-GX620>
-In-Reply-To: <b0a9f6f455aa03b7769e6d9cc2e7fdbc06732b2f.1380703263.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <b0a9f6f455aa03b7769e6d9cc2e7fdbc06732b2f.1380703263.git.agordeev@redhat.com>
-Organization: Mellanox
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Oct 2013 04:31:33 -0400
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 04:31:33 EDT
+Message-ID: <524D296B.2090905@overkiz.com>
+Date: Thu, 03 Oct 2013 10:23:07 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Fabio Porcedda <fabio.porcedda@gmail.com>
+CC: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Yang Wenyou <Wenyou.Yang@atmel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        linux-watchdog@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH v2 2/4] watchdog: at91sam9_wdt: update device tree doc
+References: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com> <1371799414-3654-1-git-send-email-b.brezillon@overkiz.com> <CAHkwnC_Q5XVcb5m5gZuG+s7ojgBb6b29pW9_rENA1sBjo4+-7Q@mail.gmail.com>
+In-Reply-To: <CAHkwnC_Q5XVcb5m5gZuG+s7ojgBb6b29pW9_rENA1sBjo4+-7Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 2988419829413345417
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Oct 2013 12:49:02 +0200
-Alexander Gordeev <agordeev@redhat.com> wrote:
+Hello Fabio,
 
-UPDATING THIS REPLY.
-Your change log confused me. The change below is not from a "recent
-re-design", it is required due to an earlier patch in this patch set.
->From the log, I assumed that the change you are talking about is already
-upstream.
+On 03/10/2013 10:08, Fabio Porcedda wrote:
+> On Fri, Jun 21, 2013 at 9:23 AM, Boris BREZILLON
+> <b.brezillon@overkiz.com> wrote:
+>> Add new at91sam9 watchdog properties to the documentation.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>   .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
+>>   1 file changed, 28 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+>> index fcdd48f..e043106 100644
+>> --- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+>> +++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
+>> @@ -9,11 +9,37 @@ Required properties:
+>>
+>>   Optional properties:
+>>   - timeout-sec: contains the watchdog timeout in seconds.
+> Why are you removing the documentation about this property?
 
-I will re-review.
+I'm not removing the property: this is an enumeration minus not a diff 
+minus.
 
--Jack
+> Regards
+Regards,
 
-NACK.  This change does not do anything logically as far as I can tell.
-pci_enable_msix in the current upstream kernel itself calls
-pci_msix_table_size.  The current code yields the same resultswill
-as the code suggested below. (i.e., the suggested code has no effect on
-optimality).
-
-BTW, pci_msix_table_size never returns a value < 0 (if msix is not
-enabled, it returns 0 for the table size), so the (err < 0) check here
-is not correct. (I also do not like using "err" here anyway for the
-value returned by pci_msix_table_size().  There is no error here, and
-it is simply confusing.
-
--Jack
-
-> As result of recent re-design of the MSI/MSI-X interrupts enabling
-> pattern this driver has to be updated to use the new technique to
-> obtain a optimal number of MSI/MSI-X interrupts required.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  drivers/net/ethernet/mellanox/mlx4/main.c |   17 ++++++++---------
->  1 files changed, 8 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c
-> b/drivers/net/ethernet/mellanox/mlx4/main.c index 60c9f4f..377a5ea
-> 100644 --- a/drivers/net/ethernet/mellanox/mlx4/main.c
-> +++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-> @@ -1852,8 +1852,16 @@ static void mlx4_enable_msi_x(struct mlx4_dev
-> *dev) int i;
->  
->  	if (msi_x) {
-> +		err = pci_msix_table_size(dev->pdev);
-> +		if (err < 0)
-> +			goto no_msi;
-> +
-> +		/* Try if at least 2 vectors are available */
->  		nreq = min_t(int, dev->caps.num_eqs -
-> dev->caps.reserved_eqs, nreq);
-> +		nreq = min_t(int, nreq, err);
-> +		if (nreq < 2)
-> +			goto no_msi;
->  
->  		entries = kcalloc(nreq, sizeof *entries, GFP_KERNEL);
->  		if (!entries)
-> @@ -1862,17 +1870,8 @@ static void mlx4_enable_msi_x(struct mlx4_dev
-> *dev) for (i = 0; i < nreq; ++i)
->  			entries[i].entry = i;
->  
-> -	retry:
->  		err = pci_enable_msix(dev->pdev, entries, nreq);
->  		if (err) {
-> -			/* Try again if at least 2 vectors are
-> available */
-> -			if (err > 1) {
-> -				mlx4_info(dev, "Requested %d
-> vectors, "
-> -					  "but only %d MSI-X vectors
-> available, "
-> -					  "trying again\n", nreq,
-> err);
-> -				nreq = err;
-> -				goto retry;
-> -			}
->  			kfree(entries);
->  			goto no_msi;
->  		}
-
+Boris
