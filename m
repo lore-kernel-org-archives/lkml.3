@@ -1,405 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab3JCUzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:55:36 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57162 "EHLO smtp.outflux.net"
+	id S1755571Ab3JCUzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:55:23 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58213 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755593Ab3JCUz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:55:29 -0400
-Date: Thu, 3 Oct 2013 13:55:15 -0700
-From: Kees Cook <kees@outflux.net>
-To: Kees Cook <keescook@chromium.org>
-Cc: James Morris <jmorris@namei.org>, LKML <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
-Message-ID: <20131003205515.GF5729@outflux.net>
-References: <20130920203556.GA8726@www.outflux.net>
- <alpine.LRH.2.02.1309241124420.3782@tundra.namei.org>
- <alpine.LRH.2.02.1309241128430.3782@tundra.namei.org>
- <CAGXu5jJ9t7tet4Bx=VUaVmjp1C18iK-nLpQBgmXqgukoAmmd4A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ9t7tet4Bx=VUaVmjp1C18iK-nLpQBgmXqgukoAmmd4A@mail.gmail.com>
-Organization: Outflux
+	id S1755047Ab3JCUxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 16:53:51 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
+Subject: [PATCH 5/7] x86, kaslr: select memory region from e820 maps
+Date: Thu,  3 Oct 2013 13:53:23 -0700
+Message-Id: <1380833605-26313-6-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380833605-26313-1-git-send-email-keescook@chromium.org>
+References: <1380833605-26313-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 06:45:35PM -0700, Kees Cook wrote:
-> [+rusty]
-> 
-> On Mon, Sep 23, 2013 at 6:28 PM, James Morris <jmorris@namei.org> wrote:
-> > On Tue, 24 Sep 2013, James Morris wrote:
-> >
-> >> On Fri, 20 Sep 2013, Kees Cook wrote:
-> >>
-> >> > This LSM enforces that modules must all come from the same filesystem,
-> >> > with the expectation that such a filesystem is backed by a read-only
-> >> > device such as dm-verity or CDROM. This allows systems that have a
-> >> > verified or unchanging filesystem to enforce module loading restrictions
-> >> > without needing to sign the modules individually.
-> >> >
-> >> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> >>
-> >> Are you using this for ChromeOS?
-> 
-> Yes. Chrome OS uses a read-only root filesystem that is backed by
-> dm-verity. This lets us pin all module loading to that filesystem
-> without needing per-module signatures.
-> 
-> > Also, you should CC Rusty on this.
-> 
-> Done! :)
+Counts available alignment positions across all e820 maps, and chooses
+one randomly for the new kernel base address.
 
-Ping... any feedback on this? I'd like to get this landed so I can send
-further patches that touch this and IMA.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - make sure to exclude e820 regions outside the 32-bit memory range.
+---
+ arch/x86/boot/compressed/aslr.c |  140 ++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 130 insertions(+), 10 deletions(-)
 
-Thanks,
-
--Kees
-
-> 
-> -Kees
-> 
-> >
-> >
-> >>
-> >>
-> >> > ---
-> >> >  security/Kconfig         |    6 ++
-> >> >  security/Makefile        |    2 +
-> >> >  security/modpin/Kconfig  |    9 +++
-> >> >  security/modpin/Makefile |    1 +
-> >> >  security/modpin/modpin.c |  197 ++++++++++++++++++++++++++++++++++++++++++++++
-> >> >  5 files changed, 215 insertions(+)
-> >> >  create mode 100644 security/modpin/Kconfig
-> >> >  create mode 100644 security/modpin/Makefile
-> >> >  create mode 100644 security/modpin/modpin.c
-> >> >
-> >> > diff --git a/security/Kconfig b/security/Kconfig
-> >> > index e9c6ac7..80172fd 100644
-> >> > --- a/security/Kconfig
-> >> > +++ b/security/Kconfig
-> >> > @@ -121,6 +121,7 @@ source security/selinux/Kconfig
-> >> >  source security/smack/Kconfig
-> >> >  source security/tomoyo/Kconfig
-> >> >  source security/apparmor/Kconfig
-> >> > +source security/modpin/Kconfig
-> >> >  source security/yama/Kconfig
-> >> >
-> >> >  source security/integrity/Kconfig
-> >> > @@ -131,6 +132,7 @@ choice
-> >> >     default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
-> >> >     default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
-> >> >     default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
-> >> > +   default DEFAULT_SECURITY_MODPIN if SECURITY_MODPIN
-> >> >     default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
-> >> >     default DEFAULT_SECURITY_DAC
-> >> >
-> >> > @@ -150,6 +152,9 @@ choice
-> >> >     config DEFAULT_SECURITY_APPARMOR
-> >> >             bool "AppArmor" if SECURITY_APPARMOR=y
-> >> >
-> >> > +   config DEFAULT_SECURITY_MODPIN
-> >> > +           bool "ModPin" if SECURITY_MODPIN=y
-> >> > +
-> >> >     config DEFAULT_SECURITY_YAMA
-> >> >             bool "Yama" if SECURITY_YAMA=y
-> >> >
-> >> > @@ -164,6 +169,7 @@ config DEFAULT_SECURITY
-> >> >     default "smack" if DEFAULT_SECURITY_SMACK
-> >> >     default "tomoyo" if DEFAULT_SECURITY_TOMOYO
-> >> >     default "apparmor" if DEFAULT_SECURITY_APPARMOR
-> >> > +   default "modpin" if DEFAULT_SECURITY_MODPIN
-> >> >     default "yama" if DEFAULT_SECURITY_YAMA
-> >> >     default "" if DEFAULT_SECURITY_DAC
-> >> >
-> >> > diff --git a/security/Makefile b/security/Makefile
-> >> > index c26c81e..73d0a05 100644
-> >> > --- a/security/Makefile
-> >> > +++ b/security/Makefile
-> >> > @@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)   += selinux
-> >> >  subdir-$(CONFIG_SECURITY_SMACK)            += smack
-> >> >  subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
-> >> >  subdir-$(CONFIG_SECURITY_APPARMOR) += apparmor
-> >> > +subdir-$(CONFIG_SECURITY_MODPIN)   += modpin
-> >> >  subdir-$(CONFIG_SECURITY_YAMA)             += yama
-> >> >
-> >> >  # always enable default capabilities
-> >> > @@ -22,6 +23,7 @@ obj-$(CONFIG_SECURITY_SMACK)              += smack/built-in.o
-> >> >  obj-$(CONFIG_AUDIT)                        += lsm_audit.o
-> >> >  obj-$(CONFIG_SECURITY_TOMOYO)              += tomoyo/built-in.o
-> >> >  obj-$(CONFIG_SECURITY_APPARMOR)            += apparmor/built-in.o
-> >> > +obj-$(CONFIG_SECURITY_MODPIN)              += modpin/built-in.o
-> >> >  obj-$(CONFIG_SECURITY_YAMA)                += yama/built-in.o
-> >> >  obj-$(CONFIG_CGROUP_DEVICE)                += device_cgroup.o
-> >> >
-> >> > diff --git a/security/modpin/Kconfig b/security/modpin/Kconfig
-> >> > new file mode 100644
-> >> > index 0000000..5be9dd5
-> >> > --- /dev/null
-> >> > +++ b/security/modpin/Kconfig
-> >> > @@ -0,0 +1,9 @@
-> >> > +config SECURITY_MODPIN
-> >> > +   bool "Module filesystem origin pinning"
-> >> > +   depends on SECURITY
-> >> > +   help
-> >> > +     Module loading will be pinned to the first filesystem used for
-> >> > +     loading. Any modules that come from other filesystems will be
-> >> > +     rejected. This is best used on systems without an initrd that
-> >> > +     have a root filesystem backed by a read-only device such as
-> >> > +     dm-verity or a CDROM.
-> >> > diff --git a/security/modpin/Makefile b/security/modpin/Makefile
-> >> > new file mode 100644
-> >> > index 0000000..9080b29
-> >> > --- /dev/null
-> >> > +++ b/security/modpin/Makefile
-> >> > @@ -0,0 +1 @@
-> >> > +obj-$(CONFIG_SECURITY_MODPIN) += modpin.o
-> >> > diff --git a/security/modpin/modpin.c b/security/modpin/modpin.c
-> >> > new file mode 100644
-> >> > index 0000000..107b4d8
-> >> > --- /dev/null
-> >> > +++ b/security/modpin/modpin.c
-> >> > @@ -0,0 +1,197 @@
-> >> > +/*
-> >> > + * Module Pinning Security Module
-> >> > + *
-> >> > + * Copyright 2011-2013 Google Inc.
-> >> > + *
-> >> > + * Authors:
-> >> > + *      Kees Cook       <keescook@chromium.org>
-> >> > + *
-> >> > + * This software is licensed under the terms of the GNU General Public
-> >> > + * License version 2, as published by the Free Software Foundation, and
-> >> > + * may be copied, distributed, and modified under those terms.
-> >> > + *
-> >> > + * This program is distributed in the hope that it will be useful,
-> >> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >> > + * GNU General Public License for more details.
-> >> > + */
-> >> > +
-> >> > +#define pr_fmt(fmt) "ModPin LSM: " fmt
-> >> > +
-> >> > +#include <linux/module.h>
-> >> > +#include <linux/security.h>
-> >> > +#include <linux/sched.h>
-> >> > +#include <linux/fs.h>
-> >> > +#include <linux/fs_struct.h>
-> >> > +#include <linux/mount.h>
-> >> > +#include <linux/path.h>
-> >> > +#include <linux/root_dev.h>
-> >> > +
-> >> > +static void report_load_module(struct path *path, char *operation)
-> >> > +{
-> >> > +   char *alloced = NULL;
-> >> > +   char *pathname; /* Pointer to either static string or "alloced". */
-> >> > +
-> >> > +   if (!path)
-> >> > +           pathname = "<unknown>";
-> >> > +   else {
-> >> > +           /* We will allow 11 spaces for ' (deleted)' to be appended */
-> >> > +           alloced = pathname = kmalloc(PATH_MAX+11, GFP_KERNEL);
-> >> > +           if (!pathname)
-> >> > +                   pathname = "<no_memory>";
-> >> > +           else {
-> >> > +                   pathname = d_path(path, pathname, PATH_MAX+11);
-> >> > +                   if (IS_ERR(pathname))
-> >> > +                           pathname = "<too_long>";
-> >> > +           }
-> >> > +   }
-> >> > +
-> >> > +   pr_notice("init_module %s module=%s pid=%d\n",
-> >> > +             operation, pathname, task_pid_nr(current));
-> >> > +
-> >> > +   kfree(alloced);
-> >> > +}
-> >> > +
-> >> > +static int modpin_enforced = 1;
-> >> > +static struct dentry *pinned_root;
-> >> > +static DEFINE_SPINLOCK(pinned_root_spinlock);
-> >> > +
-> >> > +#ifdef CONFIG_SYSCTL
-> >> > +static int zero;
-> >> > +static int one = 1;
-> >> > +
-> >> > +static struct ctl_path modpin_sysctl_path[] = {
-> >> > +   { .procname = "kernel", },
-> >> > +   { .procname = "modpin", },
-> >> > +   { }
-> >> > +};
-> >> > +
-> >> > +static struct ctl_table modpin_sysctl_table[] = {
-> >> > +   {
-> >> > +           .procname       = "enforced",
-> >> > +           .data           = &modpin_enforced,
-> >> > +           .maxlen         = sizeof(int),
-> >> > +           .mode           = 0644,
-> >> > +           .proc_handler   = proc_dointvec_minmax,
-> >> > +           .extra1         = &zero,
-> >> > +           .extra2         = &one,
-> >> > +   },
-> >> > +   { }
-> >> > +};
-> >> > +
-> >> > +/*
-> >> > + * Check if the root device is read-only (e.g. dm-verity is enabled).
-> >> > + * This must be called after early kernel init, since only then is the
-> >> > + * rootdev available.
-> >> > + */
-> >> > +static bool rootdev_readonly(void)
-> >> > +{
-> >> > +   bool rc;
-> >> > +   struct block_device *bdev;
-> >> > +   const fmode_t mode = FMODE_WRITE;
-> >> > +
-> >> > +   bdev = blkdev_get_by_dev(ROOT_DEV, mode, NULL);
-> >> > +   if (IS_ERR(bdev)) {
-> >> > +           /* In this weird case, assume it is read-only. */
-> >> > +           pr_info("dev(%u,%u): FMODE_WRITE disallowed?!\n",
-> >> > +                   MAJOR(ROOT_DEV), MINOR(ROOT_DEV));
-> >> > +           return true;
-> >> > +   }
-> >> > +
-> >> > +   rc = bdev_read_only(bdev);
-> >> > +   blkdev_put(bdev, mode);
-> >> > +
-> >> > +   pr_info("dev(%u,%u): %s\n", MAJOR(ROOT_DEV), MINOR(ROOT_DEV),
-> >> > +           rc ? "read-only" : "writable");
-> >> > +
-> >> > +   return rc;
-> >> > +}
-> >> > +
-> >> > +static void check_pinning_enforcement(void)
-> >> > +{
-> >> > +   /*
-> >> > +    * If module pinning is not being enforced, allow sysctl to change
-> >> > +    * modes for testing.
-> >> > +    */
-> >> > +   if (!rootdev_readonly()) {
-> >> > +           if (!register_sysctl_paths(modpin_sysctl_path,
-> >> > +                                      modpin_sysctl_table))
-> >> > +                   pr_notice("sysctl registration failed!\n");
-> >> > +           else
-> >> > +                   pr_info("module pinning can be disabled.\n");
-> >> > +   } else
-> >> > +           pr_info("module pinning engaged.\n");
-> >> > +}
-> >> > +#else
-> >> > +static void check_pinning_enforcement(void) { }
-> >> > +#endif
-> >> > +
-> >> > +
-> >> > +static int modpin_load_module(struct file *file)
-> >> > +{
-> >> > +   struct dentry *module_root;
-> >> > +
-> >> > +   if (!file) {
-> >> > +           if (!modpin_enforced) {
-> >> > +                   report_load_module(NULL, "old-api-pinning-ignored");
-> >> > +                   return 0;
-> >> > +           }
-> >> > +
-> >> > +           report_load_module(NULL, "old-api-denied");
-> >> > +           return -EPERM;
-> >> > +   }
-> >> > +
-> >> > +   module_root = file->f_path.mnt->mnt_root;
-> >> > +
-> >> > +   /* First loaded module defines the root for all others. */
-> >> > +   spin_lock(&pinned_root_spinlock);
-> >> > +   if (!pinned_root) {
-> >> > +           pinned_root = dget(module_root);
-> >> > +           /*
-> >> > +            * Unlock now since it's only pinned_root we care about.
-> >> > +            * In the worst case, we will (correctly) report pinning
-> >> > +            * failures before we have announced that pinning is
-> >> > +            * enabled. This would be purely cosmetic.
-> >> > +            */
-> >> > +           spin_unlock(&pinned_root_spinlock);
-> >> > +           check_pinning_enforcement();
-> >> > +           report_load_module(&file->f_path, "pinned");
-> >> > +           return 0;
-> >> > +   }
-> >> > +   spin_unlock(&pinned_root_spinlock);
-> >> > +
-> >> > +   if (module_root != pinned_root) {
-> >> > +           if (unlikely(!modpin_enforced)) {
-> >> > +                   report_load_module(&file->f_path, "pinning-ignored");
-> >> > +                   return 0;
-> >> > +           }
-> >> > +
-> >> > +           report_load_module(&file->f_path, "denied");
-> >> > +           return -EPERM;
-> >> > +   }
-> >> > +
-> >> > +   return 0;
-> >> > +}
-> >> > +
-> >> > +static struct security_operations modpin_ops = {
-> >> > +   .name   = "modpin",
-> >> > +   .kernel_module_from_file = modpin_load_module,
-> >> > +};
-> >> > +
-> >> > +static int __init modpin_init(void)
-> >> > +{
-> >> > +   int error;
-> >> > +
-> >> > +   error = register_security(&modpin_ops);
-> >> > +
-> >> > +   if (error)
-> >> > +           panic("Could not register ModPin security module");
-> >> > +
-> >> > +   pr_info("ready to pin.\n");
-> >> > +
-> >> > +   return error;
-> >> > +}
-> >> > +security_initcall(modpin_init);
-> >> > +
-> >> > +module_param(modpin_enforced, int, S_IRUSR);
-> >> > +MODULE_PARM_DESC(modpin_enforced, "Module pinning enforced (default: true)");
-> >> > --
-> >> > 1.7.9.5
-> >> >
-> >> >
-> >> > --
-> >> > Kees Cook
-> >> > Chrome OS Security
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> > the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> > Please read the FAQ at  http://www.tux.org/lkml/
-> >> >
-> >>
-> >> --
-> >> James Morris
-> >> <jmorris@namei.org>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>
-> >
-> > --
-> > James Morris
-> > <jmorris@namei.org>
-> 
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 5bb7c63..83aee8b 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -2,6 +2,7 @@
+ 
+ #ifdef CONFIG_RANDOMIZE_BASE
+ #include <asm/msr.h>
++#include <asm/e820.h>
+ #include <asm/archrandom.h>
+ 
+ #define I8254_PORT_CONTROL	0x43
+@@ -102,6 +103,130 @@ static unsigned long find_minimum_location(unsigned long input,
+ 	return output;
+ }
+ 
++/*
++ * This routine is used to count how many aligned slots that can hold the
++ * kernel exist across all e820 entries. It is called in two phases, once
++ * to count valid memory regions available for the kernel image, and a
++ * second time to select one from those seen.
++ *
++ * It is first called with "counting" set to true, where it expects to be
++ * called once for each e820 entry. In this mode, it will update *count
++ * with how many slots are available in the given e820 entry. Once the walk
++ * across all e820 entries has finished, the caller will have a total count
++ * of all valid memory regions available for the kernel image.
++ *
++ * Once the first pass of entry walking is finished, the caller selects one
++ * of the possible slots (stored in *count), and performs a second walk,
++ * with "counting" set to false. In this mode, *count is decremented until
++ * the corresponding slot is found in a specific e820 region, at which
++ * point, the function returns that address, and the walk terminates.
++ */
++static unsigned long process_e820_entry(struct e820entry *entry, bool counting,
++					unsigned long minimum,
++					unsigned long image_size,
++					unsigned long *count)
++{
++	u64 addr, size;
++	unsigned long alignments;
++
++	/* Skip non-RAM entries. */
++	if (entry->type != E820_RAM)
++		return 0;
++
++	/* Ignore entries entirely above our maximum. */
++	if (entry->addr >= CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
++		return 0;
++
++	/* Ignore entries entirely below our minimum. */
++	if (entry->addr + entry->size < minimum)
++		return 0;
++
++	size = entry->size;
++	addr = entry->addr;
++
++	/* Potentially raise address to minimum location. */
++	if (addr < minimum)
++		addr = minimum;
++
++	/* Potentially raise address to meet alignment requirements. */
++	addr = ALIGN(addr, CONFIG_PHYSICAL_ALIGN);
++
++	/* Did we raise the address above the bounds of this e820 region? */
++	if (addr > entry->addr + entry->size)
++		return 0;
++
++	/* Reduce size by any delta from the original address. */
++	size -= addr - entry->addr;
++
++	/* Reduce maximum image starting location to maximum limit. */
++	if (addr + size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
++		size = CONFIG_RANDOMIZE_BASE_MAX_OFFSET - addr;
++
++	/* Ignore entries that cannot hold even a single kernel image. */
++	if (size < image_size)
++		return 0;
++
++	/*
++	 * Reduce size by kernel image size so we can see how many aligned
++	 * starting addresses will fit without running past the end of a
++	 * region. XXX: adjacent e820 regions are not detected, so up to
++	 * image_size / CONFIG_PHYSICAL_ALIGN slots may go unused across
++	 * adjacent regions.
++	 */
++	size -= image_size;
++
++	/* Now we know how many aligned slots can contain the image. */
++	alignments = (size / CONFIG_PHYSICAL_ALIGN) + 1;
++
++	/* In the first pass, just counting all the e820 entries? */
++	if (counting) {
++		*count += alignments;
++		return 0;
++	}
++
++	/* Otherwise we're counting down to find a specific aligned slot. */
++	if (*count < alignments) {
++		/* Desired region is in this entry. */
++		return addr + (CONFIG_PHYSICAL_ALIGN * *count);
++	} else {
++		/* Desired region is beyond this entry. */
++		*count -= alignments;
++		return 0;
++	}
++}
++
++static unsigned long find_random_e820(unsigned long minimum,
++				      unsigned long size)
++{
++	int i;
++	unsigned long addr, count;
++
++	/* Make sure minimum is aligned. */
++	minimum = ALIGN(minimum, CONFIG_PHYSICAL_ALIGN);
++
++	/* Verify potential e820 positions. */
++	count = 0;
++	for (i = 0; i < real_mode->e820_entries; i++) {
++		process_e820_entry(&real_mode->e820_map[i], true, minimum,
++				   size, &count);
++	}
++
++	/* Handle crazy case of nothing fitting. */
++	if (count == 0)
++		return 0;
++
++	count = get_random_long() % count;
++
++	/* Select desired e820 position. */
++	for (i = 0; i < real_mode->e820_entries; i++) {
++		addr = process_e820_entry(&real_mode->e820_map[i], false,
++					  minimum, size, &count);
++		if (addr)
++			return addr;
++	}
++	return 0;
++}
++
+ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long input_size,
+ 				      unsigned char *output,
+@@ -118,16 +243,11 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 	choice = find_minimum_location((unsigned long)input, input_size,
+ 				       (unsigned long)output, output_size);
+ 
+-	/* XXX: Find an appropriate E820 hole, instead of adding offset. */
+-	random = get_random_long();
+-
+-	/* Clip off top of the range. */
+-	random &= (CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1);
+-	while (random + output_size > CONFIG_RANDOMIZE_BASE_MAX_OFFSET)
+-		random >>= 1;
+-
+-	/* Clip off bottom of range. */
+-	random &= ~(choice - 1);
++	random = find_random_e820(choice, output_size);
++	if (!random) {
++		debug_putstr("KASLR could not find suitable E820 region...\n");
++		goto out;
++	}
+ 
+ 	/* Always enforce the minimum. */
+ 	if (random < choice)
 -- 
-Kees Cook                                            @outflux.net
+1.7.9.5
+
