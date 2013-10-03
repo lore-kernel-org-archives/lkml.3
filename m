@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab3JCWnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 18:43:13 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:35574 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab3JCWnM (ORCPT
+	id S1755764Ab3JCWqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 18:46:11 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:64322 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113Ab3JCWqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 18:43:12 -0400
+	Thu, 3 Oct 2013 18:46:09 -0400
+Message-ID: <524DF246.9050309@gmail.com>
+Date: Thu, 03 Oct 2013 18:40:06 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <524DEE6B.2060105@zytor.com>
-References: <1380833605-26313-1-git-send-email-keescook@chromium.org>
-	<1380833605-26313-4-git-send-email-keescook@chromium.org>
-	<524DEE6B.2060105@zytor.com>
-Date: Thu, 3 Oct 2013 15:43:11 -0700
-X-Google-Sender-Auth: gYYM4G_Qpn4wXRvPtMHMgXFetMI
-Message-ID: <CAGXu5j+hm8whuGxJ9PBEdxrSwpdH9a-S5-7ReVmb+COyRo9=uw@mail.gmail.com>
-Subject: Re: [PATCH 3/7] x86, kaslr: find minimum safe relocation position
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Aaron Durbin <adurbin@google.com>,
-        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
-        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Kara <jack@suse.cz>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 18/26] mm: Convert process_vm_rw_pages() to use get_user_pages_unlocked()
+References: <1380724087-13927-1-git-send-email-jack@suse.cz> <1380724087-13927-19-git-send-email-jack@suse.cz> <524C4AA1.7000409@gmail.com> <20131002193631.GB16998@quack.suse.cz>
+In-Reply-To: <20131002193631.GB16998@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 3:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/03/2013 01:53 PM, Kees Cook wrote:
->> Examine all the known unsafe areas and avoid them by just raising the
->> minimum relocation position to be past them.
+(10/2/13 3:36 PM), Jan Kara wrote:
+> On Wed 02-10-13 12:32:33, KOSAKI Motohiro wrote:
+>> (10/2/13 10:27 AM), Jan Kara wrote:
+>>> Signed-off-by: Jan Kara <jack@suse.cz>
+>>> ---
+>>>    mm/process_vm_access.c | 8 ++------
+>>>    1 file changed, 2 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
+>>> index fd26d0433509..c1bc47d8ed90 100644
+>>> --- a/mm/process_vm_access.c
+>>> +++ b/mm/process_vm_access.c
+>>> @@ -64,12 +64,8 @@ static int process_vm_rw_pages(struct task_struct *task,
+>>>    	*bytes_copied = 0;
+>>>
+>>>    	/* Get the pages we're interested in */
+>>> -	down_read(&mm->mmap_sem);
+>>> -	pages_pinned = get_user_pages(task, mm, pa,
+>>> -				      nr_pages_to_copy,
+>>> -				      vm_write, 0, process_pages, NULL);
+>>> -	up_read(&mm->mmap_sem);
+>>> -
+>>> +	pages_pinned = get_user_pages_unlocked(task, mm, pa, nr_pages_to_copy,
+>>> +					       vm_write, 0, process_pages);
+>>>    	if (pages_pinned != nr_pages_to_copy) {
+>>>    		rc = -EFAULT;
+>>>    		goto end;
 >>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->
->> +     /* Minimum location must be above all these regions: */
->
-> This is highly problematic.  The standard protocol is to hoist the
-> initramfs as high as possible in memory, so this may really unacceptably
-> restrict the available range.
+>> This is wrong because original code is wrong. In this function, page may
+>> be pointed to anon pages. Then, you should keep to take mmap_sem until
+>> finish to copying. Otherwise concurrent fork() makes nasty COW issue.
+>    Hum, can you be more specific? I suppose you are speaking about situation
+> when the remote task we are copying data from/to does fork while
+> process_vm_rw_pages() runs. If we are copying data from remote task, I
+> don't see how COW could cause any problem. If we are copying to remote task
+> and fork happens after get_user_pages() but before copy_to_user() then I
+> can see we might be having some trouble. copy_to_user() would then copy
+> data into both original remote process and its child thus essentially
+> bypassing COW. If the child process manages to COW some of the pages before
+> copy_to_user() happens, it can even see only some of the pages. Is that what
+> you mean?
 
-Doesn't this depend on the boot loader's behavior?
+scenario 1: vm_write==0
 
-> It would be better to treat these the same as reserved regions in the
-> e820 map as far as the address space picking algorithm is concerned.
+Process P1 call get_user_pages(pa, process_pages) in process_vm_rw_pages
+P1 unlock mmap_sem.
+Process P2 call fork(). and make P3.
+P2 write memory pa. now the "process_pages" is owned by P3 (the child process)
+P3 write memory pa. and then the content of "process_pages" is changed.
+P1 read process_pages as P2's page. but actually, it is P3's data. Then, P1 observe garbage, at least unintended, data was read.
 
-Could this be considered a future optimization, or do you feel this is
-required even for this first patch series landing?
 
--Kees
+scenario 2: vm_write==1
 
--- 
-Kees Cook
-Chrome OS Security
+Process P1 call get_user_pages(pa, process_pages) in process_vm_rw_pages. It makes COW break and any anon page sharing broke.
+P1 unlock mmap_sem.
+P2 call fork(). and make P3. And, now COW page sharing is restored.
+P2 write memory pa. now the "process_pages" is owned by P3.
+P3 write memory pa. it mean P3 changes "process_pages".
+P1 write process_pages as P2's page. but actually, it is P3's. It override above P3's write and then P3 observe data corruption.
+
+
+
+The solution is to keep holding mmap_sem until finishing process_pages access
+because mmap_sem prevent fork. and then race never be happen. I mean you cann't use
+get_user_pages_unlock() if target address point to anon pages.
+
+I'm not sure these story match your explanation.
+
+
