@@ -1,133 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3JCA3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:29:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54365 "EHLO mga03.intel.com"
+	id S1753828Ab3JCAa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:30:28 -0400
+Received: from mout.web.de ([212.227.15.4]:57075 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab3JCA3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:29:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
-   d="scan'208";a="404515001"
-Date: Wed, 2 Oct 2013 17:29:42 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 77/77] vxge: Update MSI/MSI-X interrupts enablement
- code
-Message-ID: <20131003002941.GJ6768@jonmason-lab>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <467ce10b1df795edf80ed222816ab739fee7b0ea.1380703263.git.agordeev@redhat.com>
+	id S1753766Ab3JCAaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 20:30:25 -0400
+From: Martin Walch <walch.martin@web.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org
+Cc: Dirk Gouders <dirk@gouders.net>, Michal Marek <mmarek@suse.cz>,
+        Jiri Kosina <trivial@kernel.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kconfig: remove unused definition from scanner
+Date: Thu, 03 Oct 2013 02:30:21 +0200
+Message-ID: <1491733.iNaKkFyqph@tacticalops>
+User-Agent: KMail/4.11.1 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.11.1; x86_64; ; )
+In-Reply-To: <201310020857.54800.yann.morin.1998@free.fr>
+References: <6249343.9Mjtul3lu5@tacticalops> <ghk3hwjhqk.fsf@lena.gouders.net> <201310020857.54800.yann.morin.1998@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <467ce10b1df795edf80ed222816ab739fee7b0ea.1380703263.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:X4scYzi3Q6/6ypXeoLfIQbYlmVuEKLJ8giAvNJ5mWbLlImvQIQb
+ ZXZYgPReQNlpe08hr4EUht+L6IU2JeiTIvEdzT4BFB/LTgZYR3Hs6v5awEnrMskJbDpB++c
+ A+X9l1L/u0xm/iPzkbUKZU5VNriC353xzH2H4nBTDYZtE90RTfs3IUJxcZ1dJdRyXD0ALTq
+ D3T7uv8hzpB1Bwsc9gmjA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:49:33PM +0200, Alexander Gordeev wrote:
-> As result of recent re-design of the MSI/MSI-X interrupts enabling
-> pattern this driver has to be updated to use the new technique to
-> obtain a optimal number of MSI/MSI-X interrupts required.
+On Wednesday 02 October 2013 08:57:54 Yann E. MORIN wrote:
+> On Wednesday 02 October 2013 08:42:59 Dirk Gouders wrote:
+> > I think you should also regenerate the scanner and add
+> > the new zconf.lex.c_shipped to this patch.
 > 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  drivers/net/ethernet/neterion/vxge/vxge-main.c |   36 ++++++++++-------------
->  1 files changed, 16 insertions(+), 20 deletions(-)
+> I think sending the re-generated parser as a separate patch helps
+> in reviewing. Ie. I'd prefer a fifth patch.
 > 
-> diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-> index b81ff8b..b4d40dd 100644
-> --- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
-> +++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-> @@ -2297,7 +2297,21 @@ static int vxge_alloc_msix(struct vxgedev *vdev)
->  	int msix_intr_vect = 0, temp;
->  	vdev->intr_cnt = 0;
->  
-> -start:
-> +	ret = pci_msix_table_size(vdev->pdev);
-> +	if (ret < 0)
-> +		goto alloc_entries_failed;
-> +
-> +	if (ret < (vdev->no_of_vpath * 2 + 1)) {
-> +		if ((max_config_vpath != VXGE_USE_DEFAULT) || (ret < 3)) {
-> +			ret = -ENOSPC;
-> +			goto alloc_entries_failed;
-> +		}
-> +		/* Try with less no of vector by reducing no of vpaths count */
-> +		temp = (ret - 1)/2;
-> +		vxge_close_vpaths(vdev, temp);
-> +		vdev->no_of_vpath = temp;
-> +	}
+> BTW, regenerating the parser can be done with:
+>     make REGENERATE_PARSERS=1 config
 
-The original code was ugly (not my code, so I can say that).  I'd like
-to see it a little stream lined.  Something like:
+Actually, I regenerated the scanner. However, the results did not change
+after applying the patch, because the definition that the patch removes
+(ws) is not used anywhere. It is only a cleanup.
 
+Regenerating the scanner and the parser code with newer versions of
+flex and bison results in code changes. However, they are not related to
+the patch, but originate from updates in flex and bison.
+Therefore I did not see any point in including the regenerated files in 
+this patch set.
 
-        vdev->intr_cnt = pci_msix_table_size(vdev->pdev);
+Of course, if you see any benefit in regenerating the *_shipped files, I can
+still do so.
 
-        if (vdev->intr_cnt % 2 == 0)
-                vdev->intr_cnt--;
+Regards,
+Martin Walch
+-- 
 
-        if (vdev->intr_cnt < 3 || max_config_vpath != VXGE_USE_DEFAULT)
-                goto alloc_entries_failed;
-
-        if (vdev->intr_cnt != vdev->no_of_vpath * 2 + 1) {
-                vxge_close_vpaths(vdev, vdev->intr_cnt / 2);
-                vdev->no_of_vpath = vdev->intr_cnt / 2;
-        }
-
-
-> +
->  	/* Tx/Rx MSIX Vectors count */
->  	vdev->intr_cnt = vdev->no_of_vpath * 2;
->  
-> @@ -2347,25 +2361,7 @@ start:
->  	vdev->vxge_entries[j].in_use = 0;
->  
->  	ret = pci_enable_msix(vdev->pdev, vdev->entries, vdev->intr_cnt);
-> -	if (ret > 0) {
-> -		vxge_debug_init(VXGE_ERR,
-> -			"%s: MSI-X enable failed for %d vectors, ret: %d",
-> -			VXGE_DRIVER_NAME, vdev->intr_cnt, ret);
-> -		if ((max_config_vpath != VXGE_USE_DEFAULT) || (ret < 3)) {
-> -			ret = -ENOSPC;
-> -			goto enable_msix_failed;
-> -		}
-> -
-> -		kfree(vdev->entries);
-> -		kfree(vdev->vxge_entries);
-> -		vdev->entries = NULL;
-> -		vdev->vxge_entries = NULL;
-> -		/* Try with less no of vector by reducing no of vpaths count */
-> -		temp = (ret - 1)/2;
-> -		vxge_close_vpaths(vdev, temp);
-> -		vdev->no_of_vpath = temp;
-> -		goto start;
-> -	} else if (ret < 0)
-> +	if (ret)
->  		goto enable_msix_failed;
-
-Nit, space here please.
-
->  	return 0;
->  
-> -- 
-> 1.7.7.6
-> 
