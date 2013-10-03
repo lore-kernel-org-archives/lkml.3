@@ -1,153 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab3JCTmi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:42:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56725 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab3JCTmh (ORCPT
+	id S1755077Ab3JCTny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:43:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43655 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab3JCTnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:42:37 -0400
-Date: Thu, 3 Oct 2013 21:42:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, peter@hurleysoftware.com
-Cc: paulmck@linux.vnet.ibm.com
-Subject: Re: tty^Wrcu/perf lockdep trace.
-Message-ID: <20131003194226.GO28601@twins.programming.kicks-ass.net>
-References: <20131003190830.GA18672@redhat.com>
+	Thu, 3 Oct 2013 15:43:53 -0400
+Date: Thu, 3 Oct 2013 20:43:51 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+Message-ID: <20131003194351.GK13318@ZenIV.linux.org.uk>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+ <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+ <20131003105130.GE13318@ZenIV.linux.org.uk>
+ <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+ <20131003174439.GG13318@ZenIV.linux.org.uk>
+ <CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003190830.GA18672@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 03, 2013 at 12:06:04PM -0700, Linus Torvalds wrote:
+> On Thu, Oct 3, 2013 at 10:44 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Anyway, I've done nicer variants of that protection for everything except
+> > fuse (hadn't gotten around to it yet); see vfs.git#experimental now:
+> 
+> Ok, I did a quick test, and it looks ok here, so looking good for 3.13.
+> 
+> However, the new smp_mb() in mntput_no_expire() is quite noticeable in
+> the path lookup stress-test profiles. And I'm not seeing what that
+> allegedly protects against, especially if mnt_ns is NULL (ie all the
+> common important cases).
 
-That's not tty; that's RCU..
+In the common case it's ->mnt_ns is *not* NULL; that's what we get if
+the damn thing is still mounted.
 
-On Thu, Oct 03, 2013 at 03:08:30PM -0400, Dave Jones wrote:
->  ======================================================
->  [ INFO: possible circular locking dependency detected ]
->  3.12.0-rc3+ #92 Not tainted
->  -------------------------------------------------------
->  trinity-child2/15191 is trying to acquire lock:
->   (&rdp->nocb_wq){......}, at: [<ffffffff8108ff43>] __wake_up+0x23/0x50
->  
-> but task is already holding lock:
->   (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
-> 
-> which lock already depends on the new lock.
-> 
-> 
-> the existing dependency chain (in reverse order) is:
-> 
-> -> #3 (&ctx->lock){-.-...}:
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff81733f90>] _raw_spin_lock+0x40/0x80
->         [<ffffffff811500ff>] __perf_event_task_sched_out+0x2df/0x5e0
->         [<ffffffff81091b83>] perf_event_task_sched_out+0x93/0xa0
->         [<ffffffff81732052>] __schedule+0x1d2/0xa20
->         [<ffffffff81732f30>] preempt_schedule_irq+0x50/0xb0
->         [<ffffffff817352b6>] retint_kernel+0x26/0x30
->         [<ffffffff813eed04>] tty_flip_buffer_push+0x34/0x50
->         [<ffffffff813f0504>] pty_write+0x54/0x60
->         [<ffffffff813e900d>] n_tty_write+0x32d/0x4e0
->         [<ffffffff813e5838>] tty_write+0x158/0x2d0
->         [<ffffffff811c4850>] vfs_write+0xc0/0x1f0
->         [<ffffffff811c52cc>] SyS_write+0x4c/0xa0
->         [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
->  
-> -> #2 (&rq->lock){-.-.-.}:
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff81733f90>] _raw_spin_lock+0x40/0x80
->         [<ffffffff810980b2>] wake_up_new_task+0xc2/0x2e0
->         [<ffffffff81054336>] do_fork+0x126/0x460
->         [<ffffffff81054696>] kernel_thread+0x26/0x30
->         [<ffffffff8171ff93>] rest_init+0x23/0x140
->         [<ffffffff81ee1e4b>] start_kernel+0x3f6/0x403
->         [<ffffffff81ee1571>] x86_64_start_reservations+0x2a/0x2c
->         [<ffffffff81ee1664>] x86_64_start_kernel+0xf1/0xf4
->  
-> -> #1 (&p->pi_lock){-.-.-.}:
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
->         [<ffffffff810979d1>] try_to_wake_up+0x31/0x350
->         [<ffffffff81097d62>] default_wake_function+0x12/0x20
->         [<ffffffff81084af8>] autoremove_wake_function+0x18/0x40
->         [<ffffffff8108ea38>] __wake_up_common+0x58/0x90
->         [<ffffffff8108ff59>] __wake_up+0x39/0x50
->         [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
->         [<ffffffff81111450>] __call_rcu+0x140/0x820
->         [<ffffffff81111b8d>] call_rcu+0x1d/0x20
->         [<ffffffff81093697>] cpu_attach_domain+0x287/0x360
->         [<ffffffff81099d7e>] build_sched_domains+0xe5e/0x10a0
->         [<ffffffff81efa7fc>] sched_init_smp+0x3b7/0x47a
->         [<ffffffff81ee1f4e>] kernel_init_freeable+0xf6/0x202
->         [<ffffffff817200be>] kernel_init+0xe/0x190
->         [<ffffffff8173d22c>] ret_from_fork+0x7c/0xb0
->  
-> -> #0 (&rdp->nocb_wq){......}:
->         [<ffffffff810cb7ca>] __lock_acquire+0x191a/0x1be0
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
->         [<ffffffff8108ff43>] __wake_up+0x23/0x50
->         [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
->         [<ffffffff81111450>] __call_rcu+0x140/0x820
->         [<ffffffff81111bb0>] kfree_call_rcu+0x20/0x30
->         [<ffffffff81149abf>] put_ctx+0x4f/0x70
->         [<ffffffff81154c3e>] perf_event_exit_task+0x12e/0x230
->         [<ffffffff81056b8d>] do_exit+0x30d/0xcc0
->         [<ffffffff8105893c>] do_group_exit+0x4c/0xc0
->         [<ffffffff810589c4>] SyS_exit_group+0x14/0x20
->         [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
->  
-> other info that might help us debug this:
-> 
-> Chain exists of:
->   &rdp->nocb_wq --> &rq->lock --> &ctx->lock
-> 
->   Possible unsafe locking scenario:
-> 
->         CPU0                    CPU1
->         ----                    ----
->    lock(&ctx->lock);
->                                 lock(&rq->lock);
->                                 lock(&ctx->lock);
->    lock(&rdp->nocb_wq);
->  
->  *** DEADLOCK ***
-> 
-> 1 lock held by trinity-child2/15191:
->  #0:  (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
-> 
-> stack backtrace:
-> CPU: 2 PID: 15191 Comm: trinity-child2 Not tainted 3.12.0-rc3+ #92 
->  ffffffff82565b70 ffff880070c2dbf8 ffffffff8172a363 ffffffff824edf40
->  ffff880070c2dc38 ffffffff81726741 ffff880070c2dc90 ffff88022383b1c0
->  ffff88022383aac0 0000000000000000 ffff88022383b188 ffff88022383b1c0
-> Call Trace:
->  [<ffffffff8172a363>] dump_stack+0x4e/0x82
->  [<ffffffff81726741>] print_circular_bug+0x200/0x20f
->  [<ffffffff810cb7ca>] __lock_acquire+0x191a/0x1be0
->  [<ffffffff810c6439>] ? get_lock_stats+0x19/0x60
->  [<ffffffff8100b2f4>] ? native_sched_clock+0x24/0x80
->  [<ffffffff810cc243>] lock_acquire+0x93/0x200
->  [<ffffffff8108ff43>] ? __wake_up+0x23/0x50
->  [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
->  [<ffffffff8108ff43>] ? __wake_up+0x23/0x50
->  [<ffffffff8108ff43>] __wake_up+0x23/0x50
->  [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
->  [<ffffffff81111450>] __call_rcu+0x140/0x820
->  [<ffffffff8109bc8f>] ? local_clock+0x3f/0x50
->  [<ffffffff81111bb0>] kfree_call_rcu+0x20/0x30
->  [<ffffffff81149abf>] put_ctx+0x4f/0x70
->  [<ffffffff81154c3e>] perf_event_exit_task+0x12e/0x230
->  [<ffffffff81056b8d>] do_exit+0x30d/0xcc0
->  [<ffffffff810c9af5>] ? trace_hardirqs_on_caller+0x115/0x1e0
->  [<ffffffff810c9bcd>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff8105893c>] do_group_exit+0x4c/0xc0
->  [<ffffffff810589c4>] SyS_exit_group+0x14/0x20
->  [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
-> 
+What we need to avoid is this:
+
+mnt_ns non-NULL, mnt_count is 2
+CPU1: umount -l					CPU2: mntput
+umount_tree() clears mnt_ns
+drop mount_lock.lock
+namespace_unlock() calls mntput()
+decrement mnt_count
+see that mnt_ns is NULL
+grab mount_lock.lock
+check mnt_count
+						decrement mnt_count
+						see old value of mnt_ns
+						decide to bugger off
+see it equal to 1 (i.e. miss decrement on CPU2)
+decide to bugger off
+
+The barrier in mntput() is to prevent that combination, so that either CPU2
+would see mnt_ns cleared by CPU1, or CPU1 would see mnt_count decrement done
+by CPU2.  Its counterpart on CPU1 is provided by spin_unlock/spin_lock we've
+done between clearing mnt_ns and checking mnt_count.  Note that
+synchronize_rcu() in namespace_unlock() and rcu_read_lock() in mntput() are
+irrelevant here - the latter on CPU2 might very well have happened after the
+former on CPU1, so umount -l did *not* wait for CPU2 to do anything.
+
+Any suggestions re getting rid of that barrier?
