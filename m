@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab3JCSTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 14:19:16 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47650 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754264Ab3JCSTO (ORCPT
+	id S1754702Ab3JCSXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 14:23:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43387 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab3JCSXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 14:19:14 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18tCBTgJ31oF2uz7Ngy6jNv
-Date: Thu, 3 Oct 2013 11:19:09 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
-Message-ID: <20131003181909.GT8949@atomide.com>
-References: <1378230767-54931-1-git-send-email-s-anna@ti.com>
- <20131003180546.GP8949@atomide.com>
- <524DB48B.7020906@ti.com>
+	Thu, 3 Oct 2013 14:23:14 -0400
+Date: Thu, 3 Oct 2013 19:23:11 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>
+Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
+Message-ID: <20131003182311.GI13318@ZenIV.linux.org.uk>
+References: <20131003163411.GA17101@www.outflux.net>
+ <20131003175824.GH13318@ZenIV.linux.org.uk>
+ <CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524DB48B.7020906@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Suman Anna <s-anna@ti.com> [131003 11:25]:
-> Tony,
-> 
-> On 10/03/2013 01:05 PM, Tony Lindgren wrote:
-> > * Suman Anna <s-anna@ti.com> [130903 11:00]:
-> >> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
-> >> which are all device-tree boot only. This patch adds the
-> >> base support for parsing the DT nodes, and removes the code
-> >> dealing with the traditional platform device instantiation.
-> > 
-> > Great, this should be safe for Ohad to queue:
-> > 
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> > 
-> 
-> There is a v2 of this series [1] that adds additional SoC support as
-> well. It currently has some comments [2] & [3] from Mark Rutland on the
-> DT bindings. I am looking into that at the moment and it may change this
-> patch as well (the DT parse portion of it in
-> drivers/hwspinlock/omap_hwspinlock).
+On Thu, Oct 03, 2013 at 11:03:07AM -0700, Kees Cook wrote:
 
-OK, yeah I noticed there's some pending comments. Feel free to keep my
-ack for the arch/arm/mach-omap2 removal parts, those won't likely
-change.
-
-Regards,
-
-Tony
- 
-> [1] http://marc.info/?l=linux-omap&m=137944644112727&w=2
-> [2] http://marc.info/?t=137944636400005&r=1&w=2
-> [3] http://marc.info/?t=137944636400004&r=1&w=2
+> > When you start a port to a 512-bit architecture, you'll have much nastier
+> > problems than this one...
 > 
-> 
+> Well, this is simply taking advantage of this particular allocator's
+> behavior. Instead of depending on this side-effect, why not change the
+> allocation so that we never risk a potentially broken read? (Even SLOB
+> notes that it may have as low as 2-byte granularity.)
+
+Oh, for fuck sake!  "Hardening", indeed...
+
+Kees, try to think for a minute[1].  Really.  We have general-purpose
+allocator.  Asked to give us something considerably bigger than one
+word.  How do you call a situation when it returns something with
+the end of requested object crossing the page boundary if rounded
+up to nearest multiple of word size?
+
+That's right, FUBAR.  Because for that to happen it would have to
+have given you an address that would not be word-aligned.  In response
+to request to allocate something wider than a word.  Remember the
+words along the lines of "the pointer returned if the allocation
+succeeds is properly aligned..."?
+
+It's not a behaviour of this particular allocator.  It's something that
+will have to be guaranteed by *any* general-purpose allocator.
+
+[1] yes, yes, I know - the mere mention of security should've prevented such
+arrogant requests.  It's an imperfect universe.
