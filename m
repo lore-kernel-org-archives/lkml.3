@@ -1,127 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3JCMhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 08:37:37 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:33554 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844Ab3JCMhf (ORCPT
+	id S1754276Ab3JCMiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:38:25 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:42538 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab3JCMiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 08:37:35 -0400
+	Thu, 3 Oct 2013 08:38:24 -0400
+Date: Thu, 3 Oct 2013 14:38:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf tool: report user-friendly error from timechart
+Message-ID: <20131003123820.GA12004@gmail.com>
+References: <1380791146-7465-1-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CABfLueHOR1HNsRC_-+Phc=9LMPTiOVuWoEjguG64L=9hiZLeVg@mail.gmail.com>
-References: <1380207108-20030-1-git-send-email-oghorbell@gmail.com>
-	<20130927083730.GC28287@order.stressinduktion.org>
-	<CA+ev270=P9txSvo7AZN0YcsopwhCYtJCgcZCPsdofEJ+BX+EUQ@mail.gmail.com>
-	<20130927105856.GF28287@order.stressinduktion.org>
-	<CA+ev272+Gp6Kt7S8P-wXxPBh0D8Di9WVH9NDi41HpNakLKC4Dw@mail.gmail.com>
-	<20130927170345.GC10343@order.stressinduktion.org>
-	<CA+ev270d2Ztq9i34Lv9U15y1TbH7W-fioXFn-Q_sJd5F4biHuw@mail.gmail.com>
-	<20130929154546.GA10771@order.stressinduktion.org>
-	<CABfLueHOR1HNsRC_-+Phc=9LMPTiOVuWoEjguG64L=9hiZLeVg@mail.gmail.com>
-Date: Thu, 3 Oct 2013 13:37:34 +0100
-Message-ID: <CABfLueFvkvVsdLGwS7U5LqM5xDX=-XRt+jt8gY8Lm+=ETPtaGw@mail.gmail.com>
-Subject: Re: [PATCH] IPv6: Allow the MTU of ipip6 tunnel to be set below 1280
-From: Oussama Ghorbel <ou.ghorbel@gmail.com>
-To: Oussama Ghorbel <oghorbell@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oussama Ghorbel <ou.ghorbel@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380791146-7465-1-git-send-email-artagnon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I will send a new patch, the diff will be:
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 46ba243..4b51b03 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1429,9 +1429,17 @@ ip6_tnl_ioctl(struct net_device *dev, struct
-ifreq *ifr, int cmd)
- static int
- ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
- {
--       if (new_mtu < IPV6_MIN_MTU) {
--               return -EINVAL;
-+       struct ip6_tnl *tnl = netdev_priv(dev);
-+
-+       if (tnl->parms.proto == IPPROTO_IPIP) {
-+               if (new_mtu < 68)
-+                       return -EINVAL;
-+       } else {
-+               if (new_mtu < IPV6_MIN_MTU)
-+                       return -EINVAL;
-        }
-+       if (new_mtu > 0xFFF8 - dev->hard_header_len)
-+               return -EINVAL;
-        dev->mtu = new_mtu;
-        return 0;
- }
+* Ramkumar Ramachandra <artagnon@gmail.com> wrote:
 
+> +	/* Perform a quick sanity check */
+> +	if (!is_valid_tracepoint("power:cpu_frequency")) {
+> +		fprintf(stderr, "Error:\tNo permissions to read $debugfs/tracing/events/power/cpu_frequency\n");
+> +		fprintf(stderr, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
+> +		fprintf(stderr, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
 
-On Sun, Sep 29, 2013 at 5:33 PM, Oussama Ghorbel <ou.ghorbel@gmail.com> wrote:
-> On Sun, Sep 29, 2013 at 4:45 PM, Hannes Frederic Sowa
-> <hannes@stressinduktion.org> wrote:
->> On Sun, Sep 29, 2013 at 10:40:11AM +0100, Oussama Ghorbel wrote:
->>> On Fri, Sep 27, 2013 at 6:03 PM, Hannes Frederic Sowa
->>> <hannes@stressinduktion.org> wrote:
->>> > Ok, let's go with one function per protocol type. Seems easier.
->>> >
->>> > It seems to get more hairy, because it depends on the tunnel driver if the
->>> > prepended ip header is accounted in hard_header_len. :/
->>> >
->>> > I don't know if it works out cleanly. Otherwise I would be ok if the checks
->>> > just get repeated in ip6_tunnel and leave the rest as-is.
->>> >
->>> Yes, It will be the clean way to do it.
->>
->> Fine. :)
->>
->>> >
->>> > Linux currently cannot create "jumbograms" (only the receiving side
->>> > is supported).
->>> >
->>> I understand, but what are the benefit from this limit or the harm
->>> from not specifying it?
->>> Please check this comment from eth.c
->>>
->>> /**
->>>  * eth_change_mtu - set new MTU size
->>>  * @dev: network device
->>>  * @new_mtu: new Maximum Transfer Unit
->>>  *
->>>  * Allow changing MTU size. Needs to be overridden for devices
->>>  * supporting jumbo frames.
->>>  */
->>> int eth_change_mtu(struct net_device *dev, int new_mtu)
->>
->> Hmm, I cannot judge without the full patch. Will it be applicable
->> to all net_devices or just ethernet ones? The name could be a bit
->> misleading. Remindes me a lot of dev_set_mtu based on the signature, btw.
->
-> Normally to all net_devices, otherwise it could get complicated to
-> check for every dev separately ...
-> But, never mind, the comment below solve the issue
->
->>
->>> So wouldn't be a good idea to let our function open for jumbo frames...?
->>
->> Hm, we can document the fact that the function would needed to be updated in
->> that case. But we should not allow to set a mtu which would require jumbograms
->> currently.
->
-> OK, sounds a good. I will check the mtu against the limit
-> IPV6_MAXPLEN, and document the jumbo restriction ...
->
->>
->> Greetings,
->>
->>   Hannes
->>
->
-> Regards,
-> Oussama
+Is missing permissions the only way how is_valid_tracepoint() can fail?
+
+What if debugfs has the right permissions but CONFIG_TRACEPOINTS is 
+disabled in the kernel?
+
+Thanks,
+
+	Ingo
