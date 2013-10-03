@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab3JCUmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:42:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57764 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3JCUmF (ORCPT
+	id S1755531Ab3JCUmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:42:09 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47977 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab3JCUmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:42:05 -0400
-Date: Thu, 3 Oct 2013 13:42:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, isimatu.yasuaki@jp.fujitsu.com,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] mm/sparsemem: Fix a bug in free_map_bootmem when
- CONFIG_SPARSEMEM_VMEMMAP
-Message-Id: <20131003134204.e408977b42cb85984473cfd6@linux-foundation.org>
-In-Reply-To: <524CE532.1030001@gmail.com>
-References: <524CE4C1.8060508@gmail.com>
-	<524CE532.1030001@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Oct 2013 16:42:08 -0400
+Date: Thu, 3 Oct 2013 22:42:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.11-rc7: i915: stuck on render ring
+Message-ID: <20131003204205.GA18554@amd.pavel.ucw.cz>
+References: <20130903190646.GA9616@amd.pavel.ucw.cz>
+ <20130904100814.GH24319@nuc-i3427.alporthouse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904100814.GH24319@nuc-i3427.alporthouse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Oct 2013 11:32:02 +0800 Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
-
-> We pass the number of pages which hold page structs of a memory
-> section to function free_map_bootmem. This is right when
-> !CONFIG_SPARSEMEM_VMEMMAP but wrong when CONFIG_SPARSEMEM_VMEMMAP.
-> When CONFIG_SPARSEMEM_VMEMMAP, we should pass the number of pages
-> of a memory section to free_map_bootmem.
+On Wed 2013-09-04 11:08:14, Chris Wilson wrote:
+> On Tue, Sep 03, 2013 at 09:06:47PM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > I was happily using X... and then screen froze. Mouse still
+> > moves. Switching to text console still worked, good. It is first time
+> > in a while, normally this machine works well.
+> > 
+> > i915_error_state is attached.
+> > 
+> > Any ideas?
 > 
-> So the fix is removing the nr_pages parameter. When
-> CONFIG_SPARSEMEM_VMEMMAP, we directly use the prefined marco
-> PAGES_PER_SECTION in free_map_bootmem. When !CONFIG_SPARSEMEM_VMEMMAP,
-> we calculate page numbers needed to hold the page structs for a
-> memory section and use the value in free_map_bootmem.
+> It's a bug in the ddx, that was fixed in 2.14.902 (2011-03-29).
 
-What were the runtime user-visible effects of that bug?
-
-Please always include this information when fixing a bug.
+Aha, so I need to update X.... or rather debian should update the X
+server. Thanks for the info.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
