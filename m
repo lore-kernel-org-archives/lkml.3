@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab3JCNm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 09:42:58 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:42531 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab3JCNm4 (ORCPT
+	id S1754510Ab3JCNne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 09:43:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50546 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288Ab3JCNnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 09:42:56 -0400
-Message-ID: <524D7463.8080305@gmail.com>
-Date: Thu, 03 Oct 2013 09:42:59 -0400
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 3 Oct 2013 09:43:32 -0400
+Date: Thu, 3 Oct 2013 14:43:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20131003134327.GS27287@sirena.org.uk>
+References: <1380718460.7307.5.camel@phoenix>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Linux-Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Linux Torvalds <torvalds@osdl.org>, Alan Cox <alan@redhat.com>
-Subject: Re: [PATCH 1/1] x86_64: add config options to optimize for newer
- AMD processors
-References: <52486938.4090009@gmail.com> <20130929180101.GB5490@pd.tnic> <5248905E.8000801@gmail.com> <20130929205051.GD5426@pd.tnic> <52489A59.7040108@gmail.com> <20130929213026.GF5426@pd.tnic>
-In-Reply-To: <20130929213026.GF5426@pd.tnic>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9uazBBczf8QSjDPd"
+Content-Disposition: inline
+In-Reply-To: <1380718460.7307.5.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: stw481x-vmmc: Set missing .of_match_table to
+ stw481x_vmmc_match
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-09-29 17:30, Borislav Petkov wrote:
-> On Sun, Sep 29, 2013 at 05:23:37PM -0400, Austin S Hemmelgarn wrote:
->> I'm not saying that should just be included without substantiation,
->> I simply mean that the reason to include it (as far as I am
->> concerned) is that it doesn't break anything and provides something
->> useful that isn't in the kernel already.
->
-> If it doesn't bring any performance improvement - and I don't want
-> to rain on your parade but I think it won't, at least not enough to
-> warrant a serious look - there's absolutely no reason to add it.
->
-> But hey, I'm always open to surprises! So surprise me!
->
-> :-)
->
 
-Sorry it took me so long to get back to you about this.
+--9uazBBczf8QSjDPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-After doing some intensive testing, it appears that there is some
-improvement, but it is mostly in the scheduling code and syscalls.  Most
-sysbench benchmarks only show improvement when running with
-more threads than processor cores; however, build jobs appear to be much
-improved.  Building kernel 3.12-rc2 with allmodconfig using 8 jobs on a
-FX-8320 takes 22 minutes and 57 seconds on a kernel with CONFIG_MK8, 21
-minutes and 35 seconds on a kernel with CONFIG_GENERIC, and 19 minutes
-and 11 seconds on a kernel with CONFIG_PILEDRIVER.  I see similar
-results for a build of GCC 4.7 (45m1s, 41m39s, and 38m56s(.  I would
-love to test it on my Athlon II system, but I can't afford to have any
-appreciable load on that system because I'm using it as a
-router/firewall, based on a look at the low level stuff though, I
-believe that it would still be at least a bit better with
-CONFIG_MAMDFAM10 than with CONFIG_GENERIC, and certainly better than
-CONFIG_MK8 (there are some big differences in the execution pipeline
-between K8 and family 10h).
+On Wed, Oct 02, 2013 at 08:54:20PM +0800, Axel Lin wrote:
 
-I don't know about you, but that sure seems to be a worthwhile
-performance increase to me.
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
+Applied, thanks.
+
+--9uazBBczf8QSjDPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTXR8AAoJELSic+t+oim9Y40QAIisKgT/EnznIOCM85WqQtI3
+f4jK+y0GVlJ+m4nuOi1DETvr3dQUXKw5ltWSEc4zaWF73HLSZ6HDZhstNPI3TF5U
+27z8rMZ/AkeKYznVKJfghs9yQ9vBgZeI1EWV9p8nFsuksm6tqTYq+oI0v4M2M6ky
+lVMut46X9FX1yJLSvRU/HHxtC2xur+JSZFSgFOp5mikyw5NN/EmiwTLDLLGlXuTd
+S9ucvxKMkpeEyQx+ly3WGl7bP98skilg3DRgVFtytBOCABeoCJqLa7z81psBhZhZ
+G27+8o+egCddXKZn13DJYODijhZ/fraTfui3ojSIbVeS94T0QhfVGu+P57aky3gq
+b374msj1MnYSUPksPcu8V2HHFsjiozAEsF/gaY9NI2kKD6AP56VGWFj9iDUO3+NF
+kVP76W2U5VRZp/OodO5GNLNXTNw0Ji0KMc/0COvcIIdpBuwv3G6w3a9UUxo6MJiQ
+OahraKjmy4fFOhBV7ICQ5/iz6FPWq3gueqo/M8zaT1sADKsspeEdVJOx60V6EpRj
+3UJA0AE3FY3sBPcqyDvDTEqWVoe/K9UY1rN1dlLBNg3nBSgOa6vZqH2dQjS9aR1e
+3zGuYoOlWg4K5ZjndrD+4RNC5EfWGbmVQoR6iBbZgM+iP/9Oj6sAiQoMvrQ+S5PG
+b3PWKLSkzrXDDEZM7NgX
+=phYh
+-----END PGP SIGNATURE-----
+
+--9uazBBczf8QSjDPd--
