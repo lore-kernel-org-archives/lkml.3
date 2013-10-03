@@ -1,122 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3JCELO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:11:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46851 "EHLO
+	id S1754883Ab3JCELf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:11:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab3JCELN (ORCPT
+	with ESMTP id S1754249Ab3JCELd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:11:13 -0400
+	Thu, 3 Oct 2013 00:11:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/16] 3.4.65-stable review
-Date: Wed,  2 Oct 2013 21:05:24 -0700
-Message-Id: <20131003040445.523176877@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 10/52] bcache: Fix for handling overlapping extents when reading in a btree node
+Date: Wed,  2 Oct 2013 21:05:28 -0700
+Message-Id: <20131003040522.894019070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
+References: <20131003040522.190209641@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.65 release.
-There are 16 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat Oct  5 04:04:34 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.65-rc1.gz
-and the diffstat can be found below.
+From: Kent Overstreet <kmo@daterainc.com>
 
-thanks,
+commit 84786438ed17978d72eeced580ab757e4da8830b upstream.
 
-greg k-h
+btree_sort_fixup() was overly clever, because it was trying to avoid
+pulling a key off the btree iterator in more than one place.
 
--------------
-Pseudo-Shortlog of commits:
+This led to a really obscure bug where we'd break early from the loop in
+btree_sort_fixup() if the current key overlapped with keys in more than
+one older set, and the next key it overlapped with was zero size.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.65-rc1
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Kees Cook <keescook@chromium.org>
-    HID: LG: validate HID output report details
+---
+ drivers/md/bcache/bset.c |   39 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 28 insertions(+), 11 deletions(-)
 
-Khalid Aziz <khalid.aziz@oracle.com>
-    mm: fix aio performance regression for database caused by THP
-
-David Rientjes <rientjes@google.com>
-    mm, memcg: give exiting processes access to memory reserves
-
-Liam Girdwood <liam.r.girdwood@linux.intel.com>
-    ALSA: compress: Fix compress device unregister.
-
-Henrik Rydberg <rydberg@euromail.se>
-    hwmon: (applesmc) Check key count before proceeding
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon: disable tests/benchmarks if accel is disabled
-
-Jani Nikula <jani.nikula@intel.com>
-    drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
-
-Mikulas Patocka <mpatocka@redhat.com>
-    dm-snapshot: fix performance degradation due to small hash size
-
-Mikulas Patocka <mpatocka@redhat.com>
-    dm snapshot: workaround for a false positive lockdep warning
-
-Kurt Garloff <kurt@garloff.de>
-    usb/core/devio.c: Don't reject control message to endpoint with wrong direction bit
-
-Florian Wolter <wolly84@web.de>
-    xhci: Fix race between ep halt and URB cancellation
-
-Mathias Nyman <mathias.nyman@linux.intel.com>
-    xhci: Fix oops happening after address device timeout
-
-Mathias Nyman <mathias.nyman@linux.intel.com>
-    xhci: Ensure a command structure points to the correct trb on the command ring
-
-Malcolm Priestley <tvboxspy@gmail.com>
-    staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
-
-Josh Boyer <jwboyer@redhat.com>
-    x86, efi: Don't map Boot Services on i386
-
-Masoud Sharbiani <msharbiani@twitter.com>
-    x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
-
-
--------------
-
-Diffstat:
-
- Makefile                               |  4 +--
- arch/x86/kernel/reboot.c               | 16 +++++++++
- arch/x86/platform/efi/efi.c            | 11 +++---
- drivers/gpu/drm/i915/intel_dp.c        | 13 ++++++-
- drivers/gpu/drm/radeon/radeon_device.c | 15 ++++++--
- drivers/hid/hid-lg2ff.c                | 19 ++--------
- drivers/hid/hid-lg3ff.c                | 29 ++++-----------
- drivers/hid/hid-lg4ff.c                | 20 +----------
- drivers/hid/hid-lgff.c                 | 17 ++-------
- drivers/hwmon/applesmc.c               | 11 +++++-
- drivers/md/dm-snap-persistent.c        |  2 +-
- drivers/md/dm-snap.c                   |  5 ++-
- drivers/staging/vt6656/main_usb.c      |  3 +-
- drivers/usb/core/devio.c               | 16 +++++++++
- drivers/usb/host/xhci-hub.c            |  2 +-
- drivers/usb/host/xhci-ring.c           | 24 +++++++++++--
- drivers/usb/host/xhci.c                | 25 +++----------
- drivers/usb/host/xhci.h                |  1 +
- mm/oom_kill.c                          |  8 ++---
- mm/swap.c                              | 65 ++++++++++++++++++++++++----------
- sound/core/compress_offload.c          |  3 +-
- 21 files changed, 174 insertions(+), 135 deletions(-)
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -918,28 +918,45 @@ struct bkey *bch_next_recurse_key(struct
+ 
+ /* Mergesort */
+ 
++static void sort_key_next(struct btree_iter *iter,
++			  struct btree_iter_set *i)
++{
++	i->k = bkey_next(i->k);
++
++	if (i->k == i->end)
++		*i = iter->data[--iter->used];
++}
++
+ static void btree_sort_fixup(struct btree_iter *iter)
+ {
+ 	while (iter->used > 1) {
+ 		struct btree_iter_set *top = iter->data, *i = top + 1;
+-		struct bkey *k;
+ 
+ 		if (iter->used > 2 &&
+ 		    btree_iter_cmp(i[0], i[1]))
+ 			i++;
+ 
+-		for (k = i->k;
+-		     k != i->end && bkey_cmp(top->k, &START_KEY(k)) > 0;
+-		     k = bkey_next(k))
+-			if (top->k > i->k)
+-				__bch_cut_front(top->k, k);
+-			else if (KEY_SIZE(k))
+-				bch_cut_back(&START_KEY(k), top->k);
+-
+-		if (top->k < i->k || k == i->k)
++		if (bkey_cmp(top->k, &START_KEY(i->k)) <= 0)
+ 			break;
+ 
+-		heap_sift(iter, i - top, btree_iter_cmp);
++		if (!KEY_SIZE(i->k)) {
++			sort_key_next(iter, i);
++			heap_sift(iter, i - top, btree_iter_cmp);
++			continue;
++		}
++
++		if (top->k > i->k) {
++			if (bkey_cmp(top->k, i->k) >= 0)
++				sort_key_next(iter, i);
++			else
++				bch_cut_front(top->k, i->k);
++
++			heap_sift(iter, i - top, btree_iter_cmp);
++		} else {
++			/* can't happen because of comparison func */
++			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
++			bch_cut_back(&START_KEY(i->k), top->k);
++		}
+ 	}
+ }
+ 
 
 
