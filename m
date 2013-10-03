@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3JCEO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:14:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47014 "EHLO
+	id S1755492Ab3JCEPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab3JCEOy (ORCPT
+	with ESMTP id S1754116Ab3JCEPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:14:54 -0400
+	Thu, 3 Oct 2013 00:15:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 46/52] drm/radeon: disable tests/benchmarks if accel is disabled
-Date: Wed,  2 Oct 2013 21:06:04 -0700
-Message-Id: <20131003040525.381964169@linuxfoundation.org>
+Subject: [ 48/52] drm/radeon: fix hdmi audio on DCE3.0/3.1 asics
+Date: Wed,  2 Oct 2013 21:06:06 -0700
+Message-Id: <20131003040525.515563448@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -28,47 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4a1132a023eb48cf10522d84c5908d43b612c041 upstream.
+commit 58d327da9721f7a0f6e46c8dfa5cc5546fd7078a upstream.
 
-The tests are only usable if the acceleration engines have
-been successfully initialized.
+These asics seem to use a mix of the DCE2.x and
+DCE3.2 audio interfaces despite what the register spec
+says.
 
-Based on an initial patch from: Alex Ivanov <gnidorah@p0n4ik.tk>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=69729
+https://bugs.freedesktop.org/show_bug.cgi?id=69671
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1196,13 +1196,22 @@ int radeon_device_init(struct radeon_dev
- 			return r;
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -238,9 +238,19 @@ void r600_audio_set_dto(struct drm_encod
+ 	 * number (coefficient of two integer numbers.  DCCG_AUDIO_DTOx_PHASE
+ 	 * is the numerator, DCCG_AUDIO_DTOx_MODULE is the denominator
+ 	 */
+-	if (ASIC_IS_DCE3(rdev)) {
++	if (ASIC_IS_DCE32(rdev)) {
++		if (dig->dig_encoder == 0) {
++			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
++			WREG32(DCCG_AUDIO_DTO0_MODULE, clock * 100);
++			WREG32(DCCG_AUDIO_DTO_SELECT, 0); /* select DTO0 */
++		} else {
++			WREG32(DCCG_AUDIO_DTO1_PHASE, base_rate * 100);
++			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
++			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
++		}
++	} else if (ASIC_IS_DCE3(rdev)) {
+ 		/* according to the reg specs, this should DCE3.2 only, but in
+-		 * practice it seems to cover DCE3.0 as well.
++		 * practice it seems to cover DCE3.0/3.1 as well.
+ 		 */
+ 		if (dig->dig_encoder == 0) {
+ 			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
+@@ -252,7 +262,7 @@ void r600_audio_set_dto(struct drm_encod
+ 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
+ 		}
+ 	} else {
+-		/* according to the reg specs, this should be DCE2.0 and DCE3.0 */
++		/* according to the reg specs, this should be DCE2.0 and DCE3.0/3.1 */
+ 		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
+ 		       AUDIO_DTO_MODULE(clock / 10));
  	}
- 	if ((radeon_testing & 1)) {
--		radeon_test_moves(rdev);
-+		if (rdev->accel_working)
-+			radeon_test_moves(rdev);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping move tests\n");
- 	}
- 	if ((radeon_testing & 2)) {
--		radeon_test_syncing(rdev);
-+		if (rdev->accel_working)
-+			radeon_test_syncing(rdev);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping sync tests\n");
- 	}
- 	if (radeon_benchmarking) {
--		radeon_benchmark(rdev, radeon_benchmarking);
-+		if (rdev->accel_working)
-+			radeon_benchmark(rdev, radeon_benchmarking);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping benchmarks\n");
- 	}
- 	return 0;
- }
 
 
