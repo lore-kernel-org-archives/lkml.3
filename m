@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3JCQir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:38:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60659 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3JCQip convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:38:45 -0400
-Subject: Re: Use of drivers/platform and matching include?
-Mime-Version: 1.0 (Apple Message framework v1283)
+	id S1754530Ab3JCQj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:39:27 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41722 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754462Ab3JCQjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 12:39:25 -0400
+Date: Thu, 3 Oct 2013 12:39:08 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Nikita Danilov <nikita@clusterfs.com>
+Subject: lustre: why does cfs_get_random_bytes() exist?
+Message-ID: <20131003163908.GD31721@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andreas Dilger <andreas.dilger@intel.com>,
+	Peng Tao <tao.peng@emc.com>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org, Nikita Danilov <nikita@clusterfs.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20131003162519.GA25042@kroah.com>
-Date: Thu, 3 Oct 2013 11:38:44 -0500
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DAB5B812-4615-4107-AE29-FB8152634D9D@codeaurora.org>
-References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org> <20131003152715.GA15931@kroah.com> <B674A07C-F8FE-4F4D-BB0A-87D5A50852D0@codeaurora.org> <20131003162519.GA25042@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've been auditing uses of get_random_bytes() since there are places
+where get_random_bytes() is getting used where something weaker, such
+as prandom_u32() is quite sufficient.  Basically, if kernel code just
+needs a random number which does not have any cryptographic
+requirements (such as in ext[234]. which gets the new block group used
+for inode allocations using get_random_bytes), then prandom_u32()
+should be used instead of get_random_bytes() to save CPU overhead and
+to reduce the drain on the /dev/urandom's entropy pool.
 
-On Oct 3, 2013, at 11:25 AM, Greg Kroah-Hartman wrote:
+Typically, the reason for this is either for historical reasons, since
+prandom_u32() hadn't existed when the code was written, or because
+historical code was cut and pasted into newer code.
 
-> On Thu, Oct 03, 2013 at 11:21:10AM -0500, Kumar Gala wrote:
->> 
->> On Oct 3, 2013, at 10:27 AM, Greg Kroah-Hartman wrote:
->> 
->>> On Thu, Oct 03, 2013 at 09:45:38AM -0500, Kumar Gala wrote:
->>>> As we look at upstreaming more support for the Qualcomm MSM SoCs there
->>>> are a number of drivers or library like routines that are unique to
->>>> the MSM platform, we are thinking that putting them under:
->>>> 
->>>> drivers/platform/qcom/
->>> 
->>> What type of drivers are these?  Shouldn't they really go under the
->>> specific driver type directory instead?
->> 
->> If there isn't an existing driver/ dir for this I dont see how it can go there, I'm not also not really a fan of trying to artificial put something that is highly SoC specific into something generic of this nature.
-> 
-> Loose a line-wrap somewhere?...
-> 
-> Anyway, you didn't answer my question, so why do I need to answer yours?
+When I came across staging/lustre/lustre/libcfs/prng.c, I saw
+something which is **really** weird.  It defines a cfs_rand() which is
+functionally identical to prandom_u32().  More puzzlingly, it also
+defines cfs_get_random_bytes() which calls get_random_bytes() and then
+xor's the result with cfs_rand().  That last step has no cryptographic
+effect, so I'm really wondering who thought this as a good idea and/or
+necessary.
 
-Sorry about that.  I gave one example in the initial email about a driver that is used to get regions of memory used by processors or HW blocks on the SoC.
+What I think should happen is that staging/lustre/lustre/libcfs/prng.c
+should be removed, and calls to cfs_rand() should get replaced
+prandom_u32(), and cfs_get_random_bytes() should get replaced with
+get_random_bytes().
 
-I'm still sorting through the mass of code to figure out what all is there and where might be the best place for it.  However, I do think we will end up with some SoC specific bits that highly unique to qualcomm SoCs that just dont fit anywhere else and thus drivers/platforms seemed the best location.
+Does this sound reasonable?
 
-As we submit things upstream I'm more than happy to move stuff around based on feedback.
+Cheers,
 
-One example you can look at is arch/arm/mach-msm/smd.c, this is a mix of the memory region support (which we've since split out) and some multiproc messaging functionality.
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+						- Ted
