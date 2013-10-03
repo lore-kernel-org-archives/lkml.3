@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3JCQFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:05:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52762 "EHLO mga14.intel.com"
+	id S1754932Ab3JCQFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:05:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26915 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485Ab3JCQFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:05:23 -0400
+	id S1753991Ab3JCQFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 12:05:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1026,1371106800"; 
-   d="scan'208";a="302739086"
-Date: Thu, 3 Oct 2013 20:43:32 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: Re: [[PATCH] 0/3] imx-dma: fixes
-Message-ID: <20131003151332.GF16684@intel.com>
-References: <1379426168-31989-1-git-send-email-m.grzeschik@pengutronix.de>
+   d="scan'208";a="413583627"
+Message-ID: <524D9574.20702@linux.intel.com>
+Date: Thu, 03 Oct 2013 09:04:04 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379426168-31989-1-git-send-email-m.grzeschik@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: alexander.shishkin@linux.intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] usb: chipidea: add Intel Clovertrail pci id
+References: <1380663178-24218-1-git-send-email-david.a.cohen@linux.intel.com> <1380663178-24218-2-git-send-email-david.a.cohen@linux.intel.com> <20131003052134.GA1312@kroah.com>
+In-Reply-To: <20131003052134.GA1312@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 03:56:05PM +0200, Michael Grzeschik wrote:
-> Hello,
-> 
-> this series is solving some lockdep issues in the imx-dma code.
-> There are some list_head and deadlock issues in the code,
-> that is running the implementation into unsafe situations.
+Hi Greg,
 
-Thanks a bunch for doing this. I had similar ones but couldnt test due to lack
-of HW. Lets keep improving this driver as it needs bunch of other fixes too...
+On 10/02/2013 10:21 PM, Greg KH wrote:
+> On Tue, Oct 01, 2013 at 02:32:58PM -0700, David Cohen wrote:
+>> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+>> ---
+>>   drivers/usb/chipidea/ci_hdrc_pci.c | 5 +++++
+>>   1 file changed, 5 insertions(+)
+>>
+>> diff --git a/drivers/usb/chipidea/ci_hdrc_pci.c b/drivers/usb/chipidea/ci_hdrc_pci.c
+>> index 08a724b..d514332 100644
+>> --- a/drivers/usb/chipidea/ci_hdrc_pci.c
+>> +++ b/drivers/usb/chipidea/ci_hdrc_pci.c
+>> @@ -129,6 +129,11 @@ static DEFINE_PCI_DEVICE_TABLE(ci_hdrc_pci_id_table) = {
+>>   		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0829),
+>>   		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
+>>   	},
+>> +	{
+>> +		/* Intel Clovertrail */
+>> +		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe006),
+>> +		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
+>> +	},
+>
+> Can this go into 3.12-final, and any other stable kernel releases as
+> well?  Or does this platform also need other fixes that aren't in 3.10
+> and 3.11?
 
-~Vinod
-> 
-> Regards,
-> Michael
-> 
-> Michael Grzeschik (3):
->   dma: imx-dma: fix slow path issue in prep_dma_cyclic
->   dma: imx-dma: fix lockdep issue between irqhandler and tasklet
->   dma: imx-dma: fix callback path in tasklet
-> 
->  drivers/dma/imx-dma.c | 31 +++++++++++++++----------------
->  1 file changed, 15 insertions(+), 16 deletions(-)
-> 
-> -- 
-> 1.8.4.rc3
-> 
+This was tested on 3.10+
+It might work on 3.4 but it's not validated. I can test it if we care 
+about chipidea on 3.4.
 
--- 
+Br, David
+
+>
+> thanks,
+>
+> greg k-h
+>
+
