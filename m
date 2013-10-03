@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3JCIJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 04:09:02 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:33176 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab3JCII5 (ORCPT
+	id S1753662Ab3JCINE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 04:13:04 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63594 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab3JCIM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 04:08:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1371799414-3654-1-git-send-email-b.brezillon@overkiz.com>
-References: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com> <1371799414-3654-1-git-send-email-b.brezillon@overkiz.com>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Thu, 3 Oct 2013 10:08:37 +0200
-Message-ID: <CAHkwnC_Q5XVcb5m5gZuG+s7ojgBb6b29pW9_rENA1sBjo4+-7Q@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] watchdog: at91sam9_wdt: update device tree doc
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yang Wenyou <Wenyou.Yang@atmel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        linux-watchdog@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Oct 2013 04:12:59 -0400
+From: Shalin Mehta <shalinmehta85@gmail.com>
+To: gregkh@linuxfoundation.org, lisa@xenapiadmin.com, sachin.kamat@linaro.org,
+        andriy.shevchenko@linux.intel.com, w.d.hubbs@gmail.com,
+        dan.carpenter@oracle.com
+Cc: speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kirk@reisers.ca, chris@the-brannons.com,
+        kernel-janitors@vger.kernel.org,
+        Shalin Mehta <shalinmehta85@gmail.com>
+Subject: [PATCH] staging: speakup: str initialization replaced with NULL where it was initialized with int
+Date: Thu,  3 Oct 2013 01:08:42 -0700
+Message-Id: <1380787722-27736-1-git-send-email-shalinmehta85@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 21, 2013 at 9:23 AM, Boris BREZILLON
-<b.brezillon@overkiz.com> wrote:
-> Add new at91sam9 watchdog properties to the documentation.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
->  1 file changed, 28 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> index fcdd48f..e043106 100644
-> --- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> +++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> @@ -9,11 +9,37 @@ Required properties:
->
->  Optional properties:
->  - timeout-sec: contains the watchdog timeout in seconds.
+Fixed warnings in all of three files where the string was initilized with an integer instead of NULL
 
-Why are you removing the documentation about this property?
+Signed-off-by: Shalin Mehta <shalinmehta85@gmail.com>
+---
+ drivers/staging/speakup/main.c           | 2 +-
+ drivers/staging/speakup/speakup_audptr.c | 2 +-
+ drivers/staging/speakup/varhandlers.c    | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Regards
+diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
+index 14079c4..47502fa 100644
+--- a/drivers/staging/speakup/main.c
++++ b/drivers/staging/speakup/main.c
+@@ -90,7 +90,7 @@ const struct st_bits_data spk_punc_info[] = {
+ 	{"repeats", "()", CH_RPT},
+ 	{"extended numeric", "", B_EXNUM},
+ 	{"symbols", "", B_SYM},
+-	{0, 0}
++	{NULL, NULL}
+ };
+ 
+ static char mark_cut_flag;
+diff --git a/drivers/staging/speakup/speakup_audptr.c b/drivers/staging/speakup/speakup_audptr.c
+index 3508aee..61a3cee 100644
+--- a/drivers/staging/speakup/speakup_audptr.c
++++ b/drivers/staging/speakup/speakup_audptr.c
+@@ -39,7 +39,7 @@ static struct var_t vars[] = {
+ 	{ RATE, .u.n = {"\x05[r%d]", 10, 0, 20, 100, -10, NULL } },
+ 	{ PITCH, .u.n = {"\x05[f%d]", 80, 39, 4500, 0, 0, NULL } },
+ 	{ VOL, .u.n = {"\x05[g%d]", 21, 0, 40, 0, 0, NULL } },
+-	{ TONE, .u.n = {"\x05[s%d]", 9, 0, 63, 0, 0, 0 } },
++	{ TONE, .u.n = {"\x05[s%d]", 9, 0, 63, 0, 0, NULL } },
+ 	{ PUNCT, .u.n = {"\x05[A%c]", 0, 0, 3, 0, 0, "nmsa" } },
+ 	{ DIRECT, .u.n = {NULL, 0, 0, 1, 0, 0, NULL } },
+ 	V_LAST_VAR
+diff --git a/drivers/staging/speakup/varhandlers.c b/drivers/staging/speakup/varhandlers.c
+index 9aa2a78..70231b6 100644
+--- a/drivers/staging/speakup/varhandlers.c
++++ b/drivers/staging/speakup/varhandlers.c
+@@ -46,7 +46,7 @@ static struct st_var_header var_headers[] = {
+ 	{ "direct", DIRECT, VAR_NUM, NULL, NULL },
+ };
+ 
+-static struct st_var_header *var_ptrs[MAXVARS] = { 0, 0, 0 };
++static struct st_var_header *var_ptrs[MAXVARS] = { NULL, NULL, NULL };
+ 
+ static struct punc_var_t punc_vars[] = {
+ 	{ PUNC_SOME, 1 },
 -- 
-Fabio Porcedda
+1.8.1.2
+
