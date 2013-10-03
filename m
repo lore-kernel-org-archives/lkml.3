@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab3JCEVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:21:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47489 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab3JCEUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:20:51 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 56/57] ALSA: compress: Fix compress device unregister.
-Date: Wed,  2 Oct 2013 21:09:22 -0700
-Message-Id: <20131003040640.423865842@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
-References: <20131003040636.600441214@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1757300Ab3JCEhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:37:19 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:33754 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755210Ab3JCEg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 00:36:59 -0400
+Date: Wed, 2 Oct 2013 22:36:47 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Ashley D Lai <adlai@linux.vnet.ibm.com>
+Cc: Peter H?we <PeterHuewe@gmx.de>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        tpmdd-devel@lists.sourceforge.net, Sirrix AG <tpmdd@sirrix.com>,
+        Teddy Reed <teddy@prosauce.org>
+Subject: Re: [tpmdd-devel] [PATCH 02/13] tpm atmel: Call request_region
+ with the correct base
+Message-ID: <20131003043647.GA1463@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1379960083-8942-3-git-send-email-jgunthorpe@obsidianresearch.com>
+ <201310020000.13490.PeterHuewe@gmx.de>
+ <1380759074.20801.12.camel@buffalo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380759074.20801.12.camel@buffalo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 02, 2013 at 07:11:14PM -0500, Ashley D Lai wrote:
 
-------------------
+> > I somewhat have the feeling that we should maybe begin to deprecate
+> > the vendor specific 1.1 tpms...
 
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+> I agree. If we have a machine to test and it fails then we know we don't
+> have a user for this.
 
-commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
+Is this driver is only used on IBM systems? If so, will IBM provide
+support for those systems on RHEL7? If not the driver can probably
+safely be dropped.
 
-snd_unregister_device() should return the device type and not stream
-direction.
+The trouble with these old drivers is that they don't follow modern
+conventions (there are several little bugs at least) and nobody can
+test them to safely fix them.
 
-Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Tested-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+If you do find hardware, we can at least take a solid run at sprucing
+up the testable drivers which should give them more life..
 
----
- sound/core/compress_offload.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -837,7 +837,8 @@ static int snd_compress_dev_disconnect(s
- 	struct snd_compr *compr;
- 
- 	compr = device->device_data;
--	snd_unregister_device(compr->direction, compr->card, compr->device);
-+	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
-+		compr->device);
- 	return 0;
- }
- 
-
-
+Jason
