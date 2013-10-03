@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3JCQeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:34:17 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:39671 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab3JCQeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:34:15 -0400
-Date: Thu, 3 Oct 2013 09:34:11 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Dmitry Vyukov <dvyukov@google.com>
-Subject: [PATCH] fs: make sure we do not read beyond allocation
-Message-ID: <20131003163411.GA17101@www.outflux.net>
+	id S1754287Ab3JCQfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:35:52 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754003Ab3JCQfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 12:35:51 -0400
+Message-ID: <524D9CE1.8040600@nod.at>
+Date: Thu, 03 Oct 2013 18:35:45 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: dedekind1@gmail.com
+CC: richard.genoud@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] UBI: fix refill_wl_user_pool()
+References: <1380376516-30144-1-git-send-email-richard@nod.at>    <1380376516-30144-2-git-send-email-richard@nod.at>   <1380812414.27358.440.camel@sauron.fi.intel.com> <524D8879.1030203@nod.at>  <1380814071.27358.444.camel@sauron.fi.intel.com> <524D92E8.1030704@nod.at> <1380816035.27358.447.camel@sauron.fi.intel.com>
+In-Reply-To: <1380816035.27358.447.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In dentry_string_cmp (via__d_lookup_rcu), when CONFIG_DCACHE_WORD_ACCESS
-is set, word-width memory reads are performed. However, the string
-allocation size may not be a multiple of the word size. To avoid reading
-past the end of such an allocation, we must allocate in multiples of
-the word size.
+Am 03.10.2013 18:00, schrieb Artem Bityutskiy:
+> On Thu, 2013-10-03 at 17:53 +0200, Richard Weinberger wrote:
+>> Am 03.10.2013 17:27, schrieb Artem Bityutskiy:
+>>> On Thu, 2013-10-03 at 17:08 +0200, Richard Weinberger wrote:
+>>>> Am 03.10.2013 17:00, schrieb Artem Bityutskiy:
+>>>>> On Sat, 2013-09-28 at 15:55 +0200, Richard Weinberger wrote:
+>>>>>> If no free PEBs are available refill_wl_user_pool() must not
+>>>>>> return with -ENOSPC immediately.
+>>>>>> It has to block till produce_free_peb() produced a free PEB.
+>>>>>>
+>>>>>> Reported-and-Tested-by: Richard Genoud <richard.genoud@gmail.com>
+>>>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>>>>
+>>>>> What is pool size, I wonder?
+>>>>
+>>>> Currently it's 25 (UBI_FM_WL_POOL_SIZE).
+>>>> If experience shows that 25 is too low/big we can change this constant.
+>>>> Maybe it's also worth making them configurable...
+>>>
+>>> I if it is a possible scenario that this function will not return until
+>>> 25 (or even 10) PEBs are erased? 
+>>>
+>>
+>> Sure. It will try to gain up to 25 PEBs but return if it gets less.
+>> That's why a pool has a current and a max size.
+> 
+> So if erasing speed is say, 250ms, then it would take 6.25 seconds?
 
-Found by the Kernel Address Sanitizer project:
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+Only in the very worst case if we have to call 25 times produce_free_peb().
 
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- fs/dcache.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Of course we could add a check to return immediately if produce_free_peb()
+got called a few times in series.
+But I really would like to wait with such performance tweaks until fastmap
+is more mature.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 4100030..23665e2 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1570,7 +1570,11 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
- 	 */
- 	dentry->d_iname[DNAME_INLINE_LEN-1] = 0;
- 	if (name->len > DNAME_INLINE_LEN-1) {
--		dname = kmalloc(name->len + 1, GFP_KERNEL);
-+		size_t alloc_size = name->len + 1;
-+#ifdef CONFIG_DCACHE_WORD_ACCESS
-+		alloc_size = round_up(alloc_size, sizeof(unsigned long));
-+#endif
-+		dname = kmalloc(alloc_size, GFP_KERNEL);
- 		if (!dname) {
- 			kmem_cache_free(dentry_cache, dentry); 
- 			return NULL;
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks,
+//richard
