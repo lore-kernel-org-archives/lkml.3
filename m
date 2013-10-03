@@ -1,510 +1,628 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3JCRbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:31:15 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63002 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab3JCRbM (ORCPT
+	id S1754336Ab3JCRjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:39:49 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:52827 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab3JCRjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:31:12 -0400
-Date: Thu, 3 Oct 2013 10:31:05 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 1/4] watchdog: at91sam9_wdt: better watchdog support
-Message-ID: <20131003173105.GC31605@roeck-us.net>
-References: <1380802761-32279-1-git-send-email-b.brezillon@overkiz.com>
- <1380802761-32279-2-git-send-email-b.brezillon@overkiz.com>
+	Thu, 3 Oct 2013 13:39:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380802761-32279-2-git-send-email-b.brezillon@overkiz.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOw6vbLiJLLKn=gb1=j5TBeM0ijEK13+goG-=mw7MZTyNT1kpQ@mail.gmail.com>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+	<1380670860-17621-4-git-send-email-seanpaul@chromium.org>
+	<CAAQKjZN_r-=-sj=Vb-o-KUS4ab5=cjCq1ni3VZeMeVc3NL=MMg@mail.gmail.com>
+	<CAOw6vbLiJLLKn=gb1=j5TBeM0ijEK13+goG-=mw7MZTyNT1kpQ@mail.gmail.com>
+Date: Fri, 4 Oct 2013 02:39:44 +0900
+X-Google-Sender-Auth: assSm3kL6us3NQg3CY-kiPccjqY
+Message-ID: <CAAQKjZPwyKCpju4Ndd+MB_aN24-zA5xTHFsFsun2617h7YT6dw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] drm/bridge: Add PTN3460 bridge driver
+From: Inki Dae <inki.dae@samsung.com>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 02:19:18PM +0200, Boris BREZILLON wrote:
-> The at91sam9 watchdog timer can only be configured once, and the current
-> implementation tries to configure it in a static way:
-> - 2 seconds timeout
-> - wdt restart every 500ms
-> 
-> If the timer has already been configured with different values, it returns an
-> error and do not create any watchdog device.
-> 
-> This is not critical if the watchdog is disabled, but if it has been enabled with
-> different timeout values it will lead to a SoC reset.
-> 
-> This patch series tries to address this issue by adapting the heartbeat value
-> according the WDT timer config:
-> - it first tries to configure the timer as requested.
-> - if it fails it fallbacks to the current config, adapting its heartbeat timer
-> to the needs
-> 
-> This patch series also move to a dynamically allocated at91wdt device instead
-> of the static instance.
-> 
-> It adds a new at91 wdt type: software. This new type make use of the at91 wdt
-> interrupt to trigger a software reboot.
-> 
-> Finally it adds several properties to the device tree bindings.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+2013/10/3 Sean Paul <seanpaul@chromium.org>:
+> On Thu, Oct 3, 2013 at 9:55 AM, Inki Dae <inki.dae@samsung.com> wrote:
+>> Hi, thank you for your contribution and the below is my short comments,
+>>
+>> 2013/10/2 Sean Paul <seanpaul@chromium.org>:
+>>> This patch adds a drm_bridge driver for the PTN3460 DisplayPort to LVDS
+>>> bridge chip.
+>>>
+>>> Signed-off-by: Sean Paul <seanpaul@chromium.org>
+>>> ---
+>>>  .../devicetree/bindings/drm/bridge/ptn3460.txt     |  27 ++
+>>>  drivers/gpu/drm/Kconfig                            |   2 +
+>>>  drivers/gpu/drm/Makefile                           |   1 +
+>>>  drivers/gpu/drm/bridge/Kconfig                     |   4 +
+>>>  drivers/gpu/drm/bridge/Makefile                    |   3 +
+>>>  drivers/gpu/drm/bridge/ptn3460.c                   | 349 +++++++++++++++++++++
+>>>  include/drm/bridge/ptn3460.h                       |  36 +++
+>>>  7 files changed, 422 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/drm/bridge/ptn3460.txt
+>>>  create mode 100644 drivers/gpu/drm/bridge/Kconfig
+>>>  create mode 100644 drivers/gpu/drm/bridge/Makefile
+>>>  create mode 100644 drivers/gpu/drm/bridge/ptn3460.c
+>>>  create mode 100644 include/drm/bridge/ptn3460.h
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/drm/bridge/ptn3460.txt b/Documentation/devicetree/bindings/drm/bridge/ptn3460.txt
+>>> new file mode 100644
+>>> index 0000000..c1cd329
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/drm/bridge/ptn3460.txt
+>>> @@ -0,0 +1,27 @@
+>>> +ptn3460-bridge bindings
+>>> +
+>>> +Required properties:
+>>> +       - compatible: "nxp,ptn3460"
+>>> +       - reg: i2c address of the bridge
+>>> +       - powerdown-gpio: OF device-tree gpio specification
+>>
+>> Can a regulator be used instead of gpio in other board case?
+>>
+>
+> No, not to my knowledge.
+>
 
-Hi Boris,
+Hm.. plz check it out again. the gpio pin is specific to board, and
+the the gpio be used as power source trigger could be replaced with a
+regulator according to board design. So you should consider all
+possibilities even though there are no other cases yet: other board
+could  use a regulator instead.
 
-deeper dive this time ...
+>
+>>> +       - reset-gpio: OF device-tree gpio specification
+>>> +       - edid-emulation: The EDID emulation entry to use
+>>> +               +-------+------------+------------------+
+>>> +               | Value | Resolution | Description      |
+>>> +               |   0   |  1024x768  | NXP Generic      |
+>>> +               |   1   |  1920x1080 | NXP Generic      |
+>>> +               |   2   |  1920x1080 | NXP Generic      |
+>>> +               |   3   |  1600x900  | Samsung LTM200KT |
+>>> +               |   4   |  1920x1080 | Samsung LTM230HT |
+>>> +               |   5   |  1366x768  | NXP Generic      |
+>>> +               |   6   |  1600x900  | ChiMei M215HGE   |
+>>> +               +-------+------------+------------------+
+>>> +
+>>> +Example:
+>>> +       ptn3460-bridge@20 {
+>>> +               compatible = "nxp,ptn3460";
+>>> +               reg = <0x20>;
+>>> +               powerdown-gpio = <&gpy2 5 1 0 0>;
+>>> +               reset-gpio = <&gpx1 5 1 0 0>;
+>>> +               edid-emulation = <5>;
+>>> +       };
+>>> diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+>>> index 955555d..cd7bfb3 100644
+>>> --- a/drivers/gpu/drm/Kconfig
+>>> +++ b/drivers/gpu/drm/Kconfig
+>>> @@ -236,3 +236,5 @@ source "drivers/gpu/drm/tilcdc/Kconfig"
+>>>  source "drivers/gpu/drm/qxl/Kconfig"
+>>>
+>>>  source "drivers/gpu/drm/msm/Kconfig"
+>>> +
+>>> +source "drivers/gpu/drm/bridge/Kconfig"
+>>> diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+>>> index f089adf..9234253 100644
+>>> --- a/drivers/gpu/drm/Makefile
+>>> +++ b/drivers/gpu/drm/Makefile
+>>> @@ -56,3 +56,4 @@ obj-$(CONFIG_DRM_TILCDC)      += tilcdc/
+>>>  obj-$(CONFIG_DRM_QXL) += qxl/
+>>>  obj-$(CONFIG_DRM_MSM) += msm/
+>>>  obj-y                  += i2c/
+>>> +obj-y                  += bridge/
+>>> diff --git a/drivers/gpu/drm/bridge/Kconfig b/drivers/gpu/drm/bridge/Kconfig
+>>> new file mode 100644
+>>> index 0000000..f8db069
+>>> --- /dev/null
+>>> +++ b/drivers/gpu/drm/bridge/Kconfig
+>>> @@ -0,0 +1,4 @@
+>>> +config DRM_PTN3460
+>>> +       tristate "PTN3460 DP/LVDS bridge"
+>>> +       depends on DRM && I2C
+>>> +       ---help---
+>>> diff --git a/drivers/gpu/drm/bridge/Makefile b/drivers/gpu/drm/bridge/Makefile
+>>> new file mode 100644
+>>> index 0000000..b4733e1
+>>> --- /dev/null
+>>> +++ b/drivers/gpu/drm/bridge/Makefile
+>>> @@ -0,0 +1,3 @@
+>>> +ccflags-y := -Iinclude/drm
+>>> +
+>>> +obj-$(CONFIG_DRM_PTN3460) += ptn3460.o
+>>> diff --git a/drivers/gpu/drm/bridge/ptn3460.c b/drivers/gpu/drm/bridge/ptn3460.c
+>>> new file mode 100644
+>>> index 0000000..a9e5c1a
+>>> --- /dev/null
+>>> +++ b/drivers/gpu/drm/bridge/ptn3460.c
+>>> @@ -0,0 +1,349 @@
+>>> +/*
+>>> + * NXP PTN3460 DP/LVDS bridge driver
+>>> + *
+>>> + * Copyright (C) 2013 Google, Inc.
+>>> + *
+>>> + * This software is licensed under the terms of the GNU General Public
+>>> + * License version 2, as published by the Free Software Foundation, and
+>>> + * may be copied, distributed, and modified under those terms.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/module.h>
+>>> +#include <linux/of.h>
+>>> +#include <linux/of_gpio.h>
+>>> +#include <linux/i2c.h>
+>>> +#include <linux/gpio.h>
+>>> +#include <linux/delay.h>
+>>> +
+>>> +#include "drmP.h"
+>>> +#include "drm_edid.h"
+>>> +#include "drm_crtc.h"
+>>> +#include "drm_crtc_helper.h"
+>>> +
+>>> +#include "bridge/ptn3460.h"
+>>> +
+>>> +#define PTN3460_EDID_ADDR                      0x0
+>>> +#define PTN3460_EDID_EMULATION_ADDR            0x84
+>>> +#define PTN3460_EDID_ENABLE_EMULATION          0
+>>> +#define PTN3460_EDID_EMULATION_SELECTION       1
+>>> +#define PTN3460_EDID_SRAM_LOAD_ADDR            0x85
+>>> +
+>>> +struct ptn3460_bridge {
+>>> +       struct drm_connector connector;
+>>> +       struct i2c_client *client;
+>>> +       struct drm_encoder *encoder;
+>>> +       struct drm_bridge *bridge;
+>>> +       struct edid *edid;
+>>> +       int gpio_pd_n;
+>>> +       int gpio_rst_n;
+>>> +       u32 edid_emulation;
+>>> +       bool enabled;
+>>> +};
+>>> +
+>>> +static int ptn3460_read_bytes(struct ptn3460_bridge *ptn_bridge, char addr,
+>>> +               u8 *buf, int len)
+>>> +{
+>>> +       int ret;
+>>> +
+>>> +       ret = i2c_master_send(ptn_bridge->client, &addr, 1);
+>>> +       if (ret <= 0) {
+>>> +               DRM_ERROR("Failed to send i2c command, ret=%d\n", ret);
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       ret = i2c_master_recv(ptn_bridge->client, buf, len);
+>>> +       if (ret <= 0) {
+>>> +               DRM_ERROR("Failed to recv i2c data, ret=%d\n", ret);
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static int ptn3460_write_byte(struct ptn3460_bridge *ptn_bridge, char addr,
+>>> +               char val)
+>>> +{
+>>> +       int ret;
+>>> +       char buf[2];
+>>> +
+>>> +       buf[0] = addr;
+>>> +       buf[1] = val;
+>>> +
+>>> +       ret = i2c_master_send(ptn_bridge->client, buf, ARRAY_SIZE(buf));
+>>> +       if (ret <= 0) {
+>>> +               DRM_ERROR("Failed to send i2c command, ret=%d\n", ret);
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static int ptn3460_select_edid(struct ptn3460_bridge *ptn_bridge)
+>>> +{
+>>> +       int ret;
+>>> +       char val;
+>>> +
+>>> +       /* Load the selected edid into SRAM (accessed at PTN3460_EDID_ADDR) */
+>>> +       ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_SRAM_LOAD_ADDR,
+>>> +                       ptn_bridge->edid_emulation);
+>>> +       if (ret) {
+>>> +               DRM_ERROR("Failed to transfer edid to sram, ret=%d\n", ret);
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       /* Enable EDID emulation and select the desired EDID */
+>>> +       val = 1 << PTN3460_EDID_ENABLE_EMULATION |
+>>> +               ptn_bridge->edid_emulation << PTN3460_EDID_EMULATION_SELECTION;
+>>> +
+>>> +       ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_EMULATION_ADDR, val);
+>>> +       if (ret) {
+>>> +               DRM_ERROR("Failed to write edid value, ret=%d\n", ret);
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static void ptn3460_pre_enable(struct drm_bridge *bridge)
+>>> +{
+>>> +       struct ptn3460_bridge *ptn_bridge = bridge->driver_private;
+>>> +       int ret;
+>>> +
+>>> +       if (ptn_bridge->enabled)
+>>> +               return;
+>>> +
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
+>>> +               gpio_set_value(ptn_bridge->gpio_pd_n, 1);
+>>
+>> Ditto.
+>>
+>>> +
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n)) {
+>>> +               gpio_set_value(ptn_bridge->gpio_rst_n, 0);
+>>> +               udelay(10);
+>>> +               gpio_set_value(ptn_bridge->gpio_rst_n, 1);
+>>> +       }
+>>> +
+>>> +       /*
+>>> +        * There's a bug in the PTN chip where it falsely asserts hotplug before
+>>> +        * it is fully functional. We're forced to wait for the maximum start up
+>>> +        * time specified in the chip's datasheet to make sure we're really up.
+>>> +        */
+>>> +       msleep(90);
+>>> +
+>>> +       ret = ptn3460_select_edid(ptn_bridge);
+>>> +       if (ret)
+>>> +               DRM_ERROR("Select edid failed ret=%d\n", ret);
+>>> +
+>>> +       ptn_bridge->enabled = true;
+>>> +}
+>>> +
+>>> +static void ptn3460_enable(struct drm_bridge *bridge)
+>>> +{
+>>> +}
+>>> +
+>>> +static void ptn3460_disable(struct drm_bridge *bridge)
+>>> +{
+>>> +       struct ptn3460_bridge *ptn_bridge = bridge->driver_private;
+>>> +
+>>> +       if (!ptn_bridge->enabled)
+>>> +               return;
+>>> +
+>>> +       ptn_bridge->enabled = false;
+>>> +
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n))
+>>> +               gpio_set_value(ptn_bridge->gpio_rst_n, 1);
+>>> +
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
+>>> +               gpio_set_value(ptn_bridge->gpio_pd_n, 0);
+>>
+>> Ditto.
+>>
+>>> +}
+>>> +
+>>> +static void ptn3460_post_disable(struct drm_bridge *bridge)
+>>> +{
+>>> +}
+>>> +
+>>> +void ptn3460_bridge_destroy(struct drm_bridge *bridge)
+>>> +{
+>>> +       struct ptn3460_bridge *ptn_bridge = bridge->driver_private;
+>>> +
+>>> +       drm_bridge_cleanup(bridge);
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
+>>> +               gpio_free(ptn_bridge->gpio_pd_n);
+>>
+>> Ditto.
+>>
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n))
+>>> +               gpio_free(ptn_bridge->gpio_rst_n);
+>>> +       /* Nothing else to free, we've got devm allocated memory */
+>>> +}
+>>> +
+>>> +struct drm_bridge_funcs ptn3460_bridge_funcs = {
+>>> +       .pre_enable = ptn3460_pre_enable,
+>>> +       .enable = ptn3460_enable,
+>>> +       .disable = ptn3460_disable,
+>>> +       .post_disable = ptn3460_post_disable,
+>>> +       .destroy = ptn3460_bridge_destroy,
+>>> +};
+>>> +
+>>> +int ptn3460_get_modes(struct drm_connector *connector)
+>>> +{
+>>> +       struct ptn3460_bridge *ptn_bridge;
+>>> +       u8 *edid;
+>>> +       int ret, num_modes;
+>>> +       bool power_off;
+>>> +
+>>> +       ptn_bridge = container_of(connector, struct ptn3460_bridge, connector);
+>>> +
+>>> +       if (ptn_bridge->edid)
+>>> +               return drm_add_edid_modes(connector, ptn_bridge->edid);
+>>> +
+>>> +       power_off = !ptn_bridge->enabled;
+>>> +       ptn3460_pre_enable(ptn_bridge->bridge);
+>>> +
+>>> +       edid = kmalloc(EDID_LENGTH, GFP_KERNEL);
+>>> +       if (!edid) {
+>>> +               DRM_ERROR("Failed to allocate edid\n");
+>>> +               return 0;
+>>> +       }
+>>> +
+>>> +       ret = ptn3460_read_bytes(ptn_bridge, PTN3460_EDID_ADDR, edid,
+>>> +                       EDID_LENGTH);
+>>> +       if (ret) {
+>>> +               kfree(edid);
+>>> +               num_modes = 0;
+>>> +               goto out;
+>>> +       }
+>>> +
+>>> +       ptn_bridge->edid = (struct edid *)edid;
+>>> +       drm_mode_connector_update_edid_property(connector, ptn_bridge->edid);
+>>> +
+>>> +       num_modes = drm_add_edid_modes(connector, ptn_bridge->edid);
+>>> +
+>>> +out:
+>>> +       if (power_off)
+>>> +               ptn3460_disable(ptn_bridge->bridge);
+>>> +
+>>> +       return num_modes;
+>>> +}
+>>> +
+>>> +static int ptn3460_mode_valid(struct drm_connector *connector,
+>>> +               struct drm_display_mode *mode)
+>>> +{
+>>> +       return MODE_OK;
+>>> +}
+>>> +
+>>> +struct drm_encoder *ptn3460_best_encoder(struct drm_connector *connector)
+>>> +{
+>>> +       struct ptn3460_bridge *ptn_bridge;
+>>> +
+>>> +       ptn_bridge = container_of(connector, struct ptn3460_bridge, connector);
+>>> +
+>>> +       return ptn_bridge->encoder;
+>>> +}
+>>> +
+>>> +struct drm_connector_helper_funcs ptn3460_connector_helper_funcs = {
+>>> +       .get_modes = ptn3460_get_modes,
+>>> +       .mode_valid = ptn3460_mode_valid,
+>>> +       .best_encoder = ptn3460_best_encoder,
+>>> +};
+>>> +
+>>> +enum drm_connector_status ptn3460_detect(struct drm_connector *connector,
+>>> +               bool force)
+>>> +{
+>>> +       return connector_status_connected;
+>>> +}
+>>> +
+>>> +void ptn3460_connector_destroy(struct drm_connector *connector)
+>>> +{
+>>> +       drm_connector_cleanup(connector);
+>>> +}
+>>> +
+>>> +struct drm_connector_funcs ptn3460_connector_funcs = {
+>>> +       .dpms = drm_helper_connector_dpms,
+>>> +       .fill_modes = drm_helper_probe_single_connector_modes,
+>>> +       .detect = ptn3460_detect,
+>>> +       .destroy = ptn3460_connector_destroy,
+>>> +};
+>>
+>> Why do you try to add a new connector here? We already have the
+>> connector for LCD, and also provides some callbacks for it. For this,
+>> please see exynos_drm_display_ops of exynos_drm_fimd driver, and you
+>> can add new callbacks to there such as init callback for bridge device
+>> initialization if needed.
+>>
+>
+> We add a new connector for 2 reasons:
+>
+> 1) We need to override the drm detect() callback to always return true
+> since the DP driver will presumably return its hotplug status which
+> will always be low when the ptn chip is turned off.
+> 2) We want the ability to control the result of get_modes().
+>
+> I've got a patch set almost ready to tear the display ops out of fimd
+> and put them in the DP driver.
 
-> ---
->  drivers/watchdog/at91sam9_wdt.c |  300 ++++++++++++++++++++++++++++-----------
->  1 file changed, 217 insertions(+), 83 deletions(-)
-> 
-> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
-> index be37dde..8f44528 100644
-> --- a/drivers/watchdog/at91sam9_wdt.c
-> +++ b/drivers/watchdog/at91sam9_wdt.c
-> @@ -19,11 +19,13 @@
->  
->  #include <linux/errno.h>
->  #include <linux/init.h>
-> +#include <linux/interrupt.h>
->  #include <linux/io.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/moduleparam.h>
->  #include <linux/platform_device.h>
-> +#include <linux/reboot.h>
->  #include <linux/types.h>
->  #include <linux/watchdog.h>
->  #include <linux/jiffies.h>
-> @@ -31,22 +33,33 @@
->  #include <linux/bitops.h>
->  #include <linux/uaccess.h>
->  #include <linux/of.h>
-> +#include <linux/of_irq.h>
->  
->  #include "at91sam9_wdt.h"
->  
->  #define DRV_NAME "AT91SAM9 Watchdog"
->  
-> -#define wdt_read(field) \
-> -	__raw_readl(at91wdt_private.base + field)
-> -#define wdt_write(field, val) \
-> -	__raw_writel((val), at91wdt_private.base + field)
-> +#define wdt_read(wdt, field) \
-> +	__raw_readl((wdt)->base + (field))
-> +#define wdt_write(wtd, field, val) \
-> +	__raw_writel((val), (wdt)->base + (field))
->  
->  /* AT91SAM9 watchdog runs a 12bit counter @ 256Hz,
->   * use this to convert a watchdog
->   * value from/to milliseconds.
->   */
-> -#define ms_to_ticks(t)	(((t << 8) / 1000) - 1)
-> -#define ticks_to_ms(t)	(((t + 1) * 1000) >> 8)
-> +#define ticks_to_hz_rounddown(t)	((((t) + 1) * HZ) >> 8)
-> +#define ticks_to_hz_roundup(t)		(((((t) + 1) * HZ) + 255) >> 8)
-> +#define ticks_to_secs(t)		(((t) + 1) >> 8)
-> +#define secs_to_ticks(s)		(((s) << 8) - 1)
-> +
-> +#define WDT_MR_RESET	0x3FFF2FFF
-> +
-> +/* Watchdog max counter value in ticks */
-> +#define WDT_COUNTER_MAX_TICKS	0xFFF
-> +
-> +/* Watchdog max delta/value in secs */
-> +#define WDT_COUNTER_MAX_SECS	ticks_to_secs(WDT_COUNTER_MAX_TICKS)
->  
->  /* Hardware timeout in seconds */
->  #define WDT_HW_TIMEOUT 2
-> @@ -66,23 +79,40 @@ module_param(nowayout, bool, 0);
->  MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
->  	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
->  
-> -static struct watchdog_device at91_wdt_dev;
-> -static void at91_ping(unsigned long data);
-> -
-> -static struct {
-> +#define to_wdt(wdd) container_of(wdd, struct at91wdt, wdd)
-> +struct at91wdt {
-> +	struct watchdog_device wdd;
->  	void __iomem *base;
->  	unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
->  	struct timer_list timer;	/* The timer that pings the watchdog */
-> -} at91wdt_private;
-> +	u32 mr;
-> +	u32 mr_mask;
-> +	unsigned long heartbeat;	/* WDT heartbeat in jiffies */
-> +	bool nowayout;
-> +	unsigned int irq;
-> +};
->  
->  /* ......................................................................... */
->  
-> +static irqreturn_t wdt_interrupt(int irq, void *dev_id)
-> +{
-> +	struct at91wdt *wdt = (struct at91wdt *)dev_id;
-> +
-> +	if (wdt_read(wdt, AT91_WDT_SR)) {
-> +		pr_crit("at91sam9 WDT software reset\n");
-> +		emergency_restart();
-> +		pr_crit("Reboot didn't ?????\n");
-> +	}
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
->  /*
->   * Reload the watchdog timer.  (ie, pat the watchdog)
->   */
-> -static inline void at91_wdt_reset(void)
-> +static inline void at91_wdt_reset(struct at91wdt *wdt)
->  {
-> -	wdt_write(AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
-> +	wdt_write(wdt, AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
->  }
->  
->  /*
-> @@ -90,26 +120,20 @@ static inline void at91_wdt_reset(void)
->   */
->  static void at91_ping(unsigned long data)
->  {
-> -	if (time_before(jiffies, at91wdt_private.next_heartbeat) ||
-> -	    (!watchdog_active(&at91_wdt_dev))) {
-> -		at91_wdt_reset();
-> -		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
-> +	struct at91wdt *wdt = (struct at91wdt *)data;
-> +	if (time_before(jiffies, wdt->next_heartbeat) ||
-> +	    !watchdog_active(&wdt->wdd)) {
-> +		at91_wdt_reset(wdt);
-> +		mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
->  	} else
->  		pr_crit("I will reset your machine !\n");
->  }
->  
->  static int at91_wdt_ping(struct watchdog_device *wdd)
->  {
-> +	struct at91wdt *wdt = to_wdt(wdd);
->  	/* calculate when the next userspace timeout will be */
-> -	at91wdt_private.next_heartbeat = jiffies + wdd->timeout * HZ;
-> -	return 0;
-> -}
-> -
-> -static int at91_wdt_start(struct watchdog_device *wdd)
-> -{
-> -	/* calculate the next userspace timeout and modify the timer */
-> -	at91_wdt_ping(wdd);
-> -	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
-> +	wdt->next_heartbeat = jiffies + wdd->timeout * HZ;
->  	return 0;
->  }
->  
-> @@ -125,36 +149,84 @@ static int at91_wdt_set_timeout(struct watchdog_device *wdd, unsigned int new_ti
+Really? if so, that is ideal something we want and we should go. But
+isn't the DP driver placed in drivers/video/exynos? How did you take
+care of that? Actually, for this, we planned to use CDF(Common Display
+Framework) if the framework is merged to mainline somehow.
 
-at91_wdt_set_timeout only sets the new timeout but does not update
-next_heartbeat. That is ok if the timeout decreases, but if it is
-increased (say, from 1 second to 1 minute) it might result in a missed
-ping as userspace will subsequently believe that the new (larger)
-timeout was accepted by the driver. So I think you should also call
-at91_wdt_ping here or set wdt->next_heartbeat directly.
+> The display ops are better suited
+> there, since it's the actual encoder/connector. I hope to get that
+> posted this week.
+>
 
->  	return 0;
->  }
->  
-> -/*
-> - * Set the watchdog time interval in 1/256Hz (write-once)
-> - * Counter is 12 bit.
-> - */
-> -static int at91_wdt_settimeout(unsigned int timeout)
-> +static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
->  {
-> -	unsigned int reg;
-> -	unsigned int mr;
-> -
-> -	/* Check if disabled */
-> -	mr = wdt_read(AT91_WDT_MR);
-> -	if (mr & AT91_WDT_WDDIS) {
-> -		pr_err("sorry, watchdog is disabled\n");
-> -		return -EIO;
-> +	u32 tmp;
-> +	u32 delta;
-> +	u32 value;
-> +	int err;
-> +	u32 mask = wdt->mr_mask;
-> +	unsigned long min_heartbeat = 1;
-> +
-> +	tmp = wdt_read(wdt, AT91_WDT_MR);
-> +	if ((tmp & mask) != (wdt->mr & mask)) {
-> +		if (tmp == WDT_MR_RESET) {
-> +			wdt_write(wdt, AT91_WDT_MR, wdt->mr);
-> +			tmp = wdt_read(wdt, AT91_WDT_MR);
-> +		}
->  	}
->  
-> -	/*
-> -	 * All counting occurs at SLOW_CLOCK / 128 = 256 Hz
-> -	 *
-> -	 * Since WDV is a 12-bit counter, the maximum period is
-> -	 * 4096 / 256 = 16 seconds.
-> -	 */
-> -	reg = AT91_WDT_WDRSTEN	/* causes watchdog reset */
-> -		/* | AT91_WDT_WDRPROC	causes processor reset only */
-> -		| AT91_WDT_WDDBGHLT	/* disabled in debug mode */
-> -		| AT91_WDT_WDD		/* restart at any time */
-> -		| (timeout & AT91_WDT_WDV);  /* timer value */
-> -	wdt_write(AT91_WDT_MR, reg);
-> +	if (tmp & AT91_WDT_WDDIS) {
-> +		if (wdt->mr & AT91_WDT_WDDIS)
-> +			return 0;
-> +		dev_err(wdt->wdd.parent, "watchdog is disabled\n");
+I will look forward to that posting. :)
 
-Took me a while to get why you use "wdt->wdd.parent" :).
-I would just have passed the 'dev' argument. Your call, though.
-
-> +		return -EINVAL;
-> +	}
-> +
-> +	value = tmp & AT91_WDT_WDV;
-> +	delta = (tmp & AT91_WDT_WDD) >> 16;
-> +
-> +	if (delta < value)
-> +		min_heartbeat = ticks_to_hz_roundup(value - delta);
-> +
-> +	wdt->heartbeat = ticks_to_hz_rounddown(value);
-> +	if (!wdt->heartbeat) {
-> +		dev_err(wdt->wdd.parent,
-> +			"heartbeat is too small for the system to handle it correctly\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (wdt->heartbeat < min_heartbeat + 3) {
-> +		wdt->heartbeat = min_heartbeat;
-> +		dev_warn(wdt->wdd.parent,
-> +			 "min heartbeat and max heartbeat might be too close for the system to handle it correctly\n");
-> +		if (wdt->heartbeat < 4)
-> +			dev_warn(wdt->wdd.parent,
-> +				 "heartbeat might be too small for the system to handle it correctly\n");
-> +	} else
-> +		wdt->heartbeat -= 4;
-
-That means heartbeat can be 0, correct (if min_heartbeat == 1) ?
-Will that work ?
-
-> +
-> +	if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
-> +		err = request_irq(wdt->irq, wdt_interrupt,
-> +				  IRQF_SHARED | IRQF_IRQPOLL,
-> +				  pdev->name, wdt);
-> +		if (err)
-> +			return err;
-> +	}
-> +
-> +	if ((tmp & wdt->mr_mask) != (wdt->mr & wdt->mr_mask))
-> +		dev_warn(wdt->wdd.parent,
-> +			 "watchdog already configured differently (mr = %x expecting %x)\n",
-> +			 tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
-> +
-> +	setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
-> +	mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
-> +
-> +	/* Try to set timeout from device tree first */
-> +	if (watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev))
-> +		watchdog_init_timeout(&wdt->wdd, heartbeat, &pdev->dev);
-> +	watchdog_set_nowayout(&wdt->wdd, wdt->nowayout);
-> +	err = watchdog_register_device(&wdt->wdd);
-> +	if (err)
-> +		goto out_stop_timer;
-> +
-> +	wdt->next_heartbeat = jiffies + wdt->wdd.timeout * HZ;
->  
->  	return 0;
-> +
-> +out_stop_timer:
-> +	del_timer(&wdt->timer);
-> +	return err;
->  }
->  
->  /* ......................................................................... */
-> @@ -167,63 +239,125 @@ static const struct watchdog_info at91_wdt_info = {
->  
->  static const struct watchdog_ops at91_wdt_ops = {
->  	.owner =	THIS_MODULE,
-> -	.start =	at91_wdt_start,
-> +	.start =	at91_wdt_ping,
->  	.stop =		at91_wdt_stop,
->  	.ping =		at91_wdt_ping,
-
-Notpick, but you don't need both start and ping. If both are the same, providing
-start is sufficient. Given this, it might be cleaner to name the function
-at91_wdt_start and not provide ping.
-
->  	.set_timeout =	at91_wdt_set_timeout,
->  };
->  
-> -static struct watchdog_device at91_wdt_dev = {
-> -	.info =		&at91_wdt_info,
-> -	.ops =		&at91_wdt_ops,
-> -	.timeout =	WDT_HEARTBEAT,
-> -	.min_timeout =	1,
-> -	.max_timeout =	0xFFFF,
-> -};
-> +#if defined(CONFIG_OF)
-> +static int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
-> +{
-> +	u32 min = 0;
-> +	u32 max = WDT_COUNTER_MAX_SECS;
-> +	const char *tmp;
-> +
-> +	/* Get the interrupts property */
-> +	wdt->irq = irq_of_parse_and_map(np, 0);
-> +	if (!wdt->irq)
-> +		dev_warn(wdt->wdd.parent, "failed to get IRQ from DT\n");
-> +
-> +	if (!of_property_read_u32_index(np, "atmel,max-heartbeat-sec", 0,
-> +					&max)) {
-> +		if (!max || max > WDT_COUNTER_MAX_SECS)
-> +			max = WDT_COUNTER_MAX_SECS;
-> +
-> +		if (!of_property_read_u32_index(np, "atmel,min-heartbeat-sec",
-> +						0, &min)) {
-> +			if (min >= max)
-> +				min = max - 1;
-> +		}
-> +	}
-> +
-> +	min = secs_to_ticks(min);
-> +	max = secs_to_ticks(max);
-> +
-> +	wdt->mr_mask = 0x3FFFFFFF;
-> +	wdt->mr = 0;
-> +	if (!of_property_read_string(np, "atmel,watchdog-type", &tmp) &&
-> +	    !strcmp(tmp, "software")) {
-> +		wdt->mr |= AT91_WDT_WDFIEN;
-> +		wdt->mr_mask &= ~AT91_WDT_WDRPROC;
-> +	} else
-> +		wdt->mr |= AT91_WDT_WDRSTEN;
-> +
-> +	if (!of_property_read_string(np, "atmel,reset-type", &tmp) &&
-> +	    !strcmp(tmp, "proc"))
-> +		wdt->mr |= AT91_WDT_WDRPROC;
-> +
-> +	if (of_property_read_bool(np, "atmel,disable")) {
-> +		wdt->mr |= AT91_WDT_WDDIS;
-> +		wdt->mr_mask &= AT91_WDT_WDDIS;
-> +	}
-> +
-> +	if (of_property_read_bool(np, "atmel,idle-halt"))
-> +		wdt->mr |= AT91_WDT_WDIDLEHLT;
-> +
-> +	if (of_property_read_bool(np, "atmel,dbg-halt"))
-> +		wdt->mr |= AT91_WDT_WDDBGHLT;
-> +
-> +	wdt->mr |= max | ((max - min) << 16);
-> +
-> +	return 0;
-> +}
-> +#else
-> +static inline int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
-> +{
-> +	return 0;
-> +}
-> +#endif
->  
->  static int __init at91wdt_probe(struct platform_device *pdev)
->  {
->  	struct resource	*r;
-> -	int res;
-> +	int err;
-> +	struct at91wdt *wdt;
->  
-> -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!r)
-> -		return -ENODEV;
-> -	at91wdt_private.base = ioremap(r->start, resource_size(r));
-> -	if (!at91wdt_private.base) {
-> -		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
-> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
-> +	if (!wdt)
->  		return -ENOMEM;
-> -	}
->  
-> -	at91_wdt_dev.parent = &pdev->dev;
-> -	watchdog_init_timeout(&at91_wdt_dev, heartbeat, &pdev->dev);
-> -	watchdog_set_nowayout(&at91_wdt_dev, nowayout);
-> +	wdt->mr = (WDT_HW_TIMEOUT * 256) | AT91_WDT_WDRSTEN | AT91_WDT_WDD |
-> +		  AT91_WDT_WDDBGHLT | AT91_WDT_WDIDLEHLT;
-> +	wdt->mr_mask = 0x3FFFFFFF;
-> +	wdt->nowayout = nowayout;
-> +	wdt->wdd.parent = &pdev->dev;
-> +	wdt->wdd.info = &at91_wdt_info;
-> +	wdt->wdd.ops = &at91_wdt_ops;
-> +	wdt->wdd.timeout = WDT_HEARTBEAT;
-> +	wdt->wdd.min_timeout = 1;
-> +	wdt->wdd.max_timeout = 0xFFFF;
->  
-> -	/* Set watchdog */
-> -	res = at91_wdt_settimeout(ms_to_ticks(WDT_HW_TIMEOUT * 1000));
-> -	if (res)
-> -		return res;
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	wdt->base = devm_ioremap_resource(&pdev->dev, r);
-> +	if (IS_ERR(wdt->base))
-> +		return PTR_ERR(wdt->base);
-> +
-> +	if (pdev->dev.of_node) {
-> +		err = of_at91wdt_init(pdev->dev.of_node, wdt);
-> +		if (err)
-> +			return err;
-> +	}
->  
-> -	res = watchdog_register_device(&at91_wdt_dev);
-> -	if (res)
-> -		return res;
-> +	err = at91_wdt_init(pdev, wdt);
-> +	if (err)
-> +		return err;
->  
-> -	at91wdt_private.next_heartbeat = jiffies + at91_wdt_dev.timeout * HZ;
-> -	setup_timer(&at91wdt_private.timer, at91_ping, 0);
-> -	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
-> +	platform_set_drvdata(pdev, wdt);
->  
->  	pr_info("enabled (heartbeat=%d sec, nowayout=%d)\n",
-> -		at91_wdt_dev.timeout, nowayout);
-> +		wdt->wdd.timeout, wdt->nowayout);
->  
->  	return 0;
->  }
->  
->  static int __exit at91wdt_remove(struct platform_device *pdev)
->  {
-> -	watchdog_unregister_device(&at91_wdt_dev);
-> +	struct at91wdt *wdt = platform_get_drvdata(pdev);
-> +	watchdog_unregister_device(&wdt->wdd);
->  
->  	pr_warn("I quit now, hardware will probably reboot!\n");
-> -	del_timer(&at91wdt_private.timer);
-> +	del_timer(&wdt->timer);
->  
->  	return 0;
->  }
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>
+>>> +
+>>> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
+>>> +               struct i2c_client *client, struct device_node *node)
+>>> +{
+>>> +       int ret;
+>>> +       struct drm_bridge *bridge;
+>>> +       struct ptn3460_bridge *ptn_bridge;
+>>> +
+>>> +       bridge = devm_kzalloc(dev->dev, sizeof(*bridge), GFP_KERNEL);
+>>> +       if (!bridge) {
+>>> +               DRM_ERROR("Failed to allocate drm bridge\n");
+>>> +               return -ENOMEM;
+>>> +       }
+>>> +
+>>> +       ptn_bridge = devm_kzalloc(dev->dev, sizeof(*ptn_bridge), GFP_KERNEL);
+>>> +       if (!ptn_bridge) {
+>>> +               DRM_ERROR("Failed to allocate ptn bridge\n");
+>>> +               return -ENOMEM;
+>>> +       }
+>>> +
+>>> +       ptn_bridge->client = client;
+>>> +       ptn_bridge->encoder = encoder;
+>>> +       ptn_bridge->bridge = bridge;
+>>> +       ptn_bridge->gpio_pd_n = of_get_named_gpio(node, "powerdown-gpio", 0);
+>>
+>> Also, if a regulator is used instead?
+>>
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n)) {
+>>> +               ret = gpio_request_one(ptn_bridge->gpio_pd_n,
+>>> +                               GPIOF_OUT_INIT_HIGH, "PTN3460_PD_N");
+>>> +               if (ret) {
+>>> +                       DRM_ERROR("Request powerdown-gpio failed (%d)\n", ret);
+>>> +                       return ret;
+>>> +               }
+>>> +       }
+>>> +
+>>> +       ptn_bridge->gpio_rst_n = of_get_named_gpio(node, "reset-gpio", 0);
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n)) {
+>>> +               /*
+>>> +                * Request the reset pin low to avoid the bridge being
+>>> +                * initialized prematurely
+>>> +                */
+>>> +               ret = gpio_request_one(ptn_bridge->gpio_rst_n,
+>>> +                               GPIOF_OUT_INIT_LOW, "PTN3460_RST_N");
+>>> +               if (ret) {
+>>> +                       DRM_ERROR("Request reset-gpio failed (%d)\n", ret);
+>>> +                       gpio_free(ptn_bridge->gpio_pd_n);
+>>> +                       return ret;
+>>> +               }
+>>> +       }
+>>> +
+>>> +       ret = of_property_read_u32(node, "edid-emulation",
+>>> +                       &ptn_bridge->edid_emulation);
+>>> +       if (ret) {
+>>> +               DRM_ERROR("Can't read edid emulation value\n");
+>>> +               goto err;
+>>> +       }
+>>> +
+>>> +       ret = drm_bridge_init(dev, bridge, &ptn3460_bridge_funcs);
+>>> +       if (ret) {
+>>> +               DRM_ERROR("Failed to initialize bridge with drm\n");
+>>> +               goto err;
+>>> +       }
+>>> +
+>>> +       bridge->driver_private = ptn_bridge;
+>>> +       encoder->bridge = bridge;
+>>> +
+>>> +       ret = drm_connector_init(dev, &ptn_bridge->connector,
+>>> +                       &ptn3460_connector_funcs, DRM_MODE_CONNECTOR_LVDS);
+>>
+>> So it seems that here's not right place to call drm_connector_init function.
+>>
+>> Display pipeline path could be one of,
+>>          Display Controller          Display bus
+>>          ---------------------------------------------------------------------------
+>>                   FIMD---------------------LVDS--------------------LCD,
+>>                                                  or
+>>                   FIMD----------------------eDP---------------------LCD,
+>>                                                  or
+>>                   FIMD------------------MIPI-DSI------------------LCD,
+>>                                                  or
+>>                   FIMD-------------------------------------------------LCD
+>>
+>> And also in case using image enhancement chip,
+>> mDNIe-------------FIMD-LITE between Display Controller and Display
+>> bus.
+>>
+>> So, wouldn't the right place below FIMD driver? :)
+>>
+>
+> Well, this driver should be considered outside of exynos context since
+> it could be used by any drm driver.
+>
+> In the exynos context, the right place to implement it would be in the
+> dp driver, actually. However, the exynos driver has a level of
+> abstraction on top of the crtcs/encoders such that we need to
+> initialize it in the exynos_drm_core. The patchset I mentioned above
+> should help move things in a direction where fimd/mixer implement
+> drm_crtc directly and hdmi/dp implement drm_encoder/drm_connector
+> directly. In that world, DP would initialize the ptn driver.
+>
+>>
+>>> +       if (ret) {
+>>> +               DRM_ERROR("Failed to initialize connector with drm\n");
+>>> +               goto err;
+>>> +       }
+>>> +       drm_connector_helper_add(&ptn_bridge->connector,
+>>> +                       &ptn3460_connector_helper_funcs);
+>>> +       drm_sysfs_connector_add(&ptn_bridge->connector);
+>>> +       drm_mode_connector_attach_encoder(&ptn_bridge->connector, encoder);
+>>> +
+>>> +       return 0;
+>>> +
+>>> +err:
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_pd_n))
+>>> +               gpio_free(ptn_bridge->gpio_pd_n);
+>>> +       if (gpio_is_valid(ptn_bridge->gpio_rst_n))
+>>> +               gpio_free(ptn_bridge->gpio_rst_n);
+>>> +       return ret;
+>>> +}
+>>> diff --git a/include/drm/bridge/ptn3460.h b/include/drm/bridge/ptn3460.h
+>>> new file mode 100644
+>>> index 0000000..157ffa1
+>>> --- /dev/null
+>>> +++ b/include/drm/bridge/ptn3460.h
+>>> @@ -0,0 +1,36 @@
+>>> +/*
+>>> + * Copyright (C) 2013 Google, Inc.
+>>> + *
+>>> + * This software is licensed under the terms of the GNU General Public
+>>> + * License version 2, as published by the Free Software Foundation, and
+>>> + * may be copied, distributed, and modified under those terms.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#ifndef _DRM_BRIDGE_PTN3460_H_
+>>> +#define _DRM_BRIDGE_PTN3460_H_
+>>> +
+>>> +struct drm_device;
+>>> +struct drm_encoder;
+>>> +struct i2c_client;
+>>> +struct device_node;
+>>> +
+>>> +#ifdef CONFIG_DRM_PTN3460
+>>> +
+>>> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
+>>> +               struct i2c_client *client, struct device_node *node);
+>>> +#else
+>>> +
+>>> +int ptn3460_init(struct drm_device *dev, struct drm_encoder *encoder,
+>>> +               struct i2c_client *client, struct device_node *node)
+>>> +{
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +#endif
+>>> +
+>>> +#endif
+>>> --
+>>> 1.8.4
+>>>
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
