@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab3JCGMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 02:12:50 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:38391 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab3JCGMt (ORCPT
+	id S1754433Ab3JCGNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 02:13:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33477 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab3JCGNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 02:12:49 -0400
-Date: Thu, 3 Oct 2013 08:12:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
- file->f_cred
-Message-ID: <20131003061244.GC25345@gmail.com>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <524B7999.60806@amacapital.net>
- <20131002143759.GA2966@dztty>
- <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
- <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
- <20131002182206.GB2485@dztty>
- <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
- <20131002184844.GB3393@dztty>
+	Thu, 3 Oct 2013 02:13:24 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <524D0ADF.2010507@jp.fujitsu.com>
+Date: Thu, 03 Oct 2013 15:12:47 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131002184844.GB3393@dztty>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, Vivek Goyal <vgoyal@redhat.com>,
+        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: mmap for /proc/vmcore broken since 3.12-rc1
+References: <20131002140356.63706540@holzheu>
+In-Reply-To: <20131002140356.63706540@holzheu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Djalal Harouni <tixxdz@opendz.org> wrote:
-
-> > Regardless, glibc uses /proc/self/maps, which would be fine here, right?
+(2013/10/02 21:03), Michael Holzheu wrote:
+> Hello Alexey,
 >
-> I did not touch /proc/self/maps and others, but I'm planning to fix them 
-> if this solution is accepted.
-> 
-> I'll do the same thing as in /proc/*/stat for maps, let it be 0444, and 
-> try to delay the check to ->read(). So during ->read() perform 
-> ptrace_may_access() on currenct's cred and process_allow_access() on 
-> file's opener cred. This should work.
+> Looks like the following commit broke mmap for /proc/vmcore:
+>
+> commit c4fe24485729fc2cbff324c111e67a1cc2f9adea
+> Author: Alexey Dobriyan <adobriyan@gmail.com>
+> Date:   Tue Aug 20 22:17:24 2013 +0300
+>
+>      sparc: fix PCI device proc file mmap(2)
+>
+> Because /proc/vmcore (fs/proc/vmcore.c) does not implement the
+> get_unmapped_area() fops function mmap now always returns EIO.
+>
+> Michael
+>
 
-Aren't read() time checks fundamentally unrobust? We generally don't do 
-locking on read()s, so such checks - in the general case - are pretty 
-racy.
+I confirmed the bug on v3.12-rc3. According to makedumpfile's log,
+mmap failed on /proc/vmcore.
 
-Now procfs might be special, as by its nature of a pseudofilesystem it's 
-far more atomic than other filesystems, but still IMHO it's a lot more 
-robust security design wise to revoke access to objects you should not 
-have a reference to when a security boundary is crossed, than letting 
-stuff leak through and sprinking all the potential cases that may leak 
-information with permission checks ...
+mem_map (271)
+   mem_map    : ffffea001da40000
+   pfn_start  : 878000
+   pfn_end    : 880000
+Kernel can't mmap vmcore, using reads.
+STEP [Excluding unnecessary pages] : 1.268799 seconds
+STEP [Excluding unnecessary pages] : 1.268756 seconds
+STEP [Copying data               ] : 44.847924 seconds
+Writing erase info...
 
-It's also probably faster: security boundary crossings are relatively rare 
-slowpaths, while read()s are much more common...
+I'll post a patch later.
 
-So please first get consensus on this fundamental design question before 
-spreading your solution to more areas.
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
-Thanks,
-
-	Ingo
