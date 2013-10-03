@@ -1,112 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab3JCOhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 10:37:00 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:37776 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab3JCOg6 (ORCPT
+	id S1754383Ab3JCOhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 10:37:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60267 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab3JCOhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 10:36:58 -0400
-Date: Thu, 3 Oct 2013 15:36:54 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        kernel-hardening@lists.openwall.com, tixxdz@gmail.com
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
- file's opener may access task
-Message-ID: <20131003143653.GA32445@dztty>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
- <1380659178-28605-3-git-send-email-tixxdz@opendz.org>
- <524B78A2.40007@amacapital.net>
- <20131002145506.GA2669@dztty>
- <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
+	Thu, 3 Oct 2013 10:37:51 -0400
+Message-ID: <524D813C.3070905@baylibre.com>
+Date: Thu, 03 Oct 2013 16:37:48 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Murphy <dmurphy@ti.com>
+CC: Mugunthan V N <mugunthanvnm@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: dts: AM33XX: add ethernet alias's for am33xx
+References: <1380736713-24678-1-git-send-email-dmurphy@ti.com> <524CAEBE.5010305@ti.com>
+In-Reply-To: <524CAEBE.5010305@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 05:44:17PM +0100, Andy Lutomirski wrote:
-> On Wed, Oct 2, 2013 at 3:55 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Tue, Oct 01, 2013 at 06:36:34PM -0700, Andy Lutomirski wrote:
-> >> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> >> > Since /proc entries varies at runtime, permission checks need to happen
-> >> > during each system call.
-> >> >
-> >> > However even with that /proc file descriptors can be passed to a more
-> >> > privileged process (e.g. a suid-exec) which will pass the classic
-> >> > ptrace_may_access() permission check. The open() call will be issued in
-> >> > general by an unprivileged process while the disclosure of sensitive
-> >> > /proc information will happen using a more privileged process at
-> >> > read(),write()...
-> >> >
-> >> > Therfore we need a more sophisticated check to detect if the cred of the
-> >> > process have changed, and if the cred of the original opener that are
-> >> > stored in the file->f_cred have enough permission to access the task's
-> >> > /proc entries during read(), write()...
-> >> >
-> >> > Add the proc_allow_access() function that will receive the file->f_cred
-> >> > as an argument, and tries to check if the opener had enough permission
-> >> > to access the task's /proc entries.
-> >> >
-> >> > This function should be used with the ptrace_may_access() check.
-> >> >
-> >> > Cc: Kees Cook <keescook@chromium.org>
-> >> > Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-> >> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> >> > ---
-> >> >  fs/proc/base.c     | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >> >  fs/proc/internal.h |  2 ++
-> >> >  2 files changed, 58 insertions(+)
-> >> >
-> >> > diff --git a/fs/proc/base.c b/fs/proc/base.c
-> >> > index e834946..c29eeae 100644
-> >> > --- a/fs/proc/base.c
-> >> > +++ b/fs/proc/base.c
-> >> > @@ -168,6 +168,62 @@ int proc_same_open_cred(const struct cred *fcred)
-> >> >             cap_issubset(cred->cap_permitted, fcred->cap_permitted));
-> >> >  }
-> >> >
-> >> > +/* Returns 0 on success, -errno on denial. */
-> >> > +static int __proc_allow_access(const struct cred *cred,
-> >> > +                          struct task_struct *task, unsigned int mode)
-> >> > +{
-> >> > +   int ret = 0;
-> >> > +   const struct cred *tcred;
-> >> > +   const struct cred *fcred = cred;
-> >> > +
-> >> > +   rcu_read_lock();
-> >> > +   tcred = __task_cred(task);
-> >> > +   if (uid_eq(fcred->uid, tcred->euid) &&
-> >> > +       uid_eq(fcred->uid, tcred->suid) &&
-> >> > +       uid_eq(fcred->uid, tcred->uid)  &&
-> >> > +       gid_eq(fcred->gid, tcred->egid) &&
-> >> > +       gid_eq(fcred->gid, tcred->sgid) &&
-> >> > +       gid_eq(fcred->gid, tcred->gid))
-> >> > +           goto out;
-> >> > +
-> >>
-> >> What's this for?  Is it supposed to be an optimization?  If so, it looks
-> >> potentially exploitable, although I don't really understand what you're
-> >> trying to do.
-> > This function should be used in addition to the ptrace_may_access() one.
-> 
-> Sorry, I was unclear.  I meant: what are the uid and gid checks for?
-The uid/gid are checks of the current (reader) on the target task, like
-the ptrace checks. fcred here is the cred of current at open time.
+Hi Dan,
 
--- 
-Djalal Harouni
-http://opendz.org
+On 03/10/2013 01:39, Mugunthan V N wrote:
+> On Wednesday 02 October 2013 12:58 PM, Dan Murphy wrote:
+>> Set the alias for ethernet0 and ethernet1 so that uBoot
+>> can set the MAC address appropriately.
+>>
+>> Currently uBoot cannot find the alias and there for does not set the
+>> MAC address.
+>>
+>> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+>
+> Tested this with beagle bone black.
+>
+> Tested-by: Mugunthan V N <mugunthanvnm@ti.com>
+>
+> Regards
+> Mugunthan V N
+
+Thanks, pulled in my for_3.13/dts branch.
+
+Regards,
+Benoit
