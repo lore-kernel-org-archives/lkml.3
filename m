@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab3JCEoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:44:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47595 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab3JCEU7 (ORCPT
+	id S1756973Ab3JCEpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:45:10 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:33646 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab3JCEoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:20:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>, Nicolas Suzor <nic@suzor.com>,
-        Todd Previte <tprevite@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 45/57] drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
-Date: Wed,  2 Oct 2013 21:09:11 -0700
-Message-Id: <20131003040639.674203089@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
-References: <20131003040636.600441214@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 3 Oct 2013 00:44:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380774230.19002.135.camel@edumazet-glaptop.roam.corp.google.com>
+References: <1380772231-3566-1-git-send-email-ast@plumgrid.com>
+	<1380774230.19002.135.camel@edumazet-glaptop.roam.corp.google.com>
+Date: Wed, 2 Oct 2013 21:44:17 -0700
+Message-ID: <CAMEtUux5Fvffdg1G-aAe4XN8hJ3oUZyD2Gs3sqcwDdGf9VQ5fw@mail.gmail.com>
+Subject: Re: [PATCH net-next] fix unsafe set_memory_rw from softirq
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Xi Wang <xi.wang@gmail.com>, x86@kernel.org,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 2, 2013 at 9:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2013-10-02 at 20:50 -0700, Alexei Starovoitov wrote:
+>> on x86 system with net.core.bpf_jit_enable = 1
+>
+>> diff --git a/include/linux/filter.h b/include/linux/filter.h
+>> index a6ac848..378fa03 100644
+>> --- a/include/linux/filter.h
+>> +++ b/include/linux/filter.h
+>> @@ -27,6 +27,7 @@ struct sk_filter
+>>       unsigned int            len;    /* Number of filter blocks */
+>>       unsigned int            (*bpf_func)(const struct sk_buff *skb,
+>>                                           const struct sock_filter *filter);
+>> +     struct work_struct      work;
+>>       struct rcu_head         rcu;
+>>       struct sock_filter      insns[0];
+>>  };
+>
+> Nice catch !
+>
+> It seems only x86 and s390 needs this work_struct.
 
-------------------
+I think ifdef config_x86 is a bit ugly inside struct sk_filter, but
+don't mind whichever way.
 
-From: Jani Nikula <jani.nikula@intel.com>
+> (and you might CC Heiko Carstens <heiko.carstens@de.ibm.com> to ask him
+> to make the s390 part, of Ack it if you plan to do it)
 
-commit 8d16f258217f2f583af1fd57c5144aa4bbe73e48 upstream.
+set_memory_rw() on s390 is a simple page table walker that doesn't do
+any IPI unlike x86
+Heiko, please confirm that it's not an issue there.
 
-There is no clear cut rules or specs for the retry interval, as there
-are many factors that affect overall response time. Increase the
-interval, and even more so on branch devices which may have limited i2c
-bit rates.
-
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reference: https://bugs.freedesktop.org/show_bug.cgi?id=60263
-Tested-by: Nicolas Suzor <nic@suzor.com>
-Reviewed-by: Todd Previte <tprevite@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/i915/intel_dp.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
-
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -567,7 +567,18 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
- 			DRM_DEBUG_KMS("aux_ch native nack\n");
- 			return -EREMOTEIO;
- 		case AUX_NATIVE_REPLY_DEFER:
--			udelay(100);
-+			/*
-+			 * For now, just give more slack to branch devices. We
-+			 * could check the DPCD for I2C bit rate capabilities,
-+			 * and if available, adjust the interval. We could also
-+			 * be more careful with DP-to-Legacy adapters where a
-+			 * long legacy cable may force very low I2C bit rates.
-+			 */
-+			if (intel_dp->dpcd[DP_DOWNSTREAMPORT_PRESENT] &
-+			    DP_DWN_STRM_PORT_PRESENT)
-+				usleep_range(500, 600);
-+			else
-+				usleep_range(300, 400);
- 			continue;
- 		default:
- 			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
-
-
+Thanks
+Alexei
