@@ -1,152 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3JCRLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:11:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58539 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754164Ab3JCRLl (ORCPT
+	id S1754627Ab3JCRMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:12:34 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:13090 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab3JCRMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:11:41 -0400
-Date: Thu, 3 Oct 2013 18:10:54 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "msalter@redhat.com" <msalter@redhat.com>
-Subject: Re: [PATCH v2 1/3] Documentation: arm: add UEFI support
- documentation
-Message-ID: <20131003171053.GB6999@e106331-lin.cambridge.arm.com>
-References: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
- <1380799481-5470-2-git-send-email-leif.lindholm@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380799481-5470-2-git-send-email-leif.lindholm@linaro.org>
-Thread-Topic: [PATCH v2 1/3] Documentation: arm: add UEFI support
- documentation
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Oct 2013 13:12:33 -0400
+Message-ID: <1380820350.2310.8.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] ipc/sem.c: synchronize semop and semctl with IPC_RMID
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Date: Thu, 03 Oct 2013 10:12:30 -0700
+In-Reply-To: <1380806806-3722-1-git-send-email-manfred@colorfullife.com>
+References: <1380806806-3722-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leif,
-
-On Thu, Oct 03, 2013 at 12:24:39PM +0100, Leif Lindholm wrote:
-> This patch provides documentation of the [U]EFI runtime services and
-> configuration features.
+On Thu, 2013-10-03 at 15:26 +0200, Manfred Spraul wrote:
+> After acquiring the semlock spinlock, operations must test that the
+> array is still valid.
 > 
-> Cc: linux-doc@vger.kernel.org
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Acked-by: Rob Landley <rob@landley.net>
+> - semctl() and exit_sem() would walk stale linked lists (ugly, but should
+>   be ok: all lists are empty)
+> 
+> - semtimedop() would sleep forever - and if woken up due to a signal -
+>   access memory after free.
+> 
+> The patch also:
+> - standardizes the tests for .deleted, so that all tests in one
+>   function leave the function with the same approach.
+> - unconditionally tests for .deleted immediately after every call to
+>   sem_lock - even it it means that for semctl(GETALL), .deleted will be
+>   tested twice.
+> 
+> Both changes make the review simpler: After every sem_lock, there must
+> be a test of .deleted, followed by a goto to the cleanup code (if the
+> function uses "goto cleanup").
+> The only exception is semctl_down(): If sem_ids().rwsem is locked, then
+> the presence in ids->ipcs_idr is equivalent to !.deleted, thus no additional
+> test is required.
+> 
+> Davidlohr: What do you think?
+> 
+
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
 > ---
->  Documentation/arm/00-INDEX |    3 +++
->  Documentation/arm/uefi.txt |   47 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 50 insertions(+)
->  create mode 100644 Documentation/arm/uefi.txt
+>  ipc/sem.c | 42 +++++++++++++++++++++++++++++-------------
+>  1 file changed, 29 insertions(+), 13 deletions(-)
 > 
-> diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
-> index 4978456..87e01d1 100644
-> --- a/Documentation/arm/00-INDEX
-> +++ b/Documentation/arm/00-INDEX
-> @@ -36,3 +36,6 @@ nwfpe/
->  	- NWFPE floating point emulator documentation
->  swp_emulation
->  	- SWP/SWPB emulation handler/logging description
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index 8c4f59b..db9d241 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -1282,6 +1282,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
+>  
+>  	sem_lock(sma, NULL, -1);
+>  
+> +	if (sma->sem_perm.deleted) {
+> +		sem_unlock(sma, -1);
+> +		rcu_read_unlock();
+> +		return -EIDRM;
+> +	}
 > +
-> +uefi.txt
-> +	- [U]EFI configuration and runtime services documentation
-> diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
-> new file mode 100644
-> index 0000000..e6e4d41
-> --- /dev/null
-> +++ b/Documentation/arm/uefi.txt
-> @@ -0,0 +1,47 @@
-> +UEFI, the Unified Extensible Firmware Interface is a speifcication
-> +governing the behaviours of compatible firmware interfaces. It is
-> +maintained by the UEFI Forum - http://www.uefi.org/.
-> +
-> +Since UEFI is an evolution of its predecessor 'EFI', the terms EFI and
-> +UEFI are used somewhat interchangeably in this document and associated
-> +source code.
-> +
-> +The implementation depends on receiving the UEFI runtime memory map and a
-> +pointer to the System Table in a Flattened Device Tree - so is only available
-> +with CONFIG_OF.
-> +
-> +It parses the FDT /chosen node for the following parameters:
-> +- 'linux,efi-system-table':
-> +  Physical address of the system table. (required)
-> +  64-bit value since an ARMv7 plattform may support LPAE, and to facilitate
+>  	curr = &sma->sem_base[semnum];
+>  
+>  	ipc_assert_locked_object(&sma->sem_perm);
+> @@ -1336,12 +1342,14 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		int i;
+>  
+>  		sem_lock(sma, NULL, -1);
+> +		if (sma->sem_perm.deleted) {
+> +			err = -EIDRM;
+> +			goto out_unlock;
+> +		}
+>  		if(nsems > SEMMSL_FAST) {
+>  			if (!ipc_rcu_getref(sma)) {
+> -				sem_unlock(sma, -1);
+> -				rcu_read_unlock();
+>  				err = -EIDRM;
+> -				goto out_free;
+> +				goto out_unlock;
+>  			}
+>  			sem_unlock(sma, -1);
+>  			rcu_read_unlock();
+> @@ -1354,10 +1362,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  			rcu_read_lock();
+>  			sem_lock_and_putref(sma);
+>  			if (sma->sem_perm.deleted) {
+> -				sem_unlock(sma, -1);
+> -				rcu_read_unlock();
+>  				err = -EIDRM;
+> -				goto out_free;
+> +				goto out_unlock;
+>  			}
+>  		}
+>  		for (i = 0; i < sma->sem_nsems; i++)
+> @@ -1375,8 +1381,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		struct sem_undo *un;
+>  
+>  		if (!ipc_rcu_getref(sma)) {
+> -			rcu_read_unlock();
+> -			return -EIDRM;
+> +			err = -EIDRM;
+> +			goto out_rcu_wakeup;
+>  		}
+>  		rcu_read_unlock();
+>  
+> @@ -1404,10 +1410,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		rcu_read_lock();
+>  		sem_lock_and_putref(sma);
+>  		if (sma->sem_perm.deleted) {
+> -			sem_unlock(sma, -1);
+> -			rcu_read_unlock();
+>  			err = -EIDRM;
+> -			goto out_free;
+> +			goto out_unlock;
+>  		}
+>  
+>  		for (i = 0; i < nsems; i++)
+> @@ -1431,6 +1435,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		goto out_rcu_wakeup;
+>  
+>  	sem_lock(sma, NULL, -1);
+> +	if (sma->sem_perm.deleted) {
+> +		err = -EIDRM;
+> +		goto out_unlock;
+> +	}
+>  	curr = &sma->sem_base[semnum];
+>  
+>  	switch (cmd) {
+> @@ -1836,6 +1844,10 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>  	if (error)
+>  		goto out_rcu_wakeup;
+>  
+> +	error = -EIDRM;
+> +	locknum = sem_lock(sma, sops, nsops);
+> +	if (sma->sem_perm.deleted)
+> +		goto out_unlock_free;
+>  	/*
+>  	 * semid identifiers are not unique - find_alloc_undo may have
+>  	 * allocated an undo structure, it was invalidated by an RMID
+> @@ -1843,8 +1855,6 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>  	 * This case can be detected checking un->semid. The existence of
+>  	 * "un" itself is guaranteed by rcu.
+>  	 */
+> -	error = -EIDRM;
+> -	locknum = sem_lock(sma, sops, nsops);
+>  	if (un && un->semid == -1)
+>  		goto out_unlock_free;
+>  
+> @@ -2057,6 +2067,12 @@ void exit_sem(struct task_struct *tsk)
+>  		}
+>  
+>  		sem_lock(sma, NULL, -1);
+> +		/* exit_sem raced with IPC_RMID, nothing to do */
+> +		if (sma->sem_perm.deleted) {
+> +			sem_unlock(sma, -1);
+> +			rcu_read_unlock();
+> +			continue;
+> +		}
+>  		un = __lookup_undo(ulp, semid);
+>  		if (un == NULL) {
+>  			/* exit_sem raced with IPC_RMID+semget() that created
 
-s/plattform/platform/
 
-> +  code sharing with arm64. Top 32 bits will be ignored, since UEFI specification
-> +  mandates a 1:1 mapping of all RAM.
-
-You could use something like #size-cells to describe how big this is
-going to be. Is this Linux-specific -- it looks like something provided
-by EFI rather than the kernel itself.
-
-> +- 'linux,efi-mmap':
-> +  The EFI memory map as an embedded property. (required)
-> +  An array of type EFI_MEMORY_DESCRIPTOR as described by the UEFI
-> +  specification, current version described in Linux by efi_memory_desc_t.
-> +  The memory map is represented in little-endian, not DT, byte order.
-> +  This map needs to contain at least the regions to be preserved for runtime
-> +  services, but would normally just be the map retreieved by calling UEFI
-> +  GetMemoryMap() immediately before ExitBootServices().
-
-This is a little scary. If the format is so complicated, should it
-really be embedded? How big is this likely to be?
-
-Given that this is in a format defined externally, this isn't really
-Linux-specific. Maybe we need an "efi" pseudo-vendor prefix.
-
-> +- 'linux,efi-mmap-desc-size':
-> +  Size of each descriptor in the memory map. (override default)
-
-What units is this in? How many u32 cells does this take up (one
-presumably)?
-
-> +- 'linux,efi-mmap-desc-ver':
-> +  Memory descriptor format version. (override default)
-
-Type, format, valid values and their meaning?
-
-Thanks,
-Mark.
-
-> +
-> +It also depends on early_memremap() to parse the UEFI configuration tables.
-> +
-> +For actually enabling [U]EFI support, enable:
-> +- CONFIG_EFI=y
-> +- CONFIG_EFI_VARS=y or m
-> +
-> +After the kernel has mapped the required regions into its address space,
-> +a SetVirtualAddressMap() call is made into UEFI in order to update
-> +relocations. This call must be performed with all the code in a 1:1
-> +mapping. This implementation achieves this by temporarily disabling the
-> +MMU for the duration of this call. This can only be done safely:
-> +- before secondary CPUs are brought online.
-> +- after early_initcalls have completed, since it uses setup_mm_for_reboot().
-> +
-> +For verbose debug messages, specify 'uefi_debug' on the kernel command
-> +line.
-> -- 
-> 1.7.10.4
-> 
-> 
-`> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
