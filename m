@@ -1,49 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab3JCT3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:29:11 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38176 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988Ab3JCT3J (ORCPT
+	id S1755322Ab3JCT3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:29:34 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:51930 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab3JCT3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:29:09 -0400
-Date: Thu, 03 Oct 2013 15:29:07 -0400 (EDT)
-Message-Id: <20131003.152907.2144013596237714581.davem@davemloft.net>
-To: hns@goldelico.com
-Cc: j.dumon@option.com, marek.belisko@gmail.com, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by
- OPTION GTM601 during RING indication
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
-References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 03 Oct 2013 12:29:09 -0700 (PDT)
+	Thu, 3 Oct 2013 15:29:33 -0400
+Date: Thu, 3 Oct 2013 20:29:26 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131003192926.GB2390@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <1380659178-28605-3-git-send-email-tixxdz@opendz.org>
+ <524B78A2.40007@amacapital.net>
+ <20131002145506.GA2669@dztty>
+ <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
+ <20131003143653.GA32445@dztty>
+ <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Date: Wed, 2 Oct 2013 09:00:18 +0200
-
-> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
-> From: "H. Nikolaus Schaller" <hns@goldelico.com>
-> Date: Thu, 15 Nov 2012 14:40:57 +0100
-> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
->  GTM601 during RING indication
+On Thu, Oct 03, 2013 at 04:12:37PM +0100, Andy Lutomirski wrote:
+> On Thu, Oct 3, 2013 at 3:36 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Wed, Oct 02, 2013 at 05:44:17PM +0100, Andy Lutomirski wrote:
+> >> On Wed, Oct 2, 2013 at 3:55 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > On Tue, Oct 01, 2013 at 06:36:34PM -0700, Andy Lutomirski wrote:
+> >> >> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+> >> >> > Since /proc entries varies at runtime, permission checks need to happen
+> >> >> > during each system call.
+> >> >> >
+> >> >> > However even with that /proc file descriptors can be passed to a more
+> >> >> > privileged process (e.g. a suid-exec) which will pass the classic
+> >> >> > ptrace_may_access() permission check. The open() call will be issued in
+> >> >> > general by an unprivileged process while the disclosure of sensitive
+> >> >> > /proc information will happen using a more privileged process at
+> >> >> > read(),write()...
+> >> >> >
+> >> >> > Therfore we need a more sophisticated check to detect if the cred of the
+> >> >> > process have changed, and if the cred of the original opener that are
+> >> >> > stored in the file->f_cred have enough permission to access the task's
+> >> >> > /proc entries during read(), write()...
+> >> >> >
+> >> >> > Add the proc_allow_access() function that will receive the file->f_cred
+> >> >> > as an argument, and tries to check if the opener had enough permission
+> >> >> > to access the task's /proc entries.
+> >> >> >
+> >> >> > This function should be used with the ptrace_may_access() check.
+> >> >> >
+> >> >> > Cc: Kees Cook <keescook@chromium.org>
+> >> >> > Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
+> >> >> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> >> >> > ---
+> >> >> >  fs/proc/base.c     | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >> >> >  fs/proc/internal.h |  2 ++
+> >> >> >  2 files changed, 58 insertions(+)
+> >> >> >
+> >> >> > diff --git a/fs/proc/base.c b/fs/proc/base.c
+> >> >> > index e834946..c29eeae 100644
+> >> >> > --- a/fs/proc/base.c
+> >> >> > +++ b/fs/proc/base.c
+> >> >> > @@ -168,6 +168,62 @@ int proc_same_open_cred(const struct cred *fcred)
+> >> >> >             cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+> >> >> >  }
+> >> >> >
+> >> >> > +/* Returns 0 on success, -errno on denial. */
+> >> >> > +static int __proc_allow_access(const struct cred *cred,
+> >> >> > +                          struct task_struct *task, unsigned int mode)
+> >> >> > +{
+> >> >> > +   int ret = 0;
+> >> >> > +   const struct cred *tcred;
+> >> >> > +   const struct cred *fcred = cred;
+> >> >> > +
+> >> >> > +   rcu_read_lock();
+> >> >> > +   tcred = __task_cred(task);
+> >> >> > +   if (uid_eq(fcred->uid, tcred->euid) &&
+> >> >> > +       uid_eq(fcred->uid, tcred->suid) &&
+> >> >> > +       uid_eq(fcred->uid, tcred->uid)  &&
+> >> >> > +       gid_eq(fcred->gid, tcred->egid) &&
+> >> >> > +       gid_eq(fcred->gid, tcred->sgid) &&
+> >> >> > +       gid_eq(fcred->gid, tcred->gid))
+> >> >> > +           goto out;
+> >> >> > +
+> >> >>
+> >> >> What's this for?  Is it supposed to be an optimization?  If so, it looks
+> >> >> potentially exploitable, although I don't really understand what you're
+> >> >> trying to do.
+> >> > This function should be used in addition to the ptrace_may_access() one.
+> >>
+> >> Sorry, I was unclear.  I meant: what are the uid and gid checks for?
+> > The uid/gid are checks of the current (reader) on the target task, like
+> > the ptrace checks. fcred here is the cred of current at open time.
+> >
 > 
->  It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
->  wIndex that has bit 0x04 set instead of being reset as the code expects. So we
->  mask it for the error check.
->  
->  See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
+> This isn't a faithful copy of __ptrace_may_access -- the real function
+> gives LSMs a chance to veto ptracing.  That's critical even without
+> LSMs because cap_ptrace_access_check needs to get called.  (Think
+> about setcap'd programs instead of setuid programs.)
+Yes, I already did this, not only setuid, capabilities also are handled
+See the whole patch, please!
 
-I think we should look more deeply into what this bit might mean
-and why the firmware might be setting it before we even consider
-applying a patch like this one.
+
+Yes, and speaking about LSMs I've mentioned in my patches and doc, that
+the proposed function proc_allow_access() should be used after
+ptrace_may_access(). proc_allow_access() is not a replacement for
+ptrace_may_access(), it should be used *after* it.
+
+So cap_ptrace_access_check() is called, and before the file->f_cred
+checks. The LSM veto is already there.
+
+Don't forget that proc_allow_access() is not for ptracing, it's targeted
+to the procfs entries! and who opened the file.
+
+
+
+Finally take a look at what you say about: cap_ptrace_access_check()
+
+
+it does:
+1)
+if (cred->user_ns == child_cred->user_ns &&
+    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
+	return 0
+
+2)
+if (ns_capable(child_cred->user_ns, CAP_SYS_PTRACE))
+	return 0
+
+    ns_capable() calls security_capable().
+
+
+
+And take a look at what I did, Andy please:
+[PATCH v2 1/9] procfs: add proc_same_open_cred() to check if the cred
+have changed
+
+proc_same_open_cred() returns 1 on success
+
+1) for proc_same_open_cred()
+   if (f_cred->user_ns != cred->user_ns)
+        return 0
+
+   return (uid_eq(fcred->uid, cred->uid) &&
+                  gid_eq(fcred->gid, cred->gid) &&
+                  cap_issubset(cred->cap_permitted, f_cred->cap_permitted));
+
+So it handles the (1) of cap_ptrace_access_check()
+
+
+If this previous proc_same_open_cred() returns 0 (cred have changed)
+
+goto (2) [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+file's opener may access task
+
+proc_allow_access() returns 1 on success
+
+
+2) It does the uid/gid checks which is complete
+
+   Later it does security_capable() check which will do:
+   security_ops->capable(f_cred, ns, cap, SECURITY_CAP_AUDIT);
+
+   Take the old f_cred of file opener and do the capability check
+   during this moment, ->read(),->write()
+
+   So LSM support, and if LSM is disabled then we have the cap_capable()
+   which will go and check userns and capabilities.
+
+
+Andy if you see that I've missed something please let me know
+
+
+So Andy the solution is complete and I think ! can you please recheck
+
+(I'll also recheck it).
+
+> To fix this, I think you'll need to actually invoke
+> __ptrace_may_access.  That will be a mess because you don't have a
+> task_struct to pass in, so you'll have to refactor the code to
+> separately check for task==current and for cred-based permissions.
+> That, in turn, will mean that you need to get the LSMs to play along,
+> which includes Yama.  To fix that, you'll probably need to check
+> yama's task-based constraints at open time, which may be at least as
+> complicated as the revoke-based approach.
+As I've demonstrated above, no mess and it's not compilcated, very easy
+to support :-)
+
+Thanks Andy
+
+
+> --Andy
+
+-- 
+Djalal Harouni
+http://opendz.org
