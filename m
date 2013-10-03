@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3JCEPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47021 "EHLO
+	id S1755557Ab3JCEP0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab3JCEPD (ORCPT
+	with ESMTP id S1755524Ab3JCEPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:03 -0400
+	Thu, 3 Oct 2013 00:15:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 48/52] drm/radeon: fix hdmi audio on DCE3.0/3.1 asics
-Date: Wed,  2 Oct 2013 21:06:06 -0700
-Message-Id: <20131003040525.515563448@linuxfoundation.org>
+        Egbert Eich <eich@suse.com>, Jan Niggemann <jn@hz6.de>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 52/52] drm/i915: fix gen4 digital port hotplug definitions
+Date: Wed,  2 Oct 2013 21:06:10 -0700
+Message-Id: <20131003040525.787427878@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,57 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 58d327da9721f7a0f6e46c8dfa5cc5546fd7078a upstream.
+commit 0ce99f749b3834edeb500e17d6ad17e86b60ff83 upstream.
 
-These asics seem to use a mix of the DCE2.x and
-DCE3.2 audio interfaces despite what the register spec
-says.
+Apparently Bspec is wrong in this case here even for gm45. Note that
+Bspec is horribly misguided on i965g/gm, so we don't have any other
+data points besides that it seems to make machines work better.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=69729
-https://bugs.freedesktop.org/show_bug.cgi?id=69671
+With this changes all the bits in PORT_HOTPLUG_STAT for the digital
+ports are ordered the same way. This seems to agree with what register
+dumps from the hpd storm handling code shows, where the LIVE bit and
+the short/long pulse STATUS bits light up at the same time with this
+enumeration (but no with the one from Bspec).
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Also tested on my gm45 which has two DP+ ports, and everything seems
+to still work as expected.
+
+References: http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg23054.html
+Cc: Egbert Eich <eich@suse.com>
+Cc: Jan Niggemann <jn@hz6.de>
+Tested-by: Jan Niggemann <jn@hz6.de>
+[danvet: Add a big warning that Bspec seems to be wrong for these
+bits, suggested by Jani.]
+Acked-by: Jani Nikula <jani.nikula@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -238,9 +238,19 @@ void r600_audio_set_dto(struct drm_encod
- 	 * number (coefficient of two integer numbers.  DCCG_AUDIO_DTOx_PHASE
- 	 * is the numerator, DCCG_AUDIO_DTOx_MODULE is the denominator
- 	 */
--	if (ASIC_IS_DCE3(rdev)) {
-+	if (ASIC_IS_DCE32(rdev)) {
-+		if (dig->dig_encoder == 0) {
-+			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
-+			WREG32(DCCG_AUDIO_DTO0_MODULE, clock * 100);
-+			WREG32(DCCG_AUDIO_DTO_SELECT, 0); /* select DTO0 */
-+		} else {
-+			WREG32(DCCG_AUDIO_DTO1_PHASE, base_rate * 100);
-+			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
-+			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
-+		}
-+	} else if (ASIC_IS_DCE3(rdev)) {
- 		/* according to the reg specs, this should DCE3.2 only, but in
--		 * practice it seems to cover DCE3.0 as well.
-+		 * practice it seems to cover DCE3.0/3.1 as well.
- 		 */
- 		if (dig->dig_encoder == 0) {
- 			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
-@@ -252,7 +262,7 @@ void r600_audio_set_dto(struct drm_encod
- 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
- 		}
- 	} else {
--		/* according to the reg specs, this should be DCE2.0 and DCE3.0 */
-+		/* according to the reg specs, this should be DCE2.0 and DCE3.0/3.1 */
- 		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
- 		       AUDIO_DTO_MODULE(clock / 10));
- 	}
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1675,10 +1675,16 @@
+ #define CRT_HOTPLUG_DETECT_VOLTAGE_475MV	(1 << 2)
+ 
+ #define PORT_HOTPLUG_STAT	(dev_priv->info->display_mmio_offset + 0x61114)
+-/* HDMI/DP bits are gen4+ */
+-#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 29)
++/*
++ * HDMI/DP bits are gen4+
++ *
++ * WARNING: Bspec for hpd status bits on gen4 seems to be completely confused.
++ * Please check the detailed lore in the commit message for for experimental
++ * evidence.
++ */
++#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
+ #define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
+-#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 27)
++#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
+ #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
+ #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
+ #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
 
 
