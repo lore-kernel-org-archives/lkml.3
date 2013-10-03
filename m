@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab3JCPNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:13:48 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53186 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab3JCPNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:13:43 -0400
+	id S1754875Ab3JCPNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:13:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39677 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754781Ab3JCPNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 11:13:37 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <gregkh@linuxfoundation.org>, <balbi@ti.com>
 CC: <bcousson@baylibre.com>, <tony@atomide.com>, <george.cherian@ti.com>,
@@ -15,9 +14,9 @@ CC: <bcousson@baylibre.com>, <tony@atomide.com>, <george.cherian@ti.com>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v8 8/8] ARM: dts: omap5: update omap-control-usb node
-Date: Thu, 3 Oct 2013 18:12:37 +0300
-Message-ID: <1380813157-22311-9-git-send-email-rogerq@ti.com>
+Subject: [PATCH v8 6/8] usb: phy: omap: get rid of omap_get_control_dev()
+Date: Thu, 3 Oct 2013 18:12:35 +0300
+Message-ID: <1380813157-22311-7-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1380813157-22311-1-git-send-email-rogerq@ti.com>
 References: <1380813157-22311-1-git-send-email-rogerq@ti.com>
@@ -27,60 +26,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split USB2 PHY and USB3 PHY into separate omap-control-usb
-nodes. Get rid of "ti,type" property.
+This function was preventing us from supporting multiple
+instances. Get rid of it. Since we support DT boots only,
+users can get the control device phandle from the DT node.
 
-CC: Benoit Cousson <bcousson@baylibre.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap5.dtsi |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/usb/phy/phy-omap-control.c   |   31 ++++++++++---------------------
+ include/linux/usb/omap_control_usb.h |    5 -----
+ 2 files changed, 10 insertions(+), 26 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 7cdea1b..c0ec6dc 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -626,12 +626,16 @@
- 			hw-caps-temp-alert;
- 		};
+diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
+index 1c8a7c5..09c5ace 100644
+--- a/drivers/usb/phy/phy-omap-control.c
++++ b/drivers/usb/phy/phy-omap-control.c
+@@ -26,26 +26,6 @@
+ #include <linux/clk.h>
+ #include <linux/usb/omap_control_usb.h>
  
--		omap_control_usb: omap-control-usb@4a002300 {
--			compatible = "ti,omap-control-usb";
--			reg = <0x4a002300 0x4>,
--			      <0x4a002370 0x4>;
--			reg-names = "control_dev_conf", "phy_power_usb";
--			ti,type = <2>;
-+		omap_control_usb2phy: control-phy@4a002300 {
-+			compatible = "ti,control-phy-usb2";
-+			reg = <0x4a002300 0x4>;
-+			reg-names = "power";
-+		};
+-static struct omap_control_usb *control_usb;
+-
+-/**
+- * omap_get_control_dev - returns the device pointer for this control device
+- *
+- * This API should be called to get the device pointer for this control
+- * module device. This device pointer should be used for called other
+- * exported API's in this driver.
+- *
+- * To be used by PHY driver and glue driver.
+- */
+-struct device *omap_get_control_dev(void)
+-{
+-	if (!control_usb)
+-		return ERR_PTR(-ENODEV);
+-
+-	return control_usb->dev;
+-}
+-EXPORT_SYMBOL_GPL(omap_get_control_dev);
+-
+ /**
+  * omap_control_usb_phy_power - power on/off the phy using control module reg
+  * @dev: the control module device
+@@ -182,11 +162,19 @@ void omap_control_usb_set_mode(struct device *dev,
+ {
+ 	struct omap_control_usb	*ctrl_usb;
+ 
+-	if (IS_ERR(dev) || control_usb->type != OMAP_CTRL_TYPE_OTGHS)
++	if (IS_ERR(dev) || !dev)
+ 		return;
+ 
+ 	ctrl_usb = dev_get_drvdata(dev);
+ 
++	if (!ctrl_usb) {
++		dev_err(dev, "Invalid control usb device\n");
++		return;
++	}
 +
-+		omap_control_usb3phy: control-phy@4a002370 {
-+			compatible = "ti,control-phy-pipe3";
-+			reg = <0x4a002370 0x4>;
-+			reg-names = "power";
- 		};
++	if (ctrl_usb->type != OMAP_CTRL_TYPE_OTGHS)
++		return;
++
+ 	switch (mode) {
+ 	case USB_MODE_HOST:
+ 		omap_control_usb_host_mode(ctrl_usb);
+@@ -237,6 +225,7 @@ static int omap_control_usb_probe(struct platform_device *pdev)
+ {
+ 	struct resource	*res;
+ 	const struct of_device_id *of_id;
++	struct omap_control_usb *control_usb;
  
- 		omap_dwc3@4a020000 {
-@@ -662,7 +666,7 @@
- 			usb2_phy: usb2phy@4a084000 {
- 				compatible = "ti,omap-usb2";
- 				reg = <0x4a084000 0x7c>;
--				ctrl-module = <&omap_control_usb>;
-+				ctrl-module = <&omap_control_usb2phy>;
- 			};
+ 	of_id = of_match_device(of_match_ptr(omap_control_usb_id_table),
+ 								&pdev->dev);
+diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
+index 61b889a..596b019 100644
+--- a/include/linux/usb/omap_control_usb.h
++++ b/include/linux/usb/omap_control_usb.h
+@@ -65,15 +65,10 @@ enum omap_control_usb_mode {
+ #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
  
- 			usb3_phy: usb3phy@4a084400 {
-@@ -671,7 +675,7 @@
- 				      <0x4a084800 0x64>,
- 				      <0x4a084c00 0x40>;
- 				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
--				ctrl-module = <&omap_control_usb>;
-+				ctrl-module = <&omap_control_usb3phy>;
- 			};
- 		};
+ #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
+-extern struct device *omap_get_control_dev(void);
+ extern void omap_control_usb_phy_power(struct device *dev, int on);
+ extern void omap_control_usb_set_mode(struct device *dev,
+ 	enum omap_control_usb_mode mode);
+ #else
+-static inline struct device *omap_get_control_dev(void)
+-{
+-	return ERR_PTR(-ENODEV);
+-}
  
+ static inline void omap_control_usb_phy_power(struct device *dev, int on)
+ {
 -- 
 1.7.4.1
 
