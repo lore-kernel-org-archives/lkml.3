@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab3JCKAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 06:00:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44135 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab3JCKAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 06:00:12 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <bcousson@baylibre.com>
-CC: <tony@atomide.com>, <george.cherian@ti.com>, <kishon@ti.com>,
-        <bigeasy@linutronix.de>, <sergei.shtylyov@cogentembedded.com>,
-        <thomas.langer@lantiq.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v8 8/8] ARM: dts: omap5: update omap-control-usb node
-Date: Thu, 3 Oct 2013 12:59:06 +0300
-Message-ID: <1380794346-30185-9-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1380794346-30185-1-git-send-email-rogerq@ti.com>
-References: <1380794346-30185-1-git-send-email-rogerq@ti.com>
+	id S1754202Ab3JCKAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:00:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41602 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120Ab3JCKAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 06:00:17 -0400
+Date: Thu, 3 Oct 2013 11:59:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [BUG] perf tests: Test converting perf time to TSC
+Message-ID: <20131003095958.GC3081@twins.programming.kicks-ass.net>
+References: <20131002132308.GB20396@krava.brq.redhat.com>
+ <524C23D3.6020300@intel.com>
+ <20131003081737.GB993@krava.brq.redhat.com>
+ <524D2E06.5020801@intel.com>
+ <20131003085625.GA3081@twins.programming.kicks-ass.net>
+ <20131003085807.GO26785@twins.programming.kicks-ass.net>
+ <524D3ED8.2030109@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524D3ED8.2030109@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split USB2 PHY and USB3 PHY into separate omap-control-usb
-nodes. Get rid of "ti,type" property.
+On Thu, Oct 03, 2013 at 12:54:32PM +0300, Adrian Hunter wrote:
+> Where do you see that?
 
-CC: Benoit Cousson <bcousson@baylibre.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/omap5.dtsi |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 7cdea1b..c0ec6dc 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -626,12 +626,16 @@
- 			hw-caps-temp-alert;
- 		};
- 
--		omap_control_usb: omap-control-usb@4a002300 {
--			compatible = "ti,omap-control-usb";
--			reg = <0x4a002300 0x4>,
--			      <0x4a002370 0x4>;
--			reg-names = "control_dev_conf", "phy_power_usb";
--			ti,type = <2>;
-+		omap_control_usb2phy: control-phy@4a002300 {
-+			compatible = "ti,control-phy-usb2";
-+			reg = <0x4a002300 0x4>;
-+			reg-names = "power";
-+		};
-+
-+		omap_control_usb3phy: control-phy@4a002370 {
-+			compatible = "ti,control-phy-pipe3";
-+			reg = <0x4a002370 0x4>;
-+			reg-names = "power";
- 		};
- 
- 		omap_dwc3@4a020000 {
-@@ -662,7 +666,7 @@
- 			usb2_phy: usb2phy@4a084000 {
- 				compatible = "ti,omap-usb2";
- 				reg = <0x4a084000 0x7c>;
--				ctrl-module = <&omap_control_usb>;
-+				ctrl-module = <&omap_control_usb2phy>;
- 			};
- 
- 			usb3_phy: usb3phy@4a084400 {
-@@ -671,7 +675,7 @@
- 				      <0x4a084800 0x64>,
- 				      <0x4a084c00 0x40>;
- 				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
--				ctrl-module = <&omap_control_usb>;
-+				ctrl-module = <&omap_control_usb3phy>;
- 			};
- 		};
- 
--- 
-1.7.4.1
-
+my minds eye.. I should go back to sleep or so :-( Its going to be one
+of those days.
