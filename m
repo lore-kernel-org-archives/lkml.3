@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab3JCFSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:18:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47146 "EHLO
+	id S1754882Ab3JCERa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3JCESW (ORCPT
+	with ESMTP id S1754377Ab3JCER2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:22 -0400
+	Thu, 3 Oct 2013 00:17:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 22/57] serial: pch_uart: fix tty-kref leak in dma-rx path
-Date: Wed,  2 Oct 2013 21:08:48 -0700
-Message-Id: <20131003040638.127825049@linuxfoundation.org>
+        Li Fei <fei.li@intel.com>, liu chuansheng <chuansheng.liu@intel.com>,
+        Robin Holt <robinmholt@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 12/57] kernel/reboot.c: re-enable the function of variable reboot_default
+Date: Wed,  2 Oct 2013 21:08:38 -0700
+Message-Id: <20131003040637.445810984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -26,38 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit 19b85cfb190eb9980eaf416bff96aef4159a430e upstream.
+commit e2f0b88e84eed9cf9797f0a88c8012ee0b885a6d upstream.
 
-Fix tty_kref leak when tty_buffer_request room fails in dma-rx path.
+Commit 1b3a5d02ee07 ("reboot: move arch/x86 reboot= handling to generic
+kernel") did some cleanup for reboot= command line, but it made the
+reboot_default inoperative.
 
-Note that the tty ref isn't really needed anymore, but as the leak has
-always been there, fixing it before removing should makes it easier to
-backport the fix.
+The default value of variable reboot_default should be 1, and if command
+line reboot= is not set, system will use the default reboot mode.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[akpm@linux-foundation.org: fix comment layout]
+Signed-off-by: Li Fei <fei.li@intel.com>
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Acked-by: Robin Holt <robinmholt@linux.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pch_uart.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/reboot.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -658,11 +658,12 @@ static int dma_push_rx(struct eg20t_port
- 		dev_warn(port->dev, "Rx overrun: dropping %u bytes\n",
- 			 size - room);
- 	if (!room)
--		return room;
-+		goto out;
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -32,7 +32,14 @@ EXPORT_SYMBOL(cad_pid);
+ #endif
+ enum reboot_mode reboot_mode DEFAULT_REBOOT_MODE;
  
- 	tty_insert_flip_string(tport, sg_virt(&priv->sg_rx), size);
- 
- 	port->icount.rx += room;
-+out:
- 	tty_kref_put(tty);
- 
- 	return room;
+-int reboot_default;
++/*
++ * This variable is used privately to keep track of whether or not
++ * reboot_type is still set to its default value (i.e., reboot= hasn't
++ * been set on the command line).  This is needed so that we can
++ * suppress DMI scanning for reboot quirks.  Without it, it's
++ * impossible to override a faulty reboot quirk without recompiling.
++ */
++int reboot_default = 1;
+ int reboot_cpu;
+ enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
 
 
