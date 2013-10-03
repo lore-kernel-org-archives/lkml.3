@@ -1,108 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab3JCRPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:15:10 -0400
-Received: from mailout.micron.com ([137.201.242.129]:22005 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab3JCRPF (ORCPT
+	id S1754819Ab3JCRP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:15:28 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:48222 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab3JCRPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:15:05 -0400
-Message-ID: <524DA6CD.3060409@micron.com>
-Date: Thu, 3 Oct 2013 10:18:05 -0700
-From: Sam Bradshaw <sbradshaw@micron.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	Thu, 3 Oct 2013 13:15:24 -0400
+Date: Thu, 3 Oct 2013 19:15:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] PATCH: KGDB/KDB Fix no KDB config problem.
+Message-ID: <20131003171520.GA5144@gmail.com>
+References: <20131003163824.966169920@asylum.americas.sgi.com>
+ <20131003163825.184494258@asylum.americas.sgi.com>
+ <20131003165122.GB32755@gmail.com>
+ <524DA381.2050108@sgi.com>
 MIME-Version: 1.0
-To: <axboe@kernel.dk>
-CC: <linux-kernel@vger.kernel.org>, <asamymuthupa@micron.com>
-Subject: [PATCH] mtip32xx: Correctly handle security locked condition
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20194.000
-X-TM-AS-Result: No--4.624400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524DA381.2050108@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If power is removed during a secure erase, the drive will end up in a
-security locked condition.  This patch causes the driver to identify,
-log, and flag the security lock state.  IOs are prevented from
-submission to the drive until the locked state is addressed with a
-secure erase.
 
-Bumped version number to reflect this capability.
+* Mike Travis <travis@sgi.com> wrote:
 
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
----
- drivers/block/mtip32xx/mtip32xx.c |   16 ++++++++++++++--
- drivers/block/mtip32xx/mtip32xx.h |    2 +-
- 2 files changed, 15 insertions(+), 3 deletions(-)
+> 
+> 
+> On 10/3/2013 9:51 AM, Ingo Molnar wrote:
+> > 
+> > * Mike Travis <travis@sgi.com> wrote:
+> > 
+> >> Some code added to the debug_core module had KDB dependencies
+> >> that it shouldn't have.
+> >>
+> >> Signed-off-by: Mike Travis <travis@sgi.com>
+> >> ---
+> >>  kernel/debug/debug_core.c |    8 ++++----
+> >>  kernel/debug/debug_core.h |    2 ++
+> >>  2 files changed, 6 insertions(+), 4 deletions(-)
+> >>
+> >> --- linux.orig/kernel/debug/debug_core.c
+> >> +++ linux/kernel/debug/debug_core.c
+> >> @@ -575,8 +575,8 @@ return_normal:
+> >>  		raw_spin_lock(&dbg_slave_lock);
+> >>  
+> >>  #ifdef CONFIG_SMP
+> >> -	/* If SYSTEM_NMI, slaves are already waiting */
+> >> -	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
+> >> +	/* If send_ready set, slaves are already waiting */
+> >> +	if (ks->send_ready)
+> >>  		atomic_set(ks->send_ready, 1);
+> >>  
+> >>  	/* Signal the other CPUs to enter kgdb_wait() */
+> >> @@ -682,11 +682,11 @@ kgdb_handle_exception(int evector, int s
+> >>  	if (arch_kgdb_ops.enable_nmi)
+> >>  		arch_kgdb_ops.enable_nmi(0);
+> >>  
+> >> +	memset(ks, 0, sizeof(struct kgdb_state));
+> >>  	ks->cpu			= raw_smp_processor_id();
+> >>  	ks->ex_vector		= evector;
+> >>  	ks->signo		= signo;
+> >>  	ks->err_code		= ecode;
+> >> -	ks->kgdb_usethreadid	= 0;
+> >>  	ks->linux_regs		= regs;
+> >>  
+> >>  	if (kgdb_reenter_check(ks))
+> >> @@ -750,7 +750,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
+> >>  		ks->cpu			= cpu;
+> >>  		ks->ex_vector		= trapnr;
+> >>  		ks->signo		= SIGTRAP;
+> >> -		ks->err_code		= KDB_REASON_SYSTEM_NMI;
+> >> +		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
+> >>  		ks->linux_regs		= regs;
+> >>  		ks->send_ready		= send_ready;
+> >>  		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+> >> --- linux.orig/kernel/debug/debug_core.h
+> >> +++ linux/kernel/debug/debug_core.h
+> >> @@ -75,11 +75,13 @@ extern int kdb_stub(struct kgdb_state *k
+> >>  extern int kdb_parse(const char *cmdstr);
+> >>  extern int kdb_common_init_state(struct kgdb_state *ks);
+> >>  extern int kdb_common_deinit_state(void);
+> >> +#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
+> >>  #else /* ! CONFIG_KGDB_KDB */
+> >>  static inline int kdb_stub(struct kgdb_state *ks)
+> >>  {
+> >>  	return DBG_PASS_EVENT;
+> >>  }
+> >> +#define KGDB_KDB_REASON_SYSTEM_NMI 0
+> >>  #endif /* CONFIG_KGDB_KDB */
+> >>  
+> >>  #endif /* _DEBUG_CORE_H_ */
+> > 
+> > Hm, the KGDB_KDB_REASON_SYSTEM_NMI definition is a bit ugly. I still think 
+> > there are layering violations here and just kludging it around doesn't 
+> > solve it - a helper function that keeps kgdb details to the kgdb code 
+> > would.
+> > 
+> > Anyway, if Jason is fine with this solution and upholds his Acked-by then 
+> > I'll merge this into the first patch and apply the two patches.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> > 
+> 
+> Would you prefer a simple #ifdef CONFIG_KGDB_KDB around the assignment?
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index aab28a4..a710f51 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -899,8 +899,9 @@ static void mtip_handle_tfe(struct driver_data *dd)
- 			fail_reason = "thermal shutdown";
- 		}
- 		if (buf[288] == 0xBF) {
-+			set_bit(MTIP_DDF_SEC_LOCK_BIT, &dd->dd_flag);
- 			dev_info(&dd->pdev->dev,
--				"Drive indicates rebuild has failed.\n");
-+				"Drive indicates rebuild has failed. Secure erase required.\n");
- 			fail_all_ncq_cmds = 1;
- 			fail_reason = "rebuild failed";
- 		}
-@@ -1566,6 +1567,12 @@ static int mtip_get_identify(struct mtip_port *port, void __user *user_buffer)
- 	}
- #endif
- 
-+	/* Check security locked state */
-+	if (port->identify[128] & 0x4)
-+		set_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
-+	else
-+		clear_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
-+
- #ifdef MTIP_TRIM /* Disabling TRIM support temporarily */
- 	/* Demux ID.DRAT & ID.RZAT to determine trim support */
- 	if (port->identify[69] & (1 << 14) && port->identify[69] & (1 << 5))
-@@ -1887,6 +1894,10 @@ static void mtip_dump_identify(struct mtip_port *port)
- 	strlcpy(cbuf, (char *)(port->identify+27), 41);
- 	dev_info(&port->dd->pdev->dev, "Model: %s\n", cbuf);
- 
-+	dev_info(&port->dd->pdev->dev, "Security: %04x %s\n",
-+		port->identify[128],
-+		port->identify[128] & 0x4 ? "(LOCKED)" : "");
-+
- 	if (mtip_hw_get_capacity(port->dd, &sectors))
- 		dev_info(&port->dd->pdev->dev,
- 			"Capacity: %llu sectors (%llu MB)\n",
-@@ -3594,7 +3605,8 @@ static int mtip_hw_exit(struct driver_data *dd)
- 	 * saves its state.
- 	 */
- 	if (!dd->sr) {
--		if (!test_bit(MTIP_DDF_REBUILD_FAILED_BIT, &dd->dd_flag))
-+		if (!test_bit(MTIP_PF_REBUILD_BIT, &dd->port->flags) &&
-+		    !test_bit(MTIP_DDF_SEC_LOCK_BIT, &dd->dd_flag))
- 			if (mtip_standby_immediate(dd->port))
- 				dev_warn(&dd->pdev->dev,
- 					"STANDBY IMMEDIATE failed\n");
-diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
-index 9be7a15..f73444a 100644
---- a/drivers/block/mtip32xx/mtip32xx.h
-+++ b/drivers/block/mtip32xx/mtip32xx.h
-@@ -92,7 +92,7 @@
- 
- /* Driver name and version strings */
- #define MTIP_DRV_NAME		"mtip32xx"
--#define MTIP_DRV_VERSION	"1.2.6os3"
-+#define MTIP_DRV_VERSION	"1.3.0"
- 
- /* Maximum number of minor device numbers per device. */
- #define MTIP_MAX_MINORS		16
--- 
-1.7.1
+An #ifdef doesn't solve the layering violation!
 
+kernel/debug/debug_core.c didn't have any serious use of #ifdef 
+CONFIG_KGDB_KDB before (it used it to flavor a few printks) and I'm not 
+convinced it needs one for this feature either.
+
+So if that whole chunk is kdb dependent, why not shuffle that into a 
+nicely named function and host it somewhere appropriate in 
+kernel/debug/kdb/? That function would turn into an empty inline function 
+in the !CONFIG_KGDB_KDB case.
+
+But ... it's up to Jason really whether he wants to abstract that piece of 
+code out, I'm just kibitzing here really.
+
+Thanks,
+
+	Ingo
