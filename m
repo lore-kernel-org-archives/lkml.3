@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3JCWzC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 18:55:02 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:58725 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3JCWy7 (ORCPT
+	id S1755929Ab3JCW4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 18:56:16 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:23428 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab3JCW4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 18:54:59 -0400
-X-AuditID: cbfec37b-b7fa96d00000716e-46-524df5c2000b
-Message-id: <524DF5BF.4070305@samsung.com>
-Date: Thu, 03 Oct 2013 16:54:55 -0600
+	Thu, 3 Oct 2013 18:56:15 -0400
+X-AuditID: cbfec37d-b7f0e6d00000657c-94-524df60e368e
+Message-id: <524DF60A.2020304@samsung.com>
+Date: Thu, 03 Oct 2013 16:56:10 -0600
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
@@ -20,38 +20,38 @@ Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, stable@vger.kernel.org,
         Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/52] 3.10.15-stable review
-References: <20131003040522.190209641@linuxfoundation.org>
-In-reply-to: <20131003040522.190209641@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: [ 00/57] 3.11.4-stable review
+References: <20131003040636.600441214@linuxfoundation.org>
+In-reply-to: <20131003040636.600441214@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX91DX32DDJ5eEbaYs34Nm0Xz4vVs
-	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
-	SN8ugStj/e51bAVreComn2xhbWB8x9nFyMkhIWAicfjhahYIW0ziwr31bF2MXBxCAssYJbZ+
-	7WeBcHqZJK6dXM0O4WxklFh8t4sRpIVXQEti05/FTF2MHBwsAqoS37+zgoTZBNQlPr/ewQ5i
-	CwnISTQtWc0MYosKREisXPKAFaJVUOLH5Htgm0UEjCX6z84Cq2cWOMYosbDZBMQWFtCW6Fv8
-	kQVijpVE5/o5YKs4Bawl3j7ihCi3llg5aRsjhC0vsXnNW2aIcmWJP5dPgZVLCChKbF9tNYFR
-	ZBaSxbOQdM9C0r2AkXkVo1hpcXJBcVJ6aoWRXnFibnFpXrpecn7uJkZIvFTvYLz71eYQowAH
-	oxIPr0Ctb5AQa2JZcWXuIUYJDmYlEd7Tn4BCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGFUy+b58
-	qdRJlODRfmJV8nzW/8KYhZNNeTgrFhvwyXA8CV1ldvXMQj6lYt5bViL/K9bt5D+ytExR68+0
-	dzPKLXf6etVrygsrxFzM0nqclHFmkduOY4kT7pXeCOU66VNtOG//jhe3XFMCZs2b7hH300Ew
-	dNNb9wRxc835CUXquSfke12eCRXeV2Ipzkg01GIuKk4EAF6f2Vx1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t9hP12+b75BBnN/c1nMWb+GzaJ58Xo2
+	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
+	pG+XwJVxpKeNqWAFT8X75XwNjK84uxg5OSQETCQerPvCDGGLSVy4t56ti5GLQ0hgGaPExM1r
+	mCGcXiaJKTt3MoJUCQlsZJTY/EkBxOYV0JLYcuUUK4jNIqAqsWxtD9gkNgF1ic+vd7BD1MtJ
+	NC1ZDRYXFYiQWLnkAStEr6DEj8n3WEBsEQFjif6zs8DqmQWOMUosbDbpYuTgEAaav+R0IsQY
+	K4nVZ+YygdicAtYS2/pusEKUm0k8alnHDGHLS2xe85YZol5Z4s/lU0wgYyQEFCW2r7aawCgy
+	C8niWUi6ZyHpXsDIvIpRrLQ4uaA4KT21wkSvODG3uDQvXS85P3cTIyRaancw3v9qc4hRgINR
+	iYc3o943SIg1say4MvcQowQHs5II7+lPQCHelMTKqtSi/Pii0pzU4kOMTBycUg2Ml0T3LV2i
+	xjeRr0A64AT71YvBFosONt8WcX3AXi1zRf7bg40c0glT2F/vVDFU/nyq3KHtOcfi5YrL25bx
+	ND8Rn7hmQyTDqpZZmaanazd/awyLUCn22/c8PIm3aN3dxhdajvmH/6RyOeu9FGl6dODAq+6T
+	B3c6K3/7zB2e3iv/wCq69WX8na3NSizFGYmGWsxFxYkApmma33QCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 10:05 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.15 release.
-> There are 52 patches in this series, all will be posted as a response
+On 10/02/2013 10:08 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.11.4 release.
+> There are 57 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sat Oct  5 04:05:08 UTC 2013.
+> Responses should be made by Sat Oct  5 04:06:23 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.15-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.4-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
@@ -59,7 +59,7 @@ On 10/02/2013 10:05 PM, Greg Kroah-Hartman wrote:
 > greg k-h
 >
 
-Patch testing: 3.10.15-rc1 applied cleanly to 3.10.14
+Patch testing: 3.11.4-rc1 applied cleanly to 3.11.3
 Compile testing: Passed
 Boot testing: Passed
 dmesg regression testing: passed. dmesgs look good. No regressions 
