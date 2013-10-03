@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab3JCEJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:09:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46830 "EHLO
+	id S1754763Ab3JCEJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:09:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab3JCEJd (ORCPT
+	with ESMTP id S1754720Ab3JCEJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:09:33 -0400
+	Thu, 3 Oct 2013 00:09:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Giovanni <giovanni.nervi@yahoo.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 05/16] xhci: Fix oops happening after address device timeout
-Date: Wed,  2 Oct 2013 21:05:29 -0700
-Message-Id: <20131003040445.908676371@linuxfoundation.org>
+Subject: [ 04/16] xhci: Ensure a command structure points to the correct trb on the command ring
+Date: Wed,  2 Oct 2013 21:05:28 -0700
+Message-Id: <20131003040445.841883667@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
 References: <20131003040445.523176877@linuxfoundation.org>
@@ -30,43 +29,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 284d20552461466b04d6bfeafeb1c47a8891b591 upstream.
+commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
 
-When a command times out, the command ring is first aborted,
-and then stopped. If the command ring is empty when it is stopped
-the stop event will point to next command which is not yet set.
-xHCI tries to handle this next event often causing an oops.
+If a command on the command ring needs to be cancelled before it is handled
+it can be turned to a no-op operation when the ring is stopped.
+We want to store the command ring enqueue pointer in the command structure
+when the command in enqueued for the cancellation case.
 
-Don't handle command completion events on stopped cmd ring if ring is
-empty.
+Some commands used to store the command ring dequeue pointers instead of enqueue
+(these often worked because enqueue happends to equal dequeue quite often)
+
+Other commands correctly used the enqueue pointer but did not check if it pointed
+to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
+xhci_stop_device() in about 2% of suspend/resume cases.
+
+This should also solve some weird behavior happening in command cancellation cases.
+
+This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
+then forgotten:
+    http://marc.info/?l=linux-usb&m=136269803207465&w=2
 
 This patch should be backported to kernels as old as 3.7, that contain
 the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
 command ring function"
 
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Reported-by: Giovanni <giovanni.nervi@yahoo.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/host/xhci-hub.c  |    2 +-
+ drivers/usb/host/xhci-ring.c |   10 ++++++++++
+ drivers/usb/host/xhci.c      |   25 +++++--------------------
+ drivers/usb/host/xhci.h      |    1 +
+ 4 files changed, 17 insertions(+), 21 deletions(-)
 
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -287,7 +287,7 @@ static int xhci_stop_device(struct xhci_
+ 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+ 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+ 	}
+-	cmd->command_trb = xhci->cmd_ring->enqueue;
++	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -1400,6 +1400,12 @@ static void handle_cmd_completion(struct
- 			inc_deq(xhci, xhci->cmd_ring);
- 			return;
- 		}
-+		/* There is no command to handle if we get a stop event when the
-+		 * command ring is empty, event->cmd_trb points to the next
-+		 * unset command
-+		 */
-+		if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
-+			return;
- 	}
+@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xh
+ 	return TRB_TYPE_LINK_LE32(link->control);
+ }
  
- 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
++{
++	/* Enqueue pointer can be left pointing to the link TRB,
++	 * we must handle that
++	 */
++	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
++		return ring->enq_seg->next->trbs;
++	return ring->enqueue;
++}
++
+ /* Updates trb to point to the next TRB in the ring, and updates seg if the next
+  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
+  * effect the ring dequeue or enqueue pointers.
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2582,15 +2582,7 @@ static int xhci_configure_endpoint(struc
+ 	if (command) {
+ 		cmd_completion = command->completion;
+ 		cmd_status = &command->status;
+-		command->command_trb = xhci->cmd_ring->enqueue;
+-
+-		/* Enqueue pointer can be left pointing to the link TRB,
+-		 * we must handle that
+-		 */
+-		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
+-			command->command_trb =
+-				xhci->cmd_ring->enq_seg->next->trbs;
+-
++		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+ 	} else {
+ 		cmd_completion = &virt_dev->cmd_completion;
+@@ -2598,7 +2590,7 @@ static int xhci_configure_endpoint(struc
+ 	}
+ 	init_completion(cmd_completion);
+ 
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -3383,14 +3375,7 @@ int xhci_discover_or_reset_device(struct
+ 
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
+-
+-	/* Enqueue pointer can be left pointing to the link TRB,
+-	 * we must handle that
+-	 */
+-	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
+-		reset_device_cmd->command_trb =
+-			xhci->cmd_ring->enq_seg->next->trbs;
++	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 
+ 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, slot_id);
+@@ -3594,7 +3579,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3721,7 +3706,7 @@ int xhci_address_device(struct usb_hcd *
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1811,6 +1811,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhc
+ 		union xhci_trb *cmd_trb);
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ 		unsigned int ep_index, unsigned int stream_id);
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
+ 
+ /* xHCI roothub code */
+ void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
 
 
