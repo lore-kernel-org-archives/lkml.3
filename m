@@ -1,114 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab3JCXyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:54:53 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56361 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab3JCXyv (ORCPT
+	id S1754167Ab3JCX4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:56:17 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62555 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab3JCX4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:54:51 -0400
-Date: Fri, 4 Oct 2013 00:54:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>, Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Message-ID: <20131003235419.GG27287@sirena.org.uk>
+	Thu, 3 Oct 2013 19:56:15 -0400
+Message-ID: <524E0419.3080909@linaro.org>
+Date: Thu, 03 Oct 2013 16:56:09 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y/IXGmCbwaJEfeoX"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Build failure after merge of the char-misc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 00/14] Volatile Ranges v9
+References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/02/2013 05:51 PM, John Stultz wrote:
+> So its been awhile since the last release of the volatile ranges
+> patches, and while Minchan and I have been busy with other things,
+> we have been slowly chipping away at issues and differences
+> trying to get a patchset that we both agree on.
+>
+> There's still a few smaller issues, but we figured any further
+> polishing of the patch series in private would be unproductive
+> and it would be much better to send the patches out for review
+> and comment and get some wider opinions.
+>
+> Whats new in v9:
+> * Updated to v3.11
+> * Added vrange purging logic to purge anonymous pages on
+>   swapless systems
+> * Added logic to allocate the vroot structure dynamically
+>   to avoid added overhead to mm and address_space structures
+> * Lots of minor tweaks, changes and cleanups
+>
+> Still TODO:
+> * Sort out better solution for clearing volatility on new mmaps
+> 	- Minchan has a different approach here
+> * Sort out apparent shrinker livelock that occasionally crops
+>   up under severe pressure
+>  
+> Feedback or thoughts here would be particularly helpful!
 
---Y/IXGmCbwaJEfeoX
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andrew noted that I've forgotten to provide sufficient overview of what
+volatile ranges does, and given its been while, folks may want a quick
+introduction/reminder.
 
-After merging the char-misc tree into -next an x86 allmodconfig build fails
-with:
+Volatile ranges provides a method for userland to inform the kernel that
+a range of memory is safe to discard (ie: can be regenerated) but
+userspace may want to try access it in the future.  It can be thought of
+as similar to MADV_DONTNEED, but that the actual freeing of the memory
+is delayed and only done under memory pressure, and the user can try to
+cancel the action and be able to quickly access any unpurged pages. The
+idea originated from Android's ashmem, but I've since learned that other
+OSes provide similar functionality.
 
-drivers/misc/mic/host/mic_main.c: In function =E2=80=98mic_probe=E2=80=99:
-drivers/misc/mic/host/mic_main.c:320:3: error: too many arguments to functi=
-on =E2=80=98sysfs_get_dirent=E2=80=99
-   NULL, "state");
-   ^
-In file included from include/linux/kobject.h:21:0,
-                 from include/linux/module.h:16,
-                 from drivers/misc/mic/host/mic_main.c:26:
-include/linux/sysfs.h:465:1: note: declared here
- sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char
-*name)
- ^
-make[4]: *** [drivers/misc/mic/host/mic_main.o] Error 1
+This funcitonality allows for a number of interesting uses:
+* Userland caches that have kernel triggered eviction under memory
+pressure. This allows for the kernel to "rightsize" userspace caches for
+current system-wide workload. Things like image bitmap caches, or
+rendered HTML in a hidden browser tab, where the data is not visible and
+can be regenerated if needed, are good examples.
 
-caused by an interaction between the addition of the Intel MIC host
-driver and commit 388975cccaaf1 (sysfs: clean up sysfs_get_dirent())
-=66rom the driver-current tree.
+* Opportunistic freeing of memory that may be quickly reused. Minchan
+has done a malloc implementation where free() marks the pages as
+volatile, allowing the kernel to reclaim under pressure. This avoids the
+unmapping and remapping of anonymous pages on free/malloc. So if
+userland wants to malloc memory quickly after the free, it just needs to
+mark the pages as non-volatile, and only purged pages will have to be
+faulted back in.
 
-I've applied the patch below and can carry it for the time being.
+The syscall interface is defined in patch 5/14 in this series, but
+briefly there are two ways to utilze the functionality:
 
-=46rom abbabb4580f45accf74f95aed6fe35b26ae8d009 Mon Sep 17 00:00:00 2001
-=46rom: Mark Brown <broonie@linaro.org>
-Date: Fri, 4 Oct 2013 00:53:01 +0100
-Subject: [PATCH] misc: mic: Update for sysfs_get_dirent() cleanups
+Explicit marking method:
+1) Userland marks a range of memory that can be regenerated if necessary
+as volatile
+2) Before accessing the memory again, userland marks the memroy as
+nonvolatile, and the kernel will provide notifcation if any pages in the
+range has been purged.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/misc/mic/host/mic_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_m=
-ain.c
-index ca06aa9..50c2ea3 100644
---- a/drivers/misc/mic/host/mic_main.c
-+++ b/drivers/misc/mic/host/mic_main.c
-@@ -316,8 +316,7 @@ static int mic_probe(struct pci_dev *pdev,
- 			"device_create_with_groups failed rc %d\n", rc);
- 		goto smpt_uninit;
- 	}
--	mdev->state_sysfs =3D sysfs_get_dirent(mdev->sdev->kobj.sd,
--		NULL, "state");
-+	mdev->state_sysfs =3D sysfs_get_dirent(mdev->sdev->kobj.sd, "state");
- 	if (!mdev->state_sysfs) {
- 		rc =3D -ENODEV;
- 		dev_err(&pdev->dev, "sysfs_get_dirent failed rc %d\n", rc);
---=20
-1.8.4.rc3
+Optimistic method:
+1) Userland marks a large range of data as volatile
+2) Userland continues to access the data as it needs.
+3) If userland accesses a page that has been purged, the kernel will
+send a SIGBUS
+4) Userspace can trap the SIGBUS, mark the afected pages as
+non-volatile, and refill the data as needed before continuing on
 
 
---Y/IXGmCbwaJEfeoX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Other details:
+The interface takes a range of memory, which can cover anonymous pages
+as well as mmapped file pages. In the case that the pages are from a
+shared mmapped file, the volatility set on those file pages is global.
+Thus much as writes to those pages are shared to other processes, pages
+marked volatile will be volatile to any other processes that have the
+file mapped as well. It is advised that processes coordinate when using
+volatile ranges on shared mappings (much as they must coordinate when
+writing to shared data). Any uncleared volatility on mmapped files will
+last until the the file is closed by all users (ie: volatility isn't
+persistent on disk).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Volatility on anonymous pages are inherited across forks, but cleared on
+exec.
 
-iQIcBAEBAgAGBQJSTgOoAAoJELSic+t+oim9pu4P/A81KazEwflTp2vj009woy6O
-/VcefakTqw7aMzolJCO+yV8hLe4LFX6en/jvGHsg38EksyM+Qa1pBRVkxOlDWQjd
-NMQ0ATUGhte+0tmhBaHZAKKO30LsvjkzRF4QjpLX//7ljFbUUZae/YIjEkjwG6E4
-AbuinSVrBUQxEIk0imfRrGyEZicDSZgp+KouJ02VEDnAU8i8mE//eo2uJ/YrPgo7
-z0uGVcdTxBYCRXdtiilZgUsVuk+gAbxnFMTIEXpBGJv64qIrn+45WiCxCpBdyDLy
-j2p1gWiZ0NnvLcTgloF5g5W26tIGKHneqdiZdjqU+2K6wbyJBwgwr8wI6YVy0zZ+
-hPXiEri2qlhdGgXWf9EZKL2m5WE23Ldu0R2nH/SalytFlSSy/PboOXGh/Wew/TEd
-hnjfRTvryDpo/MLhsN7MSbjyzYOF1hBp+CBZN7oEngRlVSwy43vdreh5OoUvZ6Tx
-YxWxwcRODklKNW/R1WjmMWGTCchju22AlTAx+W3NzlMViEU+fPDWSIZB8POgul7Z
-XgTIYNKfTJHh4A/jRRCeGsmjUdE+kO6Uq9OWg4Cb9VDKtFsvLK4NNEcXi2JOjBRn
-Zr83t2amGjG9s93LIepPPlsOCReUp8qP0Wx20x+NjQ0nDoH+86mlOjXrvrA4NyWy
-S199uDL8ZP13uH/6YFd0
-=K33k
------END PGP SIGNATURE-----
+You can read more about the history of volatile ranges here:
+http://permalink.gmane.org/gmane.linux.kernel.mm/98848
+http://permalink.gmane.org/gmane.linux.kernel.mm/98676
+https://lwn.net/Articles/522135/
+https://lwn.net/Kernel/Index/#Volatile_ranges
 
---Y/IXGmCbwaJEfeoX--
+
+thanks
+-john
+
+thanks
+-john
+
