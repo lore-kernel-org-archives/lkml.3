@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3JCMYU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 08:24:20 -0400
-Received: from 17.mo4.mail-out.ovh.net ([46.105.41.16]:58225 "EHLO
+	id S1754120Ab3JCM1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:27:37 -0400
+Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:51713 "EHLO
 	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753619Ab3JCMYT (ORCPT
+	with ESMTP id S1753748Ab3JCM1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 08:24:19 -0400
+	Thu, 3 Oct 2013 08:27:36 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -22,13 +22,13 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-watchdog@vger.kernel.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 2/4] watchdog: at91sam9_wdt: update device tree doc
-Date: Thu,  3 Oct 2013 14:19:19 +0200
-Message-Id: <1380802761-32279-3-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH 4/4] ARM: at91/dt: add watchdog properties to kizbox board
+Date: Thu,  3 Oct 2013 14:19:21 +0200
+Message-Id: <1380802761-32279-5-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1380802761-32279-1-git-send-email-b.brezillon@overkiz.com>
 References: <1380802761-32279-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7031807868513188066
+X-Ovh-Tracer-Id: 7086695488971765988
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -42,57 +42,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new at91sam9 watchdog properties to the documentation.
+Add watchdog specific config for kizbox board.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/kizbox.dts |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-index fcdd48f..f90e294 100644
---- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-@@ -9,11 +9,37 @@ Required properties:
+diff --git a/arch/arm/boot/dts/kizbox.dts b/arch/arm/boot/dts/kizbox.dts
+index 02df191..928f6ee 100644
+--- a/arch/arm/boot/dts/kizbox.dts
++++ b/arch/arm/boot/dts/kizbox.dts
+@@ -53,6 +53,12 @@
+ 				status = "okay";
+ 			};
  
- Optional properties:
- - timeout-sec: contains the watchdog timeout in seconds.
-+- interrupts : Should contain WDT interrupt.
-+- atmel,max-heartbeat-sec : Should contain the maximum heartbeat value in
-+	seconds. This value should be less or equal to 16. It is used to
-+	compute the WDV field.
-+- atmel,min-heartbeat-sec : Should contain the minimum heartbeat value in
-+	seconds. This value must be smaller than the max-heartbeat-sec value.
-+	It is used to compute the WDD field.
-+- atmel,watchdog-type : Should be "hardware" or "software". Hardware watchdog
-+	use the at91 watchdog reset. Software watchdog use the watchdog
-+	interrupt to trigger a software reset.
-+- atmel,reset-type : Should be "proc" or "all".
-+	"all" : assert peripherals and processor reset signals
-+	"proc" : assert the processor reset signal
-+	This is valid only when using "hardware" watchdog.
-+- atmel,disable : Should be present if you want to disable the watchdog.
-+- atmel,idle-halt : Should be present if you want to stop the watchdog when
-+	entering idle state.
-+- atmel,dbg-halt : Should be present if you want to stop the watchdog when
-+	entering debug state.
++			watchdog@fffffd40 {
++				timeout-sec = <15>;
++				atmel,max-heartbeat-sec = <16>;
++				atmel,min-heartbeat-sec = <0>;
++				status = "okay";
++			};
+ 		};
  
- Example:
--
- 	watchdog@fffffd40 {
- 		compatible = "atmel,at91sam9260-wdt";
- 		reg = <0xfffffd40 0x10>;
--		timeout-sec = <10>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		timeout-sec = <15>;
-+		atmel,watchdog-type = "hardware";
-+		atmel,reset-type = "all";
-+		atmel,dbg-halt;
-+		atmel,idle-halt;
-+		atmel,max-heartbeat-sec = <16>;
-+		atmel,min-heartbeat-sec = <0>;
-+		status = "okay";
- 	};
+ 		nand0: nand@40000000 {
 -- 
 1.7.9.5
 
