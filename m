@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3JCQ1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:27:48 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:64455 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab3JCQ1q (ORCPT
+	id S1754278Ab3JCQaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:30:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48536 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab3JCQaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:27:46 -0400
+	Thu, 3 Oct 2013 12:30:03 -0400
+Date: Thu, 3 Oct 2013 17:29:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20131003162938.GB27287@sirena.org.uk>
+References: <1380716219-32039-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131002195029.GH27287@sirena.org.uk>
+ <20131003161114.GA3635@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <524D5DAC.3000004@gmail.com>
-References: <52486938.4090009@gmail.com>
-	<20130929180101.GB5490@pd.tnic>
-	<5248905E.8000801@gmail.com>
-	<20130929205051.GD5426@pd.tnic>
-	<52489A59.7040108@gmail.com>
-	<20130929213026.GF5426@pd.tnic>
-	<524D5DAC.3000004@gmail.com>
-Date: Thu, 3 Oct 2013 09:27:45 -0700
-X-Google-Sender-Auth: eRDQFnvAj-tFKwjZruw8BpZGh50
-Message-ID: <CA+55aFwuV4u3ky-XT_P_sCOYjqUW1EvA3Q2NuZ=+LZ5O06jS3g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] x86_64: add config options to optimize for newer AMD processors
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linux-Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4NxgPrvSrIDR5b4"
+Content-Disposition: inline
+In-Reply-To: <20131003161114.GA3635@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH] regulator: core: Add ability to create a lookup
+ alias for supply
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 5:06 AM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> improved.  Building kernel 3.12-rc2 with allmodconfig using 8 jobs on a FX-8320 takes
->
-> 22 minutes and 57 seconds on a kernel with CONFIG_MK8,
-> 21 minutes and 35 seconds on a kernel with CONFIG_GENERIC, and
-> 19 minutes and 11 seconds on a kernel with CONFIG_PILEDRIVER.
 
-That's certainly noticeable. Surprisingly so. What makes MK8 so bad in
-particular, I wonder?
+--T4NxgPrvSrIDR5b4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Just out of interest, have you done any profiles on the kernel cost
-here to see what it is that makes such a big difference. Because
-normally on a kernel build, I see most of the overhead in path lookup.
-But that's only true for otherwise optimized builds that don't have
-system call auditing etc debugging that spreads the costs out over
-everything..
+On Thu, Oct 03, 2013 at 05:11:14PM +0100, Charles Keepax wrote:
 
-             Linus
+> For the bulk API would you prefer taking a single src and alias
+> device and a list of supplies, or lists for all three?
+
+> I would go for a list just for the supplies, as lists of devices
+> would probably need to be filled in by a loop on the user end
+> anyway negating the point of the bulk API some what and a lot of
+> the use-cases will like have the same device on both sides for
+> all the supplies.
+
+I think just the supplies is fine.
+
+--T4NxgPrvSrIDR5b4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTZtuAAoJELSic+t+oim9A6EQAJIGxUp6vUoHGktPYfBOPbIN
+jspfRjSZz7v9S6cRcQ1BDoaSsbo05x0xhRgd2tmatwGqpOr46sPFcuAITXiOlYxq
+QWiTSAjOJdyAvWNWXhdeL1icZMuTUIYlBkdM7vZW+QFngtvx5RqO8bw0HQVrkZLs
+egmR/UHxhDLNCErVBWp7ai6oKU26Z77sKz/+VRELxGr5Y1YJuZF+uGR+6H298WYC
+I0HT9O9LSvJwQDXLdUNHK6JJ+OkvZaaZUeFVk2nv/9sa9Ahnil/NGYxBO8MQUS7T
+AJKbShqYnJx2zsG8hPYELtsDXSZiRBKW/EJITihf5gdCx6eAdrOVKC5Cq/rrww96
+vZxY3y7lRCRna6nF9ERRGGU89AKBB+ZpBxyGcjP5nnkaQCIrRWuY0RuYQ2lBgtpg
+lsC31NZ6n2Ow7hJoKuw+1jKx0shD4IpFw7Xs63FHLt7uNklYgP6w1U1BQREItXB+
+/QR/DLrN8THD4TE7PZOy+mIV97IbZUXWI3vghZfTs53/u7YUmQQgzkaiwxaV+/rt
+WqvM7zZ2yvR1X/7nom71ePn6ItVVnyBcC7pQ3UVR4lpKw1sLGYdODYDb/YI2k9sM
+/kG9T7Qenw7V6JuadUorVrXh1N8P4dsN+ZylQLtAmPnPLxopFHTrlJBSB7bZnOes
+f2+ccvBRHCJE4MtIC6jV
+=N0DJ
+-----END PGP SIGNATURE-----
+
+--T4NxgPrvSrIDR5b4--
