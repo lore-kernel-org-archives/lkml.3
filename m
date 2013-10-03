@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3JCETP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:19:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47198 "EHLO
+	id S1756102Ab3JCETT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:19:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab3JCETN (ORCPT
+	with ESMTP id S1754224Ab3JCETQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:19:13 -0400
+	Thu, 3 Oct 2013 00:19:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 34/57] USB: UHCI: accept very late isochronous URBs
-Date: Wed,  2 Oct 2013 21:09:00 -0700
-Message-Id: <20131003040638.935871481@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [ 35/57] USB: Fix breakage in ffs_fs_mount()
+Date: Wed,  2 Oct 2013 21:09:01 -0700
+Message-Id: <20131003040639.003916522@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -26,59 +27,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit bef073b067a7b1874a6b381e0035bb0516d71a77 upstream.
+commit 2606b28aabd7dea1766c23a105e1124c95409c96 upstream.
 
-Commit 24f531371de1 (USB: EHCI: accept very late isochronous URBs)
-changed the isochronous API provided by ehci-hcd.  URBs submitted too
-late, so that the time slots for all their packets have already
-expired, are no longer rejected outright.  Instead the submission is
-accepted, and the URB completes normally with a -EXDEV error for each
-packet.  This is what client drivers expect.
+	There's a bunch of failure exits in ffs_fs_mount() with
+seriously broken recovery logics.  Most of that appears to stem
+from misunderstanding of the ->kill_sb() semantics; unlike
+->put_super() it is called for *all* superblocks of given type,
+no matter how (in)complete the setup had been.  ->put_super()
+is called only if ->s_root is not NULL; any failure prior to
+setting ->s_root will have the call of ->put_super() skipped.
+->kill_sb(), OTOH, awaits every superblock that has come from
+sget().
 
-This patch implements the same policy in uhci-hcd.  It should be
-applied to all kernels containing commit c44b225077bb (UHCI: implement
-new semantics for URB_ISO_ASAP).
+Current behaviour of ffs_fs_mount():
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+We have struct ffs_sb_fill_data data on stack there.  We do
+	ffs_dev = functionfs_acquire_dev_callback(dev_name);
+and store that in data.private_data.  Then we call mount_nodev(),
+passing it ffs_sb_fill() as a callback.  That will either fail
+outright, or manage to call ffs_sb_fill().  There we allocate an
+instance of struct ffs_data, slap the value of ffs_dev (picked
+from data.private_data) into ffs->private_data and overwrite
+data.private_data by storing ffs into an overlapping member
+(data.ffs_data).  Then we store ffs into sb->s_fs_info and attempt
+to set the rest of the things up (root inode, root dentry, then
+create /ep0 there).  Any of those might fail.  Should that
+happen, we get ffs_fs_kill_sb() called before mount_nodev()
+returns.  If mount_nodev() fails for any reason whatsoever,
+we proceed to
+	functionfs_release_dev_callback(data.ffs_data);
+
+That's broken in a lot of ways.  Suppose the thing has failed in
+allocation of e.g. root inode or dentry.  We have
+	functionfs_release_dev_callback(ffs);
+	ffs_data_put(ffs);
+done by ffs_fs_kill_sb() (ffs accessed via sb->s_fs_info), followed by
+	functionfs_release_dev_callback(ffs);
+from ffs_fs_mount() (via data.ffs_data).  Note that the second
+functionfs_release_dev_callback() has every chance to be done to freed memory.
+
+Suppose we fail *before* root inode allocation.  What happens then?
+ffs_fs_kill_sb() doesn't do anything to ffs (it's either not called at all,
+or it doesn't have a pointer to ffs stored in sb->s_fs_info).  And
+	functionfs_release_dev_callback(data.ffs_data);
+is called by ffs_fs_mount(), but here we are in nasal daemon country - we
+are reading from a member of union we'd never stored into.  In practice,
+we'll get what we used to store into the overlapping field, i.e. ffs_dev.
+And then we get screwed, since we treat it (struct gfs_ffs_obj * in
+disguise, returned by functionfs_acquire_dev_callback()) as struct
+ffs_data *, pick what would've been ffs_data ->private_data from it
+(*well* past the actual end of the struct gfs_ffs_obj - struct ffs_data
+is much bigger) and poke in whatever it points to.
+
+FWIW, there's a minor leak on top of all that in case if ffs_sb_fill()
+fails on kstrdup() - ffs is obviously forgotten.
+
+The thing is, there is no point in playing all those games with union.
+Just allocate and initialize ffs_data *before* calling mount_nodev() and
+pass a pointer to it via data.ffs_data.  And once it's stored in
+sb->s_fs_info, clear data.ffs_data, so that ffs_fs_mount() knows that
+it doesn't need to kill the sucker manually - from that point on
+we'll have it done by ->kill_sb().
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/uhci-q.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/f_fs.c |   60 +++++++++++++++++++---------------------------
+ 1 file changed, 26 insertions(+), 34 deletions(-)
 
---- a/drivers/usb/host/uhci-q.c
-+++ b/drivers/usb/host/uhci-q.c
-@@ -1303,7 +1303,7 @@ static int uhci_submit_isochronous(struc
- 		}
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1034,37 +1034,19 @@ struct ffs_sb_fill_data {
+ 	struct ffs_file_perms perms;
+ 	umode_t root_mode;
+ 	const char *dev_name;
+-	union {
+-		/* set by ffs_fs_mount(), read by ffs_sb_fill() */
+-		void *private_data;
+-		/* set by ffs_sb_fill(), read by ffs_fs_mount */
+-		struct ffs_data *ffs_data;
+-	};
++	struct ffs_data *ffs_data;
+ };
  
- 		/* Fell behind? */
--		if (uhci_frame_before_eq(frame, next)) {
-+		if (!uhci_frame_before_eq(next, frame)) {
+ static int ffs_sb_fill(struct super_block *sb, void *_data, int silent)
+ {
+ 	struct ffs_sb_fill_data *data = _data;
+ 	struct inode	*inode;
+-	struct ffs_data	*ffs;
++	struct ffs_data	*ffs = data->ffs_data;
  
- 			/* USB_ISO_ASAP: Round up to the first available slot */
- 			if (urb->transfer_flags & URB_ISO_ASAP)
-@@ -1311,13 +1311,17 @@ static int uhci_submit_isochronous(struc
- 						-qh->period;
+ 	ENTER();
  
- 			/*
--			 * Not ASAP: Use the next slot in the stream.  If
--			 * the entire URB falls before the threshold, fail.
-+			 * Not ASAP: Use the next slot in the stream,
-+			 * no matter what.
- 			 */
- 			else if (!uhci_frame_before_eq(next,
- 					frame + (urb->number_of_packets - 1) *
- 						qh->period))
--				return -EXDEV;
-+				dev_dbg(uhci_dev(uhci), "iso underrun %p (%u+%u < %u)\n",
-+						urb, frame,
-+						(urb->number_of_packets - 1) *
-+							qh->period,
-+						next);
- 		}
- 	}
+-	/* Initialise data */
+-	ffs = ffs_data_new();
+-	if (unlikely(!ffs))
+-		goto Enomem;
+-
+ 	ffs->sb              = sb;
+-	ffs->dev_name        = kstrdup(data->dev_name, GFP_KERNEL);
+-	if (unlikely(!ffs->dev_name))
+-		goto Enomem;
+-	ffs->file_perms      = data->perms;
+-	ffs->private_data    = data->private_data;
+-
+-	/* used by the caller of this function */
+-	data->ffs_data       = ffs;
+-
++	data->ffs_data       = NULL;
+ 	sb->s_fs_info        = ffs;
+ 	sb->s_blocksize      = PAGE_CACHE_SIZE;
+ 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
+@@ -1080,17 +1062,14 @@ static int ffs_sb_fill(struct super_bloc
+ 				  &data->perms);
+ 	sb->s_root = d_make_root(inode);
+ 	if (unlikely(!sb->s_root))
+-		goto Enomem;
++		return -ENOMEM;
+ 
+ 	/* EP0 file */
+ 	if (unlikely(!ffs_sb_create_file(sb, "ep0", ffs,
+ 					 &ffs_ep0_operations, NULL)))
+-		goto Enomem;
++		return -ENOMEM;
+ 
+ 	return 0;
+-
+-Enomem:
+-	return -ENOMEM;
+ }
+ 
+ static int ffs_fs_parse_opts(struct ffs_sb_fill_data *data, char *opts)
+@@ -1193,6 +1172,7 @@ ffs_fs_mount(struct file_system_type *t,
+ 	struct dentry *rv;
+ 	int ret;
+ 	void *ffs_dev;
++	struct ffs_data	*ffs;
+ 
+ 	ENTER();
+ 
+@@ -1200,18 +1180,30 @@ ffs_fs_mount(struct file_system_type *t,
+ 	if (unlikely(ret < 0))
+ 		return ERR_PTR(ret);
+ 
++	ffs = ffs_data_new();
++	if (unlikely(!ffs))
++		return ERR_PTR(-ENOMEM);
++	ffs->file_perms = data.perms;
++
++	ffs->dev_name = kstrdup(dev_name, GFP_KERNEL);
++	if (unlikely(!ffs->dev_name)) {
++		ffs_data_put(ffs);
++		return ERR_PTR(-ENOMEM);
++	}
++
+ 	ffs_dev = functionfs_acquire_dev_callback(dev_name);
+-	if (IS_ERR(ffs_dev))
+-		return ffs_dev;
++	if (IS_ERR(ffs_dev)) {
++		ffs_data_put(ffs);
++		return ERR_CAST(ffs_dev);
++	}
++	ffs->private_data = ffs_dev;
++	data.ffs_data = ffs;
+ 
+-	data.dev_name = dev_name;
+-	data.private_data = ffs_dev;
+ 	rv = mount_nodev(t, flags, &data, ffs_sb_fill);
+-
+-	/* data.ffs_data is set by ffs_sb_fill */
+-	if (IS_ERR(rv))
++	if (IS_ERR(rv) && data.ffs_data) {
+ 		functionfs_release_dev_callback(data.ffs_data);
+-
++		ffs_data_put(data.ffs_data);
++	}
+ 	return rv;
+ }
  
 
 
