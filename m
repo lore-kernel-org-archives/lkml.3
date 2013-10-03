@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818Ab3JCF14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:27:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46900 "EHLO
+	id S1754966Ab3JCEL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:11:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3JCEMJ (ORCPT
+	with ESMTP id S1754927Ab3JCEL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:12:09 -0400
+	Thu, 3 Oct 2013 00:11:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Stephen Warren <swarren@nvidia.com>
-Subject: [ 19/52] serial: tegra: fix tty-kref leak
-Date: Wed,  2 Oct 2013 21:05:37 -0700
-Message-Id: <20131003040523.496519452@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [ 15/52] mei: make me client counters less error prone
+Date: Wed,  2 Oct 2013 21:05:33 -0700
+Message-Id: <20131003040523.229576145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,39 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit cfd29aa0e81b791985e8428e6507e80e074e6730 upstream.
+commit 1aee351a739153529fbb98ee461777b2abd5e1c9 upstream.
 
-Fix potential tty-kref leak in stop_rx path.
+1. u8 counters are prone to hard to detect overflow:
+ make them unsigned long to match bit_ functions argument type
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
+2. don't check me_clients_num for negativity, it is unsigned.
+
+3. init all the me client counters from one place
+
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/serial-tegra.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/misc/mei/hbm.c     |   10 ++++++----
+ drivers/misc/mei/mei_dev.h |    6 +++---
+ 2 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/tty/serial/serial-tegra.c
-+++ b/drivers/tty/serial/serial-tegra.c
-@@ -726,7 +726,7 @@ static irqreturn_t tegra_uart_isr(int ir
- static void tegra_uart_stop_rx(struct uart_port *u)
- {
- 	struct tegra_uart_port *tup = to_tegra_uport(u);
--	struct tty_struct *tty = tty_port_tty_get(&tup->uport.state->port);
-+	struct tty_struct *tty;
- 	struct tty_port *port = &u->state->port;
- 	struct dma_tx_state state;
- 	unsigned long ier;
-@@ -738,6 +738,8 @@ static void tegra_uart_stop_rx(struct ua
- 	if (!tup->rx_in_progress)
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -35,11 +35,15 @@ static void mei_hbm_me_cl_allocate(struc
+ 	struct mei_me_client *clients;
+ 	int b;
+ 
++	dev->me_clients_num = 0;
++	dev->me_client_presentation_num = 0;
++	dev->me_client_index = 0;
++
+ 	/* count how many ME clients we have */
+ 	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
+ 		dev->me_clients_num++;
+ 
+-	if (dev->me_clients_num <= 0)
++	if (dev->me_clients_num == 0)
  		return;
  
-+	tty = tty_port_tty_get(&tup->uport.state->port);
-+
- 	tegra_uart_wait_sym_time(tup, 1); /* wait a character interval */
+ 	kfree(dev->me_clients);
+@@ -221,7 +225,7 @@ static int mei_hbm_prop_req(struct mei_d
+ 	struct hbm_props_request *prop_req;
+ 	const size_t len = sizeof(struct hbm_props_request);
+ 	unsigned long next_client_index;
+-	u8 client_num;
++	unsigned long client_num;
  
- 	ier = tup->ier_shadow;
+ 
+ 	client_num = dev->me_client_presentation_num;
+@@ -650,8 +654,6 @@ void mei_hbm_dispatch(struct mei_device
+ 		if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
+ 		    dev->hbm_state == MEI_HBM_ENUM_CLIENTS) {
+ 				dev->init_clients_timer = 0;
+-				dev->me_client_presentation_num = 0;
+-				dev->me_client_index = 0;
+ 				mei_hbm_me_cl_allocate(dev);
+ 				dev->hbm_state = MEI_HBM_CLIENT_PROPERTIES;
+ 
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -402,9 +402,9 @@ struct mei_device {
+ 	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
+ 	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
+ 	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
+-	u8 me_clients_num;
+-	u8 me_client_presentation_num;
+-	u8 me_client_index;
++	unsigned long me_clients_num;
++	unsigned long me_client_presentation_num;
++	unsigned long me_client_index;
+ 
+ 	struct mei_cl wd_cl;
+ 	enum mei_wd_states wd_state;
 
 
