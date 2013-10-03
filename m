@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab3JCETH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:19:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47187 "EHLO
+	id S1756045Ab3JCETF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:19:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47174 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756030Ab3JCETD (ORCPT
+	with ESMTP id S1756009Ab3JCES4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:19:03 -0400
+	Thu, 3 Oct 2013 00:18:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 31/57] USB: fix PM config symbol in uhci-hcd, ehci-hcd, and xhci-hcd
-Date: Wed,  2 Oct 2013 21:08:57 -0700
-Message-Id: <20131003040638.733950927@linuxfoundation.org>
+Subject: [ 29/57] xhci: Ensure a command structure points to the correct trb on the command ring
+Date: Wed,  2 Oct 2013 21:08:55 -0700
+Message-Id: <20131003040638.597998950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,60 +27,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit f875fdbf344b9fde207f66b392c40845dd7e5aa6 upstream.
+commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
 
-Since uhci-hcd, ehci-hcd, and xhci-hcd support runtime PM, the .pm
-field in their pci_driver structures should be protected by CONFIG_PM
-rather than CONFIG_PM_SLEEP.  The corresponding change has already
-been made for ohci-hcd.
+If a command on the command ring needs to be cancelled before it is handled
+it can be turned to a no-op operation when the ring is stopped.
+We want to store the command ring enqueue pointer in the command structure
+when the command in enqueued for the cancellation case.
 
-Without this change, controllers won't do runtime suspend if system
-suspend or hibernation isn't enabled.
+Some commands used to store the command ring dequeue pointers instead of enqueue
+(these often worked because enqueue happends to equal dequeue quite often)
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Other commands correctly used the enqueue pointer but did not check if it pointed
+to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
+xhci_stop_device() in about 2% of suspend/resume cases.
+
+This should also solve some weird behavior happening in command cancellation cases.
+
+This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
+then forgotten:
+    http://marc.info/?l=linux-usb&m=136269803207465&w=2
+
+This patch should be backported to kernels as old as 3.7, that contain
+the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
+command ring function"
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-pci.c |    2 +-
- drivers/usb/host/uhci-pci.c |    2 +-
- drivers/usb/host/xhci-pci.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci-hub.c  |    2 +-
+ drivers/usb/host/xhci-ring.c |   10 ++++++++++
+ drivers/usb/host/xhci.c      |   25 +++++--------------------
+ drivers/usb/host/xhci.h      |    1 +
+ 4 files changed, 17 insertions(+), 21 deletions(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -403,7 +403,7 @@ static struct pci_driver ehci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown = 	usb_hcd_pci_shutdown,
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -286,7 +286,7 @@ static int xhci_stop_device(struct xhci_
+ 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+ 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+ 	}
+-	cmd->command_trb = xhci->cmd_ring->enqueue;
++	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xh
+ 	return TRB_TYPE_LINK_LE32(link->control);
+ }
  
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
---- a/drivers/usb/host/uhci-pci.c
-+++ b/drivers/usb/host/uhci-pci.c
-@@ -293,7 +293,7 @@ static struct pci_driver uhci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown =	uhci_shutdown,
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
++{
++	/* Enqueue pointer can be left pointing to the link TRB,
++	 * we must handle that
++	 */
++	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
++		return ring->enq_seg->next->trbs;
++	return ring->enqueue;
++}
++
+ /* Updates trb to point to the next TRB in the ring, and updates seg if the next
+  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
+  * effect the ring dequeue or enqueue pointers.
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2635,15 +2635,7 @@ static int xhci_configure_endpoint(struc
+ 	if (command) {
+ 		cmd_completion = command->completion;
+ 		cmd_status = &command->status;
+-		command->command_trb = xhci->cmd_ring->enqueue;
+-
+-		/* Enqueue pointer can be left pointing to the link TRB,
+-		 * we must handle that
+-		 */
+-		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
+-			command->command_trb =
+-				xhci->cmd_ring->enq_seg->next->trbs;
+-
++		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+ 	} else {
+ 		cmd_completion = &virt_dev->cmd_completion;
+@@ -2651,7 +2643,7 @@ static int xhci_configure_endpoint(struc
+ 	}
+ 	init_completion(cmd_completion);
  
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -345,7 +345,7 @@ static struct pci_driver xhci_pci_driver
- 	/* suspend and resume implemented later */
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -3468,14 +3460,7 @@ int xhci_discover_or_reset_device(struct
  
- 	.shutdown = 	usb_hcd_pci_shutdown,
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver = {
- 		.pm = &usb_hcd_pci_pm_ops
- 	},
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
+-
+-	/* Enqueue pointer can be left pointing to the link TRB,
+-	 * we must handle that
+-	 */
+-	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
+-		reset_device_cmd->command_trb =
+-			xhci->cmd_ring->enq_seg->next->trbs;
++	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 
+ 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, slot_id);
+@@ -3679,7 +3664,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3811,7 +3796,7 @@ int xhci_address_device(struct usb_hcd *
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1851,6 +1851,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhc
+ 		union xhci_trb *cmd_trb);
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ 		unsigned int ep_index, unsigned int stream_id);
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
+ 
+ /* xHCI roothub code */
+ void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
 
 
