@@ -1,155 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab3JCXOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:14:35 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:39793 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab3JCXOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:14:33 -0400
+	id S1753956Ab3JCXS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:18:28 -0400
+Received: from asmtp.lnxw.com ([207.21.185.2]:51386 "EHLO asmtp.lnxw.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016Ab3JCXS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 19:18:27 -0400
+From: Alexey Neyman <stilor@att.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
+Date: Thu, 3 Oct 2013 16:16:07 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34-020634-generic; KDE/4.4.5; i686; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Feng Tang <feng.tang@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <6362938.J7ZtNEOFpc@mistral> <CAErSpo6XCu4ROJCh5=+7zwupjbtobowoNeF1PcXEvdg349C_pg@mail.gmail.com>
+In-Reply-To: <CAErSpo6XCu4ROJCh5=+7zwupjbtobowoNeF1PcXEvdg349C_pg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKb-aKRQ10ZQ6tCqVMnJE=Cg5HT8m1Gm3snmge49XyyqA@mail.gmail.com>
-References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
-	<524B7999.60806@amacapital.net>
-	<20131002143759.GA2966@dztty>
-	<CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
-	<CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
-	<CALCETrW05=Jk_nCakZgjwJjbdG-X-f=ssFntB3Xpe1ogxiTMFQ@mail.gmail.com>
-	<CAGXu5jKb-aKRQ10ZQ6tCqVMnJE=Cg5HT8m1Gm3snmge49XyyqA@mail.gmail.com>
-Date: Thu, 3 Oct 2013 16:14:32 -0700
-Message-ID: <CAKyRK=hvAPiXuHb_Lz3xE7S5OVxMYjm+AOREJcDGSeyL2DD57w@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
-From: Julien Tinnes <jln@google.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Djalal Harouni <tixxdz@opendz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310031616.08617.stilor@att.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 11:07 AM, Kees Cook <keescook@chromium.org> wrote:
->
-> On Wed, Oct 2, 2013 at 11:00 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Wed, Oct 2, 2013 at 10:48 AM, Kees Cook <keescook@chromium.org> wrote:
-> >> On Wed, Oct 2, 2013 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> >>> On Wed, Oct 2, 2013 at 3:37 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >>>> On Tue, Oct 01, 2013 at 06:40:41PM -0700, Andy Lutomirski wrote:
-> >>>>> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
-> >>>>> > /proc/<pid>/* entries varies at runtime, appropriate permission checks
-> >>>>> > need to happen during each system call.
-> >>>>> >
-> >>>>> > Currently some of these sensitive entries are protected by performing
-> >>>>> > the ptrace_may_access() check. However even with that the /proc file
-> >>>>> > descriptors can be passed to a more privileged process
-> >>>>> > (e.g. a suid-exec) which will pass the classic ptrace_may_access()
-> >>>>> > check. In general the ->open() call will be issued by an unprivileged
-> >>>>> > process while the ->read(),->write() calls by a more privileged one.
-> >>>>> >
-> >>>>> > Example of these files are:
-> >>>>> > /proc/*/syscall, /proc/*/stack etc.
-> >>>>> >
-> >>>>> > And any open(/proc/self/*) then suid-exec to read()/write() /proc/self/*
-> >>>>> >
-> >>>>> >
-> >>>>> > These files are protected during read() by the ptrace_may_access(),
-> >>>>> > however the file descriptor can be passed to a suid-exec which can be
-> >>>>> > used to read data and bypass ASLR. Of course this was discussed several
-> >>>>> > times on LKML.
-> >>>>>
-> >>>>> Can you elaborate on what it is that you're fixing?  That is, can you
-> >>>>> give a concrete example of what process opens what file and passes the
-> >>>>> fd to what process?
-> >>>> Yes, the references were already given in this email:
-> >>>> https://lkml.org/lkml/2013/8/31/209
-> >>>>
-> >>>> This has been discussed several times on lkml:
-> >>>> https://lkml.org/lkml/2013/8/28/544
-> >>>>
-> >>>> https://lkml.org/lkml/2013/8/28/564 (check Kees's references)
-> >>>>
-> >>>>
-> >>>>> I'm having trouble following your description.
-> >>>> Process open a /proc file and pass the fd to a more privilaged process
-> >>>> that will pass the ptrace_may_access() check, while the original process
-> >>>> that opened that file should fail at the ptrace_may_access()
-> >>>
-> >>> So we're talking about two kinds of attacks, right?
-> >>
-> >> Correct.
-> >>
-> >>> Type 1: Unprivileged process does something like open("/proc/1/maps",
-> >>> O_RDONLY) and then passes the resulting fd to something privileged.
-> >>
-> >> ... and then leaks contents back to unprivileged process.
-> >>
-> >>> Type 2: Unprivileged process does something like
-> >>> open("/proc/self/maps", O_RDONLY) and then forks.  The parent calls
-> >>> execve on something privileged.
-> >>
-> >> ... and then parent snoops on file contents for the privileged child.
-> >>
-> >> (Type 2 is solved currently, IIUC. Type 1 could be reduced in scope by
-> >> changing these file modes back to 0400.)
-> >>
-> >>> Can we really not get away with fixing type 1 by preventing these
-> >>> files from being opened in the first place and type 2 by revoking all
-> >>> of these fds when a privilege-changing exec happens?
-> >>
-> >> Type 1 can be done via exec as well. Instead of using a priv exec to
-> >> read an arbitrary process, read it could read its own.
-> >
-> > Right.
-> >
-> >>
-> >> I think revoking the fd would be great. Does that mechanism exist?
-> >
-> > There's this thing that never got merged.
-> >
-> > http://thread.gmane.org/gmane.linux.kernel/1523331
-> >
-> > But doing it more directly should be reasonably straightforward.  Either:
-> >
-> > (a) when a process execs and privileges change, find all the old proc
-> > inodes, mark them dead, and unlink them, or
-> >
-> > (b) add self_exec_id to all the proc file private_data entries (or
-> > somewhere else).  Then just make sure that they're unchanged.  I think
-> > the bug last time around was because the self_exec_id and struct pid
-> > weren't being compared together.
-> >
-> > (a) is probably nicer.  I don't know if it'll break things.  Linus
-> > seemed to think that the Chrome sandbox was sensitive to this stuff,
-> > but I don't know why.
->
-> I agree, (a) seems much cleaner. Hm, I don't think Chrome does
-> anything with these sensitive files (maps, stack, syscall, etc). But
-> let's ask Julien. :)
->
-> Julien, do you see any problem with Chrome's sandbox behavior if these
-> proc files would be unavailable across privilege changes?
+On Thursday, October 03, 2013 12:14:38 pm Bjorn Helgaas wrote:
+> On Mon, Sep 23, 2013 at 12:15 AM, Alexey Neyman <stilor@att.net> wrote:
+> > [Resending due to no response to the original message in a week]
+> > 
+> > Hi all,
+> > 
+> > I have a board with a BIOS bug that reports the following I/O port
+> > regions in _CRS on one of the host bridges:
+> > 
+> > 0x0000-0x03af // #0
+> > 0x03e0-0x0cf7 // #1
+> > 0x03b0-0x03bb // #2
+> > 0x03c0-0x03df // #3
+> > 0x0000-0xdfff // #4
+> > 0xf000-0xffff // #5
+> > 
+> > Obviously, region number #4 is erroneous as it overlaps with regions
+> > #0..3. The code in coalesce_windows() in arch/x86/pci/acpi.c attempts to
+> > recover from such kind of BIOS bugs by merging the overlapping regions.
+> > Current code expands region #0 to 0x0000-0xdffff and makes region #4
+> > ignored. As a result, overlap of the expanded region #0 with regions
+> > #1..3 remains undetected (as the inner loop already compared them with
+> > region #0). As a result, regions #1..3 are inserted into the resource
+> > tree even though they overlap with adjusted region #0 - which later
+> > results in resource conflicts for PCI devices with IO ports in one of
+> > those regions (e.g., for an PCI IDE controller in legacy mode - which
+> > has port 0x3f6). The kernel then refuses to initialize these devices.
+> > 
+> > The fix: instead of expanding res1 and ignoring res2, do the opposite.
+> > The res2 window is yet to be compared against all windows between res1
+> > and res2 (regions #1..3 in the above example), so the resulting resource
+> > map will include just the expanded region - and will ignore any
+> > overlapping ones.
+> > 
+> > Signed-off-by: Alexey Neyman <stilor@att.net>
+> 
+> Can you please open a report at http://bugzilla.kernel.org, assign it
+> to drivers/pci, and attach a complete dmesg log?
 
-There is nothing that currently jumps to mind in Chromium. However,
-anything that breaks "file descriptors are capabilities" inevitably
-ends-up breaking something.
+https://bugzilla.kernel.org/show_bug.cgi?id=62511
 
-For instance, I could easily imagine breakage because a process uses
-PR_SET_DUMPABLE (more so than, say, transitions to uid 0) while its
-/proc entries are being monitored by another part of the same
-application.
+I am not at liberty to disclose full hardware configuration of the board, as 
+it is a proprietary prototype board not in production. I've provided the 
+relevant messages from dmesg though.
 
-Please cc:me on patches.
-
-Julien
+Regards,
+Alexey.
