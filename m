@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab3JCXLB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:11:01 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:59754 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3JCXK7 (ORCPT
+	id S1754466Ab3JCXLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:11:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58965 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397Ab3JCXLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:10:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1380841333.19002.259.camel@edumazet-glaptop.roam.corp.google.com>
-References: <1380840466-3822-1-git-send-email-ast@plumgrid.com>
-	<1380841333.19002.259.camel@edumazet-glaptop.roam.corp.google.com>
-Date: Thu, 3 Oct 2013 16:10:58 -0700
-Message-ID: <CAMEtUuz0bASPsAAVO_m4TZh24LLWZnb6SK6BrnOvOR7_mezc7Q@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next] fix unsafe set_memory_rw from softirq
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Eric Dumazet <erdnetdev@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Xi Wang <xi.wang@gmail.com>, x86@kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Oct 2013 19:11:11 -0400
+Date: Thu, 3 Oct 2013 16:11:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCHv4 09/10] mm: implement split page table lock for PMD
+ level
+Message-Id: <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
+In-Reply-To: <1380287787-30252-10-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1380287787-30252-10-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 4:02 PM, Eric Dumazet <erdnetdev@gmail.com> wrote:
-> On Thu, 2013-10-03 at 15:47 -0700, Alexei Starovoitov wrote:
->> on x86 system with net.core.bpf_jit_enable = 1
->>
->
->> --- a/net/core/filter.c
->> +++ b/net/core/filter.c
->> @@ -644,7 +644,9 @@ void sk_filter_release_rcu(struct rcu_head *rcu)
->>       struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
->>
->>       bpf_jit_free(fp);
->> +#if !defined(CONFIG_X86_64) /* x86_64 has a deferred free */
->>       kfree(fp);
->> +#endif
->
-> Sorry this is not very nice.
->
-> Make bpf_jit_free(fp) a bool ?  true : caller must free, false : caller
-> must not free ?
->
-> if (bpf_jit_free(fp))
->         kfree(fp);
->
-> Or move the kfree() in bpf_jit_free()
+On Fri, 27 Sep 2013 16:16:26 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-I think it's cleaner too, just didn't want to touch all architectures.
-Will do then.
+> The basic idea is the same as with PTE level: the lock is embedded into
+> struct page of table's page.
+> 
+> We can't use mm->pmd_huge_pte to store pgtables for THP, since we don't
+> take mm->page_table_lock anymore. Let's reuse page->lru of table's page
+> for that.
+> 
+> pgtable_pmd_page_ctor() returns true, if initialization is successful
+> and false otherwise. Current implementation never fails, but assumption
+> that constructor can fail will help to port it to -rt where spinlock_t
+> is rather huge and cannot be embedded into struct page -- dynamic
+> allocation is required.
+
+spinlock_t is rather large when lockdep is enabled.  What happens?
