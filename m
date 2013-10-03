@@ -1,212 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3JCEQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:16:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47079 "EHLO
+	id S1755764Ab3JCERE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47082 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab3JCEQy (ORCPT
+	with ESMTP id S1755750Ab3JCERB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:16:54 -0400
+	Thu, 3 Oct 2013 00:17:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [ 32/52] USB: Fix breakage in ffs_fs_mount()
-Date: Wed,  2 Oct 2013 21:05:50 -0700
-Message-Id: <20131003040524.365367001@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 10/57] bcache: Fix for handling overlapping extents when reading in a btree node
+Date: Wed,  2 Oct 2013 21:08:36 -0700
+Message-Id: <20131003040637.309476274@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
-References: <20131003040522.190209641@linuxfoundation.org>
+In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
+References: <20131003040636.600441214@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit 2606b28aabd7dea1766c23a105e1124c95409c96 upstream.
+commit 84786438ed17978d72eeced580ab757e4da8830b upstream.
 
-	There's a bunch of failure exits in ffs_fs_mount() with
-seriously broken recovery logics.  Most of that appears to stem
-from misunderstanding of the ->kill_sb() semantics; unlike
-->put_super() it is called for *all* superblocks of given type,
-no matter how (in)complete the setup had been.  ->put_super()
-is called only if ->s_root is not NULL; any failure prior to
-setting ->s_root will have the call of ->put_super() skipped.
-->kill_sb(), OTOH, awaits every superblock that has come from
-sget().
+btree_sort_fixup() was overly clever, because it was trying to avoid
+pulling a key off the btree iterator in more than one place.
 
-Current behaviour of ffs_fs_mount():
+This led to a really obscure bug where we'd break early from the loop in
+btree_sort_fixup() if the current key overlapped with keys in more than
+one older set, and the next key it overlapped with was zero size.
 
-We have struct ffs_sb_fill_data data on stack there.  We do
-	ffs_dev = functionfs_acquire_dev_callback(dev_name);
-and store that in data.private_data.  Then we call mount_nodev(),
-passing it ffs_sb_fill() as a callback.  That will either fail
-outright, or manage to call ffs_sb_fill().  There we allocate an
-instance of struct ffs_data, slap the value of ffs_dev (picked
-from data.private_data) into ffs->private_data and overwrite
-data.private_data by storing ffs into an overlapping member
-(data.ffs_data).  Then we store ffs into sb->s_fs_info and attempt
-to set the rest of the things up (root inode, root dentry, then
-create /ep0 there).  Any of those might fail.  Should that
-happen, we get ffs_fs_kill_sb() called before mount_nodev()
-returns.  If mount_nodev() fails for any reason whatsoever,
-we proceed to
-	functionfs_release_dev_callback(data.ffs_data);
-
-That's broken in a lot of ways.  Suppose the thing has failed in
-allocation of e.g. root inode or dentry.  We have
-	functionfs_release_dev_callback(ffs);
-	ffs_data_put(ffs);
-done by ffs_fs_kill_sb() (ffs accessed via sb->s_fs_info), followed by
-	functionfs_release_dev_callback(ffs);
-from ffs_fs_mount() (via data.ffs_data).  Note that the second
-functionfs_release_dev_callback() has every chance to be done to freed memory.
-
-Suppose we fail *before* root inode allocation.  What happens then?
-ffs_fs_kill_sb() doesn't do anything to ffs (it's either not called at all,
-or it doesn't have a pointer to ffs stored in sb->s_fs_info).  And
-	functionfs_release_dev_callback(data.ffs_data);
-is called by ffs_fs_mount(), but here we are in nasal daemon country - we
-are reading from a member of union we'd never stored into.  In practice,
-we'll get what we used to store into the overlapping field, i.e. ffs_dev.
-And then we get screwed, since we treat it (struct gfs_ffs_obj * in
-disguise, returned by functionfs_acquire_dev_callback()) as struct
-ffs_data *, pick what would've been ffs_data ->private_data from it
-(*well* past the actual end of the struct gfs_ffs_obj - struct ffs_data
-is much bigger) and poke in whatever it points to.
-
-FWIW, there's a minor leak on top of all that in case if ffs_sb_fill()
-fails on kstrdup() - ffs is obviously forgotten.
-
-The thing is, there is no point in playing all those games with union.
-Just allocate and initialize ffs_data *before* calling mount_nodev() and
-pass a pointer to it via data.ffs_data.  And once it's stored in
-sb->s_fs_info, clear data.ffs_data, so that ffs_fs_mount() knows that
-it doesn't need to kill the sucker manually - from that point on
-we'll have it done by ->kill_sb().
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_fs.c |   60 +++++++++++++++++++---------------------------
- 1 file changed, 26 insertions(+), 34 deletions(-)
+ drivers/md/bcache/bset.c |   39 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 28 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1034,37 +1034,19 @@ struct ffs_sb_fill_data {
- 	struct ffs_file_perms perms;
- 	umode_t root_mode;
- 	const char *dev_name;
--	union {
--		/* set by ffs_fs_mount(), read by ffs_sb_fill() */
--		void *private_data;
--		/* set by ffs_sb_fill(), read by ffs_fs_mount */
--		struct ffs_data *ffs_data;
--	};
-+	struct ffs_data *ffs_data;
- };
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -926,28 +926,45 @@ struct bkey *bch_next_recurse_key(struct
  
- static int ffs_sb_fill(struct super_block *sb, void *_data, int silent)
+ /* Mergesort */
+ 
++static void sort_key_next(struct btree_iter *iter,
++			  struct btree_iter_set *i)
++{
++	i->k = bkey_next(i->k);
++
++	if (i->k == i->end)
++		*i = iter->data[--iter->used];
++}
++
+ static void btree_sort_fixup(struct btree_iter *iter)
  {
- 	struct ffs_sb_fill_data *data = _data;
- 	struct inode	*inode;
--	struct ffs_data	*ffs;
-+	struct ffs_data	*ffs = data->ffs_data;
+ 	while (iter->used > 1) {
+ 		struct btree_iter_set *top = iter->data, *i = top + 1;
+-		struct bkey *k;
  
- 	ENTER();
+ 		if (iter->used > 2 &&
+ 		    btree_iter_cmp(i[0], i[1]))
+ 			i++;
  
--	/* Initialise data */
--	ffs = ffs_data_new();
--	if (unlikely(!ffs))
--		goto Enomem;
+-		for (k = i->k;
+-		     k != i->end && bkey_cmp(top->k, &START_KEY(k)) > 0;
+-		     k = bkey_next(k))
+-			if (top->k > i->k)
+-				__bch_cut_front(top->k, k);
+-			else if (KEY_SIZE(k))
+-				bch_cut_back(&START_KEY(k), top->k);
 -
- 	ffs->sb              = sb;
--	ffs->dev_name        = kstrdup(data->dev_name, GFP_KERNEL);
--	if (unlikely(!ffs->dev_name))
--		goto Enomem;
--	ffs->file_perms      = data->perms;
--	ffs->private_data    = data->private_data;
--
--	/* used by the caller of this function */
--	data->ffs_data       = ffs;
--
-+	data->ffs_data       = NULL;
- 	sb->s_fs_info        = ffs;
- 	sb->s_blocksize      = PAGE_CACHE_SIZE;
- 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
-@@ -1080,17 +1062,14 @@ static int ffs_sb_fill(struct super_bloc
- 				  &data->perms);
- 	sb->s_root = d_make_root(inode);
- 	if (unlikely(!sb->s_root))
--		goto Enomem;
-+		return -ENOMEM;
+-		if (top->k < i->k || k == i->k)
++		if (bkey_cmp(top->k, &START_KEY(i->k)) <= 0)
+ 			break;
  
- 	/* EP0 file */
- 	if (unlikely(!ffs_sb_create_file(sb, "ep0", ffs,
- 					 &ffs_ep0_operations, NULL)))
--		goto Enomem;
-+		return -ENOMEM;
- 
- 	return 0;
--
--Enomem:
--	return -ENOMEM;
- }
- 
- static int ffs_fs_parse_opts(struct ffs_sb_fill_data *data, char *opts)
-@@ -1193,6 +1172,7 @@ ffs_fs_mount(struct file_system_type *t,
- 	struct dentry *rv;
- 	int ret;
- 	void *ffs_dev;
-+	struct ffs_data	*ffs;
- 
- 	ENTER();
- 
-@@ -1200,18 +1180,30 @@ ffs_fs_mount(struct file_system_type *t,
- 	if (unlikely(ret < 0))
- 		return ERR_PTR(ret);
- 
-+	ffs = ffs_data_new();
-+	if (unlikely(!ffs))
-+		return ERR_PTR(-ENOMEM);
-+	ffs->file_perms = data.perms;
+-		heap_sift(iter, i - top, btree_iter_cmp);
++		if (!KEY_SIZE(i->k)) {
++			sort_key_next(iter, i);
++			heap_sift(iter, i - top, btree_iter_cmp);
++			continue;
++		}
 +
-+	ffs->dev_name = kstrdup(dev_name, GFP_KERNEL);
-+	if (unlikely(!ffs->dev_name)) {
-+		ffs_data_put(ffs);
-+		return ERR_PTR(-ENOMEM);
-+	}
++		if (top->k > i->k) {
++			if (bkey_cmp(top->k, i->k) >= 0)
++				sort_key_next(iter, i);
++			else
++				bch_cut_front(top->k, i->k);
 +
- 	ffs_dev = functionfs_acquire_dev_callback(dev_name);
--	if (IS_ERR(ffs_dev))
--		return ffs_dev;
-+	if (IS_ERR(ffs_dev)) {
-+		ffs_data_put(ffs);
-+		return ERR_CAST(ffs_dev);
-+	}
-+	ffs->private_data = ffs_dev;
-+	data.ffs_data = ffs;
- 
--	data.dev_name = dev_name;
--	data.private_data = ffs_dev;
- 	rv = mount_nodev(t, flags, &data, ffs_sb_fill);
--
--	/* data.ffs_data is set by ffs_sb_fill */
--	if (IS_ERR(rv))
-+	if (IS_ERR(rv) && data.ffs_data) {
- 		functionfs_release_dev_callback(data.ffs_data);
--
-+		ffs_data_put(data.ffs_data);
-+	}
- 	return rv;
++			heap_sift(iter, i - top, btree_iter_cmp);
++		} else {
++			/* can't happen because of comparison func */
++			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
++			bch_cut_back(&START_KEY(i->k), top->k);
++		}
+ 	}
  }
  
 
