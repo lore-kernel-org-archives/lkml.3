@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3JCUc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:32:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57651 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab3JCUc1 (ORCPT
+	id S1755313Ab3JCUfz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:35:55 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:61429 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab3JCUfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:32:27 -0400
-Date: Thu, 3 Oct 2013 13:32:26 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Christoffer Dall <christoffer.dall@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131003203226.GB27336@kroah.com>
-References: <1380738758.12932.43.camel@snotra.buserror.net>
- <20131002184330.GC5108@cbox>
- <20131002203735.GA10871@kroah.com>
- <1380748121.12932.89.camel@snotra.buserror.net>
- <20131002211631.GA11914@kroah.com>
- <1380749715.12932.109.camel@snotra.buserror.net>
- <20131002234009.GA27714@kroah.com>
- <1380825207.12932.151.camel@snotra.buserror.net>
- <20131003185434.GA26123@kroah.com>
- <1380827494.12932.161.camel@snotra.buserror.net>
+	Thu, 3 Oct 2013 16:35:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380827494.12932.161.camel@snotra.buserror.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANEJEGvFFu-MDQX4UNcfr58Jxg6BKkw=gAMqz0Vv6jV9miixfg@mail.gmail.com>
+References: <1380223380-22451-1-git-send-email-grundler@chromium.org>
+	<CANEJEGvFFu-MDQX4UNcfr58Jxg6BKkw=gAMqz0Vv6jV9miixfg@mail.gmail.com>
+Date: Thu, 3 Oct 2013 13:35:51 -0700
+X-Google-Sender-Auth: K4cfMkzypN-zMGJXQXWlxyl5H9M
+Message-ID: <CANEJEGtK+og5XeaCNtnVJhCPWmN1y78BX=yghc-8=kuV1+f=Xw@mail.gmail.com>
+Subject: Re: [PATCH 0/7] mmc: core: cleanup and locking patches description
+From: Grant Grundler <grundler@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>,
+        ALIM AKHTAR <alim.akhtar@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.co>
+Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 02:11:34PM -0500, Scott Wood wrote:
-> On Thu, 2013-10-03 at 11:54 -0700, gregkh@linuxfoundation.org wrote:
-> > On Thu, Oct 03, 2013 at 01:33:27PM -0500, Scott Wood wrote:
-> > > What it looks like we do still want from the driver core is the ability
-> > > for a driver to say that it should not be bound to a device except via
-> > > explicit sysfs bind,
-> > 
-> > You can do that today by not providing any device ids in your driver
-> > structure, relying on the dynamic ids the driver core creates.
-> 
-> I'm not sure what you mean by dynamic ids,
+Ping?
 
-The "new_id" file in sysfs for a driver.
+Has anyone had a chance to review/test this series and/or be willing
+to do so this week?
 
-> but if the driver doesn't provide any match data, then
-> driver_match_device() will return 0 and bind_store() will fail.
+grundler@firesword:~$ pwclient list -w 'grundler@chromium.org' -p LKML
+Patches submitted by Grant Grundler <grundler@chromium.org>:
+ID      State        Name
+--      -----        ----
+...
+2950961 New          [1/7] mmc: core: rename "data" to saved_areq
+2951081 New          [2/7] mmc: core: rename local var err to saved_err
+2950981 New          [3/7] mmc: core: restructure error handling for start req
+2951001 New          [4/7] mmc: core: use common code path to return error
+2951061 New          [5/7] mmc: core: handling polling more gracefully
+2951041 New          [6/7] mmc: core: protect references to host->areq
+with host->lock
+2951021 New          [7/7] mmc: core: mmc_start_req is a misnomer ->
+mmc_process_areq
 
-bind/unbind in sysfs can override this, I think, maybe it needs to be
-combined with the new_id file to work properly, it's been a long time
-since I last looked at that code path.
 
-> > > and the ability for a user to say that a device should not be bound to
-> > > a driver except via explicit sysfs bind.
-> > 
-> > That's not going to happen, as how can the kernel know a specific device
-> > is going to want this, before it asks the drivers about it?
-> 
-> This would normally be set by the user prior to unbinding from a
-> different driver, though it would also be nice to be able to set it at
-> boot time (e.g. via the kernel command line).
+To remind, this is the fio command line that results in mmcqd hangs on
+the exynos 5250 system (uses dw_mmc storage controller):
 
-Do that for your driver then, if you really want this, but it's not
-going into the driver core, sorry.  It should never be parsing kernel
-command lines, nor should you.
+$FIO --name=short_randwrite --size=2G --time_based --runtime=90 \
+        --readwrite=randwrite --numjobs=2 --bs=4k --norandommap
+--ioengine=psync \
+        --direct=0 --invalidate=1 --filename=/dev/mmcblk0p5
 
-> > Or, just don't ever create a driver that matches that device, then rely
-> > on userspace to do the binding explicitly.
-> 
-> That breaks the normal use case where you want the device to be bound to
-> the normal driver without doing anything special.  And again,
-> driver_match_device() will cause the bind to fail.
+thanks,
+grant
 
-So, you are asking for something that really is impossible from what I
-can tell.  Please figure out _exactly_ the semantics of what you want,
-as I'm totally confused and am giving up on this thread without seeing a
-patch anywhere.
-
-greg "back to patch review" k-h
+On Thu, Sep 26, 2013 at 12:57 PM, Grant Grundler <grundler@chromium.org> wrote:
+> Argh...too much wordsmithing...
+>
+> On Thu, Sep 26, 2013 at 12:22 PM, Grant Grundler <grundler@chromium.org> wrote:
+>> Following 7 patches are mostly cleanup with one key patch around host->areq
+>> locking.  The host->areq locking problem description is here:
+>>         http://www.spinics.net/lists/linux-mmc/msg21644.html
+>>
+>> I do believe this preposed host->areq locking patch is a complete fix.
+>
+> ... is NOT a complete fix.
+>
+>> But it appears to fix the problem and is better than nothing.
+>
+> Still true.
+>
+> cheers,
+> grant
+>
+>>
+>> This patch sequence applies clean to linus' 3.12-rc2 branch and only compile
+>> tested in this form. This is a forward port (and cleanup) of the
+>> same patch I've been testing on ChromeOS-3.4 tree using Exynos5250 chipset.
+>>
+>> cheers,
+>> grant
+>>
+>> 0000-mmc-core-cleanups-and-locking-description (this email)
+>> 0001-mmc-core-rename-data-to-saved_areq.patch
+>> 0002-mmc-core-rename-local-var-err-to-saved_err.patch
+>> 0003-mmc-core-restructure-error-handling-for-start-req.patch
+>> 0004-mmc-core-use-common-code-path-to-return-error.patch
+>> 0005-mmc-core-handling-polling-more-gracefully.patch
+>> 0006-mmc-core-protect-references-to-host-areq-with-host-l.patch
+>> 0007-mmc-core-mmc_start_req-is-a-misnomer-mmc_process_are.patch
+>>
+>>
+>>  drivers/mmc/card/block.c    |   8 ++--
+>>  drivers/mmc/card/mmc_test.c |   4 +-
+>>  drivers/mmc/core/core.c     | 103 +++++++++++++++++++++++++-------------------
+>>  include/linux/mmc/core.h    |   2 +-
+>>  4 files changed, 66 insertions(+), 51 deletions(-)
