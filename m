@@ -1,55 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab3JCA4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:56:14 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43028 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab3JCA4N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:56:13 -0400
-From: Nick Swenson <nks@daterainc.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>, Nick Swenson <nks@daterainc.com>
-Subject: [PATCH] percpu_ida: Removing unused arguement from alloc_local_tag
-Date: Wed,  2 Oct 2013 17:55:45 -0700
-Message-Id: <1380761745-8605-1-git-send-email-nks@daterainc.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1753706Ab3JCBCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 21:02:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55133 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114Ab3JCBCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 21:02:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
+   d="scan'208";a="369042883"
+Date: Wed, 2 Oct 2013 18:02:30 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 55/77] ntb: Update MSI/MSI-X interrupts enablement
+ code
+Message-ID: <20131003010230.GN6768@jonmason-lab>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <49eb592e15aaec804f9c11ca132d2b85c516aefa.1380703263.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <49eb592e15aaec804f9c11ca132d2b85c516aefa.1380703263.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing unused struct percpu_ida *pool from arguemnts of
-alloc_local_tag, changed it's one use in idr.c
+On Wed, Oct 02, 2013 at 12:49:11PM +0200, Alexander Gordeev wrote:
+> As result of recent re-design of the MSI/MSI-X interrupts enabling
+> pattern this driver has to be updated to use the new technique to
+> obtain a optimal number of MSI/MSI-X interrupts required.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  drivers/ntb/ntb_hw.c |   41 +++++++++++++----------------------------
+>  drivers/ntb/ntb_hw.h |    2 --
+>  2 files changed, 13 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> index eccd5e5..7776429 100644
+> --- a/drivers/ntb/ntb_hw.c
+> +++ b/drivers/ntb/ntb_hw.c
+> @@ -1032,23 +1032,26 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+>  	struct msix_entry *msix;
+>  	int msix_entries;
+>  	int rc, i;
+> -	u16 val;
+>  
+> -	if (!pdev->msix_cap) {
+> -		rc = -EIO;
+> +	rc = pci_msix_table_size(pdev);
+> +	if (rc < 0)
+>  		goto err;
+> -	}
+>  
+> -	rc = pci_read_config_word(pdev, pdev->msix_cap + PCI_MSIX_FLAGS, &val);
+> -	if (rc)
+> +	/*
+> +	 * On SNB, the link interrupt is always tied to 4th vector.  If
+> +	 * we can't get all 4, then we can't use MSI-X.
+> +	 */
+> +	if ((rc < SNB_MSIX_CNT) && (ndev->hw_type != BWD_HW)) {
 
-Signed-Off-By: Nick Swenson <nks@daterainc.com>
----
- lib/idr.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Please check for the HW type first, and then compare to
+ndev->limits.msix_cnt (which will be SNB_MSIX_CNT on SNB HW).  Also,
+put the comment inside the if statement and remove the unecessary "()"
+around the comparisons.  OCD on my part, but I like it that way.  
 
-diff --git a/lib/idr.c b/lib/idr.c
-index 26495e1..86e8f73 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -1254,8 +1254,7 @@ static inline void alloc_global_tags(struct percpu_ida *pool,
- 		  min(pool->nr_free, IDA_PCPU_BATCH_MOVE));
- }
- 
--static inline unsigned alloc_local_tag(struct percpu_ida *pool,
--				       struct percpu_ida_cpu *tags)
-+static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
- {
- 	int tag = -ENOSPC;
- 
-@@ -1291,7 +1290,7 @@ int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
- 	tags = this_cpu_ptr(pool->tag_cpu);
- 
- 	/* Fastpath */
--	tag = alloc_local_tag(pool, tags);
-+	tag = alloc_local_tag(tags);
- 	if (likely(tag >= 0)) {
- 		local_irq_restore(flags);
- 		return tag;
--- 
-1.8.4.rc3
+> +		rc = -ENOSPC;
+>  		goto err;
+> -
+> -	msix_entries = msix_table_size(val);
+> -	if (msix_entries > ndev->limits.msix_cnt) {
+> +	}
 
+else if...
+
+> +	if (rc > ndev->limits.msix_cnt) {
+>  		rc = -EINVAL;
+>  		goto err;
+>  	}
+>  
+> +	msix_entries = rc;
+> +
+>  	ndev->msix_entries = kmalloc(sizeof(struct msix_entry) * msix_entries,
+>  				     GFP_KERNEL);
+>  	if (!ndev->msix_entries) {
+> @@ -1060,26 +1063,8 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+>  		ndev->msix_entries[i].entry = i;
+>  
+>  	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> -	if (rc < 0)
+> +	if (rc)
+>  		goto err1;
+> -	if (rc > 0) {
+> -		/* On SNB, the link interrupt is always tied to 4th vector.  If
+> -		 * we can't get all 4, then we can't use MSI-X.
+> -		 */
+> -		if ((rc < SNB_MSIX_CNT) && (ndev->hw_type != BWD_HW)) {
+> -			rc = -EIO;
+> -			goto err1;
+> -		}
+> -
+> -		dev_warn(&pdev->dev,
+> -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+> -			 rc);
+> -		msix_entries = rc;
+> -
+> -		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> -		if (rc)
+> -			goto err1;
+> -	}
+>  
+>  	for (i = 0; i < msix_entries; i++) {
+>  		msix = &ndev->msix_entries[i];
+> diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
+> index 0a31ced..50bd760 100644
+> --- a/drivers/ntb/ntb_hw.h
+> +++ b/drivers/ntb/ntb_hw.h
+> @@ -60,8 +60,6 @@
+>  #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
+>  #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
+>  
+> -#define msix_table_size(control)	((control & PCI_MSIX_FLAGS_QSIZE)+1)
+
+Good riddance!  :-)
+
+> -
+>  #ifndef readq
+>  static inline u64 readq(void __iomem *addr)
+>  {
+> -- 
+> 1.7.7.6
+> 
