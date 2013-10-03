@@ -1,79 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3JCRyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:54:10 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:41769 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab3JCRyI (ORCPT
+	id S1754736Ab3JCRyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:54:24 -0400
+Received: from a14-66.smtp-out.amazonses.com ([54.240.14.66]:50038 "EHLO
+	a14-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754359Ab3JCRyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:54:08 -0400
+	Thu, 3 Oct 2013 13:54:22 -0400
+X-Greylist: delayed 821 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 13:54:22 EDT
+Date: Thu, 3 Oct 2013 17:40:40 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: vmstat: On demand vmstat workers V3
+Message-ID: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20131003170914.GA11992@kroah.com>
-References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org>
-	<CAOesGMjJ6Uj0uGFJqtnWQyDW+tr6eLVWoHZ+B7uFna+L8N6E8Q@mail.gmail.com>
-	<20131003170914.GA11992@kroah.com>
-Date: Thu, 3 Oct 2013 10:54:07 -0700
-Message-ID: <CAOesGMhBaj14++kJ9tVko68MjC7D+JZrBRgoxa4zmZ9z186MQw@mail.gmail.com>
-Subject: Re: Use of drivers/platform and matching include?
-From: Olof Johansson <olof@lixom.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kumar Gala <galak@codeaurora.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Feng Kan <fkan@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.03-54.240.14.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 10:09 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Oct 03, 2013 at 09:46:30AM -0700, Olof Johansson wrote:
->> I don't have a good answer though. If it wasn't for the arm64 fork,
->> locating these under arch/arm somewhere would really be the reasonable
->> answer, like we used to do on powerpc. :(
->
-> Sounds like yet-another-good reason why there shouldn't be an arm64
-> "fork" at all :(
+V2->V3:
+- Introduce a new tick_get_housekeeping_cpu() function. Not sure
+  if that is exactly what we want but it is a start. Thomas?
+- Migrate the shepherd task if the output of
+  tick_get_housekeeping_cpu() changes.
+- Fixes recommended by Andrew.
 
-Doing a fork gives a chance at a clean slate refresh of platform
-support, which is in itself quite useful. But indeed it causes some
-things to be more complicated.
+V1->V2:
+- Optimize the need_update check by using memchr_inv.
+- Clean up.
 
-It's a common complaint that "everybody who ever forked for 64-bit
-have later merged", and that's true, but that doesn't mean there's no
-value in forking (and perhaps later merging), instead of adding on top
-to start with.
+vmstat workers are used for folding counter differentials into the
+zone, per node and global counters at certain time intervals.
+They currently run at defined intervals on all processors which will
+cause some holdoff for processors that need minimal intrusion by the
+OS.
 
-> The arm community created this mess, you all can fix it up, it's not too
-> late.
+The current vmstat_update mechanism depends on a deferrable timer
+firing every other second by default which registers a work queue item
+that runs on the local CPU, with the result that we have 1 interrupt
+and one additional schedulable task on each CPU every 2 seconds
+If a workload indeed causes VM activity or multiple tasks are running
+on a CPU, then there are probably bigger issues to deal with.
 
-It wouldn't be a huge deal to add something like arch/arm/syslib and
-give some of the system library-type code a home there -- stuff like
-resource allocation libraries, etc. I don't think we want to collect
-all the back-end drivers in there though, just libraries.
+However, some workloads dedicate a CPU for a single CPU bound task.
+This is done in high performance computing, in high frequency
+financial applications, in networking (Intel DPDK, EZchip NPS) and with
+the advent of systems with more and more CPUs over time, this may become
+more and more common to do since when one has enough CPUs
+one cares less about efficiently sharing a CPU with other tasks and
+more about efficiently monopolizing a CPU per task.
 
-I think many of us are hesitant to introduce something that runs the
-risk of becoming a dumping ground for all these "I don't know where to
-put them, so here you go" drivers, since we've spent so much time
-cleaning them all up and de-forking per-vendor implementations of
-similar things.
+The difference of having this timer firing and workqueue kernel thread
+scheduled per second can be enormous. An artificial test measuring the
+worst case time to do a simple "i++" in an endless loop on a bare metal
+system and under Linux on an isolated CPU with dynticks and with and
+without this patch, have Linux match the bare metal performance
+(~700 cycles) with this patch and loose by couple of orders of magnitude
+(~200k cycles) without it[*].  The loss occurs for something that just
+calculates statistics. For networking applications, for example, this
+could be the difference between dropping packets or sustaining line rate.
 
-Still, there's little point in trying to artificially remove drivers
-that are 100% vendor unique from a vendor-specific location just for
-the sake of it. And we do have a single merge path today through
-arm-soc to catch a lot of these things as they get introduced --
-almost more so than if everyone adds their own driver/ directory and
-declare themselves maintainer of that subtree.
+Statistics are important and useful, but it would be great if there
+would be a way to not cause statistics gathering produce a huge
+performance difference. This patche does just that.
 
-Kumar, it would be useful to get a bit of an inventory of what you
-know you need a home for. I know the APM guys have a queue manager
-(arm64-only) that handles things such as resource allocation for
-ethernet, etc, that they need a home for. It's not a pure library
-though, since there's also error interrupts, etc, to deal with.
+This patch creates a vmstat shepherd worker that monitors the
+per cpu differentials on all processors. If there are differentials
+on a processor then a vmstat worker local to the processors
+with the differentials is created. That worker will then start
+folding the diffs in regular intervals. Should the worker
+find that there is no work to be done then it will make the shepherd
+worker monitor the differentials again.
+
+With this patch it is possible then to have periods longer than
+2 seconds without any OS event on a "cpu" (hardware thread).
+
+Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
 
--Olof
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2013-10-03 12:06:06.501932283 -0500
++++ linux/mm/vmstat.c	2013-10-03 12:27:49.403384459 -0500
+@@ -14,12 +14,14 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/cpu.h>
++#include <linux/cpumask.h>
+ #include <linux/vmstat.h>
+ #include <linux/sched.h>
+ #include <linux/math64.h>
+ #include <linux/writeback.h>
+ #include <linux/compaction.h>
+ #include <linux/mm_inline.h>
++#include <linux/tick.h>
+
+ #include "internal.h"
+
+@@ -417,13 +419,22 @@ void dec_zone_page_state(struct page *pa
+ EXPORT_SYMBOL(dec_zone_page_state);
+ #endif
+
+-static inline void fold_diff(int *diff)
++
++/*
++ * Fold a differential into the global counters.
++ * Returns the number of counters updated.
++ */
++static inline int fold_diff(int *diff)
+ {
+ 	int i;
++	int changes = 0;
+
+ 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
+-		if (diff[i])
++		if (diff[i]) {
+ 			atomic_long_add(diff[i], &vm_stat[i]);
++			changes++;
++	}
++	return changes;
+ }
+
+ /*
+@@ -439,12 +450,15 @@ static inline void fold_diff(int *diff)
+  * statistics in the remote zone struct as well as the global cachelines
+  * with the global counters. These could cause remote node cache line
+  * bouncing and will have to be only done when necessary.
++ *
++ * The function returns the number of global counters updated.
+  */
+-static void refresh_cpu_vm_stats(void)
++static int refresh_cpu_vm_stats(void)
+ {
+ 	struct zone *zone;
+ 	int i;
+ 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
++	int changes = 0;
+
+ 	for_each_populated_zone(zone) {
+ 		struct per_cpu_pageset __percpu *p = zone->pageset;
+@@ -484,15 +498,17 @@ static void refresh_cpu_vm_stats(void)
+ 			continue;
+ 		}
+
+-
+ 		if (__this_cpu_dec_return(p->expire))
+ 			continue;
+
+-		if (__this_cpu_read(p->pcp.count))
++		if (__this_cpu_read(p->pcp.count)) {
+ 			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
++			changes++;
++		}
+ #endif
+ 	}
+-	fold_diff(global_diff);
++	changes += fold_diff(global_diff);
++	return changes;
+ }
+
+ /*
+@@ -1213,12 +1229,15 @@ static const struct file_operations proc
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+ int sysctl_stat_interval __read_mostly = HZ;
++static struct cpumask *monitored_cpus;
+
+ static void vmstat_update(struct work_struct *w)
+ {
+-	refresh_cpu_vm_stats();
+-	schedule_delayed_work(&__get_cpu_var(vmstat_work),
+-		round_jiffies_relative(sysctl_stat_interval));
++	if (refresh_cpu_vm_stats())
++		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
++			round_jiffies_relative(sysctl_stat_interval));
++	else
++		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
+ }
+
+ static void start_cpu_timer(int cpu)
+@@ -1226,7 +1245,70 @@ static void start_cpu_timer(int cpu)
+ 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
+
+ 	INIT_DEFERRABLE_WORK(work, vmstat_update);
+-	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
++	schedule_delayed_work_on(cpu, work,
++		__round_jiffies_relative(sysctl_stat_interval, cpu));
++}
++
++/*
++ * Check if the diffs for a certain cpu indicate that
++ * an update is needed.
++ */
++static bool need_update(int cpu)
++{
++	struct zone *zone;
++
++	for_each_populated_zone(zone) {
++		struct per_cpu_pageset *p = per_cpu_ptr(zone->pageset, cpu);
++
++		/*
++		 * The fast way of checking if there are any vmstat diffs.
++		 * This works because the diffs are byte sized items.
++		 */
++		if (memchr_inv(p->vm_stat_diff, 0, NR_VM_ZONE_STAT_ITEMS))
++			return true;
++	}
++	return false;
++}
++
++static void vmstat_shepherd(struct work_struct *w)
++{
++	int cpu;
++	int s = tick_get_housekeeping_cpu();
++	struct delayed_work *d = per_cpu_ptr(&vmstat_work, s);
++
++	refresh_cpu_vm_stats();
++
++	for_each_cpu(cpu, monitored_cpus)
++		if (need_update(cpu)) {
++			cpumask_clear_cpu(cpu, monitored_cpus);
++			start_cpu_timer(cpu);
++		}
++
++	if (s != smp_processor_id()) {
++		/* Timekeeping was moved. Move the shepherd worker */
++		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
++		cpumask_clear_cpu(s, monitored_cpus);
++		cancel_delayed_work_sync(d);
++		INIT_DEFERRABLE_WORK(d, vmstat_shepherd);
++	}
++
++	schedule_delayed_work_on(s, d,
++		__round_jiffies_relative(sysctl_stat_interval, s));
++
++}
++
++static void __init start_shepherd_timer(void)
++{
++	int cpu = tick_get_housekeeping_cpu();
++	struct delayed_work *d = per_cpu_ptr(&vmstat_work, cpu);
++
++	INIT_DEFERRABLE_WORK(d, vmstat_shepherd);
++	monitored_cpus = kmalloc(BITS_TO_LONGS(nr_cpu_ids) * sizeof(long),
++			GFP_KERNEL);
++	cpumask_copy(monitored_cpus, cpu_online_mask);
++	cpumask_clear_cpu(cpu, monitored_cpus);
++	schedule_delayed_work_on(cpu, d,
++		__round_jiffies_relative(sysctl_stat_interval, cpu));
+ }
+
+ /*
+@@ -1243,17 +1325,19 @@ static int vmstat_cpuup_callback(struct
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
+ 		refresh_zone_stat_thresholds();
+-		start_cpu_timer(cpu);
+ 		node_set_state(cpu_to_node(cpu), N_CPU);
++		cpumask_set_cpu(cpu, monitored_cpus);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
+-		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		if (!cpumask_test_cpu(cpu, monitored_cpus))
++			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		cpumask_clear_cpu(cpu, monitored_cpus);
+ 		per_cpu(vmstat_work, cpu).work.func = NULL;
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+-		start_cpu_timer(cpu);
++		cpumask_set_cpu(cpu, monitored_cpus);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -1272,12 +1356,8 @@ static struct notifier_block vmstat_noti
+ static int __init setup_vmstat(void)
+ {
+ #ifdef CONFIG_SMP
+-	int cpu;
+-
+ 	register_cpu_notifier(&vmstat_notifier);
+-
+-	for_each_online_cpu(cpu)
+-		start_cpu_timer(cpu);
++	start_shepherd_timer();
+ #endif
+ #ifdef CONFIG_PROC_FS
+ 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+Index: linux/kernel/time/tick-common.c
+===================================================================
+--- linux.orig/kernel/time/tick-common.c	2013-10-03 12:06:06.501932283 -0500
++++ linux/kernel/time/tick-common.c	2013-10-03 12:06:06.501932283 -0500
+@@ -206,6 +206,24 @@ static void tick_setup_device(struct tic
+ 		tick_setup_oneshot(newdev, handler, next_event);
+ }
+
++/*
++ * Return a cpu number that may be used to run housekeeping
++ * tasks. This is usually the timekeeping cpu unless that
++ * is not available. Then we simply fall back to the current
++ * cpu.
++ */
++int tick_get_housekeeping_cpu(void)
++{
++	int cpu;
++
++	if (system_state < SYSTEM_RUNNING || tick_do_timer_cpu < 0)
++		cpu = raw_smp_processor_id();
++	else
++		cpu = tick_do_timer_cpu;
++
++	return cpu;
++}
++
+ void tick_install_replacement(struct clock_event_device *newdev)
+ {
+ 	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
+Index: linux/include/linux/tick.h
+===================================================================
+--- linux.orig/include/linux/tick.h	2013-10-03 12:06:06.501932283 -0500
++++ linux/include/linux/tick.h	2013-10-03 12:06:06.501932283 -0500
+@@ -77,6 +77,7 @@ struct tick_sched {
+ extern void __init tick_init(void);
+ extern int tick_is_oneshot_available(void);
+ extern struct tick_device *tick_get_device(int cpu);
++extern int tick_get_housekeeping_cpu(void);
+
+ # ifdef CONFIG_HIGH_RES_TIMERS
+ extern int tick_init_highres(void);
