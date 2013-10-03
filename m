@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3JCAwT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:52:19 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:59664 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab3JCAwG (ORCPT
+	id S1754121Ab3JCAw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:52:28 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:56995 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569Ab3JCAwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:52:06 -0400
+	Wed, 2 Oct 2013 20:52:20 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+Cc: Minchan Kim <minchan@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
@@ -24,11 +24,11 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
         KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 03/14] vrange: Clear volatility on new mmaps
-Date: Wed,  2 Oct 2013 17:51:32 -0700
-Message-Id: <1380761503-14509-4-git-send-email-john.stultz@linaro.org>
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 09/14] vrange: Add vrange LRU list for purging
+Date: Wed,  2 Oct 2013 17:51:38 -0700
+Message-Id: <1380761503-14509-10-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
 References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
@@ -36,29 +36,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At lsf-mm, the issue was brought up that there is a precedence with
-interfaces like mlock, such that new mappings in a pre-existing range
-do no inherit the mlock state.
+From: Minchan Kim <minchan@kernel.org>
 
-This is mostly because mlock only modifies the existing vmas, and so
-any new mmaps create new vmas, which won't be mlocked.
+This patch adds vrange LRU list for managing vranges to purge by
+something (In this implementation, I will use slab shrinker introduced
+by upcoming patches).
 
-Since volatility is not stored in the vma (for good cause, specifically
-as we'd have to have manage file volatility differently from anonymous
-and we're likely to manage volatility on small chunks of memory, which
-would cause lots of vma splitting and churn), this patch clears volitility
-on new mappings, to ensure that we don't inherit volatility if memory in
-an existing volatile range is unmapped and then re-mapped with something
-else.
+This is necessary to purge vranges on swapless system because currently
+the VM only ages anonymous pages if the system has a swap device.
 
-Thus, this patch forces any volatility to be cleared on mmap.
-
-XXX: We expect this patch to be not well loved by mm folks, and are open
-to alternative methods here. Its more of a place holder to address
-the issue from lsf-mm and hopefully will spur some further discussion.
-
-Minchan does have an alternative solution, but I'm not a big fan of it
-yet, so this simpler approach is a placeholder for now.
+In this case, because we would otherwise be duplicating the page LRUs
+tracking of hot/cold pages, we utilize a vrange LRU, to manage the
+shrinking order. Thus the shrinker will discard the entire vrange at
+once, and vranges are purged in the order they are marked volatile.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -82,68 +72,162 @@ Cc: Michel Lespinasse <walken@google.com>
 Cc: Rob Clark <robdclark@gmail.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/vrange.h | 2 ++
- mm/mmap.c              | 5 +++++
- mm/vrange.c            | 8 ++++++++
- 3 files changed, 15 insertions(+)
+ include/linux/vrange_types.h |  2 ++
+ mm/vrange.c                  | 61 ++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 58 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-index 2b96ee1..ef153c8 100644
---- a/include/linux/vrange.h
-+++ b/include/linux/vrange.h
-@@ -36,6 +36,8 @@ static inline int vrange_type(struct vrange *vrange)
- 	return vrange->owner->type;
- }
+diff --git a/include/linux/vrange_types.h b/include/linux/vrange_types.h
+index 0d48b42..d7d451c 100644
+--- a/include/linux/vrange_types.h
++++ b/include/linux/vrange_types.h
+@@ -20,6 +20,8 @@ struct vrange {
+ 	struct interval_tree_node node;
+ 	struct vrange_root *owner;
+ 	int purged;
++	struct list_head lru;
++	atomic_t refcount;
+ };
+ #endif
  
-+extern int vrange_clear(struct vrange_root *vroot,
-+				unsigned long start, unsigned long end);
- extern void vrange_root_cleanup(struct vrange_root *vroot);
- extern int vrange_fork(struct mm_struct *new,
- 					struct mm_struct *old);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f9c97d1..ed7056f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -36,6 +36,7 @@
- #include <linux/sched/sysctl.h>
- #include <linux/notifier.h>
- #include <linux/memory.h>
-+#include <linux/vrange.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -1502,6 +1503,10 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	/* Clear old maps */
- 	error = -ENOMEM;
- munmap_back:
-+
-+	/* zap any volatile ranges */
-+	vrange_clear(&mm->vroot, addr, addr + len);
-+
- 	if (find_vma_links(mm, addr, addr + len, &prev, &rb_link, &rb_parent)) {
- 		if (do_munmap(mm, addr, len))
- 			return -ENOMEM;
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 4ddcc3e9..f2d1588 100644
+index c19a966..33e3ac1 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -166,6 +166,14 @@ static int vrange_remove(struct vrange_root *vroot,
- 	return 0;
- }
+@@ -14,8 +14,21 @@
  
-+int vrange_clear(struct vrange_root *vroot,
-+					unsigned long start, unsigned long end)
-+{
-+	int purged;
+ static struct kmem_cache *vrange_cachep;
+ 
++static struct vrange_list {
++	struct list_head list;
++	unsigned long size;
++	struct mutex lock;
++} vrange_list;
 +
-+	return vrange_remove(vroot, start, end - 1, &purged);
++static inline unsigned int vrange_size(struct vrange *range)
++{
++	return range->node.last + 1 - range->node.start;
 +}
 +
- void vrange_root_cleanup(struct vrange_root *vroot)
+ static int __init vrange_init(void)
  {
- 	struct vrange *range;
++	INIT_LIST_HEAD(&vrange_list.list);
++	mutex_init(&vrange_list.lock);
+ 	vrange_cachep = KMEM_CACHE(vrange, SLAB_PANIC);
+ 	return 0;
+ }
+@@ -27,19 +40,56 @@ static struct vrange *__vrange_alloc(gfp_t flags)
+ 	if (!vrange)
+ 		return vrange;
+ 	vrange->owner = NULL;
++	INIT_LIST_HEAD(&vrange->lru);
++	atomic_set(&vrange->refcount, 1);
++
+ 	return vrange;
+ }
+ 
+ static void __vrange_free(struct vrange *range)
+ {
+ 	WARN_ON(range->owner);
++	WARN_ON(atomic_read(&range->refcount) != 0);
++	WARN_ON(!list_empty(&range->lru));
++
+ 	kmem_cache_free(vrange_cachep, range);
+ }
+ 
++static inline void __vrange_lru_add(struct vrange *range)
++{
++	mutex_lock(&vrange_list.lock);
++	WARN_ON(!list_empty(&range->lru));
++	list_add(&range->lru, &vrange_list.list);
++	vrange_list.size += vrange_size(range);
++	mutex_unlock(&vrange_list.lock);
++}
++
++static inline void __vrange_lru_del(struct vrange *range)
++{
++	mutex_lock(&vrange_list.lock);
++	if (!list_empty(&range->lru)) {
++		list_del_init(&range->lru);
++		vrange_list.size -= vrange_size(range);
++		WARN_ON(range->owner);
++	}
++	mutex_unlock(&vrange_list.lock);
++}
++
+ static void __vrange_add(struct vrange *range, struct vrange_root *vroot)
+ {
+ 	range->owner = vroot;
+ 	interval_tree_insert(&range->node, &vroot->v_rb);
++
++	WARN_ON(atomic_read(&range->refcount) <= 0);
++	__vrange_lru_add(range);
++}
++
++static inline void __vrange_put(struct vrange *range)
++{
++	if (atomic_dec_and_test(&range->refcount)) {
++		__vrange_lru_del(range);
++		__vrange_free(range);
++	}
+ }
+ 
+ static void __vrange_remove(struct vrange *range)
+@@ -64,6 +114,7 @@ static inline void __vrange_resize(struct vrange *range,
+ 	bool purged = range->purged;
+ 
+ 	__vrange_remove(range);
++	__vrange_lru_del(range);
+ 	__vrange_set(range, start_idx, end_idx, purged);
+ 	__vrange_add(range, vroot);
+ }
+@@ -100,7 +151,7 @@ static int vrange_add(struct vrange_root *vroot,
+ 		range = vrange_from_node(node);
+ 		/* old range covers new range fully */
+ 		if (node->start <= start_idx && node->last >= end_idx) {
+-			__vrange_free(new_range);
++			__vrange_put(new_range);
+ 			goto out;
+ 		}
+ 
+@@ -109,7 +160,7 @@ static int vrange_add(struct vrange_root *vroot,
+ 		purged |= range->purged;
+ 
+ 		__vrange_remove(range);
+-		__vrange_free(range);
++		__vrange_put(range);
+ 
+ 		node = next;
+ 	}
+@@ -150,7 +201,7 @@ static int vrange_remove(struct vrange_root *vroot,
+ 		if (start_idx <= node->start && end_idx >= node->last) {
+ 			/* argumented range covers the range fully */
+ 			__vrange_remove(range);
+-			__vrange_free(range);
++			__vrange_put(range);
+ 		} else if (node->start >= start_idx) {
+ 			/*
+ 			 * Argumented range covers over the left of the
+@@ -181,7 +232,7 @@ static int vrange_remove(struct vrange_root *vroot,
+ 	vrange_unlock(vroot);
+ 
+ 	if (!used_new)
+-		__vrange_free(new_range);
++		__vrange_put(new_range);
+ 
+ 	return 0;
+ }
+@@ -204,7 +255,7 @@ void vrange_root_cleanup(struct vrange_root *vroot)
+ 	while ((node = rb_first(&vroot->v_rb))) {
+ 		range = vrange_entry(node);
+ 		__vrange_remove(range);
+-		__vrange_free(range);
++		__vrange_put(range);
+ 	}
+ 	vrange_unlock(vroot);
+ }
 -- 
 1.8.1.2
 
