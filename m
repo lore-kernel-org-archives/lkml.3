@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3JCCuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 22:50:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41390 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3JCCuK (ORCPT
+	id S1753739Ab3JCCyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 22:54:05 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:65371 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab3JCCyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 22:50:10 -0400
-Date: Thu, 3 Oct 2013 03:50:07 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Linus Torvalds <torvalds@osdl.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org
-Subject: Re: [rfc] rework aio migrate pages to use aio fs
-Message-ID: <20131003025007.GC13318@ZenIV.linux.org.uk>
-References: <20130913165937.GL2517@kvack.org>
- <20130913184204.GS13318@ZenIV.linux.org.uk>
- <20130917141825.GF11526@kvack.org>
- <20131003022251.GB13318@ZenIV.linux.org.uk>
+	Wed, 2 Oct 2013 22:54:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131003022251.GB13318@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131002235615.GA7419@pd.tnic>
+References: <CA+r1ZhgsXTZ_x-jzS2OpjryhCExrG0B6nB_Ph4gb9_BJL4zeCA@mail.gmail.com>
+	<20131002235615.GA7419@pd.tnic>
+Date: Wed, 2 Oct 2013 19:54:01 -0700
+Message-ID: <CA+r1ZhhEL22-8N3McHaHZ9hmsC84mwkgz39O8t9sC967FjM_4g@mail.gmail.com>
+Subject: Re: randconfig build error with next-20131002, in crypto
+From: Jim Davis <jim.epost@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 03:22:51AM +0100, Al Viro wrote:
-> > +	/*
-> > +	 * Link the inode to a directory entry by creating a unique name
-> > +	 * using the inode sequence number.
-> > +	 */
-> > +	file = ERR_PTR(-ENOMEM);
-> > +	this.name = name;
-> > +	this.len = strlen(name);
-> > +	this.hash = 0;
-> 
-> Umm...  ITYM
-> 	struct qstr this = QSTR_INIT("[aio]", 5);
-> , if not
-> 	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb,
-> 				     &(struct qstr)QSTR_INIT("[aio]", 5));
-> > +	if (!path.dentry)
-> > +		goto err_module;
+On Wed, Oct 2, 2013 at 4:56 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Oct 02, 2013 at 03:19:51PM -0700, Jim Davis wrote:
+>> Building with the attached random configuration file,
+>>
+>>   LD      init/built-in.o
+>> crypto/built-in.o: In function `RSA_verify_signature':
+>> rsa.c:(.text+0x2dc5e): undefined reference to `mpi_get_nbits'
+>> rsa.c:(.text+0x2dc68): undefined reference to `mpi_get_nbits'
+>> rsa.c:(.text+0x2dc89): undefined reference to `mpi_free'
+>> rsa.c:(.text+0x2dca4): undefined reference to `mpi_cmp_ui'
+>> rsa.c:(.text+0x2dcb7): undefined reference to `mpi_cmp'
+>> rsa.c:(.text+0x2dcc6): undefined reference to `mpi_alloc'
+>> rsa.c:(.text+0x2dce7): undefined reference to `mpi_powm'
+>> rsa.c:(.text+0x2dcff): undefined reference to `mpi_get_nbits'
+>> rsa.c:(.text+0x2dd1c): undefined reference to `mpi_get_buffer'
+>> rsa.c:(.text+0x2de07): undefined reference to `mpi_free'
+>> make: *** [vmlinux] Error 1
+>
+> Looks like someone has forgotten this completely unused MPILIB_EXTRA
+> thing in there.
+>
+> Does this totally untested but obvious patch help?
+>
+> ---
+> From: Borislav Petkov <bp@suse.de>
+> Date: Thu, 3 Oct 2013 01:51:15 +0200
+> Subject: [PATCH] crypto: Correct RSA MPI dependency
+>
+> 9e235dcaf4f6 ("Revert "crypto: GnuPG based MPI lib - additional sources
+> (part 4)") removed the MPI lib extra stuff but left RSA selecting it
+> while it should select CONFIG_MPILIB instead. Fix it.
+>
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  crypto/asymmetric_keys/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+> index 6d2c2ea12559..755f6174585a 100644
+> --- a/crypto/asymmetric_keys/Kconfig
+> +++ b/crypto/asymmetric_keys/Kconfig
+> @@ -21,7 +21,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+>  config PUBLIC_KEY_ALGO_RSA
+>         tristate "RSA public-key algorithm"
+>         depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+> -       select MPILIB_EXTRA
+> +       select MPILIB
+>         help
+>           This option enables support for the RSA algorithm (PKCS#1, RFC3447).
+>
+> --
+> 1.8.4
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-and you've leaked that inode, BTW.
-
-Another thing: I'd rather pull everything about setting the inode
-up (aops, size, etc.) in there.
-
-Anyway, could you take a look at the last couple of commits in
-vfs.git#for-bcrl?  Commit message on the last one is an atrocity,
-of course...
+Yes, with the change that configuration file didn't generate a build
+error.  Tested-by: jim.epost@gmail.com (if it isn't overkill for for
+an obvious patch!).  Thanks.
