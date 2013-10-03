@@ -1,40 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab3JCRBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:01:48 -0400
-Received: from nm39.bullet.mail.ne1.yahoo.com ([98.138.229.32]:45540 "EHLO
-	nm39.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752421Ab3JCRBr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:01:47 -0400
-X-Greylist: delayed 407 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 13:01:46 EDT
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 400612.249.bm@omp1030.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=2mdlc9TbX5wj3RlAG0Q/BHFN/nGeRmr5hASRVFwvIp2EpZgGRjBccli40nYc6J1XETu4FHckuAFk/oxYjw1XF6xlNpBWl7AnyZsIlWnc+T/5bbuK4Bg1Ve79z+q/zIEX7x7PH2ijDrAzU0HwHZI5uJA8NPqfSUgR/Fhl5ea0908=;
-X-YMail-OSG: 8OLaUTgVM1nxmvHJROPUZK25HEXwZNwJvpGpYWxJ.CF1xnL
- KjxTCmuVcGSVgA2WvHjUC
-X-Rocket-MIMEInfo: 002.001,TXkgRGVhciBPbmUsDQoNCkkgYW0gZ2xhZCB0byBrbm93IHlvdSwgYnV0IEdvZCBrbm93cyB5b3UgYmV0dGVyIGFuZCBoZSBrbm93cyB3aHkgaGUgaGFzIGRpcmVjdGVkIG1lIHRvIHlvdSBhdCB0aGlzIHBvaW50IGluIHRpbWUsIEkga25vdyB5b3Ugd2lsbCBiZSBhbWF6ZWQgdG8gcmVhZCBmcm9tIG1lLCBidXQgZG8gbm90IGJlIGFmcmFpZCwgUmFkZXIgdG8gY29uc2lkZXIgdGhpcyBsZXR0ZXIgYXMgYSByZXF1ZXN0IGZyb20gYSBvbGQgd29tYW4gd2hvIGlzIGluIG5lZWR5IG9mIHlvdXIgYXNzaXN0YW5jZS4BMAEBAQE-
-X-RocketYMMF: inn_nfeo
-X-Mailer: YahooMailClassic/339 YahooMailWebService/0.8.160.587
-Message-ID: <1380819117.30205.YahooMailBasic@web163006.mail.bf1.yahoo.com>
-Date: Thu, 3 Oct 2013 09:51:57 -0700 (PDT)
-From: Mrs Gloria <mrs_g0@voila.fr>
-Reply-To: mrs_g0@voila.fr
-Subject: My Dear One,
-To: undisclosed recipients:;
+	id S1754417Ab3JCREJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:04:09 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:33201 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754013Ab3JCREH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 13:04:07 -0400
+Message-ID: <524DA381.2050108@sgi.com>
+Date: Thu, 03 Oct 2013 10:04:01 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] PATCH: KGDB/KDB Fix no KDB config problem.
+References: <20131003163824.966169920@asylum.americas.sgi.com> <20131003163825.184494258@asylum.americas.sgi.com> <20131003165122.GB32755@gmail.com>
+In-Reply-To: <20131003165122.GB32755@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Dear One,
 
-I am glad to know you, but God knows you better and he knows why he has directed me to you at this point in time, I know you will be amazed to read from me, but do not be afraid, Rader to consider this letter as a request from a old woman who is in needy of your assistance. I am Mrs. Gloria Amon Nikoi 85years in age; I’m the former Ghana Minister of Foreign Affairs in 1979, then in 1979-1981 Minister of Finance. Am contacting you from my country Ghana, meanwhile I am writing this mail to you with heavy sorrow in my heart because I have been suffering for pass good (5 years), For one hospital to another. I want you to get back to me immediately you receive this letter and if you know you are capable and willing to handle the transfer of $18.2 million dollars. I shall send you more information and the procedures when I receive a positive response from you.
 
-Best regards.
-Mrs Gloria Amon Nikoi.
+On 10/3/2013 9:51 AM, Ingo Molnar wrote:
+> 
+> * Mike Travis <travis@sgi.com> wrote:
+> 
+>> Some code added to the debug_core module had KDB dependencies
+>> that it shouldn't have.
+>>
+>> Signed-off-by: Mike Travis <travis@sgi.com>
+>> ---
+>>  kernel/debug/debug_core.c |    8 ++++----
+>>  kernel/debug/debug_core.h |    2 ++
+>>  2 files changed, 6 insertions(+), 4 deletions(-)
+>>
+>> --- linux.orig/kernel/debug/debug_core.c
+>> +++ linux/kernel/debug/debug_core.c
+>> @@ -575,8 +575,8 @@ return_normal:
+>>  		raw_spin_lock(&dbg_slave_lock);
+>>  
+>>  #ifdef CONFIG_SMP
+>> -	/* If SYSTEM_NMI, slaves are already waiting */
+>> -	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
+>> +	/* If send_ready set, slaves are already waiting */
+>> +	if (ks->send_ready)
+>>  		atomic_set(ks->send_ready, 1);
+>>  
+>>  	/* Signal the other CPUs to enter kgdb_wait() */
+>> @@ -682,11 +682,11 @@ kgdb_handle_exception(int evector, int s
+>>  	if (arch_kgdb_ops.enable_nmi)
+>>  		arch_kgdb_ops.enable_nmi(0);
+>>  
+>> +	memset(ks, 0, sizeof(struct kgdb_state));
+>>  	ks->cpu			= raw_smp_processor_id();
+>>  	ks->ex_vector		= evector;
+>>  	ks->signo		= signo;
+>>  	ks->err_code		= ecode;
+>> -	ks->kgdb_usethreadid	= 0;
+>>  	ks->linux_regs		= regs;
+>>  
+>>  	if (kgdb_reenter_check(ks))
+>> @@ -750,7 +750,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
+>>  		ks->cpu			= cpu;
+>>  		ks->ex_vector		= trapnr;
+>>  		ks->signo		= SIGTRAP;
+>> -		ks->err_code		= KDB_REASON_SYSTEM_NMI;
+>> +		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
+>>  		ks->linux_regs		= regs;
+>>  		ks->send_ready		= send_ready;
+>>  		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+>> --- linux.orig/kernel/debug/debug_core.h
+>> +++ linux/kernel/debug/debug_core.h
+>> @@ -75,11 +75,13 @@ extern int kdb_stub(struct kgdb_state *k
+>>  extern int kdb_parse(const char *cmdstr);
+>>  extern int kdb_common_init_state(struct kgdb_state *ks);
+>>  extern int kdb_common_deinit_state(void);
+>> +#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
+>>  #else /* ! CONFIG_KGDB_KDB */
+>>  static inline int kdb_stub(struct kgdb_state *ks)
+>>  {
+>>  	return DBG_PASS_EVENT;
+>>  }
+>> +#define KGDB_KDB_REASON_SYSTEM_NMI 0
+>>  #endif /* CONFIG_KGDB_KDB */
+>>  
+>>  #endif /* _DEBUG_CORE_H_ */
+> 
+> Hm, the KGDB_KDB_REASON_SYSTEM_NMI definition is a bit ugly. I still think 
+> there are layering violations here and just kludging it around doesn't 
+> solve it - a helper function that keeps kgdb details to the kgdb code 
+> would.
+> 
+> Anyway, if Jason is fine with this solution and upholds his Acked-by then 
+> I'll merge this into the first patch and apply the two patches.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+
+Would you prefer a simple #ifdef CONFIG_KGDB_KDB around the assignment?
