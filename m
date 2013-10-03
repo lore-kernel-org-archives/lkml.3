@@ -1,162 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab3JCShn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 14:37:43 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:57276 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab3JCShm (ORCPT
+	id S1754948Ab3JCSjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 14:39:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55909 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab3JCSi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 14:37:42 -0400
-Date: Thu, 3 Oct 2013 19:37:36 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
- file->f_cred
-Message-ID: <20131003183736.GA2390@dztty>
-References: <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
- <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
- <20131002182206.GB2485@dztty>
- <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
- <20131002184844.GB3393@dztty>
- <20131003061244.GC25345@gmail.com>
- <20131003122959.GA3619@dztty>
- <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
- <20131003154058.GA1210@dztty>
- <CALCETrXwqrqs+OhwuM8GLvnRyFDo75W5-xdXoxAvUu1PiG=_ow@mail.gmail.com>
+	Thu, 3 Oct 2013 14:38:59 -0400
+Date: Thu, 3 Oct 2013 11:39:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [ 00/16] 3.4.65-stable review
+Message-ID: <20131003183916.GA22508@kroah.com>
+References: <20131003040445.523176877@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrXwqrqs+OhwuM8GLvnRyFDo75W5-xdXoxAvUu1PiG=_ow@mail.gmail.com>
+In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Andy sorry for the delay, real life...)
-
-On Thu, Oct 03, 2013 at 04:50:54PM +0100, Andy Lutomirski wrote:
-> On Thu, Oct 3, 2013 at 4:40 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Thu, Oct 03, 2013 at 04:15:43PM +0100, Andy Lutomirski wrote:
-> >> On Thu, Oct 3, 2013 at 1:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> > On Thu, Oct 03, 2013 at 08:12:44AM +0200, Ingo Molnar wrote:
-> >> >> Now procfs might be special, as by its nature of a pseudofilesystem it's
-> >> >> far more atomic than other filesystems, but still IMHO it's a lot more
-> >> >
-> >> >
-> >> >> robust security design wise to revoke access to objects you should not
-> >> >> have a reference to when a security boundary is crossed, than letting
-> >> >> stuff leak through and sprinking all the potential cases that may leak
-> >> >> information with permission checks ...
-> >> > I agree, but those access should also be checked at the beginning, IOW
-> >> > during ->open(). revoke will not help if revoke is not involved at all,
-> >> > the task /proc entries may still be valide (no execve).
-> >> >
-> >> > Currently security boundary is crossed for example arbitrary /proc/*/stack
-> >> > (and others).
-> >> > 1) The target task does not do an execve (no revoke).
-> >> > 2) current task will open these files and *want* and *will* pass the fd to a
-> >> > more privileged process to pass the ptrace check which is done only during
-> >> > ->read().
-> >>
-> >> What does this?  Or are you saying that this is a bad thing?
-> > I'm not sure to understand you, revoke if implemented correctly is not a
-> > bad thing! In the other hand, here I try to explain what if the target task
-> > did not execve, revoke will never be involved, file descriptors are
-> > still valid!
+On Wed, Oct 02, 2013 at 09:05:24PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.65 release.
+> There are 16 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Ah. You're saying that both revoke and checking permissions at open
-> time (or using f_cred) is important.  I think I agree.  (Except that,
-> arguably, /proc/self/stat should always be fully functional even if
-> passed to a different process and yama is in use.  This seems minor.)
-Yes, ok
-
-And I do agree on the /proc/self/stat, it should always work, and it
-does with this series. Permissions on f_cred are checked only if
-current's cred change between ->open() and ->read(), and this check may
-succeed, it depends on f_cred! so /proc/self/stat will work.
-
-
-> >
-> >
-> >> (And *please* don't write software that *depends* on different
-> >> processes having different read()/write() permissions on the *same*
-> >> struct file.  I've already found multiple privilege escalations based
-> >> on that, and I'm pretty sure I can find some more.)
-> > Sorry, can't follow you here! examples related to what we discuss here ?
+> Responses should be made by Sat Oct  5 04:04:34 UTC 2013.
+> Anything received after that time might be too late.
 > 
-> There were various bugs (CVE-2013-1959) in /proc/pid/uid_map, etc,
-> that were exploitable to obtain uid 0.  They happened because write()
-> checked its caller's credentials.
-Ok, will recheck all of them soon. Thanks Andy.
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.65-rc1.gz
+> and the diffstat can be found below.
 
-Oh Andy, take a look at commit 935d8aabd4331f47 by Linus
-Add file_ns_capable() helper function for open-time capability checking
+Due to reported build issues with -rc1, I've dropped the offending patch
+and released -rc2:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.65-rc2.gz
 
-Don't you see the same change as from my patches:
-file_ns_capable() it uses the file->f_cred ! and yes it uses
-security_capable() as with the patches I proposed... but in the code I
-touched there is a need for security_capable_noaudit() also, I think.
+thanks,
 
-Same logic! file->f_cred is already beeing/planned to be used.
-
-That also goes for commit 6708075f104c3c9b0 by Eric,
-userns: Don't let unprivileged users trick privileged users into setting the id_map
-
-So Andy, what do you think? file->f_cred is already used to fix urgent
-vulnerabilities, and now, everyone here knows that /proc/*/{stack,maps}
-cab be used to leak ASLR...
-
-
-[...]
-> >> > Of course, I did clean the patchset to prove that it will work, and I
-> >> > only implemented full protection for /proc/*/{stack,syscall,stat} other
-> >> > files will wait.
-> >> >
-> >> > But Ingo you can't ignore the fact that:
-> >> > /proc/*/{stack,syscall} are 0444 mode
-> >> > /proc/*/{stack,syscall} do not have ptrace_may_access() during open()
-> >> > /proc/*/{stack,syscall} have the ptrace_may_access() during read()
-> >>
-> >> I think everyone agrees that this is broken.  We don't agree on the
-> >> fix check.  (Also, as described in my other email, your approach may
-> >> be really hard to get right.)
-> > Well, yes we don't agree perhaps on the fix, but currently there are no
-> > other fixes, will be happy to see other propositions! these files have
-> > been vulnerable for years now...
-> >
-> > And for the record it's not my approache. Please just read the emails
-> > correctly. It was proposed and suggested by Eric and perhaps Linus.
-> >
-> > I did an experiment with it, and found it easy without any extra
-> > overhead: If cred have changed do extra checkes on the original opener.
-> > It will let you pass file descritors if cred did not change.
-> >
-> >
-> > Where is this other email that says this approach is hard?
-> > It's not hard, very minor change and it works. Perhaps there is a
-> > better solution yes, but currently it's not implemented!
-> 
-> I just sent it a couple minutes ago -- it may not have made it yet.
-> It's here, though:
-> 
-> http://www.openwall.com/lists/kernel-hardening/2013/10/03/9
-Sorry, will respond, thanks.
-
-> --Andy
-
--- 
-Djalal Harouni
-http://opendz.org
+greg k-h
