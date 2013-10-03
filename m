@@ -1,52 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab3JCPxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:53:18 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753791Ab3JCPxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:53:17 -0400
-Message-ID: <524D92E8.1030704@nod.at>
-Date: Thu, 03 Oct 2013 17:53:12 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754613Ab3JCP42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:56:28 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:45804 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab3JCP40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 11:56:26 -0400
+Date: Thu, 3 Oct 2013 08:56:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [ 00/13] 3.0.99-stable review
+Message-ID: <20131003155620.GA30315@roeck-us.net>
+References: <20131003040400.753642257@linuxfoundation.org>
+ <524D0663.209@roeck-us.net>
+ <1380801873@msgid.manchmal.in-ulm.de>
+ <524D72A7.8030200@oracle.com>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: richard.genoud@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] UBI: fix refill_wl_user_pool()
-References: <1380376516-30144-1-git-send-email-richard@nod.at>   <1380376516-30144-2-git-send-email-richard@nod.at>  <1380812414.27358.440.camel@sauron.fi.intel.com> <524D8879.1030203@nod.at> <1380814071.27358.444.camel@sauron.fi.intel.com>
-In-Reply-To: <1380814071.27358.444.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524D72A7.8030200@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.10.2013 17:27, schrieb Artem Bityutskiy:
-> On Thu, 2013-10-03 at 17:08 +0200, Richard Weinberger wrote:
->> Am 03.10.2013 17:00, schrieb Artem Bityutskiy:
->>> On Sat, 2013-09-28 at 15:55 +0200, Richard Weinberger wrote:
->>>> If no free PEBs are available refill_wl_user_pool() must not
->>>> return with -ENOSPC immediately.
->>>> It has to block till produce_free_peb() produced a free PEB.
->>>>
->>>> Reported-and-Tested-by: Richard Genoud <richard.genoud@gmail.com>
->>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>
->>> What is pool size, I wonder?
->>
->> Currently it's 25 (UBI_FM_WL_POOL_SIZE).
->> If experience shows that 25 is too low/big we can change this constant.
->> Maybe it's also worth making them configurable...
+On Thu, Oct 03, 2013 at 07:35:35AM -0600, Khalid Aziz wrote:
+> On 10/03/2013 06:47 AM, Christoph Biedl wrote:
+> >Guenter Roeck wrote...
+> >
+> >>On 10/02/2013 09:04 PM, Greg Kroah-Hartman wrote:
+> >>>This is the start of the stable review cycle for the 3.0.99 release.
+> >
+> >>Heads up: I am getting lots of build failures in 3.0 and 3.4 builds.
+> >>
+> >>mm/built-in.o: In function `__put_compound_page':
+> >>slab.c:(.text+0xaa3c): undefined reference to `PageHuge'
+> >>mm/built-in.o: In function `put_compound_page':
+> >>slab.c:(.text+0xaab0): undefined reference to `PageHuge'
+> >>mm/built-in.o: In function `__get_page_tail':
+> >>slab.c:(.text+0xb178): undefined reference to `PageHuge'
+> >>make: *** [.tmp_vmlinux1] Error 1
+> >
+> >This is obviously due to
+> >
+> >| [ 11/13] mm: fix aio performance regression for database caused by THP
+> >
+> >and happens if CONFIG_HUGETLB_PAGE is not set.
+> >
+> >Looking closer, upstream commit 7cb2ef56 included linux/hugetlb.h
+> >while the backport for 3.0 just defines PageHuge. Reverting that like
+> >in the patch below causes the build to complete, and the resulting
+> >kernel shows no anomalies here.
+> >
+> >However did that backport, why was it done that way? Or did I miss an
+> >important point?
 > 
-> I if it is a possible scenario that this function will not return until
-> 25 (or even 10) PEBs are erased? 
+> Thanks for tracking this down. I had not tried a configuration with
+> CONFIG_HUGETLB_PAGE not set. In my config, I was getting many
+> multiple definition errors for bunch of other defines from
+> linux/hugetlb.h. I will look at my config again but chances are I
+> had something else screwed up in my build since you did not see
+> those errors. Did you compile with CONFIG_HUGETLB_PAGE set after
+> including linux/hugetlb.h? If you did, including linux/hugetlb.h
+> instead of importing just the definition of PageHuge in mm/swap.c
+> would be the right thing to do.
 > 
 
-Sure. It will try to gain up to 25 PEBs but return if it gets less.
-That's why a pool has a current and a max size.
+For my part, what I do is to compile lots of standard configurations.
+I don't look into details. If you are interested, go to
+http://server.roeck-us.net:8010/builders, click on any of the many
+failed builds for 3.0 or 3.4, then click on "stdio" on the build page.
+You'll see the build log, which also lists the names of the failed
+configurations.
+
+An easy start might be x86_64:allnoconfig or i386:allnoconfig,
+both of which fail.
 
 Thanks,
-//richard
+Guenter
+
+> --
+> Khalid
+> 
+> >
+> >     Christoph
+> >
+> >--- a/mm/swap.c
+> >+++ b/mm/swap.c
+> >@@ -31,6 +31,7 @@
+> >  #include <linux/backing-dev.h>
+> >  #include <linux/memcontrol.h>
+> >  #include <linux/gfp.h>
+> >+#include <linux/hugetlb.h>
+> >
+> >  #include "internal.h"
+> >
+> >@@ -41,8 +42,6 @@
+> >  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+> >  static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+> >
+> >-int PageHuge(struct page *page);
+> >-
+> >  /*
+> >   * This path almost never happens for VM activity - pages are normally
+> >   * freed via pagevecs.  But it gets used by networking.
+> >
+> 
+> 
