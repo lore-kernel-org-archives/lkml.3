@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab3JCESJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47133 "EHLO
+	id S1755932Ab3JCESX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47143 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3JCESG (ORCPT
+	with ESMTP id S1752640Ab3JCEST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:06 -0400
+	Thu, 3 Oct 2013 00:18:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 01/57] block: Fix bio_copy_data()
-Date: Wed,  2 Oct 2013 21:08:27 -0700
-Message-Id: <20131003040636.701703320@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 21/57] serial: pch_uart: fix tty-kref leak in rx-error path
+Date: Wed,  2 Oct 2013 21:08:47 -0700
+Message-Id: <20131003040638.060887887@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,34 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 2f6cf0de0281d210061ce976f2d42d246adc75bb upstream.
+commit fc0919c68cb2f75bb1af759315f9d7e2a9443c28 upstream.
 
-The memcpy() in bio_copy_data() was using the wrong offset vars, leading
-to data corruption in weird unusual setups.
+Fix tty-kref leak introduced by commit 384e301e ("pch_uart: fix a
+deadlock when pch_uart as console") which never put its tty reference.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/bio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/serial/pch_uart.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -917,8 +917,8 @@ void bio_copy_data(struct bio *dst, stru
- 		src_p = kmap_atomic(src_bv->bv_page);
- 		dst_p = kmap_atomic(dst_bv->bv_page);
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1071,6 +1071,8 @@ static void pch_uart_err_ir(struct eg20t
+ 	if (tty == NULL) {
+ 		for (i = 0; error_msg[i] != NULL; i++)
+ 			dev_err(&priv->pdev->dev, error_msg[i]);
++	} else {
++		tty_kref_put(tty);
+ 	}
+ }
  
--		memcpy(dst_p + dst_bv->bv_offset,
--		       src_p + src_bv->bv_offset,
-+		memcpy(dst_p + dst_offset,
-+		       src_p + src_offset,
- 		       bytes);
- 
- 		kunmap_atomic(dst_p);
 
 
