@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3JCQfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:35:52 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	id S1754317Ab3JCQik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:38:40 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:50300 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754003Ab3JCQfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:35:51 -0400
-Message-ID: <524D9CE1.8040600@nod.at>
-Date: Thu, 03 Oct 2013 18:35:45 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: richard.genoud@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] UBI: fix refill_wl_user_pool()
-References: <1380376516-30144-1-git-send-email-richard@nod.at>    <1380376516-30144-2-git-send-email-richard@nod.at>   <1380812414.27358.440.camel@sauron.fi.intel.com> <524D8879.1030203@nod.at>  <1380814071.27358.444.camel@sauron.fi.intel.com> <524D92E8.1030704@nod.at> <1380816035.27358.447.camel@sauron.fi.intel.com>
-In-Reply-To: <1380816035.27358.447.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752421Ab3JCQij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 12:38:39 -0400
+Message-Id: <20131003163825.184494258@asylum.americas.sgi.com>
+References: <20131003163824.966169920@asylum.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Thu, 03 Oct 2013 11:38:25 -0500
+From: Mike Travis <travis@sgi.com>
+To: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] PATCH: KGDB/KDB Fix no KDB config problem.
+Content-Disposition: inline; filename=fix-non-kdb-config.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.10.2013 18:00, schrieb Artem Bityutskiy:
-> On Thu, 2013-10-03 at 17:53 +0200, Richard Weinberger wrote:
->> Am 03.10.2013 17:27, schrieb Artem Bityutskiy:
->>> On Thu, 2013-10-03 at 17:08 +0200, Richard Weinberger wrote:
->>>> Am 03.10.2013 17:00, schrieb Artem Bityutskiy:
->>>>> On Sat, 2013-09-28 at 15:55 +0200, Richard Weinberger wrote:
->>>>>> If no free PEBs are available refill_wl_user_pool() must not
->>>>>> return with -ENOSPC immediately.
->>>>>> It has to block till produce_free_peb() produced a free PEB.
->>>>>>
->>>>>> Reported-and-Tested-by: Richard Genoud <richard.genoud@gmail.com>
->>>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>>>
->>>>> What is pool size, I wonder?
->>>>
->>>> Currently it's 25 (UBI_FM_WL_POOL_SIZE).
->>>> If experience shows that 25 is too low/big we can change this constant.
->>>> Maybe it's also worth making them configurable...
->>>
->>> I if it is a possible scenario that this function will not return until
->>> 25 (or even 10) PEBs are erased? 
->>>
->>
->> Sure. It will try to gain up to 25 PEBs but return if it gets less.
->> That's why a pool has a current and a max size.
-> 
-> So if erasing speed is say, 250ms, then it would take 6.25 seconds?
+Some code added to the debug_core module had KDB dependencies
+that it shouldn't have.
 
-Only in the very worst case if we have to call 25 times produce_free_peb().
+Signed-off-by: Mike Travis <travis@sgi.com>
+---
+ kernel/debug/debug_core.c |    8 ++++----
+ kernel/debug/debug_core.h |    2 ++
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-Of course we could add a check to return immediately if produce_free_peb()
-got called a few times in series.
-But I really would like to wait with such performance tweaks until fastmap
-is more mature.
+--- linux.orig/kernel/debug/debug_core.c
++++ linux/kernel/debug/debug_core.c
+@@ -575,8 +575,8 @@ return_normal:
+ 		raw_spin_lock(&dbg_slave_lock);
+ 
+ #ifdef CONFIG_SMP
+-	/* If SYSTEM_NMI, slaves are already waiting */
+-	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
++	/* If send_ready set, slaves are already waiting */
++	if (ks->send_ready)
+ 		atomic_set(ks->send_ready, 1);
+ 
+ 	/* Signal the other CPUs to enter kgdb_wait() */
+@@ -682,11 +682,11 @@ kgdb_handle_exception(int evector, int s
+ 	if (arch_kgdb_ops.enable_nmi)
+ 		arch_kgdb_ops.enable_nmi(0);
+ 
++	memset(ks, 0, sizeof(struct kgdb_state));
+ 	ks->cpu			= raw_smp_processor_id();
+ 	ks->ex_vector		= evector;
+ 	ks->signo		= signo;
+ 	ks->err_code		= ecode;
+-	ks->kgdb_usethreadid	= 0;
+ 	ks->linux_regs		= regs;
+ 
+ 	if (kgdb_reenter_check(ks))
+@@ -750,7 +750,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
+ 		ks->cpu			= cpu;
+ 		ks->ex_vector		= trapnr;
+ 		ks->signo		= SIGTRAP;
+-		ks->err_code		= KDB_REASON_SYSTEM_NMI;
++		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
+ 		ks->linux_regs		= regs;
+ 		ks->send_ready		= send_ready;
+ 		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+--- linux.orig/kernel/debug/debug_core.h
++++ linux/kernel/debug/debug_core.h
+@@ -75,11 +75,13 @@ extern int kdb_stub(struct kgdb_state *k
+ extern int kdb_parse(const char *cmdstr);
+ extern int kdb_common_init_state(struct kgdb_state *ks);
+ extern int kdb_common_deinit_state(void);
++#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
+ #else /* ! CONFIG_KGDB_KDB */
+ static inline int kdb_stub(struct kgdb_state *ks)
+ {
+ 	return DBG_PASS_EVENT;
+ }
++#define KGDB_KDB_REASON_SYSTEM_NMI 0
+ #endif /* CONFIG_KGDB_KDB */
+ 
+ #endif /* _DEBUG_CORE_H_ */
 
-Thanks,
-//richard
+-- 
