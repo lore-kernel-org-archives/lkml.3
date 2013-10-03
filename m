@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3JCQOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 12:14:17 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:58583 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab3JCQOP convert rfc822-to-8bit (ORCPT
+	id S1754840Ab3JCQOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 12:14:49 -0400
+Received: from smtprelay0081.hostedemail.com ([216.40.44.81]:38836 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754578Ab3JCQOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 12:14:15 -0400
-Date: Thu, 3 Oct 2013 18:17:16 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Jason Cooper <jason@lakedaemon.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: Dove: Add the audio device to the Cubox DT
-Message-ID: <20131003181716.6d03d576@armhf>
-In-Reply-To: <5246E747.6020103@gmail.com>
-References: <20130828113521.35c53365@armhf>
-	<521DCD80.9010105@gmail.com>
-	<20130831125128.0e3a23c7@armhf>
-	<140d8d8a23f.2784.107cef0f820c2f5d7b7f41463071c310@gmail.com>
-	<20130926101147.217015e1@armhf>
-	<5243F0CE.9000301@gmail.com>
-	<20130926132859.04ad4407@armhf>
-	<5246E747.6020103@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; arm-unknown-linux-gnueabihf)
+	Thu, 3 Oct 2013 12:14:48 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3872:3873:3874:4250:4321:4425:5007:7652:7807:10004:10400:10848:11232:11658:11914:12296:12517:12519:12663:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: loss49_80e7e74d2553d
+X-Filterd-Recvd-Size: 2585
+Message-ID: <1380816884.2081.113.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] skd: Replaced custom debug PRINTKs with pr_debug
+From: Joe Perches <joe@perches.com>
+To: Ramprasad Chinthekindi <Ramprasad.Chinthekindi@hgst.com>
+Cc: OS Engineering <osengineering@stec-inc.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        Akhil Bhansali <Akhil.Bhansali@hgst.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Phansalkar <Amit.Phansalkar@hgst.com>
+Date: Thu, 03 Oct 2013 09:14:44 -0700
+In-Reply-To: <24CA9A5C93173F48A9E3313B866A7C280F1C10@MYMBX3.stec-inc.ad>
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E70587F@sambx4.stec-inc.ad>
+	 <1380652383.1924.5.camel@joe-AO722>
+	 <24CA9A5C93173F48A9E3313B866A7C280F1C10@MYMBX3.stec-inc.ad>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Sep 2013 16:27:19 +0200
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+On Thu, 2013-10-03 at 10:09 +0000, Ramprasad Chinthekindi wrote:
+> > -----Original Message-----
+> > On Tue, 2013-10-01 at 12:25 +0000, OS Engineering wrote:
+> > > Hi Jens,
+> > > I'm sending a patch to replace custom debug macros with pr_debug().
+> > Kindly please review the patch.
+> > > Thanking you.
+> > 
+> > I think that this doesn't differentiate between
+> > the 2 debugging levels currently implemented.
+> > 
+> > I'd do something like this:
+> > 
+> > Add pr_fmt to prefix pr_<level> uses with "skd: "
+> > Add skd_<level> convenience logging macros
+> > Convert VPRINTK/DPRINTK to skd_dbg(level, skdev, fmt, ...)
+> > Convert pr_<level>("(%s): ...", skd_name(skdev), ...) uses to
+> > 	skd_<level>(skdev, ...)
+> > Use kcalloc not kzalloc with multiply
+> > Remove a couple unnecessary pr_err function logging uses
+> > Add missing newline to logging
+[]
+> Jens Axboe and other community members suggested us to remove the custom PRINTK macros from driver and replace them with pr_* macros directly.
+> From driver's perspective, it's perfectly fine not to distinguish VPRINTs and DPRINTs. Hence, both have been replaced with pr_debug().
 
-> Jean-Francois,
-> 
-> I can confirm the following for CuBox:
-> 
-> AU1_EXTCLK is connected to si5351 clkout 2. For the _current_
-> (v3.12-rc1) dove-cubox.dts that means that you'll have to exchange
-> the properties for &i2c0/si5351/clkout[12]. If you leave it the way
-> it is, clkout2 is not allowed to change the pll inside si5351 and
-> only try to get close to the requested clk rate by using output
-> dividers. Would be great if you can provide a corresponding patch
-> for v3.12 (no need to Cc stable).
-> 
-> Also, as you seem to push kirkwood-i2s DT forward, please get back
-> to clkout2 (<&si5351 2>) for the audio node as you did correctly in
-> the first place.
-> 
-> With above changes, SPDIF_EN, and forcing kirkwood-i2s to always use
-> extclk, I can play SPDIF audio with 44k1 and 48k. Other rates could
-> also work, but my audio equipment ignores anything else.
+The initial patch net adds ~120 line of code,
+the suggested patch net removes ~50 and
+consolidates a few different output styles.
 
-Sebastian,
+Also, please don't quote the entire patch
+without commenting on it.  Delete the
+quoted stuff that's not relevant please.
 
-Thanks for your change. I can now get audio at 44.1, 32 and 22.05 kHz
-on HDMI with the external clock (via i2s, but s/pdif and other rates
-should work too).
-
-	[snip]
-> What I am wondering here is, why you want to use i2s at all? On CuBox,
-> HDMI transmitter is connected to both i2s and spdif. IIRC, for the
-> transmitter it makes no difference if you provide i2s or spdif audio,
-> _but_ what you are loosing for sure is pass-through, i.e. sending
-> compressed AC3 directly.
-	[snip]
-
-It seems that my patch about adding s/pdif to the kirkwood audio driver
-has not been accepted yet...
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
