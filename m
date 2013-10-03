@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab3JCEGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:06:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46755 "EHLO
+	id S1754471Ab3JCEG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:06:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab3JCEGR (ORCPT
+	with ESMTP id S1754415Ab3JCEGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:06:17 -0400
+	Thu, 3 Oct 2013 00:06:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Giovanni <giovanni.nervi@yahoo.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 04/13] xhci: Fix oops happening after address device timeout
-Date: Wed,  2 Oct 2013 21:04:29 -0700
-Message-Id: <20131003040401.065171549@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>, Nicolas Suzor <nic@suzor.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 10/16] drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
+Date: Wed,  2 Oct 2013 21:05:34 -0700
+Message-Id: <20131003040446.243245338@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040400.753642257@linuxfoundation.org>
-References: <20131003040400.753642257@linuxfoundation.org>
+In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
+References: <20131003040445.523176877@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 284d20552461466b04d6bfeafeb1c47a8891b591 upstream.
+commit 8d16f258217f2f583af1fd57c5144aa4bbe73e48 upstream.
 
-When a command times out, the command ring is first aborted,
-and then stopped. If the command ring is empty when it is stopped
-the stop event will point to next command which is not yet set.
-xHCI tries to handle this next event often causing an oops.
+There is no clear cut rules or specs for the retry interval, as there
+are many factors that affect overall response time. Increase the
+interval, and even more so on branch devices which may have limited i2c
+bit rates.
 
-Don't handle command completion events on stopped cmd ring if ring is
-empty.
-
-This patch should be backported to kernels as old as 3.7, that contain
-the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
-command ring function"
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Reported-by: Giovanni <giovanni.nervi@yahoo.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reference: https://bugs.freedesktop.org/show_bug.cgi?id=60263
+Tested-by: Nicolas Suzor <nic@suzor.com>
+Reviewed-by: Todd Previte <tprevite@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1377,6 +1377,12 @@ static void handle_cmd_completion(struct
- 			inc_deq(xhci, xhci->cmd_ring, false);
- 			return;
- 		}
-+		/* There is no command to handle if we get a stop event when the
-+		 * command ring is empty, event->cmd_trb points to the next
-+		 * unset command
-+		 */
-+		if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
-+			return;
- 	}
- 
- 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -625,7 +625,18 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
+ 			DRM_DEBUG_KMS("aux_ch native nack\n");
+ 			return -EREMOTEIO;
+ 		case AUX_NATIVE_REPLY_DEFER:
+-			udelay(100);
++			/*
++			 * For now, just give more slack to branch devices. We
++			 * could check the DPCD for I2C bit rate capabilities,
++			 * and if available, adjust the interval. We could also
++			 * be more careful with DP-to-Legacy adapters where a
++			 * long legacy cable may force very low I2C bit rates.
++			 */
++			if (intel_dp->dpcd[DP_DOWNSTREAMPORT_PRESENT] &
++			    DP_DWN_STRM_PORT_PRESENT)
++				usleep_range(500, 600);
++			else
++				usleep_range(300, 400);
+ 			continue;
+ 		default:
+ 			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
 
 
