@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab3JCERE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:17:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47082 "EHLO
+	id S1755788Ab3JCERb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:17:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47086 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750Ab3JCERB (ORCPT
+	with ESMTP id S1752845Ab3JCER1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:17:01 -0400
+	Thu, 3 Oct 2013 00:17:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Kent Overstreet <kmo@daterainc.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 10/57] bcache: Fix for handling overlapping extents when reading in a btree node
-Date: Wed,  2 Oct 2013 21:08:36 -0700
-Message-Id: <20131003040637.309476274@linuxfoundation.org>
+Subject: [ 11/57] bcache: Fix flushes in writeback mode
+Date: Wed,  2 Oct 2013 21:08:37 -0700
+Message-Id: <20131003040637.379052155@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -29,81 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kent Overstreet <kmo@daterainc.com>
 
-commit 84786438ed17978d72eeced580ab757e4da8830b upstream.
+commit c0f04d88e46d14de51f4baebb6efafb7d59e9f96 upstream.
 
-btree_sort_fixup() was overly clever, because it was trying to avoid
-pulling a key off the btree iterator in more than one place.
+In writeback mode, when we get a cache flush we need to make sure we
+issue a flush to the backing device.
 
-This led to a really obscure bug where we'd break early from the loop in
-btree_sort_fixup() if the current key overlapped with keys in more than
-one older set, and the next key it overlapped with was zero size.
+The code for sending down an extra flush was wrong - by cloning the bio
+we were probably getting flags that didn't make sense for a bare flush,
+and also the old code was firing for FUA bios, for which we don't need
+to send a flush to the backing device.
+
+This was causing data corruption somehow - the mechanism was never
+determined, but this patch fixes it for the users that were seeing it.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/bset.c |   39 ++++++++++++++++++++++++++++-----------
- 1 file changed, 28 insertions(+), 11 deletions(-)
+ drivers/md/bcache/request.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/md/bcache/bset.c
-+++ b/drivers/md/bcache/bset.c
-@@ -926,28 +926,45 @@ struct bkey *bch_next_recurse_key(struct
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -997,14 +997,17 @@ static void request_write(struct cached_
+ 	} else {
+ 		bch_writeback_add(dc);
  
- /* Mergesort */
+-		if (s->op.flush_journal) {
++		if (bio->bi_rw & REQ_FLUSH) {
+ 			/* Also need to send a flush to the backing device */
+-			s->op.cache_bio = bio_clone_bioset(bio, GFP_NOIO,
+-							   dc->disk.bio_split);
++			struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
++							     dc->disk.bio_split);
  
-+static void sort_key_next(struct btree_iter *iter,
-+			  struct btree_iter_set *i)
-+{
-+	i->k = bkey_next(i->k);
+-			bio->bi_size = 0;
+-			bio->bi_vcnt = 0;
+-			closure_bio_submit(bio, cl, s->d);
++			flush->bi_rw	= WRITE_FLUSH;
++			flush->bi_bdev	= bio->bi_bdev;
++			flush->bi_end_io = request_endio;
++			flush->bi_private = cl;
 +
-+	if (i->k == i->end)
-+		*i = iter->data[--iter->used];
-+}
-+
- static void btree_sort_fixup(struct btree_iter *iter)
- {
- 	while (iter->used > 1) {
- 		struct btree_iter_set *top = iter->data, *i = top + 1;
--		struct bkey *k;
- 
- 		if (iter->used > 2 &&
- 		    btree_iter_cmp(i[0], i[1]))
- 			i++;
- 
--		for (k = i->k;
--		     k != i->end && bkey_cmp(top->k, &START_KEY(k)) > 0;
--		     k = bkey_next(k))
--			if (top->k > i->k)
--				__bch_cut_front(top->k, k);
--			else if (KEY_SIZE(k))
--				bch_cut_back(&START_KEY(k), top->k);
--
--		if (top->k < i->k || k == i->k)
-+		if (bkey_cmp(top->k, &START_KEY(i->k)) <= 0)
- 			break;
- 
--		heap_sift(iter, i - top, btree_iter_cmp);
-+		if (!KEY_SIZE(i->k)) {
-+			sort_key_next(iter, i);
-+			heap_sift(iter, i - top, btree_iter_cmp);
-+			continue;
-+		}
-+
-+		if (top->k > i->k) {
-+			if (bkey_cmp(top->k, i->k) >= 0)
-+				sort_key_next(iter, i);
-+			else
-+				bch_cut_front(top->k, i->k);
-+
-+			heap_sift(iter, i - top, btree_iter_cmp);
-+		} else {
-+			/* can't happen because of comparison func */
-+			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
-+			bch_cut_back(&START_KEY(i->k), top->k);
-+		}
- 	}
- }
- 
++			closure_bio_submit(flush, cl, s->d);
+ 		} else {
+ 			s->op.cache_bio = bio;
+ 		}
 
 
