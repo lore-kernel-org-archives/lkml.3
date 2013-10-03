@@ -1,63 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab3JCA04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:26:56 -0400
-Received: from mout.web.de ([212.227.15.14]:55893 "EHLO mout.web.de"
+	id S1753660Ab3JCA3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:29:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54365 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab3JCA0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:26:54 -0400
-From: Martin Walch <walch.martin@web.de>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <trivial@kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Benjamin Poirier <bpoirier@suse.de>, Dirk Gouders <dirk@gouders.net>,
-        Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] kconfig: add short explanation to SYMBOL_WRITE
-Date: Thu, 03 Oct 2013 02:26:49 +0200
-Message-ID: <49327842.0x8EUPeB87@tacticalops>
-User-Agent: KMail/4.11.1 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.02.1310021641280.9096@chino.kir.corp.google.com>
-References: <4542076.yVG8YKgu5r@tacticalops> <2034014.asIXrEbcsn@tacticalops> <alpine.DEB.2.02.1310021641280.9096@chino.kir.corp.google.com>
+	id S1753216Ab3JCA3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 20:29:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
+   d="scan'208";a="404515001"
+Date: Wed, 2 Oct 2013 17:29:42 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 77/77] vxge: Update MSI/MSI-X interrupts enablement
+ code
+Message-ID: <20131003002941.GJ6768@jonmason-lab>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <467ce10b1df795edf80ed222816ab739fee7b0ea.1380703263.git.agordeev@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:3ufxIfEW4qRkvs21h0JYsCqTTk0NysehxVGk/kIjH1/GrxGZKyG
- +zTC5QxzQZ1FaCDjJt/YEVYECCUiiBD3Bv1I9UfdHuBAA/n1aBduB87Aba4GZ69xpkugnOH
- e2t7ewCyOFIULmuo6uUWu/uhkA40dEK62ond8Vk5zY71eD2Aea2kH0zg28rRgov5GBwTTus
- ffmMfjNmPhym4DBDoBnRQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <467ce10b1df795edf80ed222816ab739fee7b0ea.1380703263.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 October 2013 16:42:27 David Rientjes wrote:
-> The purpose of SYMBOL_WRITE is in sym_calc_value() where it is set if the 
-> config symbol is visible and settable by the user, which is why I 
-> suggested it be specified as being writable by the user.
+On Wed, Oct 02, 2013 at 12:49:33PM +0200, Alexander Gordeev wrote:
+> As result of recent re-design of the MSI/MSI-X interrupts enabling
+> pattern this driver has to be updated to use the new technique to
+> obtain a optimal number of MSI/MSI-X interrupts required.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  drivers/net/ethernet/neterion/vxge/vxge-main.c |   36 ++++++++++-------------
+>  1 files changed, 16 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+> index b81ff8b..b4d40dd 100644
+> --- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
+> +++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+> @@ -2297,7 +2297,21 @@ static int vxge_alloc_msix(struct vxgedev *vdev)
+>  	int msix_intr_vect = 0, temp;
+>  	vdev->intr_cnt = 0;
+>  
+> -start:
+> +	ret = pci_msix_table_size(vdev->pdev);
+> +	if (ret < 0)
+> +		goto alloc_entries_failed;
+> +
+> +	if (ret < (vdev->no_of_vpath * 2 + 1)) {
+> +		if ((max_config_vpath != VXGE_USE_DEFAULT) || (ret < 3)) {
+> +			ret = -ENOSPC;
+> +			goto alloc_entries_failed;
+> +		}
+> +		/* Try with less no of vector by reducing no of vpaths count */
+> +		temp = (ret - 1)/2;
+> +		vxge_close_vpaths(vdev, temp);
+> +		vdev->no_of_vpath = temp;
+> +	}
 
-Then this looks strange to me: a config symbol of type boolean or tristate
-that is not visible, but has a default value != n will have SYMBOL_WRITE set
-in sym_calc_value:
+The original code was ugly (not my code, so I can say that).  I'd like
+to see it a little stream lined.  Something like:
 
-> case S_BOOLEAN:
-> case S_TRISTATE:
->	if (sym_is_choice_value(sym) && sym->visible == yes) {
-> 		...
->	} else {
->		...
-> 		if (!sym_is_choice(sym)) {
-> 			prop = sym_get_default_prop(sym);
-> 			if (prop) {
-> 				sym->flags |= SYMBOL_WRITE;
-> 				newval.tri = EXPR_AND(expr_calc_value(prop->expr),
-> 					prop->visible.tri);
-> 			}
-> 		}
->		...
->	}
--- 
 
+        vdev->intr_cnt = pci_msix_table_size(vdev->pdev);
+
+        if (vdev->intr_cnt % 2 == 0)
+                vdev->intr_cnt--;
+
+        if (vdev->intr_cnt < 3 || max_config_vpath != VXGE_USE_DEFAULT)
+                goto alloc_entries_failed;
+
+        if (vdev->intr_cnt != vdev->no_of_vpath * 2 + 1) {
+                vxge_close_vpaths(vdev, vdev->intr_cnt / 2);
+                vdev->no_of_vpath = vdev->intr_cnt / 2;
+        }
+
+
+> +
+>  	/* Tx/Rx MSIX Vectors count */
+>  	vdev->intr_cnt = vdev->no_of_vpath * 2;
+>  
+> @@ -2347,25 +2361,7 @@ start:
+>  	vdev->vxge_entries[j].in_use = 0;
+>  
+>  	ret = pci_enable_msix(vdev->pdev, vdev->entries, vdev->intr_cnt);
+> -	if (ret > 0) {
+> -		vxge_debug_init(VXGE_ERR,
+> -			"%s: MSI-X enable failed for %d vectors, ret: %d",
+> -			VXGE_DRIVER_NAME, vdev->intr_cnt, ret);
+> -		if ((max_config_vpath != VXGE_USE_DEFAULT) || (ret < 3)) {
+> -			ret = -ENOSPC;
+> -			goto enable_msix_failed;
+> -		}
+> -
+> -		kfree(vdev->entries);
+> -		kfree(vdev->vxge_entries);
+> -		vdev->entries = NULL;
+> -		vdev->vxge_entries = NULL;
+> -		/* Try with less no of vector by reducing no of vpaths count */
+> -		temp = (ret - 1)/2;
+> -		vxge_close_vpaths(vdev, temp);
+> -		vdev->no_of_vpath = temp;
+> -		goto start;
+> -	} else if (ret < 0)
+> +	if (ret)
+>  		goto enable_msix_failed;
+
+Nit, space here please.
+
+>  	return 0;
+>  
+> -- 
+> 1.7.7.6
+> 
