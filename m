@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab3JCEPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47038 "EHLO
+	id S1755586Ab3JCEPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:15:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab3JCEPT (ORCPT
+	with ESMTP id S1755560Ab3JCEP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:15:19 -0400
+	Thu, 3 Oct 2013 00:15:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Subject: [ 33/52] fsl/usb: Resolve PHY_CLK_VLD instability issue for ULPI phy
-Date: Wed,  2 Oct 2013 21:05:51 -0700
-Message-Id: <20131003040524.436287401@linuxfoundation.org>
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [ 35/52] usb: dwc3: add support for Merrifield
+Date: Wed,  2 Oct 2013 21:05:53 -0700
+Message-Id: <20131003040524.569316739@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,50 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
-commit ad1260e9fbf768d6bed227d9604ebee76a84aae3 upstream.
+commit 85601f8cf67c56a561a6dd5e130e65fdc179047d upstream.
 
-For controller versions greater than 1.6, setting ULPI_PHY_CLK_SEL
-bit when USB_EN bit is already set causes instability issues with
-PHY_CLK_VLD bit. So USB_EN is set only for IP controller version
-below 1.6 before setting ULPI_PHY_CLK_SEL bit
+Add PCI id for Intel Merrifield
 
-Signed-off-by: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-fsl.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/usb/dwc3/dwc3-pci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -130,7 +130,7 @@ static int usb_hcd_fsl_probe(const struc
- 	}
+--- a/drivers/usb/dwc3/dwc3-pci.c
++++ b/drivers/usb/dwc3/dwc3-pci.c
+@@ -49,6 +49,7 @@
+ #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
+ #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
+ #define PCI_DEVICE_ID_INTEL_BYT		0x0f37
++#define PCI_DEVICE_ID_INTEL_MRFLD	0x119e
  
- 	/* Enable USB controller, 83xx or 8536 */
--	if (pdata->have_sysif_regs)
-+	if (pdata->have_sysif_regs && pdata->controller_ver < FSL_USB_VER_1_6)
- 		setbits32(hcd->regs + FSL_SOC_USB_CTRL, 0x4);
- 
- 	/* Don't need to set host mode here. It will be done by tdi_reset() */
-@@ -232,15 +232,9 @@ static int ehci_fsl_setup_phy(struct usb
- 	case FSL_USB2_PHY_ULPI:
- 		if (pdata->have_sysif_regs && pdata->controller_ver) {
- 			/* controller version 1.6 or above */
-+			clrbits32(non_ehci + FSL_SOC_USB_CTRL, UTMI_PHY_EN);
- 			setbits32(non_ehci + FSL_SOC_USB_CTRL,
--					ULPI_PHY_CLK_SEL);
--			/*
--			 * Due to controller issue of PHY_CLK_VALID in ULPI
--			 * mode, we set USB_CTRL_USB_EN before checking
--			 * PHY_CLK_VALID, otherwise PHY_CLK_VALID doesn't work.
--			 */
--			clrsetbits_be32(non_ehci + FSL_SOC_USB_CTRL,
--					UTMI_PHY_EN, USB_CTRL_USB_EN);
-+				ULPI_PHY_CLK_SEL | USB_CTRL_USB_EN);
- 		}
- 		portsc |= PORT_PTS_ULPI;
- 		break;
+ struct dwc3_pci {
+ 	struct device		*dev;
+@@ -210,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(dwc3_pci_
+ 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
+ 	},
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRFLD), },
+ 	{  }	/* Terminating Entry */
+ };
+ MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
 
 
