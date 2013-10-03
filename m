@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3JCPeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:34:36 -0400
-Received: from nm35.bullet.mail.ne1.yahoo.com ([98.138.229.28]:30251 "EHLO
-	nm35.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754485Ab3JCPef (ORCPT
+	id S1754691Ab3JCPf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:35:28 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:43057 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab3JCPf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:34:35 -0400
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 293900.78359.bm@omp1015.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=nZZWYMWrSeh9H9cI4NjQX4eNW6qLngf4dDY+7TqwfOnMGxJdPwEd5ikP1olNK0+c509EpQ5KIlGsp7uc368PPtqvTDbHmGs9cKRX7u/Mm6jTGKWSJlpTkVdd+A6636KWCjeZW+780lt+aKT6Orch00XZvmjVNT4LFopWFzw/bmY=;
-X-YMail-OSG: ceih4gAVM1lpVoV2tB8Nq_xMgEXKqR7yf9D_cRI7enbr9yp
- cWC.mFF.Gao97tzM-
-X-Rocket-MIMEInfo: 002.001,DQpIZWxsby4NCg0KDQpNeSBuYW1lIGlzIE1ycyBNdXNhIFNhbW9yYSAsSSBoYXZlIGJlZW4gc3VyZmZlcmluZyBmcm9tIE92YXJpYW4gY2FuY2VyIGRpc2Vhc2UgYW5kIHRoZSBkb2N0b3Igc2F5cyB0aGF0IGkgaGF2ZSBqdXN0IGZldyBtb250aHMgdG8gbGVhdmUuSSBhbSBmcm9tIChQYXJpcykgRnJhbmNlLCBidXQgYmFzZWQgaW4gQnVya2luYSBGYXNvLEFmcmljYSBzaW5jZSB0ZW4geWVhcnMgYWdvIGFzIGEgYnVzaW5lc3Mgd29tYW4gZGVhbGluZyB3aXRoIGNvY29hIGV4cG9ydGF0aW9uLG5vdyB0aGF0IGkBMAEBAQE-
-X-RocketYMMF: niksint90
-X-Mailer: YahooMailClassic/339 YahooMailWebService/0.8.160.587
-Message-ID: <1380814291.56157.YahooMailBasic@web120502.mail.ne1.yahoo.com>
-Date: Thu, 3 Oct 2013 08:31:31 -0700 (PDT)
-From: MRS MUSA SAMORA <musasamora111@gmail.com>
-Reply-To: musasamora111@outlook.com
-Subject: FROM MRS SAMORA
-To: undisclosed recipients:;
+	Thu, 3 Oct 2013 11:35:26 -0400
+Date: Thu, 3 Oct 2013 17:35:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu ops
+Message-ID: <20131003153522.GA31978@gmail.com>
+References: <20130924154159.855373283@linux.com>
+ <0000014150a21408-2d759c49-6a9e-4553-956f-2d4b53e710f8-000000@email.amazonses.com>
+ <20130924171029.GB10261@gmail.com>
+ <0000014155fdd6cf-d54da8b8-2198-40ce-8831-4559971e69f0-000000@email.amazonses.com>
+ <20130925181146.GA16693@gmail.com>
+ <000001415fb34afc-79a24112-5d3f-431c-b90c-d6cfa1caf27a-000000@email.amazonses.com>
+ <20130928084412.GC26167@gmail.com>
+ <0000014179b65a63-512751f8-346a-4621-b6d1-9abd62e781c9-000000@email.amazonses.com>
+ <20131003072100.GA5775@gmail.com>
+ <000001417eac34d5-43f9e4c6-661b-4329-ab17-4b8a044922c8-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001417eac34d5-43f9e4c6-661b-4329-ab17-4b8a044922c8-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hello.
+* Christoph Lameter <cl@linux.com> wrote:
 
+> On Thu, 3 Oct 2013, Ingo Molnar wrote:
+> 
+> > It was important to me and other maintainers as well back then and today
+> > as well, as me and others complained about it out numerous times.
+> 
+> Yes there were some complaints and in discussions about what to do. I 
+> suggested how this could be addressed. But no patches showed up [...]
 
-My name is Mrs Musa Samora ,I have been surffering from Ovarian cancer disease and the doctor says that i have just few months to leave.I am from (Paris) France, but based in Burkina Faso,Africa since ten years ago as a business woman dealing with cocoa exportation,now that i am about to end the race like this,without any family members and no child.I have $1 Million US DOLLARS in Bank of Africa(BOA)Burkina Faso which i instructed the bank to give African union leaders to help sick people around Africa.But my mind is not at rest because i am writing this letter now through the help of my nurse beside me here in my hospital room.
+_You_ added the facility with broken (== non-existent) preemption 
+debugging for __this_cpu ops, _you_ caused Peter Zijstra and others to 
+waste time due to you ignoring those requests to add debugging. Everyone 
+rightfully expected _you_ to fix the problem you introduced.
 
+And now you blame the victims of your sloppiness, that they should have 
+fixed the problem you introduced?
 
-I also have $4.5 Million US Dollars in eco bank in Burkina Faso which i want you to claim from the bank and use help less previledge people in your country,but you must assure me that you will take only 40% of the total money and give the rest 60% to the orphanage home in your country for my heart to rest.
+> [...] and there were always other more pressing things. Especially since 
+> this is a minor issue related to CONFIG_PREEMPT which seems to be not in 
+> use in the kernels that I see in HPC, FIS and the industry at large.
 
+People wasting time and the kernel becoming less robust is not a minor 
+issue at all.
 
-Upon the receipt of your email that you are willing and capable to execute my plan, i will instruct the ecobank management to make the immediate transfer into your account.
+> > I can fix that omission easily: consider all your __this_cpu* patches 
+> > NAK-ed by me until the (trivial) preemption debug checks are upstream 
+> > worthy:
+> >
+> >   - tested
+> >   - complete
+> >   - don't produce false warnings when enabled.
+> 
+> Not sure what tests you will like to see run and if it is even possible 
+> to test all possible kernel runtime configurations. You seem to have 
+> some setup to do some testing along these lines I believe?
 
+As a starting point it would be fine if you tested it on your own systems 
+with all relevant debugging enabled...
 
-Sincerely,
-Mrs Musa Samora.
-Chat conversation end
+> These two patches will allow this testing to be done. And I do not see 
+> any mention of technical issues with the code. [...]
+
+Here's the list of open technical problems:
+
+ - Lack of testing - you have not stated it whether any warnings trigger 
+   with those two patches applied and debugging enabled, on your systems.
+
+ - I pointed out in detail how your last submission was broken in several 
+   places which show lack of time and care on the patch series.
+
+ - Your statement in the discussion that warnings will trigger with the
+   debug option enabled points to an obvious technical problem as well - 
+   all warnings known to trigger by you should be fixed by you, as part of 
+   the series.
+
+Please resolve these technical problems and resend a clean, tested, 
+working series.
+
+Until all the problems are addressed my NAK stands and I suspect Peter 
+Zijlstra's as well.
+
+Thanks,
+
+	Ingo
