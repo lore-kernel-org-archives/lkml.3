@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3JCHav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 03:30:51 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41025 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3JCHau (ORCPT
+	id S1753893Ab3JCHcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 03:32:18 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:41799 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab3JCHcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 03:30:50 -0400
-Message-ID: <524D1C2F.6060600@linux.vnet.ibm.com>
-Date: Thu, 03 Oct 2013 12:56:39 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 3 Oct 2013 03:32:17 -0400
+Date: Thu, 3 Oct 2013 09:32:12 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
+Message-ID: <20131003073212.GC5775@gmail.com>
+References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
+ <1380753493.11046.82.camel@schen9-DESK>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 04/11] cpufreq: Remove extra blank line
-References: <cover.1380703248.git.viresh.kumar@linaro.org> <f70f2486e3107448d1d3b835b78ad20724fdd252.1380703248.git.viresh.kumar@linaro.org>
-In-Reply-To: <f70f2486e3107448d1d3b835b78ad20724fdd252.1380703248.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100307-9574-0000-0000-000009E7A665
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380753493.11046.82.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 02:13 PM, Viresh Kumar wrote:
-> We don't need a blank line just at start of a block, lets remove it.
+
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> For version 8 of the patchset, we included the patch from Waiman to 
+> streamline wakeup operations and also optimize the MCS lock used in 
+> rwsem and mutex.
+
+I'd be feeling a lot easier about this patch series if you also had 
+performance figures that show how mmap_sem is affected.
+
+These:
+
+> Tim got the following improvement for exim mail server 
+> workload on 40 core system:
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Alex+Tim's patchset:    	   +4.8%
+> Alex+Tim+Waiman's patchset:        +5.3%
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+appear to be mostly related to the anon_vma->rwsem. But once that lock is 
+changed to an rwlock_t, this measurement falls away.
 
-Regards,
-Srivatsa S. Bhat
+Peter Zijlstra suggested the following testcase:
 
-> ---
->  drivers/cpufreq/cpufreq.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index d80cbe6..d149caa 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1155,7 +1155,6 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->  		if (!frozen)
->  			sysfs_remove_link(&dev->kobj, "cpufreq");
->  	} else if (cpus > 1) {
-> -
->  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
->  		if (new_cpu >= 0) {
->  			update_policy_cpu(policy, new_cpu);
-> 
+===============================>
+In fact, try something like this from userspace:
 
+n-threads:
+
+  pthread_mutex_lock(&mutex);
+  foo = mmap();
+  pthread_mutex_lock(&mutex);
+
+  /* work */
+
+  pthread_mutex_unlock(&mutex);
+  munma(foo);
+  pthread_mutex_unlock(&mutex);
+
+vs
+
+n-threads:
+
+  foo = mmap();
+  /* work */
+  munmap(foo);
+
+I've had reports that the former was significantly faster than the
+latter.
+<===============================
+
+this could be put into a standalone testcase, or you could add it as a new 
+subcommand of 'perf bench', which already has some pthread code, see for 
+example in tools/perf/bench/sched-messaging.c. Adding:
+
+   perf bench mm threads
+
+or so would be a natural thing to have.
+
+Thanks,
+
+	Ingo
