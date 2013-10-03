@@ -1,136 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3JCPux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:50:53 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44096 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab3JCPuw (ORCPT
+	id S1754740Ab3JCPvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:51:18 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:50786 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754542Ab3JCPvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:50:52 -0400
-Message-ID: <524D925A.8050402@parallels.com>
-Date: Thu, 3 Oct 2013 19:50:50 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 3 Oct 2013 11:51:16 -0400
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <fuse-devel@lists.sourceforge.net>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] fuse: writepages: crop secondary requests
-References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru> <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru> <20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu> <524D70FE.5000701@parallels.com> <20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.17.2]
+In-Reply-To: <20131003154058.GA1210@dztty>
+References: <524B7999.60806@amacapital.net> <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <20131002182206.GB2485@dztty> <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
+ <20131002184844.GB3393@dztty> <20131003061244.GC25345@gmail.com>
+ <20131003122959.GA3619@dztty> <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
+ <20131003154058.GA1210@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 3 Oct 2013 16:50:54 +0100
+Message-ID: <CALCETrXwqrqs+OhwuM8GLvnRyFDo75W5-xdXoxAvUu1PiG=_ow@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 07:14 PM, Miklos Szeredi wrote:
-> On Thu, Oct 03, 2013 at 05:28:30PM +0400, Maxim Patlasov wrote:
->
->> 1. There is an in-flight primary request with a chain of secondary ones.
->> 2. User calls ftruncate(2) to extend file; fuse_set_nowrite() makes
->> fi->writectr negative and starts waiting for completion of that
->> in-flight request
->> 3. Userspace fuse daemon ACKs the request and fuse_writepage_end()
->> is called; it calls __fuse_flush_writepages(), but the latter does
->> nothing because fi->writectr < 0
->> 4. fuse_do_setattr() proceeds extending i_size and calling
->> __fuse_release_nowrite(). But now new (increased) i_size will be
->> used as 'crop' arg of __fuse_flush_writepages()
+On Thu, Oct 3, 2013 at 4:40 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Thu, Oct 03, 2013 at 04:15:43PM +0100, Andy Lutomirski wrote:
+>> On Thu, Oct 3, 2013 at 1:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> > On Thu, Oct 03, 2013 at 08:12:44AM +0200, Ingo Molnar wrote:
+>> >> Now procfs might be special, as by its nature of a pseudofilesystem it's
+>> >> far more atomic than other filesystems, but still IMHO it's a lot more
+>> >
+>> >
+>> >> robust security design wise to revoke access to objects you should not
+>> >> have a reference to when a security boundary is crossed, than letting
+>> >> stuff leak through and sprinking all the potential cases that may leak
+>> >> information with permission checks ...
+>> > I agree, but those access should also be checked at the beginning, IOW
+>> > during ->open(). revoke will not help if revoke is not involved at all,
+>> > the task /proc entries may still be valide (no execve).
+>> >
+>> > Currently security boundary is crossed for example arbitrary /proc/*/stack
+>> > (and others).
+>> > 1) The target task does not do an execve (no revoke).
+>> > 2) current task will open these files and *want* and *will* pass the fd to a
+>> > more privileged process to pass the ptrace check which is done only during
+>> > ->read().
 >>
->> stale data can leak to the server.
-> So, lets do this then: skip fuse_flush_writepages() and call
-> fuse_send_writepage() directly.  It will ignore the NOWRITE logic, but that's
-> okay, this happens rarely and cannot happen more than once in a row.
->
-> Does this look good?
+>> What does this?  Or are you saying that this is a bad thing?
+> I'm not sure to understand you, revoke if implemented correctly is not a
+> bad thing! In the other hand, here I try to explain what if the target task
+> did not execve, revoke will never be involved, file descriptors are
+> still valid!
 
-Yes, but let's at least add a comment explaining why it's safe. There 
-are three different cases and what you write above explains only one of 
-them:
-
-1st case (trivial): there are no concurrent activities using 
-fuse_set/release_nowrite. Then we're on safe side because 
-fuse_flush_writepages() would call fuse_send_writepage() anyway.
-2nd case: someone called fuse_set_nowrite and it is waiting now for 
-completion of all in-flight requests. Here what you wrote about 
-"happening rarely and no more than once" is applicable.
-3rd case: someone (e.g. fuse_do_setattr()) is in the middle of 
-fuse_set_nowrite..fuse_release_nowrite section. The fact that 
-fuse_set_nowrite returned implies that all in-flight requests were 
-completed along with all its secondary requests (because we increment 
-writectr for a secondry before decrementing it for the primary -- that's 
-how fuse_writepage_end is implemeted). Further requests are blocked by 
-negative writectr. Hence there cannot be any in-flight requests and no 
-invocations of fuse_writepage_end while we're in 
-fuse_set_nowrite..fuse_release_nowrite section.
-
-It looks obvious now, but I'm not sure we'll able to recollect it later.
+Ah. You're saying that both revoke and checking permissions at open
+time (or using f_cred) is important.  I think I agree.  (Except that,
+arguably, /proc/self/stat should always be fully functional even if
+passed to a different process and yama is in use.  This seems minor.)
 
 >
-> Can you actually trigger this path with your testing?
+>
+>> (And *please* don't write software that *depends* on different
+>> processes having different read()/write() permissions on the *same*
+>> struct file.  I've already found multiple privilege escalations based
+>> on that, and I'm pretty sure I can find some more.)
+> Sorry, can't follow you here! examples related to what we discuss here ?
 
-No.
+There were various bugs (CVE-2013-1959) in /proc/pid/uid_map, etc,
+that were exploitable to obtain uid 0.  They happened because write()
+checked its caller's credentials.
 
-Thanks,
-Maxim
+>
+>
+>> >
+>> >
+>> >> It's also probably faster: security boundary crossings are relatively rare
+>> >> slowpaths, while read()s are much more common...
+>> > Hmm, These two are related? can't get rid of permission checks
+>> > especially on this pseudofilesystem!
+>> >
+>> >
+>> >> So please first get consensus on this fundamental design question before
+>> >> spreading your solution to more areas.
+>> > Of course, I did clean the patchset to prove that it will work, and I
+>> > only implemented full protection for /proc/*/{stack,syscall,stat} other
+>> > files will wait.
+>> >
+>> > But Ingo you can't ignore the fact that:
+>> > /proc/*/{stack,syscall} are 0444 mode
+>> > /proc/*/{stack,syscall} do not have ptrace_may_access() during open()
+>> > /proc/*/{stack,syscall} have the ptrace_may_access() during read()
+>>
+>> I think everyone agrees that this is broken.  We don't agree on the
+>> fix check.  (Also, as described in my other email, your approach may
+>> be really hard to get right.)
+> Well, yes we don't agree perhaps on the fix, but currently there are no
+> other fixes, will be happy to see other propositions! these files have
+> been vulnerable for years now...
+>
+> And for the record it's not my approache. Please just read the emails
+> correctly. It was proposed and suggested by Eric and perhaps Linus.
+>
+> I did an experiment with it, and found it easy without any extra
+> overhead: If cred have changed do extra checkes on the original opener.
+> It will let you pass file descritors if cred did not change.
+>
+>
+> Where is this other email that says this approach is hard?
+> It's not hard, very minor change and it works. Perhaps there is a
+> better solution yes, but currently it's not implemented!
 
->
-> Thanks,
-> Miklos
->
->
-> Index: linux/fs/fuse/file.c
-> ===================================================================
-> --- linux.orig/fs/fuse/file.c	2013-10-03 12:12:33.480918954 +0200
-> +++ linux/fs/fuse/file.c	2013-10-03 17:06:23.702510854 +0200
-> @@ -1436,12 +1436,12 @@ static void fuse_writepage_finish(struct
->   }
->   
->   /* Called under fc->lock, may release and reacquire it */
-> -static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req)
-> +static void fuse_send_writepage(struct fuse_conn *fc, struct fuse_req *req,
-> +				loff_t size)
->   __releases(fc->lock)
->   __acquires(fc->lock)
->   {
->   	struct fuse_inode *fi = get_fuse_inode(req->inode);
-> -	loff_t size = i_size_read(req->inode);
->   	struct fuse_write_in *inarg = &req->misc.write.in;
->   	__u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
->   
-> @@ -1482,12 +1482,13 @@ __acquires(fc->lock)
->   {
->   	struct fuse_conn *fc = get_fuse_conn(inode);
->   	struct fuse_inode *fi = get_fuse_inode(inode);
-> +	size_t crop = i_size_read(inode);
->   	struct fuse_req *req;
->   
->   	while (fi->writectr >= 0 && !list_empty(&fi->queued_writes)) {
->   		req = list_entry(fi->queued_writes.next, struct fuse_req, list);
->   		list_del_init(&req->list);
-> -		fuse_send_writepage(fc, req);
-> +		fuse_send_writepage(fc, req, crop);
->   	}
->   }
->   
-> @@ -1499,12 +1500,13 @@ static void fuse_writepage_end(struct fu
->   	mapping_set_error(inode->i_mapping, req->out.h.error);
->   	spin_lock(&fc->lock);
->   	while (req->misc.write.next) {
-> +		struct fuse_conn *fc = get_fuse_conn(inode);
-> +		struct fuse_write_in *inarg = &req->misc.write.in;
->   		struct fuse_req *next = req->misc.write.next;
->   		req->misc.write.next = next->misc.write.next;
->   		next->misc.write.next = NULL;
->   		list_add(&next->writepages_entry, &fi->writepages);
-> -		list_add_tail(&next->list, &fi->queued_writes);
-> -		fuse_flush_writepages(inode);
-> +		fuse_send_writepage(fc, next, inarg->offset + inarg->size);
->   	}
->   	fi->writectr--;
->   	fuse_writepage_finish(fc, req);
->
->
+I just sent it a couple minutes ago -- it may not have made it yet.
+It's here, though:
 
+http://www.openwall.com/lists/kernel-hardening/2013/10/03/9
+
+--Andy
