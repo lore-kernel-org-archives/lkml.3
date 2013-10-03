@@ -1,157 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3JCPPh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:15:37 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:57306 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab3JCPPe (ORCPT
+	id S1755000Ab3JCPQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:16:09 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:59683 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab3JCPQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:15:34 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 03 Oct 2013 17:15:05 +0200
-Message-ID: <1417ee2ae58.2784.107cef0f820c2f5d7b7f41463071c310@gmail.com>
-In-Reply-To: <20131003134724.GD20056@lunn.ch>
-References: <1380804294-13726-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20131003134724.GD20056@lunn.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1 AquaMail/1.2.5.5 (build: 2100355)
-Subject: Re: [PATCH 1/2] ARM: kirkwood: retain MAC address for DT ethernet
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 3 Oct 2013 11:16:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131003122959.GA3619@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <524B7999.60806@amacapital.net> <20131002143759.GA2966@dztty>
+ <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
+ <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
+ <20131002182206.GB2485@dztty> <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
+ <20131002184844.GB3393@dztty> <20131003061244.GC25345@gmail.com> <20131003122959.GA3619@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 3 Oct 2013 16:15:43 +0100
+Message-ID: <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with file->f_cred
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On October 3, 2013 3:47:24 PM Andrew Lunn <andrew@lunn.ch> wrote:
-> On Thu, Oct 03, 2013 at 02:44:53PM +0200, Sebastian Hesselbarth wrote:
-> > Ethernet IP on Kirkwood SoCs loose their MAC address register content
-> > if clock gated. To allow modular ethernet driver setups and gated clocks
-> > also on non-DT capable bootloaders, we fixup port device nodes with no
-> > valid MAC address property. This patch copies MAC address register
-> > contents set up by bootloaders early, notably before ethernet clocks
-> > are gated. While at it, also reorder call sequence in _dt_init.
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
-> > - Added Benjamin and Grant who where part of the discussion last time
-> >   and gave valuable input on DT fixups.
-> > - Patches are based on v3.12-rc1 and depend on latest mv643xx_eth
-> >   fixes applied yesterday by David Miller [1].
-> > [1] 
-> https://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=569943d0639c85a451ea853087cbd5f738247dd9
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> > Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  arch/arm/mach-kirkwood/board-dt.c |   72 
-> +++++++++++++++++++++++++++++++++++--
-> >  1 file changed, 69 insertions(+), 3 deletions(-)
-> > diff --git a/arch/arm/mach-kirkwood/board-dt.c 
-> b/arch/arm/mach-kirkwood/board-dt.c
-> > index 82d3ad8..a2974ad 100644
-> > --- a/arch/arm/mach-kirkwood/board-dt.c
-> > +++ b/arch/arm/mach-kirkwood/board-dt.c
-> > @@ -13,6 +13,8 @@
-> >  #include <linux/kernel.h>
-> >  #include <linux/init.h>
-> >  #include <linux/of.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/of_net.h>
-> >  #include <linux/of_platform.h>
-> >  #include <linux/clk-provider.h>
-> >  #include <linux/clocksource.h>
-> > @@ -66,6 +68,71 @@ static void __init kirkwood_legacy_clk_init(void)
-> >  	clk_prepare_enable(clk);
-> >  }
-> > +#define MV643XX_ETH_MAC_ADDR_LOW	0x0414
-> > +#define MV643XX_ETH_MAC_ADDR_HIGH	0x0418
-> > +
-> > +static void __init kirkwood_dt_eth_fixup(void)
-> > +{
-> > +	struct device_node *np;
-> > +
-> > +	/*
-> > +	 * The ethernet interfaces forget the MAC address assigned by u-boot
-> > +	 * if the clocks are turned off. Usually, u-boot on kirkwood boards
-> > +	 * has no DT support to properly set local-mac-address property.
-> > +	 * As a workaround, we get the MAC address from mv643xx_eth registers
-> > +	 * and update the port device node if no valid MAC address is set.
-> > +	 */
-> > +	for_each_compatible_node(np, NULL, "marvell,kirkwood-eth-port") {
-> > +		struct device_node *pnp = of_get_parent(np);
-> > +		struct property *pmac;
-> > +		void __iomem *io;
-> > +		u8 *macaddr;
-> > +		u32 reg;
-> > +
-> > +		if (!pnp || !of_device_is_available(pnp))
-> > +			continue;
-> > +
-> > +		if (of_get_mac_address(np))
-> > +			continue;
-> > +
-> > +		pr_err(FW_BUG "%s: local-mac-address is not set\n",
-> > +		       np->full_name);
-> > +
-> > +		io = of_iomap(pnp, 0);
-> > +		if (!io)
-> > +			continue;
-> > +
-> > +		pmac = kzalloc(sizeof(*pmac) + 6, GFP_KERNEL);
-> > +		if (!pmac) {
-> > +			iounmap(io);
-> > +			continue;
-> > +		}
-> > +
-> > +		pmac->value = pmac + 1;
-> > +		pmac->length = 6;
-> > +		pmac->name = kstrdup("local-mac-address", GFP_KERNEL);
-> > +		if (!pmac->name) {
-> > +			kfree(pmac);
-> > +			iounmap(io);
-> > +			continue;
-> > +		}
-> > +
-> > +		macaddr = pmac->value;
-> > +		reg = readl(io + MV643XX_ETH_MAC_ADDR_HIGH);
-> > +		macaddr[0] = (reg >> 24) & 0xff;
-> > +		macaddr[1] = (reg >> 16) & 0xff;
-> > +		macaddr[2] = (reg >> 8) & 0xff;
-> > +		macaddr[3] = reg & 0xff;
+On Thu, Oct 3, 2013 at 1:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Thu, Oct 03, 2013 at 08:12:44AM +0200, Ingo Molnar wrote:
+>>
+>> * Djalal Harouni <tixxdz@opendz.org> wrote:
+>>
+>> > > Regardless, glibc uses /proc/self/maps, which would be fine here, right?
+>> >
+>> > I did not touch /proc/self/maps and others, but I'm planning to fix them
+>> > if this solution is accepted.
+>> >
+>> > I'll do the same thing as in /proc/*/stat for maps, let it be 0444, and
+>> > try to delay the check to ->read(). So during ->read() perform
+>> > ptrace_may_access() on currenct's cred and process_allow_access() on
+>> > file's opener cred. This should work.
+>>
+>> Aren't read() time checks fundamentally unrobust? We generally don't do
+>> locking on read()s, so such checks - in the general case - are pretty
+>> racy.
+> For procfs yes, read() time checks are unrobust, the general agreement on
+> procfs is checks should be performed during each syscall.
 >
-> Hi Sebastian
+> For the locking on read()/write() IMHO there should be locking by design
+> for /proc/pid/* entries. Here we are speaking about content that varies,
+> data attached to other processes, so there is already some locking
+> mechanism, and for sensitive stuff, we must hold the cred mutex. This
+> is the standard from the old days of procfs.
 >
-> What happens if at this point, the ethernet clock is gated off?  I
-> assume the CPU locks solid, requiring a power cycle.
 >
-> It would be a bit of an odd situation, u-boot has disabled the clock,
-> yet we have a DT node for the device and no valid local-mac-address.
-> We do however know that Jason Gunthorpe u-boot does gate the second
-> ethernet for his board, so it is not completely impossible to hit this
-> situation, particularly when bringing up a new board.
+> And yes some of them are racy, but we can improve it, delay the checks.
 >
-> Are we too early in the boot to actually use the clock information in
-> the node to find it, and clk_prepare_enable() it before making the
-> access?
+> From old Linux git history, before the initial git repository build, I
+> found that some important checks were done right after gathering the info.
+>
+>
+>> Now procfs might be special, as by its nature of a pseudofilesystem it's
+>> far more atomic than other filesystems, but still IMHO it's a lot more
+>
+>
+>> robust security design wise to revoke access to objects you should not
+>> have a reference to when a security boundary is crossed, than letting
+>> stuff leak through and sprinking all the potential cases that may leak
+>> information with permission checks ...
+> I agree, but those access should also be checked at the beginning, IOW
+> during ->open(). revoke will not help if revoke is not involved at all,
+> the task /proc entries may still be valide (no execve).
+>
+> Currently security boundary is crossed for example arbitrary /proc/*/stack
+> (and others).
+> 1) The target task does not do an execve (no revoke).
+> 2) current task will open these files and *want* and *will* pass the fd to a
+> more privileged process to pass the ptrace check which is done only during
+> ->read().
 
-Ccframework is up when calling this. I suggest to call clk_is_enabled and 
-also skip the fixup if it isn't. Clk_prepare_enable ist quite useless, as 
-register contents will suffer what this workaround is about. I send an 
-updated v2 later but someone will have to test as I don't have kirkwood 
-around till next week.
+What does this?  Or are you saying that this is a bad thing?
 
-> 	Andrew
+(And *please* don't write software that *depends* on different
+processes having different read()/write() permissions on the *same*
+struct file.  I've already found multiple privilege escalations based
+on that, and I'm pretty sure I can find some more.)
 
+>
+>
+>> It's also probably faster: security boundary crossings are relatively rare
+>> slowpaths, while read()s are much more common...
+> Hmm, These two are related? can't get rid of permission checks
+> especially on this pseudofilesystem!
+>
+>
+>> So please first get consensus on this fundamental design question before
+>> spreading your solution to more areas.
+> Of course, I did clean the patchset to prove that it will work, and I
+> only implemented full protection for /proc/*/{stack,syscall,stat} other
+> files will wait.
+>
+> But Ingo you can't ignore the fact that:
+> /proc/*/{stack,syscall} are 0444 mode
+> /proc/*/{stack,syscall} do not have ptrace_may_access() during open()
+> /proc/*/{stack,syscall} have the ptrace_may_access() during read()
 
+I think everyone agrees that this is broken.  We don't agree on the
+fix check.  (Also, as described in my other email, your approach may
+be really hard to get right.)
 
+--Andy
