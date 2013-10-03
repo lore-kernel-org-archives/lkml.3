@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3JCESe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47149 "EHLO
+	id S1755966Ab3JCESj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab3JCES3 (ORCPT
+	with ESMTP id S1755949Ab3JCESh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:29 -0400
+	Thu, 3 Oct 2013 00:18:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 23/57] ARM: 7837/3: fix Thumb-2 bug in AES assembler code
-Date: Wed,  2 Oct 2013 21:08:49 -0700
-Message-Id: <20131003040638.194800808@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 24/57] staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
+Date: Wed,  2 Oct 2013 21:08:50 -0700
+Message-Id: <20131003040638.262456251@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -28,53 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 40190c85f427dcfdbab5dbef4ffd2510d649da1f upstream.
+commit e3eb270fab7734427dd8171a93e4946fe28674bc upstream.
 
-Patch 638591c enabled building the AES assembler code in Thumb2 mode.
-However, this code used arithmetic involving PC rather than adr{l}
-instructions to generate PC-relative references to the lookup tables,
-and this needs to take into account the different PC offset when
-running in Thumb mode.
+The vt6656 is prone to resetting on the usb bus.
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+It seems there is a race condition and wpa supplicant is
+trying to open the device via iw_handlers before its actually
+closed at a stage that the buffers are being removed.
+
+The device is longer considered open when the
+buffers are being removed. So move ~DEVICE_FLAGS_OPENED
+flag to before freeing the device buffers.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/crypto/aes-armv4.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/vt6656/main_usb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/arm/crypto/aes-armv4.S
-+++ b/arch/arm/crypto/aes-armv4.S
-@@ -148,7 +148,7 @@ AES_Te:
- @ 		 const AES_KEY *key) {
- .align	5
- ENTRY(AES_encrypt)
--	sub	r3,pc,#8		@ AES_encrypt
-+	adr	r3,AES_encrypt
- 	stmdb   sp!,{r1,r4-r12,lr}
- 	mov	r12,r0		@ inp
- 	mov	r11,r2
-@@ -381,7 +381,7 @@ _armv4_AES_encrypt:
- .align	5
- ENTRY(private_AES_set_encrypt_key)
- _armv4_AES_set_encrypt_key:
--	sub	r3,pc,#8		@ AES_set_encrypt_key
-+	adr	r3,_armv4_AES_set_encrypt_key
- 	teq	r0,#0
- 	moveq	r0,#-1
- 	beq	.Labrt
-@@ -843,7 +843,7 @@ AES_Td:
- @ 		 const AES_KEY *key) {
- .align	5
- ENTRY(AES_decrypt)
--	sub	r3,pc,#8		@ AES_decrypt
-+	adr	r3,AES_decrypt
- 	stmdb   sp!,{r1,r4-r12,lr}
- 	mov	r12,r0		@ inp
- 	mov	r11,r2
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -1099,6 +1099,8 @@ static int device_close(struct net_devic
+     memset(pMgmt->abyCurrBSSID, 0, 6);
+     pMgmt->eCurrState = WMAC_STATE_IDLE;
+ 
++	pDevice->flags &= ~DEVICE_FLAGS_OPENED;
++
+     device_free_tx_bufs(pDevice);
+     device_free_rx_bufs(pDevice);
+     device_free_int_bufs(pDevice);
+@@ -1110,7 +1112,6 @@ static int device_close(struct net_devic
+     usb_free_urb(pDevice->pInterruptURB);
+ 
+     BSSvClearNodeDBTable(pDevice, 0);
+-    pDevice->flags &=(~DEVICE_FLAGS_OPENED);
+ 
+     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "device_close2 \n");
+ 
 
 
