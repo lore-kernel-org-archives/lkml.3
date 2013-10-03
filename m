@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3JCEOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:14:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46996 "EHLO
+	id S1755432Ab3JCEOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:14:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47006 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab3JCEOh (ORCPT
+	with ESMTP id S1754116Ab3JCEOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:14:37 -0400
+	Thu, 3 Oct 2013 00:14:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@ut.ee>, Chris Wilson <chris@chris-wilson.co.uk>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 42/52] drm/i915: preserve pipe A quirk in i9xx_set_pipeconf
-Date: Wed,  2 Oct 2013 21:06:00 -0700
-Message-Id: <20131003040525.114430880@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        =?UTF-8?q?Dieter=20N=C3=BCtzel?= <Dieter@nuetzel-hh.de>
+Subject: [ 44/52] drm/radeon: avoid UVD corruption on AGP cards using GPU gart
+Date: Wed,  2 Oct 2013 21:06:02 -0700
+Message-Id: <20131003040525.248314352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -32,57 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 67c72a12254101d4e8d9b9f3a02646ba0be84a2d upstream.
+commit 4ca5a6cba53e13b8fd153b0762b4128fab6a3cfb upstream.
 
-This regression has been introduced in
+If the user has forced the driver to use the internal GPU gart
+rather than AGP on an AGP card, force the buffers to vram
+as well.
 
-commit 9f11a9e4e50006b615ba94722dfc33ced89664cf
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Jun 13 00:54:58 2013 +0200
-
-    drm/i915: set up PIPECONF explicitly for i9xx/vlv platforms
-
-Ville brough up the idea that this is just the pipe A quirk gone
-wrong.
-
-Note that after resume the bios might or might not have enabled pipe A
-already.  We have a bit of magic to make sure that on resume we set up
-a decent mode for pipe A, but I fear if I just smash pipe A to always
-on we'd enable it in a bogus state and hang the hw. Hence the
-readback.
-
-v2: Clarify the logic a bit as suggested by Chris. Also amend the
-commit message to clarify why we don't unconditionally enable the
-pipe.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66462
-References: https://lkml.org/lkml/2013/8/26/238
-Cc: Meelis Roos <mroos@ut.ee>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Use |= instead of = as suggested by Chris.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Tested-by: Dieter Nützel <Dieter@nuetzel-hh.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/radeon_cs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4564,6 +4564,10 @@ static void i9xx_set_pipeconf(struct int
- 
- 	pipeconf = I915_READ(PIPECONF(intel_crtc->pipe));
- 
-+	if (dev_priv->quirks & QUIRK_PIPEA_FORCE &&
-+	    I915_READ(PIPECONF(intel_crtc->pipe)) & PIPECONF_ENABLE)
-+		pipeconf |= PIPECONF_ENABLE;
-+
- 	if (intel_crtc->pipe == 0 && INTEL_INFO(dev)->gen < 4) {
- 		/* Enable pixel doubling when the dot clock is > 90% of the (display)
- 		 * core speed.
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -84,7 +84,7 @@ static int radeon_cs_parser_relocs(struc
+ 		   VRAM, also but everything into VRAM on AGP cards to avoid
+ 		   image corruptions */
+ 		if (p->ring == R600_RING_TYPE_UVD_INDEX &&
+-		    (i == 0 || p->rdev->flags & RADEON_IS_AGP)) {
++		    (i == 0 || drm_pci_device_is_agp(p->rdev->ddev))) {
+ 			/* TODO: is this still needed for NI+ ? */
+ 			p->relocs[i].lobj.domain =
+ 				RADEON_GEM_DOMAIN_VRAM;
 
 
