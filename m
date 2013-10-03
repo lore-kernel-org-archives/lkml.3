@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab3JCEPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:15:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47017 "EHLO
+	id S1755449Ab3JCEOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:14:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47011 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab3JCEO6 (ORCPT
+	with ESMTP id S1754116Ab3JCEOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:14:58 -0400
+	Thu, 3 Oct 2013 00:14:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [ 47/52] drm/radeon: add missing hdmi callbacks for rv6xx
-Date: Wed,  2 Oct 2013 21:06:05 -0700
-Message-Id: <20131003040525.448441201@linuxfoundation.org>
+        Alex Ivanov <gnidorah@p0n4ik.tk>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 45/52] drm/radeon: Make r100_cp_ring_info() and radeon_ring_gfx() safe (v2)
+Date: Wed,  2 Oct 2013 21:06:03 -0700
+Message-Id: <20131003040525.315302401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Alex Ivanov <gnidorah@p0n4ik.tk>
 
-commit 99d79aa2f3b7729e7290e8bda5d0dd8b0240ec62 upstream.
+commit 0eb3448aa6b31fbf24c31756aba7940cac5ad6b8 upstream.
 
-When dpm was merged, I added a new asic struct for
-rv6xx, but it never got properly updated when the
-hdmi callbacks were added due to the two patch sets
-being developed in parallel.
+Prevent NULL pointer dereference in case when radeon_ring_fini() did it's job.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=69729
+Reading of r100_cp_ring_info and radeon_ring_gfx debugfs entries will lead to a KP if ring buffer was deallocated, e.g. on failed ring test.
+Seen on PA-RISC machine having "radeon: ring test failed (scratch(0x8504)=0xCAFEDEAD)" issue.
 
+v2: agd5f: add some parens around ring->ready check
+
+Signed-off-by: Alex Ivanov <gnidorah@p0n4ik.tk>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_asic.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/r100.c        |    8 +++++---
+ drivers/gpu/drm/radeon/radeon_ring.c |    8 +++++---
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -892,6 +892,8 @@ static struct radeon_asic r520_asic = {
- 		.wait_for_vblank = &avivo_wait_for_vblank,
- 		.set_backlight_level = &atombios_set_backlight_level,
- 		.get_backlight_level = &atombios_get_backlight_level,
-+		.hdmi_enable = &r600_hdmi_enable,
-+		.hdmi_setmode = &r600_hdmi_setmode,
- 	},
- 	.copy = {
- 		.blit = &r100_copy_blit,
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -2935,9 +2935,11 @@ static int r100_debugfs_cp_ring_info(str
+ 	seq_printf(m, "CP_RB_RPTR 0x%08x\n", rdp);
+ 	seq_printf(m, "%u free dwords in ring\n", ring->ring_free_dw);
+ 	seq_printf(m, "%u dwords in ring\n", count);
+-	for (j = 0; j <= count; j++) {
+-		i = (rdp + j) & ring->ptr_mask;
+-		seq_printf(m, "r[%04d]=0x%08x\n", i, ring->ring[i]);
++	if (ring->ready) {
++		for (j = 0; j <= count; j++) {
++			i = (rdp + j) & ring->ptr_mask;
++			seq_printf(m, "r[%04d]=0x%08x\n", i, ring->ring[i]);
++		}
+ 	}
+ 	return 0;
+ }
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -823,9 +823,11 @@ static int radeon_debugfs_ring_info(stru
+ 	 * packet that is the root issue
+ 	 */
+ 	i = (ring->rptr + ring->ptr_mask + 1 - 32) & ring->ptr_mask;
+-	for (j = 0; j <= (count + 32); j++) {
+-		seq_printf(m, "r[%5d]=0x%08x\n", i, ring->ring[i]);
+-		i = (i + 1) & ring->ptr_mask;
++	if (ring->ready) {
++		for (j = 0; j <= (count + 32); j++) {
++			seq_printf(m, "r[%5d]=0x%08x\n", i, ring->ring[i]);
++			i = (i + 1) & ring->ptr_mask;
++		}
+ 	}
+ 	return 0;
+ }
 
 
