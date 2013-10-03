@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab3JCESF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47130 "EHLO
+	id S1755916Ab3JCESP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3JCESD (ORCPT
+	with ESMTP id S1752640Ab3JCESL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:03 -0400
+	Thu, 3 Oct 2013 00:18:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [ 19/57] tty: Fix SIGTTOU not sent with tcflush()
-Date: Wed,  2 Oct 2013 21:08:45 -0700
-Message-Id: <20131003040637.925829084@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Stephen Warren <swarren@nvidia.com>
+Subject: [ 20/57] serial: tegra: fix tty-kref leak
+Date: Wed,  2 Oct 2013 21:08:46 -0700
+Message-Id: <20131003040637.993021932@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,37 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 5cec7bf699c61d14f0538345076480bb8c8ebfbb upstream.
+commit cfd29aa0e81b791985e8428e6507e80e074e6730 upstream.
 
-Commit 'e7f3880cd9b98c5bf9391ae7acdec82b75403776'
-  tty: Fix recursive deadlock in tty_perform_flush()
-introduced a regression where tcflush() does not generate
-SIGTTOU for background process groups.
+Fix potential tty-kref leak in stop_rx path.
 
-Make sure ioctl(TCFLSH) calls tty_check_change() when
-invoked from the line discipline.
-
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_ioctl.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/tty/serial/serial-tegra.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -1201,6 +1201,9 @@ int n_tty_ioctl_helper(struct tty_struct
- 		}
- 		return 0;
- 	case TCFLSH:
-+		retval = tty_check_change(tty);
-+		if (retval)
-+			return retval;
- 		return __tty_perform_flush(tty, arg);
- 	default:
- 		/* Try the mode commands */
+--- a/drivers/tty/serial/serial-tegra.c
++++ b/drivers/tty/serial/serial-tegra.c
+@@ -726,7 +726,7 @@ static irqreturn_t tegra_uart_isr(int ir
+ static void tegra_uart_stop_rx(struct uart_port *u)
+ {
+ 	struct tegra_uart_port *tup = to_tegra_uport(u);
+-	struct tty_struct *tty = tty_port_tty_get(&tup->uport.state->port);
++	struct tty_struct *tty;
+ 	struct tty_port *port = &u->state->port;
+ 	struct dma_tx_state state;
+ 	unsigned long ier;
+@@ -738,6 +738,8 @@ static void tegra_uart_stop_rx(struct ua
+ 	if (!tup->rx_in_progress)
+ 		return;
+ 
++	tty = tty_port_tty_get(&tup->uport.state->port);
++
+ 	tegra_uart_wait_sym_time(tup, 1); /* wait a character interval */
+ 
+ 	ier = tup->ier_shadow;
 
 
