@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab3JCKVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 06:21:30 -0400
-Received: from forward7.mail.yandex.net ([77.88.61.37]:45922 "EHLO
-	forward7.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab3JCKV2 (ORCPT
+	id S1753703Ab3JCKXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:23:05 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51280 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752898Ab3JCKXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 06:21:28 -0400
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Oct 2013 06:21:28 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>, akpm@linux-foundation.org
-Subject: [PATCH][resend]scripts/tags.sh: Increase identifier list 
+	Thu, 3 Oct 2013 06:23:04 -0400
+X-Sasl-enc: 2Tzga0QaZj3etynqKsNbKCnUtBExIGnhNfdUahsQ+/bg 1380795778
+Date: Thu, 3 Oct 2013 07:22:55 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Stephan von Krawczynski <skraw@ithnet.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: NUMA processor numbering
+Message-ID: <20131003102255.GA2086@khazad-dum.debian.net>
+References: <20131003120514.36128d85.skraw@ithnet.com>
 MIME-Version: 1.0
-Message-Id: <47921380795212@web26m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 03 Oct 2013 14:13:32 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003120514.36128d85.skraw@ithnet.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add		__maybe_unused
-		__always_unused
-		__cacheline_aligned
-		__cacheline_aligned_in_smp
-		ACPI_EXPORT_SYMBOL
-to the list.
+On Thu, 03 Oct 2013, Stephan von Krawczynski wrote:
+> Does the above output mean that the cores are numbered right across the two
+> physical cpus? Does this mean one has to pin processes to 0,2,4,... to stay in
+> "short distance" to node 0 RAM?
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: Michal Marek <mmarek@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- scripts/tags.sh |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 74f02e4..f1bcfc1 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -151,13 +151,14 @@ exuberant()
- 	all_target_sources | xargs $1 -a                        \
- 	-I __initdata,__exitdata,__initconst,__devinitdata	\
- 	-I __devinitconst,__cpuinitdata,__initdata_memblock	\
--	-I __refdata,__attribute				\
-+	-I __refdata,__attribute,__maybe_unused,__always_unused \
- 	-I __acquires,__releases,__deprecated			\
- 	-I __read_mostly,__aligned,____cacheline_aligned        \
- 	-I ____cacheline_aligned_in_smp                         \
-+	-I __cacheline_aligned,__cacheline_aligned_in_smp	\
- 	-I ____cacheline_internodealigned_in_smp                \
- 	-I __used,__packed,__packed2__,__must_check,__must_hold	\
--	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
-+	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL,ACPI_EXPORT_SYMBOL   \
- 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
- 	-I static,const						\
- 	--extra=+f --c-kinds=+px                                \
+...
+
+> If so, it would be a lot better to have them numbered 0-15 and 16-31 for pinning.
+> Is there a way to achieve this?
+
+Yes, use hwloc to get the pinning masks for whatever property you want (e.g.
+all threads in a given core, all threads in a given node, all threads that
+share a given L3 cache...).
+
+http://www.open-mpi.org/projects/hwloc/
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
