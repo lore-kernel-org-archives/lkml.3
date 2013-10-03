@@ -1,157 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab3JCFmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:42:32 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18970 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755728Ab3JCFm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 01:42:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18HuRaaSNs2oRzhg3tVTYH2
-Subject: [PATCH 5/6] pinctrl: single: Add support for auxdata
-To: linux-arm-kernel@lists.infradead.org
-From: Tony Lindgren <tony@atomide.com>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-omap@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>
-Date: Wed, 02 Oct 2013 22:42:26 -0700
-Message-ID: <20131003054226.8941.80570.stgit@localhost>
-In-Reply-To: <20131003054104.8941.88857.stgit@localhost>
-References: <20131003054104.8941.88857.stgit@localhost>
-User-Agent: StGit/0.16-1-ga54b
+	id S1756884Ab3JCFoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:44:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30827 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387Ab3JCFoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 01:44:16 -0400
+Date: Thu, 3 Oct 2013 08:43:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexander Graf <agraf@suse.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linux-kernel@vger.kernel.org, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
+Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
+ some powernv systems
+Message-ID: <20131003054355.GT17294@redhat.com>
+References: <20131001083908.GA17294@redhat.com>
+ <1380620338.645.22.camel@pasglop>
+ <524AAFAA.3010801@redhat.com>
+ <20131002050940.GA25363@drongo>
+ <524BDD73.3020106@redhat.com>
+ <1380704789.645.57.camel@pasglop>
+ <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
+ <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
+ <20131002100224.GF17294@redhat.com>
+ <1380751340.645.68.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380751340.645.68.camel@pasglop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For omaps, we still have dependencies to the legacy code
-for handling the PRM (Power Reset Management) interrupts,
-and also for reconfiguring the io wake-up chain after
-changes.
+On Thu, Oct 03, 2013 at 08:02:20AM +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-10-02 at 13:02 +0300, Gleb Natapov wrote:
+> 
+> > Yes, I alluded to it in my email to Paul and Paolo asked also. How this
+> > interface is disabled? Also hwrnd is MMIO in a host why guest needs to
+> > use hypercall instead of emulating the device (in kernel or somewhere
+> > else?).
+> 
+> Migration will have to be dealt with one way or another, I suppose we
+> will indeed need a qemu fallback.
+> 
+So at least from amount of code perspective userspace and kernel space
+solutions are on par since later will require former anyway.
 
-Let's pass the PRM interrupt and the rearm functions via
-auxdata. Then when at some point we have a proper PRM
-driver, we can get the interrupt via device tree and
-set up the rearm function as exported function in the
-PRM driver.
+What about other direction? Migration from KVM that does not have the
+hypercall to one that has? We try to not change HW under a guest.
 
-By using auxdata we can remove a dependency to the
-wake-up events for converting omap3 to be device
-tree only.
+> As for why hypercall instead of MMIO, well, you'd have to ask the folks
+> who wrote the PAPR spec :-) It's specified as a hypercall and
+> implemented as such in pHyp (PowerVM). The existing guests expect it
+> that way.
+OK.
 
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Prakash Manjunathappa <prakash.pm@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Tony Lindgren <tony@atomide.com>
----
- drivers/pinctrl/pinctrl-single.c             |   23 +++++++++++++++++++++++
- include/linux/platform_data/pinctrl-single.h |   12 ++++++++++++
- 2 files changed, 35 insertions(+)
- create mode 100644 include/linux/platform_data/pinctrl-single.h
+> 
+> It might have to do with the required whitening done by the hypervisor
+> (H_RANDOM output is supposed to be clean). It also abstracts us from the
+> underlying HW implementation which could in theory change.
+>  
+But I guess bare metal OS has to know how to do whitening and deal with
+HW change already. Anyway this is not the place to discuss PAPR
+decisions. Thanks for insights.
 
-diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index b4ff055..e7092e8 100644
---- a/drivers/pinctrl/pinctrl-single.c
-+++ b/drivers/pinctrl/pinctrl-single.c
-@@ -28,6 +28,8 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/pinctrl/pinconf-generic.h>
- 
-+#include <linux/platform_data/pinctrl-single.h>
-+
- #include "core.h"
- #include "pinconf.h"
- 
-@@ -159,12 +161,14 @@ struct pcs_name {
-  * @irq:	optional interrupt for the controller
-  * @irq_enable_mask:	optional SoC specific interrupt enable mask
-  * @irq_status_mask:	optional SoC specific interrupt status mask
-+ * @rearm:	optional SoC specific wake-up rearm function
-  */
- struct pcs_soc_data {
- 	unsigned flags;
- 	int irq;
- 	unsigned irq_enable_mask;
- 	unsigned irq_status_mask;
-+	void (*rearm)(void);
- };
- 
- /**
-@@ -1622,6 +1626,8 @@ static void pcs_irq_unmask(struct irq_data *d)
- 	struct pcs_soc_data *pcs_soc = irq_data_get_irq_chip_data(d);
- 
- 	pcs_irq_set(pcs_soc, d->irq, true);
-+	if (pcs_soc->rearm)
-+		pcs_soc->rearm();
- }
- 
- /**
-@@ -1672,6 +1678,11 @@ static int pcs_irq_handle(struct pcs_soc_data *pcs_soc)
- 		}
- 	}
- 
-+	/*
-+	 * For debugging on omaps, you may want to call pcs_soc->rearm()
-+	 * here to see wake-up interrupts during runtime also.
-+	 */
-+
- 	return count;
- }
- 
-@@ -1838,6 +1849,7 @@ static int pcs_probe(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
- 	const struct of_device_id *match;
-+	struct pcs_pdata *pdata;
- 	struct resource *res;
- 	struct pcs_device *pcs;
- 	const struct pcs_soc_data *soc;
-@@ -1952,6 +1964,17 @@ static int pcs_probe(struct platform_device *pdev)
- 	if (pcs->socdata.irq)
- 		pcs->flags |= PCS_FEAT_IRQ;
- 
-+	/* We still need auxdata for some omaps for PRM interrupts */
-+	pdata = dev_get_platdata(&pdev->dev);
-+	if (pdata) {
-+		if (pdata->rearm)
-+			pcs->socdata.rearm = pdata->rearm;
-+		if (pdata->irq) {
-+			pcs->socdata.irq = pdata->irq;
-+			pcs->flags |= PCS_FEAT_IRQ;
-+		}
-+	}
-+
- 	if (PCS_HAS_IRQ) {
- 		ret = pcs_irq_init_chained_handler(pcs, np);
- 		if (ret < 0)
-diff --git a/include/linux/platform_data/pinctrl-single.h b/include/linux/platform_data/pinctrl-single.h
-new file mode 100644
-index 0000000..72eacda
---- /dev/null
-+++ b/include/linux/platform_data/pinctrl-single.h
-@@ -0,0 +1,12 @@
-+/**
-+ * irq:		optional wake-up interrupt
-+ * rearm:	optional soc specific rearm function
-+ *
-+ * Note that the irq and rearm setup should come from device
-+ * tree except for omap where there are still some dependencies
-+ * to the legacy PRM code.
-+ */
-+struct pcs_pdata {
-+	int irq;
-+	void (*rearm)(void);
-+};
+> >  Another things is that on a host hwrnd is protected from
+> > direct userspace access by virtue of been a device, but guest code (event
+> > kernel mode) is userspace as far as hosts security model goes, so by
+> > implementing this hypercall in a way that directly access hwrnd you
+> > expose hwrnd to a userspace unconditionally. Why is this a good idea? 
+> 
+> Why would this be a bad idea ?
+> 
+When you elevate privilege you need to explain why it is not harmful
+and why the privilege was restricted in the first place. /dev/hwrng
+that first patch created gives access only to root, this patch changes
+it to whoever can create a guest. 
 
+Why it can be a bad idea? User can drain hwrng continuously making other
+users of it much slower, or even worse, making them fall back to another
+much less reliable, source of entropy.
+
+--
+			Gleb.
