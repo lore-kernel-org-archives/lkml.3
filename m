@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab3JCVNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 17:13:48 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:48746 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab3JCVNr (ORCPT
+	id S1755752Ab3JCVOv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 17:14:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44067 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755544Ab3JCVOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 17:13:47 -0400
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] memstick: Fix memory leak in memstick_check() error path
-Date: Thu,  3 Oct 2013 16:13:18 -0500
-Message-Id: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
-X-Mailer: git-send-email 1.8.1.4
+	Thu, 3 Oct 2013 17:14:49 -0400
+Date: Thu, 3 Oct 2013 22:14:48 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+Message-ID: <20131003211448.GN13318@ZenIV.linux.org.uk>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+ <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+ <20131003105130.GE13318@ZenIV.linux.org.uk>
+ <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+ <20131003174439.GG13318@ZenIV.linux.org.uk>
+ <CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
+ <20131003194351.GK13318@ZenIV.linux.org.uk>
+ <CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
+ <20131003204142.GL13318@ZenIV.linux.org.uk>
+ <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With kernel 3.12-rc3, kemcheck reports the following leak:
+On Thu, Oct 03, 2013 at 01:52:45PM -0700, Linus Torvalds wrote:
 
-> unreferenced object 0xffff8800ae85c190 (size 16):
->   comm "kworker/u4:3", pid 685, jiffies 4294916336 (age 2831.760s)
->   hex dump (first 16 bytes):
->     6d 65 6d 73 74 69 63 6b 30 00 00 00 00 00 00 00  memstick0.......
->   backtrace:
->     [<ffffffff8146a0d1>] kmemleak_alloc+0x21/0x50
->     [<ffffffff81160720>] __kmalloc_track_caller+0x160/0x2f0
->     [<ffffffff81237b9b>] kvasprintf+0x5b/0x90
->     [<ffffffff8122c0c1>] kobject_set_name_vargs+0x21/0x60
->     [<ffffffff812e7f5c>] dev_set_name+0x3c/0x40
->     [<ffffffffa02bf918>] memstick_check+0xb8/0x340 [memstick]
->     [<ffffffff81069862>] process_one_work+0x1d2/0x670
->     [<ffffffff8106a88a>] worker_thread+0x11a/0x370
->     [<ffffffff81072ea6>] kthread+0xd6/0xe0
->     [<ffffffff81478bbc>] ret_from_fork+0x7c/0xb0
+> Yeah, I think we should be guaranteed that, because the
+> synchronize_rcu() will guarantee that all other CPU's go through an
+> idle period. So the "read A" on CPU2 cannot possibly see a 1 _unless_
+> it happens so early that synchronize_rcu() definitely sees it (ie it's
+> a "preexisting reader" by definition), in which case synchronize_rcu()
+> will be waiting for a subsequent idle period, in which case the B=0 on
+> CPU2 is not only guaranteed to happen but also be visible out, so the
+> "read B" on CPU1 will see 0. And that's true even if CPU2 doesn't have
+> an explicit memory barrier, because the "RCU idle" state implies that
+> it has gone through a barrier.
+> 
+> So I don't see how they could possibly see ones. Modulo terminal bugs
+> in synchronize_barrier() (which can be very slow, but for umount I
+> wouldn't worry). Or modulo my brain being fried.
 
-This problem was introduced by commit 0252c3b "memstick: struct device -
-replace bus_id with dev_name(), dev_set_name() where the name is not freed
-in the error path.
-
-Thanks to Catalin Marinas for suggesting the fix.
-
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alex Dubov <oakad@yahoo.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
- drivers/memstick/core/memstick.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/memstick/core/memstick.c b/drivers/memstick/core/memstick.c
-index ffcb10a..0c73a45 100644
---- a/drivers/memstick/core/memstick.c
-+++ b/drivers/memstick/core/memstick.c
-@@ -415,6 +415,7 @@ static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
- 	return card;
- err_out:
- 	host->card = old_card;
-+	kfree(card->dev.kobj.name);
- 	kfree(card);
- 	return NULL;
- }
--- 
-1.8.1.4
-
+There's one more place similar to that - kern_unmount().  There we also
+go from "longterm vfsmount, mntput() doesn't need to bother checking"
+to NULL ->mnt_ns.  We can, of course, slap synchronize_rcu() there as
+well, but that might make pid_ns and ipc_ns destruction slow...
