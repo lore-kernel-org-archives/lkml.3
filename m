@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab3JCAsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 20:48:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56270 "EHLO mga01.intel.com"
+	id S1753756Ab3JCAtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 20:49:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4547 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753178Ab3JCAsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 20:48:07 -0400
+	id S1753089Ab3JCAtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 20:49:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1022,1371106800"; 
-   d="scan'208";a="410690805"
-Date: Wed, 2 Oct 2013 17:48:05 -0700
+   d="scan'208";a="413257834"
+Date: Wed, 2 Oct 2013 17:49:28 -0700
 From: Jon Mason <jon.mason@intel.com>
 To: Alexander Gordeev <agordeev@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
@@ -28,45 +28,51 @@ Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
         e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
         Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
         "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 54/77] ntb: Ensure number of MSIs on SNB is enough
- for the link interrupt
-Message-ID: <20131003004805.GL6768@jonmason-lab>
+Subject: Re: [PATCH RFC 53/77] ntb: Fix missed call to pci_enable_msix()
+Message-ID: <20131003004928.GM6768@jonmason-lab>
 References: <cover.1380703262.git.agordeev@redhat.com>
- <5d9c5b2d3bbc444ff32bddeece7a239d046bd79c.1380703263.git.agordeev@redhat.com>
+ <0590d63c3432229a3824bada71e07a08fb955498.1380703263.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5d9c5b2d3bbc444ff32bddeece7a239d046bd79c.1380703263.git.agordeev@redhat.com>
+In-Reply-To: <0590d63c3432229a3824bada71e07a08fb955498.1380703263.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:49:10PM +0200, Alexander Gordeev wrote:
+On Wed, Oct 02, 2013 at 12:49:09PM +0200, Alexander Gordeev wrote:
+> Current MSI-X enablement code assumes MSI-Xs were successfully
+> allocated in case less than requested vectors were available.
+> That assumption is wrong, since MSI-Xs should be enabled with
+> a repeated call to pci_enable_msix(). This update fixes this.
+
+Good catch, I'll pull it in for my next NTB release.
+
+Thanks,
+Jon
+
+> 
 > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 > ---
->  drivers/ntb/ntb_hw.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/ntb/ntb_hw.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
 > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> index de2062c..eccd5e5 100644
+> index 1cb6e51..de2062c 100644
 > --- a/drivers/ntb/ntb_hw.c
 > +++ b/drivers/ntb/ntb_hw.c
-> @@ -1066,7 +1066,7 @@ static int ntb_setup_msix(struct ntb_device *ndev)
->  		/* On SNB, the link interrupt is always tied to 4th vector.  If
->  		 * we can't get all 4, then we can't use MSI-X.
->  		 */
-> -		if (ndev->hw_type != BWD_HW) {
-> +		if ((rc < SNB_MSIX_CNT) && (ndev->hw_type != BWD_HW)) {
-
-Nack, this check is unnecessary.
-
-Also, no comment in the commit on why it could be necessary.
-
-
->  			rc = -EIO;
->  			goto err1;
->  		}
+> @@ -1075,6 +1075,10 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+>  			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+>  			 rc);
+>  		msix_entries = rc;
+> +
+> +		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> +		if (rc)
+> +			goto err1;
+>  	}
+>  
+>  	for (i = 0; i < msix_entries; i++) {
 > -- 
 > 1.7.7.6
 > 
