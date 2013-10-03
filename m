@@ -1,98 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab3JCNZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 09:25:10 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:24182 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab3JCNZI (ORCPT
+	id S1754206Ab3JCN07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 09:26:59 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:61866 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753766Ab3JCN06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 09:25:08 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-cb-524d7005c873
-Message-id: <1380806660.3392.30.camel@AMDC1943>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Bob Liu <bob.liu@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
+	Thu, 3 Oct 2013 09:26:58 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Date: Thu, 03 Oct 2013 15:24:20 +0200
-In-reply-to: <20131001210431.GA8941@variantweb.net>
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
- <5237FDCC.5010109@oracle.com> <20130923220757.GC16191@variantweb.net>
- <524318DE.7070106@samsung.com> <20130925215744.GA25852@variantweb.net>
- <52455B05.1010603@samsung.com> <20130927220045.GA751@variantweb.net>
- <1380529726.11375.11.camel@AMDC1943> <20131001210431.GA8941@variantweb.net>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xy7qsBb5BBiv/6VjMWb+GzWLjjPWs
-	Fl2nprJYfHr5gNHibNMbdovLu+awWdxb85/VYu2Ru+wWk989Y7RY9vU9u8WhfavYLea1v2R1
-	4PFYvOclk8emVZ1sHps+TWL3ODHjN4vHg0ObWTw+Pr3F4tG3ZRWjx+bT1R6fN8kFcEZx2aSk
-	5mSWpRbp2yVwZbTMeMFSMI+v4serRewNjGu5uxg5OSQETCTu7NrBCmGLSVy4t56ti5GLQ0hg
-	KaNE+9XHUM5nRonux1/ZQap4BfQl5vU9AbOFBYwk7u4+DGazCRhLbF6+hA3EFgGq6Z69ghmk
-	mVlgHbPEx7ufwYpYBFQlJr7cDraOE6jh6fNbTBAb3jJJrL7wigUkwSygLjFp3iJmiJuUJHa3
-	d7JDxOUlNq95ywxxhaDEj8n3WCYwCsxC0jILSdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfm
-	pesl5+duYoTE0JcdjIuPWR1iFOBgVOLh7VDxCRJiTSwrrsw9xCjBwawkwmsf4xskxJuSWFmV
-	WpQfX1Sak1p8iJGJg1OqgbEgVOjw7p0ved342co+qAju6j68Jsbz37Tzs+7e2Ld7+1+L82+7
-	1a+fOPr1Q//MZTtenX/mJXesy4az9k3CrIutVmLMX3Ukpyasr1N6sFY81/GmqIJaype3FX3d
-	rE02ZbIrGhNV/z+747z41vuKnN7Wf/rrC3n2iNoz6O+ryrv/kfXVjZTJabJKLMUZiYZazEXF
-	iQBrDzxsfwIAAA==
+        Mike Galbraith <efault@gmx.de>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH v2] ipc/sem.c: synchronize semop and semctl with IPC_RMID
+Date: Thu,  3 Oct 2013 15:26:46 +0200
+Message-Id: <1380806806-3722-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2013-10-01 at 16:04 -0500, Seth Jennings wrote:
-> Yes, it is very similar.  I'm beginning to like aspects of this patch
-> more as I explore this issue more.
-> 
-> At first, I balked at the idea of yet another abstraction layer, but it
-> is very hard to avoid unless you want to completely collapse zswap and
-> zbud into one another and dissolve the layering.  Then you could do a
-> direct swap_offset -> address mapping.
+After acquiring the semlock spinlock, operations must test that the
+array is still valid.
 
-After discussion with Tomasz Stanislawski we had an idea of merging the
-trees (zswap's rb and zbud's radix added in these patches) into one tree
-in zbud layer.
+- semctl() and exit_sem() would walk stale linked lists (ugly, but should
+  be ok: all lists are empty)
 
-This would simplify the design (if migration was added, of course).
+- semtimedop() would sleep forever - and if woken up due to a signal -
+  access memory after free.
 
-The idea looks like:
-1. Get rid of the red-black tree in zswap.
-2. Add radix tree to zbud (or use radix tree from address space).
- - Use offset (from swp_entry) as index to radix tree.
- - zbud page (struct page) stored in tree.
-4. With both buddies filled one zbud page would be put in radix tree
-twice.
-5. zbud API would look like:
-zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp, pgoff_t offset)
-zbud_free(struct zbud_pool *pool, pgoff_t offset)
-zbud_map(struct zbud_pool *pool, pgoff_t offset)
-etc.
+The patch also:
+- standardizes the tests for .deleted, so that all tests in one
+  function leave the function with the same approach.
+- unconditionally tests for .deleted immediately after every call to
+  sem_lock - even it it means that for semctl(GETALL), .deleted will be
+  tested twice.
 
-6. zbud_map/unmap() would be a little more complex than now as it would
-took over some code from zswap (finding offset in tree).
+Both changes make the review simpler: After every sem_lock, there must
+be a test of .deleted, followed by a goto to the cleanup code (if the
+function uses "goto cleanup").
+The only exception is semctl_down(): If sem_ids().rwsem is locked, then
+the presence in ids->ipcs_idr is equivalent to !.deleted, thus no additional
+test is required.
 
-7. The radix tree would be used for:
- - finding entry by offset (for zswap_frontswap_load() and others),
- - migration.
+Davidlohr: What do you think?
 
-8. In case of migration colliding with zbud_map/unmap() the locking
-could be limited (in comparison to my patch). Calling zbud_map() would
-mark a page "dirty". During migration if page was "dirtied" then
-migration would fail with EAGAIN. Of course migration won't start if
-zbud buddy was mapped.
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ ipc/sem.c | 42 +++++++++++++++++++++++++++++-------------
+ 1 file changed, 29 insertions(+), 13 deletions(-)
 
-
-What do you think about this?
-
-
-Best regards,
-Krzysztof
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 8c4f59b..db9d241 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1282,6 +1282,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
+ 
+ 	sem_lock(sma, NULL, -1);
+ 
++	if (sma->sem_perm.deleted) {
++		sem_unlock(sma, -1);
++		rcu_read_unlock();
++		return -EIDRM;
++	}
++
+ 	curr = &sma->sem_base[semnum];
+ 
+ 	ipc_assert_locked_object(&sma->sem_perm);
+@@ -1336,12 +1342,14 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		int i;
+ 
+ 		sem_lock(sma, NULL, -1);
++		if (sma->sem_perm.deleted) {
++			err = -EIDRM;
++			goto out_unlock;
++		}
+ 		if(nsems > SEMMSL_FAST) {
+ 			if (!ipc_rcu_getref(sma)) {
+-				sem_unlock(sma, -1);
+-				rcu_read_unlock();
+ 				err = -EIDRM;
+-				goto out_free;
++				goto out_unlock;
+ 			}
+ 			sem_unlock(sma, -1);
+ 			rcu_read_unlock();
+@@ -1354,10 +1362,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 			rcu_read_lock();
+ 			sem_lock_and_putref(sma);
+ 			if (sma->sem_perm.deleted) {
+-				sem_unlock(sma, -1);
+-				rcu_read_unlock();
+ 				err = -EIDRM;
+-				goto out_free;
++				goto out_unlock;
+ 			}
+ 		}
+ 		for (i = 0; i < sma->sem_nsems; i++)
+@@ -1375,8 +1381,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		struct sem_undo *un;
+ 
+ 		if (!ipc_rcu_getref(sma)) {
+-			rcu_read_unlock();
+-			return -EIDRM;
++			err = -EIDRM;
++			goto out_rcu_wakeup;
+ 		}
+ 		rcu_read_unlock();
+ 
+@@ -1404,10 +1410,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		rcu_read_lock();
+ 		sem_lock_and_putref(sma);
+ 		if (sma->sem_perm.deleted) {
+-			sem_unlock(sma, -1);
+-			rcu_read_unlock();
+ 			err = -EIDRM;
+-			goto out_free;
++			goto out_unlock;
+ 		}
+ 
+ 		for (i = 0; i < nsems; i++)
+@@ -1431,6 +1435,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		goto out_rcu_wakeup;
+ 
+ 	sem_lock(sma, NULL, -1);
++	if (sma->sem_perm.deleted) {
++		err = -EIDRM;
++		goto out_unlock;
++	}
+ 	curr = &sma->sem_base[semnum];
+ 
+ 	switch (cmd) {
+@@ -1836,6 +1844,10 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 	if (error)
+ 		goto out_rcu_wakeup;
+ 
++	error = -EIDRM;
++	locknum = sem_lock(sma, sops, nsops);
++	if (sma->sem_perm.deleted)
++		goto out_unlock_free;
+ 	/*
+ 	 * semid identifiers are not unique - find_alloc_undo may have
+ 	 * allocated an undo structure, it was invalidated by an RMID
+@@ -1843,8 +1855,6 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 	 * This case can be detected checking un->semid. The existence of
+ 	 * "un" itself is guaranteed by rcu.
+ 	 */
+-	error = -EIDRM;
+-	locknum = sem_lock(sma, sops, nsops);
+ 	if (un && un->semid == -1)
+ 		goto out_unlock_free;
+ 
+@@ -2057,6 +2067,12 @@ void exit_sem(struct task_struct *tsk)
+ 		}
+ 
+ 		sem_lock(sma, NULL, -1);
++		/* exit_sem raced with IPC_RMID, nothing to do */
++		if (sma->sem_perm.deleted) {
++			sem_unlock(sma, -1);
++			rcu_read_unlock();
++			continue;
++		}
+ 		un = __lookup_undo(ulp, semid);
+ 		if (un == NULL) {
+ 			/* exit_sem raced with IPC_RMID+semget() that created
+-- 
+1.8.3.1
 
