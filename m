@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3JCUku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:40:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57571 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429Ab3JCUks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:40:48 -0400
-Message-ID: <1380832842.2673.80.camel@ul30vt.home>
-Subject: Re: [PATCH v2 4/4] kvm: Add VFIO device for handling IOMMU cache
- coherency
-From: Alex Williamson <alex.williamson@redhat.com>
-To: gleb@redhat.com
-Cc: aik@ozlabs.ru, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Thu, 03 Oct 2013 14:40:42 -0600
-In-Reply-To: <20131003025134.8850.97617.stgit@bling.home>
-References: <20131001201524.31715.4300.stgit@bling.home>
-	 <20131003025134.8850.97617.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755427Ab3JCUlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:41:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43888 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab3JCUln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 16:41:43 -0400
+Date: Thu, 3 Oct 2013 21:41:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+Message-ID: <20131003204142.GL13318@ZenIV.linux.org.uk>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+ <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+ <20131003105130.GE13318@ZenIV.linux.org.uk>
+ <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+ <20131003174439.GG13318@ZenIV.linux.org.uk>
+ <CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
+ <20131003194351.GK13318@ZenIV.linux.org.uk>
+ <CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 20:55 -0600, Alex Williamson wrote:
-> So far we've succeeded at making KVM and VFIO mostly unaware of each
-> other, but there's an important point where that breaks down.  Intel
-> VT-d hardware may or may not support snoop control.  When snoop
-> control is available, intel-iommu promotes No-Snoop transactions on
-> PCIe to be cache coherent.  That allows KVM to handle things like the
-> x86 WBINVD opcode as a nop.  When the hardware does not support this,
-> KVM must implement a hardware visible WBINVD for the guest.
-> 
-> We could simply let userspace tell KVM how to handle WBINVD, but it's
-> privileged for a reason.  Allowing an arbitrary user to enable
-> physical WBINVD gives them more access to the hardware.  Previously,
-> this has only been enabled for guests supporting legacy PCI device
-> assignment.  In such cases it's necessary for proper guest execution.
-> We therefore create a new KVM-VFIO virtual device.  The user can add
-> and remove VFIO groups to this device via file descriptors.  KVM
-> makes use of the VFIO external user interface to validate that the
-> user has access to physical hardware and, for now, assumes the I/O
-> is noncoherent.  Eventually we'll add an interface to allow KVM to
-> determine the conherency of the domain as noted in the TODO.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
-> v2: Patches 1-3 of v1 series remain the same, not resent
->   - Fix cast warning from (int32_t *)u64 from get_user calls
->   - Add a Kconfig variable to protect kvm_vfio_ops for archs
->     not (yet) building virt/kvm/vfio.c
+On Thu, Oct 03, 2013 at 01:19:16PM -0700, Linus Torvalds wrote:
 
-There might be another option for my particular need of this.  The
-device PCIe capability has a bit in the Device Control register that
-enables a device to do NoSnoop transactions.  Therefore it seems like by
-clearing this bit on the physical device and emulating it as read-only
-in the guest, we can prevent the NoSnoop at the device rather than at
-the IOMMU.  If we can prevent NoSnoop, then I don't think we need to
-worry about things like WBINVD emulation in KVM.  Let me work on this a
-bit more before applying.  Thanks,
+> Hmm. The CPU2 mntput can only happen under RCU readlock, right? After
+> the RCU grace period _and_ if the umount is going ahead, nothing
+> should have a mnt pointer, right?
 
-Alex
+umount -l doesn't care.
 
+> So I'm wondering if you couldn't just have a synchronize_rcu() in that
+> umount path, after clearing mnt_ns. At that point you _know_ you're
+> the only one that should have access to the mnt.
+
+We have it there.  See namespace_unlock().  And you are right about the
+locking rules for umount_tree(), except that caller is responsible
+for dropping those.  With (potentially final) mntput() happening after
+both (well, as part of namespace_unlock(), done after synchronize_rcu()).
+
+The problem is this:
+A = 1, B = 1
+CPU1:
+A = 0
+<full barrier>
+synchronize_rcu()
+read B
+
+CPU2:
+rcu_read_lock()
+B = 0
+read A
+
+Are we guaranteed that we won't get both of them seeing ones, in situation
+when that rcu_read_lock() comes too late to be noticed by synchronize_rcu()?
