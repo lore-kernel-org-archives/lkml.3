@@ -1,219 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab3JCWBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 18:01:08 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41963 "EHLO e9.ny.us.ibm.com"
+	id S1755810Ab3JCWCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 18:02:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46318 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451Ab3JCWBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 18:01:04 -0400
-Date: Thu, 3 Oct 2013 15:00:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131003220057.GY5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131002150518.675931976@infradead.org>
- <20131003164117.GD5790@linux.vnet.ibm.com>
- <20131003184001.GM28601@twins.programming.kicks-ass.net>
- <20131003184719.GA11996@redhat.com>
- <20131003192135.GR5790@linux.vnet.ibm.com>
- <20131003193206.GA17796@redhat.com>
- <20131003193319.GB17796@redhat.com>
- <20131003195026.GT5790@linux.vnet.ibm.com>
- <20131003200002.GA23768@redhat.com>
- <20131003211009.GA4127@redhat.com>
+	id S1755381Ab3JCWCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 18:02:06 -0400
+Message-ID: <524DE944.8030603@ti.com>
+Date: Thu, 3 Oct 2013 18:01:40 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131003211009.GA4127@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100322-7182-0000-0000-000008A08D5E
+To: Lukasz Majewski <l.majewski@samsung.com>
+CC: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, <devicetree@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 2/6] thermal: exynos: Provide separate TMU data for Exynos4412
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com> <1380010102-25817-3-git-send-email-l.majewski@samsung.com>
+In-Reply-To: <1380010102-25817-3-git-send-email-l.majewski@samsung.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="ctPpqo7gjkOEnAFcX0J6R6pgcxIOTvLe6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 11:10:09PM +0200, Oleg Nesterov wrote:
-> On 10/03, Oleg Nesterov wrote:
-> >
-> > So unless Peter objects I'll write the changelogs (always nontrivial task),
-> > test, and send these 2 patches + "add ops->barr() / rcu_sync_wait_for_cb"
-> > tomorrow.
-> 
-> And, can't resist, probably another patch below (incomplete, needs the
-> obvious change in cpu.c and the new trivial __complete_locked() helper).
-> 
-> Hmm. But when I look at wait_for_completion() I think it is buggy. Will
-> try to send the fix tomorrow.
-> 
-> Oleg.
-> 
-> rcusync: introduce rcu_sync_struct->exclusive mode
-> 
-> CHANGELOG.
+--ctPpqo7gjkOEnAFcX0J6R6pgcxIOTvLe6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Should the changelog really be in all caps?  (Sorry, couldn't resist...)
+Lukasz,
 
-One confusion below (mine), otherwise cannot see any obvious problems
-with it.  Not that this should count for much, getting a bit punch-drunk
-reviewing this sort of code.  ;-)
+Just minor comments.
 
-							Thanx, Paul
+On 24-09-2013 04:08, Lukasz Majewski wrote:
+> Up till now Exynos5250 and Exynos4412 had the same definitions for TMU
+> data. Following commit changes that, by introducing separate
+> exynos4412_default_tmu_data structure.
+>=20
+> Since Exynos4412 was chronologically first, the corresponding name for
+> TMU registers and default data was renamed.
+>=20
+> Additionally, new SOC_ARCH_EXYNOS4412 type has been defined.
 
+It is not clear the objective of the patch itself. Was it just to make
+the code more readable or are you fixing something?
+
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 > ---
-> 
-> diff --git a/include/linux/rcusync.h b/include/linux/rcusync.h
-> index ab787c1..265875c 100644
-> --- a/include/linux/rcusync.h
-> +++ b/include/linux/rcusync.h
-> @@ -1,8 +1,8 @@
->  #ifndef _LINUX_RCUSYNC_H_
->  #define _LINUX_RCUSYNC_H_
-> 
-> -#include <linux/wait.h>
->  #include <linux/rcupdate.h>
-> +#include <linux/completion.h>
-> 
->  struct rcu_sync_ops {
->  	void (*sync)(void);
-> @@ -15,11 +15,12 @@ struct rcu_sync_ops {
->  struct rcu_sync_struct {
->  	int			gp_state;
->  	int			gp_count;
-> -	wait_queue_head_t	gp_wait;
-> +	struct completion	gp_comp;
-> 
->  	int			cb_state;
->  	struct rcu_head		cb_head;
-> 
-> +	bool			exclusive;
->  	struct rcu_sync_ops	*ops;
->  };
-> 
-> @@ -33,31 +34,33 @@ static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
-> 
->  enum rcu_sync_type { RCU_SYNC, RCU_SCHED_SYNC, RCU_BH_SYNC };
-> 
-> -extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
-> +extern void rcu_sync_init(struct rcu_sync_struct *,
-> +				enum rcu_sync_type, bool excl);
->  extern void rcu_sync_enter(struct rcu_sync_struct *);
->  extern void rcu_sync_exit(struct rcu_sync_struct *);
-> 
->  extern struct rcu_sync_ops rcu_sync_ops_array[];
-> 
-> -#define __RCU_SYNC_INITIALIZER(name, type) {				\
-> +#define __RCU_SYNC_INITIALIZER(name, type, excl) {			\
->  		.gp_state = 0,						\
->  		.gp_count = 0,						\
-> -		.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),	\
-> +		.gp_comp = COMPLETION_INITIALIZER(name.gp_comp),	\
->  		.cb_state = 0,						\
-> +		.exclusive = excl,					\
->  		.ops = rcu_sync_ops_array + (type),			\
->  	}
-> 
-> -#define	__DEFINE_RCU_SYNC(name, type)	\
-> -	struct rcu_sync_struct name = __RCU_SYNC_INITIALIZER(name, type)
-> +#define	__DEFINE_RCU_SYNC(name, type, excl)	\
-> +	struct rcu_sync_struct name = __RCU_SYNC_INITIALIZER(name, type, excl)
-> 
-> -#define DEFINE_RCU_SYNC(name)		\
-> -	__DEFINE_RCU_SYNC(name, RCU_SYNC)
-> +#define DEFINE_RCU_SYNC(name, excl)		\
-> +	__DEFINE_RCU_SYNC(name, RCU_SYNC, excl)
-> 
-> -#define DEFINE_RCU_SCHED_SYNC(name)	\
-> -	__DEFINE_RCU_SYNC(name, RCU_SCHED_SYNC)
-> +#define DEFINE_RCU_SCHED_SYNC(name, excl)	\
-> +	__DEFINE_RCU_SYNC(name, RCU_SCHED_SYNC, excl)
-> 
-> -#define DEFINE_RCU_BH_SYNC(name)	\
-> -	__DEFINE_RCU_SYNC(name, RCU_BH_SYNC)
-> +#define DEFINE_RCU_BH_SYNC(name, excl)		\
-> +	__DEFINE_RCU_SYNC(name, RCU_BH_SYNC, excl)
-> 
->  #endif /* _LINUX_RCUSYNC_H_ */
-> 
-> diff --git a/kernel/rcusync.c b/kernel/rcusync.c
-> index 21cde9b..d8068df 100644
-> --- a/kernel/rcusync.c
-> +++ b/kernel/rcusync.c
-> @@ -4,7 +4,7 @@
->  enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
->  enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
-> 
-> -#define	rss_lock	gp_wait.lock
-> +#define	rss_lock	gp_comp.wait.lock
-> 
->  #ifdef CONFIG_PROVE_RCU
->  #define __INIT_HELD(func)	.held = func,
-> @@ -30,11 +30,13 @@ struct rcu_sync_ops rcu_sync_ops_array[] = {
+>  drivers/thermal/samsung/exynos_tmu.c      |    7 ++++---
+>  drivers/thermal/samsung/exynos_tmu.h      |    1 +
+>  drivers/thermal/samsung/exynos_tmu_data.c |   26 ++++++++++++++++++++-=
+-----
+>  drivers/thermal/samsung/exynos_tmu_data.h |    9 ++++++++-
+>  4 files changed, 33 insertions(+), 10 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
+sung/exynos_tmu.c
+> index b43afda..a858cc4 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -488,7 +488,7 @@ static const struct of_device_id exynos_tmu_match[]=
+ =3D {
 >  	},
+>  	{
+>  		.compatible =3D "samsung,exynos4412-tmu",
+> -		.data =3D (void *)EXYNOS5250_TMU_DRV_DATA,
+> +		.data =3D (void *)EXYNOS4412_TMU_DRV_DATA,
+>  	},
+>  	{
+>  		.compatible =3D "samsung,exynos5250-tmu",
+> @@ -630,8 +630,9 @@ static int exynos_tmu_probe(struct platform_device =
+*pdev)
+>  		return ret;
+> =20
+>  	if (pdata->type =3D=3D SOC_ARCH_EXYNOS ||
+> -		pdata->type =3D=3D SOC_ARCH_EXYNOS4210 ||
+> -				pdata->type =3D=3D SOC_ARCH_EXYNOS5440)
+> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS4210 ||
+> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS4412 ||
+> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS5440)
+>  		data->soc =3D pdata->type;
+>  	else {
+>  		ret =3D -EINVAL;
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/sam=
+sung/exynos_tmu.h
+> index b364c9e..db37df0 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -41,6 +41,7 @@ enum calibration_mode {
+> =20
+>  enum soc_type {
+>  	SOC_ARCH_EXYNOS4210 =3D 1,
+> +	SOC_ARCH_EXYNOS4412,
+>  	SOC_ARCH_EXYNOS,
+>  	SOC_ARCH_EXYNOS5440,
 >  };
-> 
-> -void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
-> +void rcu_sync_init(struct rcu_sync_struct *rss,
-> +			enum rcu_sync_type type, bool excl)
->  {
->  	memset(rss, 0, sizeof(*rss));
-> -	init_waitqueue_head(&rss->gp_wait);
-> +	init_completion(&rss->gp_comp);
->  	rss->ops = rcu_sync_ops_array + type;
-> +	rss->exclusive = excl;
->  }
-> 
->  void rcu_sync_enter(struct rcu_sync_struct *rss)
-> @@ -53,9 +55,13 @@ void rcu_sync_enter(struct rcu_sync_struct *rss)
->  	if (need_sync) {
->  		rss->ops->sync();
->  		rss->gp_state = GP_PASSED;
-> -		wake_up_all(&rss->gp_wait);
-> +		if (!rss->exclusive)
-> +			wake_up_all(&rss->gp_comp.wait);
 
-Not sure about the wake_up_all() on a completion, but if we are exclusive,
-don't we need to complete() the completion here?
+I believe the above enum needs some documentation. SOC_ARCH_EXYNOS seams
+to be a bit confusing.
 
-Oh, I guess gp_comp.wait is exactly a wait_queue_head_t, so I guess
-you can do wake_up_all() on it...  And the thing we would wake up
-is ourselves, and we are already awake.
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/therma=
+l/samsung/exynos_tmu_data.c
+> index 9002499..bd08093 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -90,8 +90,8 @@ struct exynos_tmu_init_data const exynos4210_default_=
+tmu_data =3D {
+>  };
+>  #endif
+> =20
+> -#if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
+> -static const struct exynos_tmu_registers exynos5250_tmu_registers =3D =
+{
+> +#if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
+> +static const struct exynos_tmu_registers exynos4412_tmu_registers =3D =
+{
+>  	.triminfo_data =3D EXYNOS_TMU_REG_TRIMINFO,
+>  	.triminfo_25_shift =3D EXYNOS_TRIMINFO_25_SHIFT,
+>  	.triminfo_85_shift =3D EXYNOS_TRIMINFO_85_SHIFT,
+> @@ -128,7 +128,7 @@ static const struct exynos_tmu_registers exynos5250=
+_tmu_registers =3D {
+>  	.emul_time_mask =3D EXYNOS_EMUL_TIME_MASK,
+>  };
+> =20
+> -#define EXYNOS5250_TMU_DATA \
+> +#define EXYNOS4412_TMU_DATA \
+>  	.threshold_falling =3D 10, \
+>  	.trigger_levels[0] =3D 85, \
+>  	.trigger_levels[1] =3D 103, \
+> @@ -162,15 +162,29 @@ static const struct exynos_tmu_registers exynos52=
+50_tmu_registers =3D {
+>  		.temp_level =3D 103, \
+>  	}, \
+>  	.freq_tab_count =3D 2, \
+> -	.type =3D SOC_ARCH_EXYNOS, \
+> -	.registers =3D &exynos5250_tmu_registers, \
+> +	.registers =3D &exynos4412_tmu_registers, \
+>  	.features =3D (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+>  			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+>  			TMU_SUPPORT_EMUL_TIME)
+> +#endif
+> =20
+> +#if defined(CONFIG_SOC_EXYNOS4412)
+> +struct exynos_tmu_init_data const exynos4412_default_tmu_data =3D {
+> +	.tmu_data =3D {
+> +		{ EXYNOS4412_TMU_DATA,
+> +		.type =3D SOC_ARCH_EXYNOS4412,
+> +		},
+> +	},
+> +	.tmu_count =3D 1,
+> +};
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250)
+>  struct exynos_tmu_init_data const exynos5250_default_tmu_data =3D {
+>  	.tmu_data =3D {
+> -		{ EXYNOS5250_TMU_DATA },
+> +		{ EXYNOS4412_TMU_DATA,
+> +		.type =3D SOC_ARCH_EXYNOS,
+> +		},
 
-Never mind!!!
+Please add a comment on this initialization, specially because we start
+to mix macros with inline initialization. Starts to be hard to follow.
 
->  	} else if (need_wait) {
-> -		wait_event(rss->gp_wait, rss->gp_state == GP_PASSED);
-> +		if (!rss->exclusive)
-> +			wait_event(rss->gp_comp.wait, rss->gp_state == GP_PASSED);
-> +		else
-> +			wait_for_completion(&rss->gp_comp);
->  	} else {
->  		/*
->  		 * Possible when there's a pending CB from a rcu_sync_exit().
-> @@ -110,6 +116,8 @@ void rcu_sync_exit(struct rcu_sync_struct *rss)
->  		} else if (rss->cb_state == CB_PENDING) {
->  			rss->cb_state = CB_REPLAY;
->  		}
-> +	} else if (rss->exclusive) {
-> +		__complete_locked(&rss->gp_comp);
->  	}
->  	spin_unlock_irq(&rss->rss_lock);
->  }
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Besides, I believe
++		{
++			EXYNOS4412_TMU_DATA,
++			.type =3D SOC_ARCH_EXYNOS,
++		},
 
+is a much more common style.
+
+
+>  	},
+>  	.tmu_count =3D 1,
+>  };
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/therma=
+l/samsung/exynos_tmu_data.h
+> index dc7feb5..b130b1e 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -138,7 +138,14 @@ extern struct exynos_tmu_init_data const exynos421=
+0_default_tmu_data;
+>  #define EXYNOS4210_TMU_DRV_DATA (NULL)
+>  #endif
+> =20
+> -#if (defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412))=
+
+> +#if defined(CONFIG_SOC_EXYNOS4412)
+> +extern struct exynos_tmu_init_data const exynos4412_default_tmu_data;
+> +#define EXYNOS4412_TMU_DRV_DATA (&exynos4412_default_tmu_data)
+> +#else
+> +#define EXYNOS4412_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250)
+>  extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
+>  #define EXYNOS5250_TMU_DRV_DATA (&exynos5250_default_tmu_data)
+>  #else
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--ctPpqo7gjkOEnAFcX0J6R6pgcxIOTvLe6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJN6UcACgkQCXcVR3XQvP2JMAEA9LFqKMnC0Izrnf9fDAeuykqB
+BD0Qr0+4Ri3yREgu5awA/RMigHCxddWxu/Cit3Oi/pBIvK1+uazpMeqs8lBhpfaH
+=ytK4
+-----END PGP SIGNATURE-----
+
+--ctPpqo7gjkOEnAFcX0J6R6pgcxIOTvLe6--
