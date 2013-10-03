@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab3JCESu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47159 "EHLO
+	id S1753619Ab3JCES4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47171 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab3JCESq (ORCPT
+	with ESMTP id S1755983Ab3JCESx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:46 -0400
+	Thu, 3 Oct 2013 00:18:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Imre Deak <imre.deak@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 26/57] drm/i915/tv: clear adjusted_mode.flags
-Date: Wed,  2 Oct 2013 21:08:52 -0700
-Message-Id: <20131003040638.395884514@linuxfoundation.org>
+        Solomon Peachy <pizza@shaftnet.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/57] cw1200: Use a threaded oneshot irq handler for cw1200_spi
+Date: Wed,  2 Oct 2013 21:08:54 -0700
+Message-Id: <20131003040638.529911719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -29,63 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Solomon Peachy <pizza@shaftnet.org>
 
-commit 1062b81598bc00e2f6620e6f3788f8f8df2f01e7 upstream.
+commit 87421cb6010a2f6494938fbe0a95e1b096b3b7af upstream.
 
-The native TV encoder has it's own flags to adjust sync modes and
-enabled interlaced modes which are totally irrelevant for the adjusted
-mode. This worked out nicely since the input modes used by both the
-load detect code and reported in the ->get_modes callbacks all have no
-flags set, and we also don't fill out any of them in the ->get_config
-callback.
+This supercedes the older patch ("cw1200: Don't perform SPI transfers in
+interrupt context") that badly attempted to fix this problem.
 
-This changed with the additional sanitation done with
+This is a far simpler solution, which has the added benefit of
+actually working.
 
-commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0
-Author: Imre Deak <imre.deak@intel.com>
-Date:   Tue Jul 30 13:36:32 2013 +0300
-
-    drm/i915: make user mode sync polarity setting explicit
-
-sinc now the "no flags at all" state wouldn't fit through core code
-any more. So fix this up again by explicitly clearing the flags in the
-->compute_config callback.
-
-Aside: We have zero checking in place to make sure that the requested
-mode is indeed the right input mode we want for the selected TV mode.
-So we'll happily fall over if userspace tries to pull us.  But that's
-definitely work for a different patch series. So just add a FIXME
-comment for now.
-
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Imre Deak <imre.deak@intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Solomon Peachy <pizza@shaftnet.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_tv.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/wireless/cw1200/cw1200_spi.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -918,6 +918,14 @@ intel_tv_compute_config(struct intel_enc
- 	DRM_DEBUG_KMS("forcing bpc to 8 for TV\n");
- 	pipe_config->pipe_bpp = 8*3;
+--- a/drivers/net/wireless/cw1200/cw1200_spi.c
++++ b/drivers/net/wireless/cw1200/cw1200_spi.c
+@@ -250,9 +250,10 @@ static int cw1200_spi_irq_subscribe(stru
  
-+	/* TV has it's own notion of sync and other mode flags, so clear them. */
-+	pipe_config->adjusted_mode.flags = 0;
-+
-+	/*
-+	 * FIXME: We don't check whether the input mode is actually what we want
-+	 * or whether userspace is doing something stupid.
-+	 */
-+
- 	return true;
- }
+ 	pr_debug("SW IRQ subscribe\n");
+ 
+-	ret = request_any_context_irq(self->func->irq, cw1200_spi_irq_handler,
+-				      IRQF_TRIGGER_HIGH,
+-				      "cw1200_wlan_irq", self);
++	ret = request_threaded_irq(self->func->irq, NULL,
++				   cw1200_spi_irq_handler,
++				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++				   "cw1200_wlan_irq", self);
+ 	if (WARN_ON(ret < 0))
+ 		goto exit;
  
 
 
