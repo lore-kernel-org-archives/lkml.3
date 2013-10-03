@@ -1,170 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab3JCN07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 09:26:59 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:61866 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab3JCN06 (ORCPT
+	id S1754245Ab3JCN2D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 09:28:03 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:49505 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab3JCN2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 09:26:58 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH v2] ipc/sem.c: synchronize semop and semctl with IPC_RMID
-Date: Thu,  3 Oct 2013 15:26:46 +0200
-Message-Id: <1380806806-3722-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 3 Oct 2013 09:28:01 -0400
+Message-ID: <524D70DA.8040308@gmail.com>
+Date: Thu, 03 Oct 2013 22:27:54 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: mpatocka@redhat.com
+CC: dm-devel@redhat.com, devel@driverdev.osuosl.org, thornber@redhat.com,
+        snitzer@redhat.com, gregkh@linuxfoundation.org, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        joe@perches.com, akpm@linux-foundation.org, m.chehab@samsung.com,
+        ejt@redhat.com, agk@redhat.com, cesarb@cesarb.net, ruby.wktk@gmail.com
+Subject: Re: [dm-devel] dm-writeboost testing
+References: <alpine.LRH.2.02.1310021125150.19199@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1310021125150.19199@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After acquiring the semlock spinlock, operations must test that the
-array is still valid.
+Hi, Mikulas,
 
-- semctl() and exit_sem() would walk stale linked lists (ugly, but should
-  be ok: all lists are empty)
+Thank you for reporting.
+I am really happy to see this report.
 
-- semtimedop() would sleep forever - and if woken up due to a signal -
-  access memory after free.
+First, I respond to the performance problem.
+I will make time later for investigating the rest and answer.
+Some deadlock issues are difficult to solve in short time.
 
-The patch also:
-- standardizes the tests for .deleted, so that all tests in one
-  function leave the function with the same approach.
-- unconditionally tests for .deleted immediately after every call to
-  sem_lock - even it it means that for semctl(GETALL), .deleted will be
-  tested twice.
 
-Both changes make the review simpler: After every sem_lock, there must
-be a test of .deleted, followed by a goto to the cleanup code (if the
-function uses "goto cleanup").
-The only exception is semctl_down(): If sem_ids().rwsem is locked, then
-the presence in ids->ipcs_idr is equivalent to !.deleted, thus no additional
-test is required.
 
-Davidlohr: What do you think?
+> I tested dm-writeboost with disk as backing device and ramdisk as cache 
+> device. When I run mkfs.ext4 on the dm-writeboost device, it writes data 
+> to the cache on the first time. However, on next mkfs.ext4 invocations, 
+> dm-writeboost writes data to the disk, not to the cache.
+> 
+> mkfs.ext4 on raw disk:	1.5s
+> mkfs.ext4 on dm-cache using raw disk and ramdisk:
+> 1st time - 0.15s
+> next time - 0.12s
+> mkfs.ext4 on dm-writeboost using raw disk and ramdisk:
+> 1st time - 0.11s
+> next time - 1.71s, 1.31s, 0.91s, 0.86s, 0.82s
+> 
+> - there seems to be some error in logic in dm-writeboost that makes it not 
+> cache writes if these writes are already placed in the cache. In 
+> real-world scenarios where the same piece of disk is overwritten over and 
+> over again (for example journal), this could cause performance problems.
+> 
+> dm-cache doesn't have this problem, if you overwrite the same piece of 
+> data again and again, it goes to the cache device.
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/sem.c | 42 +++++++++++++++++++++++++++++-------------
- 1 file changed, 29 insertions(+), 13 deletions(-)
+It is not a bug but should/can be optimized.
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 8c4f59b..db9d241 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1282,6 +1282,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
- 
- 	sem_lock(sma, NULL, -1);
- 
-+	if (sma->sem_perm.deleted) {
-+		sem_unlock(sma, -1);
-+		rcu_read_unlock();
-+		return -EIDRM;
-+	}
+Below is the cache hit path for writes.
+writeboost performs very poorly when a partial write hits
+which then turns `needs_cleanup_perv_cache` to true.
+Partial write hits is believed to be unlikely so
+I decided to give up this path to make other likely-paths optimized.
+I think this is just a tradeoff issue of what to be optimized the most.
+
+        if (found) {
+
+                if (unlikely(on_buffer)) {
+                        mutex_unlock(&cache->io_lock);
+
+                        update_mb_idx = mb->idx;
+                        goto write_on_buffer;
+                } else {
+                        u8 dirty_bits = atomic_read_mb_dirtiness(seg, mb);
+
+                        /*
+                         * First clean up the previous cache
+                         * and migrate the cache if needed.
+                         */
+                        bool needs_cleanup_prev_cache =
+                                !bio_fullsize || !(dirty_bits == 255);
+
+                        if (unlikely(needs_cleanup_prev_cache)) {
+                                wait_for_completion(&seg->flush_done);
+                                migrate_mb(cache, seg, mb, dirty_bits, true);
+                        }
+
+I checked that the mkfs.ext4 writes only in 4KB size
+so it is not gonna turn the boolean value true for going into the slowpath.
+
+Problem:
+Problem is that
+it chooses the slowpath even though the bio is full-sized overwrite
+in the test.
+
+The reason is that the dirty bits is sometimes seen as 0
+and the suspect is the migration daemon.
+
+I guess you created the writeboost device with the default configuration.
+In that case migration daemon always works and
+some metadata is cleaned up in background.
+
+If you turns both enable_migration_modulator and allow_migrate to 0
+before beginning the test
+to stop migration at all
+it never goes into the slowpath with the test.
+
+Solution:
+Changing the code to
+avoid going into the slowpath when the dirty bits is zero
+will solve this problem.
+
+And done. Please pull the latest one from the repo.
+--- a/Driver/dm-writeboost-target.c
++++ b/Driver/dm-writeboost-target.c
+@@ -688,6 +688,14 @@ static int writeboost_map(struct dm_target *ti, struct bio *bio
+                        bool needs_cleanup_prev_cache =
+                                !bio_fullsize || !(dirty_bits == 255);
+
++                       /*
++                        * Migration works in background
++                        * and may have cleaned up the metablock.
++                        * If the metablock is clean we need not to migrate.
++                        */
++                       if (!dirty_bits)
++                               needs_cleanup_prev_cache = false;
 +
- 	curr = &sma->sem_base[semnum];
- 
- 	ipc_assert_locked_object(&sma->sem_perm);
-@@ -1336,12 +1342,14 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		int i;
- 
- 		sem_lock(sma, NULL, -1);
-+		if (sma->sem_perm.deleted) {
-+			err = -EIDRM;
-+			goto out_unlock;
-+		}
- 		if(nsems > SEMMSL_FAST) {
- 			if (!ipc_rcu_getref(sma)) {
--				sem_unlock(sma, -1);
--				rcu_read_unlock();
- 				err = -EIDRM;
--				goto out_free;
-+				goto out_unlock;
- 			}
- 			sem_unlock(sma, -1);
- 			rcu_read_unlock();
-@@ -1354,10 +1362,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 			rcu_read_lock();
- 			sem_lock_and_putref(sma);
- 			if (sma->sem_perm.deleted) {
--				sem_unlock(sma, -1);
--				rcu_read_unlock();
- 				err = -EIDRM;
--				goto out_free;
-+				goto out_unlock;
- 			}
- 		}
- 		for (i = 0; i < sma->sem_nsems; i++)
-@@ -1375,8 +1381,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		struct sem_undo *un;
- 
- 		if (!ipc_rcu_getref(sma)) {
--			rcu_read_unlock();
--			return -EIDRM;
-+			err = -EIDRM;
-+			goto out_rcu_wakeup;
- 		}
- 		rcu_read_unlock();
- 
-@@ -1404,10 +1410,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		rcu_read_lock();
- 		sem_lock_and_putref(sma);
- 		if (sma->sem_perm.deleted) {
--			sem_unlock(sma, -1);
--			rcu_read_unlock();
- 			err = -EIDRM;
--			goto out_free;
-+			goto out_unlock;
- 		}
- 
- 		for (i = 0; i < nsems; i++)
-@@ -1431,6 +1435,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		goto out_rcu_wakeup;
- 
- 	sem_lock(sma, NULL, -1);
-+	if (sma->sem_perm.deleted) {
-+		err = -EIDRM;
-+		goto out_unlock;
-+	}
- 	curr = &sma->sem_base[semnum];
- 
- 	switch (cmd) {
-@@ -1836,6 +1844,10 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	if (error)
- 		goto out_rcu_wakeup;
- 
-+	error = -EIDRM;
-+	locknum = sem_lock(sma, sops, nsops);
-+	if (sma->sem_perm.deleted)
-+		goto out_unlock_free;
- 	/*
- 	 * semid identifiers are not unique - find_alloc_undo may have
- 	 * allocated an undo structure, it was invalidated by an RMID
-@@ -1843,8 +1855,6 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	 * This case can be detected checking un->semid. The existence of
- 	 * "un" itself is guaranteed by rcu.
- 	 */
--	error = -EIDRM;
--	locknum = sem_lock(sma, sops, nsops);
- 	if (un && un->semid == -1)
- 		goto out_unlock_free;
- 
-@@ -2057,6 +2067,12 @@ void exit_sem(struct task_struct *tsk)
- 		}
- 
- 		sem_lock(sma, NULL, -1);
-+		/* exit_sem raced with IPC_RMID, nothing to do */
-+		if (sma->sem_perm.deleted) {
-+			sem_unlock(sma, -1);
-+			rcu_read_unlock();
-+			continue;
-+		}
- 		un = __lookup_undo(ulp, semid);
- 		if (un == NULL) {
- 			/* exit_sem raced with IPC_RMID+semget() that created
--- 
-1.8.3.1
+                        if (unlikely(needs_cleanup_prev_cache)) {
+                                wait_for_completion(&seg->flush_done);
+                                migrate_mb(cache, seg, mb, dirty_bits, true);
 
+Thanks,
+Akira
