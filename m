@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3JCEL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:11:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46887 "EHLO
+	id S1754904Ab3JCELq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:11:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab3JCEL4 (ORCPT
+	with ESMTP id S1754885Ab3JCELk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:11:56 -0400
+	Thu, 3 Oct 2013 00:11:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [ 15/52] mei: make me client counters less error prone
-Date: Wed,  2 Oct 2013 21:05:33 -0700
-Message-Id: <20131003040523.229576145@linuxfoundation.org>
+        Masoud Sharbiani <msharbiani@twitter.com>,
+        Vinson Lee <vlee@twitter.com>, Robin Holt <holt@sgi.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 12/52] x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
+Date: Wed,  2 Oct 2013 21:05:30 -0700
+Message-Id: <20131003040523.028002809@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,76 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Masoud Sharbiani <msharbiani@twitter.com>
 
-commit 1aee351a739153529fbb98ee461777b2abd5e1c9 upstream.
+commit 4f0acd31c31f03ba42494c8baf6c0465150e2621 upstream.
 
-1. u8 counters are prone to hard to detect overflow:
- make them unsigned long to match bit_ functions argument type
+Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
 
-2. don't check me_clients_num for negativity, it is unsigned.
-
-3. init all the me client counters from one place
-
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hbm.c     |   10 ++++++----
- drivers/misc/mei/mei_dev.h |    6 +++---
- 2 files changed, 9 insertions(+), 7 deletions(-)
+ arch/x86/kernel/reboot.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -35,11 +35,15 @@ static void mei_hbm_me_cl_allocate(struc
- 	struct mei_me_client *clients;
- 	int b;
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -447,6 +447,22 @@ static struct dmi_system_id __initdata r
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
++	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
+ 	{ }
+ };
  
-+	dev->me_clients_num = 0;
-+	dev->me_client_presentation_num = 0;
-+	dev->me_client_index = 0;
-+
- 	/* count how many ME clients we have */
- 	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
- 		dev->me_clients_num++;
- 
--	if (dev->me_clients_num <= 0)
-+	if (dev->me_clients_num == 0)
- 		return;
- 
- 	kfree(dev->me_clients);
-@@ -221,7 +225,7 @@ static int mei_hbm_prop_req(struct mei_d
- 	struct hbm_props_request *prop_req;
- 	const size_t len = sizeof(struct hbm_props_request);
- 	unsigned long next_client_index;
--	u8 client_num;
-+	unsigned long client_num;
- 
- 
- 	client_num = dev->me_client_presentation_num;
-@@ -650,8 +654,6 @@ void mei_hbm_dispatch(struct mei_device
- 		if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
- 		    dev->hbm_state == MEI_HBM_ENUM_CLIENTS) {
- 				dev->init_clients_timer = 0;
--				dev->me_client_presentation_num = 0;
--				dev->me_client_index = 0;
- 				mei_hbm_me_cl_allocate(dev);
- 				dev->hbm_state = MEI_HBM_CLIENT_PROPERTIES;
- 
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -402,9 +402,9 @@ struct mei_device {
- 	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
- 	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
- 	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
--	u8 me_clients_num;
--	u8 me_client_presentation_num;
--	u8 me_client_index;
-+	unsigned long me_clients_num;
-+	unsigned long me_client_presentation_num;
-+	unsigned long me_client_index;
- 
- 	struct mei_cl wd_cl;
- 	enum mei_wd_states wd_state;
 
 
