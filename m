@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3JCUtG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:49:06 -0400
-Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:43403 "HELO
-	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754617Ab3JCUtE (ORCPT
+	id S1755273Ab3JCUws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:52:48 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:54134 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754953Ab3JCUwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:49:04 -0400
+	Thu, 3 Oct 2013 16:52:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <1380802143.19256.95.camel@haakon3.risingtidesystems.com>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
- <20130920203222.GA14306@kroah.com> <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
- <524180B7.7090307@gmail.com> <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
- <5241C9E7.2000404@cs.wisc.edu> <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
- <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
- <ff6a93ed5d234c14874d03415812a3ec@SN2PR03MB061.namprd03.prod.outlook.com> <1380802143.19256.95.camel@haakon3.risingtidesystems.com>
-From: Eric Seppanen <eric@purestorage.com>
-Date: Thu, 3 Oct 2013 13:48:42 -0700
-Message-ID: <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
-Subject: Re: Drivers: scsi: FLUSH timeout
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131003204142.GL13318@ZenIV.linux.org.uk>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+	<CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+	<20131003105130.GE13318@ZenIV.linux.org.uk>
+	<CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+	<20131003174439.GG13318@ZenIV.linux.org.uk>
+	<CA+55aFy5kA7ubyetouWsB0OnB5mMRAoyQ-4kbQsCVWARFaf9MA@mail.gmail.com>
+	<20131003194351.GK13318@ZenIV.linux.org.uk>
+	<CA+55aFw-Yp7xEG3cnU1hcVXAHNGkCoomm0NsUt_Adf=mrauSHw@mail.gmail.com>
+	<20131003204142.GL13318@ZenIV.linux.org.uk>
+Date: Thu, 3 Oct 2013 13:52:45 -0700
+X-Google-Sender-Auth: 9V_CTYappPYIUIWxnuYPv4FtR5U
+Message-ID: <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 5:09 AM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
+On Thu, Oct 3, 2013 at 1:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> On Wed, 2013-10-02 at 18:29 +0000, KY Srinivasan wrote:
-> > Ideally, I want this to be adjustable like the way we can change the I/O timeout.
-> > Since that has been attempted earlier and rejected (not clear what the reasons were),
-> > I was suggesting that we pick a larger number. James, let me know how I should proceed here.
-> >
+> The problem is this:
+> A = 1, B = 1
+> CPU1:
+> A = 0
+> <full barrier>
+> synchronize_rcu()
+> read B
 >
-> I think the objection was to making a module parameter for doing this
-> globally for all struct scsi_disk, and not the idea of making it
-> adjustable on an individual basis per-say..
+> CPU2:
+> rcu_read_lock()
+> B = 0
+> read A
 >
-> What about adding a /sys/class/scsi_disk/$HCTL/flush_timeout..?
+> Are we guaranteed that we won't get both of them seeing ones, in situation
+> when that rcu_read_lock() comes too late to be noticed by synchronize_rcu()?
 
-Do I/O timeouts and flush timeouts need to be independently adjusted?
-If you're having trouble with slow operations, it seems likely to be
-across the board.
+Yeah, I think we should be guaranteed that, because the
+synchronize_rcu() will guarantee that all other CPU's go through an
+idle period. So the "read A" on CPU2 cannot possibly see a 1 _unless_
+it happens so early that synchronize_rcu() definitely sees it (ie it's
+a "preexisting reader" by definition), in which case synchronize_rcu()
+will be waiting for a subsequent idle period, in which case the B=0 on
+CPU2 is not only guaranteed to happen but also be visible out, so the
+"read B" on CPU1 will see 0. And that's true even if CPU2 doesn't have
+an explicit memory barrier, because the "RCU idle" state implies that
+it has gone through a barrier.
 
-Flush timeout could be defined as 2x the read/write timeout.  Any
-other command-specific timeouts could be scaled the same way.
+So I don't see how they could possibly see ones. Modulo terminal bugs
+in synchronize_barrier() (which can be very slow, but for umount I
+wouldn't worry). Or modulo my brain being fried.
+
+                  Linus
