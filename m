@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3JCSHq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 14:07:46 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:52096 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab3JCSHp (ORCPT
+	id S1754753Ab3JCSIF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 14:08:05 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:62466 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754739Ab3JCSIC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 14:07:45 -0400
+	Thu, 3 Oct 2013 14:08:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131003172755.GG7408@mudshark.cambridge.arm.com>
-References: <1380820515-21100-1-git-send-email-zishen.lim@linaro.org>
-	<20131003172755.GG7408@mudshark.cambridge.arm.com>
-Date: Thu, 3 Oct 2013 11:07:44 -0700
-Message-ID: <CAM1oe53oQ5OBww=89vqcyUt_NqsYfCHDVZkKv0p9=-TchhkHSA@mail.gmail.com>
-Subject: Re: [RFC] ARM: lockless get_user_pages_fast()
-From: Zi Shen Lim <zishen.lim@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-networking@linaro.org" <linaro-networking@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307514F2CE@IN01WEMBXA.internal.synopsys.com>
+References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA2307514EA98@IN01WEMBXA.internal.synopsys.com>
+	<C2D7FE5348E1B147BCA15975FBA2307514F2CE@IN01WEMBXA.internal.synopsys.com>
+Date: Thu, 3 Oct 2013 13:08:00 -0500
+Message-ID: <CAL_JsqJZTJwMM=noq7dDz5nhMcBGxiHgCEqxwN9BaqwZbXtbmA@mail.gmail.com>
+Subject: Re: [PATCH 00/21] of: prom.h clean-up and removal
+From: Rob Herring <robherring2@gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your feedback Will.
-
-On Thu, Oct 3, 2013 at 10:27 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Oct 03, 2013 at 06:15:15PM +0100, Zi Shen Lim wrote:
->> Futex uses GUP. Currently on ARM, the default __get_user_pages_fast
->> being used always returns 0, leading to a forever loop in get_futex_key :(
+On Thu, Oct 3, 2013 at 4:33 AM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+> [Trimmed CC list a bit]
+>
+> On 09/27/2013 10:26 AM, Vineet Gupta wrote:
+>> On 09/27/2013 12:21 AM, Rob Herring wrote:
+>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>
+>>> This is the second series of clean-up for architecture DT code. The first
+>>> series is here [1].
+>>>
+>>> As the number of DT enabled architectures has grown, there has been a lot
+>>> of copy/paste duplication of prom.h. The include ordering for prom.h is
+>>> complex and has resulted in many implicit includes. This series cleans up
+>>> prom.h and removes the dependency of prom.h includes in the core DT code
+>>> on all architectures except sparc. This removes prom.h on several
+>>> architectures and makes it an architecture specific include on the rest.
+>>>
+>>> Compiled on arm, arm64, microblaze, mips, openrisc, powerpc, sparc,
+>>> xtensa. Mostly defconfigs and some allyesconfigs. The 0-day builder has
+>>> also caught some issues.
+>>>
+>>> A branch with both series is available here:
+>>> git://sources.calxeda.com/kernel/linux.git dt-cleanup
+>>>
+>> I gave the latest branch a spin - everything looks good except for a build warning
+>> - and given the const qualifier in the API, I reckon most (if not all) would see that.
 >>
->> Implementing GUP solves this problem.
+>> It seems this was introduced in first series but maybe I failed to notice then as
+>> I'm sure I booted that code too.
 >>
->> Tested on vexpress-A15 on QEMU.
->> 8<---------------------------------------------------->8
+>> ------------------>8-----------------------------
+>>   CC      arch/arc/kernel/devtree.o
+>> arch/arc/kernel/devtree.c: In function ‘setup_machine_fdt’:
+>> arch/arc/kernel/devtree.c:50:8: warning: assignment discards ‘const’ qualifier
+>> from pointer target type [enabled by default]
+>>   mdesc = of_flat_dt_match_machine(NULL, arch_get_next_mach);
+>>         ^
+>> ------------------>8-----------------------------
 >>
->> Implement get_user_pages_fast without locking in the fastpath on ARM.
->> This work is derived from the x86 version and adapted to ARM.
+>> ARM propagates the const to callers - upto setup_arch(), but that might not work
+>> for us as we use it to setup a global @machine_desc which is then used to dispatch
+>> the callbacks in platform APIs. Semantically it's good if it is const but that
+>> would require making it local and propagating to all the users - not worth the
+>> trouble I suppose.
+>>
+>> What say you !
 >
-> This looks pretty much like an exact copy of the x86 version, which will
-> likely also result in another exact copy for arm64. Can none of this code be
-> made common? Furthermore, the fact that you've lifted the code and not
-> provided much of an explanation in the cover letter hints that you might not
-> be aware of all the subtleties involved here...
->
+> Ping ?
 
-You are right. I was wondering the same too. Hopefully this RFC will
-lead to the desired solution.
+I think this should be const like arm recently fixed. The structure is
+declared const with MACHINE_START which gets dropped.
 
-x86 does this:
---8<-----
-        unsigned long mask;
-        pte_t *ptep;
-
-        mask = _PAGE_PRESENT|_PAGE_USER;
-        if (write)
-                mask |= _PAGE_RW;
-
-        ptep = pte_offset_map(&pmd, addr);
-        do {
-                pte_t pte = gup_get_pte(ptep);
-                struct page *page;
-
-                if ((pte_flags(pte) & (mask | _PAGE_SPECIAL)) != mask) {
-                        pte_unmap(ptep);
-                        return 0;
-                }
--->8-----
-The adaptation uses pte_* macros.
-
-x86 also uses a more optimized version of pmd_large and pud_large,
-instead of reusing pmd_huge or pud_huge.
-
->> +static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
->> +             int write, struct page **pages, int *nr)
->> +{
->> +     unsigned long next;
->> +     pmd_t *pmdp;
->> +
->> +     pmdp = pmd_offset(&pud, addr);
->> +     do {
->> +             pmd_t pmd = *pmdp;
->> +
->> +             next = pmd_addr_end(addr, end);
->> +             /*
->> +              * The pmd_trans_splitting() check below explains why
->> +              * pmdp_splitting_flush has to flush the tlb, to stop
->> +              * this gup-fast code from running while we set the
->> +              * splitting bit in the pmd. Returning zero will take
->> +              * the slow path that will call wait_split_huge_page()
->> +              * if the pmd is still in splitting state. gup-fast
->> +              * can't because it has irq disabled and
->> +              * wait_split_huge_page() would never return as the
->> +              * tlb flush IPI wouldn't run.
->> +              */
->> +             if (pmd_none(pmd) || pmd_trans_splitting(pmd))
->> +                     return 0;
->> +             if (unlikely(pmd_huge(pmd))) {
->> +                     if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
->> +                             return 0;
->> +             } else {
->> +                     if (!gup_pte_range(pmd, addr, next, write, pages, nr))
->> +                             return 0;
->> +             }
->> +     } while (pmdp++, addr = next, addr != end);
->
-> ...case in point: we don't (usually) require IPIs to shoot down TLB entries
-> in SMP systems, so this is racy under thp splitting.
->
-
-Ok. I learned something new :)
-Suggestions on how to proceed?
-
-Thanks for your patience.
-
-> Will
+Rob
