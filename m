@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab3JCESP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47138 "EHLO
+	id S1755907Ab3JCESJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47133 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab3JCESL (ORCPT
+	with ESMTP id S1754564Ab3JCESG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:11 -0400
+	Thu, 3 Oct 2013 00:18:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Stephen Warren <swarren@nvidia.com>
-Subject: [ 20/57] serial: tegra: fix tty-kref leak
-Date: Wed,  2 Oct 2013 21:08:46 -0700
-Message-Id: <20131003040637.993021932@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 01/57] block: Fix bio_copy_data()
+Date: Wed,  2 Oct 2013 21:08:27 -0700
+Message-Id: <20131003040636.701703320@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -26,39 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit cfd29aa0e81b791985e8428e6507e80e074e6730 upstream.
+commit 2f6cf0de0281d210061ce976f2d42d246adc75bb upstream.
 
-Fix potential tty-kref leak in stop_rx path.
+The memcpy() in bio_copy_data() was using the wrong offset vars, leading
+to data corruption in weird unusual setups.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/serial-tegra.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/bio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/serial-tegra.c
-+++ b/drivers/tty/serial/serial-tegra.c
-@@ -726,7 +726,7 @@ static irqreturn_t tegra_uart_isr(int ir
- static void tegra_uart_stop_rx(struct uart_port *u)
- {
- 	struct tegra_uart_port *tup = to_tegra_uport(u);
--	struct tty_struct *tty = tty_port_tty_get(&tup->uport.state->port);
-+	struct tty_struct *tty;
- 	struct tty_port *port = &u->state->port;
- 	struct dma_tx_state state;
- 	unsigned long ier;
-@@ -738,6 +738,8 @@ static void tegra_uart_stop_rx(struct ua
- 	if (!tup->rx_in_progress)
- 		return;
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -917,8 +917,8 @@ void bio_copy_data(struct bio *dst, stru
+ 		src_p = kmap_atomic(src_bv->bv_page);
+ 		dst_p = kmap_atomic(dst_bv->bv_page);
  
-+	tty = tty_port_tty_get(&tup->uport.state->port);
-+
- 	tegra_uart_wait_sym_time(tup, 1); /* wait a character interval */
+-		memcpy(dst_p + dst_bv->bv_offset,
+-		       src_p + src_bv->bv_offset,
++		memcpy(dst_p + dst_offset,
++		       src_p + src_offset,
+ 		       bytes);
  
- 	ier = tup->ier_shadow;
+ 		kunmap_atomic(dst_p);
 
 
