@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab3JCEJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:09:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46827 "EHLO
+	id S1754800Ab3JCEJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:09:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab3JCEJ0 (ORCPT
+	with ESMTP id S1752741Ab3JCEJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:09:26 -0400
+	Thu, 3 Oct 2013 00:09:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 04/16] xhci: Ensure a command structure points to the correct trb on the command ring
-Date: Wed,  2 Oct 2013 21:05:28 -0700
-Message-Id: <20131003040445.841883667@linuxfoundation.org>
+        Florian Wolter <wolly84@web.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 06/16] xhci: Fix race between ep halt and URB cancellation
+Date: Wed,  2 Oct 2013 21:05:30 -0700
+Message-Id: <20131003040445.976216077@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
 References: <20131003040445.523176877@linuxfoundation.org>
@@ -27,144 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Florian Wolter <wolly84@web.de>
 
-commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
+commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
 
-If a command on the command ring needs to be cancelled before it is handled
-it can be turned to a no-op operation when the ring is stopped.
-We want to store the command ring enqueue pointer in the command structure
-when the command in enqueued for the cancellation case.
+The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
+user process, because the stopped_td variable was overwritten in the
+handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
+refuse the reset and communication with device can not run over this endpoint.
+https://bugzilla.kernel.org/show_bug.cgi?id=60699
 
-Some commands used to store the command ring dequeue pointers instead of enqueue
-(these often worked because enqueue happends to equal dequeue quite often)
-
-Other commands correctly used the enqueue pointer but did not check if it pointed
-to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
-xhci_stop_device() in about 2% of suspend/resume cases.
-
-This should also solve some weird behavior happening in command cancellation cases.
-
-This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
-then forgotten:
-    http://marc.info/?l=linux-usb&m=136269803207465&w=2
-
-This patch should be backported to kernels as old as 3.7, that contain
-the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
-command ring function"
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Florian Wolter <wolly84@web.de>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-hub.c  |    2 +-
- drivers/usb/host/xhci-ring.c |   10 ++++++++++
- drivers/usb/host/xhci.c      |   25 +++++--------------------
- drivers/usb/host/xhci.h      |    1 +
- 4 files changed, 17 insertions(+), 21 deletions(-)
+ drivers/usb/host/xhci-ring.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -287,7 +287,7 @@ static int xhci_stop_device(struct xhci_
- 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
- 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
- 	}
--	cmd->command_trb = xhci->cmd_ring->enqueue;
-+	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
- 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
- 	xhci_ring_cmd_db(xhci);
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xh
- 	return TRB_TYPE_LINK_LE32(link->control);
- }
- 
-+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
-+{
-+	/* Enqueue pointer can be left pointing to the link TRB,
-+	 * we must handle that
-+	 */
-+	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
-+		return ring->enq_seg->next->trbs;
-+	return ring->enqueue;
-+}
-+
- /* Updates trb to point to the next TRB in the ring, and updates seg if the next
-  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
-  * effect the ring dequeue or enqueue pointers.
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2582,15 +2582,7 @@ static int xhci_configure_endpoint(struc
- 	if (command) {
- 		cmd_completion = command->completion;
- 		cmd_status = &command->status;
--		command->command_trb = xhci->cmd_ring->enqueue;
--
--		/* Enqueue pointer can be left pointing to the link TRB,
--		 * we must handle that
--		 */
--		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
--			command->command_trb =
--				xhci->cmd_ring->enq_seg->next->trbs;
--
-+		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
- 	} else {
- 		cmd_completion = &virt_dev->cmd_completion;
-@@ -2598,7 +2590,7 @@ static int xhci_configure_endpoint(struc
+@@ -857,8 +857,12 @@ remove_finished_td:
+ 		/* Otherwise ring the doorbell(s) to restart queued transfers */
+ 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
  	}
- 	init_completion(cmd_completion);
+-	ep->stopped_td = NULL;
+-	ep->stopped_trb = NULL;
++
++	/* Clear stopped_td and stopped_trb if endpoint is not halted */
++	if (!(ep->ep_state & EP_HALTED)) {
++		ep->stopped_td = NULL;
++		ep->stopped_trb = NULL;
++	}
  
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
- 				udev->slot_id, must_succeed);
-@@ -3383,14 +3375,7 @@ int xhci_discover_or_reset_device(struct
- 
- 	/* Attempt to submit the Reset Device command to the command ring */
- 	spin_lock_irqsave(&xhci->lock, flags);
--	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
--
--	/* Enqueue pointer can be left pointing to the link TRB,
--	 * we must handle that
--	 */
--	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
--		reset_device_cmd->command_trb =
--			xhci->cmd_ring->enq_seg->next->trbs;
-+	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 
- 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
- 	ret = xhci_queue_reset_device(xhci, slot_id);
-@@ -3594,7 +3579,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -3721,7 +3706,7 @@ int xhci_address_device(struct usb_hcd *
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1811,6 +1811,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhc
- 		union xhci_trb *cmd_trb);
- void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
- 		unsigned int ep_index, unsigned int stream_id);
-+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
- 
- /* xHCI roothub code */
- void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
+ 	/*
+ 	 * Drop the lock and complete the URBs in the cancelled TD list.
 
 
