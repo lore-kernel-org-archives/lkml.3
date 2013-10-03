@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3JCIfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 04:35:19 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:51078 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab3JCIfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 04:35:16 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf tool: more user-friendly errors from trace
-Date: Thu,  3 Oct 2013 13:58:11 +0530
-Message-Id: <1380788891-31908-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.4.477.g5d89aa9
+	id S1753615Ab3JCIgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 04:36:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48507 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab3JCIgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 04:36:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1024,1371106800"; 
+   d="scan'208";a="387178940"
+Message-ID: <524D2E06.5020801@intel.com>
+Date: Thu, 03 Oct 2013 11:42:46 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [BUG] perf tests: Test converting perf time to TSC
+References: <20131002132308.GB20396@krava.brq.redhat.com> <524C23D3.6020300@intel.com> <20131003081737.GB993@krava.brq.redhat.com>
+In-Reply-To: <20131003081737.GB993@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, execution of 'perf trace' reports the following cryptic
-message to the user:
+On 03/10/13 11:17, Jiri Olsa wrote:
+> On Wed, Oct 02, 2013 at 04:46:59PM +0300, Adrian Hunter wrote:
+>> On 02/10/13 16:23, Jiri Olsa wrote:
+>>> hi,
+>>> got a segfault in the tsc test on latest acme's tree.
+>>>
+>>> I'm dealing with some other issues right now, so just reporting ;-)
+>>
+>> The capability bits have changed positions.  You need to have:
+>>
+>> commit fa7315871046b9a4c48627905691dbde57e51033
+>> Author: Peter Zijlstra <peterz@infradead.org>
+>> Date:   Thu Sep 19 10:16:42 2013 +0200
+>>
+>>     perf: Fix capabilities bitfield compatibility in 'struct
+>> perf_event_mmap_page'
+> 
+> ok, I'll try that.. but anyway, the test should
+> not crash in account of missing kernel change 
 
-$ perf trace
-Couldn't read the raw_syscalls tracepoints information!
+No the ABI is broken in that case - better to crash.
 
-Now, it prints a detailed message:
-
-$ perf trace
-Error:  No permissions to read $debugfs/tracing/events/raw_syscalls
-Hint:   Change the permissions of debugfs: /sys/kernel/debug
-        The directory will be present if your kernel was compiled with debugfs support.
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/builtin-trace.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 71aa3e3..544707a 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -916,14 +916,18 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 
- 	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
- 	    perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit)) {
--		fprintf(trace->output, "Couldn't read the raw_syscalls tracepoints information!\n");
-+		fprintf(trace->output, "Error:\tNo permissions to read $debugfs/tracing/events/raw_syscalls\n");
-+		fprintf(trace->output, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
-+		fprintf(trace->output, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
- 		goto out_delete_evlist;
- 	}
- 
- 	if (trace->sched &&
- 	    perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
- 				   trace__sched_stat_runtime)) {
--		fprintf(trace->output, "Couldn't read the sched_stat_runtime tracepoint information!\n");
-+		fprintf(trace->output, "Error:\tNo permissions to read $debugfs/tracing/events/sched/sched_stat_runtime\n");
-+		fprintf(trace->output, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
-+		fprintf(trace->output, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
- 		goto out_delete_evlist;
- 	}
- 
--- 
-1.8.4.477.g5d89aa9
 
