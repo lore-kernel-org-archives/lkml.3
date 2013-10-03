@@ -1,132 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3JCPlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:41:07 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:45249 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753977Ab3JCPlF (ORCPT
+	id S1754595Ab3JCPoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:44:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49650 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab3JCPoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:41:05 -0400
-Date: Thu, 3 Oct 2013 16:40:58 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 0/9] procfs: protect /proc/<pid>/* files with
- file->f_cred
-Message-ID: <20131003154058.GA1210@dztty>
-References: <524B7999.60806@amacapital.net>
- <20131002143759.GA2966@dztty>
- <CALCETrUcg4o5QeGMP1rRAzJSfjwS=qD3DsDWV3=fPJQOA3xkKw@mail.gmail.com>
- <CAGXu5j+APTTSKh_xvgpzV3wNYseQxafbKqQ3NyvUe50aGOOBGg@mail.gmail.com>
- <20131002182206.GB2485@dztty>
- <CAGXu5jL3iReSCfRRXGaKp4dikh5f3BR55NbVEXHrTscTSDgeZA@mail.gmail.com>
- <20131002184844.GB3393@dztty>
- <20131003061244.GC25345@gmail.com>
- <20131003122959.GA3619@dztty>
- <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
+	Thu, 3 Oct 2013 11:44:14 -0400
+Date: Thu, 3 Oct 2013 17:44:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, jolsa@redhat.com
+Subject: Re: trinity finds ftrace/perf bug. Film at 11.
+Message-ID: <20131003154401.GO31370@twins.programming.kicks-ass.net>
+References: <20130911135434.GA678@redhat.com>
+ <20130912141913.2ffc7077@gandalf.local.home>
+ <20130912183849.GA16674@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrV2tdHAkLs=FQexnEkdSeXjLD51bKe9B67amnMYnVj1sQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130912183849.GA16674@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 04:15:43PM +0100, Andy Lutomirski wrote:
-> On Thu, Oct 3, 2013 at 1:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Thu, Oct 03, 2013 at 08:12:44AM +0200, Ingo Molnar wrote:
-> >> Now procfs might be special, as by its nature of a pseudofilesystem it's
-> >> far more atomic than other filesystems, but still IMHO it's a lot more
-> >
-> >
-> >> robust security design wise to revoke access to objects you should not
-> >> have a reference to when a security boundary is crossed, than letting
-> >> stuff leak through and sprinking all the potential cases that may leak
-> >> information with permission checks ...
-> > I agree, but those access should also be checked at the beginning, IOW
-> > during ->open(). revoke will not help if revoke is not involved at all,
-> > the task /proc entries may still be valide (no execve).
-> >
-> > Currently security boundary is crossed for example arbitrary /proc/*/stack
-> > (and others).
-> > 1) The target task does not do an execve (no revoke).
-> > 2) current task will open these files and *want* and *will* pass the fd to a
-> > more privileged process to pass the ptrace check which is done only during
-> > ->read().
+On Thu, Sep 12, 2013 at 02:38:49PM -0400, Dave Jones wrote:
+
+> The current one I'm staring at is this from LIST_DEBUG..
 > 
-> What does this?  Or are you saying that this is a bad thing?
-I'm not sure to understand you, revoke if implemented correctly is not a
-bad thing! In the other hand, here I try to explain what if the target task
-did not execve, revoke will never be involved, file descriptors are
-still valid!
-
-
-> (And *please* don't write software that *depends* on different
-> processes having different read()/write() permissions on the *same*
-> struct file.  I've already found multiple privilege escalations based
-> on that, and I'm pretty sure I can find some more.)
-Sorry, can't follow you here! examples related to what we discuss here ?
-
-
-> >
-> >
-> >> It's also probably faster: security boundary crossings are relatively rare
-> >> slowpaths, while read()s are much more common...
-> > Hmm, These two are related? can't get rid of permission checks
-> > especially on this pseudofilesystem!
-> >
-> >
-> >> So please first get consensus on this fundamental design question before
-> >> spreading your solution to more areas.
-> > Of course, I did clean the patchset to prove that it will work, and I
-> > only implemented full protection for /proc/*/{stack,syscall,stat} other
-> > files will wait.
-> >
-> > But Ingo you can't ignore the fact that:
-> > /proc/*/{stack,syscall} are 0444 mode
-> > /proc/*/{stack,syscall} do not have ptrace_may_access() during open()
-> > /proc/*/{stack,syscall} have the ptrace_may_access() during read()
+> list_del corruption. next->prev should be prev (ffff88000fb812b0), but was ffff88000fb812b0. (next=ffff88009df8b7b0).
 > 
-> I think everyone agrees that this is broken.  We don't agree on the
-> fix check.  (Also, as described in my other email, your approach may
-> be really hard to get right.)
-Well, yes we don't agree perhaps on the fix, but currently there are no
-other fixes, will be happy to see other propositions! these files have
-been vulnerable for years now...
+> The sharp eyed will notice that those first two addresses are actually the same.
+> So we matched the next->prev != prev test, but at the time we got to the printk that follows
+> in the WARN, the inverse was true. Smells like a race of some kind.
 
-And for the record it's not my approache. Please just read the emails
-correctly. It was proposed and suggested by Eric and perhaps Linus.
+FWIW, I've not given up on this. I've found one bug in the list_entry
+handling already -- although not this one.
 
-I did an experiment with it, and found it easy without any extra
-overhead: If cred have changed do extra checkes on the original opener.
-It will let you pass file descritors if cred did not change.
+Today I hit a more revealing error:
 
+[ 8348.150303] list_del corruption. prev->next should be ffff88042839c108, but was 6b6b6b6b6b6b6b6b
 
-Where is this other email that says this approach is hard?
-It's not hard, very minor change and it works. Perhaps there is a
-better solution yes, but currently it's not implemented!
+And as we all know that 6b is POISON_FREE, so we're staring at a
+use-after-free here.
 
-If you see any bug or if it's not right: then please show us an example,
-that's it.
+Brain did give out for today though.. more staring at reference counts
+tomorrow.
 
-
-Thanks Andy
-
-> --Andy
-
--- 
-Djalal Harouni
-http://opendz.org
+The sad thing is that reproduction takes forever on my machine; I need
+to let trinity run for a good hour and then ^C abort the run. Only then
+will I hit it fairly reliably.
