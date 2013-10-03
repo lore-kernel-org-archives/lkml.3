@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab3JCEMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:12:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46912 "EHLO
+	id S1755118Ab3JCEMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:12:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab3JCEM1 (ORCPT
+	with ESMTP id S1755093Ab3JCEMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:12:27 -0400
+	Thu, 3 Oct 2013 00:12:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 21/52] serial: pch_uart: fix tty-kref leak in dma-rx path
-Date: Wed,  2 Oct 2013 21:05:39 -0700
-Message-Id: <20131003040523.629664932@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 23/52] staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
+Date: Wed,  2 Oct 2013 21:05:41 -0700
+Message-Id: <20131003040523.764469344@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,38 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 19b85cfb190eb9980eaf416bff96aef4159a430e upstream.
+commit e3eb270fab7734427dd8171a93e4946fe28674bc upstream.
 
-Fix tty_kref leak when tty_buffer_request room fails in dma-rx path.
+The vt6656 is prone to resetting on the usb bus.
 
-Note that the tty ref isn't really needed anymore, but as the leak has
-always been there, fixing it before removing should makes it easier to
-backport the fix.
+It seems there is a race condition and wpa supplicant is
+trying to open the device via iw_handlers before its actually
+closed at a stage that the buffers are being removed.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+The device is longer considered open when the
+buffers are being removed. So move ~DEVICE_FLAGS_OPENED
+flag to before freeing the device buffers.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pch_uart.c |    3 ++-
+ drivers/staging/vt6656/main_usb.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -658,11 +658,12 @@ static int dma_push_rx(struct eg20t_port
- 		dev_warn(port->dev, "Rx overrun: dropping %u bytes\n",
- 			 size - room);
- 	if (!room)
--		return room;
-+		goto out;
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -1099,6 +1099,8 @@ static int device_close(struct net_devic
+     memset(pMgmt->abyCurrBSSID, 0, 6);
+     pMgmt->eCurrState = WMAC_STATE_IDLE;
  
- 	tty_insert_flip_string(tport, sg_virt(&priv->sg_rx), size);
++	pDevice->flags &= ~DEVICE_FLAGS_OPENED;
++
+     device_free_tx_bufs(pDevice);
+     device_free_rx_bufs(pDevice);
+     device_free_int_bufs(pDevice);
+@@ -1110,7 +1112,6 @@ static int device_close(struct net_devic
+     usb_free_urb(pDevice->pInterruptURB);
  
- 	port->icount.rx += room;
-+out:
- 	tty_kref_put(tty);
+     BSSvClearNodeDBTable(pDevice, 0);
+-    pDevice->flags &=(~DEVICE_FLAGS_OPENED);
  
- 	return room;
+     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "device_close2 \n");
+ 
 
 
