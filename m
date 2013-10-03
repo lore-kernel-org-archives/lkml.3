@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3JCEN5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:13:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46959 "EHLO
+	id S1755300Ab3JCEOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:14:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab3JCENz (ORCPT
+	with ESMTP id S1752388Ab3JCEOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:13:55 -0400
+	Thu, 3 Oct 2013 00:14:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 31/52] USB: UHCI: accept very late isochronous URBs
-Date: Wed,  2 Oct 2013 21:05:49 -0700
-Message-Id: <20131003040524.298319221@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 03/52] bcache: Fix a dumb journal discard bug
+Date: Wed,  2 Oct 2013 21:05:21 -0700
+Message-Id: <20131003040522.425207606@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -26,59 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit bef073b067a7b1874a6b381e0035bb0516d71a77 upstream.
+commit 6d9d21e35fbfa2934339e96934f862d118abac23 upstream.
 
-Commit 24f531371de1 (USB: EHCI: accept very late isochronous URBs)
-changed the isochronous API provided by ehci-hcd.  URBs submitted too
-late, so that the time slots for all their packets have already
-expired, are no longer rejected outright.  Instead the submission is
-accepted, and the URB completes normally with a -EXDEV error for each
-packet.  This is what client drivers expect.
+That switch statement was obviously wrong, leading to some sort of weird
+spinning on rare occasion with discards enabled...
 
-This patch implements the same policy in uhci-hcd.  It should be
-applied to all kernels containing commit c44b225077bb (UHCI: implement
-new semantics for URB_ISO_ASAP).
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/uhci-q.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/md/bcache/journal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/uhci-q.c
-+++ b/drivers/usb/host/uhci-q.c
-@@ -1303,7 +1303,7 @@ static int uhci_submit_isochronous(struc
- 		}
- 
- 		/* Fell behind? */
--		if (uhci_frame_before_eq(frame, next)) {
-+		if (!uhci_frame_before_eq(next, frame)) {
- 
- 			/* USB_ISO_ASAP: Round up to the first available slot */
- 			if (urb->transfer_flags & URB_ISO_ASAP)
-@@ -1311,13 +1311,17 @@ static int uhci_submit_isochronous(struc
- 						-qh->period;
- 
- 			/*
--			 * Not ASAP: Use the next slot in the stream.  If
--			 * the entire URB falls before the threshold, fail.
-+			 * Not ASAP: Use the next slot in the stream,
-+			 * no matter what.
- 			 */
- 			else if (!uhci_frame_before_eq(next,
- 					frame + (urb->number_of_packets - 1) *
- 						qh->period))
--				return -EXDEV;
-+				dev_dbg(uhci_dev(uhci), "iso underrun %p (%u+%u < %u)\n",
-+						urb, frame,
-+						(urb->number_of_packets - 1) *
-+							qh->period,
-+						next);
- 		}
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -425,7 +425,7 @@ static void do_journal_discard(struct ca
+ 		return;
  	}
+ 
+-	switch (atomic_read(&ja->discard_in_flight) == DISCARD_IN_FLIGHT) {
++	switch (atomic_read(&ja->discard_in_flight)) {
+ 	case DISCARD_IN_FLIGHT:
+ 		return;
  
 
 
