@@ -1,142 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab3JCL0C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 07:26:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831Ab3JCLZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 07:25:59 -0400
-Date: Thu, 3 Oct 2013 14:25:55 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 5/7] KVM: mmu: remove argument to kvm_init_shadow_mmu and
- kvm_init_shadow_ept_mmu
-Message-ID: <20131003112555.GD17294@redhat.com>
-References: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
- <1380725776-14948-6-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380725776-14948-6-git-send-email-pbonzini@redhat.com>
+	id S1753956Ab3JCL0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 07:26:13 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:54586 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab3JCL0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 07:26:10 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, grant.likely@secretlab.ca,
+        roy.franz@linaro.org, msalter@redhat.com,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v2 0/3] arm: [U]EFI runtime services support
+Date: Thu,  3 Oct 2013 12:24:38 +0100
+Message-Id: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 04:56:14PM +0200, Paolo Bonzini wrote:
-> The initialization function in mmu.c can always use walk_mmu, which
-> is known to be vcpu->arch.mmu.  Only init_kvm_nested_mmu is used to
-> initialize vcpu->arch.nested_mmu.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/mmu.c | 15 +++++++++------
->  arch/x86/kvm/mmu.h |  5 ++---
->  arch/x86/kvm/svm.c |  4 ++--
->  arch/x86/kvm/vmx.c |  4 ++--
->  4 files changed, 15 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 40772ef..ac598c8 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -3742,11 +3742,13 @@ static void init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
->  	update_last_pte_bitmap(vcpu, context);
->  }
->  
-> -void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context)
-> +void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
->  {
->  	bool smep = kvm_read_cr4_bits(vcpu, X86_CR4_SMEP);
-> +	struct kvm_mmu *context = vcpu->arch.walk_mmu;
-I'd rather use &vcpu->arch.mmu here.
+In systems based on [U]EFI-conformant firmware, runtime services provide
+a standardised way for the kernel to update firmware environment
+variables. This is used for example by efibootmgr to update which image
+should be loaded on next boot.
 
-> +
->  	ASSERT(vcpu);
-> -	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
-> +	ASSERT(!VALID_PAGE(context->root_hpa));
->  
->  	if (!is_paging(vcpu))
->  		nonpaging_init_context(vcpu, context);
-> @@ -3765,11 +3767,12 @@ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context)
->  }
->  EXPORT_SYMBOL_GPL(kvm_init_shadow_mmu);
->  
-> -void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context,
-> -		bool execonly)
-> +void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly)
->  {
-> +	struct kvm_mmu *context = vcpu->arch.walk_mmu;
-> +
->  	ASSERT(vcpu);
-> -	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
-> +	ASSERT(!VALID_PAGE(context->root_hpa));
->  
->  	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
->  
-> @@ -3790,7 +3793,7 @@ EXPORT_SYMBOL_GPL(kvm_init_shadow_ept_mmu);
->  
->  static void init_kvm_softmmu(struct kvm_vcpu *vcpu)
->  {
-> -	kvm_init_shadow_mmu(vcpu, vcpu->arch.walk_mmu);
-> +	kvm_init_shadow_mmu(vcpu);
->  	vcpu->arch.walk_mmu->set_cr3           = kvm_x86_ops->set_cr3;
->  	vcpu->arch.walk_mmu->get_cr3           = get_cr3;
->  	vcpu->arch.walk_mmu->get_pdptr         = kvm_pdptr_read;
-And change walk_mmu to mmu here too for consistency with all other
-places. Basically if you want to initialize use mmu or nested_mmu.
-Use walk_mmu pointer only when you need to use mmu.
+This patchset implements basic support for UEFI runtime services on ARM
+platforms, as well as the basic underlying EFI support. It also defines
+a mechanism by which the required information is passed from the
+bootloader to the kernel via FDT entries.
 
-> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-> index 2926152..c9d3d8f 100644
-> --- a/arch/x86/kvm/mmu.h
-> +++ b/arch/x86/kvm/mmu.h
-> @@ -70,9 +70,8 @@ enum {
->  };
->  
->  int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct);
-> -void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context);
-> -void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context,
-> -		bool execonly);
-> +void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu);
-> +void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly);
->  
->  static inline unsigned int kvm_mmu_available_pages(struct kvm *kvm)
->  {
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index c7168a5..37bcd6b 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -1961,8 +1961,8 @@ static void nested_svm_inject_npf_exit(struct kvm_vcpu *vcpu,
->  
->  static void nested_svm_init_mmu_context(struct kvm_vcpu *vcpu)
->  {
-> -	kvm_init_shadow_mmu(vcpu, &vcpu->arch.mmu);
-> -
-> +	WARN_ON(mmu_is_nested(vcpu));
-> +	kvm_init_shadow_mmu(vcpu);
->  	vcpu->arch.mmu.set_cr3           = nested_svm_set_tdp_cr3;
->  	vcpu->arch.mmu.get_cr3           = nested_svm_get_tdp_cr3;
->  	vcpu->arch.mmu.get_pdptr         = nested_svm_get_tdp_pdptr;
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 2db9164..fdd1cb8 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -7501,9 +7501,9 @@ static unsigned long nested_ept_get_cr3(struct kvm_vcpu *vcpu)
->  
->  static void nested_ept_init_mmu_context(struct kvm_vcpu *vcpu)
->  {
-> -	kvm_init_shadow_ept_mmu(vcpu, &vcpu->arch.mmu,
-> +	WARN_ON(mmu_is_nested(vcpu));
-> +	kvm_init_shadow_ept_mmu(vcpu,
->  			nested_vmx_ept_caps & VMX_EPT_EXECUTE_ONLY_BIT);
-> -
->  	vcpu->arch.mmu.set_cr3           = vmx_set_cr3;
->  	vcpu->arch.mmu.get_cr3           = nested_ept_get_cr3;
->  	vcpu->arch.mmu.inject_page_fault = nested_ept_inject_page_fault;
-> -- 
-> 1.8.3.1
-> 
+This patchset depends on the previously submitted early_ioremap() and
+generic UEFI config table scanning patchsets.
 
---
-			Gleb.
+Changes from v1:
+- Updated FDT bindings, based on feedback.
+- Use common config table scanning and address lookup code.
+- Add dependency on !CPU_BIG_ENDIAN (for now).
+- Add proper efi_enabled() facility.
+- Documentation updates.
+
+Leif Lindholm (3):
+  Documentation: arm: add UEFI support documentation
+  arm: Add [U]EFI runtime services support
+  init: efi: arm: enable (U)EFI runtime services on arm
+
+ Documentation/arm/00-INDEX |    3 +
+ Documentation/arm/uefi.txt |   47 +++++
+ arch/arm/Kconfig           |   15 ++
+ arch/arm/include/asm/efi.h |   22 ++
+ arch/arm/kernel/Makefile   |    2 +
+ arch/arm/kernel/efi.c      |  485 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/efi_phys.S |   59 ++++++
+ arch/arm/kernel/setup.c    |    6 +
+ include/linux/efi.h        |    2 +-
+ init/main.c                |    4 +
+ 10 files changed, 644 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/arm/uefi.txt
+ create mode 100644 arch/arm/include/asm/efi.h
+ create mode 100644 arch/arm/kernel/efi.c
+ create mode 100644 arch/arm/kernel/efi_phys.S
+
+-- 
+1.7.10.4
+
