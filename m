@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3JCRO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:14:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60668 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab3JCRO4 (ORCPT
+	id S1754784Ab3JCRPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:15:10 -0400
+Received: from mailout.micron.com ([137.201.242.129]:22005 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab3JCRPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:14:56 -0400
-Date: Thu, 3 Oct 2013 18:14:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        Imre Deak <imre.deak@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
-Message-ID: <20131003171440.GD27287@sirena.org.uk>
+	Thu, 3 Oct 2013 13:15:05 -0400
+Message-ID: <524DA6CD.3060409@micron.com>
+Date: Thu, 3 Oct 2013 10:18:05 -0700
+From: Sam Bradshaw <sbradshaw@micron.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Hmb9n29fjuiORm2l"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Build failure after merge of the drm-intel tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: <axboe@kernel.dk>
+CC: <linux-kernel@vger.kernel.org>, <asamymuthupa@micron.com>
+Subject: [PATCH] mtip32xx: Correctly handle security locked condition
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20194.000
+X-TM-AS-Result: No--4.624400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If power is removed during a secure erase, the drive will end up in a
+security locked condition.  This patch causes the driver to identify,
+log, and flag the security lock state.  IOs are prevented from
+submission to the drive until the locked state is addressed with a
+secure erase.
 
---Hmb9n29fjuiORm2l
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Bumped version number to reflect this capability.
 
-After merging the drm-intel tree into -next an x86 allmodconfig build fails
-with:
-
-In file included from include/linux/kobject.h:29:0,
-                 from include/linux/cpufreq.h:16,
-                 from drivers/gpu/drm/i915/intel_pm.c:28:
-drivers/gpu/drm/i915/intel_pm.c: In function =E2=80=98intel_pm_init=E2=80=
-=99:
-drivers/gpu/drm/i915/intel_pm.c:5883:34: error: =E2=80=98struct intel_gen6_=
-power_mgmt=E2=80=99 has no member named =E2=80=98vlv_work=E2=80=99
-  INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
-                                  ^
-include/linux/workqueue.h:216:16: note: in definition of macro =E2=80=98__I=
-NIT_WORK=E2=80=99
-   __init_work((_work), _onstack);    \
-                ^
-include/linux/workqueue.h:244:3: note: in expansion of macro =E2=80=98INIT_=
-WORK=E2=80=99
-   INIT_WORK(&(_work)->work, (_func));   \
-   ^
-include/linux/workqueue.h:260:2: note: in expansion of macro =E2=80=98__INI=
-T_DELAYED_WORK=E2=80=99
-  __INIT_DELAYED_WORK(_work, _func, 0)
-  ^
-drivers/gpu/drm/i915/intel_pm.c:5883:2: note: in expansion of macro =E2=80=
-=98INIT_DELAYED_WORK=E2=80=99
-  INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
-  ^
-drivers/gpu/drm/i915/intel_pm.c:5883:34: error: =E2=80=98struct intel_gen6_=
-power_mgmt=E2=80=99 has no member named =E2=80=98vlv_work=E2=80=99
-  INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
-                                  ^
-and so on caused by 671952a2a290a (drm/i915: fix rps.vlv_work
-initialization) in the drm-intel-fixes tree interacting with ac3a48b3036
-(drm/i915: Boost RPS frequency for CPU stalls) from the drm-intel tree.
-
-I have used the fix below for today:
-
-=46rom 4f4dccef92d64393e2a7e867f7c2755c09178c48 Mon Sep 17 00:00:00 2001
-=46rom: Mark Brown <broonie@linaro.org>
-Date: Thu, 3 Oct 2013 18:10:55 +0100
-Subject: [PATCH] drm/i915: Resolve interaction with drm-fixes tree
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 ---
- drivers/gpu/drm/i915/intel_pm.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c |   16 ++++++++++++++--
+ drivers/block/mtip32xx/mtip32xx.h |    2 +-
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_p=
-m.c
-index 7cdac0b..0b4de57 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5879,7 +5879,5 @@ void intel_pm_init(struct drm_device *dev)
-=20
- 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
- 			  intel_gen6_powersave_work);
--
--	INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
- }
-=20
---=20
-1.8.4.rc3
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index aab28a4..a710f51 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -899,8 +899,9 @@ static void mtip_handle_tfe(struct driver_data *dd)
+ 			fail_reason = "thermal shutdown";
+ 		}
+ 		if (buf[288] == 0xBF) {
++			set_bit(MTIP_DDF_SEC_LOCK_BIT, &dd->dd_flag);
+ 			dev_info(&dd->pdev->dev,
+-				"Drive indicates rebuild has failed.\n");
++				"Drive indicates rebuild has failed. Secure erase required.\n");
+ 			fail_all_ncq_cmds = 1;
+ 			fail_reason = "rebuild failed";
+ 		}
+@@ -1566,6 +1567,12 @@ static int mtip_get_identify(struct mtip_port *port, void __user *user_buffer)
+ 	}
+ #endif
+ 
++	/* Check security locked state */
++	if (port->identify[128] & 0x4)
++		set_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
++	else
++		clear_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
++
+ #ifdef MTIP_TRIM /* Disabling TRIM support temporarily */
+ 	/* Demux ID.DRAT & ID.RZAT to determine trim support */
+ 	if (port->identify[69] & (1 << 14) && port->identify[69] & (1 << 5))
+@@ -1887,6 +1894,10 @@ static void mtip_dump_identify(struct mtip_port *port)
+ 	strlcpy(cbuf, (char *)(port->identify+27), 41);
+ 	dev_info(&port->dd->pdev->dev, "Model: %s\n", cbuf);
+ 
++	dev_info(&port->dd->pdev->dev, "Security: %04x %s\n",
++		port->identify[128],
++		port->identify[128] & 0x4 ? "(LOCKED)" : "");
++
+ 	if (mtip_hw_get_capacity(port->dd, &sectors))
+ 		dev_info(&port->dd->pdev->dev,
+ 			"Capacity: %llu sectors (%llu MB)\n",
+@@ -3594,7 +3605,8 @@ static int mtip_hw_exit(struct driver_data *dd)
+ 	 * saves its state.
+ 	 */
+ 	if (!dd->sr) {
+-		if (!test_bit(MTIP_DDF_REBUILD_FAILED_BIT, &dd->dd_flag))
++		if (!test_bit(MTIP_PF_REBUILD_BIT, &dd->port->flags) &&
++		    !test_bit(MTIP_DDF_SEC_LOCK_BIT, &dd->dd_flag))
+ 			if (mtip_standby_immediate(dd->port))
+ 				dev_warn(&dd->pdev->dev,
+ 					"STANDBY IMMEDIATE failed\n");
+diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
+index 9be7a15..f73444a 100644
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -92,7 +92,7 @@
+ 
+ /* Driver name and version strings */
+ #define MTIP_DRV_NAME		"mtip32xx"
+-#define MTIP_DRV_VERSION	"1.2.6os3"
++#define MTIP_DRV_VERSION	"1.3.0"
+ 
+ /* Maximum number of minor device numbers per device. */
+ #define MTIP_MAX_MINORS		16
+-- 
+1.7.1
 
-
---Hmb9n29fjuiORm2l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSTaX9AAoJELSic+t+oim97ngP+wQN0VYuA79Zf8sTDdGXmr3z
-qTyoZJvOWfbOwnbD5Swlwu8amgGuIdLqhLXzN6CB80ujNZUBXNEj+v6oRIWqXyhP
-2IDidwuZ7ksQWr552688kvxREiTokpfohIjOSHkwCBseSm0uYelDvl97LKkPV0tA
-A+CTXETR7AJymHam2miY5LlTAIlV+4UxCBAocxo8Pxcvedaycc7VeLBELrl3OPrI
-IsHPxbzUkJSIz8a9EmrkOiiLlGOe4ev2asS1rkZsqzCVdXZePIjX1VQ0q4WdH5mj
-9iTSE5h/YXxV+n7BqgFtWHBYtY1SlMp35+8uLL0RumoqN/mv6Y3fCZvbvZC0xwnV
-P60zdAfe35YkPu/xApitF5dckn6tQug5+xXQ85KQ8EkzIjU+uxTObAKjE5dNVpGe
-lsbDZTbRHpL+oNASAg6/D4KFYbqffhQcIrJIf+DsMt3VAu9O0oRDrHFqS3W5huQK
-51/IF7xepBlDVcCXMbi9QTiHuBDBgYzDShr6YBlIBG2cKSum7/s0XFjjZ18znPkb
-Y/Ez8NlRRZJ/A9NWFPgOSXvLu2R6ND3Rt3IQvYFiHC06mEkNzKRFKLI1MeYsoeTB
-7rXkOxzq4emWDMsKdW+l6H0jcjouzFYNi/Vfy+4qjLVnXZgFdos1o6IfvkLB9H4D
-FypFV3Abc7IcK8A3Wq8n
-=ROso
------END PGP SIGNATURE-----
-
---Hmb9n29fjuiORm2l--
