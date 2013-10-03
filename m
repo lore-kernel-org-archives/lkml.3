@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3JCFZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 01:25:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46974 "EHLO
+	id S1755248Ab3JCENk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:13:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab3JCEOQ (ORCPT
+	with ESMTP id S1753556Ab3JCENh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:14:16 -0400
+	Thu, 3 Oct 2013 00:13:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 06/52] bcache: Fix a writeback performance regression
-Date: Wed,  2 Oct 2013 21:05:24 -0700
-Message-Id: <20131003040522.625750151@linuxfoundation.org>
+        Florian Wolter <wolly84@web.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 29/52] xhci: Fix race between ep halt and URB cancellation
+Date: Wed,  2 Oct 2013 21:05:47 -0700
+Message-Id: <20131003040524.165248777@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -27,222 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Florian Wolter <wolly84@web.de>
 
-commit c2a4f3183a1248f615a695fbd8905da55ad11bba upstream.
+commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
 
-Background writeback works by scanning the btree for dirty data and
-adding those keys into a fixed size buffer, then for each dirty key in
-the keybuf writing it to the backing device.
+The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
+user process, because the stopped_td variable was overwritten in the
+handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
+refuse the reset and communication with device can not run over this endpoint.
+https://bugzilla.kernel.org/show_bug.cgi?id=60699
 
-When read_dirty() finishes and it's time to scan for more dirty data, we
-need to wait for the outstanding writeback IO to finish - they still
-take up slots in the keybuf (so that foreground writes can check for
-them to avoid races) - without that wait, we'll continually rescan when
-we'll be able to add at most a key or two to the keybuf, and that takes
-locks that starves foreground IO.  Doh.
-
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Florian Wolter <wolly84@web.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/bcache.h    |    7 ++----
- drivers/md/bcache/util.c      |   11 +++++++++-
- drivers/md/bcache/util.h      |   12 ++++++++---
- drivers/md/bcache/writeback.c |   43 ++++++++++++++++++++----------------------
- 4 files changed, 43 insertions(+), 30 deletions(-)
+ drivers/usb/host/xhci-ring.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -499,7 +499,7 @@ struct cached_dev {
- 	 */
- 	atomic_t		has_dirty;
- 
--	struct ratelimit	writeback_rate;
-+	struct bch_ratelimit	writeback_rate;
- 	struct delayed_work	writeback_rate_update;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -857,8 +857,12 @@ remove_finished_td:
+ 		/* Otherwise ring the doorbell(s) to restart queued transfers */
+ 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ 	}
+-	ep->stopped_td = NULL;
+-	ep->stopped_trb = NULL;
++
++	/* Clear stopped_td and stopped_trb if endpoint is not halted */
++	if (!(ep->ep_state & EP_HALTED)) {
++		ep->stopped_td = NULL;
++		ep->stopped_trb = NULL;
++	}
  
  	/*
-@@ -508,10 +508,9 @@ struct cached_dev {
- 	 */
- 	sector_t		last_read;
- 
--	/* Number of writeback bios in flight */
--	atomic_t		in_flight;
-+	/* Limit number of writeback bios in flight */
-+	struct semaphore	in_flight;
- 	struct closure_with_timer writeback;
--	struct closure_waitlist	writeback_wait;
- 
- 	struct keybuf		writeback_keys;
- 
---- a/drivers/md/bcache/util.c
-+++ b/drivers/md/bcache/util.c
-@@ -190,7 +190,16 @@ void bch_time_stats_update(struct time_s
- 	stats->last = now ?: 1;
- }
- 
--unsigned bch_next_delay(struct ratelimit *d, uint64_t done)
-+/**
-+ * bch_next_delay() - increment @d by the amount of work done, and return how
-+ * long to delay until the next time to do some work.
-+ *
-+ * @d - the struct bch_ratelimit to update
-+ * @done - the amount of work done, in arbitrary units
-+ *
-+ * Returns the amount of time to delay by, in jiffies
-+ */
-+uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
- {
- 	uint64_t now = local_clock();
- 
---- a/drivers/md/bcache/util.h
-+++ b/drivers/md/bcache/util.h
-@@ -452,17 +452,23 @@ read_attribute(name ## _last_ ## frequen
- 	(ewma) >> factor;						\
- })
- 
--struct ratelimit {
-+struct bch_ratelimit {
-+	/* Next time we want to do some work, in nanoseconds */
- 	uint64_t		next;
-+
-+	/*
-+	 * Rate at which we want to do work, in units per nanosecond
-+	 * The units here correspond to the units passed to bch_next_delay()
-+	 */
- 	unsigned		rate;
- };
- 
--static inline void ratelimit_reset(struct ratelimit *d)
-+static inline void bch_ratelimit_reset(struct bch_ratelimit *d)
- {
- 	d->next = local_clock();
- }
- 
--unsigned bch_next_delay(struct ratelimit *d, uint64_t done);
-+uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done);
- 
- #define __DIV_SAFE(n, d, zero)						\
- ({									\
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -91,11 +91,15 @@ static void update_writeback_rate(struct
- 
- static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
- {
-+	uint64_t ret;
-+
- 	if (atomic_read(&dc->disk.detaching) ||
- 	    !dc->writeback_percent)
- 		return 0;
- 
--	return bch_next_delay(&dc->writeback_rate, sectors * 10000000ULL);
-+	ret = bch_next_delay(&dc->writeback_rate, sectors * 10000000ULL);
-+
-+	return min_t(uint64_t, ret, HZ);
- }
- 
- /* Background writeback */
-@@ -165,7 +169,7 @@ static void refill_dirty(struct closure
- 
- 	up_write(&dc->writeback_lock);
- 
--	ratelimit_reset(&dc->writeback_rate);
-+	bch_ratelimit_reset(&dc->writeback_rate);
- 
- 	/* Punt to workqueue only so we don't recurse and blow the stack */
- 	continue_at(cl, read_dirty, dirty_wq);
-@@ -246,9 +250,7 @@ static void write_dirty_finish(struct cl
- 	}
- 
- 	bch_keybuf_del(&dc->writeback_keys, w);
--	atomic_dec_bug(&dc->in_flight);
--
--	closure_wake_up(&dc->writeback_wait);
-+	up(&dc->in_flight);
- 
- 	closure_return_with_destructor(cl, dirty_io_destructor);
- }
-@@ -278,7 +280,7 @@ static void write_dirty(struct closure *
- 	trace_bcache_write_dirty(&io->bio);
- 	closure_bio_submit(&io->bio, cl, &io->dc->disk);
- 
--	continue_at(cl, write_dirty_finish, dirty_wq);
-+	continue_at(cl, write_dirty_finish, system_wq);
- }
- 
- static void read_dirty_endio(struct bio *bio, int error)
-@@ -299,7 +301,7 @@ static void read_dirty_submit(struct clo
- 	trace_bcache_read_dirty(&io->bio);
- 	closure_bio_submit(&io->bio, cl, &io->dc->disk);
- 
--	continue_at(cl, write_dirty, dirty_wq);
-+	continue_at(cl, write_dirty, system_wq);
- }
- 
- static void read_dirty(struct closure *cl)
-@@ -324,12 +326,9 @@ static void read_dirty(struct closure *c
- 
- 		if (delay > 0 &&
- 		    (KEY_START(&w->key) != dc->last_read ||
--		     jiffies_to_msecs(delay) > 50)) {
--			w->private = NULL;
--
--			closure_delay(&dc->writeback, delay);
--			continue_at(cl, read_dirty, dirty_wq);
--		}
-+		     jiffies_to_msecs(delay) > 50))
-+			while (delay)
-+				delay = schedule_timeout(delay);
- 
- 		dc->last_read	= KEY_OFFSET(&w->key);
- 
-@@ -354,15 +353,10 @@ static void read_dirty(struct closure *c
- 
- 		pr_debug("%s", pkey(&w->key));
- 
--		closure_call(&io->cl, read_dirty_submit, NULL, &dc->disk.cl);
-+		down(&dc->in_flight);
-+		closure_call(&io->cl, read_dirty_submit, NULL, cl);
- 
- 		delay = writeback_delay(dc, KEY_SIZE(&w->key));
--
--		atomic_inc(&dc->in_flight);
--
--		if (!closure_wait_event(&dc->writeback_wait, cl,
--					atomic_read(&dc->in_flight) < 64))
--			continue_at(cl, read_dirty, dirty_wq);
- 	}
- 
- 	if (0) {
-@@ -372,11 +366,16 @@ err:
- 		bch_keybuf_del(&dc->writeback_keys, w);
- 	}
- 
--	refill_dirty(cl);
-+	/*
-+	 * Wait for outstanding writeback IOs to finish (and keybuf slots to be
-+	 * freed) before refilling again
-+	 */
-+	continue_at(cl, refill_dirty, dirty_wq);
- }
- 
- void bch_cached_dev_writeback_init(struct cached_dev *dc)
- {
-+	sema_init(&dc->in_flight, 64);
- 	closure_init_unlocked(&dc->writeback);
- 	init_rwsem(&dc->writeback_lock);
- 
-@@ -406,7 +405,7 @@ void bch_writeback_exit(void)
- 
- int __init bch_writeback_init(void)
- {
--	dirty_wq = create_singlethread_workqueue("bcache_writeback");
-+	dirty_wq = create_workqueue("bcache_writeback");
- 	if (!dirty_wq)
- 		return -ENOMEM;
- 
+ 	 * Drop the lock and complete the URBs in the cancelled TD list.
 
 
