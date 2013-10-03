@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3JCJrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:47:35 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:39152 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab3JCJrJ (ORCPT
+	id S1754220Ab3JCJru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:47:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:56422 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3JCJrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:47:09 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH 9/9] video: amba-clcd: Remove unnecessary amba_set_drvdata()
-Date: Thu,  3 Oct 2013 11:46:31 +0200
-Message-Id: <2f12a1d7caba382efe8d361b373da60c08e70622.1380793579.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-References: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-In-Reply-To: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-References: <27e289763bbcb7d10f84081543cfc3a4dc770398.1380793579.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-4165-1380793626-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 3 Oct 2013 05:47:47 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1024,1371081600"; 
+   d="scan'208";a="57273291"
+Message-ID: <524D3D40.4040907@citrix.com>
+Date: Thu, 3 Oct 2013 10:47:44 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Frediano Ziglio <frediano.ziglio@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector corruption
+References: <1380788677.30462.1.camel@hamster.uk.xensource.com>
+In-Reply-To: <1380788677.30462.1.camel@hamster.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 03/10/13 09:24, Frediano Ziglio wrote:
+> Due to the way kernel is initialized under Xen is possible that the ring1
+> selector used by the kernel for the boot cpu end up to be copied to
+> userspace leading to segmentation fault in the userspace.
+> 
+> 
+> Xen code in the kernel initialize no-boot cpus with correct selectors (ds
+> and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
+> On task context switch (switch_to) we assume that ds, es and cs already
+> point to __USER_DS and __KERNEL_CSso these selector are not changed.
+> 
+> If processor is an Intel that support sysenter instruction sysenter/sysexit
+> is used so ds and es are not restored switching back from kernel to
+> userspace. In the case the selectors point to a ring1 instead of __USER_DS
+> the userspace code will crash on first memory access attempt (to be
+> precise Xen on the emulated iret used to do sysexit will detect and set ds
+> and es to zero which lead to GPF anyway).
+> 
+> Now if an userspace process call kernel using sysenter and get rescheduled
+> (for me it happen on a specific init calling wait4) could happen that the
+> ring1 selector is set to ds and es.
+> 
+> This is quite hard to detect cause after a while these selectors are fixed
+> (__USER_DS seems sticky).
+> 
+> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
+> to be the first one that have this issue.
+> 
+> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
 
---=_mimegpg-monstr-desktop-4165-1380793626-0001
+Looks okay to me but I don't really understand it...
 
-Driver core clears the driver data to NULL after device_release
-or on probe failure, so just remove it from here.
-
-Driver core change:
-"device-core: Ensure drvdata = NULL when no driver is bound"
-(sha1: 0998d0631001288a5974afc0b2a5f568bcdecb4d)
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- drivers/video/amba-clcd.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/video/amba-clcd.c b/drivers/video/amba-clcd.c
-index 0a2cce7..0bab6ab 100644
---- a/drivers/video/amba-clcd.c
-+++ b/drivers/video/amba-clcd.c
-@@ -594,8 +594,6 @@ static int clcdfb_remove(struct amba_device *dev)
- {
- 	struct clcd_fb *fb = amba_get_drvdata(dev);
-
--	amba_set_drvdata(dev, NULL);
--
- 	clcdfb_disable(fb);
- 	unregister_framebuffer(&fb->fb);
- 	if (fb->fb.cmap.len)
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-4165-1380793626-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlJNPRoACgkQykllyylKDCHcwwCdHLkeyMWDxFyiuUFRn6V6Njg+
-Im4AnRxhoiYE30MftYnQafGuXa4PQ332
-=XSu4
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-4165-1380793626-0001--
+David
