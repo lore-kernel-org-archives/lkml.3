@@ -1,130 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3JCTgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:36:12 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:53987 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3JCTgK (ORCPT
+	id S1754954Ab3JCTiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:38:12 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43778 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715Ab3JCTiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:36:10 -0400
+	Thu, 3 Oct 2013 15:38:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131003182311.GI13318@ZenIV.linux.org.uk>
-References: <20131003163411.GA17101@www.outflux.net>
-	<20131003175824.GH13318@ZenIV.linux.org.uk>
-	<CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
-	<20131003182311.GI13318@ZenIV.linux.org.uk>
-Date: Thu, 3 Oct 2013 12:36:08 -0700
-X-Google-Sender-Auth: ngcIzsiUG38HMJv9OXDCl1ARX7M
-Message-ID: <CAGXu5j+4NUKfgKiAK+w2MrsqRxHiYc62LBMx4UsfxUBSxNwNJA@mail.gmail.com>
-Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
-From: Kees Cook <keescook@chromium.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Dmitry Vyukov <dvyukov@google.com>
+In-Reply-To: <20131003192926.GB2390@dztty>
+References: <1380659178-28605-1-git-send-email-tixxdz@opendz.org>
+ <1380659178-28605-3-git-send-email-tixxdz@opendz.org> <524B78A2.40007@amacapital.net>
+ <20131002145506.GA2669@dztty> <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
+ <20131003143653.GA32445@dztty> <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
+ <20131003192926.GB2390@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 3 Oct 2013 12:37:49 -0700
+Message-ID: <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
+ opener may access task
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 11:23 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, Oct 03, 2013 at 11:03:07AM -0700, Kees Cook wrote:
->
->> > When you start a port to a 512-bit architecture, you'll have much nastier
->> > problems than this one...
+On Thu, Oct 3, 2013 at 12:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Thu, Oct 03, 2013 at 04:12:37PM +0100, Andy Lutomirski wrote:
+>> On Thu, Oct 3, 2013 at 3:36 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> > On Wed, Oct 02, 2013 at 05:44:17PM +0100, Andy Lutomirski wrote:
+>> >> On Wed, Oct 2, 2013 at 3:55 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> >> > On Tue, Oct 01, 2013 at 06:36:34PM -0700, Andy Lutomirski wrote:
+>> >> >> On 10/01/2013 01:26 PM, Djalal Harouni wrote:
+>> >> >> > Since /proc entries varies at runtime, permission checks need to happen
+>> >> >> > during each system call.
+>> >> >> >
+>> >> >> > However even with that /proc file descriptors can be passed to a more
+>> >> >> > privileged process (e.g. a suid-exec) which will pass the classic
+>> >> >> > ptrace_may_access() permission check. The open() call will be issued in
+>> >> >> > general by an unprivileged process while the disclosure of sensitive
+>> >> >> > /proc information will happen using a more privileged process at
+>> >> >> > read(),write()...
+>> >> >> >
+>> >> >> > Therfore we need a more sophisticated check to detect if the cred of the
+>> >> >> > process have changed, and if the cred of the original opener that are
+>> >> >> > stored in the file->f_cred have enough permission to access the task's
+>> >> >> > /proc entries during read(), write()...
+>> >> >> >
+>> >> >> > Add the proc_allow_access() function that will receive the file->f_cred
+>> >> >> > as an argument, and tries to check if the opener had enough permission
+>> >> >> > to access the task's /proc entries.
+>> >> >> >
+>> >> >> > This function should be used with the ptrace_may_access() check.
+>> >> >> >
+>> >> >> > Cc: Kees Cook <keescook@chromium.org>
+>> >> >> > Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
+>> >> >> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+>> >> >> > ---
+>> >> >> >  fs/proc/base.c     | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>> >> >> >  fs/proc/internal.h |  2 ++
+>> >> >> >  2 files changed, 58 insertions(+)
+>> >> >> >
+>> >> >> > diff --git a/fs/proc/base.c b/fs/proc/base.c
+>> >> >> > index e834946..c29eeae 100644
+>> >> >> > --- a/fs/proc/base.c
+>> >> >> > +++ b/fs/proc/base.c
+>> >> >> > @@ -168,6 +168,62 @@ int proc_same_open_cred(const struct cred *fcred)
+>> >> >> >             cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+>> >> >> >  }
+>> >> >> >
+>> >> >> > +/* Returns 0 on success, -errno on denial. */
+>> >> >> > +static int __proc_allow_access(const struct cred *cred,
+>> >> >> > +                          struct task_struct *task, unsigned int mode)
+>> >> >> > +{
+>> >> >> > +   int ret = 0;
+>> >> >> > +   const struct cred *tcred;
+>> >> >> > +   const struct cred *fcred = cred;
+>> >> >> > +
+>> >> >> > +   rcu_read_lock();
+>> >> >> > +   tcred = __task_cred(task);
+>> >> >> > +   if (uid_eq(fcred->uid, tcred->euid) &&
+>> >> >> > +       uid_eq(fcred->uid, tcred->suid) &&
+>> >> >> > +       uid_eq(fcred->uid, tcred->uid)  &&
+>> >> >> > +       gid_eq(fcred->gid, tcred->egid) &&
+>> >> >> > +       gid_eq(fcred->gid, tcred->sgid) &&
+>> >> >> > +       gid_eq(fcred->gid, tcred->gid))
+>> >> >> > +           goto out;
+>> >> >> > +
+>> >> >>
+>> >> >> What's this for?  Is it supposed to be an optimization?  If so, it looks
+>> >> >> potentially exploitable, although I don't really understand what you're
+>> >> >> trying to do.
+>> >> > This function should be used in addition to the ptrace_may_access() one.
+>> >>
+>> >> Sorry, I was unclear.  I meant: what are the uid and gid checks for?
+>> > The uid/gid are checks of the current (reader) on the target task, like
+>> > the ptrace checks. fcred here is the cred of current at open time.
+>> >
 >>
->> Well, this is simply taking advantage of this particular allocator's
->> behavior. Instead of depending on this side-effect, why not change the
->> allocation so that we never risk a potentially broken read? (Even SLOB
->> notes that it may have as low as 2-byte granularity.)
+>> This isn't a faithful copy of __ptrace_may_access -- the real function
+>> gives LSMs a chance to veto ptracing.  That's critical even without
+>> LSMs because cap_ptrace_access_check needs to get called.  (Think
+>> about setcap'd programs instead of setuid programs.)
+> Yes, I already did this, not only setuid, capabilities also are handled
+> See the whole patch, please!
 >
-> Oh, for fuck sake!  "Hardening", indeed...
 >
-> Kees, try to think for a minute[1].  Really.  We have general-purpose
-> ...
-> [1] yes, yes, I know - the mere mention of security should've prevented such
-> arrogant requests.  It's an imperfect universe.
-
-I want to attempt to disassemble what you've communicating here:
-
-a) I'm not thinking.
-b) Requesting that someone think when they mention security is arrogant.
-
-I would say that "a" is not true. We simply disagree, but you want to
-tell me I'm not thinking rather than discuss the technical merits or
-flaws of the change I have proposed. I am pointing out an assumption
-being made in this code, and you seem to feel it is not worth fixing.
-I don't think it's useful to tell me I should think harder. We just
-think differently. We have different immediate goals, but share the
-common goal of making Linux fantastic. I'm thinking just fine.
-
-Your statement "b" is much more interesting. I see it as a sarcastic
-comment about your opinion of "security" work in the kernel. To me
-this comes across as a "them" vs "us" interpretation; one where you
-may believe "people mentioning security" are condescending about
-anyone questioning them. I could read into this that you think I am
-part of "them" instead of part of "us". I find that rather insulting,
-given our common goals. Additionally, I don't think I've been
-condescending.
-
-All of this, of course, made me go check my original email carefully.
-There is no mention of "hardening" in my email nor the KASAN link. The
-only mention of "security" in either place is in my email signature,
-since that is a reflection of my job role working on Chrome OS. I did
-not attempt to Cc stable, and there is no CVE mentioned in the email.
-So, I can only assume that you have read into this bug and already
-understand that this kind of out-of-bounds reading of heap is
-sometimes considered a security problem. That's fair, but you appear
-to be lashing out at me for this patch on the basis that it is a
-"meaningless" security fix. Since I didn't actually bring "security"
-up at all, it additionally makes me think you've defined me as part of
-"them" doing security work. Again, that's fair, most of my patches are
-security related, but we are not on different teams. Saying things
-like this attempts to push me away and draw a boundary that does not
-exist.
-
-We're all trying to make Linux greater than it already is. Neither
-this patch in particular, or any security efforts in general, seek to
-destroy Linux.
-
-Continued below, but this change seeks to make things easier for tools
-that are trying to find "real" security flaws in the kernel. This one
-is unlikely to be anything but theoretical, but it is clearly doing
-something against the "contract" of the heap allocation API.
-
-> allocator.  Asked to give us something considerably bigger than one
-> word.  How do you call a situation when it returns something with
-> the end of requested object crossing the page boundary if rounded
-> up to nearest multiple of word size?
+> Yes, and speaking about LSMs I've mentioned in my patches and doc, that
+> the proposed function proc_allow_access() should be used after
+> ptrace_may_access(). proc_allow_access() is not a replacement for
+> ptrace_may_access(), it should be used *after* it.
 >
-> That's right, FUBAR.  Because for that to happen it would have to
-> have given you an address that would not be word-aligned.  In response
-> to request to allocate something wider than a word.  Remember the
-> words along the lines of "the pointer returned if the allocation
-> succeeds is properly aligned..."?
+> So cap_ptrace_access_check() is called, and before the file->f_cred
+> checks. The LSM veto is already there.
+
+It's possible that I've misunderstood your patches, but I really don't
+see where you're calling into LSMs to give them a chance to veto
+access by *f_cred*.
+
+
+> 1) for proc_same_open_cred()
+>    if (f_cred->user_ns != cred->user_ns)
+>         return 0
 >
-> It's not a behaviour of this particular allocator.  It's something that
-> will have to be guaranteed by *any* general-purpose allocator.
+>    return (uid_eq(fcred->uid, cred->uid) &&
+>                   gid_eq(fcred->gid, cred->gid) &&
+>                   cap_issubset(cred->cap_permitted, f_cred->cap_permitted));
+>
+> So it handles the (1) of cap_ptrace_access_check()
 
-No such allocator exists today, sure. I can imagine some kind of
-crazy-town allocator that tried to do really fancy storage and might
-end up cramming oddly sized allocations at the end of pages, but it
-likely doesn't help to ponder this.
+No.  This just means that, if there's a possibility that the caps are
+wrong, you invoke ptrace_allow_access, which *does not re-check
+capabilities*.
 
-What the patch does help with, though, is dynamic analysis tools that
-are looking for out-of-bound reads, which this clearly is. It should
-be considered a violation of the API to attempt to access a range
-beyond what was requested for the allocation. Fixing this means lots
-of noise vanishes from such analysis of the allocation API, letting
-other tools besides just KASAN do work to find other more serious
-problems in heap usage.
-
-Does fixing this to help dynamic analysis tools somehow make the
-kernel worse? I think that fixing this makes it easier to find further
-bugs that might be much more serious.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+--Andy
