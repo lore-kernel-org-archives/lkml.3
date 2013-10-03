@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab3JCXfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:35:43 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:32843 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3JCXfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:35:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131003220628.GA14835@google.com>
-References: <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-	<1380399187-4962-1-git-send-email-yinghai@kernel.org>
-	<20131003220628.GA14835@google.com>
-Date: Thu, 3 Oct 2013 16:35:40 -0700
-X-Google-Sender-Auth: 8FYEry4PJz1lrR5YZRW_cUoq_Ow
-Message-ID: <CAE9FiQVYZ2pRTs5Xsc2MKgUiWfLbSExLA-vF0HK2iy=tVw2OHA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Workaround missing pci_set_master in pci drivers
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753673Ab3JCXiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:38:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44411 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab3JCXiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 19:38:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1028,1371106800"; 
+   d="scan'208";a="369521653"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
+References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1380287787-30252-10-git-send-email-kirill.shutemov@linux.intel.com>
+ <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
+Subject: Re: [PATCHv4 09/10] mm: implement split page table lock for PMD level
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131003233800.8A003E0090@blue.fi.intel.com>
+Date: Fri,  4 Oct 2013 02:38:00 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 3:06 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Sep 28, 2013 at 01:13:07PM -0700, Yinghai Lu wrote:
->> @@ -1156,8 +1156,14 @@ static void pci_enable_bridge(struct pci
->>
->>       pci_enable_bridge(dev->bus->self);
->>
->> -     if (pci_is_enabled(dev))
->> +     if (pci_is_enabled(dev)) {
->> +             if (!dev->is_busmaster) {
->> +                     dev_warn(&dev->dev, "driver skip pci_set_master, fix it!\n");
->
-> I know this is already in Linus' tree, but if we're going to enable
-> bus mastering here, what's the point of the warning?  If somebody
-> fixes the driver by adding a pci_set_master() call there, does that
-> improve something?
+Andrew Morton wrote:
+> On Fri, 27 Sep 2013 16:16:26 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > The basic idea is the same as with PTE level: the lock is embedded into
+> > struct page of table's page.
+> > 
+> > We can't use mm->pmd_huge_pte to store pgtables for THP, since we don't
+> > take mm->page_table_lock anymore. Let's reuse page->lru of table's page
+> > for that.
+> > 
+> > pgtable_pmd_page_ctor() returns true, if initialization is successful
+> > and false otherwise. Current implementation never fails, but assumption
+> > that constructor can fail will help to port it to -rt where spinlock_t
+> > is rather huge and cannot be embedded into struct page -- dynamic
+> > allocation is required.
+> 
+> spinlock_t is rather large when lockdep is enabled.  What happens?
 
-Help us to catch other offender and fix them.
+The same as with PTE split lock: CONFIG_SPLIT_PTLOCK_CPUS set to 999999
+if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC. It effectively blocks split locks
+usage if spinlock_t is too big.
 
-Yinghai
+-- 
+ Kirill A. Shutemov
