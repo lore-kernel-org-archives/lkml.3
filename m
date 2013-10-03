@@ -1,182 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3JCMKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 08:10:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43281 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3JCMKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 08:10:12 -0400
-Date: Thu, 3 Oct 2013 13:09:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sage Weil <sage@inktank.com>, Jianpeng Ma <majianpeng@gmail.com>,
-        Zheng Yan <zheng.z.yan@intel.com>, Zach Brown <zab@zabbo.net>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: ceph-devel@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Message-ID: <20131003120957.GK27287@sirena.org.uk>
+	id S1754013Ab3JCML3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 08:11:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab3JCML2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 08:11:28 -0400
+Date: Thu, 3 Oct 2013 15:11:27 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 5/7] KVM: mmu: remove argument to kvm_init_shadow_mmu and
+ kvm_init_shadow_ept_mmu
+Message-ID: <20131003121126.GF17294@redhat.com>
+References: <1380725776-14948-1-git-send-email-pbonzini@redhat.com>
+ <1380725776-14948-6-git-send-email-pbonzini@redhat.com>
+ <20131003112555.GD17294@redhat.com>
+ <524D5A2D.6070001@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6THr7QwYWIbrk6Kt"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Build failure after merge of ceph tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <524D5A2D.6070001@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 03, 2013 at 01:51:09PM +0200, Paolo Bonzini wrote:
+> Il 03/10/2013 13:25, Gleb Natapov ha scritto:
+> > On Wed, Oct 02, 2013 at 04:56:14PM +0200, Paolo Bonzini wrote:
+> >> The initialization function in mmu.c can always use walk_mmu, which
+> >> is known to be vcpu->arch.mmu.  Only init_kvm_nested_mmu is used to
+> >> initialize vcpu->arch.nested_mmu.
+> >>
+> >> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> >> ---
+> >>  arch/x86/kvm/mmu.c | 15 +++++++++------
+> >>  arch/x86/kvm/mmu.h |  5 ++---
+> >>  arch/x86/kvm/svm.c |  4 ++--
+> >>  arch/x86/kvm/vmx.c |  4 ++--
+> >>  4 files changed, 15 insertions(+), 13 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >> index 40772ef..ac598c8 100644
+> >> --- a/arch/x86/kvm/mmu.c
+> >> +++ b/arch/x86/kvm/mmu.c
+> >> @@ -3742,11 +3742,13 @@ static void init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+> >>  	update_last_pte_bitmap(vcpu, context);
+> >>  }
+> >>  
+> >> -void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context)
+> >> +void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
+> >>  {
+> >>  	bool smep = kvm_read_cr4_bits(vcpu, X86_CR4_SMEP);
+> >> +	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+> > I'd rather use &vcpu->arch.mmu here.
+> > 
+> >> +
+> >>  	ASSERT(vcpu);
+> >> -	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
+> >> +	ASSERT(!VALID_PAGE(context->root_hpa));
+> >>  
+> >>  	if (!is_paging(vcpu))
+> >>  		nonpaging_init_context(vcpu, context);
+> >> @@ -3765,11 +3767,12 @@ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context)
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(kvm_init_shadow_mmu);
+> >>  
+> >> -void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context,
+> >> -		bool execonly)
+> >> +void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly)
+> >>  {
+> >> +	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+> >> +
+> >>  	ASSERT(vcpu);
+> >> -	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
+> >> +	ASSERT(!VALID_PAGE(context->root_hpa));
+> >>  
+> >>  	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
+> >>  
+> >> @@ -3790,7 +3793,7 @@ EXPORT_SYMBOL_GPL(kvm_init_shadow_ept_mmu);
+> >>  
+> >>  static void init_kvm_softmmu(struct kvm_vcpu *vcpu)
+> >>  {
+> >> -	kvm_init_shadow_mmu(vcpu, vcpu->arch.walk_mmu);
+> >> +	kvm_init_shadow_mmu(vcpu);
+> >>  	vcpu->arch.walk_mmu->set_cr3           = kvm_x86_ops->set_cr3;
+> >>  	vcpu->arch.walk_mmu->get_cr3           = get_cr3;
+> >>  	vcpu->arch.walk_mmu->get_pdptr         = kvm_pdptr_read;
+> > And change walk_mmu to mmu here too for consistency with all other
+> > places. Basically if you want to initialize use mmu or nested_mmu.
+> > Use walk_mmu pointer only when you need to use mmu.
+> 
+> Makes sense, especially considering how kvm_init_shadow_mmu initializes 
+> vcpu->arch.mmu.base_role directly.
+> 
+> Something like this (large enough that I'll probably make it a separate 
+> patch in v2)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index ac598c8..d1f53cf 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -3702,7 +3704,7 @@ static void paging32E_init_context(struct kvm_vcpu *vcpu,
+>  
+>  static void init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+>  {
+> -	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+> +	struct kvm_mmu *context = &vcpu->arch.mmu;
+>  
+>  	context->base_role.word = 0;
+>  	context->page_fault = tdp_page_fault;
+> @@ -3745,7 +3747,7 @@ static void init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+>  void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
+>  {
+>  	bool smep = kvm_read_cr4_bits(vcpu, X86_CR4_SMEP);
+> -	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+> +	struct kvm_mmu *context = &vcpu->arch.mmu;
+>  
+>  	ASSERT(vcpu);
+>  	ASSERT(!VALID_PAGE(context->root_hpa));
+> @@ -3759,17 +3761,17 @@ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
+>  	else
+>  		paging32_init_context(vcpu, context);
+>  
+> -	vcpu->arch.mmu.base_role.nxe = is_nx(vcpu);
+> -	vcpu->arch.mmu.base_role.cr4_pae = !!is_pae(vcpu);
+> -	vcpu->arch.mmu.base_role.cr0_wp  = is_write_protection(vcpu);
+> -	vcpu->arch.mmu.base_role.smep_andnot_wp
+> +	context->base_role.nxe = is_nx(vcpu);
+> +	context->base_role.cr4_pae = !!is_pae(vcpu);
+> +	context->base_role.cr0_wp  = is_write_protection(vcpu);
+> +	context->base_role.smep_andnot_wp
+>  		= smep && !is_write_protection(vcpu);
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_init_shadow_mmu);
+>  
+>  void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly)
+>  {
+> -	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+> +	struct kvm_mmu *context = &vcpu->arch.mmu;
+>  
+>  	ASSERT(vcpu);
+>  	ASSERT(!VALID_PAGE(context->root_hpa));
+> @@ -3793,11 +3795,13 @@ EXPORT_SYMBOL_GPL(kvm_init_shadow_ept_mmu);
+>  
+>  static void init_kvm_softmmu(struct kvm_vcpu *vcpu)
+>  {
+> +	struct kvm_mmu *context = &vcpu->arch.mmu;
+> +
+>  	kvm_init_shadow_mmu(vcpu);
+> -	vcpu->arch.walk_mmu->set_cr3           = kvm_x86_ops->set_cr3;
+> -	vcpu->arch.walk_mmu->get_cr3           = get_cr3;
+> -	vcpu->arch.walk_mmu->get_pdptr         = kvm_pdptr_read;
+> -	vcpu->arch.walk_mmu->inject_page_fault = kvm_inject_page_fault;
+> +	context->set_cr3           = kvm_x86_ops->set_cr3;
+> +	context->get_cr3           = get_cr3;
+> +	context->get_pdptr         = kvm_pdptr_read;
+> +	context->inject_page_fault = kvm_inject_page_fault;
+>  }
+>  
+>  static void init_kvm_nested_mmu(struct kvm_vcpu *vcpu)
+Yes.
 
---6THr7QwYWIbrk6Kt
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> 
+> How far should I go?  Should I also remove the context argument from
+> nonpaging_init_context and friends, changing it to a local variable?
+> (Doesn't seem like a big improvement in clarity).
+> 
+If it does not no need to do it. Hard to judge for me without trying.
 
-After merging the ceph tree into -next an x86 allmodconfig build fails
-with:
-
-fs/ceph/file.c: In function =E2=80=98ceph_sync_read=E2=80=99:
-fs/ceph/file.c:437:25: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-    void __user *data =3D i->iov[0].iov_base + i->iov_offset;
-                         ^
-fs/ceph/file.c:438:18: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-    size_t len =3D i->iov[0].iov_len - i->iov_offset;
-                  ^
-fs/ceph/file.c:470:26: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-     void __user *data =3D i->iov[0].iov_base
-                          ^
-In file included from include/linux/cache.h:4:0,
-                 from include/linux/time.h:4,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from fs/ceph/file.c:3:
-fs/ceph/file.c:472:14: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-     l =3D min(i->iov[0].iov_len - i->iov_offset,
-              ^
-include/linux/kernel.h:670:9: note: in definition of macro =E2=80=98min=E2=
-=80=99
-  typeof(x) _min1 =3D (x);   \
-         ^
-fs/ceph/file.c:472:14: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-     l =3D min(i->iov[0].iov_len - i->iov_offset,
-              ^
-include/linux/kernel.h:670:21: note: in definition of macro =E2=80=98min=E2=
-=80=99
-  typeof(x) _min1 =3D (x);   \
-                     ^
-include/linux/kernel.h:672:17: warning: comparison of distinct pointer type=
-s lacks a cast [enabled by default]
-  (void) (&_min1 =3D=3D &_min2);  \
-                 ^
-fs/ceph/file.c:472:9: note: in expansion of macro =E2=80=98min=E2=80=99
-     l =3D min(i->iov[0].iov_len - i->iov_offset,
-         ^
-fs/ceph/file.c: In function =E2=80=98ceph_sync_direct_write=E2=80=99:
-fs/ceph/file.c:586:24: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-   void __user *data =3D i.iov->iov_base + i.iov_offset;
-                        ^
-fs/ceph/file.c:587:14: error: =E2=80=98struct iov_iter=E2=80=99 has no memb=
-er named =E2=80=98iov=E2=80=99
-   u64 len =3D i.iov->iov_len - i.iov_offset;
-              ^
-make[2]: *** [fs/ceph/file.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [fs/ceph] Error 2
-
-caused by commits 53d028160 (ceph: implement readv/preadv for sync
-operation) and 2f0a7a180 (ceph: Implement writev/pwritev for sync
-operation) interacting with commit f6794d33a5ec ("iov_iter: hide iovec
-details behind ops function pointers") from the aio-direct tree.
-
-I extended Stephen's previous fix to this:
-
-=46rom 577435f0a97e67b735f355aef0ef55732814818c Mon Sep 17 00:00:00 2001
-=46rom: Mark Brown <broonie@linaro.org>
-Date: Thu, 3 Oct 2013 13:05:20 +0100
-Subject: [PATCH] ceph: Fix up for iov_iter changes
-
-Extend an earlier fixup by Stephen Rothwell.
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- fs/ceph/file.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index c4419e8..37b5b5c 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -434,8 +434,8 @@ static ssize_t ceph_sync_read(struct kiocb *iocb, struc=
-t iov_iter *i,
-=20
- 	if (file->f_flags & O_DIRECT) {
- 		while (iov_iter_count(i)) {
--			void __user *data =3D i->iov[0].iov_base + i->iov_offset;
--			size_t len =3D i->iov[0].iov_len - i->iov_offset;
-+			void __user *data =3D iov_iter_iovec(i)->iov_base + i->iov_offset;
-+			size_t len =3D iov_iter_iovec(i)->iov_len - i->iov_offset;
-=20
- 			num_pages =3D calc_pages_for((unsigned long)data, len);
- 			pages =3D ceph_get_direct_page_vector(data,
-@@ -467,9 +467,9 @@ static ssize_t ceph_sync_read(struct kiocb *iocb, struc=
-t iov_iter *i,
- 			size_t left =3D len =3D ret;
-=20
- 			while (left) {
--				void __user *data =3D i->iov[0].iov_base
-+				void __user *data =3D iov_iter_iovec(i)->iov_base
- 							+ i->iov_offset;
--				l =3D min(i->iov[0].iov_len - i->iov_offset,
-+				l =3D min(iov_iter_iovec(i)->iov_len - i->iov_offset,
- 					left);
-=20
- 				ret =3D ceph_copy_page_vector_to_user(&pages[k],
-@@ -583,8 +583,8 @@ ceph_sync_direct_write(struct kiocb *iocb, const struct=
- iovec *iov,
- 	iov_iter_init(&i, iov, nr_segs, count, 0);
-=20
- 	while (iov_iter_count(&i) > 0) {
--		void __user *data =3D i.iov->iov_base + i.iov_offset;
--		u64 len =3D i.iov->iov_len - i.iov_offset;
-+		void __user *data =3D iov_iter_iovec(&i)->iov_base + i.iov_offset;
-+		u64 len =3D iov_iter_iovec(&i)->iov_len - i.iov_offset;
-=20
- 		page_align =3D (unsigned long)data & ~PAGE_MASK;
-=20
---=20
-1.8.4.rc3
-
-
---6THr7QwYWIbrk6Kt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSTV6RAAoJELSic+t+oim9e48QAJpajHmo8BBWPAabl3Hhu2nP
-+UmtLIUQsRtCr4Xh14s3u2DYXXIga3JwuZEgjLnbMVCpm0oTHR/PWsxSzxWZJ/2c
-TcIbpmwX6DQ8K6n0dN6SQk3LprVgsUsvs4CVWAewXe+J6nm7zOxD0bzQilKTOYHr
-acwcXvJDkkkPFXBsqaF23IRfZ60qWZ+fKDKa0SooKuZwCH+QvPP5EZPzA7yYE2nH
-n62fdfPPcNE1oBT4swaXHamdo1vlJriA0Pmsjq8ByK7mVvQsffTE9t2ykY7JQ9Av
-nSst1r7ldB21vaIQ5j7QQwI2vxx1t5XPqlPldzqDlBUwPQIhqTJ7jNDUSBJRNxH+
-u3jLVNa1O3b7k1kXBYqwNmYjeN7wdumS7P9xWwq2G7TQ/EUxFBA7iHz0iEYmPmfC
-QWpv5DhsqSCjBkE9AOWxjNTc17jeAiOC+8bTsCosrDViP+BxPnE0XgdflP917QSr
-hTlEVxgwRt8gHlTWf6J6EPg4wvva0ds6abadfQHieJayU8YHt35kjS3VtsAHGm5n
-U+o3DpkC+gJm3U4Z5iHP+N8X851rR76MnCD5n/qm8WPazvcpvno5LvRBHcwXxNDj
-y2fm5oEOAS3t8len9zmKEsrokAR9Kg7KU05CueS8M8Se3FluzD3ZOOVpDS2ucSqE
-ZW1R+J+xj/S0B/FkdgNi
-=SD2O
------END PGP SIGNATURE-----
-
---6THr7QwYWIbrk6Kt--
+--
+			Gleb.
