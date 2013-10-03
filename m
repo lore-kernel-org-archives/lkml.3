@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3JCUOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:14:05 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3236 "EHLO mms1.broadcom.com"
+	id S1755538Ab3JCUOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:14:07 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3206 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755474Ab3JCUNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755470Ab3JCUNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Oct 2013 16:13:54 -0400
 X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
 From: "Tim Kryger" <tim.kryger@linaro.org>
@@ -19,137 +19,110 @@ To: "Christian Daudt" <bcm@fixthebug.org>,
 cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-mmc@vger.kernel.org, patches@linaro.org
-Subject: [PATCH 1/6] ARM: dts: Declare clocks as fixed on bcm11351
-Date: Thu, 3 Oct 2013 13:13:09 -0700
-Message-ID: <1380831194-27238-2-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH 6/6] mmc: sdhci-bcm-kona: Add basic use of clocks
+Date: Thu, 3 Oct 2013 13:13:14 -0700
+Message-ID: <1380831194-27238-7-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1380831194-27238-1-git-send-email-tim.kryger@linaro.org>
 References: <1380831194-27238-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-X-WSS-ID: 7E5310730UO13716385-01-01
+X-WSS-ID: 7E5310700UO13716386-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Declare clocks that are enabled and configured by bootloaders as fixed
-rate clocks in the DTS such that device drivers may use standard clock
-function calls.
+Enable the external clock needed by the host controller during the
+probe and disable it during the remove.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
- arch/arm/boot/dts/bcm11351.dtsi | 97 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 97 insertions(+)
+ drivers/mmc/host/sdhci-bcm-kona.c | 30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 98e6bc0..c348b09 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -126,4 +126,101 @@
- 		status = "disabled";
- 	};
+diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+index 85472d3..91db099 100644
+--- a/drivers/mmc/host/sdhci-bcm-kona.c
++++ b/drivers/mmc/host/sdhci-bcm-kona.c
+@@ -54,6 +54,7 @@
  
-+	clocks {
-+		bsc1_clk: bsc1 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		bsc2_clk: bsc2 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		bsc3_clk: bsc3 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		bsc4_clk: bsc4 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		hub_timer_clk: hub_timer {
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+			#clock-cells = <0>;
-+		};
-+
-+		pwm_clk: pwm {
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		sdio1_clk: sdio1 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <48000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		sdio2_clk: sdio2 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <48000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		sdio3_clk: sdio3 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <48000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		sdio4_clk: sdio4 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <48000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		tmon_1m_clk: tmon_1m {
-+			compatible = "fixed-clock";
-+			clock-frequency = <1000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		uartb_clk: uartb {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		uartb2_clk: uartb2 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		uartb3_clk: uartb3 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		uartb4_clk: uartb4 {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		usb_otg_ahb_clk: usb_otg_ahb {
-+			compatible = "fixed-clock";
-+			clock-frequency = <52000000>;
-+			#clock-cells = <0>;
-+		};
-+	};
+ struct sdhci_bcm_kona_dev {
+ 	struct mutex	write_lock; /* protect back to back writes */
++	struct clk	*external_clk;
  };
+ 
+ 
+@@ -252,11 +253,29 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
+ 	mmc_of_parse(host->mmc);
+ 
+ 	if (!host->mmc->f_max) {
+-		dev_err(&pdev->dev, "Missing max-freq for SDHCI cfg\n");
++		dev_err(dev, "Missing max-freq for SDHCI cfg\n");
+ 		ret = -ENXIO;
+ 		goto err_pltfm_free;
+ 	}
+ 
++	/* Get and enable the external clock */
++	kona_dev->external_clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(kona_dev->external_clk)) {
++		dev_err(dev, "Failed to get external clock\n");
++		ret = PTR_ERR(kona_dev->external_clk);
++		goto err_pltfm_free;
++	}
++
++	if (clk_set_rate(kona_dev->external_clk, host->mmc->f_max) != 0) {
++		dev_err(dev, "Failed to set rate external clock\n");
++		goto err_pltfm_free;
++	}
++
++	if (clk_prepare_enable(kona_dev->external_clk) != 0) {
++		dev_err(dev, "Failed to enable external clock\n");
++		goto err_pltfm_free;
++	}
++
+ 	dev_dbg(dev, "non-removable=%c\n",
+ 		(host->mmc->caps & MMC_CAP_NONREMOVABLE) ? 'Y' : 'N');
+ 	dev_dbg(dev, "cd_gpio %c, wp_gpio %c\n",
+@@ -271,7 +290,7 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
+ 
+ 	ret = sdhci_bcm_kona_sd_reset(host);
+ 	if (ret)
+-		goto err_pltfm_free;
++		goto err_clk_disable;
+ 
+ 	sdhci_bcm_kona_sd_init(host);
+ 
+@@ -307,6 +326,9 @@ err_remove_host:
+ err_reset:
+ 	sdhci_bcm_kona_sd_reset(host);
+ 
++err_clk_disable:
++	clk_disable_unprepare(kona_dev->external_clk);
++
+ err_pltfm_free:
+ 	sdhci_pltfm_free(pdev);
+ 
+@@ -317,6 +339,8 @@ err_pltfm_free:
+ static int __exit sdhci_bcm_kona_remove(struct platform_device *pdev)
+ {
+ 	struct sdhci_host *host = platform_get_drvdata(pdev);
++	struct sdhci_pltfm_host *pltfm_priv = sdhci_priv(host);
++	struct sdhci_bcm_kona_dev *kona_dev = sdhci_pltfm_priv(pltfm_priv);
+ 	int dead;
+ 	u32 scratch;
+ 
+@@ -326,6 +350,8 @@ static int __exit sdhci_bcm_kona_remove(struct platform_device *pdev)
+ 		dead = 1;
+ 	sdhci_remove_host(host, dead);
+ 
++	clk_disable_unprepare(kona_dev->external_clk);
++
+ 	sdhci_free_host(host);
+ 
+ 	return 0;
 -- 
 1.8.0.1
 
