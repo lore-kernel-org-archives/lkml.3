@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab3JCXBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:01:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43588 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3JCXBI (ORCPT
+	id S1753531Ab3JCXCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 19:02:18 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:54401 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab3JCXCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:01:08 -0400
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-networking@linaro.org, Kim Phillips <kim.phillips@linaro.org>,
-        Danke Xie <d.xie@sta.samsung.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Subject: [PATCH v2] mfd: twl6030: Fix endianness problem in IRQ handler
-Date: Fri,  4 Oct 2013 02:00:34 +0300
-Message-Id: <1380841234-19475-1-git-send-email-taras.kondratiuk@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380712124-20666-1-git-send-email-taras.kondratiuk@linaro.org>
-References: <1380712124-20666-1-git-send-email-taras.kondratiuk@linaro.org>
+	Thu, 3 Oct 2013 19:02:17 -0400
+Message-ID: <1380841333.19002.259.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: [PATCH v2 net-next] fix unsafe set_memory_rw from softirq
+From: Eric Dumazet <erdnetdev@gmail.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Xi Wang <xi.wang@gmail.com>, x86@kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 03 Oct 2013 16:02:13 -0700
+In-Reply-To: <1380840466-3822-1-git-send-email-ast@plumgrid.com>
+References: <1380840466-3822-1-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danke Xie <d.xie@sta.samsung.com>
+On Thu, 2013-10-03 at 15:47 -0700, Alexei Starovoitov wrote:
+> on x86 system with net.core.bpf_jit_enable = 1
+> 
 
-The current TWL 6030 IRQ handler assumes little endianness.
-This change makes it endian-neutral.
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -644,7 +644,9 @@ void sk_filter_release_rcu(struct rcu_head *rcu)
+>  	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
+>  
+>  	bpf_jit_free(fp);
+> +#if !defined(CONFIG_X86_64) /* x86_64 has a deferred free */
+>  	kfree(fp);
+> +#endif
 
-Signed-off-by: Danke Xie <d.xie@sta.samsung.com>
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
----
-v2: fixed sparse warning
-v1: https://patchwork.kernel.org/patch/2974331/
+Sorry this is not very nice.
 
-drivers/mfd/twl6030-irq.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Make bpf_jit_free(fp) a bool ?  true : caller must free, false : caller
+must not free ?
 
-diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-index 517eda8..18a607e 100644
---- a/drivers/mfd/twl6030-irq.c
-+++ b/drivers/mfd/twl6030-irq.c
-@@ -176,8 +176,9 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
- 	int i, ret;
- 	union {
- 		u8 bytes[4];
--		u32 int_sts;
-+		__le32 int_sts;
- 	} sts;
-+	u32 int_sts; /* sts.int_sts converted to CPU endianness */
- 	struct twl6030_irq *pdata = data;
- 
- 	/* read INT_STS_A, B and C in one shot using a burst read */
-@@ -196,8 +197,9 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
- 	if (sts.bytes[2] & 0x10)
- 		sts.bytes[2] |= 0x08;
- 
--	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
--		if (sts.int_sts & 0x1) {
-+	int_sts = le32_to_cpu(sts.int_sts);
-+	for (i = 0; int_sts; int_sts >>= 1, i++)
-+		if (int_sts & 0x1) {
- 			int module_irq =
- 				irq_find_mapping(pdata->irq_domain,
- 						 pdata->irq_mapping_tbl[i]);
--- 
-1.7.9.5
+if (bpf_jit_free(fp))
+	kfree(fp);
+
+Or move the kfree() in bpf_jit_free()
+
+
 
