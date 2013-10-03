@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab3JCREJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:04:09 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:33201 "EHLO relay.sgi.com"
+	id S1754566Ab3JCRHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:07:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49994 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013Ab3JCREH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:04:07 -0400
-Message-ID: <524DA381.2050108@sgi.com>
-Date: Thu, 03 Oct 2013 10:04:01 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1754084Ab3JCRHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 13:07:07 -0400
+Message-ID: <524DA41C.7000809@ti.com>
+Date: Thu, 3 Oct 2013 12:06:36 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] PATCH: KGDB/KDB Fix no KDB config problem.
-References: <20131003163824.966169920@asylum.americas.sgi.com> <20131003163825.184494258@asylum.americas.sgi.com> <20131003165122.GB32755@gmail.com>
-In-Reply-To: <20131003165122.GB32755@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, Mike Turquette <mturquette@linaro.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH V5 0/6] ARM: OMAP3+: support cpufreq-cpu0 for device tree
+ boot
+References: <1368039976-29648-1-git-send-email-nm@ti.com> <87pprmuwxg.fsf@linaro.org>
+In-Reply-To: <87pprmuwxg.fsf@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+fixing Benoit's mail ID.
+On 10/03/2013 11:43 AM, Kevin Hilman wrote:
+> Hi Nishanth,
+> 
+> Nishanth Menon <nm@ti.com> writes:
+> 
+>> The following version 5 of the series arose from trying to use
+>> BeagleBoard-XM (OMAP3 variant) for doing CPU DVFS using cpufreq-cpu0.
+>> This series enables the generic cpufreq-cpu0 driver to be used in
+>> device tree enabled boot while maintaining support of the legacy
+>> omap-cpufreq driver when used in non device tree enabled boot.
+> 
+> What's the status of this series?  Is it still waiting on the clock DT
+> changes?
 
+yes - i do have a new series lined up at the moment here[1] - trying
+to ensure everything is dandy before public post. ofcourse, we'd like
+to ensure we have feedback on tero's series[2]. I am now working on
+ensuring ABB regulator[3](again depends on Tero's series) fits on top
+of Mike's voltage notifier series[4]
 
-On 10/3/2013 9:51 AM, Ingo Molnar wrote:
-> 
-> * Mike Travis <travis@sgi.com> wrote:
-> 
->> Some code added to the debug_core module had KDB dependencies
->> that it shouldn't have.
->>
->> Signed-off-by: Mike Travis <travis@sgi.com>
->> ---
->>  kernel/debug/debug_core.c |    8 ++++----
->>  kernel/debug/debug_core.h |    2 ++
->>  2 files changed, 6 insertions(+), 4 deletions(-)
->>
->> --- linux.orig/kernel/debug/debug_core.c
->> +++ linux/kernel/debug/debug_core.c
->> @@ -575,8 +575,8 @@ return_normal:
->>  		raw_spin_lock(&dbg_slave_lock);
->>  
->>  #ifdef CONFIG_SMP
->> -	/* If SYSTEM_NMI, slaves are already waiting */
->> -	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
->> +	/* If send_ready set, slaves are already waiting */
->> +	if (ks->send_ready)
->>  		atomic_set(ks->send_ready, 1);
->>  
->>  	/* Signal the other CPUs to enter kgdb_wait() */
->> @@ -682,11 +682,11 @@ kgdb_handle_exception(int evector, int s
->>  	if (arch_kgdb_ops.enable_nmi)
->>  		arch_kgdb_ops.enable_nmi(0);
->>  
->> +	memset(ks, 0, sizeof(struct kgdb_state));
->>  	ks->cpu			= raw_smp_processor_id();
->>  	ks->ex_vector		= evector;
->>  	ks->signo		= signo;
->>  	ks->err_code		= ecode;
->> -	ks->kgdb_usethreadid	= 0;
->>  	ks->linux_regs		= regs;
->>  
->>  	if (kgdb_reenter_check(ks))
->> @@ -750,7 +750,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
->>  		ks->cpu			= cpu;
->>  		ks->ex_vector		= trapnr;
->>  		ks->signo		= SIGTRAP;
->> -		ks->err_code		= KDB_REASON_SYSTEM_NMI;
->> +		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
->>  		ks->linux_regs		= regs;
->>  		ks->send_ready		= send_ready;
->>  		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
->> --- linux.orig/kernel/debug/debug_core.h
->> +++ linux/kernel/debug/debug_core.h
->> @@ -75,11 +75,13 @@ extern int kdb_stub(struct kgdb_state *k
->>  extern int kdb_parse(const char *cmdstr);
->>  extern int kdb_common_init_state(struct kgdb_state *ks);
->>  extern int kdb_common_deinit_state(void);
->> +#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
->>  #else /* ! CONFIG_KGDB_KDB */
->>  static inline int kdb_stub(struct kgdb_state *ks)
->>  {
->>  	return DBG_PASS_EVENT;
->>  }
->> +#define KGDB_KDB_REASON_SYSTEM_NMI 0
->>  #endif /* CONFIG_KGDB_KDB */
->>  
->>  #endif /* _DEBUG_CORE_H_ */
-> 
-> Hm, the KGDB_KDB_REASON_SYSTEM_NMI definition is a bit ugly. I still think 
-> there are layering violations here and just kludging it around doesn't 
-> solve it - a helper function that keeps kgdb details to the kgdb code 
-> would.
-> 
-> Anyway, if Jason is fine with this solution and upholds his Acked-by then 
-> I'll merge this into the first patch and apply the two patches.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+So, yep, everything is blocked due to lack of feedback on Tero's
+series [2].
 
-Would you prefer a simple #ifdef CONFIG_KGDB_KDB around the assignment?
+[1]
+https://github.com/nmenon/linux-2.6-playground/commits/devel/cpufreq-cpu0
+[2] http://marc.info/?t=138009899400001&r=1&w=2
+[3]
+https://github.com/nmenon/linux-2.6-playground/commits/push/abb-regulator-dts
+[4]
+http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=shortlog;h=refs/heads/clk-next-volt
+-- 
+Regards,
+Nishanth Menon
