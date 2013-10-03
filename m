@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3JCELk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:11:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46858 "EHLO
+	id S1754921Ab3JCELs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:11:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46870 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249Ab3JCELh (ORCPT
+	with ESMTP id S1754905Ab3JCELq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:11:37 -0400
+	Thu, 3 Oct 2013 00:11:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/52] bcache: Fix flushes in writeback mode
-Date: Wed,  2 Oct 2013 21:05:29 -0700
-Message-Id: <20131003040522.961225150@linuxfoundation.org>
+        Vinson Lee <vlee@twitter.com>, Borislav Petkov <bp@suse.de>,
+        Vinson Lee <vlee@freedesktop.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 13/52] tools lib lk: Uninclude linux/magic.h in debugfs.c
+Date: Wed,  2 Oct 2013 21:05:31 -0700
+Message-Id: <20131003040523.095156919@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
 References: <20131003040522.190209641@linuxfoundation.org>
@@ -27,54 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Vinson Lee <vlee@twitter.com>
 
-commit c0f04d88e46d14de51f4baebb6efafb7d59e9f96 upstream.
+commit ce7eebe5c3deef8e19c177c24ee75843256e69ca upstream.
 
-In writeback mode, when we get a cache flush we need to make sure we
-issue a flush to the backing device.
+The compilation only looks for linux/magic.h from the default include
+paths, which does not include the source tree. This results in a build
+error if linux/magic.h is not available or not installed.
 
-The code for sending down an extra flush was wrong - by cloning the bio
-we were probably getting flags that didn't make sense for a bare flush,
-and also the old code was firing for FUA bios, for which we don't need
-to send a flush to the backing device.
+For example, this build error occurs on CentOS 5.
 
-This was causing data corruption somehow - the mechanism was never
-determined, but this patch fixes it for the users that were seeing it.
+$ make -C tools/lib/lk V=1
+[...]
+gcc -o debugfs.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
+-D_FORTIFY_SOURCE=2 -Wbad-function-cast -Wdeclaration-after-statement
+-Wformat-security -Wformat-y2k -Winit-self -Wmissing-declarations
+-Wmissing-prototypes -Wnested-externs -Wno-system-headers
+-Wold-style-definition -Wpacked -Wredundant-decls -Wshadow
+-Wstrict-aliasing=3 -Wstrict-prototypes -Wswitch-default -Wswitch-enum
+-Wundef -Wwrite-strings -Wformat  -fPIC  -D_LARGEFILE64_SOURCE
+-D_FILE_OFFSET_BITS=64 debugfs.c
+debugfs.c:8:25: error: linux/magic.h: No such file or directory
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The only symbol from linux/magic.h needed by debugfs.c is DEBUGFS_MAGIC,
+and that is already defined in debugfs.h. linux/magic.h isn't providing
+any extra symbols and can unincluded. This is similar to the approach by
+perf, which has its own magic.h wrapper at
+tools/perf/util/include/linux/magic.h
+
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Vinson Lee <vlee@freedesktop.org>
+Link: http://lkml.kernel.org/r/1379546200-17028-1-git-send-email-vlee@freedesktop.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/request.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ tools/lib/lk/debugfs.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1056,14 +1056,17 @@ static void request_write(struct cached_
- 		trace_bcache_writeback(s->orig_bio);
- 		bch_writeback_add(dc, bio_sectors(bio));
+--- a/tools/lib/lk/debugfs.c
++++ b/tools/lib/lk/debugfs.c
+@@ -5,7 +5,6 @@
+ #include <stdbool.h>
+ #include <sys/vfs.h>
+ #include <sys/mount.h>
+-#include <linux/magic.h>
+ #include <linux/kernel.h>
  
--		if (s->op.flush_journal) {
-+		if (bio->bi_rw & REQ_FLUSH) {
- 			/* Also need to send a flush to the backing device */
--			s->op.cache_bio = bio_clone_bioset(bio, GFP_NOIO,
--							   dc->disk.bio_split);
-+			struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
-+							     dc->disk.bio_split);
- 
--			bio->bi_size = 0;
--			bio->bi_vcnt = 0;
--			closure_bio_submit(bio, cl, s->d);
-+			flush->bi_rw	= WRITE_FLUSH;
-+			flush->bi_bdev	= bio->bi_bdev;
-+			flush->bi_end_io = request_endio;
-+			flush->bi_private = cl;
-+
-+			closure_bio_submit(flush, cl, s->d);
- 		} else {
- 			s->op.cache_bio = bio;
- 		}
+ #include "debugfs.h"
 
 
