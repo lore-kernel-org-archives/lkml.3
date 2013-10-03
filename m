@@ -1,92 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab3JCCFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 22:05:19 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41477 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab3JCCFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 22:05:17 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: cryptography@metzdowd.com, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH] random: drop trickle mode
-Date: Wed,  2 Oct 2013 22:05:15 -0400
-Message-Id: <1380765915-31530-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
-In-Reply-To: <20131003020403.GA31463@thunk.org>
-References: <20131003020403.GA31463@thunk.org>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1753513Ab3JCCW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Oct 2013 22:22:58 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41343 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab3JCCW5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Oct 2013 22:22:57 -0400
+Date: Thu, 3 Oct 2013 03:22:51 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Linus Torvalds <torvalds@osdl.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org
+Subject: Re: [rfc] rework aio migrate pages to use aio fs
+Message-ID: <20131003022251.GB13318@ZenIV.linux.org.uk>
+References: <20130913165937.GL2517@kvack.org>
+ <20130913184204.GS13318@ZenIV.linux.org.uk>
+ <20130917141825.GF11526@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917141825.GF11526@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The add_timer_randomness() used to drop into trickle mode when entropy
-pool was estimated to be 87.5% full.  This was important when
-add_timer_randomness() was used to sample interrupts.  It's not used
-for this any more --- add_interrupt_randomness() now uses fast_mix()
-instead.  By elimitating trickle mode, it allows us to fully utilize
-entropy provided by add_input_randomness() and add_disk_randomness()
-even when the input pool is above the old trickle threshold of 87.5%.
+On Tue, Sep 17, 2013 at 10:18:25AM -0400, Benjamin LaHaise wrote:
+> +static int aio_set_page_dirty(struct page *page)
+> +{
+> +	return 0;
+> +};
+> +
+> +static const struct address_space_operations aio_aops = {
+> +	.set_page_dirty = aio_set_page_dirty,
+> +};
+> +
+> +/*
+> + * A single inode exists for each aio_inode file.  The inodes are only
+> + * used for mapping the event ring buffers in order to make it possible
+> + * to provide migration ops to the vm.
+> + */
+> +static struct inode *aio_inode_mkinode(struct super_block *s)
+> +{
+> +	struct inode *inode = new_inode_pseudo(s);
+> +
+> +	if (!inode)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	inode->i_ino = get_next_ino();
+> +	inode->i_fop = &aio_ring_fops;
+> +	inode->i_mapping->a_ops = &aio_aops;
+> +
+> +	/*
+> +	 * Mark the inode dirty from the very beginning,
+> +	 * that way it will never be moved to the dirty
+> +	 * list because mark_inode_dirty() will think
+> +	 * that it already _is_ on the dirty list.
+> +	 */
+> +	inode->i_state = I_DIRTY;
+> +	inode->i_mode = S_IRUSR | S_IWUSR;
+> +	inode->i_uid = current_fsuid();
+> +	inode->i_gid = current_fsgid();
+> +	inode->i_flags |= S_PRIVATE;
+> +	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+> +	return inode;
+> +}
 
-This helps to answer the criticism in [1] in their hypothetical
-scenario where our entropy estimator was inaccurate, even though the
-measurements in [2] seem to indicate that our entropy estimator given
-real-life entropy collection is actually pretty good, albeit on the
-conservative side (which was as it was designed).
+FWIW, I would've taken that to fs/libfs.c, sans the assignment of ->i_fop.
+BTW, are you sure that you want it to be opened via procfs symlink?  Is that
+even possible?  IOW, what's that ->i_fop for?
 
-[1] http://eprint.iacr.org/2013/338.pdf
-[2] http://eprint.iacr.org/2012/251.pdf
+> +struct file *aio_inode_getfile_private(const char *name,
+> +				       const struct file_operations *fops,
+> +				       void *priv, int flags)
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
----
- drivers/char/random.c | 18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
+Why is it not static?  And why bother with fops as argument, etc.?
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 790ce8d..8661c5c 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -282,10 +282,8 @@
- #define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
- 
- /*
-- * To allow fractional bits to be tracked, the following fields contain
-- * this many fractional bits:
-- *
-- * entropy_count, trickle_thresh
-+ * To allow fractional bits to be tracked, the entropy_count field is
-+ * denominated in units of 1/8th bits.
-  *
-  * 2*(ENTROPY_SHIFT + log2(poolbits)) must <= 31, or the multiply in
-  * credit_entropy_bits() needs to be 64 bits wide.
-@@ -314,14 +312,6 @@ static int random_write_wakeup_thresh = 128;
- static int random_min_urandom_seed = 60;
- 
- /*
-- * When the input pool goes over trickle_thresh, start dropping most
-- * samples to avoid wasting CPU time and reduce lock contention.
-- */
--static const int trickle_thresh = (INPUT_POOL_WORDS * 28) << ENTROPY_SHIFT;
--
--static DEFINE_PER_CPU(int, trickle_count);
--
--/*
-  * Originally, we used a primitive polynomial of degree .poolwords
-  * over GF(2).  The taps for various sizes are defined below.  They
-  * were chosen to be evenly spaced except for the last tap, which is 1
-@@ -755,10 +745,6 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 	long delta, delta2, delta3;
- 
- 	preempt_disable();
--	/* if over the trickle threshold, use only 1 in 4096 samples */
--	if (ENTROPY_BITS(&input_pool) > trickle_thresh &&
--	    ((__this_cpu_inc_return(trickle_count) - 1) & 0xfff))
--		goto out;
- 
- 	sample.jiffies = jiffies;
- 	sample.cycles = random_get_entropy();
--- 
-1.7.12.rc0.22.gcdd159b
+> +	if (fops->owner && !try_module_get(fops->owner))
+> +		return ERR_PTR(-ENOENT);
 
+Also pointless, AFAICS.  BTW, you've just open-coded fops_get(fops), not
+that it mattered in this case...
+
+> +	inode = aio_inode_mkinode(aio_mnt->mnt_sb);
+> +	if (IS_ERR(inode)) {
+> +		file = ERR_PTR(-ENOMEM);
+> +		goto err_module;
+> +	}
+> +
+> +	/*
+> +	 * Link the inode to a directory entry by creating a unique name
+> +	 * using the inode sequence number.
+> +	 */
+> +	file = ERR_PTR(-ENOMEM);
+> +	this.name = name;
+> +	this.len = strlen(name);
+> +	this.hash = 0;
+
+Umm...  ITYM
+	struct qstr this = QSTR_INIT("[aio]", 5);
+, if not
+	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb,
+				     &(struct qstr)QSTR_INIT("[aio]", 5));
+> +	if (!path.dentry)
+> +		goto err_module;
+> +
+> +	path.mnt = mntget(aio_mnt);
+> +
+> +	d_instantiate(path.dentry, inode);
+> +
+> +	file = alloc_file(&path, OPEN_FMODE(flags), fops);
+> +	if (IS_ERR(file))
+> +		goto err_dput;
+
+> +	file->f_mapping = inode->i_mapping;
+
+Pointless, BTW - alloc_file() will have already set it that way.
+
+> +	file->f_flags = flags & (O_ACCMODE | O_NONBLOCK);
+> +	file->private_data = priv;
+> +
+> +	return file;
+> +
+> +err_dput:
+> +	path_put(&path);
+> +err_module:
+> +	module_put(fops->owner);
+
+And that module_put is pointless as well here.
