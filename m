@@ -1,112 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3JCRSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:18:00 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:58737 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679Ab3JCRR6 (ORCPT
+	id S1754875Ab3JCRSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:18:24 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:52057 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab3JCRSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:17:58 -0400
-Date: Thu, 3 Oct 2013 19:18:02 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, roy.franz@linaro.org,
-        linux-efi@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        matt.fleming@intel.com, msalter@redhat.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        arnd@arndb.de
-Subject: Re: [PATCH v2 1/3] Documentation: arm: add UEFI support documentation
-Message-ID: <20131003171800.GC1557@rocoto.smurfnet.nu>
-References: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
- <1380799481-5470-2-git-send-email-leif.lindholm@linaro.org>
- <524D9726.6080501@gmail.com>
+	Thu, 3 Oct 2013 13:18:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524D9726.6080501@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOw6vbJVH4ePsJ5cOT0KcsZDBdM+MtqgTwmvYiM0EAExSLWWhQ@mail.gmail.com>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+	<1380670860-17621-5-git-send-email-seanpaul@chromium.org>
+	<CAAQKjZPgtKf5UWZhHV-+Vv2c4uwuEUhZHV=r14es8eFC07PONg@mail.gmail.com>
+	<CAOw6vbJVH4ePsJ5cOT0KcsZDBdM+MtqgTwmvYiM0EAExSLWWhQ@mail.gmail.com>
+Date: Fri, 4 Oct 2013 02:18:19 +0900
+X-Google-Sender-Auth: qXEsK4R7PuWrOOXTcnkvRaU_dXQ
+Message-ID: <CAAQKjZPPWh1dzDxR+iH_TpTCj3mjjJgA5tSVZT2JXk5ZMDzAqA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] drm/exynos: Initialize ptn3460 if present
+From: Inki Dae <inki.dae@samsung.com>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 11:11:18AM -0500, Rob Herring wrote:
-> Adding devicetree list since you are defining bindings...
-> 
-> > +with CONFIG_OF.
-> > +
-> > +It parses the FDT /chosen node for the following parameters:
-> 
-> DT bindings should be documented in Documentation/devicetree/bindings.
-> 
-> I also wonder if this would be more appropriately placed in a /firmware
-> node.
+2013/10/4 Sean Paul <seanpaul@chromium.org>:
+> On Thu, Oct 3, 2013 at 10:43 AM, Inki Dae <inki.dae@samsung.com> wrote:
+>> 2013/10/2 Sean Paul <seanpaul@chromium.org>:
+>>> This patch adds code to look for the ptn3460 in the device tree file on
+>>> exynos initialization. If ptn node is found, the driver will initialize
+>>> the ptn3460 driver and skip creating a DP connector (since the bridge
+>>> driver will register its own connector).
+>>>
+>>> Signed-off-by: Sean Paul <seanpaul@chromium.org>
+>>> ---
+>>>  drivers/gpu/drm/exynos/exynos_drm_core.c | 44 +++++++++++++++++++++++++++++++-
+>>>  1 file changed, 43 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_core.c b/drivers/gpu/drm/exynos/exynos_drm_core.c
+>>> index 1bef6dc..9cf4476 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_core.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_core.c
+>>> @@ -12,7 +12,9 @@
+>>>   * option) any later version.
+>>>   */
+>>>
+>>> +#include <linux/of_i2c.h>
+>>>  #include <drm/drmP.h>
+>>> +#include <drm/bridge/ptn3460.h>
+>>>  #include "exynos_drm_drv.h"
+>>>  #include "exynos_drm_encoder.h"
+>>>  #include "exynos_drm_connector.h"
+>>> @@ -20,6 +22,40 @@
+>>>
+>>>  static LIST_HEAD(exynos_drm_subdrv_list);
+>>>
+>>> +struct bridge_init {
+>>> +       struct i2c_client *client;
+>>> +       struct device_node *node;
+>>> +};
+>>> +
+>>> +static bool find_bridge(const char *name, struct bridge_init *bridge)
+>>> +{
+>>> +       bridge->client = NULL;
+>>> +       bridge->node = of_find_node_by_name(NULL, name);
+>>
+>> Not clear to me. Why do you try to handle device tree here, not real
+>> device driver?. How about adding a output property to board specific
+>> fimd dt node: i.e. output = <&ptn3460_bridge>?
+>
+> The problem doing something like this is that we won't have a handle
+> to drm_device if it's just a standalone driver, and so we won't be
+> able to register the bridge or connector. We need this init call one
+> way or another.
+>
 
-This is information passed to the kernel by the bootloader - not
-system descriptiont - so I don't quite see why it needs different
-treatment from initrd and bootargs.
+At least, dt binding shoul be done in real device driver so this way
+is not good. Let's find a better way.
 
-Feedback on v1 was:
-https://lkml.org/lkml/2013/6/26/378
-and
-https://lkml.org/lkml/2013/6/27/420
+>
+>> Actually, the output
+>> device of fimd hw could be one of MIPI-DSI, eDP, mDNIe, LVDS bridge,
+>> or LCD. And then, let's find ptn3460-bridge node in the fimd driver,
+>> and initialize the ptn3460 bridge driver, and get power on or off
+>> through  exynos_drm_display_ops of the fimd driver. And all these
+>> codes could be hided from fimd driver by moving them into
+>> exynos_drm_display_ops. Of course, for this, you would need additional
+>> works. So let's do it if needed.
+>>
+>> The below is the outline of device tree I recommend,
+>>
+>> In board dts,
+>>        i2c@I2CD000 {
+>>              ptn3460_bridge: prn3460-bridge@20 {
+>>                     ...
+>>              }
+>>         }
+>>
+>>         fimd@11c00000 {
+>>              ...
+>>              output_dev = <&ptn3460_bridge>;
+>>         }
+>>
+>> With this, I believe that you can do all things you want for
+>> controlling the LVDS bridge in fimd driver.
+>>
+>
+> No, this isn't what I want to do. The bridge should not hang off fimd
+> since it's a crtc. The bridge should only be initialized by the DP
+> driver (it doesn't make sense to initialize ptn when you're using
+> MIPI/LVDS/whatever).
 
-I don't really mind either way, but the current layout is now used
-across 3 sets of kernel patches, so we need to reach some sort of
-consensus. Interested parties so far: me, you, Grant, Arnd, Mark.
+I don't mean that the bridge device should be initialized by fimd
+directly but the fimd driver provides just interfaces abstracted to
+control the bridge device. And basically, the exynos_drm_display_ops
+shouldn't be in fimd driver but in real connector driver; i.e. lcd
+panel or LVDS driver. The reason I placed the exynos_drm_display_ops
+in fimd driver is that lcd panel driver is controlled by lcd class
+depended on Linux framebuffer, and I thought the panel driver should
+be shared with drm driver in case of ARM SoC. The
+exynos_drm_display_ops should be moved into right place if something
+better exists some time or other.
 
-> > +- 'linux,efi-mmap':
-> > +  The EFI memory map as an embedded property. (required)
-> > +  An array of type EFI_MEMORY_DESCRIPTOR as described by the UEFI
-> > +  specification, current version described in Linux by efi_memory_desc_t.
-> 
-> Is that too complex to describe here?
- 
-No, just felt a bit redundant, and also not architecture-specific.
+So how can the DP driver control the bridge device as of now? the DP
+you mentioned would be eDP, and the eDP driver is placed in
+drivers/video/exynos/, and also MIPI-DSI driver.
 
-> > +  The memory map is represented in little-endian, not DT, byte order.
-> > +  This map needs to contain at least the regions to be preserved for runtime
-> > +  services, but would normally just be the map retreieved by calling UEFI
-> > +  GetMemoryMap() immediately before ExitBootServices().
-> > +- 'linux,efi-mmap-desc-size':
-> > +  Size of each descriptor in the memory map. (override default)
-> 
-> 32-bit value?
-
-Value as returned by the above mentioned GetMemoryMap().
-Defined in UEFI specification (and <linux/efi.h>) as 32-bit (native
-int). But yes, I can be explicit.
-
-> > +- 'linux,efi-mmap-desc-ver':
-> > +  Memory descriptor format version. (override default)
-> 
-> String? Number?
- 
-Value as returned by the above mentioned GetMemoryMap().
-Defined in the UEFI specification as 32-bit (uint32), not
-architecture specific. And I can add that too.
-
-> Are these all generated by UEFI at runtime or could they be statically
-> set in a platform's DTB?
-
-Generated at runtime.
-This is not the platform memory map, this is the UEFI memory map,
-which tells us which regions we need to preserve for runtime
-services, ACPI and such.
-
-> How would other OS's get this information? Is this really linux specific?
-
-The way it is passed through DT is. Other operating systems might keep
-boot services running for longer, and make calls into UEFI later, so
-not needing to cache the data. Since boot services means the timer
-interrupt is active, the ARM Linux boot protocol effectively prohibits
-this.
-
-Many of these questions are about generic UEFI mechanisms.
-If they need to be documented outside the UEFI specification,
-Documentation/arm is not the right place for it.
-
-If you want, I could give a basic Documentation/uefi.txt a shot.
-
-/
-    Leif
+>
+> Since the actual crtc/encoder drivers are abstracted through
+> exynos_drm_core/crtc/encoder, we need to initialize the ptn driver in
+> the abstraction layers in order to hook it directly into drm.
+>
+> Sean
+>
+>
+>> Thanks,
+>> Inki Dae
+>>
+>>> +       if (!bridge->node)
+>>> +               return false;
+>>> +
+>>> +       bridge->client = of_find_i2c_device_by_node(bridge->node);
+>>> +       if (!bridge->client)
+>>> +               return false;
+>>> +
+>>> +       return true;
+>>> +}
+>>> +
+>>> +/* returns the number of bridges attached */
+>>> +static int exynos_drm_attach_lcd_bridge(struct drm_device *dev,
+>>> +               struct drm_encoder *encoder)
+>>> +{
+>>> +       struct bridge_init bridge;
+>>> +       int ret;
+>>> +
+>>> +       if (find_bridge("ptn3460-bridge", &bridge)) {
+>>> +               ret = ptn3460_init(dev, encoder, bridge.client, bridge.node);
+>>> +               if (!ret)
+>>> +                       return 1;
+>>> +       }
+>>> +       return 0;
+>>> +}
+>>> +
+>>>  static int exynos_drm_create_enc_conn(struct drm_device *dev,
+>>>                                         struct exynos_drm_subdrv *subdrv)
+>>>  {
+>>> @@ -36,6 +72,13 @@ static int exynos_drm_create_enc_conn(struct drm_device *dev,
+>>>                 DRM_ERROR("failed to create encoder\n");
+>>>                 return -EFAULT;
+>>>         }
+>>> +       subdrv->encoder = encoder;
+>>> +
+>>> +       if (subdrv->manager->display_ops->type == EXYNOS_DISPLAY_TYPE_LCD) {
+>>> +               ret = exynos_drm_attach_lcd_bridge(dev, encoder);
+>>> +               if (ret)
+>>> +                       return 0;
+>>> +       }
+>>>
+>>>         /*
+>>>          * create and initialize a connector for this sub driver and
+>>> @@ -48,7 +91,6 @@ static int exynos_drm_create_enc_conn(struct drm_device *dev,
+>>>                 goto err_destroy_encoder;
+>>>         }
+>>>
+>>> -       subdrv->encoder = encoder;
+>>>         subdrv->connector = connector;
+>>>
+>>>         return 0;
+>>> --
+>>> 1.8.4
+>>>
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
