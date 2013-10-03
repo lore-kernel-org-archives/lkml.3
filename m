@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab3JCP42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:56:28 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45804 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3JCP40 (ORCPT
+	id S1754792Ab3JCP5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:57:05 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40330 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754654Ab3JCP5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:56:26 -0400
-Date: Thu, 3 Oct 2013 08:56:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ 00/13] 3.0.99-stable review
-Message-ID: <20131003155620.GA30315@roeck-us.net>
-References: <20131003040400.753642257@linuxfoundation.org>
- <524D0663.209@roeck-us.net>
- <1380801873@msgid.manchmal.in-ulm.de>
- <524D72A7.8030200@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524D72A7.8030200@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Oct 2013 11:57:02 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, daniel.lezcano@linaro.org
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 00/16] CPUIdle: Minor cleanups for 3.13
+Date: Thu,  3 Oct 2013 21:26:39 +0530
+Message-Id: <cover.1380815504.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 07:35:35AM -0600, Khalid Aziz wrote:
-> On 10/03/2013 06:47 AM, Christoph Biedl wrote:
-> >Guenter Roeck wrote...
-> >
-> >>On 10/02/2013 09:04 PM, Greg Kroah-Hartman wrote:
-> >>>This is the start of the stable review cycle for the 3.0.99 release.
-> >
-> >>Heads up: I am getting lots of build failures in 3.0 and 3.4 builds.
-> >>
-> >>mm/built-in.o: In function `__put_compound_page':
-> >>slab.c:(.text+0xaa3c): undefined reference to `PageHuge'
-> >>mm/built-in.o: In function `put_compound_page':
-> >>slab.c:(.text+0xaab0): undefined reference to `PageHuge'
-> >>mm/built-in.o: In function `__get_page_tail':
-> >>slab.c:(.text+0xb178): undefined reference to `PageHuge'
-> >>make: *** [.tmp_vmlinux1] Error 1
-> >
-> >This is obviously due to
-> >
-> >| [ 11/13] mm: fix aio performance regression for database caused by THP
-> >
-> >and happens if CONFIG_HUGETLB_PAGE is not set.
-> >
-> >Looking closer, upstream commit 7cb2ef56 included linux/hugetlb.h
-> >while the backport for 3.0 just defines PageHuge. Reverting that like
-> >in the patch below causes the build to complete, and the resulting
-> >kernel shows no anomalies here.
-> >
-> >However did that backport, why was it done that way? Or did I miss an
-> >important point?
-> 
-> Thanks for tracking this down. I had not tried a configuration with
-> CONFIG_HUGETLB_PAGE not set. In my config, I was getting many
-> multiple definition errors for bunch of other defines from
-> linux/hugetlb.h. I will look at my config again but chances are I
-> had something else screwed up in my build since you did not see
-> those errors. Did you compile with CONFIG_HUGETLB_PAGE set after
-> including linux/hugetlb.h? If you did, including linux/hugetlb.h
-> instead of importing just the definition of PageHuge in mm/swap.c
-> would be the right thing to do.
-> 
+Hi Rafael,
 
-For my part, what I do is to compile lots of standard configurations.
-I don't look into details. If you are interested, go to
-http://server.roeck-us.net:8010/builders, click on any of the many
-failed builds for 3.0 or 3.4, then click on "stdio" on the build page.
-You'll see the build log, which also lists the names of the failed
-configurations.
+These are V2 of my CPUIdle cleanup series.. Few patches are dropped as they
+required further modifications. Last one is rewritten as suggested by Daniel.
+Most of them are already Acked by Daniel.
 
-An easy start might be x86_64:allnoconfig or i386:allnoconfig,
-both of which fail.
+Viresh Kumar (16):
+  cpuidle: fix indentation of cpumask
+  cpuidle: Fix comments in cpuidle core
+  cpuidle: make __cpuidle_get_cpu_driver() inline
+  cpuidle: make __cpuidle_device_init() return void
+  cpuidle: make __cpuidle_driver_init() return void
+  cpuidle: rearrange code in __cpuidle_driver_init()
+  cpuidle: rearrange __cpuidle_register_device() to keep minimal exit
+    points
+  cpuidle: merge two if() statements for checking error cases
+  cpuidle: reduce code duplication inside cpuidle_idle_call()
+  cpuidle: replace multiline statements with single line in
+    cpuidle_idle_call()
+  cpuidle: call cpuidle_get_driver() from after taking
+    cpuidle_driver_lock
+  cpuidle: use drv instead of cpuidle_driver in show_current_driver()
+  cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+  cpuidle: don't calculate time-diff if entered_state < 0
+  cpuidle: don't call poll_idle_init() for every cpu
+  cpuidle: remove cpuidle_unregister_governor()
 
-Thanks,
-Guenter
+ Documentation/cpuidle/governor.txt |  1 -
+ drivers/cpuidle/coupled.c          |  2 +-
+ drivers/cpuidle/cpuidle.c          | 95 ++++++++++----------------------------
+ drivers/cpuidle/driver.c           | 69 ++++++++++++++++++++-------
+ drivers/cpuidle/governor.c         | 43 -----------------
+ drivers/cpuidle/sysfs.c            | 30 ++++++------
+ include/linux/cpuidle.h            |  8 +---
+ 7 files changed, 94 insertions(+), 154 deletions(-)
 
-> --
-> Khalid
-> 
-> >
-> >     Christoph
-> >
-> >--- a/mm/swap.c
-> >+++ b/mm/swap.c
-> >@@ -31,6 +31,7 @@
-> >  #include <linux/backing-dev.h>
-> >  #include <linux/memcontrol.h>
-> >  #include <linux/gfp.h>
-> >+#include <linux/hugetlb.h>
-> >
-> >  #include "internal.h"
-> >
-> >@@ -41,8 +42,6 @@
-> >  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
-> >  static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
-> >
-> >-int PageHuge(struct page *page);
-> >-
-> >  /*
-> >   * This path almost never happens for VM activity - pages are normally
-> >   * freed via pagevecs.  But it gets used by networking.
-> >
-> 
-> 
+-- 
+1.7.12.rc2.18.g61b472e
+
