@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3JCESj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:18:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47153 "EHLO
+	id S1755980Ab3JCESo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:18:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949Ab3JCESh (ORCPT
+	with ESMTP id S1754548Ab3JCESl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:18:37 -0400
+	Thu, 3 Oct 2013 00:18:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 24/57] staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
-Date: Wed,  2 Oct 2013 21:08:50 -0700
-Message-Id: <20131003040638.262456251@linuxfoundation.org>
+Subject: [ 25/57] staging: vt6656: [BUG] iwctl_siwencodeext return if device not open
+Date: Wed,  2 Oct 2013 21:08:51 -0700
+Message-Id: <20131003040638.329362115@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -28,43 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit e3eb270fab7734427dd8171a93e4946fe28674bc upstream.
+commit 5e8c3d3e41b0bf241e830a1ee0752405adecc050 upstream.
 
-The vt6656 is prone to resetting on the usb bus.
+Don't allow entry to iwctl_siwencodeext if device not open.
 
-It seems there is a race condition and wpa supplicant is
-trying to open the device via iw_handlers before its actually
-closed at a stage that the buffers are being removed.
-
-The device is longer considered open when the
-buffers are being removed. So move ~DEVICE_FLAGS_OPENED
-flag to before freeing the device buffers.
+This fixes a race condition where wpa supplicant/network manager
+enters the function when the device is already closed.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/main_usb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/vt6656/iwctl.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -1099,6 +1099,8 @@ static int device_close(struct net_devic
-     memset(pMgmt->abyCurrBSSID, 0, 6);
-     pMgmt->eCurrState = WMAC_STATE_IDLE;
+--- a/drivers/staging/vt6656/iwctl.c
++++ b/drivers/staging/vt6656/iwctl.c
+@@ -1634,6 +1634,9 @@ int iwctl_siwencodeext(struct net_device
+ 	if (pMgmt == NULL)
+ 		return -EFAULT;
  
-+	pDevice->flags &= ~DEVICE_FLAGS_OPENED;
++	if (!(pDevice->flags & DEVICE_FLAGS_OPENED))
++		return -ENODEV;
 +
-     device_free_tx_bufs(pDevice);
-     device_free_rx_bufs(pDevice);
-     device_free_int_bufs(pDevice);
-@@ -1110,7 +1112,6 @@ static int device_close(struct net_devic
-     usb_free_urb(pDevice->pInterruptURB);
- 
-     BSSvClearNodeDBTable(pDevice, 0);
--    pDevice->flags &=(~DEVICE_FLAGS_OPENED);
- 
-     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "device_close2 \n");
- 
+ 	buf = kzalloc(sizeof(struct viawget_wpa_param), GFP_KERNEL);
+ 	if (buf == NULL)
+ 		return -ENOMEM;
 
 
