@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab3JCEQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:16:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47076 "EHLO
+	id S1758608Ab3JCFVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 01:21:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48187 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755702Ab3JCEQu (ORCPT
+	with ESMTP id S1757689Ab3JCFVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:16:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [ 41/52] dm-raid: silence compiler warning on rebuilds_per_group.
-Date: Wed,  2 Oct 2013 21:05:59 -0700
-Message-Id: <20131003040525.047739188@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131003040522.190209641@linuxfoundation.org>
-References: <20131003040522.190209641@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 3 Oct 2013 01:21:21 -0400
+Date: Wed, 2 Oct 2013 22:21:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: alexander.shishkin@linux.intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] usb: chipidea: add Intel Clovertrail pci id
+Message-ID: <20131003052134.GA1312@kroah.com>
+References: <1380663178-24218-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1380663178-24218-2-git-send-email-david.a.cohen@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380663178-24218-2-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 01, 2013 at 02:32:58PM -0700, David Cohen wrote:
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>  drivers/usb/chipidea/ci_hdrc_pci.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/usb/chipidea/ci_hdrc_pci.c b/drivers/usb/chipidea/ci_hdrc_pci.c
+> index 08a724b..d514332 100644
+> --- a/drivers/usb/chipidea/ci_hdrc_pci.c
+> +++ b/drivers/usb/chipidea/ci_hdrc_pci.c
+> @@ -129,6 +129,11 @@ static DEFINE_PCI_DEVICE_TABLE(ci_hdrc_pci_id_table) = {
+>  		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0829),
+>  		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
+>  	},
+> +	{
+> +		/* Intel Clovertrail */
+> +		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe006),
+> +		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
+> +	},
 
-------------------
+Can this go into 3.12-final, and any other stable kernel releases as
+well?  Or does this platform also need other fixes that aren't in 3.10
+and 3.11?
 
-From: NeilBrown <neilb@suse.de>
+thanks,
 
-commit 3f6bbd3ffd7b733dd705e494663e5761aa2cb9c1 upstream.
-
-This doesn't really need to be initialised, but it doesn't hurt,
-silences the compiler, and as it is a counter it makes sense for it to
-start at zero.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/dm-raid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -380,7 +380,7 @@ static int validate_region_size(struct r
- static int validate_raid_redundancy(struct raid_set *rs)
- {
- 	unsigned i, rebuild_cnt = 0;
--	unsigned rebuilds_per_group, copies, d;
-+	unsigned rebuilds_per_group = 0, copies, d;
- 	unsigned group_size, last_group_start;
- 
- 	for (i = 0; i < rs->md.raid_disks; i++)
-
-
+greg k-h
