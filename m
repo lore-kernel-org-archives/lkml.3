@@ -1,141 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab3JCRxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 13:53:32 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:41460 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab3JCRxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 13:53:31 -0400
-Message-ID: <524DAF17.8040104@sgi.com>
-Date: Thu, 03 Oct 2013 10:53:27 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1754717Ab3JCRyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 13:54:10 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:41769 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417Ab3JCRyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 13:54:08 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] PATCH: KGDB/KDB Fix no KDB config problem.
-References: <20131003163824.966169920@asylum.americas.sgi.com> <20131003163825.184494258@asylum.americas.sgi.com> <20131003165122.GB32755@gmail.com> <524DA381.2050108@sgi.com> <20131003171520.GA5144@gmail.com>
-In-Reply-To: <20131003171520.GA5144@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20131003170914.GA11992@kroah.com>
+References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org>
+	<CAOesGMjJ6Uj0uGFJqtnWQyDW+tr6eLVWoHZ+B7uFna+L8N6E8Q@mail.gmail.com>
+	<20131003170914.GA11992@kroah.com>
+Date: Thu, 3 Oct 2013 10:54:07 -0700
+Message-ID: <CAOesGMhBaj14++kJ9tVko68MjC7D+JZrBRgoxa4zmZ9z186MQw@mail.gmail.com>
+Subject: Re: Use of drivers/platform and matching include?
+From: Olof Johansson <olof@lixom.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kumar Gala <galak@codeaurora.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Feng Kan <fkan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 3, 2013 at 10:09 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Oct 03, 2013 at 09:46:30AM -0700, Olof Johansson wrote:
+>> I don't have a good answer though. If it wasn't for the arm64 fork,
+>> locating these under arch/arm somewhere would really be the reasonable
+>> answer, like we used to do on powerpc. :(
+>
+> Sounds like yet-another-good reason why there shouldn't be an arm64
+> "fork" at all :(
+
+Doing a fork gives a chance at a clean slate refresh of platform
+support, which is in itself quite useful. But indeed it causes some
+things to be more complicated.
+
+It's a common complaint that "everybody who ever forked for 64-bit
+have later merged", and that's true, but that doesn't mean there's no
+value in forking (and perhaps later merging), instead of adding on top
+to start with.
+
+> The arm community created this mess, you all can fix it up, it's not too
+> late.
+
+It wouldn't be a huge deal to add something like arch/arm/syslib and
+give some of the system library-type code a home there -- stuff like
+resource allocation libraries, etc. I don't think we want to collect
+all the back-end drivers in there though, just libraries.
+
+I think many of us are hesitant to introduce something that runs the
+risk of becoming a dumping ground for all these "I don't know where to
+put them, so here you go" drivers, since we've spent so much time
+cleaning them all up and de-forking per-vendor implementations of
+similar things.
+
+Still, there's little point in trying to artificially remove drivers
+that are 100% vendor unique from a vendor-specific location just for
+the sake of it. And we do have a single merge path today through
+arm-soc to catch a lot of these things as they get introduced --
+almost more so than if everyone adds their own driver/ directory and
+declare themselves maintainer of that subtree.
+
+Kumar, it would be useful to get a bit of an inventory of what you
+know you need a home for. I know the APM guys have a queue manager
+(arm64-only) that handles things such as resource allocation for
+ethernet, etc, that they need a home for. It's not a pure library
+though, since there's also error interrupts, etc, to deal with.
 
 
-On 10/3/2013 10:15 AM, Ingo Molnar wrote:
-> 
-> * Mike Travis <travis@sgi.com> wrote:
-> 
->>
->>
->> On 10/3/2013 9:51 AM, Ingo Molnar wrote:
->>>
->>> * Mike Travis <travis@sgi.com> wrote:
->>>
->>>> Some code added to the debug_core module had KDB dependencies
->>>> that it shouldn't have.
->>>>
->>>> Signed-off-by: Mike Travis <travis@sgi.com>
->>>> ---
->>>>  kernel/debug/debug_core.c |    8 ++++----
->>>>  kernel/debug/debug_core.h |    2 ++
->>>>  2 files changed, 6 insertions(+), 4 deletions(-)
->>>>
->>>> --- linux.orig/kernel/debug/debug_core.c
->>>> +++ linux/kernel/debug/debug_core.c
->>>> @@ -575,8 +575,8 @@ return_normal:
->>>>  		raw_spin_lock(&dbg_slave_lock);
->>>>  
->>>>  #ifdef CONFIG_SMP
->>>> -	/* If SYSTEM_NMI, slaves are already waiting */
->>>> -	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
->>>> +	/* If send_ready set, slaves are already waiting */
->>>> +	if (ks->send_ready)
->>>>  		atomic_set(ks->send_ready, 1);
->>>>  
->>>>  	/* Signal the other CPUs to enter kgdb_wait() */
->>>> @@ -682,11 +682,11 @@ kgdb_handle_exception(int evector, int s
->>>>  	if (arch_kgdb_ops.enable_nmi)
->>>>  		arch_kgdb_ops.enable_nmi(0);
->>>>  
->>>> +	memset(ks, 0, sizeof(struct kgdb_state));
->>>>  	ks->cpu			= raw_smp_processor_id();
->>>>  	ks->ex_vector		= evector;
->>>>  	ks->signo		= signo;
->>>>  	ks->err_code		= ecode;
->>>> -	ks->kgdb_usethreadid	= 0;
->>>>  	ks->linux_regs		= regs;
->>>>  
->>>>  	if (kgdb_reenter_check(ks))
->>>> @@ -750,7 +750,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
->>>>  		ks->cpu			= cpu;
->>>>  		ks->ex_vector		= trapnr;
->>>>  		ks->signo		= SIGTRAP;
->>>> -		ks->err_code		= KDB_REASON_SYSTEM_NMI;
->>>> +		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
->>>>  		ks->linux_regs		= regs;
->>>>  		ks->send_ready		= send_ready;
->>>>  		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
->>>> --- linux.orig/kernel/debug/debug_core.h
->>>> +++ linux/kernel/debug/debug_core.h
->>>> @@ -75,11 +75,13 @@ extern int kdb_stub(struct kgdb_state *k
->>>>  extern int kdb_parse(const char *cmdstr);
->>>>  extern int kdb_common_init_state(struct kgdb_state *ks);
->>>>  extern int kdb_common_deinit_state(void);
->>>> +#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
->>>>  #else /* ! CONFIG_KGDB_KDB */
->>>>  static inline int kdb_stub(struct kgdb_state *ks)
->>>>  {
->>>>  	return DBG_PASS_EVENT;
->>>>  }
->>>> +#define KGDB_KDB_REASON_SYSTEM_NMI 0
->>>>  #endif /* CONFIG_KGDB_KDB */
->>>>  
->>>>  #endif /* _DEBUG_CORE_H_ */
->>>
->>> Hm, the KGDB_KDB_REASON_SYSTEM_NMI definition is a bit ugly. I still think 
->>> there are layering violations here and just kludging it around doesn't 
->>> solve it - a helper function that keeps kgdb details to the kgdb code 
->>> would.
->>>
->>> Anyway, if Jason is fine with this solution and upholds his Acked-by then 
->>> I'll merge this into the first patch and apply the two patches.
->>>
->>> Thanks,
->>>
->>> 	Ingo
->>>
->>
->> Would you prefer a simple #ifdef CONFIG_KGDB_KDB around the assignment?
-> 
-> An #ifdef doesn't solve the layering violation!
-> 
-> kernel/debug/debug_core.c didn't have any serious use of #ifdef 
-> CONFIG_KGDB_KDB before (it used it to flavor a few printks) and I'm not 
-> convinced it needs one for this feature either.
-> 
-> So if that whole chunk is kdb dependent, why not shuffle that into a 
-> nicely named function and host it somewhere appropriate in 
-> kernel/debug/kdb/? That function would turn into an empty inline function 
-> in the !CONFIG_KGDB_KDB case.
-> 
-> But ... it's up to Jason really whether he wants to abstract that piece of 
-> code out, I'm just kibitzing here really.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-
-If I moved it to KDB then we would lose the capability to enter KGDB
-mode and the gdb_stub functionality.  The #ifdef could have a comment
-to this effect?
+-Olof
