@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab3JCUMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:12:53 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:61704 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab3JCUMv (ORCPT
+	id S1755434Ab3JCUNW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:13:22 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:63453 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab3JCUNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:12:51 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, David Miller <davem@davemloft.net>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH] of: fix unnecessary warning on missing /cpus node
-Date: Thu,  3 Oct 2013 21:12:29 +0100
-Message-Id: <1380831149-15764-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 3 Oct 2013 16:13:19 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Benoit Cousson <bcousson@baylibre.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH V5 0/6] ARM: OMAP3+: support cpufreq-cpu0 for device tree boot
+References: <1368039976-29648-1-git-send-email-nm@ti.com>
+	<87pprmuwxg.fsf@linaro.org> <524DA41C.7000809@ti.com>
+Date: Thu, 03 Oct 2013 13:13:15 -0700
+In-Reply-To: <524DA41C.7000809@ti.com> (Nishanth Menon's message of "Thu, 3
+	Oct 2013 12:06:36 -0500")
+Message-ID: <87d2nmun8k.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all DT platforms have all the cpus collected under a /cpus node.
-That just happens to be a details of FDT, ePAPR and PowerPC platforms.
-Sparc does something different, but unfortunately the current code
-complains with a warning if /cpus isn't there. This became a problem
-with commit f86e4718, "driver/core cpu: initialize of_node in cpu's
-device structure", which caused the function to get called for all
-architectures.
+Nishanth Menon <nm@ti.com> writes:
 
-This commit is a temporary fix to fail silently if the cpus node isn't
-present. A proper fix will come later to allow arch code to provide a
-custom mechanism for decoding the CPU hwid if the 'reg' property isn't
-appropriate.
+> fixing Benoit's mail ID.
+> On 10/03/2013 11:43 AM, Kevin Hilman wrote:
+>> Hi Nishanth,
+>> 
+>> Nishanth Menon <nm@ti.com> writes:
+>> 
+>>> The following version 5 of the series arose from trying to use
+>>> BeagleBoard-XM (OMAP3 variant) for doing CPU DVFS using cpufreq-cpu0.
+>>> This series enables the generic cpufreq-cpu0 driver to be used in
+>>> device tree enabled boot while maintaining support of the legacy
+>>> omap-cpufreq driver when used in non device tree enabled boot.
+>> 
+>> What's the status of this series?  Is it still waiting on the clock DT
+>> changes?
+>
+> yes - i do have a new series lined up at the moment here[1] - trying
+> to ensure everything is dandy before public post. ofcourse, we'd like
+> to ensure we have feedback on tero's series[2]. I am now working on
+> ensuring ABB regulator[3](again depends on Tero's series) fits on top
+> of Mike's voltage notifier series[4]
+>
+> So, yep, everything is blocked due to lack of feedback on Tero's
+> series [2].
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
----
- drivers/of/base.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+OK, thanks for the update. 
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 865d3f6..7d4c70f 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -303,10 +303,8 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
- 	struct device_node *cpun, *cpus;
- 
- 	cpus = of_find_node_by_path("/cpus");
--	if (!cpus) {
--		pr_warn("Missing cpus node, bailing out\n");
-+	if (!cpus)
- 		return NULL;
--	}
- 
- 	for_each_child_of_node(cpus, cpun) {
- 		if (of_node_cmp(cpun->type, "cpu"))
--- 
-1.8.1.2
-
+Kevin
