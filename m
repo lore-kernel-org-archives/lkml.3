@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3JCDwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Oct 2013 23:52:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53938 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab3JCDwH (ORCPT
+	id S1752280Ab3JCEAg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:00:36 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:57974 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3JCEAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Oct 2013 23:52:07 -0400
-Date: Wed, 02 Oct 2013 23:52:06 -0400 (EDT)
-Message-Id: <20131002.235206.2101296729379094715.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 02 Oct 2013 20:52:07 -0700 (PDT)
+	Thu, 3 Oct 2013 00:00:34 -0400
+Date: Thu, 3 Oct 2013 13:00:31 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 1/2] rcar-hpbdma: remove shdma_free_irq() calls
+Message-ID: <20131003040031.GA7925@verge.net.au>
+References: <201309260228.37765.sergei.shtylyov@cogentembedded.com>
+ <20130926021417.GC18396@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130926021417.GC18396@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 26, 2013 at 11:14:17AM +0900, Simon Horman wrote:
+> On Thu, Sep 26, 2013 at 02:28:37AM +0400, Sergei Shtylyov wrote:
+> > Commit c1c63a14f4f2419d093acd7164eccdff315baa86 (DMA: shdma: switch to managed
+> > resource allocation) got rid of shdma_free_irq() but  unfortunately got merged
+> > later than commit c4f6c41ba790bbbfcebb4c47a709ac8ff1fe1af9 (dma: add driver for
+> > R-Car HPB-DMAC), so that the HPB-DMAC driver retained the calls and got broken:
+> > 
+> > drivers/dma/sh/rcar-hpbdma.c: In function `hpb_dmae_alloc_chan_resources':
+> > drivers/dma/sh/rcar-hpbdma.c:435: error: implicit declaration of function
+> > `shdma_free_irq'
+> > 
+> > Fix this compilation error by removing the remaining shdma_free_irq() calls.
+> 
+> Tested-by: Simon Horman <horms+renesas@verge.net.au>
+> 
+> > Reported-by: Simon Horman <horms@verge.net.au>
+> > Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-Couple small bug fixes:
-
-1) strlcpy in ldom_reboot() is still not quite right, use sprintf
-   instead from Kees Cook.
-
-2) Generic hugetlb interface pte checks should use the widest return
-   type, otherwise high bits can get chopped off.
-
-3) Fix build with PCI MSI enabled on 32-bit sparc.
-
-Please pull, thanks a lot!
-
-The following changes since commit c31eeaced22ce8bd61268a3c595d542bb38c0a4f:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-10-01 12:58:48 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to a988fb806d72d4e3a0edbeaece3f2f1172ce44b8:
-
-  sparc: fix MSI build failure on Sparc32 (2013-10-02 20:02:35 -0400)
-
-----------------------------------------------------------------
-David Miller (1):
-      mm: Fix generic hugetlb pte check return type.
-
-Kees Cook (1):
-      sparc: fix ldom_reboot buffer overflow harder
-
-Michael Opdenacker (1):
-      sparc: remove deprecated IRQF_DISABLED
-
-Thomas Petazzoni (1):
-      sparc: fix MSI build failure on Sparc32
-
- arch/sparc/Kconfig                 | 7 ++++++-
- arch/sparc/include/asm/floppy_64.h | 2 +-
- arch/sparc/kernel/Makefile         | 3 ++-
- arch/sparc/kernel/ds.c             | 5 ++---
- arch/sparc/kernel/ldc.c            | 4 ++--
- include/asm-generic/hugetlb.h      | 4 ++--
- 6 files changed, 15 insertions(+), 10 deletions(-)
+Vinod, could you consider taking this and the following patch
+as a fix for v3.12?
