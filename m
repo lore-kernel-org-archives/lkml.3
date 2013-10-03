@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3JCUHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 16:07:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54709 "EHLO mx1.redhat.com"
+	id S1755236Ab3JCUI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 16:08:29 -0400
+Received: from 8bytes.org ([85.214.48.195]:59378 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754548Ab3JCUHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 16:07:13 -0400
-Date: Thu, 3 Oct 2013 22:00:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131003200002.GA23768@redhat.com>
-References: <20131002145655.361606532@infradead.org> <20131002150518.675931976@infradead.org> <20131003164117.GD5790@linux.vnet.ibm.com> <20131003184001.GM28601@twins.programming.kicks-ass.net> <20131003184719.GA11996@redhat.com> <20131003192135.GR5790@linux.vnet.ibm.com> <20131003193206.GA17796@redhat.com> <20131003193319.GB17796@redhat.com> <20131003195026.GT5790@linux.vnet.ibm.com>
+	id S1754545Ab3JCUI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 16:08:27 -0400
+Date: Thu, 3 Oct 2013 22:08:24 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH] iommu: Remove stack trace from broken irq remapping
+ warning
+Message-ID: <20131003200824.GA17455@8bytes.org>
+References: <1380300815-1864-1-git-send-email-nhorman@tuxdriver.com>
+ <20131003172142.GA20660@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003195026.GT5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131003172142.GA20660@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Oct  3 22:08:25 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 524dceb920861825214041
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Paul E. McKenney wrote:
->
-> On Thu, Oct 03, 2013 at 09:33:19PM +0200, Oleg Nesterov wrote:
-> > On 10/03, Oleg Nesterov wrote:
-> > >
-> > > Because I believe this needs another patch ;) see below, didn't test
-> > > it yet.
-> > > ...
-> > >  struct rcu_sync_ops {
-> > >  	void (*sync)(void);
-> > >  	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-> > > +#ifdef CONFIG_PROVE_RCU
-> > > +	bool (*held)(void);
-> >         ^^^^
-> > OK, it has to return "int".
->
-> I missed this, but the rest looked good.  ;-)
+On Thu, Oct 03, 2013 at 01:21:42PM -0400, Neil Horman wrote:
+> On Fri, Sep 27, 2013 at 12:53:35PM -0400, Neil Horman wrote:
+> > The warning for the irq remapping broken check in intel_irq_remapping.c is
+> > pretty pointless.  We need the warning, but we know where its comming from, the
+> > stack trace will always be the same, and it needlessly triggers things like
+> > Abrt.  This changes the warning to just print a text warning about BIOS being
+> > broken, without the stack trace, then sets the appropriate taint bit.  Since we
+> > automatically disable irq remapping, theres no need to contiue making Abrt jump
+> > at this problem
+> > 
+> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> > CC: Joerg Roedel <joro@8bytes.org>
+> > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > CC: Andy Lutomirski <luto@amacapital.net>
+> > CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> 
+> Ping Bjorn, Jeorg, any thoughts here?
 
-OK thanks ;)
+Yes, the patch is doing the right thing. I have it already on my list
+and will merge it soon.
 
-So unless Peter objects I'll write the changelogs (always nontrivial task),
-test, and send these 2 patches + "add ops->barr() / rcu_sync_wait_for_cb"
-tomorrow.
 
-Oleg.
+	Joerg
+
 
