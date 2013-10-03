@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab3JCJMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 05:12:51 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:56982 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab3JCJMu (ORCPT
+	id S1753334Ab3JCJOA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 05:14:00 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:54202 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3JCJN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 05:12:50 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf tool: report user-friendly error from timechart
-Date: Thu,  3 Oct 2013 14:35:46 +0530
-Message-Id: <1380791146-7465-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.4.477.g5d89aa9
+	Thu, 3 Oct 2013 05:13:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131003090347.GB3081@twins.programming.kicks-ass.net>
+References: <20131002133759.GH28601@twins.programming.kicks-ass.net>
+	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
+	<CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
+	<CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
+	<20131002190001.GX3081@twins.programming.kicks-ass.net>
+	<CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
+	<20131002203107.GY3081@twins.programming.kicks-ass.net>
+	<CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
+	<20131003090347.GB3081@twins.programming.kicks-ass.net>
+Date: Thu, 3 Oct 2013 11:13:57 +0200
+Message-ID: <CABPqkBQ5zEwcUHRBSAx6MPSamen9XjV3MoVPmCjaqCTL-DjO1Q@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Earlier, when 'timechart record' was invoked by a user without
-permissions to debugfs:
+On Thu, Oct 3, 2013 at 11:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Oct 03, 2013 at 10:55:28AM +0200, Stephane Eranian wrote:
+>> I don't know the MM code but I assume that that vm_mm struct is
+>> allocated dynamically
+>> and maybe you already grabbing a lock while doing this. Could we
+>> leverage that lock
+>> to increment a global generation number?
+>
+> Sure; something like so.. I just don't like global state nor adding to
+> mm_struct for just this.
+>
+I understand, I don't like global state either. I see you already
+have uprobes state in there. Thus to me, the perf situation is
+not much worse in terms of usefulness (frequency of use).
 
-$ perf timechart record
-invalid or unsupported event: 'power:cpu_frequency'
-Run 'perf list' for a list of valid events
+Thanks.
 
- usage: perf record [<options>] [<command>]
-    or: perf record [<options>] -- <command> [<options>]
-[... detailed usage information ...]
-
-This is highly user unfriendly, as the real problem is not reported to
-the user correctly. Now, the user gets a much more friendly:
-
-$ perf timechart record
-Error:  No permissions to read $debugfs/tracing/events/power/cpu_frequency
-Hint:   Change the permissions of debugfs: /sys/kernel/debug
-        The directory will be present if your kernel was compiled with debugfs support.
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/builtin-timechart.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index c2e0231..ceaf9b8 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1056,6 +1056,14 @@ static int __cmd_record(int argc, const char **argv)
- 	}
- #endif
- 
-+	/* Perform a quick sanity check */
-+	if (!is_valid_tracepoint("power:cpu_frequency")) {
-+		fprintf(stderr, "Error:\tNo permissions to read $debugfs/tracing/events/power/cpu_frequency\n");
-+		fprintf(stderr, "Hint:\tChange the permissions of debugfs: /sys/kernel/debug\n");
-+		fprintf(stderr, "\tThe directory will be present if your kernel was compiled with debugfs support.\n");
-+		return 1;
-+	}
-+
- 	rec_argc = record_elems + argc - 1;
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
--- 
-1.8.4.477.g5d89aa9
-
+> ---
+>  include/linux/mm_types.h | 1 +
+>  kernel/fork.c            | 6 ++++++
+>  2 files changed, 7 insertions(+)
+>
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index d9851eeb6e1d..3877b1e72a5b 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -436,6 +436,7 @@ struct mm_struct {
+>         int first_nid;
+>  #endif
+>         struct uprobes_state uprobes_state;
+> +       u64 mm_id;
+>  };
+>
+>  /* first nid will either be a valid NID or one of these values */
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 086fe73ad6bd..b315f6227629 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -523,6 +523,8 @@ static void mm_init_aio(struct mm_struct *mm)
+>  #endif
+>  }
+>
+> +static u64 global_mm_id;
+> +
+>  static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>  {
+>         atomic_set(&mm->mm_users, 1);
+> @@ -537,6 +539,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>         spin_lock_init(&mm->page_table_lock);
+>         mm_init_aio(mm);
+>         mm_init_owner(mm, p);
+> +       mm->mm_id = 0;
+>
+>         if (likely(!mm_alloc_pgd(mm))) {
+>                 mm->def_flags = 0;
+> @@ -1422,6 +1425,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>          */
+>         write_lock_irq(&tasklist_lock);
+>
+> +       if (p->mm && !p->mm->mm_id)
+> +               p->mm->mm_id = ++global_mm_id;
+> +
+>         /* CLONE_PARENT re-uses the old parent */
+>         if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
+>                 p->real_parent = current->real_parent;
