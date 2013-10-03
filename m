@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3JCEVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:21:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47383 "EHLO
+	id S1757495Ab3JCEoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:44:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab3JCEUm (ORCPT
+	with ESMTP id S1753728Ab3JCEU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:20:42 -0400
+	Thu, 3 Oct 2013 00:20:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [ 53/57] drm/radeon: add missing hdmi callbacks for rv6xx
-Date: Wed,  2 Oct 2013 21:09:19 -0700
-Message-Id: <20131003040640.220640827@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>, Nicolas Suzor <nic@suzor.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 45/57] drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
+Date: Wed,  2 Oct 2013 21:09:11 -0700
+Message-Id: <20131003040639.674203089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 99d79aa2f3b7729e7290e8bda5d0dd8b0240ec62 upstream.
+commit 8d16f258217f2f583af1fd57c5144aa4bbe73e48 upstream.
 
-When dpm was merged, I added a new asic struct for
-rv6xx, but it never got properly updated when the
-hdmi callbacks were added due to the two patch sets
-being developed in parallel.
+There is no clear cut rules or specs for the retry interval, as there
+are many factors that affect overall response time. Increase the
+interval, and even more so on branch devices which may have limited i2c
+bit rates.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=69729
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reference: https://bugs.freedesktop.org/show_bug.cgi?id=60263
+Tested-by: Nicolas Suzor <nic@suzor.com>
+Reviewed-by: Todd Previte <tprevite@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_asic.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -926,6 +926,8 @@ static struct radeon_asic r520_asic = {
- 		.wait_for_vblank = &avivo_wait_for_vblank,
- 		.set_backlight_level = &atombios_set_backlight_level,
- 		.get_backlight_level = &atombios_get_backlight_level,
-+		.hdmi_enable = &r600_hdmi_enable,
-+		.hdmi_setmode = &r600_hdmi_setmode,
- 	},
- 	.copy = {
- 		.blit = &r100_copy_blit,
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -567,7 +567,18 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
+ 			DRM_DEBUG_KMS("aux_ch native nack\n");
+ 			return -EREMOTEIO;
+ 		case AUX_NATIVE_REPLY_DEFER:
+-			udelay(100);
++			/*
++			 * For now, just give more slack to branch devices. We
++			 * could check the DPCD for I2C bit rate capabilities,
++			 * and if available, adjust the interval. We could also
++			 * be more careful with DP-to-Legacy adapters where a
++			 * long legacy cable may force very low I2C bit rates.
++			 */
++			if (intel_dp->dpcd[DP_DOWNSTREAMPORT_PRESENT] &
++			    DP_DWN_STRM_PORT_PRESENT)
++				usleep_range(500, 600);
++			else
++				usleep_range(300, 400);
+ 			continue;
+ 		default:
+ 			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
 
 
