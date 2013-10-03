@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3JCEUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:20:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
+	id S1756809Ab3JCEV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:21:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47762 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756243Ab3JCEUa (ORCPT
+	with ESMTP id S1756750Ab3JCEVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:20:30 -0400
+	Thu, 3 Oct 2013 00:21:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 08/57] bcache: Fix a dumb CPU spinning bug in writeback
-Date: Wed,  2 Oct 2013 21:08:34 -0700
-Message-Id: <20131003040637.175658911@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [ 43/57] dm mpath: disable WRITE SAME if it fails
+Date: Wed,  2 Oct 2013 21:09:09 -0700
+Message-Id: <20131003040639.539617973@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040636.600441214@linuxfoundation.org>
 References: <20131003040636.600441214@linuxfoundation.org>
@@ -27,31 +28,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 79e3dab90d9f826ceca67c7890e048ac9169de49 upstream.
+commit f84cb8a46a771f36a04a02c61ea635c968ed5f6a upstream.
 
-schedule_timeout() != schedule_timeout_uninterruptible()
+Workaround the SCSI layer's problematic WRITE SAME heuristics by
+disabling WRITE SAME in the DM multipath device's queue_limits if an
+underlying device disabled it.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The WRITE SAME heuristics, with both the original commit 5db44863b6eb
+("[SCSI] sd: Implement support for WRITE SAME") and the updated commit
+66c28f971 ("[SCSI] sd: Update WRITE SAME heuristics"), default to enabling
+WRITE SAME(10) even without successfully determining it is supported.
+After the first failed WRITE SAME the SCSI layer will disable WRITE SAME
+for the device (by setting sdkp->device->no_write_same which results in
+'max_write_same_sectors' in device's queue_limits to be set to 0).
+
+When a device is stacked ontop of such a SCSI device any changes to that
+SCSI device's queue_limits do not automatically propagate up the stack.
+As such, a DM multipath device will not have its WRITE SAME support
+disabled.  This causes the block layer to continue to issue WRITE SAME
+requests to the mpath device which causes paths to fail and (if mpath IO
+isn't configured to queue when no paths are available) it will result in
+actual IO errors to the upper layers.
+
+This fix doesn't help configurations that have additional devices
+stacked ontop of the mpath device (e.g. LVM created linear DM devices
+ontop).  A proper fix that restacks all the queue_limits from the bottom
+of the device stack up will need to be explored if SCSI will continue to
+use this model of optimistically allowing op codes and then disabling
+them after they fail for the first time.
+
+Before this patch:
+
+EXT4-fs (dm-6): mounted filesystem with ordered data mode. Opts: (null)
+device-mapper: multipath: XXX snitm debugging: got -EREMOTEIO (-121)
+device-mapper: multipath: XXX snitm debugging: failing WRITE SAME IO with error=-121
+end_request: critical target error, dev dm-6, sector 528
+dm-6: WRITE SAME failed. Manually zeroing.
+device-mapper: multipath: Failing path 8:112.
+end_request: I/O error, dev dm-6, sector 4616
+dm-6: WRITE SAME failed. Manually zeroing.
+end_request: I/O error, dev dm-6, sector 4616
+end_request: I/O error, dev dm-6, sector 5640
+end_request: I/O error, dev dm-6, sector 6664
+end_request: I/O error, dev dm-6, sector 7688
+end_request: I/O error, dev dm-6, sector 524288
+Buffer I/O error on device dm-6, logical block 65536
+lost page write due to I/O error on dm-6
+JBD2: Error -5 detected when updating journal superblock for dm-6-8.
+end_request: I/O error, dev dm-6, sector 524296
+Aborting journal on device dm-6-8.
+end_request: I/O error, dev dm-6, sector 524288
+Buffer I/O error on device dm-6, logical block 65536
+lost page write due to I/O error on dm-6
+JBD2: Error -5 detected when updating journal superblock for dm-6-8.
+
+# cat /sys/block/sdh/queue/write_same_max_bytes
+0
+# cat /sys/block/dm-6/queue/write_same_max_bytes
+33553920
+
+After this patch:
+
+EXT4-fs (dm-6): mounted filesystem with ordered data mode. Opts: (null)
+device-mapper: multipath: XXX snitm debugging: got -EREMOTEIO (-121)
+device-mapper: multipath: XXX snitm debugging: WRITE SAME I/O failed with error=-121
+end_request: critical target error, dev dm-6, sector 528
+dm-6: WRITE SAME failed. Manually zeroing.
+
+# cat /sys/block/sdh/queue/write_same_max_bytes
+0
+# cat /sys/block/dm-6/queue/write_same_max_bytes
+0
+
+It should be noted that WRITE SAME support wasn't enabled in DM
+multipath until v3.10.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/writeback.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/md/dm-mpath.c         |   11 ++++++++++-
+ drivers/md/dm.c               |   11 +++++++++++
+ include/linux/device-mapper.h |    3 ++-
+ 3 files changed, 23 insertions(+), 2 deletions(-)
 
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -397,8 +397,7 @@ static void read_dirty(struct closure *c
- 		if (delay > 0 &&
- 		    (KEY_START(&w->key) != dc->last_read ||
- 		     jiffies_to_msecs(delay) > 50))
--			while (delay)
--				delay = schedule_timeout(delay);
-+			delay = schedule_timeout_uninterruptible(delay);
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1284,8 +1284,17 @@ static int do_end_io(struct multipath *m
+ 	if (!error && !clone->errors)
+ 		return 0;	/* I/O complete */
  
- 		dc->last_read	= KEY_OFFSET(&w->key);
+-	if (error == -EOPNOTSUPP || error == -EREMOTEIO || error == -EILSEQ)
++	if (error == -EOPNOTSUPP || error == -EREMOTEIO || error == -EILSEQ) {
++		if ((clone->cmd_flags & REQ_WRITE_SAME) &&
++		    !clone->q->limits.max_write_same_sectors) {
++			struct queue_limits *limits;
++
++			/* device doesn't really support WRITE SAME, disable it */
++			limits = dm_get_queue_limits(dm_table_get_md(m->ti->table));
++			limits->max_write_same_sectors = 0;
++		}
+ 		return error;
++	}
  
+ 	if (mpio->pgpath)
+ 		fail_path(mpio->pgpath);
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -2250,6 +2250,17 @@ struct target_type *dm_get_immutable_tar
+ }
+ 
+ /*
++ * The queue_limits are only valid as long as you have a reference
++ * count on 'md'.
++ */
++struct queue_limits *dm_get_queue_limits(struct mapped_device *md)
++{
++	BUG_ON(!atomic_read(&md->holders));
++	return &md->queue->limits;
++}
++EXPORT_SYMBOL_GPL(dm_get_queue_limits);
++
++/*
+  * Fully initialize a request-based queue (->elevator, ->request_fn, etc).
+  */
+ static int dm_init_request_based_queue(struct mapped_device *md)
+--- a/include/linux/device-mapper.h
++++ b/include/linux/device-mapper.h
+@@ -405,13 +405,14 @@ int dm_noflush_suspending(struct dm_targ
+ union map_info *dm_get_mapinfo(struct bio *bio);
+ union map_info *dm_get_rq_mapinfo(struct request *rq);
+ 
++struct queue_limits *dm_get_queue_limits(struct mapped_device *md);
++
+ /*
+  * Geometry functions.
+  */
+ int dm_get_geometry(struct mapped_device *md, struct hd_geometry *geo);
+ int dm_set_geometry(struct mapped_device *md, struct hd_geometry *geo);
+ 
+-
+ /*-----------------------------------------------------------------
+  * Functions for manipulating device-mapper tables.
+  *---------------------------------------------------------------*/
 
 
