@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab3JCP6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 11:58:38 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:64202 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3JCP6f (ORCPT
+	id S1755260Ab3JCP6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 11:58:51 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:47089 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab3JCP6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 11:58:35 -0400
+	Thu, 3 Oct 2013 11:58:49 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl, daniel.lezcano@linaro.org
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 14/16] cpuidle: don't calculate time-diff if entered_state < 0
-Date: Thu,  3 Oct 2013 21:26:53 +0530
-Message-Id: <0a0c8e4c6fbf681d375f25b0c0eba036b8eaadf7.1380815504.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 16/16] cpuidle: remove cpuidle_unregister_governor()
+Date: Thu,  3 Oct 2013 21:26:55 +0530
+Message-Id: <37fdfe53136ec441698be7371a1c8b541014d969.1380815504.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1380815504.git.viresh.kumar@linaro.org>
 References: <cover.1380815504.git.viresh.kumar@linaro.org>
@@ -24,61 +24,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If entered_state < 0, we don't need to set dev->last_residency to 'diff' as we
-will be setting it to zero without using its new value.
+cpuidle_unregister_governor()  and cpuidle_replace_governor() routines aren't
+used anymore and so can be removed. These were used by cpufreq governors
+earlier, which can't be compiled in as modules anymore and so these are useless.
 
-And so move calculation of diff also inside the "if" statement.
-
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Suggested-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpuidle/cpuidle.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ Documentation/cpuidle/governor.txt |  1 -
+ drivers/cpuidle/governor.c         | 43 --------------------------------------
+ include/linux/cpuidle.h            |  6 ------
+ 3 files changed, 50 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index b45257a..1a6e9f5 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -77,23 +77,22 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+diff --git a/Documentation/cpuidle/governor.txt b/Documentation/cpuidle/governor.txt
+index 12c6bd5..d9020f5 100644
+--- a/Documentation/cpuidle/governor.txt
++++ b/Documentation/cpuidle/governor.txt
+@@ -25,5 +25,4 @@ kernel configuration and platform will be selected by cpuidle.
  
- 	struct cpuidle_state *target_state = &drv->states[index];
- 	ktime_t time_start, time_end;
--	s64 diff;
+ Interfaces:
+ extern int cpuidle_register_governor(struct cpuidle_governor *gov);
+-extern void cpuidle_unregister_governor(struct cpuidle_governor *gov);
+ struct cpuidle_governor
+diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
+index ea2f8e7..ca89412 100644
+--- a/drivers/cpuidle/governor.c
++++ b/drivers/cpuidle/governor.c
+@@ -96,46 +96,3 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
  
- 	time_start = ktime_get();
- 
- 	entered_state = target_state->enter(dev, drv, index);
- 
--	time_end = ktime_get();
-+	if (entered_state >= 0) {
-+		s64 diff;
- 
--	local_irq_enable();
-+		time_end = ktime_get();
-+		diff = ktime_to_us(ktime_sub(time_end, time_start));
- 
--	diff = ktime_to_us(ktime_sub(time_end, time_start));
--	if (diff > INT_MAX)
--		diff = INT_MAX;
-+		if (diff > INT_MAX)
-+			diff = INT_MAX;
- 
--	dev->last_residency = (int) diff;
-+		dev->last_residency = (int) diff;
- 
--	if (entered_state >= 0) {
- 		/* Update cpuidle counters */
- 		/* This can be moved to within driver enter routine
- 		 * but that results in multiple copies of same code.
-@@ -104,6 +103,8 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
- 		dev->last_residency = 0;
- 	}
- 
-+	local_irq_enable();
-+
- 	return entered_state;
+ 	return ret;
  }
+-
+-/**
+- * cpuidle_replace_governor - find a replacement governor
+- * @exclude_rating: the rating that will be skipped while looking for
+- * new governor.
+- */
+-static struct cpuidle_governor *cpuidle_replace_governor(int exclude_rating)
+-{
+-	struct cpuidle_governor *gov;
+-	struct cpuidle_governor *ret_gov = NULL;
+-	unsigned int max_rating = 0;
+-
+-	list_for_each_entry(gov, &cpuidle_governors, governor_list) {
+-		if (gov->rating == exclude_rating)
+-			continue;
+-		if (gov->rating > max_rating) {
+-			max_rating = gov->rating;
+-			ret_gov = gov;
+-		}
+-	}
+-
+-	return ret_gov;
+-}
+-
+-/**
+- * cpuidle_unregister_governor - unregisters a governor
+- * @gov: the governor
+- */
+-void cpuidle_unregister_governor(struct cpuidle_governor *gov)
+-{
+-	if (!gov)
+-		return;
+-
+-	mutex_lock(&cpuidle_lock);
+-	if (gov == cpuidle_curr_governor) {
+-		struct cpuidle_governor *new_gov;
+-		new_gov = cpuidle_replace_governor(gov->rating);
+-		cpuidle_switch_governor(new_gov);
+-	}
+-	list_del(&gov->governor_list);
+-	mutex_unlock(&cpuidle_lock);
+-}
+-
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index c082425..50fcbb0 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -195,16 +195,10 @@ struct cpuidle_governor {
+ };
  
+ #ifdef CONFIG_CPU_IDLE
+-
+ extern int cpuidle_register_governor(struct cpuidle_governor *gov);
+-extern void cpuidle_unregister_governor(struct cpuidle_governor *gov);
+-
+ #else
+-
+ static inline int cpuidle_register_governor(struct cpuidle_governor *gov)
+ {return 0;}
+-static inline void cpuidle_unregister_governor(struct cpuidle_governor *gov) { }
+-
+ #endif
+ 
+ #ifdef CONFIG_ARCH_HAS_CPU_RELAX
 -- 
 1.7.12.rc2.18.g61b472e
 
