@@ -1,251 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab3JCTVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 15:21:42 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37302 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3JCTVl (ORCPT
+	id S1755245Ab3JCTVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 15:21:45 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:51913 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab3JCTVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 15:21:41 -0400
-Date: Thu, 3 Oct 2013 12:21:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131003192135.GR5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131002145655.361606532@infradead.org>
- <20131002150518.675931976@infradead.org>
- <20131003164117.GD5790@linux.vnet.ibm.com>
- <20131003184001.GM28601@twins.programming.kicks-ass.net>
- <20131003184719.GA11996@redhat.com>
+	Thu, 3 Oct 2013 15:21:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131003184719.GA11996@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100319-6688-0000-0000-000002371672
+In-Reply-To: <20131003172142.GA20660@hmsreliant.think-freely.org>
+References: <1380300815-1864-1-git-send-email-nhorman@tuxdriver.com> <20131003172142.GA20660@hmsreliant.think-freely.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 3 Oct 2013 13:21:22 -0600
+Message-ID: <CAErSpo7fzSNGShWocpLQf6LwQZ84u+9zRX0oMJyNrRfe+87mxg@mail.gmail.com>
+Subject: Re: [PATCH] iommu: Remove stack trace from broken irq remapping warning
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 08:47:19PM +0200, Oleg Nesterov wrote:
-> On 10/03, Peter Zijlstra wrote:
-> >
-> > On Thu, Oct 03, 2013 at 09:41:17AM -0700, Paul E. McKenney wrote:
-> > > On Wed, Oct 02, 2013 at 04:56:57PM +0200, Peter Zijlstra wrote:
-> > > #ifdef CONFIG_PROVE_RCU
-> > > #define rcu_sync_is_idle_check(rss) BUG_ON(!rss->read_side_check())
-> > > #else
-> > > #define rcu_sync_is_idle_check(rss) do { } while (0)
-> > > #endif
-> > >
-> > > 	rcu_sync_is_idle_check(rss);
-> >
-> > The below actually seems to build, although I didn't test the config
-> > permutations, only defconfig.
-> 
-> Yes, but...
-> 
-> I think it would be better to start with the patch below, this way
-> it would be easier a) to add the new ops (we need more anyway) and b)
-> use CONFIG_PROVE_RCU to avoid the unused members even if this is
-> really minor.
+On Thu, Oct 3, 2013 at 11:21 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> On Fri, Sep 27, 2013 at 12:53:35PM -0400, Neil Horman wrote:
+>> The warning for the irq remapping broken check in intel_irq_remapping.c is
+>> pretty pointless.  We need the warning, but we know where its comming from, the
+>> stack trace will always be the same, and it needlessly triggers things like
+>> Abrt.  This changes the warning to just print a text warning about BIOS being
+>> broken, without the stack trace, then sets the appropriate taint bit.  Since we
+>> automatically disable irq remapping, theres no need to contiue making Abrt jump
+>> at this problem
+>>
+>> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+>> CC: Joerg Roedel <joro@8bytes.org>
+>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: Andy Lutomirski <luto@amacapital.net>
+>> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+>> ---
+>>  drivers/iommu/intel_irq_remapping.c | 13 +++++++------
+>>  1 file changed, 7 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+>> index f71673d..b97d70b 100644
+>> --- a/drivers/iommu/intel_irq_remapping.c
+>> +++ b/drivers/iommu/intel_irq_remapping.c
+>> @@ -525,12 +525,13 @@ static int __init intel_irq_remapping_supported(void)
+>>       if (disable_irq_remap)
+>>               return 0;
+>>       if (irq_remap_broken) {
+>> -             WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
+>> -                        "This system BIOS has enabled interrupt remapping\n"
+>> -                        "on a chipset that contains an erratum making that\n"
+>> -                        "feature unstable.  To maintain system stability\n"
+>> -                        "interrupt remapping is being disabled.  Please\n"
+>> -                        "contact your BIOS vendor for an update\n");
+>> +             printk(KERN_WARNING
+>> +                     "This system BIOS has enabled interrupt remapping\n"
+>> +                     "on a chipset that contains an erratum making that\n"
+>> +                     "feature unstable.  To maintain system stability\n"
+>> +                     "interrupt remapping is being disabled.  Please\n"
+>> +                     "contact your BIOS vendor for an update\n");
+>> +             add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+>>               disable_irq_remap = 1;
+>>               return 0;
+>>       }
+>> --
+>> 1.8.3.1
+>>
+>>
+>
+> Ping Bjorn, Jeorg, any thoughts here?
 
-I am fine with this as well, but I don't see the code that checks for
-the required RCU read-side critical section.
+This is in drivers/iommu, so I'd prefer that Joerg handle this.
 
-							Thanx, Paul
+My opinion is that this patch does the right thing in dropping the
+backtrace and keeping the taint.
 
-> Oleg.
-> 
-> rcusync: introdude struct rcu_sync_ops
-> 
-> CHANGELOG
-> 
-> ---
->  include/linux/rcusync.h |   63 +++++++++++++++++++++--------------------------
->  kernel/rcusync.c        |   40 ++++++++++++++---------------
->  2 files changed, 47 insertions(+), 56 deletions(-)
-> 
-> diff --git a/include/linux/rcusync.h b/include/linux/rcusync.h
-> index 7858491..30c6037 100644
-> --- a/include/linux/rcusync.h
-> +++ b/include/linux/rcusync.h
-> @@ -4,6 +4,11 @@
->  #include <linux/wait.h>
->  #include <linux/rcupdate.h>
-> 
-> +struct rcu_sync_ops {
-> +	void (*sync)(void);
-> +	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-> +};
-> +
->  struct rcu_sync_struct {
->  	int			gp_state;
->  	int			gp_count;
-> @@ -12,43 +17,9 @@ struct rcu_sync_struct {
->  	int			cb_state;
->  	struct rcu_head		cb_head;
-> 
-> -	void (*sync)(void);
-> -	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-> +	struct rcu_sync_ops	*ops;
->  };
-> 
-> -#define ___RCU_SYNC_INIT(name)						\
-> -	.gp_state = 0,							\
-> -	.gp_count = 0,							\
-> -	.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),		\
-> -	.cb_state = 0
-> -
-> -#define __RCU_SCHED_SYNC_INIT(name) {					\
-> -	___RCU_SYNC_INIT(name),						\
-> -	.sync = synchronize_sched,					\
-> -	.call = call_rcu_sched,						\
-> -}
-> -
-> -#define __RCU_BH_SYNC_INIT(name) {					\
-> -	___RCU_SYNC_INIT(name),						\
-> -	.sync = synchronize_rcu_bh,					\
-> -	.call = call_rcu_bh,						\
-> -}
-> -
-> -#define __RCU_SYNC_INIT(name) {						\
-> -	___RCU_SYNC_INIT(name),						\
-> -	.sync = synchronize_rcu,					\
-> -	.call = call_rcu,						\
-> -}
-> -
-> -#define DEFINE_RCU_SCHED_SYNC(name)					\
-> -	struct rcu_sync_struct name = __RCU_SCHED_SYNC_INIT(name)
-> -
-> -#define DEFINE_RCU_BH_SYNC(name)					\
-> -	struct rcu_sync_struct name = __RCU_BH_SYNC_INIT(name)
-> -
-> -#define DEFINE_RCU_SYNC(name)						\
-> -	struct rcu_sync_struct name = __RCU_SYNC_INIT(name)
-> -
->  static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
->  {
->  	return !rss->gp_state; /* GP_IDLE */
-> @@ -60,5 +31,27 @@ extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
->  extern void rcu_sync_enter(struct rcu_sync_struct *);
->  extern void rcu_sync_exit(struct rcu_sync_struct *);
-> 
-> +extern struct rcu_sync_ops rcu_sync_ops_array[];
-> +
-> +#define __RCU_SYNC_INITIALIZER(name, type) {				\
-> +		.gp_state = 0,						\
-> +		.gp_count = 0,						\
-> +		.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),	\
-> +		.cb_state = 0,						\
-> +		.ops = rcu_sync_ops_array + (type),			\
-> +	}
-> +
-> +#define	__DEFINE_RCU_SYNC(name, type)	\
-> +	struct rcu_sync_struct name = __RCU_SYNC_INITIALIZER(name, type)
-> +
-> +#define DEFINE_RCU_SYNC(name)		\
-> +	__DEFINE_RCU_SYNC(name, RCU_SYNC)
-> +
-> +#define DEFINE_RCU_SCHED_SYNC(name)	\
-> +	__DEFINE_RCU_SYNC(name, RCU_SCHED_SYNC)
-> +
-> +#define DEFINE_RCU_BH_SYNC(name)	\
-> +	__DEFINE_RCU_SYNC(name, RCU_BH_SYNC)
-> +
->  #endif /* _LINUX_RCUSYNC_H_ */
-> 
-> diff --git a/kernel/rcusync.c b/kernel/rcusync.c
-> index f84176a..1cefb83 100644
-> --- a/kernel/rcusync.c
-> +++ b/kernel/rcusync.c
-> @@ -1,4 +1,3 @@
-> -
->  #include <linux/rcusync.h>
->  #include <linux/sched.h>
-> 
-> @@ -7,27 +6,26 @@ enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
-> 
->  #define	rss_lock	gp_wait.lock
-> 
-> +struct rcu_sync_ops rcu_sync_ops_array[] = {
-> +	[RCU_SYNC] = {
-> +		.sync = synchronize_rcu,
-> +		.call = call_rcu,
-> +	},
-> +	[RCU_SCHED_SYNC] = {
-> +		.sync = synchronize_sched,
-> +		.call = call_rcu_sched,
-> +	},
-> +	[RCU_BH_SYNC] = {
-> +		.sync = synchronize_rcu_bh,
-> +		.call = call_rcu_bh,
-> +	},
-> +};
-> +
->  void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
->  {
->  	memset(rss, 0, sizeof(*rss));
->  	init_waitqueue_head(&rss->gp_wait);
-> -
-> -	switch (type) {
-> -	case RCU_SYNC:
-> -		rss->sync = synchronize_rcu;
-> -		rss->call = call_rcu;
-> -		break;
-> -
-> -	case RCU_SCHED_SYNC:
-> -		rss->sync = synchronize_sched;
-> -		rss->call = call_rcu_sched;
-> -		break;
-> -
-> -	case RCU_BH_SYNC:
-> -		rss->sync = synchronize_rcu_bh;
-> -		rss->call = call_rcu_bh;
-> -		break;
-> -	}
-> +	rss->ops = rcu_sync_ops_array + type;
->  }
-> 
->  void rcu_sync_enter(struct rcu_sync_struct *rss)
-> @@ -44,7 +42,7 @@ void rcu_sync_enter(struct rcu_sync_struct *rss)
->  	BUG_ON(need_wait && need_sync);
-> 
->  	if (need_sync) {
-> -		rss->sync();
-> +		rss->ops->sync();
->  		rss->gp_state = GP_PASSED;
->  		wake_up_all(&rss->gp_wait);
->  	} else if (need_wait) {
-> @@ -81,7 +79,7 @@ static void rcu_sync_func(struct rcu_head *rcu)
->  		 * to catch a later GP.
->  		 */
->  		rss->cb_state = CB_PENDING;
-> -		rss->call(&rss->cb_head, rcu_sync_func);
-> +		rss->ops->call(&rss->cb_head, rcu_sync_func);
->  	} else {
->  		/*
->  		 * We're at least a GP after rcu_sync_exit(); eveybody will now
-> @@ -99,7 +97,7 @@ void rcu_sync_exit(struct rcu_sync_struct *rss)
->  	if (!--rss->gp_count) {
->  		if (rss->cb_state == CB_IDLE) {
->  			rss->cb_state = CB_PENDING;
-> -			rss->call(&rss->cb_head, rcu_sync_func);
-> +			rss->ops->call(&rss->cb_head, rcu_sync_func);
->  		} else if (rss->cb_state == CB_PENDING) {
->  			rss->cb_state = CB_REPLAY;
->  		}
-> 
+I tend to agree with Andy that we should also consider a second patch
+that drops the taint, because this is basically just a quirk that
+avoids broken chipset functionality, but as far as I can tell, there's
+no reason to fear an undebuggable problem related to disabling
+interrupt remapping.  We don't taint the kernel for other similar
+quirks, so I don't see why we should here.
 
+Bjorn
