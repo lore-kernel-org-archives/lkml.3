@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3JCKEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 06:04:37 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:22767 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab3JCKEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 06:04:35 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1024,1371081600"; 
-   d="scan'208";a="57276323"
-Message-ID: <524D4132.3000809@citrix.com>
-Date: Thu, 3 Oct 2013 11:04:34 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
+	id S1753856Ab3JCKGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 06:06:38 -0400
+Received: from ozlabs.org ([203.10.76.45]:47152 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752361Ab3JCKGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 06:06:36 -0400
+Date: Thu, 3 Oct 2013 20:06:30 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, linuxppc-dev@ozlabs.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, tytso@mit.edu
+Subject: Re: [PATCH 3/3] KVM: PPC: Book3S: Add support for hwrng found on
+ some powernv systems
+Message-ID: <20131003100630.GA27821@iris.ozlabs.ibm.com>
+References: <1380704789.645.57.camel@pasglop>
+ <668E4650-BC22-4CBF-A282-E7875DF29DB6@suse.de>
+ <3CBF5732-E7EE-4C96-8132-6D7B77270DAF@suse.de>
+ <20131002100224.GF17294@redhat.com>
+ <1380722275.12149.28.camel@concordia>
+ <029A8D6C-C23C-42B2-8C26-D76B59E2C9DD@suse.de>
+ <524C2EAE.7090209@redhat.com>
+ <C4834CF8-F81C-4B82-B1A7-1751D50AADB7@suse.de>
+ <20131002224542.GA10016@iris.ozlabs.ibm.com>
+ <20131003054803.GU17294@redhat.com>
 MIME-Version: 1.0
-To: Frediano Ziglio <frediano.ziglio@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector corruption
-References: <1380788677.30462.1.camel@hamster.uk.xensource.com>
-In-Reply-To: <1380788677.30462.1.camel@hamster.uk.xensource.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003054803.GU17294@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/13 09:24, Frediano Ziglio wrote:
-> Due to the way kernel is initialized under Xen is possible that the ring1
-> selector used by the kernel for the boot cpu end up to be copied to
-> userspace leading to segmentation fault in the userspace.
->
->
-> Xen code in the kernel initialize no-boot cpus with correct selectors (ds
-> and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
-> On task context switch (switch_to) we assume that ds, es and cs already
-> point to __USER_DS and __KERNEL_CSso these selector are not changed.
->
-> If processor is an Intel that support sysenter instruction sysenter/sysexit
-> is used so ds and es are not restored switching back from kernel to
-> userspace. In the case the selectors point to a ring1 instead of __USER_DS
-> the userspace code will crash on first memory access attempt (to be
-> precise Xen on the emulated iret used to do sysexit will detect and set ds
-> and es to zero which lead to GPF anyway).
->
-> Now if an userspace process call kernel using sysenter and get rescheduled
-> (for me it happen on a specific init calling wait4) could happen that the
-> ring1 selector is set to ds and es.
->
-> This is quite hard to detect cause after a while these selectors are fixed
-> (__USER_DS seems sticky).
->
-> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
-> to be the first one that have this issue.
->
-> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+On Thu, Oct 03, 2013 at 08:48:03AM +0300, Gleb Natapov wrote:
+> On Thu, Oct 03, 2013 at 08:45:42AM +1000, Paul Mackerras wrote:
+> > On Wed, Oct 02, 2013 at 04:36:05PM +0200, Alexander Graf wrote:
+> > > 
+> > > On 02.10.2013, at 16:33, Paolo Bonzini wrote:
+> > > 
+> > > > Il 02/10/2013 16:08, Alexander Graf ha scritto:
+> > > >>> The hwrng is accessible by host userspace via /dev/mem.
+> > > >> 
+> > > >> A guest should live on the same permission level as a user space
+> > > >> application. If you run QEMU as UID 1000 without access to /dev/mem, why
+> > > >> should the guest suddenly be able to directly access a memory location
+> > > >> (MMIO) it couldn't access directly through a normal user space interface.
+> > > >> 
+> > > >> It's basically a layering violation.
+> > > > 
+> > > > With Michael's earlier patch in this series, the hwrng is accessible by
+> > > > host userspace via /dev/hwrng, no?
+> > > 
+> > > Yes, but there's not token from user space that gets passed into the kernel to check whether access is ok or not. So while QEMU may not have permission to open /dev/hwrng it could spawn a guest that opens it, drains all entropy out of it and thus stall other processes which try to fetch entropy, no?
+> > 
+> > Even if you drain all entropy out of it, wait 64 microseconds and it
+> > will be full again. :)  Basically it produces 64 bits every
+> > microsecond and puts that in a 64 entry x 64-bit FIFO buffer, which is
+> > what is read by the MMIO.  So there is no danger of stalling other
+> > processes for any significant amount of time.
+> > 
+> Even if user crates 100s guests each one of which reads hwrng in a loop?
 
-In terms of the correctness of the fix,
+Well, you can't actually have more guests running than there are cores
+in a system.  POWER7+ has one RNG per chip and 8 cores per chip, each
+of which can run 4 threads (which have to be in the same guest).
 
-Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Michael's code uses the RNG on the same chip.  Worst case therefore is
+32 threads accessing the same RNG, so a given thread might have to
+wait up to 32 microseconds for its data.
 
-However, I am not sure the comment is necessary.  The prevailing style
-is for no justification of loads of segment selectors on boot, and the
-comment itself refers simply to an interaction issue of 32bit on Xen
-when making use of sysenter.
-
-> ---
->  arch/x86/xen/smp.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
->
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index d1e4777..2a47241 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -278,6 +278,18 @@ static void __init xen_smp_prepare_boot_cpu(void)
->  		   old memory can be recycled */
->  		make_lowmem_page_readwrite(xen_initial_gdt);
->  
-> +#ifdef CONFIG_X86_32
-> +		/*
-> +		 * Assure we use segments with user level access.
-> +		 * During switching of task these segments got not reloaded
-> +		 * so it could happen that userspace tasks get Xen ring1
-> +		 * selector causing exit with sysenter failures on next
-> +		 * userspace memory operation.
-> +		 */
-> +		loadsegment(ds, __USER_DS);
-> +		loadsegment(es, __USER_DS);
-> +#endif
-> +
->  		xen_filter_cpu_maps();
->  		xen_setup_vcpu_info_placement();
->  	}
-
+Paul.
