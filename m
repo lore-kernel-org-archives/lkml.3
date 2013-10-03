@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab3JCEHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 00:07:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
+	id S1754606Ab3JCEHi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 00:07:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46774 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab3JCEHd (ORCPT
+	with ESMTP id S1752736Ab3JCEHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 00:07:33 -0400
+	Thu, 3 Oct 2013 00:07:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        jwboyer@fedoraproject.org, Guenter Roeck <linux@roeck-us.net>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [ 12/16] hwmon: (applesmc) Check key count before proceeding
-Date: Wed,  2 Oct 2013 21:05:36 -0700
-Message-Id: <20131003040446.376616667@linuxfoundation.org>
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 13/16] ALSA: compress: Fix compress device unregister.
+Date: Wed,  2 Oct 2013 21:05:37 -0700
+Message-Id: <20131003040446.443217877@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131003040445.523176877@linuxfoundation.org>
 References: <20131003040445.523176877@linuxfoundation.org>
@@ -27,53 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
 
-commit 5f4513864304672e6ea9eac60583eeac32e679f2 upstream.
+commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
 
-After reports from Chris and Josh Boyer of a rare crash in applesmc,
-Guenter pointed at the initialization problem fixed below. The patch
-has not been verified to fix the crash, but should be applied
-regardless.
+snd_unregister_device() should return the device type and not stream
+direction.
 
-Reported-by: <jwboyer@fedoraproject.org>
-Suggested-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Tested-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/applesmc.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ sound/core/compress_offload.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -489,16 +489,25 @@ static int applesmc_init_smcreg_try(void
- {
- 	struct applesmc_registers *s = &smcreg;
- 	bool left_light_sensor, right_light_sensor;
-+	unsigned int count;
- 	u8 tmp[1];
- 	int ret;
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -663,7 +663,8 @@ static int snd_compress_dev_disconnect(s
+ 	struct snd_compr *compr;
  
- 	if (s->init_complete)
- 		return 0;
+ 	compr = device->device_data;
+-	snd_unregister_device(compr->direction, compr->card, compr->device);
++	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
++		compr->device);
+ 	return 0;
+ }
  
--	ret = read_register_count(&s->key_count);
-+	ret = read_register_count(&count);
- 	if (ret)
- 		return ret;
- 
-+	if (s->cache && s->key_count != count) {
-+		pr_warn("key count changed from %d to %d\n",
-+			s->key_count, count);
-+		kfree(s->cache);
-+		s->cache = NULL;
-+	}
-+	s->key_count = count;
-+
- 	if (!s->cache)
- 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
- 	if (!s->cache)
 
 
