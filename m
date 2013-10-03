@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab3JCOzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 10:55:43 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:42373 "EHLO extserv.mm-sol.com"
+	id S1754340Ab3JCO4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 10:56:20 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:42476 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab3JCOzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 10:55:41 -0400
+	id S1753713Ab3JCO4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 10:56:18 -0400
 From: Stanimir Varbanov <svarbanov@mm-sol.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -18,33 +18,48 @@ Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-arm-msm@vger.kernel.org,
         Stanimir Varbanov <svarbanov@mm-sol.com>
-Subject: [PATCH 0/2] Add support for Qualcomm's PRNG
-Date: Thu,  3 Oct 2013 17:52:33 +0300
-Message-Id: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com>
+Subject: [PATCH 1/2] ARM: DT: msm: Add Qualcomm's PRNG driver binding document
+Date: Thu,  3 Oct 2013 17:52:34 +0300
+Message-Id: <1380811955-18085-2-git-send-email-svarbanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com>
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds hardware RNG driver wich is used to control the
-Qualcomm's PRNG hardware block.
-The first patch document the DT bindings needed to sucessfuly probe
-the driver and the second patch adds the driver.
+This adds Qualcomm PRNG driver device tree binding documentation
+to use as an example in dts trees.
 
-Comments are welecome!
-
-Stanimir Varbanov (2):
-  ARM: DT: msm: Add Qualcomm's PRNG driver binding document
-  hwrng: msm: Add PRNG support for MSM SoC's
-
- .../devicetree/bindings/rng/qcom,prng.txt          |  17 ++
- drivers/char/hw_random/Kconfig                     |  12 ++
- drivers/char/hw_random/Makefile                    |   1 +
- drivers/char/hw_random/msm-rng.c                   | 211 +++++++++++++++++++++
- 4 files changed, 241 insertions(+)
+Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+---
+ Documentation/devicetree/bindings/rng/qcom,prng.txt | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/rng/qcom,prng.txt
- create mode 100644 drivers/char/hw_random/msm-rng.c
 
+diff --git a/Documentation/devicetree/bindings/rng/qcom,prng.txt b/Documentation/devicetree/bindings/rng/qcom,prng.txt
+new file mode 100644
+index 000000000000..92be00085ab1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rng/qcom,prng.txt
+@@ -0,0 +1,17 @@
++Qualcomm MSM pseudo random number generator.
++
++Required properties:
++
++- compatible  : should be "qcom,prng"
++- reg         : specifies base physical address and size of the registers map
++- clocks      : phandle to clock-controller plus clock-specifier pair
++- clock-names : "prng" clocks all registers, FIFO and circuits in PRNG IP block
++
++Example:
++
++	rng {
++		compatible = "qcom,prng";
++		reg = <0xf9bff000 0x200>;
++		clocks = <&clock GCC_PRNG_AHB_CLK>;
++		clock-names = "prng";
++	};
 -- 
 1.8.3.1
 
