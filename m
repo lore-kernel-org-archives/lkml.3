@@ -1,77 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3JDWO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 18:14:27 -0400
-Received: from smtprelay0230.hostedemail.com ([216.40.44.230]:39146 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752945Ab3JDWO0 (ORCPT
+	id S1754566Ab3JDWRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 18:17:32 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:49716 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab3JDWRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 18:14:26 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2901:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3871:3872:3873:3874:4321:4605:5007:6119:7652:7903:8784:9121:10011:10400:10848:10967:11026:11232:11233:11473:11658:11914:12295:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: chair98_7da595556b157
-X-Filterd-Recvd-Size: 2623
-Message-ID: <1380924862.2081.118.camel@joe-AO722>
-Subject: Re: [PATCH v2 6/6] Introduce Intel RAPL power capping driver
-From: Joe Perches <joe@perches.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        gregkh@linuxfoundation.org, len.brown@intel.com, rjw@sisk.pl,
-        arjan@linux.intel.com
-Date: Fri, 04 Oct 2013 15:14:22 -0700
-In-Reply-To: <20131004131228.54eb7098@ultegra>
-References: <1380904616-17519-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-	 <1380904616-17519-7-git-send-email-srinivas.pandruvada@linux.intel.com>
-	 <1380910065.2081.117.camel@joe-AO722> <20131004131228.54eb7098@ultegra>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Oct 2013 18:17:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131004194142.GA4524@dztty>
+References: <20131003201332.GA3500@dztty> <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
+ <20131004085911.GA2157@dztty> <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+ <20131004182353.GA2600@dztty> <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty> <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty> <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+ <20131004194142.GA4524@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 4 Oct 2013 15:17:08 -0700
+Message-ID: <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
+ opener may access task
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 13:12 -0700, Jacob Pan wrote:
-> On Fri, 04 Oct 2013 11:07:45 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > On Fri, 2013-10-04 at 09:36 -0700, Srinivas Pandruvada wrote:
-> > > The Intel Running Average Power Limit(RAPL) technology provides
-> > > platform software with the ability to monitor, control, and get
-> > > notifications on power usage.
-> > []
-> > > diff --git a/drivers/powercap/Makefile b/drivers/powercap/Makefile
-> > []
-> > > +/* bitmasks for RAPL MSRs, used by primitive access functions */
-> > > +#define ENERGY_STATUS_MASK      0xffffffff
-> > > +
-> > > +#define POWER_LIMIT1_MASK       0x7FFF
-> > > +#define POWER_LIMIT1_ENABLE     BIT(15)
-> > > +#define POWER_LIMIT1_CLAMP      BIT(16)
-> > > +
-> > > +#define POWER_LIMIT2_MASK       (0x7FFFULL<<32)
-> > > +#define POWER_LIMIT2_ENABLE     BIT_ULL(47)
-> > > +#define POWER_LIMIT2_CLAMP      BIT_ULL(48)
-> > > +#define POWER_PACKAGE_LOCK      BIT_ULL(63)
-> > > +#define POWER_PP_LOCK           BIT(31)
-> > > +
-> > > +#define TIME_WINDOW1_MASK       (0x7F<<17)
-> > > +#define TIME_WINDOW2_MASK       (0x7FULL<<49)
-> > 
-> > 
-> > Is there a reason why these masks aren't all ULL?
-> > 
-> > 
-> 
-> are you referring to this line below not being ULL?
-> > > +#define TIME_WINDOW1_MASK       (0x7F<<17)
-> if this is the case, I did that because it is not more than 32 bit.
-> 
-> Thanks,
-> 
-> Jacob
+On Fri, Oct 4, 2013 at 12:41 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
+>> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> > On Fri, Oct 04, 2013 at 12:16:26PM -0700, Andy Lutomirski wrote:
+>> >> On Fri, Oct 4, 2013 at 12:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> >> > On Fri, Oct 04, 2013 at 07:34:08PM +0100, Andy Lutomirski wrote:
+>> >> >> On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> >> >> > On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
+>> >> >> >> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> >> >> >> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
+>> >> > [...]
+>> >> >> Sorry, I described the obviously broken scenario incorrectly.  Your
+>> >> >> patch breaks (in the absence of things like selinux) if a exec
+>> >> >> something setuid root.
+>> >> >>
+>> >> >> [...]
+>> >> >>
+>> >> >> >
+>> >> >> > I did the check in the proc_same_open_cred() function:
+>> >> >> >  return (uid_eq(fcred->uid, cred->uid) &&
+>> >> >> >          gid_eq(fcred->gid, cred->gid) &&
+>> >> >> >          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+>> >> >>
+>> >> >> Which has nothing to do with anything.  If that check fails, you're
+>> >> >> just going on to a different, WRONG check/.
+>> >> >>
+>> >> >> >
+>> >> >> > Check if this is the same uid/gid and the capabilities superset!
+>> >> >> >
+>> >> >> > But in the proc_allow_access() the capabilities superset is missing.
+>> >> >> >
+>> >> >> >
+>> >> >> > So to fix it:
+>> >> >> > 1) if proc_same_open_cred() detects that cred have changed between
+>> >> >> > ->open() and ->read() then abort, return zero, the ->read(),write()...
+>> >> >>
+>> >> >> IMO yuck.
+>> >> >>
+>> >> >> >
+>> >> >> >
+>> >> >> > 2) Improve the proc_allow_access() check by:
+>> >> >> >    if this is the same user namespace then check uid/gid of f_cred on
+>> >> >> >    target cred task, and the capabilities superset:
+>> >> >> >    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
+>> >> >> >
+>> >> >> >    If it fails let security_capable() or file_ns_capable() do its magic.
+>> >> >> >
+>> >> >>
+>> >> >> NAK.  You need to actually call the LSM.  What if the reason to fail
+>> >> >> the request isn't that the writer gained capabilities -- what if the
+>> >> >> writer's selinux label changed?
+>> >> > Sorry I can't follow you here! Can you be more explicit please?
+>> >> >
+>> >> > For me we are already doing this during ptrace_may_access() on each
+>> >> > syscall, which will call LSM to inspect the privileges on each ->open(),
+>> >> > ->write()... So LSM hooks are already called. If you want to have more
+>> >> > LSM hooks, then perhaps that's another problem?
+>> >>
+>> >> Can you show me where, in your code, LSMs are asked whether the
+>> >> process calling read() is permitted to ptrace the process that the
+>> >> proc file points at?
+>> > Yes.
+>> > [PATCH v2 9/9] procfs: improve permission checks on /proc/*/syscall
+>> >
+>> > ->read()
+>> >   ->syscall_read()
+>> >     ->lock_trace()
+>> >       ->ptrace_may_access()
+>> >         ->__ptrace_may_access()
+>> >           ->security_ptrace_access_check()
+>> >             ->yama_ptrace_access_check()
+>> >             ->security_ops->ptrace_access_check()
+>> >
+>> >
+>> > And also for patch:
+>> > [PATCH v2 8/9] procfs: improve permission checks on /proc/*/stack
+>> >
+>> > And during ->open() and ->read()
+>> >
+>> >
+>> > So sorry Andy, I don't follow what you are describing.
+>>
+>> And what parameters are you passing to security_ptrace_access_check?
+>> It's supposed to be f_cred, right?  Because you want to make sure
+>> that, if the opener had some low-privilege label, the target has
+>> execed and gotten a more secure label, and the reader has a
+>> high-privilege label, that the opener's label is checked against the
+>> target's new label.
+> The current's cred each time.
 
-Isn't LIMIT1/WINDOW1 used as ull anyway?
-It doesn't hurt to show that the value is also ull.
+Exactly.  Hence the NAK.
 
+>
+> Is there some mechanism to check what you describe?
+>
+
+No.  You could try to add one, but getting it to be compatible with
+YAMA might be really messy.
+
+Or you could see if destroying and recreating all the inodes on exec
+or some other revoke-like approach would work.
+
+--Andy
