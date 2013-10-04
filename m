@@ -1,200 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab3JDTdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:33:20 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:56249 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab3JDTdS (ORCPT
+	id S1754699Ab3JDTeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:34:05 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:38181 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751577Ab3JDTeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:33:18 -0400
-MIME-Version: 1.0
-Date: Fri, 4 Oct 2013 12:33:17 -0700
-X-Google-Sender-Auth: 6wi93cTcvr45JjIb4cCVFNoCDQ0
-Message-ID: <CA+55aFxndx0J0sTLTx0qu25TkoLLfGd+8qiLhdG5CYwpO1NvVQ@mail.gmail.com>
-Subject: security: lockless stat() issues
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: James Morris <jmorris@namei.org>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b677efad132f304e7ef5f12
+	Fri, 4 Oct 2013 15:34:04 -0400
+Date: Fri, 4 Oct 2013 15:34:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <mgalbraith@suse.de>,
+        tomk@rgmadvisors.com, Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: Re: [PATCH] sched/rt: Remove redundant nr_cpus_allowed test
+Message-ID: <20131004153401.76fbbb0e@gandalf.local.home>
+In-Reply-To: <1380914693-24634-1-git-send-email-shawn.bohrer@gmail.com>
+References: <1380914693-24634-1-git-send-email-shawn.bohrer@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b677efad132f304e7ef5f12
-Content-Type: text/plain; charset=UTF-8
+On Fri,  4 Oct 2013 14:24:53 -0500
+Shawn Bohrer <shawn.bohrer@gmail.com> wrote:
 
-Guys,
- we've been working on scaling path lookup again, and 3.12 will be
-pretty kick-ass on many loads.
+> From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> 
+> In 76854c7e8f3f4172fef091e78d88b3b751463ac6 "sched: Use
+> rt.nr_cpus_allowed to recover select_task_rq() cycles" an optimization
+> was added to select_task_rq_rt() that immediately returns when
+> p->nr_cpus_allowed == 1 at the beginning of the function.  This makes
+> the latter p->nr_cpus_allowed > 1 check redundant and can be removed.
+> 
+> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-HOWEVER, there's one really annoying case: we do all the path lookup
-in RCU mode, where we can avoid touching any dentry state etc at all,
-but then to "finalize" the path lookup in order to use it long-term,
-we have to increment reference counts etc. That can be somewhat
-expensive for high-scalability cases, since it will force-dirty (and
-thus make exclusive in the cache) the core dentry cache entry.
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-And that's all fine for a lot of the common cases: when you do things
-like open a file, you really do have to increment the reference count,
-and there's no question that we do the right thing. And most people
-who really open files tend to work on them, so getting the dentry
-exclusively is fine.
+-- Steve
 
-There's one very important exception, though: things like "stat()" and
-"access()" do *not* open a file in order to hold on to it. And they
-are quite common (stat() in particular), _and_ they are often done on
-files that are shared and then passed by rather than worked on..
+> ---
+>  kernel/sched/rt.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index 01970c8..ceebfba 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1213,8 +1213,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
+>  	 */
+>  	if (curr && unlikely(rt_task(curr)) &&
+>  	    (curr->nr_cpus_allowed < 2 ||
+> -	     curr->prio <= p->prio) &&
+> -	    (p->nr_cpus_allowed > 1)) {
+> +	     curr->prio <= p->prio)) {
+>  		int target = find_lowest_rq(p);
+>  
+>  		if (target != -1)
 
-Now, interestingly, both stat() and access() actually _already_ do
-some kind of retry for special circumstances (LOOKUP_REVAL), and that
-really looks like it could be extended to just do the whole lookup in
-RCU mode too, and thus avoid ever finalizing the pathname.
-
-However, the LSM interface doesn't really allow for that.
-
-So how do people feel about passing a "mode" value for
-security_inode_getattr(), the same way we do for
-security_inode_permission()? The only flag would be that MAY_NOT_BLOCK
-flag that gets set for RCU lookup, and the semantics would be the same
-(return -ECHILD if you need to sleep).
-
-Attached is a patch that adds the interface, and then makes all
-security layers just do that ECHILD thing (and nobody actually sets
-MAY_NOT_BLOCK yet). So it's purely preparatory. It's also
-insufficient, because we'll need the same kind o fflag for the
-low-level filesystem "i_op->getattr()" call, but that's an independent
-issue.
-
-Al, any comments?
-
-               Linus
-
---047d7b677efad132f304e7ef5f12
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hmdt8l480
-
-IGZzL3N0YXQuYyAgICAgICAgICAgICAgICAgIHwgMiArLQogaW5jbHVkZS9saW51eC9zZWN1cml0
-eS5oICAgfCA5ICsrKysrKy0tLQogc2VjdXJpdHkvYXBwYXJtb3IvbHNtLmMgICAgfCA0ICsrKy0K
-IHNlY3VyaXR5L2NhcGFiaWxpdHkuYyAgICAgIHwgMiArLQogc2VjdXJpdHkvc2VjdXJpdHkuYyAg
-ICAgICAgfCA0ICsrLS0KIHNlY3VyaXR5L3NlbGludXgvaG9va3MuYyAgIHwgNSArKysrLQogc2Vj
-dXJpdHkvc21hY2svc21hY2tfbHNtLmMgfCA3ICsrKysrKy0KIHNlY3VyaXR5L3RvbW95by90b21v
-eW8uYyAgIHwgNCArKystCiA4IGZpbGVzIGNoYW5nZWQsIDI2IGluc2VydGlvbnMoKyksIDExIGRl
-bGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL3N0YXQuYyBiL2ZzL3N0YXQuYwppbmRleCBkMGVh
-N2VmNzVlMjYuLmMzZWQ3NmM5NWI2NyAxMDA2NDQKLS0tIGEvZnMvc3RhdC5jCisrKyBiL2ZzL3N0
-YXQuYwpAQCAtNDIsNyArNDIsNyBAQCBpbnQgdmZzX2dldGF0dHIoc3RydWN0IHBhdGggKnBhdGgs
-IHN0cnVjdCBrc3RhdCAqc3RhdCkKIAlzdHJ1Y3QgaW5vZGUgKmlub2RlID0gcGF0aC0+ZGVudHJ5
-LT5kX2lub2RlOwogCWludCByZXR2YWw7CiAKLQlyZXR2YWwgPSBzZWN1cml0eV9pbm9kZV9nZXRh
-dHRyKHBhdGgtPm1udCwgcGF0aC0+ZGVudHJ5KTsKKwlyZXR2YWwgPSBzZWN1cml0eV9pbm9kZV9n
-ZXRhdHRyKHBhdGgtPm1udCwgcGF0aC0+ZGVudHJ5LCAwKTsKIAlpZiAocmV0dmFsKQogCQlyZXR1
-cm4gcmV0dmFsOwogCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3NlY3VyaXR5LmggYi9pbmNs
-dWRlL2xpbnV4L3NlY3VyaXR5LmgKaW5kZXggOWQzN2UyYjlkM2VjLi5iYTA0ODBiODYzNTEgMTAw
-NjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvc2VjdXJpdHkuaAorKysgYi9pbmNsdWRlL2xpbnV4L3Nl
-Y3VyaXR5LmgKQEAgLTUwNSw3ICs1MDUsOSBAQCBzdGF0aWMgaW5saW5lIHZvaWQgc2VjdXJpdHlf
-ZnJlZV9tbnRfb3B0cyhzdHJ1Y3Qgc2VjdXJpdHlfbW50X29wdHMgKm9wdHMpCiAgKglDaGVjayBw
-ZXJtaXNzaW9uIGJlZm9yZSBvYnRhaW5pbmcgZmlsZSBhdHRyaWJ1dGVzLgogICoJQG1udCBpcyB0
-aGUgdmZzbW91bnQgd2hlcmUgdGhlIGRlbnRyeSB3YXMgbG9va2VkIHVwCiAgKglAZGVudHJ5IGNv
-bnRhaW5zIHRoZSBkZW50cnkgc3RydWN0dXJlIGZvciB0aGUgZmlsZS4KKyAqCUBtYXNrIGNvbnRh
-aW5zIE1BWV9OT1RfQkxPQ0sgaXMgc2V0IGlmIHRoaXMgaXMgYSBsb2NrbGVzcyBsb29rdXAKICAq
-CVJldHVybiAwIGlmIHBlcm1pc3Npb24gaXMgZ3JhbnRlZC4KKyAqCVJldHVybiAtRUNISUxEIGlm
-IHlvdSBjYW5ub3QgZG8gaXQgbG9ja2xlc3NseSBhbmQgTUFZX05PVF9CTE9DSyBpcyBzZXQKICAq
-IEBpbm9kZV9zZXR4YXR0cjoKICAqCUNoZWNrIHBlcm1pc3Npb24gYmVmb3JlIHNldHRpbmcgdGhl
-IGV4dGVuZGVkIGF0dHJpYnV0ZXMKICAqCUB2YWx1ZSBpZGVudGlmaWVkIGJ5IEBuYW1lIGZvciBA
-ZGVudHJ5LgpAQCAtMTUxMSw3ICsxNTEzLDcgQEAgc3RydWN0IHNlY3VyaXR5X29wZXJhdGlvbnMg
-ewogCWludCAoKmlub2RlX2ZvbGxvd19saW5rKSAoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBzdHJ1
-Y3QgbmFtZWlkYXRhICpuZCk7CiAJaW50ICgqaW5vZGVfcGVybWlzc2lvbikgKHN0cnVjdCBpbm9k
-ZSAqaW5vZGUsIGludCBtYXNrKTsKIAlpbnQgKCppbm9kZV9zZXRhdHRyKQkoc3RydWN0IGRlbnRy
-eSAqZGVudHJ5LCBzdHJ1Y3QgaWF0dHIgKmF0dHIpOwotCWludCAoKmlub2RlX2dldGF0dHIpIChz
-dHJ1Y3QgdmZzbW91bnQgKm1udCwgc3RydWN0IGRlbnRyeSAqZGVudHJ5KTsKKwlpbnQgKCppbm9k
-ZV9nZXRhdHRyKSAoc3RydWN0IHZmc21vdW50ICptbnQsIHN0cnVjdCBkZW50cnkgKmRlbnRyeSwg
-aW50IG1hc2spOwogCWludCAoKmlub2RlX3NldHhhdHRyKSAoc3RydWN0IGRlbnRyeSAqZGVudHJ5
-LCBjb25zdCBjaGFyICpuYW1lLAogCQkJICAgICAgIGNvbnN0IHZvaWQgKnZhbHVlLCBzaXplX3Qg
-c2l6ZSwgaW50IGZsYWdzKTsKIAl2b2lkICgqaW5vZGVfcG9zdF9zZXR4YXR0cikgKHN0cnVjdCBk
-ZW50cnkgKmRlbnRyeSwgY29uc3QgY2hhciAqbmFtZSwKQEAgLTE3ODcsNyArMTc4OSw3IEBAIGlu
-dCBzZWN1cml0eV9pbm9kZV9yZWFkbGluayhzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpOwogaW50IHNl
-Y3VyaXR5X2lub2RlX2ZvbGxvd19saW5rKHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgc3RydWN0IG5h
-bWVpZGF0YSAqbmQpOwogaW50IHNlY3VyaXR5X2lub2RlX3Blcm1pc3Npb24oc3RydWN0IGlub2Rl
-ICppbm9kZSwgaW50IG1hc2spOwogaW50IHNlY3VyaXR5X2lub2RlX3NldGF0dHIoc3RydWN0IGRl
-bnRyeSAqZGVudHJ5LCBzdHJ1Y3QgaWF0dHIgKmF0dHIpOwotaW50IHNlY3VyaXR5X2lub2RlX2dl
-dGF0dHIoc3RydWN0IHZmc21vdW50ICptbnQsIHN0cnVjdCBkZW50cnkgKmRlbnRyeSk7CitpbnQg
-c2VjdXJpdHlfaW5vZGVfZ2V0YXR0cihzdHJ1Y3QgdmZzbW91bnQgKm1udCwgc3RydWN0IGRlbnRy
-eSAqZGVudHJ5LCBpbnQgbWFzayk7CiBpbnQgc2VjdXJpdHlfaW5vZGVfc2V0eGF0dHIoc3RydWN0
-IGRlbnRyeSAqZGVudHJ5LCBjb25zdCBjaGFyICpuYW1lLAogCQkJICAgIGNvbnN0IHZvaWQgKnZh
-bHVlLCBzaXplX3Qgc2l6ZSwgaW50IGZsYWdzKTsKIHZvaWQgc2VjdXJpdHlfaW5vZGVfcG9zdF9z
-ZXR4YXR0cihzdHJ1Y3QgZGVudHJ5ICpkZW50cnksIGNvbnN0IGNoYXIgKm5hbWUsCkBAIC0yMTc4
-LDcgKzIxODAsOCBAQCBzdGF0aWMgaW5saW5lIGludCBzZWN1cml0eV9pbm9kZV9zZXRhdHRyKHN0
-cnVjdCBkZW50cnkgKmRlbnRyeSwKIH0KIAogc3RhdGljIGlubGluZSBpbnQgc2VjdXJpdHlfaW5v
-ZGVfZ2V0YXR0cihzdHJ1Y3QgdmZzbW91bnQgKm1udCwKLQkJCQkJICBzdHJ1Y3QgZGVudHJ5ICpk
-ZW50cnkpCisJCQkJCSAgc3RydWN0IGRlbnRyeSAqZGVudHJ5LAorCQkJCQkgIGludCBtYXNrKQog
-ewogCXJldHVybiAwOwogfQpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvYXBwYXJtb3IvbHNtLmMgYi9z
-ZWN1cml0eS9hcHBhcm1vci9sc20uYwppbmRleCBmYjk5ZTE4MTIzYjQuLmFmMDcwMjQ1MTBmNCAx
-MDA2NDQKLS0tIGEvc2VjdXJpdHkvYXBwYXJtb3IvbHNtLmMKKysrIGIvc2VjdXJpdHkvYXBwYXJt
-b3IvbHNtLmMKQEAgLTM2NCwxMCArMzY0LDEyIEBAIHN0YXRpYyBpbnQgYXBwYXJtb3JfcGF0aF9j
-aG93bihzdHJ1Y3QgcGF0aCAqcGF0aCwga3VpZF90IHVpZCwga2dpZF90IGdpZCkKIAlyZXR1cm4g
-Y29tbW9uX3Blcm0oT1BfQ0hPV04sIHBhdGgsIEFBX01BWV9DSE9XTiwgJmNvbmQpOwogfQogCi1z
-dGF0aWMgaW50IGFwcGFybW9yX2lub2RlX2dldGF0dHIoc3RydWN0IHZmc21vdW50ICptbnQsIHN0
-cnVjdCBkZW50cnkgKmRlbnRyeSkKK3N0YXRpYyBpbnQgYXBwYXJtb3JfaW5vZGVfZ2V0YXR0cihz
-dHJ1Y3QgdmZzbW91bnQgKm1udCwgc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBpbnQgbWFzaykKIHsK
-IAlpZiAoIW1lZGlhdGVkX2ZpbGVzeXN0ZW0oZGVudHJ5LT5kX2lub2RlKSkKIAkJcmV0dXJuIDA7
-CisJaWYgKG1hc2sgJiBNQVlfTk9UX0JMT0NLKQorCQlyZXR1cm4gLUVDSElMRDsKIAogCXJldHVy
-biBjb21tb25fcGVybV9tbnRfZGVudHJ5KE9QX0dFVEFUVFIsIG1udCwgZGVudHJ5LAogCQkJCSAg
-ICAgIEFBX01BWV9NRVRBX1JFQUQpOwpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvY2FwYWJpbGl0eS5j
-IGIvc2VjdXJpdHkvY2FwYWJpbGl0eS5jCmluZGV4IGRiZWI5YmMyN2IyNC4uMmZhODBhZTA4YTQy
-IDEwMDY0NAotLS0gYS9zZWN1cml0eS9jYXBhYmlsaXR5LmMKKysrIGIvc2VjdXJpdHkvY2FwYWJp
-bGl0eS5jCkBAIC0yMDIsNyArMjAyLDcgQEAgc3RhdGljIGludCBjYXBfaW5vZGVfc2V0YXR0cihz
-dHJ1Y3QgZGVudHJ5ICpkZW50cnksIHN0cnVjdCBpYXR0ciAqaWF0dHIpCiAJcmV0dXJuIDA7CiB9
-CiAKLXN0YXRpYyBpbnQgY2FwX2lub2RlX2dldGF0dHIoc3RydWN0IHZmc21vdW50ICptbnQsIHN0
-cnVjdCBkZW50cnkgKmRlbnRyeSkKK3N0YXRpYyBpbnQgY2FwX2lub2RlX2dldGF0dHIoc3RydWN0
-IHZmc21vdW50ICptbnQsIHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgaW50IG1hc2spCiB7CiAJcmV0
-dXJuIDA7CiB9CmRpZmYgLS1naXQgYS9zZWN1cml0eS9zZWN1cml0eS5jIGIvc2VjdXJpdHkvc2Vj
-dXJpdHkuYwppbmRleCA0ZGMzMWY0ZjI3MDAuLmIyNDIzZmE2NDk4MyAxMDA2NDQKLS0tIGEvc2Vj
-dXJpdHkvc2VjdXJpdHkuYworKysgYi9zZWN1cml0eS9zZWN1cml0eS5jCkBAIC01NjcsMTEgKzU2
-NywxMSBAQCBpbnQgc2VjdXJpdHlfaW5vZGVfc2V0YXR0cihzdHJ1Y3QgZGVudHJ5ICpkZW50cnks
-IHN0cnVjdCBpYXR0ciAqYXR0cikKIH0KIEVYUE9SVF9TWU1CT0xfR1BMKHNlY3VyaXR5X2lub2Rl
-X3NldGF0dHIpOwogCi1pbnQgc2VjdXJpdHlfaW5vZGVfZ2V0YXR0cihzdHJ1Y3QgdmZzbW91bnQg
-Km1udCwgc3RydWN0IGRlbnRyeSAqZGVudHJ5KQoraW50IHNlY3VyaXR5X2lub2RlX2dldGF0dHIo
-c3RydWN0IHZmc21vdW50ICptbnQsIHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgaW50IG1hc2spCiB7
-CiAJaWYgKHVubGlrZWx5KElTX1BSSVZBVEUoZGVudHJ5LT5kX2lub2RlKSkpCiAJCXJldHVybiAw
-OwotCXJldHVybiBzZWN1cml0eV9vcHMtPmlub2RlX2dldGF0dHIobW50LCBkZW50cnkpOworCXJl
-dHVybiBzZWN1cml0eV9vcHMtPmlub2RlX2dldGF0dHIobW50LCBkZW50cnksIG1hc2spOwogfQog
-CiBpbnQgc2VjdXJpdHlfaW5vZGVfc2V0eGF0dHIoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBjb25z
-dCBjaGFyICpuYW1lLApkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvc2VsaW51eC9ob29rcy5jIGIvc2Vj
-dXJpdHkvc2VsaW51eC9ob29rcy5jCmluZGV4IGE1MDkxZWMwNmFhNi4uMGRhZmNlODUyNGZkIDEw
-MDY0NAotLS0gYS9zZWN1cml0eS9zZWxpbnV4L2hvb2tzLmMKKysrIGIvc2VjdXJpdHkvc2VsaW51
-eC9ob29rcy5jCkBAIC0yNzg1LDExICsyNzg1LDE0IEBAIHN0YXRpYyBpbnQgc2VsaW51eF9pbm9k
-ZV9zZXRhdHRyKHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgc3RydWN0IGlhdHRyICppYXR0cikKIAly
-ZXR1cm4gZGVudHJ5X2hhc19wZXJtKGNyZWQsIGRlbnRyeSwgYXYpOwogfQogCi1zdGF0aWMgaW50
-IHNlbGludXhfaW5vZGVfZ2V0YXR0cihzdHJ1Y3QgdmZzbW91bnQgKm1udCwgc3RydWN0IGRlbnRy
-eSAqZGVudHJ5KQorc3RhdGljIGludCBzZWxpbnV4X2lub2RlX2dldGF0dHIoc3RydWN0IHZmc21v
-dW50ICptbnQsIHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgaW50IG1hc2spCiB7CiAJY29uc3Qgc3Ry
-dWN0IGNyZWQgKmNyZWQgPSBjdXJyZW50X2NyZWQoKTsKIAlzdHJ1Y3QgcGF0aCBwYXRoOwogCisJ
-aWYgKG1hc2sgJiBNQVlfTk9UX0JMT0NLKQorCQlyZXR1cm4gLUVDSElMRDsKKwogCXBhdGguZGVu
-dHJ5ID0gZGVudHJ5OwogCXBhdGgubW50ID0gbW50OwogCmRpZmYgLS1naXQgYS9zZWN1cml0eS9z
-bWFjay9zbWFja19sc20uYyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xzbS5jCmluZGV4IDg4MjUz
-NzVjYzAzMS4uM2JjMzRiMDI0MzRlIDEwMDY0NAotLS0gYS9zZWN1cml0eS9zbWFjay9zbWFja19s
-c20uYworKysgYi9zZWN1cml0eS9zbWFjay9zbWFja19sc20uYwpAQCAtODA4LDEwICs4MDgsMTUg
-QEAgc3RhdGljIGludCBzbWFja19pbm9kZV9zZXRhdHRyKHN0cnVjdCBkZW50cnkgKmRlbnRyeSwg
-c3RydWN0IGlhdHRyICppYXR0cikKICAqCiAgKiBSZXR1cm5zIDAgaWYgYWNjZXNzIGlzIHBlcm1p
-dHRlZCwgYW4gZXJyb3IgY29kZSBvdGhlcndpc2UKICAqLwotc3RhdGljIGludCBzbWFja19pbm9k
-ZV9nZXRhdHRyKHN0cnVjdCB2ZnNtb3VudCAqbW50LCBzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCitz
-dGF0aWMgaW50IHNtYWNrX2lub2RlX2dldGF0dHIoc3RydWN0IHZmc21vdW50ICptbnQsIHN0cnVj
-dCBkZW50cnkgKmRlbnRyeSwgaW50IG1hc2spCiB7CiAJc3RydWN0IHNta19hdWRpdF9pbmZvIGFk
-OwogCXN0cnVjdCBwYXRoIHBhdGg7CisJaW50IG5vX2Jsb2NrID0gbWFzayAmIE1BWV9OT1RfQkxP
-Q0s7CisKKwkvKiBNYXkgYmUgZHJvcHBhYmxlIGFmdGVyIGF1ZGl0ICovCisJaWYgKG5vX2Jsb2Nr
-KQorCQlyZXR1cm4gLUVDSElMRDsKIAogCXBhdGguZGVudHJ5ID0gZGVudHJ5OwogCXBhdGgubW50
-ID0gbW50OwpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvdG9tb3lvL3RvbW95by5jIGIvc2VjdXJpdHkv
-dG9tb3lvL3RvbW95by5jCmluZGV4IGYwYjc1NmUyN2ZlZC4uYTBjMWI0ZmZmMTk2IDEwMDY0NAot
-LS0gYS9zZWN1cml0eS90b21veW8vdG9tb3lvLmMKKysrIGIvc2VjdXJpdHkvdG9tb3lvL3RvbW95
-by5jCkBAIC0xNDQsOSArMTQ0LDExIEBAIHN0YXRpYyBpbnQgdG9tb3lvX2Jwcm1fY2hlY2tfc2Vj
-dXJpdHkoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSkKICAqCiAgKiBSZXR1cm5zIDAgb24gc3Vj
-Y2VzcywgbmVnYXRpdmUgdmFsdWUgb3RoZXJ3aXNlLgogICovCi1zdGF0aWMgaW50IHRvbW95b19p
-bm9kZV9nZXRhdHRyKHN0cnVjdCB2ZnNtb3VudCAqbW50LCBzdHJ1Y3QgZGVudHJ5ICpkZW50cnkp
-CitzdGF0aWMgaW50IHRvbW95b19pbm9kZV9nZXRhdHRyKHN0cnVjdCB2ZnNtb3VudCAqbW50LCBz
-dHJ1Y3QgZGVudHJ5ICpkZW50cnksIGludCBtYXNrKQogewogCXN0cnVjdCBwYXRoIHBhdGggPSB7
-IG1udCwgZGVudHJ5IH07CisJaWYgKG1hc2sgJiBNQVlfTk9UX0JMT0NLKQorCQlyZXR1cm4gLUVD
-SElMRDsKIAlyZXR1cm4gdG9tb3lvX3BhdGhfcGVybShUT01PWU9fVFlQRV9HRVRBVFRSLCAmcGF0
-aCwgTlVMTCk7CiB9CiAK
---047d7b677efad132f304e7ef5f12--
