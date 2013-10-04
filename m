@@ -1,140 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3JDAhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:37:22 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:42764 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab3JDAhU convert rfc822-to-8bit (ORCPT
+	id S1753995Ab3JDAlR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:41:17 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47702 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3JDAlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 20:37:20 -0400
-Subject: Re: [PATCH 1/2] fs/ext4: adding and initalizing new members of ext4_inode_info and ext4_sb_info
-Mime-Version: 1.0 (Apple Message framework v1085)
+	Thu, 3 Oct 2013 20:41:16 -0400
+X-Originating-IP: 173.246.103.110
+Date: Thu, 3 Oct 2013 17:41:08 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+Message-ID: <20131004004108.GA9914@jtriplet-mobl1>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+ <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+ <20131003105130.GE13318@ZenIV.linux.org.uk>
+ <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+ <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
+ <20131003232826.GA6604@jtriplet-mobl1>
+ <CA+55aFxvZV0brpjRERYj6Bb-i2kF+nhfCVvmXV5Bdn2QhEt5sw@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <1380728219-60784-1-git-send-email-tmac@hp.com>
-Date: Thu, 3 Oct 2013 18:37:14 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, aswin@hp.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <94F53E8F-6D99-4747-97A9-4FB60DD2BED2@dilger.ca>
-References: <1380728219-60784-1-git-send-email-tmac@hp.com>
-To: T Makphaibulchoke <tmac@hp.com>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxvZV0brpjRERYj6Bb-i2kF+nhfCVvmXV5Bdn2QhEt5sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-10-02, at 9:36 AM, T Makphaibulchoke wrote:
-> Adding new members, i_prev_oprhan to help decoupling the ondisk from the
-> in memory orphan list and i_mutex_orphan_mutex to serialize orphan list
-> updates on a single inode, to the ext4_inode_info structure.
+On Thu, Oct 03, 2013 at 04:51:00PM -0700, Linus Torvalds wrote:
+> On Thu, Oct 3, 2013 at 4:28 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> > On Thu, Oct 03, 2013 at 01:52:45PM -0700, Linus Torvalds wrote:
+> >> On Thu, Oct 3, 2013 at 1:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >> >
+> >> > The problem is this:
+> >> > A = 1, B = 1
+> >> > CPU1:
+> >> > A = 0
+> >> > <full barrier>
+> >> > synchronize_rcu()
+> >> > read B
+> >> >
+> >> > CPU2:
+> >> > rcu_read_lock()
+> >> > B = 0
+> >> > read A
+> >> >
+> >> > Are we guaranteed that we won't get both of them seeing ones, in situation
+> >> > when that rcu_read_lock() comes too late to be noticed by synchronize_rcu()?
+> >>
+> >> Yeah, I think we should be guaranteed that, because the
+> >> synchronize_rcu() will guarantee that all other CPU's go through an
+> >> idle period. So the "read A" on CPU2 cannot possibly see a 1 _unless_
+> >> it happens so early that synchronize_rcu() definitely sees it (ie it's
+> >> a "preexisting reader" by definition), in which case synchronize_rcu()
+> >> will be waiting for a subsequent idle period, in which case the B=0 on
+> >> CPU2 is not only guaranteed to happen but also be visible out, so the
+> >> "read B" on CPU1 will see 0. And that's true even if CPU2 doesn't have
+> >> an explicit memory barrier, because the "RCU idle" state implies that
+> >> it has gone through a barrier.
+> >
+> > I think the reasoning in one direction is actually quite a bit less
+> > obvious than that.
+> >
+> > rcu_read_unlock() does *not* necessarily imply a memory barrier
+> 
+> Don't think of it in those terms.
+> 
+> The only thing that matters is semantics. The semantics of
+> synchronize_rcu() is that it needs to wait for all RCU users. It's
+> that simple. By definition, anything inside a "rcu_read_lock()" is a
+> RCU user, so if we have a read of memory (memory barrier or not), then
+> synchronize_rcu() needs to wait for it. Otherwise serialize_rcu() is
+> clearly totally broken.
 
-What do these additional fields do to the size of struct ext4_inode_info?
-I recall that Ted did a bunch of work to shrink this enough to fit nicely
-into a slab, and it would be a shame to increase the inode size to overflow
-the current packing and increase per-inode memory usage by 25-33%, for an
-improvement that is only noticeable on a 90-core machine.
+Read, yes, but I don't think that's enough to force your example above
+to work in all cases.  That requires semantics beyond what RCU's
+primitives guarantee, and I don't think you can draw conclusions about
+those semantics without talking about CPU memory barriers.
 
-Is there another lock that could be shared for this that is unlikely to
-cause much contention?
+synchronize_rcu() says it'll wait for any in-progress reader, which
+includes whatever that reader might be doing.  That guarantees one
+direction of your example above.  It's a tool for controlling what the
+*reader* can observe.  The vast majority of RCU usage models assume the
+writers will use a lock to guard against each other, and that readers
+don't make modifications.  synchronize_rcu() doesn't make any particular
+guarantees in the other direction about what the *writer* can observe,
+especially in the case where synchronize_rcu() does not observe the
+rcu_read_lock() and doesn't need to count that reader.  (Also note that
+B=0 is a blind write, with no read.)
 
-Also, it isn't clear to me why this patch is separate from 2/2, because
-all it does is add fields that are not used for anything.  I don't think
-the 8 lines of code here are so complex that they can't be part of the
-same patch that is actually using them.
+The example above will work on x86 with any reasonable implementation
+(due to write ordering guarantees), and it should work on any
+architecture with all the current implementations of RCU in the Linux
+kernel.  If we want to require that all future implementations of RCU
+allow the above example to work, we should document that example and
+associated assumption for future reference, because I don't think the
+semantics of the RCU primitives inherently guarantee it.
 
-Cheers, Andreas
+> Now, the fact that the normal rcu_read_lock() is just a compiler
+> barrier may make you think "oh, it cannot work", but the thing is, the
+> way things happens is that synchronize_rcu() ends up relying on the
+> _scheduler_ data structures, rather than anything else. It requires
+> seeing an idle scheduler state for each CPU after being called.
 
-> Adding a new member, s_ondisk_oprhan_lock to protect the ondisk orphan list
-> and change s_orphan_lock from mutex to spinlock in the ext4_sb_info
-> structure in fs/ext4/inode.c.
-> 
-> Adding code to initialize newly added spinlock and mutex members in
-> fs/ext4/super.c.
-> 
-> Adding code to initialize the newly added i_orphan_mutex member of an
-> ext4_inode_info
-> 
-> Signed-off-by: T. Makphaibulchoke <tmac@hp.com>
-> ---
-> fs/ext4/ext4.h  | 5 ++++-
-> fs/ext4/inode.c | 1 +
-> fs/ext4/super.c | 4 +++-
-> 3 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index b577e45..1b1232f 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -817,6 +817,7 @@ struct ext4_inode_info {
-> 	struct rw_semaphore xattr_sem;
-> 
-> 	struct list_head i_orphan;	/* unlinked but open inodes */
-> +	struct mutex i_orphan_mutex;
-> 
-> 	/*
-> 	 * i_disksize keeps track of what the inode size is ON DISK, not
-> @@ -864,6 +865,7 @@ struct ext4_inode_info {
-> 	rwlock_t i_es_lock;
-> 	struct list_head i_es_lru;
-> 	unsigned int i_es_lru_nr;	/* protected by i_es_lock */
-> +	unsigned int i_prev_orphan;	/* protected by s_ondisk_orphan_lock */
-> 	unsigned long i_touch_when;	/* jiffies of last accessing */
-> 
-> 	/* ialloc */
-> @@ -1201,7 +1203,8 @@ struct ext4_sb_info {
-> 	/* Journaling */
-> 	struct journal_s *s_journal;
-> 	struct list_head s_orphan;
-> -	struct mutex s_orphan_lock;
-> +	spinlock_t s_orphan_lock;
-> +	struct mutex s_ondisk_orphan_lock;
-> 	unsigned long s_resize_flags;		/* Flags indicating if there
-> 						   is a resizer */
-> 	unsigned long s_commit_interval;
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index dd32a2e..3edb108 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -4061,6 +4061,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
-> 	for (block = 0; block < EXT4_N_BLOCKS; block++)
-> 		ei->i_data[block] = raw_inode->i_block[block];
-> 	INIT_LIST_HEAD(&ei->i_orphan);
-> +	mutex_init(&ei->i_orphan_mutex);
-> 
-> 	/*
-> 	 * Set transaction id's of transactions that have to be committed
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 36b141e..2fecd19 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -920,6 +920,7 @@ static void init_once(void *foo)
-> 	struct ext4_inode_info *ei = (struct ext4_inode_info *) foo;
-> 
-> 	INIT_LIST_HEAD(&ei->i_orphan);
-> +	mutex_init(&ei->i_orphan_mutex);
-> 	init_rwsem(&ei->xattr_sem);
-> 	init_rwsem(&ei->i_data_sem);
-> 	inode_init_once(&ei->vfs_inode);
-> @@ -3841,7 +3842,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
-> 	memcpy(sb->s_uuid, es->s_uuid, sizeof(es->s_uuid));
-> 
-> 	INIT_LIST_HEAD(&sbi->s_orphan); /* unlinked but open files */
-> -	mutex_init(&sbi->s_orphan_lock);
-> +	spin_lock_init(&sbi->s_orphan_lock);
-> +	mutex_init(&sbi->s_ondisk_orphan_lock);
-> 
-> 	sb->s_root = NULL;
-> 
-> -- 
-> 1.7.11.3
-> 
+That's a detail of implementation.  In practice, the required semantics
+of synchronize_rcu() would be perfectly satisfied by an implementation
+that can divine that no readers are currently running without waiting
+for everyone to pass through the scheduler.  synchronize_sched() means
+"everyone has scheduled"; synchronize_rcu() *only* means "any readers
+in-progress when I called synchronize_rcu() have finished when
+synchronize_rcu() returns", which does not have to imply a trip through
+the scheduler.
 
-
-Cheers, Andreas
-
-
-
-
-
+- Josh Triplett
