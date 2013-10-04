@@ -1,198 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3JDKgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 06:36:39 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:50793 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3JDKgh (ORCPT
+	id S1754410Ab3JDKiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 06:38:07 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49186 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278Ab3JDKiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 06:36:37 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 00/21] of: prom.h clean-up and removal
-To: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Anatolij Gustschin <agust@denx.de>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Chris Zankel <chris@zankel.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        James Hogan <james.hogan@imgtec.com>, Jonas Bonn <jonas@southpole.se>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Mark Salter <msalter@redhat.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Michal Simek <monstr@monstr.eu>, Olof Johansson <olof@lixom.net>,
-        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vineet Gupta <vgupta@synopsys.com>, Will Deacon <will.deacon@arm.com>,
-        Wolfgang Grandegger <wg@grandegger.com>, x86@kernel.org
-In-Reply-To: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
-References: <1380221456-11192-1-git-send-email-robherring2@gmail.com>
-Date: Fri, 04 Oct 2013 11:36:32 +0100
-Message-Id: <20131004103632.36165C42354@trevor.secretlab.ca>
+	Fri, 4 Oct 2013 06:38:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACT4Y+Z_hxVOqUeVtvOH-eCkTLveW3vsPtcXN-jhs7=cbd21Zw@mail.gmail.com>
+References: <20131003163411.GA17101@www.outflux.net>
+	<20131003175824.GH13318@ZenIV.linux.org.uk>
+	<CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
+	<20131003182311.GI13318@ZenIV.linux.org.uk>
+	<CAGXu5j+4NUKfgKiAK+w2MrsqRxHiYc62LBMx4UsfxUBSxNwNJA@mail.gmail.com>
+	<20131003205706.GM13318@ZenIV.linux.org.uk>
+	<CACT4Y+Z_hxVOqUeVtvOH-eCkTLveW3vsPtcXN-jhs7=cbd21Zw@mail.gmail.com>
+Date: Fri, 4 Oct 2013 12:38:03 +0200
+Message-ID: <CAFLxGvxo8bvg0Pn8z3qUENFNOUmNdfp5Cz_WP=H5G8kXubdR3A@mail.gmail.com>
+Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Dmitry Vyukov <dvyukov@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013 13:50:35 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> This is the second series of clean-up for architecture DT code. The first
-> series is here [1].
-> 
-> As the number of DT enabled architectures has grown, there has been a lot
-> of copy/paste duplication of prom.h. The include ordering for prom.h is
-> complex and has resulted in many implicit includes. This series cleans up
-> prom.h and removes the dependency of prom.h includes in the core DT code
-> on all architectures except sparc. This removes prom.h on several
-> architectures and makes it an architecture specific include on the rest.
-> 
-> Compiled on arm, arm64, microblaze, mips, openrisc, powerpc, sparc,
-> xtensa. Mostly defconfigs and some allyesconfigs. The 0-day builder has
-> also caught some issues.
-> 
-> A branch with both series is available here:
-> git://sources.calxeda.com/kernel/linux.git dt-cleanup
+On Fri, Oct 4, 2013 at 8:05 AM, Dmitry Vyukov <dvyukov@google.com> wrote:
+> On Fri, Oct 4, 2013 at 12:57 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> On Thu, Oct 03, 2013 at 12:36:08PM -0700, Kees Cook wrote:
+>>> > Kees, try to think for a minute[1].  Really.  We have general-purpose
+>>> > ...
+>>> > [1] yes, yes, I know - the mere mention of security should've prevented such
+>>> > arrogant requests.  It's an imperfect universe.
+>>>
+>>> I want to attempt to disassemble what you've communicating here:
+>>>
+>>> a) I'm not thinking.
+>>> b) Requesting that someone think when they mention security is arrogant.
+>>
+>> Not really.
+>>
+>> It's just that all too often completely pointless changes are touted
+>> as security hardening.  With replies along the lines of "it doesn't
+>> really buy you anything" countered with indignant "but what if
+>> <impossible situation>" and/or references to "defense in depth" (used
+>> as a magical incantation), etc.
+>>
+>> You've posted a provably pointless patch.  Happens to all of us.  And in
+>> reply to "it's pointless for the following reasons" (with moderate
+>> level of sarcasm) you responded pretty much with "but what if allocator
+>> changes?  It's more robust that way".  OK, but if you go for that
+>> kind of arguments (and they can be valid), you'd better be correct.
+>> You were not, and for very obvious reasons.  Let me repeat, this
+>> time with sarcasm level down to zero:
+>>
+>> Let n be some integer between 32 and 4096 and N be equal to n rounded up
+>> to word size.  If kmalloc(n) returns a pointer such that fetch from
+>> (char *)p[N - 1] triggers an exception, we have a badly broken kernel.
+>> It can happen only if there is a page boundary between p[n-1] and p[N-1],
+>> which means that p is not word-aligned.
+>> Consider the following code:
+>>         struct foo {
+>>                 unsigned long n;
+>>                 char a[];
+>>         } *p = kmalloc(offsetof(struct foo, a) + 33);
+>>         if (p)
+>>                 p->n = 1;
+>> and note that it will result in an exception on any architecture that prohibits
+>> unaligned accesses in the kernel.  Even on architectures where those are
+>> allowed, misaligned structures mean serious correctness problems (atomicity of
+>> stores, etc.)
+>>
+>> In other words, kmalloc() (or, indeed, userland malloc()) demonstrating
+>> such behaviour would need immediate fixing.  The only exception I can
+>> think of is something with byte granularity of memory protection; in such
+>> case we can have that without unaligned return values returned by allocator.
+>> Which would require a lot of changes in mm/*, at the very least, and probably
+>> would violate a lot of assumptions elsewhere in the kernel (starting with
+>> sizeof(void *) == sizeof(unsigned long)).
+>>
+>>> What the patch does help with, though, is dynamic analysis tools that
+>>> are looking for out-of-bound reads, which this clearly is. It should
+>>> be considered a violation of the API to attempt to access a range
+>>> beyond what was requested for the allocation. Fixing this means lots
+>>> of noise vanishes from such analysis of the allocation API, letting
+>>> other tools besides just KASAN do work to find other more serious
+>>> problems in heap usage.
+>>>
+>>> Does fixing this to help dynamic analysis tools somehow make the
+>>> kernel worse? I think that fixing this makes it easier to find further
+>>> bugs that might be much more serious.
+>>
+>> Possibly true.  But then I'd suggest wrapping that into a different ifdef;
+>> grep for ifdef __CHECKER__, with comment along the lines of "to simplify
+>> analysis of potential out-of-bounds accesses".
+>
+>
+> Hi,
+>
+> Any single reason to not just fix the code?
+>
+> With this patch:
+> + sticks with "do not access beyond request size", which is a good
+> thing all others equal
+> + makes static and dynamic verification tools happy
+> - ???
 
-Nice!
+- It does not fix anything, it only shuts up the checker
+- It adds another ifdef where it is not obvious why it's needed
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
+Therefore it makes more sense to add a ifdef __CHECKER__ such that
+everyone immediately knows that the issue is only false positive.
 
-for the whole series.
-
-g.
-
-> 
-> Rob
-> 
-> [1] http://www.spinics.net/lists/devicetree/msg04865.html
-> 
-> Rob Herring (21):
->   drivers: remove unnecessary prom.h includes
->   of: remove unnecessary prom.h includes
->   ARM: keystone: remove unnecessary prom.h include
->   arm64: remove unnecessary prom.h include
->   openrisc: remove unnecessary prom.h include
->   arc: remove unnecessary prom.h includes
->   hexagon: remove unnecessary prom.h includes
->   metag: move setup_machine_fdt declaration from prom.h
->   microblaze: clean-up prom.h implicit includes
->   drivers: clean-up prom.h implicit includes
->   mips: add explicit includes of prom.h
->   x86: add necessary includes for prom.h
->   of: implement pci_address_to_pio as weak function
->   of: implement of_node_to_nid as a weak function
->   of: remove HAVE_ARCH_DEVTREE_FIXUPS
->   of: move of_address_to_resource and of_iomap declarations from sparc
->   of: move of_translate_dma_address to of_address.h
->   powerpc: clean-up include ordering in prom.h
->   powerpc: add explicit OF includes
->   of: only include prom.h on sparc
->   of: remove empty arch prom.h headers
-> 
->  arch/arc/include/asm/prom.h                      | 14 ---------
->  arch/arc/kernel/devtree.c                        |  1 -
->  arch/arc/kernel/setup.c                          |  1 -
->  arch/arm/include/asm/prom.h                      |  2 --
->  arch/arm/mach-keystone/platsmp.c                 |  1 -
->  arch/arm64/include/asm/prom.h                    |  1 -
->  arch/arm64/mm/init.c                             |  1 -
->  arch/c6x/include/asm/prom.h                      |  1 -
->  arch/hexagon/kernel/setup.c                      |  3 --
->  arch/metag/include/asm/prom.h                    | 23 --------------
->  arch/metag/include/asm/setup.h                   |  1 +
->  arch/metag/kernel/setup.c                        |  1 -
->  arch/microblaze/include/asm/prom.h               | 39 +-----------------------
->  arch/microblaze/kernel/prom.c                    |  1 +
->  arch/microblaze/kernel/setup.c                   |  1 +
->  arch/microblaze/kernel/timer.c                   |  1 +
->  arch/microblaze/pci/pci-common.c                 |  1 +
->  arch/mips/include/asm/prom.h                     | 11 -------
->  arch/mips/lantiq/prom.c                          |  1 +
->  arch/mips/mti-sead3/sead3-setup.c                |  2 ++
->  arch/mips/ralink/of.c                            |  1 +
->  arch/openrisc/include/asm/prom.h                 | 22 -------------
->  arch/openrisc/kernel/prom.c                      |  1 -
->  arch/powerpc/include/asm/prom.h                  | 33 ++++----------------
->  arch/powerpc/kernel/epapr_paravirt.c             |  1 +
->  arch/powerpc/platforms/512x/clock.c              |  1 +
->  arch/powerpc/platforms/512x/pdm360ng.c           |  2 ++
->  arch/powerpc/platforms/82xx/mpc8272_ads.c        |  2 ++
->  arch/powerpc/platforms/82xx/pq2fads.c            |  2 ++
->  arch/powerpc/platforms/83xx/suspend.c            |  2 ++
->  arch/powerpc/platforms/86xx/pic.c                |  1 +
->  arch/powerpc/platforms/embedded6xx/flipper-pic.c |  1 +
->  arch/powerpc/platforms/embedded6xx/hlwd-pic.c    |  2 ++
->  arch/powerpc/platforms/pasemi/gpio_mdio.c        |  1 +
->  arch/powerpc/platforms/powermac/pfunc_base.c     |  1 +
->  arch/powerpc/platforms/powernv/opal-lpc.c        |  1 +
->  arch/powerpc/platforms/powernv/opal.c            |  1 +
->  arch/powerpc/platforms/powernv/setup.c           |  1 +
->  arch/powerpc/platforms/pseries/hotplug-memory.c  |  2 ++
->  arch/powerpc/sysdev/cpm_common.c                 |  1 +
->  arch/powerpc/sysdev/fsl_gtm.c                    |  2 ++
->  arch/powerpc/sysdev/fsl_pmc.c                    |  1 +
->  arch/powerpc/sysdev/mpic.c                       |  8 ++---
->  arch/powerpc/sysdev/mpic_timer.c                 |  2 ++
->  arch/sparc/include/asm/prom.h                    | 12 --------
->  arch/x86/include/asm/prom.h                      |  5 ---
->  arch/x86/kernel/devicetree.c                     | 11 +------
->  arch/xtensa/include/asm/prom.h                   |  6 ----
->  drivers/ata/sata_fsl.c                           |  2 ++
->  drivers/char/bsr.c                               |  1 +
->  drivers/char/hw_random/pasemi-rng.c              |  1 +
->  drivers/cpufreq/pasemi-cpufreq.c                 |  1 +
->  drivers/crypto/caam/ctrl.c                       |  3 ++
->  drivers/crypto/caam/jr.c                         |  2 ++
->  drivers/dma/fsldma.c                             |  2 ++
->  drivers/edac/cell_edac.c                         |  1 +
->  drivers/i2c/busses/i2c-mpc.c                     |  2 ++
->  drivers/i2c/busses/i2c-powermac.c                |  1 +
->  drivers/input/serio/xilinx_ps2.c                 |  1 +
->  drivers/macintosh/macio_asic.c                   |  2 ++
->  drivers/macintosh/rack-meter.c                   |  2 ++
->  drivers/macintosh/smu.c                          |  1 +
->  drivers/macintosh/via-pmu.c                      |  2 ++
->  drivers/mtd/nand/fsl_elbc_nand.c                 |  1 +
->  drivers/mtd/nand/pasemi_nand.c                   |  2 ++
->  drivers/net/can/grcan.c                          |  3 --
->  drivers/net/can/sja1000/sja1000_of_platform.c    |  1 -
->  drivers/net/ethernet/ibm/emac/core.c             |  2 ++
->  drivers/net/ethernet/ibm/emac/mal.c              |  1 +
->  drivers/net/ethernet/ibm/emac/rgmii.c            |  1 +
->  drivers/net/ethernet/ibm/emac/tah.c              |  1 +
->  drivers/net/ethernet/ibm/emac/zmii.c             |  1 +
->  drivers/net/ethernet/xilinx/ll_temac_main.c      |  1 +
->  drivers/of/address.c                             |  8 +++++
->  drivers/of/base.c                                |  7 +++++
->  drivers/of/of_pci.c                              |  1 -
->  drivers/of/of_pci_irq.c                          |  1 -
->  drivers/of/pdt.c                                 |  1 -
->  drivers/pcmcia/electra_cf.c                      |  2 ++
->  drivers/tty/ehv_bytechan.c                       |  1 +
->  drivers/tty/serial/pmac_zilog.c                  |  2 ++
->  drivers/usb/host/ehci-ppc-of.c                   |  2 ++
->  drivers/usb/host/ohci-ppc-of.c                   |  2 ++
->  fs/proc/proc_devtree.c                           |  3 --
->  include/linux/of.h                               | 13 ++++----
->  include/linux/of_address.h                       | 39 +++++++++++++-----------
->  sound/aoa/core/gpio-feature.c                    |  3 +-
->  sound/aoa/soundbus/i2sbus/core.c                 |  2 ++
->  sound/ppc/pmac.c                                 |  2 ++
->  sound/ppc/tumbler.c                              |  1 +
->  90 files changed, 141 insertions(+), 220 deletions(-)
->  delete mode 100644 arch/arc/include/asm/prom.h
->  delete mode 100644 arch/arm64/include/asm/prom.h
->  delete mode 100644 arch/c6x/include/asm/prom.h
->  delete mode 100644 arch/metag/include/asm/prom.h
->  delete mode 100644 arch/openrisc/include/asm/prom.h
->  delete mode 100644 arch/xtensa/include/asm/prom.h
-> 
-> -- 
-> 1.8.1.2
-> 
-
+-- 
+Thanks,
+//richard
