@@ -1,158 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3JDPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 11:07:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54569 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab3JDPH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 11:07:26 -0400
-Message-ID: <524ED994.7020600@ti.com>
-Date: Fri, 4 Oct 2013 11:07:00 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754880Ab3JDPJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 11:09:17 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33335 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab3JDPJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 11:09:15 -0400
+Date: Fri, 4 Oct 2013 16:09:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Message-ID: <20131004150910.GP27287@sirena.org.uk>
+References: <1380562166.32071.172.camel@dvhart-mobl4.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Lukasz Majewski <l.majewski@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, <devicetree@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 4/6] thermal: exynos: Replace SOC_ARCH_EXYNOS with SOC_ARCH_EXYNOS5250
-References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com> <524DEAED.4030905@ti.com> <20131004122330.47e21d24@amdc308.digital.local> <2265935.YcHunKd7UC@amdc1032>
-In-Reply-To: <2265935.YcHunKd7UC@amdc1032>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="VxriV23ILdJdStvRGSMKosPtajFoJ5uWu"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qUGjz7OmxI7iFH2Z"
+Content-Disposition: inline
+In-Reply-To: <1380562166.32071.172.camel@dvhart-mobl4.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: GPIO: Performance sensitive applications, gpiochip-level locking
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VxriV23ILdJdStvRGSMKosPtajFoJ5uWu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 04-10-2013 06:47, Bartlomiej Zolnierkiewicz wrote:
-> On Friday, October 04, 2013 12:23:30 PM Lukasz Majewski wrote:
->> Hi Eduardo,
->>
->>> On 24-09-2013 04:08, Lukasz Majewski wrote:
->>>> The TMU data definition is now separated to Exynos4412 and
->>>> Exynos5250.
->>>>
->>>> Now SOC_ARCH_EXYNOS only refers to Exynos5250. Hence the name
->>>> SOC_ARCH_EXYNOS has been changed to SOC_ARCH_EXYNOS5250.
->>>>
->>>
->>> How about merging this one with patch 02?
->>
->> I wanted to show how the work was logically split - patch 02
->> extracts Exynos4412 from Exynos5250. Then this patch changes the name.=
+--qUGjz7OmxI7iFH2Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>
->> I will merge those two patches. No problem.
->=20
-> Oh, well. Looking at the patch #2 again the merge can be done without
-> sacrificing backportability.
+On Mon, Sep 30, 2013 at 10:29:26AM -0700, Darren Hart wrote:
 
-Please, merge them and describe that you are reworking the type and the
-enum definition. Also add your reasonings, specially if you found bugs.
-The way the descriptions are being presented, the bugs you found do not
-get properly explained.
+> Is there a best practice for dealing with this kind of configuration?
 
->=20
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->=20
->>>
->>>> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
->>>> ---
->>>>  drivers/thermal/samsung/exynos_tmu.c      |    4 ++--
->>>>  drivers/thermal/samsung/exynos_tmu.h      |    2 +-
->>>>  drivers/thermal/samsung/exynos_tmu_data.c |    2 +-
->>>>  3 files changed, 4 insertions(+), 4 deletions(-)
->>>>
->>>> diff --git a/drivers/thermal/samsung/exynos_tmu.c
->>>> b/drivers/thermal/samsung/exynos_tmu.c index 21b89e4..037cd46 100644=
+> If not, would it make sense to add optional gpiochip-level lock/unlock
+> and lockless direction and value operations to the gpiochip function
+> block?
 
->>>> --- a/drivers/thermal/samsung/exynos_tmu.c
->>>> +++ b/drivers/thermal/samsung/exynos_tmu.c
->>>> @@ -632,9 +632,9 @@ static int exynos_tmu_probe(struct
->>>> platform_device *pdev) if (ret)
->>>>  		return ret;
->>>> =20
->>>> -	if (pdata->type =3D=3D SOC_ARCH_EXYNOS ||
->>>> -	    pdata->type =3D=3D SOC_ARCH_EXYNOS4210 ||
->>>> +	if (pdata->type =3D=3D SOC_ARCH_EXYNOS4210 ||
->>>>  	    pdata->type =3D=3D SOC_ARCH_EXYNOS4412 ||
->>>> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS5250 ||
->>>>  	    pdata->type =3D=3D SOC_ARCH_EXYNOS5440)
->>>>  		data->soc =3D pdata->type;
->>>>  	else {
->>>> diff --git a/drivers/thermal/samsung/exynos_tmu.h
->>>> b/drivers/thermal/samsung/exynos_tmu.h index db37df0..b42ece4 100644=
+Another thing people keep suggesting for this is a block GPIO set
+operation - something that will let you configure multiple GPIOs with a
+single call.  That maps nicely onto hardware which has a single register
+for multiple GPIOs but there's been abstraction problems implementing
+it.
 
->>>> --- a/drivers/thermal/samsung/exynos_tmu.h
->>>> +++ b/drivers/thermal/samsung/exynos_tmu.h
->>>> @@ -42,7 +42,7 @@ enum calibration_mode {
->>>>  enum soc_type {
->>>>  	SOC_ARCH_EXYNOS4210 =3D 1,
->>>>  	SOC_ARCH_EXYNOS4412,
->>>> -	SOC_ARCH_EXYNOS,
->>>> +	SOC_ARCH_EXYNOS5250,
->>>>  	SOC_ARCH_EXYNOS5440,
->>>>  };
->>>> =20
->>>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c
->>>> b/drivers/thermal/samsung/exynos_tmu_data.c index bd08093..188223f
->>>> 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.c
->>>> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
->>>> @@ -183,7 +183,7 @@ struct exynos_tmu_init_data const
->>>> exynos4412_default_tmu_data =3D { struct exynos_tmu_init_data const
->>>> exynos5250_default_tmu_data =3D { .tmu_data =3D {
->>>>  		{ EXYNOS4412_TMU_DATA,
->>>> -		.type =3D SOC_ARCH_EXYNOS,
->>>> +		.type =3D SOC_ARCH_EXYNOS5250,
->>>>  		},
->>>>  	},
->>>>  	.tmu_count =3D 1,
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---VxriV23ILdJdStvRGSMKosPtajFoJ5uWu
+--qUGjz7OmxI7iFH2Z
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-iF4EAREIAAYFAlJO2ZoACgkQCXcVR3XQvP0sDQD7B52MD2xoWPbCYvVisLgvmobk
-MuRwecQ+owTvny7WD/0A/1T6FMBw/dgmv5ouYybMEElHRaNuD3WYksqvtdweaUDR
-=UoWf
+iQIcBAEBAgAGBQJSTtoSAAoJELSic+t+oim9VvcP/3TDjE/E7+D8fCYcLstvvAI+
+CFmyXGOH5mGRbhMeahi4k1rA/3qe1Cegalqr/BcqORXdSBtYtLNndfWWUV5liF49
+JuAZld2ZH0DncsA3YOPj6AgQYRIsxSzJi1/3UL7IDJDMm2bVW0EauBhOHjQwOh2d
+AaqEY8RZMoxdAUOsV+M0Ie0skHxu2eXuSd94ws0d7qkGb1N2NglGTUrKnrYKlR+M
+11+7yPpQZjbTEculq1LA4oPnk45x8NCrMzE0nMYB1g4I+Mj8vNFUHcur+P/9x2eP
+lItBnoSUrOfwn1EJSY6++7HtjxQhqRno4HzGlyvGs3syvGCrDQQ4nexxwjY9EMZy
+Yj2aw8DZlZPwEm6CBqGPMb9PNXHD0/9kGkSEByNLQLHQLrJ2vZ7/smOUPzh7bMnN
+21OhUmtTS0lYaRvtYEJZjprSl7BQv9hZCKciSEgBFq5cpIkYWp3wECuCrcGp0h7x
+Y053f+SI1Kfx2KzE73TZ1lNvNsgEgjWsiQ1N3HeyyXKtCGsDk/Y9TLyyNFPxxuUE
+3dMbSTAeWONJvE+SpAg8F78AUNAOvCf5E/wwEI6BkAkLWxAhBTSxT6g3QuypBg9H
+YhZKiwPE/Aa53T01lJXaiFaHDe5Jxl8CEYlVBCtPYCAJQlX8WBl0rAJTlRoTqtiG
++NM2oT5ZYABpRDpH9gVD
+=tAG0
 -----END PGP SIGNATURE-----
 
---VxriV23ILdJdStvRGSMKosPtajFoJ5uWu--
+--qUGjz7OmxI7iFH2Z--
