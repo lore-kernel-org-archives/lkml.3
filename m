@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab3JDTMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:12:30 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:48500 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab3JDTM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:12:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131004184629.GA17550@redhat.com>
-References: <20131004184614.GA17536@redhat.com>
-	<20131004184629.GA17550@redhat.com>
-Date: Fri, 4 Oct 2013 12:12:25 -0700
-X-Google-Sender-Auth: U0x77xDxim5HIlOcza4UZAuXmUQ
-Message-ID: <CA+55aFxfbV2AsOUhL318AH8y4BUe2FXFb8aTFuqPqc_2SdV2MA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] rcusync: introduce struct rcu_sync_ops
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
+	id S1753748Ab3JDTOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:14:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50797 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751469Ab3JDTOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 15:14:03 -0400
+Date: Fri, 4 Oct 2013 21:06:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131004190653.GA17639@redhat.com>
+References: <20131003211009.GA4127@redhat.com> <20131004071814.GS28601@twins.programming.kicks-ass.net> <20131004111513.GA5699@redhat.com> <20131004114442.GJ3081@twins.programming.kicks-ass.net> <20131004121300.GA7725@redhat.com> <20131004123806.GK3081@twins.programming.kicks-ass.net> <20131004133135.GA11097@redhat.com> <20131004144319.GM3081@twins.programming.kicks-ass.net> <20131004151323.GA16440@redhat.com> <20131004162546.GQ3081@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004162546.GQ3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 11:46 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Add the new struct rcu_sync_ops which holds sync/call methods, and
-> turn the function pointers in rcu_sync_struct into the single pointer
-> to struct rcu_sync_ops.
+On 10/04, Peter Zijlstra wrote:
 >
-> +struct rcu_sync_ops {
-> +       void (*sync)(void);
-> +       void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-> +};
-> +
->  struct rcu_sync_struct {
->         int                     gp_state;
->         int                     gp_count;
-> @@ -12,43 +17,9 @@ struct rcu_sync_struct {
->         int                     cb_state;
->         struct rcu_head         cb_head;
+> On Fri, Oct 04, 2013 at 05:13:23PM +0200, Oleg Nesterov wrote:
 >
-> -       void (*sync)(void);
-> -       void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-> +       struct rcu_sync_ops     *ops;
+> > I am not trying saying this feature is "must have", of course it
+> > is not. The only problem, I am a bit puzzled why you dislike it
+> > that much.
+>
+> The reason I dislike it is because I feel we're now mixing two objects
+> into one; one object doing mutual exclusion and one object being
+> terribly smart with sync_rcu.
 
-Ugh.
+OK, I see your point.
 
-This interface pretty much guarantees that a compiler can never do
-anything clever, like know that "hey, you used a static initializer on
-this thing, and the fields are const, so now know statically what the
-functions are, and I can just turn the indirect jumps into direct
-jumps".
+But rcu_sync_struct has to serialize the writers anyway. The only
+question is how many other writers the thread doing ->sync() should
+wakeup and when.
 
-I'm not sure gcc is actually that clever, but by making it this kind
-of ops pointer, I *guarantee* that gcc can never do it.
+And otoh. Currently nobody needs the non-exclusive mode (cpu-hotplug
+doesn't care because it is always exclusive itself). And in fact you
+initially argued with wake_up_all ;) "exclusive" is more natural, it
+is like rw_semaphore.
 
-How about you make the rule be:
+However, yes-yes-yes, I do think that we need the non-exclusive mode
+too, at least for percpu_down_write_nonexclusive() which I think we
+need as well.
 
- - get rid of the stupid "type" enum index thing
+Oleg.
 
- - get rid of the "init" thing that sets pointers in the dynamic data
-structures. Get rid of the pointer too.
-
- - instead, use a "static const" type descriptor for each type (it
-approaches being your "rcu_sync_ops" structure). Pass this in as an
-argument to all the functions (use a #define per type or something, so
-that users don't need to do this by hand)
-
- - now every single user passes in that type descriptor.
-
- - together with using a few inline functions, suddenly the "indirect"
-jumps through this type descriptor end up actually being nice direct
-compile-time constants: iow, they get turned into direct jumps.
-
-Tadaa. You actually get good code generation, and you use *less*
-dynamic memory since you don't have to have this pointer to the
-descriptor.
-
-                Linus
