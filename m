@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3JDRws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:52:48 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:56518 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab3JDRwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:52:47 -0400
-Date: Fri, 4 Oct 2013 10:52:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Olof Johansson <olof@lixom.net>
-Cc: Mark Brown <broonie@kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 3
-Message-ID: <20131004175240.GA9301@roeck-us.net>
-References: <20131004010230.GI27287@sirena.org.uk>
- <524E50DB.3060707@roeck-us.net>
- <CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>
- <524EC658.90706@roeck-us.net>
- <20131004143440.GO27287@sirena.org.uk>
- <CAOesGMhrF+RB9O2f1JGtkT02amZQCx1nUo0GjmeBErYiSHSVZA@mail.gmail.com>
+	id S1753947Ab3JDRyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:54:06 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:60722 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751222Ab3JDRyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 13:54:04 -0400
+Date: Fri, 4 Oct 2013 12:54:00 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "normalperson@yhbt.net" <normalperson@yhbt.net>,
+        "nzimmer@sgi.com" <nzimmer@sgi.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "nelhage@nelhage.com" <nelhage@nelhage.com>,
+        "davidel@xmailserver.org" <davidel@xmailserver.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 2/2 v2] epoll: Do not take global 'epmutex' for simple
+	topologies
+Message-ID: <20131004175359.GA153672@asylum.americas.sgi.com>
+References: <cover.1380645717.git.jbaron@akamai.com> <355cdd8dc79b7bcca59509999a972cc9d6b4b673.1380645717.git.jbaron@akamai.com> <20131003145054.efcf3f4ffc64abcc7e09a87f@linux-foundation.org> <524EDBBC.2060305@akamai.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMhrF+RB9O2f1JGtkT02amZQCx1nUo0GjmeBErYiSHSVZA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <524EDBBC.2060305@akamai.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 10:00:20AM -0700, Olof Johansson wrote:
-> On Fri, Oct 4, 2013 at 7:34 AM, Mark Brown <broonie@kernel.org> wrote:
-> > On Fri, Oct 04, 2013 at 06:44:56AM -0700, Guenter Roeck wrote:
+On Fri, Oct 04, 2013 at 11:16:12AM -0400, Jason Baron wrote:
+> On 10/03/2013 05:50 PM, Andrew Morton wrote:
+> > On Tue,  1 Oct 2013 17:08:14 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
 > >
-> >> Great summaries. Do you have a single builder, or several builders and
-> >> collect the results ? Either case, any chance sharing the buildbot scripts ?
+> >> When calling EPOLL_CTL_ADD for an epoll file descriptor that is attached
+> >> directly to a wakeup source, we do not need to take the global 'epmutex',
+> >> unless the epoll file descriptor is nested. The purpose of taking
+> >> the 'epmutex' on add is to prevent complex topologies such as loops and
+> >> deep wakeup paths from forming in parallel through multiple EPOLL_CTL_ADD
+> >> operations. However, for the simple case of an epoll file descriptor
+> >> attached directly to a wakeup source (with no nesting), we do not need
+> >> to hold the 'epmutex'.
+> >>
+> >> This patch along with 'epoll: optimize EPOLL_CTL_DEL using rcu' improves
+> >> scalability on larger systems. Quoting Nathan Zimmer's mail on SPECjbb
+> >> performance:
+> >>
+> >> "
+> >> On the 16 socket run the performance went from 35k jOPS to 125k jOPS.
+> >> In addition the benchmark when from scaling well on 10 sockets to scaling well
+> >> on just over 40 sockets.
+> >>
+> >> ...
+> >>
+> >> Currently the benchmark stops scaling at around 40-44 sockets but it seems like
+> >> I found a second unrelated bottleneck.
+> >> "
+> > I couldn't resist fiddling.  Please review
 > >
-> > There's a repo at:
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > Subject: epoll-do-not-take-global-epmutex-for-simple-topologies-fix
 > >
-> >   git://git.linaro.org/people/khilman/build-scripts.git
+> > - use `bool' for boolean variables
+> > - remove unneeded/undesirable cast of void*
+> > - add missed ep_scan_ready_list() kerneldoc 
 > 
-> A git url is frustrating, especially when the gitweb isn't configured
-> to use the same paths.
+> Hi Andrew,
 > 
-> https://git.linaro.org/gitweb?p=people/khilman/build-scripts.git;a=summary
+> Looks good to me. Feel free to add:
 > 
-I was able to clone it, though.
+> Reviewed-by: Jason Baron <jbaron@akamai.com>
+> 
+> Thanks,
+> 
+> -Jason
 
-> > (Olof and Kevin have been collaborating on them).
-> 
-> What I use is quite different from that, but the origins are more or
-> less the same.
-> 
-No problem. I'll see if there is anything I can use to improve my buildbot
-scripts. My key problem is that I have not figured out how to merge
-results from multiple builders into a single summary e-mail. Hope I can
-solve that problem at some point. Time is always the problem.
+Just finished rerunning the benchmarks with this latest patchset, including the
+fiddling, and it still looks great.
 
 Thanks,
-Guenter
+
+Nate
