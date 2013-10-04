@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab3JDHVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 03:21:12 -0400
-Received: from mail-pa0-f66.google.com ([209.85.220.66]:50104 "EHLO
-	mail-pa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3JDHVK (ORCPT
+	id S1753115Ab3JDHV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 03:21:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39545 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3JDHV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 03:21:10 -0400
-Message-ID: <524e6c65.cabf440a.5d34.fffff7e6@mx.google.com>
-From: cecelia97452@googlemail.com
-To: linux-kernel@vger.kernel.org
-Reply-To: COLEEN93482@gmail.com
-Subject: RE: Free SEO Trial For mail-archive.com
-Date: Fri, 4 Oct 2013 12:51:12 +0530
+	Fri, 4 Oct 2013 03:21:57 -0400
+Date: Fri, 4 Oct 2013 09:21:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCHv4 09/10] mm: implement split page table lock for PMD level
+Message-ID: <20131004072132.GT28601@twins.programming.kicks-ass.net>
+References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1380287787-30252-10-git-send-email-kirill.shutemov@linux.intel.com>
+ <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Morning Sir,
+On Thu, Oct 03, 2013 at 04:11:09PM -0700, Andrew Morton wrote:
+> On Fri, 27 Sep 2013 16:16:26 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > The basic idea is the same as with PTE level: the lock is embedded into
+> > struct page of table's page.
+> > 
+> > We can't use mm->pmd_huge_pte to store pgtables for THP, since we don't
+> > take mm->page_table_lock anymore. Let's reuse page->lru of table's page
+> > for that.
+> > 
+> > pgtable_pmd_page_ctor() returns true, if initialization is successful
+> > and false otherwise. Current implementation never fails, but assumption
+> > that constructor can fail will help to port it to -rt where spinlock_t
+> > is rather huge and cannot be embedded into struct page -- dynamic
+> > allocation is required.
+> 
+> spinlock_t is rather large when lockdep is enabled.  What happens?
 
-Hope this email finds you in good health
+I could go fix all the arch code and pgtable ctor thingies and do the
+same thing we do on -rt if anybody cares.
 
-Does your website rank page 1 on major search engines like google & bing for your most converting keywords ? OR have your website lost rankings in last 1 year with Googles new algorithm changes? Google has launched 3 major updates in last 3 weeks resulting in many websites dropping in traffic and sales. 
-
-For your information 85% of users searching the web will never find your website unless you're ranked on first page of Google, MSN and other major search engines. On the top of this with all these new google update around ( Penguin & Pandas ) its not easy to get page 1 and stay there for long to keep getting business from the web.
-
-Why our program is very unique : 15 days free seo trial
-
-We are presently offering a free 15 days SEO trial that has never been offered on the web so far. We will work on your website for 15 days and show you substantial growth in rankings for all keywords. You only move to paid service if satisfied with our service else you can opt out.
-
-OUR TOP SELLING PACKAGES
-
-- Package A) 10 keywords optimized - $99 / M
-- Package B) 20 Keywords optimized - $149 / M
-- Package C) 30 keywords optimized - $199 / M
-
-COMPANY INFORMATION
-
-We rank top 10 on Google for terms like Online SEO Company, online seo consultants and many more. We are working for hundreds of clients online and all rank top 10 for their best keywords. We would like to have a chance to rank your website page 1 for best keywords in your niche.
-
-
-To opt-in for our free seo trial please email us back with the information below
-
-- Package you would like to OPT for
-- "Website Address You want To Optimize"
-- Recommended keywords ( Optional )
-- SEO done previously ( Yes / No )
-
-We guarantee you top 10 google listings in max 3 months of our program. We use the most ethical "white hat" Search Engine Optimization techniques to deliver rankings that will not get your website banned or penalized.
-
-
-Reply Awaited
-
-Regards
-Julia M
-SEO Manager (TOB)
-B7 Green Avenue, Amritsar 143001 Punjab
+Hugh thought the single pagetable lock would catch the more interesting
+locking scenarios, but its of course sad to have an entire locking
+scheme not covered by lockdep -- that's just waiting for a bug to sneak
+in there.
