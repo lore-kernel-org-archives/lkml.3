@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3JDTL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:11:28 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:37971 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab3JDTL0 (ORCPT
+	id S1753513Ab3JDTMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:12:30 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:48500 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab3JDTM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:11:26 -0400
-Date: Fri, 4 Oct 2013 20:11:13 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
- file's opener may access task
-Message-ID: <20131004191113.GA3916@dztty>
-References: <20131003143653.GA32445@dztty>
- <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
- <20131003192926.GB2390@dztty>
- <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
- <20131003201332.GA3500@dztty>
- <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
- <20131004085911.GA2157@dztty>
- <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
- <20131004182353.GA2600@dztty>
- <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+	Fri, 4 Oct 2013 15:12:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131004184629.GA17550@redhat.com>
+References: <20131004184614.GA17536@redhat.com>
+	<20131004184629.GA17550@redhat.com>
+Date: Fri, 4 Oct 2013 12:12:25 -0700
+X-Google-Sender-Auth: U0x77xDxim5HIlOcza4UZAuXmUQ
+Message-ID: <CA+55aFxfbV2AsOUhL318AH8y4BUe2FXFb8aTFuqPqc_2SdV2MA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] rcusync: introduce struct rcu_sync_ops
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 07:34:08PM +0100, Andy Lutomirski wrote:
-> On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
-> >> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
-[...] 
-> Sorry, I described the obviously broken scenario incorrectly.  Your
-> patch breaks (in the absence of things like selinux) if a exec
-> something setuid root.
-> 
-> [...]
-> 
-> >
-> > I did the check in the proc_same_open_cred() function:
-> >  return (uid_eq(fcred->uid, cred->uid) &&
-> >          gid_eq(fcred->gid, cred->gid) &&
-> >          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
-> 
-> Which has nothing to do with anything.  If that check fails, you're
-> just going on to a different, WRONG check/.
-> 
-> >
-> > Check if this is the same uid/gid and the capabilities superset!
-> >
-> > But in the proc_allow_access() the capabilities superset is missing.
-> >
-> >
-> > So to fix it:
-> > 1) if proc_same_open_cred() detects that cred have changed between
-> > ->open() and ->read() then abort, return zero, the ->read(),write()...
-> 
-> IMO yuck.
-> 
-> >
-> >
-> > 2) Improve the proc_allow_access() check by:
-> >    if this is the same user namespace then check uid/gid of f_cred on
-> >    target cred task, and the capabilities superset:
-> >    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
-> >
-> >    If it fails let security_capable() or file_ns_capable() do its magic.
-> >
-> 
-> NAK.  You need to actually call the LSM.  What if the reason to fail
-> the request isn't that the writer gained capabilities -- what if the
-> writer's selinux label changed?
-Sorry I can't follow you here! Can you be more explicit please?
+On Fri, Oct 4, 2013 at 11:46 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Add the new struct rcu_sync_ops which holds sync/call methods, and
+> turn the function pointers in rcu_sync_struct into the single pointer
+> to struct rcu_sync_ops.
+>
+> +struct rcu_sync_ops {
+> +       void (*sync)(void);
+> +       void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> +};
+> +
+>  struct rcu_sync_struct {
+>         int                     gp_state;
+>         int                     gp_count;
+> @@ -12,43 +17,9 @@ struct rcu_sync_struct {
+>         int                     cb_state;
+>         struct rcu_head         cb_head;
+>
+> -       void (*sync)(void);
+> -       void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> +       struct rcu_sync_ops     *ops;
 
-For me we are already doing this during ptrace_may_access() on each
-syscall, which will call LSM to inspect the privileges on each ->open(),
-->write()... So LSM hooks are already called. If you want to have more
-LSM hooks, then perhaps that's another problem?
+Ugh.
 
--- 
-Djalal Harouni
-http://opendz.org
+This interface pretty much guarantees that a compiler can never do
+anything clever, like know that "hey, you used a static initializer on
+this thing, and the fields are const, so now know statically what the
+functions are, and I can just turn the indirect jumps into direct
+jumps".
+
+I'm not sure gcc is actually that clever, but by making it this kind
+of ops pointer, I *guarantee* that gcc can never do it.
+
+How about you make the rule be:
+
+ - get rid of the stupid "type" enum index thing
+
+ - get rid of the "init" thing that sets pointers in the dynamic data
+structures. Get rid of the pointer too.
+
+ - instead, use a "static const" type descriptor for each type (it
+approaches being your "rcu_sync_ops" structure). Pass this in as an
+argument to all the functions (use a #define per type or something, so
+that users don't need to do this by hand)
+
+ - now every single user passes in that type descriptor.
+
+ - together with using a few inline functions, suddenly the "indirect"
+jumps through this type descriptor end up actually being nice direct
+compile-time constants: iow, they get turned into direct jumps.
+
+Tadaa. You actually get good code generation, and you use *less*
+dynamic memory since you don't have to have this pointer to the
+descriptor.
+
+                Linus
