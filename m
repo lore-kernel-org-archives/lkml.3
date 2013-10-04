@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab3JDQWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:22:48 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48185 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab3JDQWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:22:46 -0400
-Date: Fri, 4 Oct 2013 09:22:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131004162242.GI5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131003184001.GM28601@twins.programming.kicks-ass.net>
- <20131003184719.GA11996@redhat.com>
- <20131003192135.GR5790@linux.vnet.ibm.com>
- <20131003193206.GA17796@redhat.com>
- <20131003193319.GB17796@redhat.com>
- <20131003195026.GT5790@linux.vnet.ibm.com>
- <20131003200002.GA23768@redhat.com>
- <20131003211009.GA4127@redhat.com>
- <20131003220057.GY5790@linux.vnet.ibm.com>
- <20131004112945.GB5699@redhat.com>
+	id S1755233Ab3JDQZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:25:04 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:44156 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754654Ab3JDQZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 12:25:01 -0400
+Message-ID: <524EEB96.6040707@mm-sol.com>
+Date: Fri, 04 Oct 2013 19:23:50 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131004112945.GB5699@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100416-1344-0000-0000-0000022ABBB7
+To: "Theodore Ts'o" <tytso@mit.edu>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org>
+In-Reply-To: <20131003165130.GA11974@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 01:29:45PM +0200, Oleg Nesterov wrote:
-> On 10/03, Paul E. McKenney wrote:
-> >
-> > On Thu, Oct 03, 2013 at 11:10:09PM +0200, Oleg Nesterov wrote:
-> > >
-> > > rcusync: introduce rcu_sync_struct->exclusive mode
-> > >
-> > > CHANGELOG.
-> >
-> > Should the changelog really be in all caps?  (Sorry, couldn't resist...)
-> 
-> Apparently you do not realize it is going to be an EXCELLENT changelog!
+Hi Ted,
 
-;-)
+On 10/03/2013 07:51 PM, Theodore Ts'o wrote:
+> On Thu, Oct 03, 2013 at 05:52:33PM +0300, Stanimir Varbanov wrote:
+>> This patch set adds hardware RNG driver wich is used to control the
+>> Qualcomm's PRNG hardware block.
+>> The first patch document the DT bindings needed to sucessfuly probe
+>> the driver and the second patch adds the driver.
+> 
+> Is this really a PRNG (pseudo-random number generator)?  What are the
+> guarantees which Qualcomm is providing for the PRNG?  If it's really a
+> PRNG such as AES(i++, NSA_KEY), then kudo to Qualcomm for being
+> honest.
+> 
+> If it is supposed to be (or at least claimed to be) a secure random
+> number generator ala RDRAND suitable for use in cryptographic
+> applications, calling it a PRNG is going to be a bit misleading.
 
-> > > @@ -53,9 +55,13 @@ void rcu_sync_enter(struct rcu_sync_struct *rss)
-> > >  	if (need_sync) {
-> > >  		rss->ops->sync();
-> > >  		rss->gp_state = GP_PASSED;
-> > > -		wake_up_all(&rss->gp_wait);
-> > > +		if (!rss->exclusive)
-> > > +			wake_up_all(&rss->gp_comp.wait);
-> >
-> > Not sure about the wake_up_all() on a completion,
-> 
-> Yes, we reuse completion->wait in the !exclusive case. Like we reuse
-> its spinlock as rss_lock.
-> 
-> We can add a completion/complete union, but this will complicate the
-> code a bit and imo doesn't make sense.
+I guess that it should follow NIST 800-90 recommendation, but I'm not
+aware what DRBG mechanism is used.
 
-Fair enough!
+To be honest I really don't know the hardware implementation details. I
+put PRNG abbreviation in the cover letter just because I saw that
+defines for register offsets are prefixed with PRNG_*. I could rename
+all occurrences of PRNG to RNG. Is that will be enough to avoid confusions?
 
-							Thanx, Paul
-
-> > but if we are exclusive,
-> > don't we need to complete() the completion here?
-> 
-> No, if we are exclusive we should delay the "wake up the next writer"
-> till rcu_sync_exit().
-> 
-> > Oh, I guess gp_comp.wait is exactly a wait_queue_head_t, so I guess
-> > you can do wake_up_all() on it...
-> 
-> Yes, and we never "mix" completion/wait_queue_head_t operations/members.
-> IOW, we always use ->gp_comp if "exclusive", and only ->gp_comp.wait is
-> used otherwise.
-> 
-> > Never mind!!!
-> 
-> Agreed ;)
-> 
-> Oleg.
-> 
-
+regadrs,
+Stan
