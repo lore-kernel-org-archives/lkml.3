@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3JDOxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:53:48 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:57588 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754120Ab3JDOxo (ORCPT
+	id S1755032Ab3JDO4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:56:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48641 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab3JDO4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:53:44 -0400
-Date: Fri, 4 Oct 2013 10:53:42 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com
-Subject: Re: [PATCH] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
-Message-ID: <20131004105342.20c00a41@gandalf.local.home>
-In-Reply-To: <20131004080909.GP26785@twins.programming.kicks-ass.net>
-References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
-	<20130927091427.GE24743@yliu-dev.sh.intel.com>
-	<20130927152908.GE15690@laptop.programming.kicks-ass.net>
-	<20131004080909.GP26785@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Fri, 4 Oct 2013 10:56:34 -0400
+Date: Fri, 4 Oct 2013 16:56:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org
+Subject: wait-simple stuff
+Message-ID: <20131004145625.GN3081@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Oct 2013 10:09:09 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hi guys,
 
-> On Fri, Sep 27, 2013 at 05:29:08PM +0200, Peter Zijlstra wrote:
-> > Subject: ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Fri Sep 27 17:11:00 CEST 2013
-> > 
-> > Since we now have two need_resched states; trace the two so we can
-> > observe discrepancies.
-> > 
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> 
-> Steve, if you're done conferencing.. any objections?
-> 
+Would something like the below break something?
+>From a quick read things seems fine for both the simple-waitqueue as the
+completions.
 
-Taking a quick look, my only objection so far is that the change log is
-rather flimsy. What are the two states and what are their dependencies?
+Without that lockbreak in I can't see how the kernel would still be
+deterministic as you can pile as many tasks as you want on these
+waitqueues.
 
-In other words, what does these flags in the trace actually mean?
-Probably need to add comments in the code and/or update the
-Documentation section
+---
+ kernel/sched/core.c  |  4 ++--
+ kernel/wait-simple.c | 12 +++++++++---
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
--- Steve
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d2a85b2b58f0..ae2fbef70971 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3496,7 +3496,7 @@ void complete(struct completion *x)
+ 
+ 	raw_spin_lock_irqsave(&x->wait.lock, flags);
+ 	x->done++;
+-	__swait_wake_locked(&x->wait, TASK_NORMAL, 1);
++	__swait_wake_locked(&x->wait, TASK_NORMAL, 1, &flags);
+ 	raw_spin_unlock_irqrestore(&x->wait.lock, flags);
+ }
+ EXPORT_SYMBOL(complete);
+@@ -3516,7 +3516,7 @@ void complete_all(struct completion *x)
+ 
+ 	raw_spin_lock_irqsave(&x->wait.lock, flags);
+ 	x->done += UINT_MAX/2;
+-	__swait_wake_locked(&x->wait, TASK_NORMAL, 0);
++	__swait_wake_locked(&x->wait, TASK_NORMAL, 0, &flags);
+ 	raw_spin_unlock_irqrestore(&x->wait.lock, flags);
+ }
+ EXPORT_SYMBOL(complete_all);
+diff --git a/kernel/wait-simple.c b/kernel/wait-simple.c
+index 7dfa86d1f654..3a20cbff91dd 100644
+--- a/kernel/wait-simple.c
++++ b/kernel/wait-simple.c
+@@ -73,12 +73,13 @@ void swait_finish(struct swait_head *head, struct swaiter *w)
+ EXPORT_SYMBOL(swait_finish);
+ 
+ unsigned int
+-__swait_wake_locked(struct swait_head *head, unsigned int state, unsigned int num)
++__swait_wake_locked(struct swait_head *head, unsigned int state,
++		    unsigned int num, unsigned long *flags)
+ {
+-	struct swaiter *curr, *next;
++	struct swaiter *curr;
+ 	int woken = 0;
+ 
+-	list_for_each_entry_safe(curr, next, &head->list, node) {
++	while ((curr = list_first_entry_or_null(&head->list, struct swaiter, node))) {
+ 		if (wake_up_state(curr->task, state)) {
+ 			__swait_dequeue(curr);
+ 			/*
+@@ -94,6 +95,11 @@ __swait_wake_locked(struct swait_head *head, unsigned int state, unsigned int nu
+ 			if (++woken == num)
+ 				break;
+ 		}
++
++		if (need_resched()) {
++			raw_spin_unlock_irqrestore(&head->lock, *flags);
++			raw_spin_lock_irqsave(&head->lock, *flags);
++		}
+ 	}
+ 	return woken;
+ }
