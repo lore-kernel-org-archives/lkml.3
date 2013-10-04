@@ -1,203 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3JDCCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 22:02:53 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:60389 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3JDCCv (ORCPT
+	id S1754091Ab3JDCEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 22:04:40 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:63332 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752010Ab3JDCEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 22:02:51 -0400
-Message-ID: <524E21BC.7090104@gmail.com>
-Date: Fri, 04 Oct 2013 10:02:36 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Thu, 3 Oct 2013 22:04:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnAGAKshTlJ5LPFV/2dsb2JhbABagweDSrlJhT6BHBd0giUBAQU6HCMQCAMOCgklDwUlAyETiAW8ehaOCIEzB4MfgQQDmACSAIM2KoEt
+Date: Fri, 4 Oct 2013 12:04:17 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Joe Thornber <thornber@redhat.com>, devel@driverdev.osuosl.org,
+        snitzer@redhat.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Akira Hayakawa <ruby.wktk@gmail.com>,
+        dm-devel@redhat.com, agk@redhat.com, joe@perches.com,
+        akpm@linux-foundation.org, dan.carpenter@oracle.com, ejt@redhat.com,
+        cesarb@cesarb.net, m.chehab@samsung.com
+Subject: Re: [dm-devel] Reworking dm-writeboost [was: Re: staging: Add
+ dm-writeboost]
+Message-ID: <20131004020417.GF4446@dastard>
+References: <5223208D.4000008@gmail.com>
+ <20130916215357.GA5015@redhat.com>
+ <52384E66.6050101@gmail.com>
+ <20130917205936.GB12001@redhat.com>
+ <523E3522.2060607@gmail.com>
+ <524183A2.9050301@gmail.com>
+ <20130926034325.GO26872@dastard>
+ <20131001082654.GA10326@debian>
+ <alpine.LRH.2.02.1310021956130.22612@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com
-CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH part1 v6 6/6] mem-hotplug: Introduce movable_node boot option
-References: <524E2032.4020106@gmail.com>
-In-Reply-To: <524E2032.4020106@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1310021956130.22612@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+On Wed, Oct 02, 2013 at 08:01:45PM -0400, Mikulas Patocka wrote:
+> 
+> 
+> On Tue, 1 Oct 2013, Joe Thornber wrote:
+> 
+> > > Alternatively, delaying them will stall the filesystem because it's
+> > > waiting for said REQ_FUA IO to complete. For example, journal writes
+> > > in XFS are extremely IO latency sensitive in workloads that have a
+> > > signifincant number of ordering constraints (e.g. O_SYNC writes,
+> > > fsync, etc) and delaying even one REQ_FUA/REQ_FLUSH can stall the
+> > > filesystem for the majority of that barrier_deadline_ms.
+> > 
+> > Yes, this is a valid concern, but I assume Akira has benchmarked.
+> > With dm-thin, I delay the REQ_FUA/REQ_FLUSH for a tiny amount, just to
+> > see if there are any other FUA requests on my queue that can be
+> > aggregated into a single flush.  I agree with you that the target
+> > should never delay waiting for new io; that's asking for trouble.
+> > 
+> > - Joe
+> 
+> You could send the first REQ_FUA/REQ_FLUSH request directly to the disk 
+> and aggregate all the requests that were received while you processed the 
+> initial request. This way, you can do request batching without introducing 
+> artifical delays.
 
-The hot-Pluggable field in SRAT specifies which memory is hotpluggable.
-As we mentioned before, if hotpluggable memory is used by the kernel,
-it cannot be hot-removed. So memory hotplug users may want to set all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
+Yes, that's what XFS does with it's log when lots of fsync requests
+come in. i.e. the first is dispatched immmediately, and the others
+are gathered into the next log buffer until it is either full or the
+original REQ_FUA log write completes.
 
-Memory hotplug users may also set a node as movable node, which has
-ZONE_MOVABLE only, so that the whole node can be hot-removed.
+That's where arbitrary delays in the storage stack below XFS cause
+problems - if the first FUA log write is delayed, the next log
+buffer will get filled, issued and delayed, and when we run out of
+log buffers (there are 8 maximum) the entire log subsystem will
+stall, stopping *all* log commit operations until log buffer
+IOs complete and become free again. i.e. it can stall modifications
+across the entire filesystem while we wait for batch timeouts to
+expire and issue and complete FUA requests.
 
-But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
-kernel cannot use memory in movable nodes. This will cause NUMA
-performance down. And other users may be unhappy.
+IMNSHO, REQ_FUA/REQ_FLUSH optimisations should be done at the
+point where they are issued - any attempt to further optimise them
+by adding delays down in the stack to aggregate FUA operations will
+only increase latency of the operations that the issuer want to have
+complete as fast as possible....
 
-So we need a way to allow users to enable and disable this functionality.
-In this patch, we introduce movable_node boot option to allow users to
-choose to not to consume hotpluggable memory at early boot time and
-later we can set it as ZONE_MOVABLE.
+Cheers,
 
-To achieve this, the movable_node boot option will control the memblock
-allocation direction. That said, after memblock is ready, before SRAT is
-parsed, we should allocate memory near the kernel image as we explained
-in the previous patches. So if movable_node boot option is set, the kernel
-does the following:
-
-1. After memblock is ready, make memblock allocate memory bottom up.
-2. After SRAT is parsed, make memblock behave as default, allocate memory
-   top down.
-
-Users can specify "movable_node" in kernel commandline to enable this
-functionality. For those who don't use memory hotplug or who don't want
-to lose their NUMA performance, just don't specify anything. The kernel
-will work as before.
-
-Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- Documentation/kernel-parameters.txt |    3 +++
- arch/x86/mm/numa.c                  |   11 +++++++++++
- mm/Kconfig                          |   17 ++++++++++++-----
- mm/memory_hotplug.c                 |   31 +++++++++++++++++++++++++++++++
- 4 files changed, 57 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 539a236..13201d4 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1769,6 +1769,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
- 
-+	movable_node	[KNL,X86] Boot-time switch to disable the effects
-+			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
-+
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
- 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 8bf93ba..24aec58 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -567,6 +567,17 @@ static int __init numa_init(int (*init_func)(void))
- 	ret = init_func();
- 	if (ret < 0)
- 		return ret;
-+
-+	/*
-+	 * We reset memblock back to the top-down direction
-+	 * here because if we configured ACPI_NUMA, we have
-+	 * parsed SRAT in init_func(). It is ok to have the
-+	 * reset here even if we did't configure ACPI_NUMA
-+	 * or acpi numa init fails and fallbacks to dummy
-+	 * numa init.
-+	 */
-+	memblock_set_bottom_up(false);
-+
- 	ret = numa_cleanup_meminfo(&numa_meminfo);
- 	if (ret < 0)
- 		return ret;
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 026771a..0db1cc6 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -153,11 +153,18 @@ config MOVABLE_NODE
- 	help
- 	  Allow a node to have only movable memory.  Pages used by the kernel,
- 	  such as direct mapping pages cannot be migrated.  So the corresponding
--	  memory device cannot be hotplugged.  This option allows users to
--	  online all the memory of a node as movable memory so that the whole
--	  node can be hotplugged.  Users who don't use the memory hotplug
--	  feature are fine with this option on since they don't online memory
--	  as movable.
-+	  memory device cannot be hotplugged.  This option allows the following
-+	  two things:
-+	  - When the system is booting, node full of hotpluggable memory can
-+	  be arranged to have only movable memory so that the whole node can
-+	  be hotplugged. (need movable_node boot option specified).
-+	  - After the system is up, the option allows users to online all the
-+	  memory of a node as movable memory so that the whole node can be
-+	  hotplugged.
-+
-+	  Users who don't use the memory hotplug feature are fine with this
-+	  option on since they don't specify movable_node boot option or they
-+	  don't online memory as movable.
- 
- 	  Say Y here if you want to hotplug a whole node.
- 	  Say N here if you want kernel to use memory on all nodes evenly.
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ed85fe3..6874c31 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -31,6 +31,7 @@
- #include <linux/firmware-map.h>
- #include <linux/stop_machine.h>
- #include <linux/hugetlb.h>
-+#include <linux/memblock.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -1412,6 +1413,36 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
- }
- #endif /* CONFIG_MOVABLE_NODE */
- 
-+static int __init cmdline_parse_movable_node(char *p)
-+{
-+#ifdef CONFIG_MOVABLE_NODE
-+	/*
-+	 * Memory used by the kernel cannot be hot-removed because Linux
-+	 * cannot migrate the kernel pages. When memory hotplug is
-+	 * enabled, we should prevent memblock from allocating memory
-+	 * for the kernel.
-+	 *
-+	 * ACPI SRAT records all hotpluggable memory ranges. But before
-+	 * SRAT is parsed, we don't know about it.
-+	 *
-+	 * The kernel image is loaded into memory at very early time. We
-+	 * cannot prevent this anyway. So on NUMA system, we set any
-+	 * node the kernel resides in as un-hotpluggable.
-+	 *
-+	 * Since on modern servers, one node could have double-digit
-+	 * gigabytes memory, we can assume the memory around the kernel
-+	 * image is also un-hotpluggable. So before SRAT is parsed, just
-+	 * allocate memory near the kernel image to try the best to keep
-+	 * the kernel away from hotpluggable memory.
-+	 */
-+	memblock_set_bottom_up(true);
-+#else
-+	pr_warn("movable_node option not supported");
-+#endif
-+	return 0;
-+}
-+early_param("movable_node", cmdline_parse_movable_node);
-+
- /* check which state of node_states will be changed when offline memory */
- static void node_states_check_changes_offline(unsigned long nr_pages,
- 		struct zone *zone, struct memory_notify *arg)
+Dave.
 -- 
-1.7.1
-
+Dave Chinner
+david@fromorbit.com
