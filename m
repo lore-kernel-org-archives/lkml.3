@@ -1,208 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3JDRNI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:13:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3JDRNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:13:06 -0400
-Message-ID: <1380906772.25705.19.camel@ul30vt.home>
-Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Date: Fri, 04 Oct 2013 11:12:52 -0600
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D07190F35@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1380127533.3030.319.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0718FD1C@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380901507.2673.204.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07190F35@039-SN2MPN1-011.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753131Ab3JDRNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:13:07 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42077 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842Ab3JDRNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 13:13:05 -0400
+Message-ID: <1380906778.1987.23.camel@dabdike.int.hansenpartnership.com>
+Subject: Call for Linux Plumbers Conference Planning Committee applications
+ for =?ISO-8859-1?Q?D=FCsseldorf?= in 2014
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: tech-board <tech-board@lists.linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lpc-planning@linuxplumbersconf.org,
+        lpc-announce@lists.linuxplumbersconf.org
+Date: Fri, 04 Oct 2013 10:12:58 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 16:47 +0000, Bhushan Bharat-R65777 wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Friday, October 04, 2013 9:15 PM
-> > To: Bhushan Bharat-R65777
-> > Cc: joro@8bytes.org; benh@kernel.crashing.org; galak@kernel.crashing.org; linux-
-> > kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > pci@vger.kernel.org; agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > foundation.org
-> > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-> > 
-> > On Fri, 2013-10-04 at 09:54 +0000, Bhushan Bharat-R65777 wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: linux-pci-owner@vger.kernel.org
-> > > > [mailto:linux-pci-owner@vger.kernel.org]
-> > > > On Behalf Of Alex Williamson
-> > > > Sent: Wednesday, September 25, 2013 10:16 PM
-> > > > To: Bhushan Bharat-R65777
-> > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux- foundation.org;
-> > > > Bhushan Bharat-R65777
-> > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > > device
-> > > >
-> > > > On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> > > > > This api return the iommu domain to which the device is attached.
-> > > > > The iommu_domain is required for making API calls related to iommu.
-> > > > > Follow up patches which use this API to know iommu maping.
-> > > > >
-> > > > > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-> > > > > ---
-> > > > >  drivers/iommu/iommu.c |   10 ++++++++++
-> > > > >  include/linux/iommu.h |    7 +++++++
-> > > > >  2 files changed, 17 insertions(+), 0 deletions(-)
-> > > > >
-> > > > > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c index
-> > > > > fbe9ca7..6ac5f50 100644
-> > > > > --- a/drivers/iommu/iommu.c
-> > > > > +++ b/drivers/iommu/iommu.c
-> > > > > @@ -696,6 +696,16 @@ void iommu_detach_device(struct iommu_domain
-> > > > > *domain, struct device *dev)  }
-> > > > > EXPORT_SYMBOL_GPL(iommu_detach_device);
-> > > > >
-> > > > > +struct iommu_domain *iommu_get_dev_domain(struct device *dev) {
-> > > > > +	struct iommu_ops *ops = dev->bus->iommu_ops;
-> > > > > +
-> > > > > +	if (unlikely(ops == NULL || ops->get_dev_iommu_domain == NULL))
-> > > > > +		return NULL;
-> > > > > +
-> > > > > +	return ops->get_dev_iommu_domain(dev); }
-> > > > > +EXPORT_SYMBOL_GPL(iommu_get_dev_domain);
-> > > >
-> > > > What prevents this from racing iommu_domain_free()?  There's no
-> > > > references acquired, so there's no reason for the caller to assume the
-> > pointer is valid.
-> > >
-> > > Sorry for late query, somehow this email went into a folder and
-> > > escaped;
-> > >
-> > > Just to be sure, there is not lock at generic "struct iommu_domain", but IP
-> > specific structure (link FSL domain) linked in iommu_domain->priv have a lock,
-> > so we need to ensure this race in FSL iommu code (say
-> > drivers/iommu/fsl_pamu_domain.c), right?
-> > 
-> > No, it's not sufficient to make sure that your use of the interface is race
-> > free.  The interface itself needs to be designed so that it's difficult to use
-> > incorrectly.
-> 
-> So we can define iommu_get_dev_domain()/iommu_put_dev_domain();
-> iommu_get_dev_domain() will return domain with the lock held, and
-> iommu_put_dev_domain() will release the lock? And
-> iommu_get_dev_domain() must always be followed by
-> iommu_get_dev_domain().
+The Linux Foundation Technical Advisory Board, as the Steering Committee
+for Linux Plumbers Conference would like to announce the call for
+applications to become the next Plumbers planning team.  The application
+process is documented here:
 
-What lock?  get/put are generally used for reference counting, not
-locking in the kernel.
+https://wiki.linuxfoundation.org/en/LPC
 
-> > That's not the case here.  This is a backdoor to get the iommu
-> > domain from the iommu driver regardless of who is using it or how.  The iommu
-> > domain is created and managed by vfio, so shouldn't we be looking at how to do
-> > this through vfio?
-> 
-> Let me first describe what we are doing here:
-> During initialization:-
->  - vfio talks to MSI system to know the MSI-page and size
->  - vfio then interacts with iommu to map the MSI-page in iommu (IOVA is decided by userspace and physical address is the MSI-page)
->  - So the IOVA subwindow mapping is created in iommu and yes VFIO know about this mapping.
-> 
-> Now do SET_IRQ(MSI/MSIX) ioctl:
->  - calls pci_enable_msix()/pci_enable_msi_block(): which is supposed to set MSI address/data in device.
->  - So in current implementation (this patchset) msi-subsystem gets the IOVA from iommu via this defined interface.
->  - Are you saying that rather than getting this from iommu, we should get this from vfio? What difference does this make?
+Because of the tight deadline applications must be in no later than 3
+November and are expected to be decided on by mid to end of November.
+The venue designated at this stage is Düsseldorf, Germany, co-located
+with LinuxCon Europe on the week of 13-17 October.  However strong
+applications co-locating with LinuxCon North America in Chicago on the
+week of 18-22 August will be considered on merit.
 
-Yes, you just said above that vfio knows the msi to iova mapping, so why
-go outside of vfio to find it later?  The difference is one case you can
-have a proper reference to data structures to make sure the pointer you
-get back actually has meaning at the time you're using it vs the code
-here where you're defining an API that returns a meaningless value
-because you can't check or enforce that an arbitrary caller is using it
-correctly.  It's not maintainable.  Thanks,
-
-Alex
-
-> > It seems like you'd want to use your device to get a vfio
-> > group reference, from which you could do something with the vfio external user
-> > interface and get the iommu domain reference.  Thanks,
-> > 
-> > Alex
-> > 
-> > > > >  /*
-> > > > >   * IOMMU groups are really the natrual working unit of the IOMMU, but
-> > > > >   * the IOMMU API works on domains and devices.  Bridge that gap
-> > > > > by diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> > > > > index 7ea319e..fa046bd 100644
-> > > > > --- a/include/linux/iommu.h
-> > > > > +++ b/include/linux/iommu.h
-> > > > > @@ -127,6 +127,7 @@ struct iommu_ops {
-> > > > >  	int (*domain_set_windows)(struct iommu_domain *domain, u32
-> > w_count);
-> > > > >  	/* Get the numer of window per domain */
-> > > > >  	u32 (*domain_get_windows)(struct iommu_domain *domain);
-> > > > > +	struct iommu_domain *(*get_dev_iommu_domain)(struct device
-> > > > > +*dev);
-> > > > >
-> > > > >  	unsigned long pgsize_bitmap;
-> > > > >  };
-> > > > > @@ -190,6 +191,7 @@ extern int iommu_domain_window_enable(struct
-> > > > > iommu_domain
-> > > > *domain, u32 wnd_nr,
-> > > > >  				      phys_addr_t offset, u64 size,
-> > > > >  				      int prot);
-> > > > >  extern void iommu_domain_window_disable(struct iommu_domain
-> > > > > *domain,
-> > > > > u32 wnd_nr);
-> > > > > +extern struct iommu_domain *iommu_get_dev_domain(struct device
-> > > > > +*dev);
-> > > > >  /**
-> > > > >   * report_iommu_fault() - report about an IOMMU fault to the IOMMU
-> > framework
-> > > > >   * @domain: the iommu domain where the fault has happened @@
-> > > > > -284,6
-> > > > > +286,11 @@ static inline void iommu_domain_window_disable(struct
-> > > > > iommu_domain *domain,  {  }
-> > > > >
-> > > > > +static inline struct iommu_domain *iommu_get_dev_domain(struct
-> > > > > +device
-> > > > > +*dev) {
-> > > > > +	return NULL;
-> > > > > +}
-> > > > > +
-> > > > >  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain
-> > > > > *domain, dma_addr_t iova)  {
-> > > > >  	return 0;
-> > > >
-> > > >
-> > > >
-> > > > --
-> > > > To unsubscribe from this list: send the line "unsubscribe linux-pci"
-> > > > in the body of a message to majordomo@vger.kernel.org More majordomo
-> > > > info at http://vger.kernel.org/majordomo-info.html
-> > >
-> > 
-> > 
-> > 
-> 
-
+James Bottomley
+on behalf of Plumbers Steering Committee
 
 
