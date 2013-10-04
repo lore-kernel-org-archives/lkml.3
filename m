@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab3JDUPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 16:15:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49469 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab3JDUPQ (ORCPT
+	id S1753572Ab3JDUSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 16:18:40 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:51575 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab3JDUSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 16:15:16 -0400
-Date: Fri, 4 Oct 2013 21:15:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: security: lockless stat() issues
-Message-ID: <20131004201512.GQ13318@ZenIV.linux.org.uk>
-References: <CA+55aFxndx0J0sTLTx0qu25TkoLLfGd+8qiLhdG5CYwpO1NvVQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxndx0J0sTLTx0qu25TkoLLfGd+8qiLhdG5CYwpO1NvVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Oct 2013 16:18:38 -0400
+From: Erik Faye-Lund <kusmabite@gmail.com>
+To: linux-tegra@vger.kernel.org
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpu: host1x: check relocs after all gathers are consumed
+Date: Fri,  4 Oct 2013 20:18:33 +0000
+Message-Id: <1380917913-20482-1-git-send-email-kusmabite@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 12:33:17PM -0700, Linus Torvalds wrote:
+The num_relocs count are passed to the kernel per job, not per gather.
 
-> So how do people feel about passing a "mode" value for
-> security_inode_getattr(), the same way we do for
-> security_inode_permission()? The only flag would be that MAY_NOT_BLOCK
-> flag that gets set for RCU lookup, and the semantics would be the same
-> (return -ECHILD if you need to sleep).
-> 
-> Attached is a patch that adds the interface, and then makes all
-> security layers just do that ECHILD thing (and nobody actually sets
-> MAY_NOT_BLOCK yet). So it's purely preparatory. It's also
-> insufficient, because we'll need the same kind o fflag for the
-> low-level filesystem "i_op->getattr()" call, but that's an independent
-> issue.
-> 
-> Al, any comments?
+For multi-gather jobs, we would previously fail if there were relocs in
+other gathers aside from the first one.
 
-Just a couple of days ago you'd been complaining about filesystems exposure
-to rcuwalk details and now you propose to increase the contact surface
-by one more method?  OK...
+Fix this by simply moving the check until all gathers have been
+consumed.
 
-For one thing, that will definitely require lazy freeing of struct
-super_block itself.  At the very least, you want ->i_sb->s_dev, even
-on default pathway.  Another thing is that API is wrong for that
-kind of stuff - we pass vfsmount/dentry pair and we end up looking
-at the inode guts.  Fine, but in RCU case you must cope with the
-possibility of dentry->d_inode going NULL under you.  Which isn't
-all that terrible, but we need to slap ACCESS_ONCE() into each method
-instance (all 34 of them).  IOW, it's worse than just "oh, we need to
-add a flag"; we'll need to pass the sodding inode separately, with
-dire warnings not to use dentry->d_inode.
+Signed-off-by: Erik Faye-Lund <kusmabite@gmail.com>
+---
+ drivers/gpu/host1x/job.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-It's not impossible to do, of course, but it won't be fun...
+diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+index c4e1050..c9ddff8 100644
+--- a/drivers/gpu/host1x/job.c
++++ b/drivers/gpu/host1x/job.c
+@@ -436,10 +436,6 @@ static int validate(struct host1x_firewall *fw, struct host1x_job_gather *g)
+ 		}
+ 	}
+ 
+-	/* No relocs should remain at this point */
+-	if (fw->num_relocs)
+-		err = -EINVAL;
+-
+ out:
+ 	return err;
+ }
+@@ -493,6 +489,10 @@ static inline int copy_gathers(struct host1x_job *job, struct device *dev)
+ 		offset += g->words * sizeof(u32);
+ 	}
+ 
++	/* No relocs should remain at this point */
++	if (fw.num_relocs)
++		return -EINVAL;
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-Oh, well...  In any case, we need something in Documentation/filesystems
-describing the RCU-related rules for fs writers - exposure surface, what
-to avoid, etc.
