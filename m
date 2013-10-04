@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab3JDX4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 19:56:00 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:39374 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3JDXz6 (ORCPT
+	id S1752836Ab3JDX6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 19:58:35 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:34709 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab3JDX6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 19:55:58 -0400
+	Fri, 4 Oct 2013 19:58:33 -0400
+Message-ID: <524F5625.4080807@mit.edu>
+Date: Fri, 04 Oct 2013 16:58:29 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6aE-vxhOHk_mgyWMYrgkG0Juuy8Bs-S2Hjb_7k8S=n8Q@mail.gmail.com>
-References: <20131004011806.GE20450@dangermouse.emea.sgi.com>
-	<CAErSpo6aE-vxhOHk_mgyWMYrgkG0Juuy8Bs-S2Hjb_7k8S=n8Q@mail.gmail.com>
-Date: Fri, 4 Oct 2013 16:55:56 -0700
-X-Google-Sender-Auth: bB_9QCasGxFa9zT-MTG8ypE3FnI
-Message-ID: <CAE9FiQV_aDmUqGO7HyybwH5fMYqjVpimKF7YA=Jp4EDSFzbQDA@mail.gmail.com>
-Subject: Re: Commit 07f9b61 breaks systems that don't implement a _CBA method
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ethan Zhao <ethan.zhao@oracle.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        zab@redhat.com, jack@suse.cz, tytso@mit.edu, mszeredi@suse.cz
+Subject: Re: [RFC PATCH 0/7] cross rename
+References: <1380643239-16060-1-git-send-email-miklos@szeredi.hu>
+In-Reply-To: <1380643239-16060-1-git-send-email-miklos@szeredi.hu>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Oct 3, 2013 at 7:18 PM, Hedi Berriche <hedi@sgi.com> wrote:
+On 10/01/2013 09:00 AM, Miklos Szeredi wrote:
+> This series adds a new syscall, renameat2(), which is the same as renameat() but
+> with a flags argument.  Internally i_op->reaname2() is also added, which can
+> later be merged with ->rename() but is kept separately for now, since this would
+> just blow up this patch without helping review.
 
-> It's regrettable that the code is so subtle.  The obvious thing to do
-> would be to check for _CBA, and if it doesn't exist, look for an MCFG
-> entry.  But for various historical reasons, the code is a mess, and we
-> haven't figured out how to safely simplify it.
->
-> Ethan, Yinghai, any objections to reverting 07f9b61?
+How hard would it be to also add RENAME_NOREPLACE that fails if the
+destination already exists?
 
-yes, that is right solution.
+IMO this would get rid of the last sane use of hard links (link + unlink
+to simulate non-clobbering rename), and it would be nice on filesystems
+that don't have hard links.
+
+Windows has supported this since Windows 98, IIRC (using MoveFileEx).
+
+--Andy
+
