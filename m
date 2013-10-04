@@ -1,69 +1,492 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab3JDHV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 03:21:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39545 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3JDHV5 (ORCPT
+	id S1752667Ab3JDH1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 03:27:32 -0400
+Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:43836 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751437Ab3JDH1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 03:21:57 -0400
-Date: Fri, 4 Oct 2013 09:21:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCHv4 09/10] mm: implement split page table lock for PMD level
-Message-ID: <20131004072132.GT28601@twins.programming.kicks-ass.net>
-References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1380287787-30252-10-git-send-email-kirill.shutemov@linux.intel.com>
- <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131003161109.aa568784d6fc48e61dc1d33e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 4 Oct 2013 03:27:31 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: [PATCH v5 1/4] watchdog: at91sam9_wdt: better watchdog support
+Date: Fri,  4 Oct 2013 09:24:12 +0200
+Message-Id: <1380871455-7324-2-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com>
+References: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 7888336223507020001
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 04:11:09PM -0700, Andrew Morton wrote:
-> On Fri, 27 Sep 2013 16:16:26 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > The basic idea is the same as with PTE level: the lock is embedded into
-> > struct page of table's page.
-> > 
-> > We can't use mm->pmd_huge_pte to store pgtables for THP, since we don't
-> > take mm->page_table_lock anymore. Let's reuse page->lru of table's page
-> > for that.
-> > 
-> > pgtable_pmd_page_ctor() returns true, if initialization is successful
-> > and false otherwise. Current implementation never fails, but assumption
-> > that constructor can fail will help to port it to -rt where spinlock_t
-> > is rather huge and cannot be embedded into struct page -- dynamic
-> > allocation is required.
-> 
-> spinlock_t is rather large when lockdep is enabled.  What happens?
+The at91sam9 watchdog timer can only be configured once, and the current
+implementation tries to configure it in a static way:
+- 2 seconds timeout
+- wdt restart every 500ms
 
-I could go fix all the arch code and pgtable ctor thingies and do the
-same thing we do on -rt if anybody cares.
+If the timer has already been configured with different values, it returns an
+error and do not create any watchdog device.
 
-Hugh thought the single pagetable lock would catch the more interesting
-locking scenarios, but its of course sad to have an entire locking
-scheme not covered by lockdep -- that's just waiting for a bug to sneak
-in there.
+This is not critical if the watchdog is disabled, but if it has been enabled with
+different timeout values it will lead to a SoC reset.
+
+This patch series tries to address this issue by adapting the heartbeat value
+according the WDT timer config:
+- it first tries to configure the timer as requested.
+- if it fails it fallbacks to the current config, adapting its heartbeat timer
+to the needs
+
+This patch series also move to a dynamically allocated at91wdt device instead
+of the static instance.
+
+It adds a new at91 wdt type: software. This new type make use of the at91 wdt
+interrupt to trigger a software reboot.
+
+Finally it adds several properties to the device tree bindings.
+
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/watchdog/at91sam9_wdt.c |  309 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 223 insertions(+), 86 deletions(-)
+
+diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+index be37dde..9bd089e 100644
+--- a/drivers/watchdog/at91sam9_wdt.c
++++ b/drivers/watchdog/at91sam9_wdt.c
+@@ -19,11 +19,13 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/init.h>
++#include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ #include <linux/types.h>
+ #include <linux/watchdog.h>
+ #include <linux/jiffies.h>
+@@ -31,22 +33,33 @@
+ #include <linux/bitops.h>
+ #include <linux/uaccess.h>
+ #include <linux/of.h>
++#include <linux/of_irq.h>
+ 
+ #include "at91sam9_wdt.h"
+ 
+ #define DRV_NAME "AT91SAM9 Watchdog"
+ 
+-#define wdt_read(field) \
+-	__raw_readl(at91wdt_private.base + field)
+-#define wdt_write(field, val) \
+-	__raw_writel((val), at91wdt_private.base + field)
++#define wdt_read(wdt, field) \
++	__raw_readl((wdt)->base + (field))
++#define wdt_write(wtd, field, val) \
++	__raw_writel((val), (wdt)->base + (field))
+ 
+ /* AT91SAM9 watchdog runs a 12bit counter @ 256Hz,
+  * use this to convert a watchdog
+  * value from/to milliseconds.
+  */
+-#define ms_to_ticks(t)	(((t << 8) / 1000) - 1)
+-#define ticks_to_ms(t)	(((t + 1) * 1000) >> 8)
++#define ticks_to_hz_rounddown(t)	((((t) + 1) * HZ) >> 8)
++#define ticks_to_hz_roundup(t)		(((((t) + 1) * HZ) + 255) >> 8)
++#define ticks_to_secs(t)		(((t) + 1) >> 8)
++#define secs_to_ticks(s)		(((s) << 8) - 1)
++
++#define WDT_MR_RESET	0x3FFF2FFF
++
++/* Watchdog max counter value in ticks */
++#define WDT_COUNTER_MAX_TICKS	0xFFF
++
++/* Watchdog max delta/value in secs */
++#define WDT_COUNTER_MAX_SECS	ticks_to_secs(WDT_COUNTER_MAX_TICKS)
+ 
+ /* Hardware timeout in seconds */
+ #define WDT_HW_TIMEOUT 2
+@@ -66,23 +79,40 @@ module_param(nowayout, bool, 0);
+ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
+ 	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+ 
+-static struct watchdog_device at91_wdt_dev;
+-static void at91_ping(unsigned long data);
+-
+-static struct {
++#define to_wdt(wdd) container_of(wdd, struct at91wdt, wdd)
++struct at91wdt {
++	struct watchdog_device wdd;
+ 	void __iomem *base;
+ 	unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
+ 	struct timer_list timer;	/* The timer that pings the watchdog */
+-} at91wdt_private;
++	u32 mr;
++	u32 mr_mask;
++	unsigned long heartbeat;	/* WDT heartbeat in jiffies */
++	bool nowayout;
++	unsigned int irq;
++};
+ 
+ /* ......................................................................... */
+ 
++static irqreturn_t wdt_interrupt(int irq, void *dev_id)
++{
++	struct at91wdt *wdt = (struct at91wdt *)dev_id;
++
++	if (wdt_read(wdt, AT91_WDT_SR)) {
++		pr_crit("at91sam9 WDT software reset\n");
++		emergency_restart();
++		pr_crit("Reboot didn't ?????\n");
++	}
++
++	return IRQ_HANDLED;
++}
++
+ /*
+  * Reload the watchdog timer.  (ie, pat the watchdog)
+  */
+-static inline void at91_wdt_reset(void)
++static inline void at91_wdt_reset(struct at91wdt *wdt)
+ {
+-	wdt_write(AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
++	wdt_write(wdt, AT91_WDT_CR, AT91_WDT_KEY | AT91_WDT_WDRSTT);
+ }
+ 
+ /*
+@@ -90,26 +120,21 @@ static inline void at91_wdt_reset(void)
+  */
+ static void at91_ping(unsigned long data)
+ {
+-	if (time_before(jiffies, at91wdt_private.next_heartbeat) ||
+-	    (!watchdog_active(&at91_wdt_dev))) {
+-		at91_wdt_reset();
+-		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
+-	} else
++	struct at91wdt *wdt = (struct at91wdt *)data;
++	if (time_before(jiffies, wdt->next_heartbeat) ||
++	    !watchdog_active(&wdt->wdd)) {
++		at91_wdt_reset(wdt);
++		mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
++	} else {
+ 		pr_crit("I will reset your machine !\n");
+-}
+-
+-static int at91_wdt_ping(struct watchdog_device *wdd)
+-{
+-	/* calculate when the next userspace timeout will be */
+-	at91wdt_private.next_heartbeat = jiffies + wdd->timeout * HZ;
+-	return 0;
++	}
+ }
+ 
+ static int at91_wdt_start(struct watchdog_device *wdd)
+ {
+-	/* calculate the next userspace timeout and modify the timer */
+-	at91_wdt_ping(wdd);
+-	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
++	struct at91wdt *wdt = to_wdt(wdd);
++	/* calculate when the next userspace timeout will be */
++	wdt->next_heartbeat = jiffies + wdd->timeout * HZ;
+ 	return 0;
+ }
+ 
+@@ -122,39 +147,89 @@ static int at91_wdt_stop(struct watchdog_device *wdd)
+ static int at91_wdt_set_timeout(struct watchdog_device *wdd, unsigned int new_timeout)
+ {
+ 	wdd->timeout = new_timeout;
+-	return 0;
++	return at91_wdt_start(wdd);
+ }
+ 
+-/*
+- * Set the watchdog time interval in 1/256Hz (write-once)
+- * Counter is 12 bit.
+- */
+-static int at91_wdt_settimeout(unsigned int timeout)
++static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
+ {
+-	unsigned int reg;
+-	unsigned int mr;
+-
+-	/* Check if disabled */
+-	mr = wdt_read(AT91_WDT_MR);
+-	if (mr & AT91_WDT_WDDIS) {
+-		pr_err("sorry, watchdog is disabled\n");
+-		return -EIO;
++	u32 tmp;
++	u32 delta;
++	u32 value;
++	int err;
++	u32 mask = wdt->mr_mask;
++	unsigned long min_heartbeat = 1;
++	struct device *dev = &pdev->dev;
++
++	tmp = wdt_read(wdt, AT91_WDT_MR);
++	if ((tmp & mask) != (wdt->mr & mask)) {
++		if (tmp == WDT_MR_RESET) {
++			wdt_write(wdt, AT91_WDT_MR, wdt->mr);
++			tmp = wdt_read(wdt, AT91_WDT_MR);
++		}
++	}
++
++	if (tmp & AT91_WDT_WDDIS) {
++		if (wdt->mr & AT91_WDT_WDDIS)
++			return 0;
++		dev_err(dev, "watchdog is disabled\n");
++		return -EINVAL;
++	}
++
++	value = tmp & AT91_WDT_WDV;
++	delta = (tmp & AT91_WDT_WDD) >> 16;
++
++	if (delta < value)
++		min_heartbeat = ticks_to_hz_roundup(value - delta);
++
++	wdt->heartbeat = ticks_to_hz_rounddown(value);
++	if (!wdt->heartbeat) {
++		dev_err(dev,
++			"heartbeat is too small for the system to handle it correctly\n");
++		return -EINVAL;
++	}
++
++	if (wdt->heartbeat < min_heartbeat + 4) {
++		wdt->heartbeat = min_heartbeat;
++		dev_warn(dev,
++			 "min heartbeat and max heartbeat might be too close for the system to handle it correctly\n");
++		if (wdt->heartbeat < 4)
++			dev_warn(dev,
++				 "heartbeat might be too small for the system to handle it correctly\n");
++	} else {
++		wdt->heartbeat -= 4;
+ 	}
+ 
+-	/*
+-	 * All counting occurs at SLOW_CLOCK / 128 = 256 Hz
+-	 *
+-	 * Since WDV is a 12-bit counter, the maximum period is
+-	 * 4096 / 256 = 16 seconds.
+-	 */
+-	reg = AT91_WDT_WDRSTEN	/* causes watchdog reset */
+-		/* | AT91_WDT_WDRPROC	causes processor reset only */
+-		| AT91_WDT_WDDBGHLT	/* disabled in debug mode */
+-		| AT91_WDT_WDD		/* restart at any time */
+-		| (timeout & AT91_WDT_WDV);  /* timer value */
+-	wdt_write(AT91_WDT_MR, reg);
++	if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
++		err = request_irq(wdt->irq, wdt_interrupt,
++				  IRQF_SHARED | IRQF_IRQPOLL,
++				  pdev->name, wdt);
++		if (err)
++			return err;
++	}
++
++	if ((tmp & wdt->mr_mask) != (wdt->mr & wdt->mr_mask))
++		dev_warn(dev,
++			 "watchdog already configured differently (mr = %x expecting %x)\n",
++			 tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
++
++	setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
++	mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
++
++	/* Try to set timeout from device tree first */
++	if (watchdog_init_timeout(&wdt->wdd, 0, dev))
++		watchdog_init_timeout(&wdt->wdd, heartbeat, dev);
++	watchdog_set_nowayout(&wdt->wdd, wdt->nowayout);
++	err = watchdog_register_device(&wdt->wdd);
++	if (err)
++		goto out_stop_timer;
++
++	wdt->next_heartbeat = jiffies + wdt->wdd.timeout * HZ;
+ 
+ 	return 0;
++
++out_stop_timer:
++	del_timer(&wdt->timer);
++	return err;
+ }
+ 
+ /* ......................................................................... */
+@@ -169,61 +244,123 @@ static const struct watchdog_ops at91_wdt_ops = {
+ 	.owner =	THIS_MODULE,
+ 	.start =	at91_wdt_start,
+ 	.stop =		at91_wdt_stop,
+-	.ping =		at91_wdt_ping,
+ 	.set_timeout =	at91_wdt_set_timeout,
+ };
+ 
+-static struct watchdog_device at91_wdt_dev = {
+-	.info =		&at91_wdt_info,
+-	.ops =		&at91_wdt_ops,
+-	.timeout =	WDT_HEARTBEAT,
+-	.min_timeout =	1,
+-	.max_timeout =	0xFFFF,
+-};
++#if defined(CONFIG_OF)
++static int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
++{
++	u32 min = 0;
++	u32 max = WDT_COUNTER_MAX_SECS;
++	const char *tmp;
++
++	/* Get the interrupts property */
++	wdt->irq = irq_of_parse_and_map(np, 0);
++	if (!wdt->irq)
++		dev_warn(wdt->wdd.parent, "failed to get IRQ from DT\n");
++
++	if (!of_property_read_u32_index(np, "atmel,max-heartbeat-sec", 0,
++					&max)) {
++		if (!max || max > WDT_COUNTER_MAX_SECS)
++			max = WDT_COUNTER_MAX_SECS;
++
++		if (!of_property_read_u32_index(np, "atmel,min-heartbeat-sec",
++						0, &min)) {
++			if (min >= max)
++				min = max - 1;
++		}
++	}
++
++	min = secs_to_ticks(min);
++	max = secs_to_ticks(max);
++
++	wdt->mr_mask = 0x3FFFFFFF;
++	wdt->mr = 0;
++	if (!of_property_read_string(np, "atmel,watchdog-type", &tmp) &&
++	    !strcmp(tmp, "software")) {
++		wdt->mr |= AT91_WDT_WDFIEN;
++		wdt->mr_mask &= ~AT91_WDT_WDRPROC;
++	} else {
++		wdt->mr |= AT91_WDT_WDRSTEN;
++	}
++
++	if (!of_property_read_string(np, "atmel,reset-type", &tmp) &&
++	    !strcmp(tmp, "proc"))
++		wdt->mr |= AT91_WDT_WDRPROC;
++
++	if (of_property_read_bool(np, "atmel,disable")) {
++		wdt->mr |= AT91_WDT_WDDIS;
++		wdt->mr_mask &= AT91_WDT_WDDIS;
++	}
++
++	if (of_property_read_bool(np, "atmel,idle-halt"))
++		wdt->mr |= AT91_WDT_WDIDLEHLT;
++
++	if (of_property_read_bool(np, "atmel,dbg-halt"))
++		wdt->mr |= AT91_WDT_WDDBGHLT;
++
++	wdt->mr |= max | ((max - min) << 16);
++
++	return 0;
++}
++#else
++static inline int of_at91wdt_init(struct device_node *np, struct at91wdt *wdt)
++{
++	return 0;
++}
++#endif
+ 
+ static int __init at91wdt_probe(struct platform_device *pdev)
+ {
+ 	struct resource	*r;
+-	int res;
++	int err;
++	struct at91wdt *wdt;
+ 
+-	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!r)
+-		return -ENODEV;
+-	at91wdt_private.base = ioremap(r->start, resource_size(r));
+-	if (!at91wdt_private.base) {
+-		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
++	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
++	if (!wdt)
+ 		return -ENOMEM;
+-	}
+ 
+-	at91_wdt_dev.parent = &pdev->dev;
+-	watchdog_init_timeout(&at91_wdt_dev, heartbeat, &pdev->dev);
+-	watchdog_set_nowayout(&at91_wdt_dev, nowayout);
++	wdt->mr = (WDT_HW_TIMEOUT * 256) | AT91_WDT_WDRSTEN | AT91_WDT_WDD |
++		  AT91_WDT_WDDBGHLT | AT91_WDT_WDIDLEHLT;
++	wdt->mr_mask = 0x3FFFFFFF;
++	wdt->nowayout = nowayout;
++	wdt->wdd.parent = &pdev->dev;
++	wdt->wdd.info = &at91_wdt_info;
++	wdt->wdd.ops = &at91_wdt_ops;
++	wdt->wdd.timeout = WDT_HEARTBEAT;
++	wdt->wdd.min_timeout = 1;
++	wdt->wdd.max_timeout = 0xFFFF;
+ 
+-	/* Set watchdog */
+-	res = at91_wdt_settimeout(ms_to_ticks(WDT_HW_TIMEOUT * 1000));
+-	if (res)
+-		return res;
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	wdt->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(wdt->base))
++		return PTR_ERR(wdt->base);
++
++	if (pdev->dev.of_node) {
++		err = of_at91wdt_init(pdev->dev.of_node, wdt);
++		if (err)
++			return err;
++	}
+ 
+-	res = watchdog_register_device(&at91_wdt_dev);
+-	if (res)
+-		return res;
++	err = at91_wdt_init(pdev, wdt);
++	if (err)
++		return err;
+ 
+-	at91wdt_private.next_heartbeat = jiffies + at91_wdt_dev.timeout * HZ;
+-	setup_timer(&at91wdt_private.timer, at91_ping, 0);
+-	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
++	platform_set_drvdata(pdev, wdt);
+ 
+ 	pr_info("enabled (heartbeat=%d sec, nowayout=%d)\n",
+-		at91_wdt_dev.timeout, nowayout);
++		wdt->wdd.timeout, wdt->nowayout);
+ 
+ 	return 0;
+ }
+ 
+ static int __exit at91wdt_remove(struct platform_device *pdev)
+ {
+-	watchdog_unregister_device(&at91_wdt_dev);
++	struct at91wdt *wdt = platform_get_drvdata(pdev);
++	watchdog_unregister_device(&wdt->wdd);
+ 
+ 	pr_warn("I quit now, hardware will probably reboot!\n");
+-	del_timer(&at91wdt_private.timer);
++	del_timer(&wdt->timer);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
+
