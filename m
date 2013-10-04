@@ -1,197 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab3JDPFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 11:05:48 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52976 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755199Ab3JDPFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 11:05:47 -0400
-Date: Fri, 4 Oct 2013 16:04:53 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: add early_ioremap support
-Message-ID: <20131004150453.GG25137@arm.com>
-References: <1380890819-27831-1-git-send-email-msalter@redhat.com>
+	id S1755247Ab3JDPG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 11:06:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754493Ab3JDPG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 11:06:58 -0400
+Date: Fri, 4 Oct 2013 16:03:14 +0100
+From: Joe Thornber <thornber@redhat.com>
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+Cc: mpatocka@redhat.com, dm-devel@redhat.com, devel@driverdev.osuosl.org,
+        snitzer@redhat.com, gregkh@linuxfoundation.org, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        joe@perches.com, akpm@linux-foundation.org, m.chehab@samsung.com,
+        ejt@redhat.com, agk@redhat.com, cesarb@cesarb.net
+Subject: Re: [dm-devel] dm-writeboost testing
+Message-ID: <20131004150313.GB25523@debian>
+Mail-Followup-To: Akira Hayakawa <ruby.wktk@gmail.com>, mpatocka@redhat.com,
+	dm-devel@redhat.com, devel@driverdev.osuosl.org, snitzer@redhat.com,
+	gregkh@linuxfoundation.org, david@fromorbit.com,
+	linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+	joe@perches.com, akpm@linux-foundation.org, m.chehab@samsung.com,
+	ejt@redhat.com, agk@redhat.com, cesarb@cesarb.net
+References: <alpine.LRH.2.02.1310021125150.19199@file01.intranet.prod.int.rdu2.redhat.com>
+ <524D70DA.8040308@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380890819-27831-1-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <524D70DA.8040308@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Thu, Oct 03, 2013 at 10:27:54PM +0900, Akira Hayakawa wrote:
 
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/fixmap.h
-> @@ -0,0 +1,117 @@
-> +/*
-> + * fixmap.h: compile-time virtual memory allocation
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-> + *
-> + * Copyright (C) 1998 Ingo Molnar
-> + *
-> + */
-
-I can see several architectures having very similar macros/functions in
-fixmap.h. It would make sense to create a generic fixmap.h holding at
-least the fix_to_virt and related macros, FIXADDR_START etc. with enum
-fixed_addresses in arch code.
-
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -42,6 +42,7 @@
->  #include <linux/of_fdt.h>
->  #include <linux/of_platform.h>
+> > dm-cache doesn't have this problem, if you overwrite the same piece of 
+> > data again and again, it goes to the cache device.
 > 
-> +#include <asm/fixmap.h>
->  #include <asm/cputype.h>
->  #include <asm/elf.h>
->  #include <asm/cputable.h>
-> @@ -252,6 +253,8 @@ void __init setup_arch(char **cmdline_p)
+> It is not a bug but should/can be optimized.
 > 
->         *cmdline_p = boot_command_line;
+> Below is the cache hit path for writes.
+> writeboost performs very poorly when a partial write hits
+> which then turns `needs_cleanup_perv_cache` to true.
+
+Are you using fixed size blocks for caching then?  The whole point of
+using a journal/log based disk layout for caching is you can slurp up
+all writes irrespective of their size.
+
+What are the scenarios where you out perform dm-cache?
+
+- Joe
+
+
+
+
+> Partial write hits is believed to be unlikely so
+> I decided to give up this path to make other likely-paths optimized.
+> I think this is just a tradeoff issue of what to be optimized the most.
 > 
-> +       early_ioremap_init();
-> +
->         parse_early_param();
-
-Should the early_ioremap_init() call happen after parse_early_param()?
-Is early_ioremap_debug initialised already?
-
-> --- a/arch/arm64/mm/ioremap.c
-> +++ b/arch/arm64/mm/ioremap.c
-> @@ -25,6 +25,10 @@
->  #include <linux/vmalloc.h>
->  #include <linux/io.h>
+>         if (found) {
 > 
-> +#include <asm/fixmap.h>
-> +#include <asm/tlbflush.h>
-> +#include <asm/pgalloc.h>
+>                 if (unlikely(on_buffer)) {
+>                         mutex_unlock(&cache->io_lock);
+> 
+>                         update_mb_idx = mb->idx;
+>                         goto write_on_buffer;
+>                 } else {
+>                         u8 dirty_bits = atomic_read_mb_dirtiness(seg, mb);
+> 
+>                         /*
+>                          * First clean up the previous cache
+>                          * and migrate the cache if needed.
+>                          */
+>                         bool needs_cleanup_prev_cache =
+>                                 !bio_fullsize || !(dirty_bits == 255);
+> 
+>                         if (unlikely(needs_cleanup_prev_cache)) {
+>                                 wait_for_completion(&seg->flush_done);
+>                                 migrate_mb(cache, seg, mb, dirty_bits, true);
+>                         }
+> 
+> I checked that the mkfs.ext4 writes only in 4KB size
+> so it is not gonna turn the boolean value true for going into the slowpath.
+> 
+> Problem:
+> Problem is that
+> it chooses the slowpath even though the bio is full-sized overwrite
+> in the test.
+> 
+> The reason is that the dirty bits is sometimes seen as 0
+> and the suspect is the migration daemon.
+> 
+> I guess you created the writeboost device with the default configuration.
+> In that case migration daemon always works and
+> some metadata is cleaned up in background.
+> 
+> If you turns both enable_migration_modulator and allow_migrate to 0
+> before beginning the test
+> to stop migration at all
+> it never goes into the slowpath with the test.
+> 
+> Solution:
+> Changing the code to
+> avoid going into the slowpath when the dirty bits is zero
+> will solve this problem.
+> 
+> And done. Please pull the latest one from the repo.
+> --- a/Driver/dm-writeboost-target.c
+> +++ b/Driver/dm-writeboost-target.c
+> @@ -688,6 +688,14 @@ static int writeboost_map(struct dm_target *ti, struct bio *bio
+>                         bool needs_cleanup_prev_cache =
+>                                 !bio_fullsize || !(dirty_bits == 255);
+> 
+> +                       /*
+> +                        * Migration works in background
+> +                        * and may have cleaned up the metablock.
+> +                        * If the metablock is clean we need not to migrate.
+> +                        */
+> +                       if (!dirty_bits)
+> +                               needs_cleanup_prev_cache = false;
 > +
->  static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
->                                       pgprot_t prot, void *caller)
->  {
-> @@ -82,3 +86,284 @@ void __iounmap(volatile void __iomem *io_addr)
->         vunmap(addr);
->  }
->  EXPORT_SYMBOL(__iounmap);
-> +
-> +static int early_ioremap_debug __initdata;
-> +
-> +static int __init early_ioremap_debug_setup(char *str)
-> +{
-> +       early_ioremap_debug = 1;
-> +
-> +       return 0;
-> +}
-> +early_param("early_ioremap_debug", early_ioremap_debug_setup);
-> +
-> +static int after_paging_init __initdata;
-> +#ifndef CONFIG_ARM64_64K_PAGES
-> +static pte_t bm_pte[PAGE_SIZE/sizeof(pte_t)] __page_aligned_bss;
-> +#endif
-
-bm_pte[PTRS_PER_PTE];
-
-> +
-> +static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
-> +{
-> +       pgd_t *pgd = &swapper_pg_dir[pgd_index(addr)];
-
-pgd_offset_k(addr);
-
-> +       pud_t *pud = pud_offset(pgd, addr);
-> +       pmd_t *pmd = pmd_offset(pud, addr);
-> +
-> +       return pmd;
-> +}
-> +
-> +static inline pte_t * __init early_ioremap_pte(unsigned long addr)
-> +{
-> +#ifdef CONFIG_ARM64_64K_PAGES
-> +       pmd_t *pmd = early_ioremap_pmd(addr);
-> +       return pte_offset_kernel(pmd, addr);
-> +#else
-> +       return &bm_pte[pte_index(addr)];
-> +#endif
-
-If we populate the pmd correctly with 4K pages (and I think we do in
-early_ioremap_init()), can we not just use this function without the
-#ifdef-else part (always pte_offset_kernel())?
-
-> +static unsigned long slot_virt[FIX_BTMAPS_SLOTS] __initdata;
-> +
-> +void __init early_ioremap_init(void)
-> +{
-> +       pmd_t *pmd;
-> +       int i;
-> +
-> +       if (early_ioremap_debug)
-> +               pr_info("early_ioremap_init()\n");
-> +
-> +       for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
-> +               slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*i);
-> +
-> +       pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
-> +#ifndef CONFIG_ARM64_64K_PAGES
-> +       /* need to populate pmd for 4k pagesize only */
-> +       memset(bm_pte, 0, sizeof(bm_pte));
-
-Do we need memset() here? bm_pte[] is placed in the .bss section.
-
-> +       pmd_populate_kernel(&init_mm, pmd, bm_pte);
-> +#endif
-> +
-> +       /*
-> +        * The boot-ioremap range spans multiple pmds, for which
-> +        * we are not prepared:
-> +        */
-> +#define __FIXADDR_TOP (-PAGE_SIZE)
-> +       BUILD_BUG_ON((__fix_to_virt(FIX_BTMAP_BEGIN) >> PMD_SHIFT)
-> +                    != (__fix_to_virt(FIX_BTMAP_END) >> PMD_SHIFT));
-> +#undef __FIXADDR_TOP
-
-Why this #define/#undef? FIXADDR_TOP is statically defined.
-
-> +void __init __set_fixmap(enum fixed_addresses idx,
-> +                        phys_addr_t phys, pgprot_t flags)
-> +{
-> +       unsigned long addr = __fix_to_virt(idx);
-> +       pte_t *pte;
-> +
-> +       if (idx >= __end_of_fixed_addresses) {
-> +               BUG();
-> +               return;
-> +       }
-> +       if (after_paging_init) {
-> +               WARN_ON(1);
-> +               return;
-> +       }
-> +
-> +       pte = early_ioremap_pte(addr);
-> +
-> +       if (pgprot_val(flags))
-> +               set_pte(pte, pfn_pte(phys >> PAGE_SHIFT, flags));
-> +       else
-> +               pte_clear(&init_mm, addr, pte);
-> +       flush_tlb_kernel_range(addr, addr+PAGE_SIZE);
-
-Would __set_fixmap be used to change valid ptes? If not, we could keep
-the flush_tlb_kernel_range() call only under the 'else' block.
-
-As I was going through the patch, I realised that the early_ioremap()
-looks really to the x86 implementation. Can we move it into a library to
-be shared between the two?
-
--- 
-Catalin
+>                         if (unlikely(needs_cleanup_prev_cache)) {
+>                                 wait_for_completion(&seg->flush_done);
+>                                 migrate_mb(cache, seg, mb, dirty_bits, true);
+> 
+> Thanks,
+> Akira
