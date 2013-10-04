@@ -1,155 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3JDVms (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 17:42:48 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:42319 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab3JDVmq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 17:42:46 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "eric@purestorage.com" <eric@purestorage.com>,
-        "nab@linux-iscsi.org" <nab@linux-iscsi.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the
- basic I/O timeout
-Thread-Topic: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the
- basic I/O timeout
-Thread-Index: AQHOwTQXtrhMaZFXTEu/YravllNS3JnliCkA
-Date: Fri, 4 Oct 2013 21:42:24 +0000
-Message-ID: <1380922944.3868.8.camel@dabdike.int.hansenpartnership.com>
-References: <1380915516-28720-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1380915516-28720-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.17.213.192]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <3571843CB1EE8A4D8AE3BD839A0DDA3A@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	id S1753453Ab3JDVoz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 17:44:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33550 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab3JDVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 17:44:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
+   d="scan'208";a="388083555"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: gregkh@linuxfoundation.org, balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH] usb: g_ffs: fix compilation warning
+Date: Fri,  4 Oct 2013 14:48:46 -0700
+Message-Id: <1380923326-18546-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 12:38 -0700, K. Y. Srinivasan wrote:
-> Rather than having a separate constant for specifying the timeout on FLUSH
-> operations, use the basic I/O timeout value that is already configurable
-> on a per target basis to derive the FLUSH timeout. Looking at the current
-> definitions of these timeout values, the FLUSH operation is supposed to have
-> a value that is twice the normal timeout value. This patch preserves this
-> relationship while leveraging the flexibility of specifying the I/O timeout.
-> 
-> I would like to thank Eric Seppanen <eric@purestorage.com> and 
-> Nicholas A. Bellinger <nab@linux-iscsi.org> for their help in resolving
-> this issue.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/scsi/sd.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index e62d17d..8aff306 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
->  
->  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
->  {
-> -	rq->timeout = SD_FLUSH_TIMEOUT;
-> +	rq->timeout *= 2;
->  	rq->retries = SD_MAX_RETRIES;
->  	rq->cmd[0] = SYNCHRONIZE_CACHE;
->  	rq->cmd_len = 10;
-> @@ -1433,6 +1433,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
->  {
->  	int retries, res;
->  	struct scsi_device *sdp = sdkp->device;
-> +	unsigned int timeout = sdp->request_queue->rq_timeout;
+Due to lack of "u_ether.h" header file, g_ffs.c compiles with following
+warning:
 
-The timeout is signed in the function prototype
+drivers/usb/gadget/g_ffs.c:81:1: warning: data definition has no type or
+storage class [enabled by default]
+drivers/usb/gadget/g_ffs.c:81:1: warning: type defaults to ‘int’ in
+declaration of ‘USB_ETHERNET_MODULE_PARAMETERS’ [-Wimplicit-int]
+drivers/usb/gadget/g_ffs.c:81:1: warning: function declaration isn’t a
+prototype [-Wstrict-prototypes]
 
->  	struct scsi_sense_hdr sshdr;
->  
->  	if (!scsi_device_online(sdp))
-> @@ -1448,7 +1449,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
->  		 * flush everything.
->  		 */
->  		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
-> -					     &sshdr, SD_FLUSH_TIMEOUT,
-> +					     &sshdr, timeout * 2,
->  					     SD_MAX_RETRIES, NULL, REQ_PM);
->  		if (res == 0)
->  			break;
+This patch adds the missing header.
 
-Not like this, please: you now leave us with a dangling #define whose
-name makes you think it should be related to flushing and a couple of
-curious magic constants.  It's almost hand crafted to confuse people
-reading the code.
-
-Please do it like this instead: with a comment explaining what we're
-doing above the #define and a name that clearly relates to the actions.
-
-James
-
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
+ drivers/usb/gadget/g_ffs.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e62d17d..5c9496d 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
+diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
+index 5327c82..ed3d9ab 100644
+--- a/drivers/usb/gadget/g_ffs.c
++++ b/drivers/usb/gadget/g_ffs.c
+@@ -13,6 +13,9 @@
+ #define pr_fmt(fmt) "g_ffs: " fmt
  
- static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
- {
--	rq->timeout = SD_FLUSH_TIMEOUT;
-+	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
- 	rq->retries = SD_MAX_RETRIES;
- 	rq->cmd[0] = SYNCHRONIZE_CACHE;
- 	rq->cmd_len = 10;
-@@ -1433,6 +1433,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- {
- 	int retries, res;
- 	struct scsi_device *sdp = sdkp->device;
-+	const int timeout = sdp->request_queue->rq_timeout
-+		* SD_FLUSH_TIMEOUT_MULTIPLIER;
- 	struct scsi_sense_hdr sshdr;
- 
- 	if (!scsi_device_online(sdp))
-@@ -1448,8 +1450,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- 		 * flush everything.
- 		 */
- 		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
--					     &sshdr, SD_FLUSH_TIMEOUT,
--					     SD_MAX_RETRIES, NULL, REQ_PM);
-+					     &sshdr, timeout, SD_MAX_RETRIES,
-+					     NULL, REQ_PM);
- 		if (res == 0)
- 			break;
- 	}
-diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-index 7a049de..7f7999c 100644
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -13,7 +13,11 @@
-  */
- #define SD_TIMEOUT		(30 * HZ)
- #define SD_MOD_TIMEOUT		(75 * HZ)
--#define SD_FLUSH_TIMEOUT	(60 * HZ)
-+/*
-+ * Flush timeout is a multiplier over the standard device timeout which is
-+ * user modifiable via sysfs but initially set to SD_TIMEOUT
-+ */
-+#define SD_FLUSH_TIMEOUT_MULTIPLIER	2
- #define SD_WRITE_SAME_TIMEOUT	(120 * HZ)
- 
+ #include <linux/module.h>
++
++#include "u_ether.h"
++
  /*
+  * kbuild is not very cooperative with respect to linking separately
+  * compiled library objects into one module.  So for now we won't use
+-- 
+1.8.4.rc3
 
