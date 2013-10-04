@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3JDG6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 02:58:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39071 "EHLO
+	id S1752284Ab3JDHA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 03:00:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39108 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab3JDG6q (ORCPT
+	with ESMTP id S1751178Ab3JDHAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 02:58:46 -0400
-Date: Fri, 4 Oct 2013 08:58:35 +0200
+	Fri, 4 Oct 2013 03:00:55 -0400
+Date: Fri, 4 Oct 2013 09:00:35 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, peter@hurleysoftware.com
-Subject: Re: tty^Wrcu/perf lockdep trace.
-Message-ID: <20131004065835.GP28601@twins.programming.kicks-ass.net>
-References: <20131003190830.GA18672@redhat.com>
- <20131003194226.GO28601@twins.programming.kicks-ass.net>
- <20131003195832.GU5790@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131004070035.GQ28601@twins.programming.kicks-ass.net>
+References: <20131002145655.361606532@infradead.org>
+ <20131002150518.675931976@infradead.org>
+ <20131003164117.GD5790@linux.vnet.ibm.com>
+ <20131003184001.GM28601@twins.programming.kicks-ass.net>
+ <20131003184719.GA11996@redhat.com>
+ <20131003192135.GR5790@linux.vnet.ibm.com>
+ <20131003193206.GA17796@redhat.com>
+ <20131003193319.GB17796@redhat.com>
+ <20131003195026.GT5790@linux.vnet.ibm.com>
+ <20131003200002.GA23768@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003195832.GU5790@linux.vnet.ibm.com>
+In-Reply-To: <20131003200002.GA23768@redhat.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 12:58:32PM -0700, Paul E. McKenney wrote:
-> On Thu, Oct 03, 2013 at 09:42:26PM +0200, Peter Zijlstra wrote:
-> > 
-> > That's not tty; that's RCU..
-> > 
-> > On Thu, Oct 03, 2013 at 03:08:30PM -0400, Dave Jones wrote:
-> > >  ======================================================
-> > >  [ INFO: possible circular locking dependency detected ]
-> > >  3.12.0-rc3+ #92 Not tainted
-> > >  -------------------------------------------------------
-> > >  trinity-child2/15191 is trying to acquire lock:
-> > >   (&rdp->nocb_wq){......}, at: [<ffffffff8108ff43>] __wake_up+0x23/0x50
-> > >  
-> > > but task is already holding lock:
-> > >   (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
-> > > 
-> > > which lock already depends on the new lock.
-> > > 
-> > > 
-> > > the existing dependency chain (in reverse order) is:
-> > > 
-> > > -> #3 (&ctx->lock){-.-...}:
-> > >  
-> > > -> #2 (&rq->lock){-.-.-.}:
-> > >  
-> > > -> #1 (&p->pi_lock){-.-.-.}:
-> > >  
-> > > -> #0 (&rdp->nocb_wq){......}:
+On Thu, Oct 03, 2013 at 10:00:02PM +0200, Oleg Nesterov wrote:
+> On 10/03, Paul E. McKenney wrote:
+> >
+> > On Thu, Oct 03, 2013 at 09:33:19PM +0200, Oleg Nesterov wrote:
+> > > On 10/03, Oleg Nesterov wrote:
+> > > >
+> > > > Because I believe this needs another patch ;) see below, didn't test
+> > > > it yet.
+> > > > ...
+> > > >  struct rcu_sync_ops {
+> > > >  	void (*sync)(void);
+> > > >  	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> > > > +#ifdef CONFIG_PROVE_RCU
+> > > > +	bool (*held)(void);
+> > >         ^^^^
+> > > OK, it has to return "int".
+> >
+> > I missed this, but the rest looked good.  ;-)
 > 
-> I suppose I could defer the ->nocb_wq wakeup until the next context switch
-> or transition to idle/userspace, but it might be simpler for put_ctx()
-> to maintain a per-CPU chain of callbacks which are kfree_rcu()ed when
-> ctx->lock is dropped.  Also easier on the kernel/user and kernel/idle
-> transition overhead/latency...
+> OK thanks ;)
 > 
-> Other thoughts?
+> So unless Peter objects I'll write the changelogs (always nontrivial task),
+> test, and send these 2 patches + "add ops->barr() / rcu_sync_wait_for_cb"
+> tomorrow.
 
-What's caused this? We've had that kfree_rcu() in there for ages. I need
-to audit all the get/put_ctx calls anyway for an unrelated issue but I
-fear its going to be messy to defer that kfree_rcu() call, but I can
-try.
+No I'm fine with that.. its sad that the ops thing requires a double
+deref and an extra cachemiss but I don't suppose that's a real issue
+since we're calling synchronize_*() things which take for ever anyway
+:-)
 
 
