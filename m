@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3JDQQD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:16:03 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:54686 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab3JDQQB (ORCPT
+	id S1755419Ab3JDQQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:16:11 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:55387 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755376Ab3JDQQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:16:01 -0400
+	Fri, 4 Oct 2013 12:16:08 -0400
 From: Fabio Estevam <festevam@gmail.com>
 To: shawn.guo@linaro.org
 Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH 2/3] ARM: dts: imx53-qsb: SDHC1 does not have cd-gpios
-Date: Fri,  4 Oct 2013 13:15:27 -0300
-Message-Id: <1380903328-17598-2-git-send-email-festevam@gmail.com>
+Subject: [PATCH 3/3] ARM: dts: imx53-qsb: Do not use GPIO1_8 as wakeup source
+Date: Fri,  4 Oct 2013 13:15:28 -0300
+Message-Id: <1380903328-17598-3-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1380903328-17598-1-git-send-email-festevam@gmail.com>
 References: <1380903328-17598-1-git-send-email-festevam@gmail.com>
@@ -22,36 +22,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-SDHC1 does not have any GPIO for reading the card detection status, so
-remove 'cd-gpios'.
+On the mx53qsb board with mc34708 PMIC, GPIO1_8 resets the system, so better not
+to use it as a wakeup source.
 
-After this change card detection works via the internal SD controller mechanism.
+Use GPIO 2_14 and 2_15 for wakeup sources instead.
 
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- arch/arm/boot/dts/imx53-qsb.dts | 2 --
- 1 file changed, 2 deletions(-)
+ arch/arm/boot/dts/imx53-qsb.dts | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/imx53-qsb.dts b/arch/arm/boot/dts/imx53-qsb.dts
-index b646ef1..029ae42 100644
+index 029ae42..91a5935 100644
 --- a/arch/arm/boot/dts/imx53-qsb.dts
 +++ b/arch/arm/boot/dts/imx53-qsb.dts
-@@ -122,7 +122,6 @@
- &esdhc1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_esdhc1_1>;
--	cd-gpios = <&gpio3 13 0>;
- 	status = "okay";
- };
+@@ -55,19 +55,20 @@
+ 			label = "Power Button";
+ 			gpios = <&gpio1 8 0>;
+ 			linux,code = <116>; /* KEY_POWER */
+-			gpio-key,wakeup;
+ 		};
  
-@@ -153,7 +152,6 @@
- 				MX53_PAD_PATA_DATA15__GPIO2_15    0x80000000
- 				MX53_PAD_EIM_DA11__GPIO3_11       0x80000000
- 				MX53_PAD_EIM_DA12__GPIO3_12       0x80000000
--				MX53_PAD_EIM_DA13__GPIO3_13       0x80000000
- 				MX53_PAD_PATA_DA_0__GPIO7_6       0x80000000
- 				MX53_PAD_PATA_DA_2__GPIO7_8	  0x80000000
- 				MX53_PAD_GPIO_16__GPIO7_11        0x80000000
+ 		volume-up {
+ 			label = "Volume Up";
+ 			gpios = <&gpio2 14 0>;
+ 			linux,code = <115>; /* KEY_VOLUMEUP */
++			gpio-key,wakeup;
+ 		};
+ 
+ 		volume-down {
+ 			label = "Volume Down";
+ 			gpios = <&gpio2 15 0>;
+ 			linux,code = <114>; /* KEY_VOLUMEDOWN */
++			gpio-key,wakeup;
+ 		};
+ 	};
+ 
 -- 
 1.8.1.2
 
