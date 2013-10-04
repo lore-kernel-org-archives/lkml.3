@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab3JDKJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 06:09:03 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:35704 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab3JDKJC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 06:09:02 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: provide public clk_is_enabled function
-Date: Fri,  4 Oct 2013 12:08:30 +0200
-Message-Id: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1753663Ab3JDKLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 06:11:14 -0400
+Received: from dan.rpsys.net ([93.97.175.187]:51767 "EHLO dan.rpsys.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751469Ab3JDKLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 06:11:12 -0400
+X-Greylist: delayed 870 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Oct 2013 06:11:10 EDT
+Message-ID: <1380880553.18603.575.camel@ted>
+Subject: Re: [PATCH] MAINTAINERS: remove Richard Purdie as backlight
+ maintainer
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Laurent Pinchart'" <laurent.pinchart+renesas@ideasonboard.com>,
+        "'Michael Hennerich'" <michael.hennerich@analog.com>,
+        "'Milo Kim'" <milo.kim@ti.com>,
+        "'Daniel Jeong'" <gshark.jeong@gmail.com>
+Date: Fri, 04 Oct 2013 10:55:53 +0100
+In-Reply-To: <20131003174315.d9aa8af7.akpm@linux-foundation.org>
+References: <017f01cebb35$f6a82ac0$e3f88040$%han@samsung.com>
+	 <20131003162048.d4be6510f36da5c61dc61c43@linux-foundation.org>
+	 <003801cec093$6b3c1bf0$41b453d0$%han@samsung.com>
+	 <20131003174315.d9aa8af7.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To determine if a clk has been previously enabled, provide a public
-clk_is_enabled function. This is especially helpful to check the state
-of clk-gate without actually changing the state of the gate.
+On Thu, 2013-10-03 at 17:43 -0700, Andrew Morton wrote:
+> On Fri, 04 Oct 2013 08:50:57 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
+> 
+> > On Friday, October 04, 2013 8:21 AM, Andrew Morton wrote:
+> > > On Fri, 27 Sep 2013 12:59:28 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
+> > > 
+> > > > Remove Richard Purdie as backlight subsystem maintainer, since he
+> > > > is not responding for a few years.
+> > > 
+> > > It's nice to give a person a ./CREDITS entry when we remove them from
+> > > ./MAINTAINERS.
+> > 
+> > However, Richard Purdie still remains as maintainers of other two entries
+> > as below:
+> > In this case, is it still necessary give him a ./CREDITS entry?
+> 
+> Necessary?  No.  Nice?  Yes ;) I like to think that it reduces any of
+> the sting from being removed from MAINTAINERS.  Plus it is more
+> accurate and costs nothing.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/clk/clk.c   |   18 ++++++++++++++++++
- include/linux/clk.h |   13 +++++++++++++
- 2 files changed, 31 insertions(+)
+It is sad to be removed from there but equally, I haven't had the time
+to spend on it for a while and it is justified. I am still around, I
+have been reading some of the patches, there are just other things which
+are more in need of my time (the Yocto Project primarily). I'd done what
+I'd set out to do with the backlight/leds subsystems and its time to let
+others take them forward. So a credits entry sounds nice and probably
+more appropriate now, thanks :)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index a004769..26698d3 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -929,6 +929,24 @@ int clk_enable(struct clk *clk)
- EXPORT_SYMBOL_GPL(clk_enable);
- 
- /**
-+ * clk_is_enabled - return the enabled state of a clk
-+ * @clk: the clk whose enabled state gets returned
-+ *
-+ * Returns true if the clock is enabled, false otherwise.
-+ */
-+bool clk_is_enabled(struct clk *clk)
-+{
-+	bool is_en;
-+
-+	clk_prepare_lock();
-+	is_en = __clk_is_enabled(clk);
-+	clk_prepare_unlock();
-+
-+	return is_en;
-+}
-+EXPORT_SYMBOL_GPL(clk_is_enabled);
-+
-+/**
-  * __clk_round_rate - round the given rate for a clk
-  * @clk: round the rate of this clock
-  * @rate: the rate which is to be rounded
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 9a6d045..8cbf2f7 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -187,6 +187,14 @@ int clk_enable(struct clk *clk);
- void clk_disable(struct clk *clk);
- 
- /**
-+ * clk_is_enabled - return the enabled state of a clk
-+ * @clk: the clk whose enabled state gets returned
-+ *
-+ * Returns true if the clock is enabled, false otherwise.
-+ */
-+bool clk_is_enabled(struct clk *clk);
-+
-+/**
-  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
-  *		  This is only valid once the clock source has been enabled.
-  * @clk: clock source
-@@ -299,6 +307,11 @@ static inline int clk_enable(struct clk *clk)
- 
- static inline void clk_disable(struct clk *clk) {}
- 
-+static inline bool clk_is_enabled(struct clk *clk)
-+{
-+	return false;
-+}
-+
- static inline unsigned long clk_get_rate(struct clk *clk)
- {
- 	return 0;
--- 
-1.7.10.4
+Cheers,
+
+Richard
 
