@@ -1,188 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3JDSed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 14:34:33 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:45438 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab3JDSe3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 14:34:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131004182353.GA2600@dztty>
-References: <20131002145506.GA2669@dztty> <CALCETrW=6nnU0uQBqbFyJY8Fj+CHoGbOnGJ-aOB+3GwtV0f1bw@mail.gmail.com>
- <20131003143653.GA32445@dztty> <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
- <20131003192926.GB2390@dztty> <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
- <20131003201332.GA3500@dztty> <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
- <20131004085911.GA2157@dztty> <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
- <20131004182353.GA2600@dztty>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 4 Oct 2013 19:34:08 +0100
-Message-ID: <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
- opener may access task
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+	id S1751839Ab3JDSwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 14:52:13 -0400
+Received: from [216.32.180.189] ([216.32.180.189]:53312 "EHLO
+	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750983Ab3JDSwL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 14:52:11 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(z551bizbb2dI98dI9371I936eI1454I1432I4015I13e6K1521Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2fh2a8h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
+Message-ID: <1380912653.2920.35.camel@atx-linux-37>
+Subject: Re: [RFC PATCH v2] fpga: Introduce new fpga subsystem
+From: Alan Tull <atull@altera.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        David Brown <davidb@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, <linux-doc@vger.kernel.org>
+Date: Fri, 4 Oct 2013 13:50:53 -0500
+In-Reply-To: <524EECA7.7040409@monstr.eu>
+References: <cover.1380727889.git.michal.simek@xilinx.com>
+	 <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
+	 <20131002174640.GA10287@obsidianresearch.com> <524EECA7.7040409@monstr.eu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+MIME-Version: 1.0
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
->> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
->> >> On Thu, Oct 3, 2013 at 1:13 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> >> > On Thu, Oct 03, 2013 at 12:37:49PM -0700, Andy Lutomirski wrote:
->> >> >> On Thu, Oct 3, 2013 at 12:29 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> > The current patches block and protect the current attacks correctly,
->> > without overhead.
->> >
->> > Example:
->> > proc_uid_map_write()
->> >  -> map_write()
->> >    -> file_ns_capable()
->> >       -> security_capable(file->f_cred, ns, cap)
->> >
->> > file_ns_capable() added in commit 935d8aabd4331 by Linus
->> > Add file_ns_capable() helper function for open-time capability checking
->> >
->> > That also goes for commit 6708075f104c3c9b0 by Eric,
->> > userns: Don't let unprivileged users trick privileged users into setting
->> > the id_map
->> >
->> > The proc_allow_access() function that I've proposed has the same logic
->> > of file_ns_capable(), We can even put file_ns_capable() inside
->> > proc_allow_access(). We'll add support of security_capable_noaudit()
->> > inside file_ns_capable() and proc_allow_access() will be much more
->> > better.
->> >
->> > file_ns_capable() checks where a capability was there,
->> > proc_allow_access() checks where they have same uid + if capability was
->> > there.
->> >
->> >> please either fix it, stop using f_cred, or explain why it it's okay
->> >> despite not invoking LSM in the expected way.
->> > I've already explained it.
->> >
->> > LSM is handled by ptrace_may_access() which should be called during
->> > ->open() to handle f_cred, and during ->read() to handle current's cred.
->>
->> This is getting tiresome.  This patch (2/9) has my NAK.  The other
->> patches depend on it, so I will not ack them.  (The maintainers may or
->> may not care about my NAK -- that's their business.)
-> Yeh tiresome, especially for fixing some leaks that affect the kernel
-> and ASLR for a long time now...
->
-> Ok response below:
->
->> Your code is *wrong* for even the simple case of /proc/*/syscall.  Consider:
->>
->> Start with two processes, a and b, both normal tasks started by an
->> unprivileged user.  Process a opens /proc/<b's pid>/syscall.  All
->> checks pass.  Process b execs a setcap'd binary.  So b's uid and gid
->> do not change.
->>
->> Then process a redirects stdin to that existing /proc/<b's pid>/stack
-> You mean /proc/<b's pid>/syscall, ok let see
->
->> fd.  Here's the bug in your patch: process a can *still* read that fd.
->>  Why?  Because *you're not checking that a's capabilities are a
->> superset of b's*.  That code lives in the LSM infrastructure.  You
-> Please see with me:
+On Fri, 2013-10-04 at 18:28 +0200, Michal Simek wrote:
+> On 10/02/2013 07:46 PM, Jason Gunthorpe wrote:
+> > On Wed, Oct 02, 2013 at 05:35:58PM +0200, Michal Simek wrote:
+> > 
+> >> +What:		/sys/class/fpga_manager/fpga<dev-id>/fpga_config_state
+> >> +Date:		October 2013
+> >> +KernelVersion:	3.12
+> >> +Contact:	Michal Simek <michal.simek@xilinx.com>
+> >> +Description:
+> >> +		By reading this file you will get current fpga manager state.
+> >> +		Flag bits are present in include/linux/fpga.h (FPGA_MGR_XX).
+> >> +		By writing to this file you can change fpga manager state.
+> >> +		Valid options are: write_init, write_complete, read_init,
+> >> +		read_complete.
+> > 
+> > This shouldn't be asymmetric - read/write should be in the same
+> > format.
+> > 
+> > I strongly encourage you to use text strings to indicate the state of
+> > the configuration FSM, and I *really* think you should rework things
+> > to have an explicit configuration FSM rather than trying to bodge one
+> > together with a bunch of bit flags.
+> 
+> Any favourite names for states?
+> Or ready, write_init, write_complete is enough for now?
 
-Sorry, I described the obviously broken scenario incorrectly.  Your
-patch breaks (in the absence of things like selinux) if a exec
-something setuid root.
+Currently the only state I want to attempt to *set* from sysfs would be
+reset. 
 
-[...]
+For Altera fpga, the states I want to *report* are:
 
->
-> I did the check in the proc_same_open_cred() function:
->  return (uid_eq(fcred->uid, cred->uid) &&
->          gid_eq(fcred->gid, cred->gid) &&
->          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+static const char *const altera_fpga_state_str[] = {
+        [ALT_FPGAMGR_STAT_POWER_UP] = "power up phase",
+        [ALT_FPGAMGR_STAT_RESET] = "reset phase",
+        [ALT_FPGAMGR_STAT_CFG] = "configuration phase",
+        [ALT_FPGAMGR_STAT_INIT] = "initialization phase",
+        [ALT_FPGAMGR_STAT_USER_MODE] = "user mode",
+        [ALT_FPGAMGR_STAT_UNKNOWN] = "undetermined",
+        [ALT_FPGAMGR_STAT_POWER_OFF] = "powered off",
+};
 
-Which has nothing to do with anything.  If that check fails, you're
-just going on to a different, WRONG check/.
+Setting write_init and write_complete explicitly is fine, but not needed
+for me.  I'm fine with the driver knowing that if I request to write
+data, it knows that it needs to write_init and write_complete.  Either
+way works for me here.
 
->
-> Check if this is the same uid/gid and the capabilities superset!
->
-> But in the proc_allow_access() the capabilities superset is missing.
->
->
-> So to fix it:
-> 1) if proc_same_open_cred() detects that cred have changed between
-> ->open() and ->read() then abort, return zero, the ->read(),write()...
 
-IMO yuck.
+> 
+> Alan: This should be unified way for user to get proper states from the
+> driver. It means from my point of view will be better to have set of states
+> which this function can return instead of calling origin status function
+> where we can't control states for all these drivers.
 
->
->
-> 2) Improve the proc_allow_access() check by:
->    if this is the same user namespace then check uid/gid of f_cred on
->    target cred task, and the capabilities superset:
->    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
->
->    If it fails let security_capable() or file_ns_capable() do its magic.
->
+I agree with both you and Jason on this :)  I agree that it should be
+strings, and also that it probably should come from the framework
+instead of directly from the low level driver.  The framework should
+query the low level driver for state.  Not all vendors' fpgas support
+exactly the same set of states, so we can hash out a superset that we
+can agree on that fits all our needs (mine are above). 
 
-NAK.  You need to actually call the LSM.  What if the reason to fail
-the request isn't that the writer gained capabilities -- what if the
-writer's selinux label changed?
+I think this is separate from your 'flags' implementation.  I like that
+implementation for locking, but I want something that actually goes to
+the low level driver to find out what state the fpga manager has to
+report.
 
->
->
-> The capabilities superset check are available, they are not LSM
-> specific.
+> 
+> > Plus error handling is missing, failures need to be reported back.
+> 
+> Will fix this.
+> 
+> > Noticed several typos:
+> 
+> Ah yeah c&p. :-(
+> 
+> > 
+> >> +
+> >> +	if (mgr->mops->read_init) {
+> >> +		ret = mgr->mops->read_init(mgr);
+> >> +		if (ret) {
+> >> +			dev_dbg(mgr->dev, "Failed to write_init\n");
+> >                                                     ^^^^^^^^
+> > read_init
+> > 
+> >> +	if (mgr->mops->write) {
+> >                    ^^^^^^^^^^
+> > read
+> > 
+> >> +		ret = mgr->mops->read(mgr, buf, count);
+> >> +		if (ret) {
+> >> +			dev_dbg(mgr->dev, "Failed to write\n");
+> >                                              ^^^^^^^^^^^^^^^^^
+> > read
+> > 
+> >> +
+> >> +	if (mgr->mops->write_complete) {
+> >                     ^^^^^^^^^^
+> > read
+> >> +		ret = mgr->mops->read_complete(mgr);
+> >> +		if (ret) {
+> >> +			dev_dbg(mgr->dev, "Failed to write_complete\n");
+> >   					  	  ^^^^^^^^^^^^
+> > read
+> > 
+> >> +static inline int fpga_mgr_write(struct fpga_manager *mgr, const u8 *buf,
+> >> +				 ssize_t count)
+> >> +{
+> >> +	int bit, ret;
+> >> +
+> >> +	dev_dbg(mgr->dev, "%s %lx\n", __func__, mgr->flags);
+> >> +
+> >> +	/* FPGE init has to be done to be able to continue */
+> >            ^^^^^^
+> > FPGA
+> > 
+> >> +static struct device_attribute fpga_mgr_attrs[] = {
+> >> +	__ATTR(name, S_IRUGO, fpga_mgr_name_show, NULL),
+> >> +	__ATTR(firmware, S_IWUSR, NULL, fpga_mgr_attr_write),
+> >> +	__ATTR(fpga_config_state, S_IRUSR | S_IWUSR,
+> >> +	       fpga_mgr_status_read, fpga_mgr_status_write),
+> >> +	__ATTR_NULL
+> >> +};
+> > 
+> > AFAIK it is preferred to use DEVICE_ATTR_RO(), ATTRIBUTE_GROUPS()
+> > and struct class.dev_groups
+> > 
+> > eg see this note in linux/device.h
+> > 
+> > struct class {
+> >         struct device_attribute         *dev_attrs;     /* use dev_groups instead */
+> >         const struct attribute_group    **dev_groups;
+> > }
+> > 
+> 
+> This will be fixed in v3. I have already changed this.
+> 
+> >> +	struct fpga_manager *mgr;
+> >> +	int ret;
+> >> +
+> >> +	if (!mops) {
+> >> +		dev_dbg(&pdev->dev, "Register failed: NO fpga_manager_ops\n");
+> >> +		return -EINVAL;
+> >> +	}
+> >> +
+> >> +	if (!name || !strlen(name)) {
+> >> +		dev_dbg(&pdev->dev, "Register failed: NO name specific\n");
+> >> +		return -EINVAL;
+> >> +	}
+> >> +
+> >> +	mgr = devm_kzalloc(&pdev->dev, sizeof(*mgr), GFP_KERNEL);
+> >> +	if (!mgr)
+> >> +		return -ENOMEM;
+> > 
+> > I wonder if this is right, it seems like a strange way to make a class
+> > subsystem, usually the struct fpga_manager would contain the 'struct
+> > device' (not a pointer, so you can use container_of) and drvdata would
+> > be reserved for something else.
+> 
+> I am not following you here. mrg structure is connected with the driver
+> it means when driver is removed then this structure is freed.
+> 
+> 
+> > 
+> > This seems to create lifetime issues since the devm above will be
+> > free'd when the platform driver is released, but the class device will
+> > live on with the stray pointer. Better to allocate everything against
+> > the class device below.
+> 
+> device in unregistered before this structure is freed.
+> fpga_mgr_unregister() is called in the platform driver in remove function.
+> 
+> > 
+> > Plus you need to ensure the device is fully functionally before
+> > device_register is called, otherwise you race with notifications to
+> > userspace.
+> 
+> fpga_mgr_register() should be called as the latest function in the probe
+> in platform_driver. At least it is what I have for zynq.
+> 
+> >> +/**
+> >> + * fpga_mgr_unregister: Remove fpga manager
+> >> + * @pdev: Pointer to the platform device of fpga manager
+> >> + *
+> >> + * Function unregister fpga manager and release all temporary structures
+> >> + *
+> >> + * Returns 0 for all cases
+> >> + */
+> >> +int fpga_mgr_unregister(struct platform_device *pdev)
+> >> +{
+> >> +	struct fpga_manager *mgr = platform_get_drvdata(pdev);
+> >> +
+> >> +	if (mgr && mgr->mops && mgr->mops->fpga_remove)
+> >> +		mgr->mops->fpga_remove(mgr);
+> >> +
+> >> +	device_unregister(mgr->dev);
+> >> +
+> >> +	spin_lock(&fpga_mgr_idr_lock);
+> >> +	idr_remove(&fpga_mgr_idr, mgr->nr);
+> >> +	spin_unlock(&fpga_mgr_idr_lock);
+> > 
+> > What happens when userspace is holding one of the sysfs files open and
+> > you unload the module? Looks like bad things?
+> 
+> I didn't test this but feel free to check it.
+> 
+> Thanks,
+> Michal
+> 
 
-NO.  This is getting ridiculous.  You can't just re-implement what the
-commoncap code does because you don't want to call the LSM hook.  You
-need to call the LSM hook.
 
->
->> need to call it if you want to keep the general approach you're
->> trying.  You can't fix this just by checking for CAP_PTRACE, because
->> then you'll break SELinux.
-> IIUC, then SELinux is already broken!
->
-> You do you realize that these patches are adding a bench of
-> ptrace_may_access() during ->open() to give LSM a chance to inspect
-> f_cred and other things.
-
-Yes.  But they're messy, they open-code incorrect checks, and they are
-sufficiently incomplete as fixes for the vulnerability that you're
-better off not doing them, because they'll just muddy the waters.
-
---Andy
-
->
->
->> This is messy, and it's why I think that you'd be better off doing
->> this by revoking the fd on exec instead.
-> As I've said I'm not against revoke. If it was there I would use it!
->
-> Not implemented! and perhaps it will be complex...
->
->
-> Please respond, and perhaps you should reconsider your NAK! since you
-> were involved in the patches that were committed, and used the
-> file->f_cred approach
-
-Yes, I was.  That particular thing is fine, because there's no LSM
-hook involved in the first case.  If anyone ever adds one, they'll
-have to invoke it in the appropriate places.
-
---Andy
