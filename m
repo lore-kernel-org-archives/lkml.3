@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab3JDTEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:04:40 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:56751 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab3JDTEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:04:39 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS fixes for 3.12-rc4
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20131004190435.6C3E14266DC@whiskey.americas.sgi.com>
-Date: Fri,  4 Oct 2013 14:04:35 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1752524Ab3JDTL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:11:28 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:37971 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3JDTL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 15:11:26 -0400
+Date: Fri, 4 Oct 2013 20:11:13 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131004191113.GA3916@dztty>
+References: <20131003143653.GA32445@dztty>
+ <CALCETrU_D7X+jPWseiyp3FJJnw5CHhLbGz73FVDaeBpRDA+-og@mail.gmail.com>
+ <20131003192926.GB2390@dztty>
+ <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
+ <20131003201332.GA3500@dztty>
+ <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
+ <20131004085911.GA2157@dztty>
+ <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+ <20131004182353.GA2600@dztty>
+ <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Oct 04, 2013 at 07:34:08PM +0100, Andy Lutomirski wrote:
+> On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
+> >> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
+[...] 
+> Sorry, I described the obviously broken scenario incorrectly.  Your
+> patch breaks (in the absence of things like selinux) if a exec
+> something setuid root.
+> 
+> [...]
+> 
+> >
+> > I did the check in the proc_same_open_cred() function:
+> >  return (uid_eq(fcred->uid, cred->uid) &&
+> >          gid_eq(fcred->gid, cred->gid) &&
+> >          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+> 
+> Which has nothing to do with anything.  If that check fails, you're
+> just going on to a different, WRONG check/.
+> 
+> >
+> > Check if this is the same uid/gid and the capabilities superset!
+> >
+> > But in the proc_allow_access() the capabilities superset is missing.
+> >
+> >
+> > So to fix it:
+> > 1) if proc_same_open_cred() detects that cred have changed between
+> > ->open() and ->read() then abort, return zero, the ->read(),write()...
+> 
+> IMO yuck.
+> 
+> >
+> >
+> > 2) Improve the proc_allow_access() check by:
+> >    if this is the same user namespace then check uid/gid of f_cred on
+> >    target cred task, and the capabilities superset:
+> >    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
+> >
+> >    If it fails let security_capable() or file_ns_capable() do its magic.
+> >
+> 
+> NAK.  You need to actually call the LSM.  What if the reason to fail
+> the request isn't that the writer gained capabilities -- what if the
+> writer's selinux label changed?
+Sorry I can't follow you here! Can you be more explicit please?
 
-   Please pull in these bugfixes for xfs.  There are lockdep annotations for
-   project quotas, a fix for dirent dtype support on v4 filesystems, a fix for
-   a memory leak in recovery, and a fix for the build error that resulted from
-   it.  D'oh.
+For me we are already doing this during ptrace_may_access() on each
+syscall, which will call LSM to inspect the privileges on each ->open(),
+->write()... So LSM hooks are already called. If you want to have more
+LSM hooks, then perhaps that's another problem?
 
-Thanks,
-	Ben
-
-The following changes since commit 997def25e4b9cee3b01609e18a52f926bca8bd2b:
-
-  xfs: fix node forward in xfs_node_toosmall (2013-09-26 10:38:17 -0500)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.12-rc4
-
-for you to fetch changes up to b2a42f78ab475f4730300b0e9568bc3b2587d112:
-
-  xfs: Use kmem_free() instead of free() (2013-10-04 13:56:12 -0500)
-
-----------------------------------------------------------------
-xfs: bugfixes for 3.12-rc4
-
-- lockdep fix for project quotas
-- fix for dirent dtype support on v4 filesystems
-- fix for a memory leak in recovery
-- fix for build failure due to the recovery fix
-
-----------------------------------------------------------------
-Dave Chinner (2):
-      xfs: lockdep needs to know about 3 dquot-deep nesting
-      xfs: dirent dtype presence is dependent on directory magic numbers
-
-Thierry Reding (1):
-      xfs: Use kmem_free() instead of free()
-
-tinguely@sgi.com (1):
-      xfs: fix memory leak in xlog_recover_add_to_trans
-
- fs/xfs/xfs_dir2_block.c   |  6 +++---
- fs/xfs/xfs_dir2_format.h  | 51 +++++++++++++++++++----------------------------
- fs/xfs/xfs_dir2_readdir.c |  4 ++--
- fs/xfs/xfs_dir2_sf.c      |  6 +++---
- fs/xfs/xfs_dquot.c        | 19 +++++++++++++++---
- fs/xfs/xfs_log_recover.c  |  1 +
- 6 files changed, 45 insertions(+), 42 deletions(-)
+-- 
+Djalal Harouni
+http://opendz.org
