@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3JDTfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:35:54 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:35919 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab3JDTfw convert rfc822-to-8bit (ORCPT
+	id S1753953Ab3JDTij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:38:39 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:46817 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab3JDTii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:35:52 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 4 Oct 2013 15:38:38 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Mark Brown <broonie@kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20131004164139.GR27287@sirena.org.uk>
-Cc: mark.rutland@arm.com, devicetree@vger.kernel.org, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com, rob@landley.net,
-        grant.likely@linaro.org, linux-arm-kernel@lists.infradead.org
-References: <1380803407-15196-1-git-send-email-ldewangan@nvidia.com>
- <20131004164139.GR27287@sirena.org.uk>
-Message-ID: <20131004193545.4343.15596@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: palmas: add clock driver for palmas
-Date: Fri, 04 Oct 2013 12:35:45 -0700
+In-Reply-To: <20131004153012.19245adb@gandalf.local.home>
+References: <20131004184614.GA17536@redhat.com>
+	<20131004184629.GA17550@redhat.com>
+	<CA+55aFxfbV2AsOUhL318AH8y4BUe2FXFb8aTFuqPqc_2SdV2MA@mail.gmail.com>
+	<20131004153012.19245adb@gandalf.local.home>
+Date: Fri, 4 Oct 2013 12:38:37 -0700
+X-Google-Sender-Auth: QZRJYsoq3wFIVzLEDNrUEQcA6HE
+Message-ID: <CA+55aFwda1pErt32162S_1gq=Kkge7Gj3n2sm_rOopAtz2bVUQ@mail.gmail.com>
+Subject: Re: [PATCH 1/5] rcusync: introduce struct rcu_sync_ops
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Mark Brown (2013-10-04 09:41:39)
-> On Thu, Oct 03, 2013 at 06:00:07PM +0530, Laxman Dewangan wrote:
-> 
-> > +     Optional subnode properties:
-> > +     ti,clock-boot-enable: Enable clock at the time of booting.
-> 
-> Shouldn't this be a generic clock subsystem thing?  It seems like
-> something that might be desired for nearly any clock.
+On Fri, Oct 4, 2013 at 12:30 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> As all the rcu_synchronization() methods (on non UP) are quite
+> expensive, I doubt that this optimization is worth anything.
 
-The best solution is to have a driver claim the clock with clk_get and
-enable it with clk_prepare_enable. I gave more detail in my reply to
-Laxman.
+Maybe. It just annoys me, because afaik, the function that gets called
+is always static per callsite.
 
-Regards,
-Mike
+                  Linus
