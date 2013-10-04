@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab3JDV33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 17:29:29 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:38565 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab3JDV3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 17:29:24 -0400
-Message-ID: <1380922156.3214.49.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, <linux-pci@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux390@de.ibm.com>, <linux-s390@vger.kernel.org>, <x86@kernel.org>,
-        <linux-ide@vger.kernel.org>, <iss_storagedev@hp.com>,
-        <linux-nvme@lists.infradead.org>, <linux-rdma@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <e1000-devel@lists.sourceforge.net>,
-        <linux-driver@qlogic.com>,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, <linux-scsi@vger.kernel.org>
-Date: Fri, 4 Oct 2013 22:29:16 +0100
-In-Reply-To: <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
-	 <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
-	 <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20194.005
-X-TM-AS-Result: No--48.633100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1752299Ab3JDViG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 17:38:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18822 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab3JDViE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 17:38:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
+   d="scan'208";a="414188442"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>, bp@suse.de
+Subject: [PATCH] x86: Don't make AMD_GART depend on EXPERT and default y
+Date: Fri,  4 Oct 2013 14:37:56 -0700
+Message-Id: <1380922676-23007-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 10:29 +0200, Alexander Gordeev wrote:
-> On Thu, Oct 03, 2013 at 11:49:45PM +0100, Ben Hutchings wrote:
-> > On Wed, 2013-10-02 at 12:48 +0200, Alexander Gordeev wrote:
-> > > This update converts pci_enable_msix() and pci_enable_msi_block()
-> > > interfaces to canonical kernel functions and makes them return a
-> > > error code in case of failure or 0 in case of success.
-> > [...]
-> > 
-> > I think this is fundamentally flawed: pci_msix_table_size() and
-> > pci_get_msi_cap() can only report the limits of the *device* (which the
-> > driver usually already knows), whereas MSI allocation can also be
-> > constrained due to *global* limits on the number of distinct IRQs.
-> 
-> Even the current implementation by no means addresses it. Although it
-> might seem a case for architectures to report the number of IRQs available
-> for a driver to retry, in fact they all just fail. The same applies to
-> *any* other type of resource involved: irq_desc's, CPU interrupt vector
-> space, msi_desc's etc. No platform cares about it and just bails out once
-> a constrain met (please correct me if I am wrong here). Given that Linux
-> has been doing well even on embedded I think we should not change it.
->
-> The only exception to the above is pSeries platform which takes advantage
-> of the current design (to implement MSI quota). There are indications we
-> can satisfy pSeries requirements, but the design proposed in this RFC
-> is not going to change drastically anyway. The start of the discusstion
-> is here: https://lkml.org/lkml/2013/9/5/293
+From: Andi Kleen <ak@linux.intel.com>
 
-All I can see there is that Tejun didn't think that the global limits
-and positive return values were implemented by any architecture.  But
-you have a counter-example, so I'm not sure what your point is.
+The AMD_GART driver was made EXPERT/EMBEDDED a long time
+ago to avoid unbootable 64bit systems with 32bit only devices.
 
-It has been quite a while since I saw this happen on x86.  But I just
-checked on a test system running RHEL 5 i386 (Linux 2.6.18).  If I ask
-for 16 MSI-X vectors on a device that supports 1024, the return value is
-8, and indeed I can then successfully allocate 8.
+This was before swiotlb was there, which does the job
+of this fallback today. SWIOTLB is always on, so systems
+should always boot.
 
-Now that's going quite a way back, and it may be that global limits
-aren't a significant problem any more.  With the x86_64 build of RHEL 5
-on an identical system, I can allocate 16 or even 32, so this is
-apparently not a hardware limit in this case.
+The drawback is that every system has to compile that
+driver in (it cannot be a module).
 
-> > Currently pci_enable_msix() will report a positive value if it fails due
-> > to the global limit.  Your patch 7 removes that.  pci_enable_msi_block()
-> > unfortunately doesn't appear to do this.
-> 
-> pci_enable_msi_block() can do more than one MSI only on x86 (with IOMMU),
-> but it does not bother to return positive numbers, indeed.
-> 
-> > It seems to me that a more useful interface would take a minimum and
-> > maximum number of vectors from the driver.  This wouldn't allow the
-> > driver to specify that it could only accept, say, any even number within
-> > a certain range, but you could still leave the current functions
-> > available for any driver that needs that.
-> 
-> Mmmm.. I am not sure I am getting it. Could you please rephrase?
+Also:
+- Newer AMD CPUs (the APUs) don't seem to have AMD_GART support
+at all anymore.
+- Newer AMD platforms have a much better real IOMMU
+- The AMD GART driver was never very good (lots of overhead, e.g.
+in flushing due to some workarounds) and it's doubtful it's really
+better than SWIOTLB.
+- On older K8 systems it didn't even work with all chipsets.
+- The 32bit device bounce buffer case should be rare/
+non performance critical these days anyways.
+- On non AMD systems it is not needed at all.
 
-Most drivers seem to either:
-(a) require exactly a certain number of MSI vectors, or
-(b) require a minimum number of MSI vectors, usually want to allocate
-more, and work with any number in between
+So drop the EXPERT dependency on AMD_GART and remove the
+default y. The driver can be still compiled in, just
+it's an explicit decision now, and people who don't want
+it can unselect it.
 
-We can support drivers in both classes by adding new allocation
-functions that allow specifying a minimum (required) and maximum
-(wanted) number of MSI vectors.  Those in class (a) would just specify
-the same value for both.  These new functions can take account of any
-global limit or allocation policy without any further changes to the
-drivers that use them.
+I also clarified the description a bit.
 
-The few drivers with more specific requirements would still need to
-implement the currently recommended loop, using the old allocation
-functions.
+This allows to save ~8K text on most modern x86-64 systems.
 
-Ben.
+Cc: bp@suse.de
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/Kconfig | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee2fb9d..c9d2b81 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -756,17 +756,16 @@ config DMI
+ 	  BIOS code.
+ 
+ config GART_IOMMU
+-	bool "GART IOMMU support" if EXPERT
+-	default y
++	bool "Old AMD GART IOMMU support"
+ 	select SWIOTLB
+ 	depends on X86_64 && PCI && AMD_NB
+ 	---help---
+ 	  Support for full DMA access of devices with 32bit memory access only
+ 	  on systems with more than 3GB. This is usually needed for USB,
+ 	  sound, many IDE/SATA chipsets and some other devices.
+-	  Provides a driver for the AMD Athlon64/Opteron/Turion/Sempron GART
+-	  based hardware IOMMU and a software bounce buffer based IOMMU used
+-	  on Intel systems and as fallback.
++	  Provides a driver for the older AMD Athlon64/Opteron/Turion/Sempron GART
++	  based hardware IOMMU.
++	  Newer systems typically have a better AMD IOMMU.
+ 	  The code is only active when needed (enough memory and limited
+ 	  device) unless CONFIG_IOMMU_DEBUG or iommu=force is specified
+ 	  too.
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.8.3.1
 
