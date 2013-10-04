@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab3JDAau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:30:50 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1651 "EHLO mms3.broadcom.com"
+	id S1754174Ab3JDAas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:30:48 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1650 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab3JDAap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753485Ab3JDAap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Oct 2013 20:30:45 -0400
 X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
 From: "Sherman Yin" <syin@broadcom.com>
@@ -21,49 +21,41 @@ cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, bcm-kernel-feedback-list@broadcom.com,
         linux-arm-kernel@lists.infradead.org,
         "Sherman Yin" <syin@broadcom.com>
-Subject: [PATCH 1/4] pinctrl: Add void * to pinctrl_pin_desc
-Date: Thu, 3 Oct 2013 17:23:16 -0700
-Message-ID: <1380846199-12829-2-git-send-email-syin@broadcom.com>
+Subject: [PATCH 0/4] Add Broadcom Capri pinctrl driver
+Date: Thu, 3 Oct 2013 17:23:15 -0700
+Message-ID: <1380846199-12829-1-git-send-email-syin@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
 MIME-Version: 1.0
-X-WSS-ID: 7E50D3AD2L891410617-01-01
+X-WSS-ID: 7E50D3AD2L891410616-02-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drv_data is added to the pinctrl_pin_desc for drivers to define additional
-driver-specific per-pin data.
+The following patches adds a pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
+The first patch, adding the void * to pinctrl_pin_desc, has been previously
+discussed with LinusW.  See this thread:
 
-Signed-off-by: Sherman Yin <syin@broadcom.com>
-Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
----
-Change-Id: I78b2c44b93d88b04897fd0af80ffce213e338d6b
----
- include/linux/pinctrl/pinctrl.h |    2 ++
- 1 file changed, 2 insertions(+)
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-April/165880.html
 
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 5979147..c8e42c4 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -32,10 +32,12 @@ struct device_node;
-  * pins, pads or other muxable units in this struct
-  * @number: unique pin number from the global pin number space
-  * @name: a name for this pin
-+ * @drv_data: driver-defined per-pin data. pinctrl core does not touch this
-  */
- struct pinctrl_pin_desc {
- 	unsigned number;
- 	const char *name;
-+	void *drv_data;
- };
- 
- /* Convenience macro to define a single named or anonymous pin descriptor */
+Sherman Yin (4):
+  pinctrl: Add void * to pinctrl_pin_desc
+  pinctrl: Add pinctrl binding for Broadcom Capri SoCs
+  ARM: pinctrl: Add Broadcom Capri pinctrl driver
+  pinctrl: Enable pinctrl for Broadcom Capri SoCs
+
+ .../bindings/pinctrl/brcm,capri-pinctrl.txt        |  419 +++++
+ arch/arm/boot/dts/bcm11351.dtsi                    |    4 +
+ arch/arm/mach-bcm/Kconfig                          |    2 +
+ drivers/pinctrl/Kconfig                            |   10 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-capri.c                    | 1727 ++++++++++++++++++++
+ include/linux/pinctrl/pinctrl.h                    |    2 +
+ 7 files changed, 2165 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
+ create mode 100644 drivers/pinctrl/pinctrl-capri.c
+
 -- 
 1.7.9.5
 
