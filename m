@@ -1,48 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab3JDQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:28:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50783 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab3JDQ2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:28:20 -0400
-Date: Fri, 4 Oct 2013 18:28:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com
-Subject: Re: [PATCH] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
-Message-ID: <20131004162804.GR3081@twins.programming.kicks-ass.net>
-References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
- <20130927091427.GE24743@yliu-dev.sh.intel.com>
- <20130927152908.GE15690@laptop.programming.kicks-ass.net>
- <20131004080909.GP26785@twins.programming.kicks-ass.net>
- <20131004105342.20c00a41@gandalf.local.home>
- <20131004152826.GP3081@twins.programming.kicks-ass.net>
- <20131004115712.40c62743@gandalf.local.home>
+	id S1755488Ab3JDQcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:32:24 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:44386 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754887Ab3JDQcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 12:32:22 -0400
+Message-ID: <524EED4E.8090505@mm-sol.com>
+Date: Fri, 04 Oct 2013 19:31:10 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131004115712.40c62743@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] hwrng: msm: Add PRNG support for MSM SoC's
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <1380811955-18085-3-git-send-email-svarbanov@mm-sol.com> <524DC4B1.4050100@codeaurora.org>
+In-Reply-To: <524DC4B1.4050100@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 11:57:12AM -0400, Steven Rostedt wrote:
-> > +  need-resched:
-> > +	'N' both TIF_NEED_RESCHED and PREEMPT_NEED_RESCHED is set,
-> > +	'n' only TIF_NEED_RESCHED is set,
-> > +	'p' only PREEMPT_NEED_RESCHED is set,
-> > +	'.' otherwise.
-> 
-> Yes this is actually good enough. I'll have to spend time to explain
-> this better. But I'll let you off the hook from doing it for me ;-)
+Hi Stephen,
 
-beware; such endevours might lead to books and those are typically out
-of date by the time they hit the street -- ie. they're a fair waste of
-time ;-)
+Thanks for the quick review!
+
+On 10/03/2013 10:25 PM, Stephen Boyd wrote:
+> On 10/03/13 07:52, Stanimir Varbanov wrote:
+>> +#define PRNG_CONFIG_MASK	0x00000002
+>> +#define PRNG_CONFIG_HW_ENABLE	BIT(1)
+> 
+> These two are the same so please drop the PRNG_CONFIG_MASK define and
+> just use the PRNG_CONFIG_HW_ENABLE define.
+> 
+
+OK I will drop the mask and rework the code related to it.
+
+>> +#define PRNG_STATUS_DATA_AVAIL	BIT(0)
+>> +
+>> +#define MAX_HW_FIFO_DEPTH	16
+>> +#define MAX_HW_FIFO_SIZE	(MAX_HW_FIFO_DEPTH * 4)
+>> +#define WORD_SZ			4
+>> +
+>> +struct msm_rng {
+>> +	void __iomem *base;
+>> +	struct clk *clk;
+>> +};
+>> +
+>> +static int msm_rng_enable(struct msm_rng *rng, int enable)
+>> +{
+>> +	u32 val;
+>> +	int ret;
+>> +
+>> +	ret = clk_prepare_enable(rng->clk);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	if (enable) {
+>> +		/* Enable PRNG only if it is not already enabled */
+>> +		val = readl_relaxed(rng->base + PRNG_CONFIG);
+>> +		if (val & PRNG_CONFIG_HW_ENABLE)
+>> +			goto already_enabled;
+>> +
+>> +		/* PRNG is not enabled */
+>> +		val = readl_relaxed(rng->base + PRNG_LFSR_CFG);
+>> +		val &= ~PRNG_LFSR_CFG_MASK;
+>> +		val |= PRNG_LFSR_CFG_CLOCKS;
+>> +		writel(val, rng->base + PRNG_LFSR_CFG);
+>> +
+>> +		val = readl_relaxed(rng->base + PRNG_CONFIG);
+>> +		val &= ~PRNG_CONFIG_MASK;
+>> +		val |= PRNG_CONFIG_HW_ENABLE;
+>> +		writel(val, rng->base + PRNG_CONFIG);
+> 
+> This could just be
+> 
+> 		val = readl_relaxed(rng->base + PRNG_CONFIG);
+> 		val |= PRNG_CONFIG_HW_ENABLE;
+> 		writel(val, rng->base + PRNG_CONFIG);
+> 
+> 
+>> +	} else {
+>> +		val = readl_relaxed(rng->base + PRNG_CONFIG);
+>> +		val &= ~PRNG_CONFIG_MASK;
+>> +		writel(val, rng->base + PRNG_CONFIG);
+>> +	}
+>> +
+>> +already_enabled:
+>> +	clk_disable_unprepare(rng->clk);
+>> +	return 0;
+>> +}
+>> +
+> [...]
+>> +static int msm_rng_probe(struct platform_device *pdev)
+>> +{
+>> +	struct msm_rng *rng;
+>> +	struct device_node *np;
+>> +	struct resource res;
+>> +	int ret;
+>> +
+>> +	np = of_node_get(pdev->dev.of_node);
+>> +	if (!np)
+>> +		return -ENODEV;
+> 
+> This is unnecessary.
+
+I used this call because CONFIG_OF_DYNAMIC could be enabled at some
+time. Isn't that possible? I saw that of_node_get|put is used in .probe
+on few places in drivers.
+
+> 
+>> +
+>> +	rng = devm_kzalloc(&pdev->dev, sizeof(*rng), GFP_KERNEL);
+>> +	if (!rng) {
+>> +		ret = -ENOMEM;
+>> +		goto err_exit;
+>> +	}
+>> +
+>> +	ret = of_address_to_resource(np, 0, &res);
+>> +	if (ret)
+>> +		goto err_exit;
+> 
+> We should just do
+> 
+>   res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>   rng->base = devm_ioremap_resource(&pdev->dev, res);
+>   if (IS_ERR(rng->base))
+>             return PTR_ERR(rng->base);
+> 
+>> +
+>> +	rng->base = devm_ioremap_resource(&pdev->dev, &res);
+>> +	if (IS_ERR(rng->base)) {
+>> +		ret = PTR_ERR(rng->base);
+>> +		goto err_exit;
+>> +	}
+>> +
+>> +	rng->clk = devm_clk_get(&pdev->dev, "prng");
+>> +	if (IS_ERR(rng->clk)) {
+>> +		ret = PTR_ERR(rng->clk);
+>> +		goto err_exit;
+>> +	}
+>> +
+>> +	msm_rng_ops.priv = (unsigned long) rng;
+>> +	ret = hwrng_register(&msm_rng_ops);
+>> +	if (ret)
+>> +		dev_err(&pdev->dev, "failed to register hwrng\n");
+>> +
+>> +err_exit:
+> 
+> Doing all that should make this goto exit path unnecessary.
+> 
+>> +	of_node_put(np);
+>> +	return ret;
+>> +}
+>> +
+>> +static int msm_rng_remove(struct platform_device *pdev)
+>> +{
+>> +	hwrng_unregister(&msm_rng_ops);
+>> +	return 0;
+>> +}
+>> +
+>> +static struct of_device_id msm_rng_of_match[] = {
+> 
+> const?
+> 
+>> +	{ .compatible = "qcom,prng", },
+>> +	{}
+>> +};
+>> +MODULE_DEVICE_TABLE(of, msm_rng_of_match);
+>> +
+>> +static struct platform_driver msm_rng_driver = {
+>> +	.probe = msm_rng_probe,
+>> +	.remove = msm_rng_remove,
+>> +	.driver = {
+>> +		.name = KBUILD_MODNAME,
+>> +		.owner = THIS_MODULE,
+>> +		.of_match_table = of_match_ptr(msm_rng_of_match),
+>> +	}
+>> +};
+>> +module_platform_driver(msm_rng_driver);
+>> +
+>> +MODULE_AUTHOR("The Linux Foundation");
+>> +MODULE_DESCRIPTION("Qualcomm MSM random number generator driver");
+>> +MODULE_LICENSE("GPL v2");
+> 
+> 
+
+regards,
+Stan
+
