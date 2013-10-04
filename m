@@ -1,169 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab3JDO0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:26:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49871 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754057Ab3JDO0t (ORCPT
+	id S1754838Ab3JDO20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:28:26 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:33763 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab3JDO2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:26:49 -0400
-Date: Fri, 4 Oct 2013 15:26:45 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Mark A. Greer" <mgreer@animalcreek.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/9] ARM: dts: Add SHAM data and documentation for
- AM33XX
-Message-ID: <20131004142644.GI6999@e106331-lin.cambridge.arm.com>
-References: <1380553986-15910-1-git-send-email-joelf@ti.com>
- <1380553986-15910-4-git-send-email-joelf@ti.com>
+	Fri, 4 Oct 2013 10:28:24 -0400
+Message-ID: <524ED081.1040600@monstr.eu>
+Date: Fri, 04 Oct 2013 16:28:17 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380553986-15910-4-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+References: <cover.1380727889.git.michal.simek@xilinx.com> <524C6D64.8080801@zytor.com> <20131003064915.GB17155@amd.pavel.ucw.cz> <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
+In-Reply-To: <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 04:13:00PM +0100, Joel Fernandes wrote:
-> From: "Mark A. Greer" <mgreer@animalcreek.com>
-> 
-> Add the generic AM33XX SHAM module's device tree data and
-> enable it for the am335x-evm, am335x-evmsk, and am335x-bone
-> platforms.  Also add Documentation file describing the data
-> for the SHAM module.
-> 
-> [joelf@ti.com: Dropped interrupt-parrent property]
-> CC: Paul Walmsley <paul@pwsan.com>
-> Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
-> ---
->  .../devicetree/bindings/crypto/omap-sham.txt       | 31 ++++++++++++++++++++++
->  arch/arm/boot/dts/am335x-bone.dts                  |  4 +++
->  arch/arm/boot/dts/am335x-evm.dts                   |  4 +++
->  arch/arm/boot/dts/am335x-evmsk.dts                 |  4 +++
->  arch/arm/boot/dts/am33xx.dtsi                      |  9 +++++++
->  5 files changed, 52 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/crypto/omap-sham.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/crypto/omap-sham.txt b/Documentation/devicetree/bindings/crypto/omap-sham.txt
-> new file mode 100644
-> index 0000000..b97710f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/crypto/omap-sham.txt
-> @@ -0,0 +1,31 @@
-> +OMAP SoC SHA crypto Module
-> +
-> +Required properties:
-> +
-> +- compatible : Should contain entries for this and backward compatible
-> +  SHAM versions:
-> +  - "ti,omap2-sham" for OMAP2 & OMAP3.
-> +  - "ti,omap4-sham" for OMAP4 and AM33XX.
-> +  Note that these two versions are incompatible.
-> +- ti,hwmods: Name of the hwmod associated with the SHAM module
-> +- reg : Offset and length of the register set for the module
-> +- interrupt-parent : the phandle for the interrupt controller that
-> +  services interrupts for this module.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I don't think this is strictly speaking necessary -- it's mostly going
-to be implicit (it is in the dtsi below). As this is a standard
-property, you don't need to document it here.
+On 10/04/2013 04:21 PM, H. Peter Anvin wrote:
+> Yes; I never got too corner Greg ;)
+>=20
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+>> On Fri, Oct 04, 2013 at 03:57:57PM +0200, Michal Simek wrote:
+>>> But anyway what was resolution from that meeting?
+>>
+>> It never happened, we got distracted by lunch :)
 
-> +- interrupts : the interrupt number for the SHAM module.
+Then why not to have it here?
 
-Sorry, I missed this last time, but this should be interrupt-specifier
-rather than interrupt number.
+M
 
-Otherwise, this looks good to me. With the fixups above:
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
 
-> +
-> +Optional properties:
-> +- dmas: DMA specifier for the rx dma. See the DMA client binding,
-> +	Documentation/devicetree/bindings/dma/dma.txt
-> +- dma-names: DMA request name. Should be "rx" if a dma is present.
-> +
-> +Example:
-> +	/* AM335x */
-> +	sham: sham@53100000 {
-> +		compatible = "ti,omap4-sham";
-> +		ti,hwmods = "sham";
-> +		reg = <0x53100000 0x200>;
-> +		interrupt-parent = <&intc>;
-> +		interrupts = <109>;
-> +		dmas = <&edma 36>;
-> +		dma-names = "rx";
-> +	};
-> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> index 0d63348..8a9802e 100644
-> --- a/arch/arm/boot/dts/am335x-bone.dts
-> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> @@ -19,3 +19,7 @@
->  &mmc1 {
->  	vmmc-supply = <&ldo3_reg>;
->  };
-> +
-> +&sham {
-> +	status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-> index 23b0a3e..d59e51c 100644
-> --- a/arch/arm/boot/dts/am335x-evm.dts
-> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> @@ -522,3 +522,7 @@
->  	status = "okay";
->  	vmmc-supply = <&vmmc_reg>;
->  };
-> +
-> +&sham {
-> +	status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
-> index bc93895..d45a330 100644
-> --- a/arch/arm/boot/dts/am335x-evmsk.dts
-> +++ b/arch/arm/boot/dts/am335x-evmsk.dts
-> @@ -424,3 +424,7 @@
->  	status = "okay";
->  	vmmc-supply = <&vmmc_reg>;
->  };
-> +
-> +&sham {
-> +	status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 553adc6..299710b 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -710,5 +710,14 @@
->  			#size-cells = <1>;
->  			status = "disabled";
->  		};
-> +
-> +		sham: sham@53100000 {
-> +			compatible = "ti,omap4-sham";
-> +			ti,hwmods = "sham";
-> +			reg = <0x53100000 0x200>;
-> +			interrupts = <109>;
-> +			dmas = <&edma 36>;
-> +			dma-names = "rx";
-> +		};
->  	};
->  };
-> -- 
-> 1.8.1.2
-> 
-> 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJO0IEACgkQykllyylKDCEd5wCgnMWR1TbIxwDEtRZPrXVnG4XL
+lGgAoIGcq5djM6rBATn3XXmT+wfuLpQj
+=zEC/
+-----END PGP SIGNATURE-----
+
+--x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs--
