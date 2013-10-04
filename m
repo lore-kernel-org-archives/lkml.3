@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab3JDKcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 06:32:08 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37754 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab3JDKcE (ORCPT
+	id S1754563Ab3JDKcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 06:32:12 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:41898 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab3JDKcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 06:32:04 -0400
-Subject: [PATCH 11/19] Check if the process is an ELF executable
+	Fri, 4 Oct 2013 06:32:02 -0400
+Subject: [PATCH 10/19] Track the core generation requests
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@in.ibm.com>
 Cc: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
@@ -19,8 +19,8 @@ Cc: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
         gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
         eparis@redhat.com, d.hatayama@jp.fujitsu.com, james.hogan@imgtec.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org
-Date: Fri, 04 Oct 2013 16:01:58 +0530
-Message-ID: <20131004103157.1612.78311.stgit@f19-x64>
+Date: Fri, 04 Oct 2013 16:01:52 +0530
+Message-ID: <20131004103152.1612.64284.stgit@f19-x64>
 In-Reply-To: <20131004102532.1612.24185.stgit@f19-x64>
 References: <20131004102532.1612.24185.stgit@f19-x64>
 User-Agent: StGit/0.16
@@ -29,77 +29,152 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100410-5816-0000-0000-00000A3577A4
+x-cbid: 13100410-2674-0000-0000-00000AE8EE43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:Suzuki K. Poulose <suzuki@in.ibm.com>
+From:Suzuki K.Poulose <suzuki@in.ibm.com>
 
-Validate if the process is an ELF exec. This will be later extended to identify
-if the task is a native ELF or a compat ELF.
+Keep track of the core generation requests. Concurrent core generation requests
+for the same target process are not allowed.
 
 Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+Signed-off-by: Ananth N.Mavinakayanahalli <ananth@in.ibm.com>
 ---
- fs/proc/gencore.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ fs/proc/gencore.c |   86 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/proc/gencore.h |   12 +++++++
+ 2 files changed, 96 insertions(+), 2 deletions(-)
+ create mode 100644 fs/proc/gencore.h
 
 diff --git a/fs/proc/gencore.c b/fs/proc/gencore.c
-index 580a8b5..5f56910 100644
+index 115f1e4..580a8b5 100644
 --- a/fs/proc/gencore.c
 +++ b/fs/proc/gencore.c
-@@ -22,6 +22,7 @@
-  *      Suzuki K. Poulose <suzuki@in.ibm.com>
+@@ -23,23 +23,105 @@
   */
  
-+#include <linux/elf.h>
  #include <linux/seq_file.h>
- #include <linux/slab.h>
++#include <linux/slab.h>
  #include "internal.h"
-@@ -85,6 +86,29 @@ static int release_gencore(struct inode *inode, struct file *file)
++#include "gencore.h"
++
++static LIST_HEAD(core_list);
++static DEFINE_MUTEX(core_mutex);
++
++/* Called with core_mutex held */
++static struct core_proc* get_core_proc(struct task_struct *t)
++{
++	struct core_proc *cp;
++
++	list_for_each_entry(cp, &core_list, list) {
++		if (cp->task == t->group_leader)
++			return cp;
++	}
++	return NULL;
++}
+ 
+ static ssize_t read_gencore(struct file *file, char __user *buffer,
+ 				size_t buflen, loff_t *fpos)
+ {
+-	return 0;
++	struct task_struct *task = get_proc_task(file->f_dentry->d_inode);
++	struct core_proc *cp;
++	ssize_t ret = 0;
++
++	if (!task)
++		return -EIO;
++
++	mutex_lock(&core_mutex);
++	cp = get_core_proc(task);
++	if (!cp) {
++		mutex_unlock(&core_mutex);
++		ret = -EIO;
++		goto out;
++	}
++	mutex_unlock(&core_mutex);
++
++out:
++	put_task_struct(task);
++	return ret;
+ }
+ 
+ static int release_gencore(struct inode *inode, struct file *file)
+ {
++	struct task_struct *task = get_proc_task(file->f_dentry->d_inode);
++	struct core_proc *cp;
++
++	if (!task)
++		return -EIO;
++
++	mutex_lock(&core_mutex);
++	cp = get_core_proc(task);
++	if (cp) {
++		list_del(&cp->list);
++		kfree(cp);
++	}
++	mutex_unlock(&core_mutex);
++	put_task_struct(task);
  	return 0;
  }
  
-+ /*
-+ * Determine whether the task is an ELF executable.
-+ * Returns
-+ *     < 0     - Non-ELF
-+ *     0       - Native ELF Executable
++/*
++ * Validate if the call is valid. We also need to prevent >1 open
++ * of the same file.
 + */
-+static int get_elf_class(struct task_struct *task)
-+{
-+	struct elfhdr hdr;
-+	int ret = 0;
-+	ret = kernel_read(task->mm->exe_file, 0, (char*)&hdr, sizeof(hdr));
-+	if (ret < 0)
-+		return ret;
-+	
-+	/* Verify the ELF magic on the exe_file */
-+	if (memcmp(hdr.e_ident, ELFMAG, SELFMAG))
-+		return -EINVAL;
-+	if (elf_check_arch(&hdr))
-+		return 0;
-+	
-+	return -EINVAL;
-+}
-+
- /*
-  * Validate if the call is valid. We also need to prevent >1 open
-  * of the same file.
-@@ -93,10 +117,15 @@ static int open_gencore(struct inode *inode, struct file *filp)
+ static int open_gencore(struct inode *inode, struct file *filp)
  {
- 	struct task_struct *task = get_proc_task(inode);
- 	struct core_proc *cp;
-+	int elf_class;
- 	int ret = 0;
- 	if (!task)
- 		return -ENOENT;
- 
-+	elf_class = get_elf_class(task);
-+	if (elf_class < 0)
-+		return elf_class;
+-	return 0;
++	struct task_struct *task = get_proc_task(inode);
++	struct core_proc *cp;
++	int ret = 0;
++	if (!task)
++		return -ENOENT;
 +
- 	mutex_lock(&core_mutex);
- 	cp = get_core_proc(task);
- 	mutex_unlock(&core_mutex);	
++	mutex_lock(&core_mutex);
++	cp = get_core_proc(task);
++	mutex_unlock(&core_mutex);	
++	if (cp) {
++		ret = -EALREADY;
++		goto out;
++	}
++
++	cp = kzalloc(sizeof (*cp), GFP_KERNEL);
++	if (!cp) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	cp->task = task->group_leader;
++	INIT_LIST_HEAD(&cp->list);
++	mutex_lock(&core_mutex);
++	list_add(&cp->list, &core_list);
++	mutex_unlock(&core_mutex);
++
++out:
++	put_task_struct(task);
++	return ret;
+ }
++
+ const struct file_operations proc_gen_core_operations = {
+ 	.open           = open_gencore,
+ 	.read           = read_gencore,
+diff --git a/fs/proc/gencore.h b/fs/proc/gencore.h
+new file mode 100644
+index 0000000..c98fddf
+--- /dev/null
++++ b/fs/proc/gencore.h
+@@ -0,0 +1,12 @@
++#ifndef __GEN_CORE_H
++#define __GEN_CORE_H
++
++#include <linux/list.h>
++#include <linux/sched.h>
++
++struct core_proc {
++	struct list_head list;
++	struct task_struct *task;
++};
++
++#endif
 
