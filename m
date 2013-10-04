@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab3JDOgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:36:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43466 "EHLO comal.ext.ti.com"
+	id S1754663Ab3JDOlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:41:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35655 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754543Ab3JDOgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:36:08 -0400
-Date: Fri, 4 Oct 2013 09:36:02 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <b.zolnierkie@samsung.com>,
-        <m.szyprowski@samsung.com>, <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2] USB: gadget: s3c-hsotg: add isochronous transfers
- support
-Message-ID: <20131004143602.GF16059@radagast>
-Reply-To: <balbi@ti.com>
-References: <1380016036-20983-1-git-send-email-r.baldyga@samsung.com>
- <20131001144527.GX1476@radagast>
- <524BF6AD.8000908@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iBwuxWUsK/REspAd"
-Content-Disposition: inline
-In-Reply-To: <524BF6AD.8000908@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753531Ab3JDOlC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 10:41:02 -0400
+Subject: Re: [PATCH 0/2] powerpc: allow kvm to use kerel debug framework
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <21895.1373441122@ale.ozlabs.ibm.com>
+Date: Fri, 4 Oct 2013 16:40:55 +0200
+Cc: Bharat Bhushan <r65777@freescale.com>, linuxppc-dev@lists.ozlabs.org,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        scottwood@freescale.com, Bharat Bhushan <bharat.bhushan@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A0DA1F6E-02F2-4CFC-B4B4-2D545E96DF32@suse.de>
+References: <1372918546-15075-1-git-send-email-Bharat.Bhushan@freescale.com> <C4D71A1A-3D5B-4C9C-A26B-9EAFFD9D87C5@suse.de> <14504.1373343872@ale.ozlabs.ibm.com> <636D011A-6C50-4E74-B4B2-658EC4E53E9C@suse.de> <21895.1373441122@ale.ozlabs.ibm.com>
+To: Michael Neuling <mikey@neuling.org>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---iBwuxWUsK/REspAd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 02, 2013 at 12:34:21PM +0200, Robert Baldyga wrote:
-> On 10/01/2013 04:45 PM, Felipe Balbi wrote:
-> Hello,
-> >Hi,
-> >
-> >On Tue, Sep 24, 2013 at 11:47:16AM +0200, Robert Baldyga wrote:
-> >>Hello,
-> >>
-> >>This is update for my proposal for isochronous transfers support in s3c=
--hsotg
-> >>driver. I've fixed issuses pointed by Bartlomiej Zolnierkiewicz. For mo=
-re
-> >>information, please check the change log at the end of the mail.
-> >
-> >this shouldn't be part of commit log.
-> >
-> >>This patch adds isochronous transfer support. It adds few modifications:
-> >>- Modify s3c_hsotg_write_fifo() function. It actually calculates transf=
-er
-> >>   size, taking into account Multi Count value, which indicates number =
-of
-> >>   transactions per microframe.
-> >>- Fix s3c_hsotg_start_req() function by setting number of packets to Mu=
-lti
-> >>   Count field in DIEPTSIZ register for isochronous endpoints.
-> >>- Fix s3c_hsotg_set_ep_maxpacket() function. Field wMaxPacketSize of en=
-dpoint
-> >>   descriptor is now splitted into maximum packet size value and number=
- of
-> >>   additional transaction per microframe.
-> >>- Modify s3c_hsotg_epint() function. Some interrupts are ignored for
-> >>   isochronous endpoints, (e.g. INTknTXFEmpMsk) becouse isochronous req=
-uest is
-> >>   always transfered in single transaction, which ends with XferCompl i=
-nterrupt.
-> >>   Add Odd/Even microframe toggle to allow data transfering in each mic=
-roframe.
-> >>- Fix s3c_hsotg_ep_enable() function by supporting isochronous endpoint=
- type.
-> >
-> >you're doing way too many things in a single patch.
->=20
-> All these changes concerns to isochronous transfers support, and I
-> think they should not be splitted into number of patches. This entire
-> patch adds one compact functionality and it has no sense to put small
-> parts of this functionality to separated patches.
+On 10.07.2013, at 09:25, Michael Neuling wrote:
 
-you have at least two bug fixes here which should be splitted into their
-own patches.
+> Alexander Graf <agraf@suse.de> wrote:
+> 
+>> 
+>> On 09.07.2013, at 06:24, Michael Neuling wrote:
+>> 
+>>> Alexander Graf <agraf@suse.de> wrote:
+>>> 
+>>>> 
+>>>> On 04.07.2013, at 08:15, Bharat Bhushan wrote:
+>>>> 
+>>>>> From: Bharat Bhushan <bharat.bhushan@freescale.com>
+>>>>> 
+>>>>> This patchset moves the debug registers in a structure, which allows
+>>>>> kvm to use same structure for debug emulation.
+>>>>> 
+>>>>> Note: Earilier a patchset "https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-June/108132.html"
+>>>>> was sent which is a bunch of six patches. That patchset is divided into two parts:
+>>>>> 	1) powerpc specific changes (These 2 patches are actually have those changes)
+>>>>> 	2) KVM specific changes (will send separate patch on agraf repository)
+>>>> 
+>>>> Mikey, if you like those could you please apply the into a topic
+>>>> branch and get that one merged with Ben? I'd also pull it into my tree
+>>>> then.
+>>> 
+>>> benh would pull these directly.  
+>>> 
+>>> I'll have a chat with him to see if he wants my ACK before he does that.
+>> 
+>> I have a bunch of patches that I need to apply on top, so I need a topic branch.
+> 
+> I've acked the PPC specific bits of the v6 version of these patches.
+> 
+> benh said he'll open a topic branch for you sometime next week and he'll
+> stick them in there.  
 
-I'm not taking this patch the way it is.
+After talking to Ben about it, I've just put these into kvm-ppc-queue, so they will hit Linus' tree through the kvm tree.
 
---=20
-balbi
 
---iBwuxWUsK/REspAd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Alex
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSTtJSAAoJEIaOsuA1yqRESvoQALWp94zqHIekEvM2SOSa03F7
-VjlqG8NFpGc6nqcNSzrHmUb6cgVHXtCPPn+2WDmvuqSWtREkN1Oi4aNUHhhB2XjY
-LRE76e5Vqvn+vUNHImtNXHOiS/uSlRs5qHaYHXD0pGRcVhrrsSzlc9IG76P8O9xM
-s0PQ/X+u7V3dp0WMftPydNlUQ4QhxWaaaEo7dbYEvOuTn2UD+iBWyMY/jNVcMKoJ
-wmoePyzZgQeSrlNhBji1kc1lhAT32N8uB8pvwyGZWfXkS0U1ff/7IBwd8pBoudEn
-hJMIqf4royIU2Or8rKzSn3+VFLxn4owX1sNNhAR3JC/MeVuk7e58hYQFYIHJzm7x
-ZQLY2abmtnKt3YLdo7WNxq6eIWNi4FCbFdAXy2vTjISfyQYot1pnrLQgjtwszLYS
-RSAcRbBSnpGG+ZiutPMQv+rOLBf5I+/IWpGg1e40V9CpqPTzxouVcSkJoCtT9bj4
-Lw6d2fb7ju3iikt5LGJO/rQZk3lili7yW9XfRl9cnJEWeznf49041er0/ZyJutAL
-Ne29Pvn/c+YRwW4AzMZwXlc2LWmHvemCtYlb3rarhP6da9OpajfeDg0+P5S17/hk
-slYUmgyXE/5hEIeKrGIJWKrpqxguLiRFS6dgUXUIZmPz0ZC4KV2/0eRN1lp7Awib
-3stGW5dnYtB7UYhX2GgP
-=NtQ6
------END PGP SIGNATURE-----
-
---iBwuxWUsK/REspAd--
