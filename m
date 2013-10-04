@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab3JDO20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:28:26 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:33763 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3JDO2Y (ORCPT
+	id S1754777Ab3JDOcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:32:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49851 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab3JDOcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:28:24 -0400
-Message-ID: <524ED081.1040600@monstr.eu>
-Date: Fri, 04 Oct 2013 16:28:17 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 4 Oct 2013 10:32:05 -0400
+Date: Fri, 4 Oct 2013 09:31:51 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] usb: dwc3: msm: Add device tree binding
+ information
+Message-ID: <20131004143151.GD16059@radagast>
+Reply-To: <balbi@ti.com>
+References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
+ <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-References: <cover.1380727889.git.michal.simek@xilinx.com> <524C6D64.8080801@zytor.com> <20131003064915.GB17155@amd.pavel.ucw.cz> <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
-In-Reply-To: <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
-X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs"
+	protocol="application/pgp-signature"; boundary="veXX9dWIonWZEC6h"
+Content-Disposition: inline
+In-Reply-To: <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs
-Content-Type: text/plain; charset=UTF-8
+--veXX9dWIonWZEC6h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 10/04/2013 04:21 PM, H. Peter Anvin wrote:
-> Yes; I never got too corner Greg ;)
+On Wed, Aug 21, 2013 at 04:29:44PM +0300, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 >=20
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
->> On Fri, Oct 04, 2013 at 03:57:57PM +0200, Michal Simek wrote:
->>> But anyway what was resolution from that meeting?
->>
->> It never happened, we got distracted by lunch :)
+> MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+> (SNPS) and HS, SS PHY's control and configuration registers.
+>=20
+> It could operate in device mode (SS, HS, FS) and host
+> mode (SS, HS, FS, LS).
+>=20
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 
-Then why not to have it here?
-
-M
-
-
+these patches were sent *ages* and nobody from DT mailing list has
+reviewed. Unless someone steps up now, I'll be queueing these patches
+next week.
 
 --=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+balbi
 
-
-
---x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs
+--veXX9dWIonWZEC6h
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlJO0IEACgkQykllyylKDCEd5wCgnMWR1TbIxwDEtRZPrXVnG4XL
-lGgAoIGcq5djM6rBATn3XXmT+wfuLpQj
-=zEC/
+iQIcBAEBAgAGBQJSTtFXAAoJEIaOsuA1yqREnK4P/ib6IL8J9hQd/qnXfr3gP9I1
+rSP0ywocsezTucEuyww4ztcMir7LYwfAdZp9Mb0Tlzz5XVNuQOxQ+ndOyP/+sa1x
+rcDh+4sJ/KmH/6wgQX1ldDQoAyu0v84xcbDqW+317RORg1SxgOrTPDPQauJdm6Bi
+Dpe+KiRD2pukoEWPVLgVd2ZJHuSTthqy05tyFW7wnpWLwwZlZ4z2fLsAYQ4zfcdr
+N7BlG5X66ft334R96G1sdbefZ6WGK6R6sYoQc0l/TAgGcdyZnbFEZ++mL7i5iZs3
+Sx5/vQa8XHczGyduBjsdMZ+BPETBmBLT6ps4FLy6TciZ2u8a8DoVRrefc8+scFz+
+PK/E+M1de6XlmV/2Jdt5sS3MhBeiUph/A1p74rofgezzZQnckxB7Z+MBuuzdZ8BJ
+blEk9g1846sqqkdqqkxpoX+zYczQ+YiHA7AcP/TNgwMV7wquYINHzfHGkmXUpbBR
+PfhuKrjb+siSCI/mFxED+gNzOALvS8vYRjypokAOiG/r0D4GoOp2/UnatE6vs9rN
+ntE6HQ21OgjCC7WsivwkfBQpWnra1lww92+wUO6AtJN25POKJRHfSQ1sFPLCDlqj
+dbg4KUKb9ciqUotcBJMt0l0VPV6CGhI5JH180u83itaNdcpkr96owIdMBAHPzumW
+HIybjD38hZO2XggXRxqy
+=n24o
 -----END PGP SIGNATURE-----
 
---x9ivCiqLQ1IM9qkv0g3QUMHShjulDRrGs--
+--veXX9dWIonWZEC6h--
