@@ -1,161 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3JDIyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 04:54:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64165 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab3JDIx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 04:53:59 -0400
-Date: Fri, 4 Oct 2013 10:53:57 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20131004085357.GA2619@bandura.localhost>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
- <20130819212512.GA7918@redhat.com>
+	id S1753708Ab3JDIyf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 04:54:35 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:47147 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab3JDIyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 04:54:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819212512.GA7918@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
+References: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 4 Oct 2013 09:54:11 +0100
+X-Google-Sender-Auth: HF7hzmpJDLaew2JjjrnQrX3KD0w
+Message-ID: <CAHkRjk4MUOcXE6QngJYDcD1-1GMERxTusNcHr0FciU=wfFxbYA@mail.gmail.com>
+Subject: Re: [PATCH] memstick: Fix memory leak in memstick_check() error path
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Alex Dubov <oakad@yahoo.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 05:25:12PM -0400, Dave Jones wrote:
-> On Mon, Aug 19, 2013 at 05:52:02PM +0200, Anton Arapov wrote:
->  > On Mon, Aug 19, 2013 at 11:39:39AM -0400, Theodore Ts'o wrote:
->  > > On Mon, Aug 19, 2013 at 05:16:43PM +0200, Anton Arapov wrote:
->  > > > > Why not just do that through email?  You'll reach a much wider group of
->  > > > > people than the tiny 80 developers at the conference.
->  > > > 
->  > > > Ouch! Someone to take it as replacement of email - the least I wanted. It will
->  > > > go email-way in either case.
->  > > > 
->  > > > These tiny 80 may give the most valuable feedback on the topic. And often
->  > > > it is the most difficult to get attention of them, especially via email.
->  > > > In case it fits the conference, it could dilute the heavy topics.
->  > > 
->  > > Usyually the best thing to do is to start the discussion on the
->  > > mailing list (and we can do that on ksummit-2013-discuss, but this is
->  > > always why it's sometimes useful to cc lkml on topic proposals, so we
->  > > can jump start the discussion), and see if it's controversial or not.
->  > 
->  > Oh well,... I didn't have a time for this right now, nor project is
->  > not exactly in the state I'm willing to show (mostly webui) 
->  > 
->  > // CC'd: lkml (please don't complain on styles yet, focus on functionality)
-> 
-> I stumbled across this a week or so ago, and had some thoughts back then,
-> but didn't mail them anywhere because I wasn't sure who ran it, and couldn't
-> tell how far along it was.
-> 
-> Quick brain dump
-> 
-> * Visiting it with chromium gets an annoying warning about the https server
->   identifying as a different server. (does it even need https?)
+On 3 October 2013 22:13, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+> With kernel 3.12-rc3, kemcheck reports the following leak:
 
-It was an openshift+chromium issue, it should be resolved as per 
-https://bugzilla.redhat.com/show_bug.cgi?id=908417
+That would be "kmemleak" rather than "kmemcheck" ;)
 
+>> unreferenced object 0xffff8800ae85c190 (size 16):
+>>   comm "kworker/u4:3", pid 685, jiffies 4294916336 (age 2831.760s)
+>>   hex dump (first 16 bytes):
+>>     6d 65 6d 73 74 69 63 6b 30 00 00 00 00 00 00 00  memstick0.......
+>>   backtrace:
+>>     [<ffffffff8146a0d1>] kmemleak_alloc+0x21/0x50
+>>     [<ffffffff81160720>] __kmalloc_track_caller+0x160/0x2f0
+>>     [<ffffffff81237b9b>] kvasprintf+0x5b/0x90
+>>     [<ffffffff8122c0c1>] kobject_set_name_vargs+0x21/0x60
+>>     [<ffffffff812e7f5c>] dev_set_name+0x3c/0x40
+>>     [<ffffffffa02bf918>] memstick_check+0xb8/0x340 [memstick]
+>>     [<ffffffff81069862>] process_one_work+0x1d2/0x670
+>>     [<ffffffff8106a88a>] worker_thread+0x11a/0x370
+>>     [<ffffffff81072ea6>] kthread+0xd6/0xe0
+>>     [<ffffffff81478bbc>] ret_from_fork+0x7c/0xb0
+>
+> This problem was introduced by commit 0252c3b "memstick: struct device -
+> replace bus_id with dev_name(), dev_set_name() where the name is not freed
+> in the error path.
+>
+> Thanks to Catalin Marinas for suggesting the fix.
+>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Alex Dubov <oakad@yahoo.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> ---
+>  drivers/memstick/core/memstick.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/memstick/core/memstick.c b/drivers/memstick/core/memstick.c
+> index ffcb10a..0c73a45 100644
+> --- a/drivers/memstick/core/memstick.c
+> +++ b/drivers/memstick/core/memstick.c
+> @@ -415,6 +415,7 @@ static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
+>         return card;
+>  err_out:
+>         host->card = old_card;
+> +       kfree(card->dev.kobj.name);
 
-> * There's a lot of tainted kernel traces in there. 99% of kernel developers
->   will never care about these in my experience.  You can adjust this on a per-query
->   basis it seems, but better would be to turn them off globally, and have them
->   available just for people who want to search for 'all' (tainted or untainted) oopses.
-> 
->   - That the tainted oopses are counted as 'regular' oopses is skewing the 'top bugs'
->     on the front page.
-> 
->   - As well as proprietary, take care of 'out of tree' tainted modules in the same way.
+It looks weird to go into dev.kobj internals here for freeing the
+name. There is also memstick_free_card() which doesn't seem to do
+anything about the name freeing.
 
-It is possible to filter out tainted reports now. 
+Should memstick_alloc_card() do a device_initialise(&card->dev) and in
+memstick_free_card() (or the error path) do a put_device(&card->dev)?
+This should take care of kobj.name as well via kobject_put().
 
-
-> * I clicked through some of the debian oopses, and saw these:
->   https://oops.kernel.org/browse-reports/oops-detail/?id=30497
->   https://oops.kernel.org/browse-reports/oops-detail/?id=30499
->   It would be useful to know if this was the same user. (It seems likely, but
->   there's no way to know for sure). You don't need identifying info other than
->   "These came from the same system" side-stepping any privacy concerns.
-
-Watching oopses from one source is still in to do.
-
-But now you can see "Total count: 14 (from 7 unique sources) " per
-oops, for example:
-http://oops.kernel.org/oops/warning-at-net-ipv4-tcp_input-c2776-tcp_fastretrans_alert0xc21-0xc60-6/
-
-> * In the Linked modules section, if there's an out-of-tree/proprietary module,
->   we annotate those in oopses with (O), or (P). This seems to be lost in your UI.
->   (Bonus points for making them stand out)
-
-implemented.
-
-
-> * The traces by default lack a lot of information, forcing clicking of the 'show raw oops'
->   in every case.  Missing useful info (at least): EIP/RIP, other registers.
-
-should be improved now.
-
-> * 'Show raw oops' doesn't. (At least on chromium)
-> 
-> * This bug last seen: 2013-08-17
->   Also useful here would be something like:
->   Seen on: 3.2-rc2, 3.10-rc10  (You can probably just list earliest/latest rather than
->    every single kernel it's been seen on, unless you want a 'show all' button)
-
-implemented.
-
-> * Instead of summaries like "general protection fault: 4000 [#1] SMP"
->   Decode the EIP/RIP, and call it "general protection fault in i915_gem_do_execbuffer".
->   Not only does it make reading summaries easier, it should allow you to detect
->   dupes better.  (Sidenote, abrt needs this too, when it files bugzillas)
-
-fixed.
-
-> * Looking over the summaries at https://oops.kernel.org/browse-reports/?distro=Fedora&search=submit
->   The first thing that comes to mind is "There's a lot of soft lockup bugs here"
->   Some means of grouping similar looking bugs would be useful.
->   (In bugzilla, clicking 'sort by summary' kinda gives this, but it still sucks).
-
-improved && fixed
-
-> * When Arjan ran kerneloops, he would periodically mail out a "top 10 oopses" report
->   on the latest tree. That seems like something that would be worth doing again,
->   but only after filtering out the tainted stuff as mentioned above.
-
-I will start to do it.
-
-> * Some kind of "find similar bugs in other bug trackers" feature would be really awesome.
-
-still in todo.
-
-> * There's a bunch of bugs in there that have been tainted 'W'.  These are almost never useful,
->   because we're already deep in "bad shit happened" land at that point.
->   It'll also mean you could get flooded with oopses from a single crash if something
->   keeps on spewing traces. Just give up after filing the first oops.
-> 
-> * Take for example: https://oops.kernel.org/browse-reports/oops-detail/?id=30410
->   This is a 2.6.27.5 kernel bug, that was filed *last week*.
->   I'd bet dollars to donuts no-one is going to give a crap about that bug.
->   I'm not sure if it's better here to never file 'ancient' bugs, or to periodically
->   archive/delete ones that have been in the db more than a few years.  
-> 
-> * Looking at https://oops.kernel.org/browse-reports/?function=ironlake_crtc_disable&search=submit
->   It seems the hashing algorithm for detecting dupes could use some work.
->   Many of these traces are probably exactly the same problem.
->   Are you hashing symbols in the trace beginning with '? ' ? If so, you probably shouldn't be.
-
-hash function improved. 
-
-
-Thanks for this feedback. There are still a number of improvements
-planned, mostly cosmetic ones. I will keep you posted.
-
-
-Anton.
+Catalin
