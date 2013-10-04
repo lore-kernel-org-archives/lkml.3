@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab3JDOlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:41:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35655 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab3JDOlC convert rfc822-to-8bit (ORCPT
+	id S1754858Ab3JDOmf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:42:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48367 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754771Ab3JDOme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:41:02 -0400
-Subject: Re: [PATCH 0/2] powerpc: allow kvm to use kerel debug framework
-Mime-Version: 1.0 (Apple Message framework v1278)
+	Fri, 4 Oct 2013 10:42:34 -0400
+Date: Fri, 4 Oct 2013 16:42:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        eranian@google.com
+Subject: Re: [RFC PATCH 0/7] perf, x86: Reduce lbr_sel_map size
+Message-ID: <20131004144214.GL3081@twins.programming.kicks-ass.net>
+References: <1380184093-8838-1-git-send-email-zheng.z.yan@intel.com>
+ <20131004105535.GH3081@twins.programming.kicks-ass.net>
+ <20131004133548.GF6882@two.firstfloor.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <21895.1373441122@ale.ozlabs.ibm.com>
-Date: Fri, 4 Oct 2013 16:40:55 +0200
-Cc: Bharat Bhushan <r65777@freescale.com>, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        scottwood@freescale.com, Bharat Bhushan <bharat.bhushan@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A0DA1F6E-02F2-4CFC-B4B4-2D545E96DF32@suse.de>
-References: <1372918546-15075-1-git-send-email-Bharat.Bhushan@freescale.com> <C4D71A1A-3D5B-4C9C-A26B-9EAFFD9D87C5@suse.de> <14504.1373343872@ale.ozlabs.ibm.com> <636D011A-6C50-4E74-B4B2-658EC4E53E9C@suse.de> <21895.1373441122@ale.ozlabs.ibm.com>
-To: Michael Neuling <mikey@neuling.org>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <20131004133548.GF6882@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 10.07.2013, at 09:25, Michael Neuling wrote:
-
-> Alexander Graf <agraf@suse.de> wrote:
+On Fri, Oct 04, 2013 at 03:35:48PM +0200, Andi Kleen wrote:
+> > From what I can tell this is the exact same drivel I rejected earlier.
 > 
->> 
->> On 09.07.2013, at 06:24, Michael Neuling wrote:
->> 
->>> Alexander Graf <agraf@suse.de> wrote:
->>> 
->>>> 
->>>> On 04.07.2013, at 08:15, Bharat Bhushan wrote:
->>>> 
->>>>> From: Bharat Bhushan <bharat.bhushan@freescale.com>
->>>>> 
->>>>> This patchset moves the debug registers in a structure, which allows
->>>>> kvm to use same structure for debug emulation.
->>>>> 
->>>>> Note: Earilier a patchset "https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-June/108132.html"
->>>>> was sent which is a bunch of six patches. That patchset is divided into two parts:
->>>>> 	1) powerpc specific changes (These 2 patches are actually have those changes)
->>>>> 	2) KVM specific changes (will send separate patch on agraf repository)
->>>> 
->>>> Mikey, if you like those could you please apply the into a topic
->>>> branch and get that one merged with Ben? I'd also pull it into my tree
->>>> then.
->>> 
->>> benh would pull these directly.  
->>> 
->>> I'll have a chat with him to see if he wants my ACK before he does that.
->> 
->> I have a bunch of patches that I need to apply on top, so I need a topic branch.
-> 
-> I've acked the PPC specific bits of the v6 version of these patches.
-> 
-> benh said he'll open a topic branch for you sometime next week and he'll
-> stick them in there.  
+> So what do you want changed?
 
-After talking to Ben about it, I've just put these into kvm-ppc-queue, so they will hit Linus' tree through the kvm tree.
-
-
-Alex
-
+Maybe go read what I wrote last time? AFAICT there's nothing different
+and the changelogs for sure don't say anything useful.
