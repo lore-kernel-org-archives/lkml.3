@@ -1,180 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3JDWbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 18:31:41 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:57993 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab3JDWbi convert rfc822-to-8bit (ORCPT
+	id S1753408Ab3JDWcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 18:32:35 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52399 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3JDWcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 18:31:38 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: KY Srinivasan <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "eric@purestorage.com" <eric@purestorage.com>,
-        "nab@linux-iscsi.org" <nab@linux-iscsi.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the
- basic I/O timeout
-Thread-Topic: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the
- basic I/O timeout
-Thread-Index: AQHOwTQXtrhMaZFXTEu/YravllNS3JnliCkAgAAFQQCAAAh3AA==
-Date: Fri, 4 Oct 2013 22:31:30 +0000
-Message-ID: <1380925890.3868.12.camel@dabdike.int.hansenpartnership.com>
-References: <1380915516-28720-1-git-send-email-kys@microsoft.com>
-	 <1380922944.3868.8.camel@dabdike.int.hansenpartnership.com>
-	 <2c2ffa39467f4931b2b66ca0602af766@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <2c2ffa39467f4931b2b66ca0602af766@SN2PR03MB061.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.17.213.192]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <98EEF877EC6BCB4FB7B999087A4A2A0D@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Fri, 4 Oct 2013 18:32:33 -0400
+Date: Fri, 4 Oct 2013 15:32:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v5 4/4] ARM: at91/dt: add watchdog properties to kizbox
+ board
+Message-ID: <20131004223226.GD3685@roeck-us.net>
+References: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com>
+ <1380871455-7324-5-git-send-email-b.brezillon@overkiz.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380871455-7324-5-git-send-email-b.brezillon@overkiz.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 22:01 +0000, KY Srinivasan wrote:
+On Fri, Oct 04, 2013 at 09:24:15AM +0200, Boris BREZILLON wrote:
+> Add watchdog specific config for kizbox board.
 > 
-> > -----Original Message-----
-> > From: James Bottomley [mailto:jbottomley@parallels.com]
-> > Sent: Friday, October 04, 2013 2:42 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org;
-> > eric@purestorage.com; nab@linux-iscsi.org; linux-scsi@vger.kernel.org
-> > Subject: Re: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the basic
-> > I/O timeout
-> > 
-> > On Fri, 2013-10-04 at 12:38 -0700, K. Y. Srinivasan wrote:
-> > > Rather than having a separate constant for specifying the timeout on FLUSH
-> > > operations, use the basic I/O timeout value that is already configurable
-> > > on a per target basis to derive the FLUSH timeout. Looking at the current
-> > > definitions of these timeout values, the FLUSH operation is supposed to have
-> > > a value that is twice the normal timeout value. This patch preserves this
-> > > relationship while leveraging the flexibility of specifying the I/O timeout.
-> > >
-> > > I would like to thank Eric Seppanen <eric@purestorage.com> and
-> > > Nicholas A. Bellinger <nab@linux-iscsi.org> for their help in resolving
-> > > this issue.
-> > >
-> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > ---
-> > >  drivers/scsi/sd.c |    5 +++--
-> > >  1 files changed, 3 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> > > index e62d17d..8aff306 100644
-> > > --- a/drivers/scsi/sd.c
-> > > +++ b/drivers/scsi/sd.c
-> > > @@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct
-> > scsi_device *sdp, struct request *rq)
-> > >
-> > >  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
-> > >  {
-> > > -	rq->timeout = SD_FLUSH_TIMEOUT;
-> > > +	rq->timeout *= 2;
-> > >  	rq->retries = SD_MAX_RETRIES;
-> > >  	rq->cmd[0] = SYNCHRONIZE_CACHE;
-> > >  	rq->cmd_len = 10;
-> > > @@ -1433,6 +1433,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
-> > >  {
-> > >  	int retries, res;
-> > >  	struct scsi_device *sdp = sdkp->device;
-> > > +	unsigned int timeout = sdp->request_queue->rq_timeout;
-> > 
-> > The timeout is signed in the function prototype
-> > 
-> > >  	struct scsi_sense_hdr sshdr;
-> > >
-> > >  	if (!scsi_device_online(sdp))
-> > > @@ -1448,7 +1449,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
-> > >  		 * flush everything.
-> > >  		 */
-> > >  		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
-> > > -					     &sshdr, SD_FLUSH_TIMEOUT,
-> > > +					     &sshdr, timeout * 2,
-> > >  					     SD_MAX_RETRIES, NULL, REQ_PM);
-> > >  		if (res == 0)
-> > >  			break;
-> > 
-> > Not like this, please: you now leave us with a dangling #define whose
-> > name makes you think it should be related to flushing and a couple of
-> > curious magic constants.  It's almost hand crafted to confuse people
-> > reading the code.
-> > 
-> > Please do it like this instead: with a comment explaining what we're
-> > doing above the #define and a name that clearly relates to the actions.
-> > 
-> > James
-> > 
-> > ---
-> > 
-> > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> > index e62d17d..5c9496d 100644
-> > --- a/drivers/scsi/sd.c
-> > +++ b/drivers/scsi/sd.c
-> > @@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device
-> > *sdp, struct request *rq)
-> > 
-> >  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
-> >  {
-> > -	rq->timeout = SD_FLUSH_TIMEOUT;
-> > +	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
-> >  	rq->retries = SD_MAX_RETRIES;
-> >  	rq->cmd[0] = SYNCHRONIZE_CACHE;
-> >  	rq->cmd_len = 10;
-> > @@ -1433,6 +1433,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
-> >  {
-> >  	int retries, res;
-> >  	struct scsi_device *sdp = sdkp->device;
-> > +	const int timeout = sdp->request_queue->rq_timeout
-> > +		* SD_FLUSH_TIMEOUT_MULTIPLIER;
-> >  	struct scsi_sense_hdr sshdr;
-> > 
-> >  	if (!scsi_device_online(sdp))
-> > @@ -1448,8 +1450,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
-> >  		 * flush everything.
-> >  		 */
-> >  		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
-> > -					     &sshdr, SD_FLUSH_TIMEOUT,
-> > -					     SD_MAX_RETRIES, NULL, REQ_PM);
-> > +					     &sshdr, timeout, SD_MAX_RETRIES,
-> > +					     NULL, REQ_PM);
-> >  		if (res == 0)
-> >  			break;
-> >  	}
-> > diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-> > index 7a049de..7f7999c 100644
-> > --- a/drivers/scsi/sd.h
-> > +++ b/drivers/scsi/sd.h
-> > @@ -13,7 +13,11 @@
-> >   */
-> >  #define SD_TIMEOUT		(30 * HZ)
-> >  #define SD_MOD_TIMEOUT		(75 * HZ)
-> > -#define SD_FLUSH_TIMEOUT	(60 * HZ)
-> > +/*
-> > + * Flush timeout is a multiplier over the standard device timeout which is
-> > + * user modifiable via sysfs but initially set to SD_TIMEOUT
-> > + */
-> > +#define SD_FLUSH_TIMEOUT_MULTIPLIER	2
-> >  #define SD_WRITE_SAME_TIMEOUT	(120 * HZ)
-> > 
-> >  /*
-> 
-> Thanks James. Given that you have already made the changes you want done (in the
-> Patch above), do you still want me to send you a fixed up patch?
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Either way is fine.  I just need the patch to be on the mailing list for
-my workflow (which it is now).
-
-James
-
-
+Acked-by: Guenter Roeck <linux@roeck-us.net>
