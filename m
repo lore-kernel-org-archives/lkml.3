@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab3JDUoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 16:44:55 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:62638 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab3JDUow (ORCPT
+	id S1753650Ab3JDUtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 16:49:16 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:55200 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab3JDUtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 16:44:52 -0400
+	Fri, 4 Oct 2013 16:49:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <1378732388-4508-7-git-send-email-wangyijing@huawei.com>
-References: <1378732388-4508-1-git-send-email-wangyijing@huawei.com> <1378732388-4508-7-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 4 Oct 2013 14:44:31 -0600
-Message-ID: <CAErSpo5epkfhw0zyn-xXr-xCVeWmna8Eu_v3SmOrKU7EqwfDJw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] radeon: Use pcie_get_readrq() and pcie_set_readrq()
- to simplify code
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131004201512.GQ13318@ZenIV.linux.org.uk>
+References: <CA+55aFxndx0J0sTLTx0qu25TkoLLfGd+8qiLhdG5CYwpO1NvVQ@mail.gmail.com>
+	<20131004201512.GQ13318@ZenIV.linux.org.uk>
+Date: Fri, 4 Oct 2013 13:49:13 -0700
+X-Google-Sender-Auth: QQnPzZTklnqDzbKVyOSxbE6h5IA
+Message-ID: <CA+55aFzt1LN77WgFbdEak0f-JssQH64pSL=1zYAfB7=B8pxwvQ@mail.gmail.com>
+Subject: Re: security: lockless stat() issues
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[-cc unrelated folks, +cc Alex, Christian]
+On Fri, Oct 4, 2013 at 1:15 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Just a couple of days ago you'd been complaining about filesystems exposure
+> to rcuwalk details and now you propose to increase the contact surface
+> by one more method?  OK...\
 
-On Mon, Sep 9, 2013 at 7:13 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> Use pcie_get_readrq() and pcie_set_readrq() functions to simplify code.
->
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+.. anything for a really critical path.
 
-I believe the following patch is correct, and I'd be happy to merge it
-via the PCI tree along with the rest of this series.
+> For one thing, that will definitely require lazy freeing of struct
+> super_block itself.  At the very least, you want ->i_sb->s_dev, even
+> on default pathway.  Another thing is that API is wrong for that
+> kind of stuff - we pass vfsmount/dentry pair and we end up looking
+> at the inode guts.  Fine, but in RCU case you must cope with the
+> possibility of dentry->d_inode going NULL under you.  Which isn't
+> all that terrible, but we need to slap ACCESS_ONCE() into each method
+> instance (all 34 of them).  IOW, it's worse than just "oh, we need to
+> add a flag"; we'll need to pass the sodding inode separately, with
+> dire warnings not to use dentry->d_inode.
 
-But it'd be better to have an ack from Alex, and he might prefer to
-merge it directly.
+That would get ugly.
 
-Bjorn
+However, I don't think we actually really need to do that.  We had a
+similar situation with d_revalidate() passing inode pointers etc
+totally unnecessarily. Yes, the filesystem needs to use ACCESS_ONCE()
+and care about NULL, but it doesn't need anything more than that. And
+we really do have that already.
 
-> ---
->  drivers/gpu/drm/radeon/evergreen.c |   19 ++++++-------------
->  1 files changed, 6 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-> index d5b49e3..b191f92 100644
-> --- a/drivers/gpu/drm/radeon/evergreen.c
-> +++ b/drivers/gpu/drm/radeon/evergreen.c
-> @@ -1169,23 +1169,16 @@ int evergreen_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk)
->
->  void evergreen_fix_pci_max_read_req_size(struct radeon_device *rdev)
->  {
-> -       u16 ctl, v;
-> -       int err;
-> -
-> -       err = pcie_capability_read_word(rdev->pdev, PCI_EXP_DEVCTL, &ctl);
-> -       if (err)
-> -               return;
-> -
-> -       v = (ctl & PCI_EXP_DEVCTL_READRQ) >> 12;
-> +       int readrq;
-> +       u16 v;
->
-> +       readrq = pcie_get_readrq(rdev->pdev);
-> +       v = ffs(readrq) - 8;
->         /* if bios or OS sets MAX_READ_REQUEST_SIZE to an invalid value, fix it
->          * to avoid hangs or perfomance issues
->          */
-> -       if ((v == 0) || (v == 6) || (v == 7)) {
-> -               ctl &= ~PCI_EXP_DEVCTL_READRQ;
-> -               ctl |= (2 << 12);
-> -               pcie_capability_write_word(rdev->pdev, PCI_EXP_DEVCTL, ctl);
-> -       }
-> +       if ((v == 0) || (v == 6) || (v == 7))
-> +               pcie_set_readrq(rdev->pdev, 512);
->  }
->
->  static bool dce4_is_in_vblank(struct radeon_device *rdev, int crtc)
-> --
-> 1.7.1
->
->
+And we already have dentry->d_sb - which is supposed to be valid.
+Again, we already use it under RCU for d_revalidate() and for name
+hashing. So the super-block had better already be ok with RCU.
+
+            Linus
