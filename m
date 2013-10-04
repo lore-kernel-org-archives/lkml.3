@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3JDMTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 08:19:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34313 "EHLO mx1.redhat.com"
+	id S1754225Ab3JDMU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 08:20:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab3JDMTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 08:19:06 -0400
-Subject: Re: Drivers: scsi: FLUSH timeout
-From: Ewan Milne <emilne@redhat.com>
-Reply-To: emilne@redhat.com
-To: Eric Seppanen <eric@purestorage.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-In-Reply-To: <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
-	 <20130920203222.GA14306@kroah.com>
-	 <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <524180B7.7090307@gmail.com>
-	 <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <5241C9E7.2000404@cs.wisc.edu>
-	 <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
-	 <ff6a93ed5d234c14874d03415812a3ec@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <1380802143.19256.95.camel@haakon3.risingtidesystems.com>
-	 <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Fri, 04 Oct 2013 08:18:56 -0400
-Message-ID: <1380889136.4010.313.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751149Ab3JDMU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 08:20:27 -0400
+Date: Fri, 4 Oct 2013 14:13:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131004121300.GA7725@redhat.com>
+References: <20131003184719.GA11996@redhat.com> <20131003192135.GR5790@linux.vnet.ibm.com> <20131003193206.GA17796@redhat.com> <20131003193319.GB17796@redhat.com> <20131003195026.GT5790@linux.vnet.ibm.com> <20131003200002.GA23768@redhat.com> <20131003211009.GA4127@redhat.com> <20131004071814.GS28601@twins.programming.kicks-ass.net> <20131004111513.GA5699@redhat.com> <20131004114442.GJ3081@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004114442.GJ3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-03 at 13:48 -0700, Eric Seppanen wrote:
-> On Thu, Oct 3, 2013 at 5:09 AM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
+On 10/04, Peter Zijlstra wrote:
+>
+> On Fri, Oct 04, 2013 at 01:15:13PM +0200, Oleg Nesterov wrote:
+> > > What's exclusive to mean? One writer at a time?
 > >
-> > On Wed, 2013-10-02 at 18:29 +0000, KY Srinivasan wrote:
-> > > Ideally, I want this to be adjustable like the way we can change the I/O timeout.
-> > > Since that has been attempted earlier and rejected (not clear what the reasons were),
-> > > I was suggesting that we pick a larger number. James, let me know how I should proceed here.
-> > >
-> >
-> > I think the objection was to making a module parameter for doing this
-> > globally for all struct scsi_disk, and not the idea of making it
-> > adjustable on an individual basis per-say..
-> >
-> > What about adding a /sys/class/scsi_disk/$HCTL/flush_timeout..?
-> 
-> Do I/O timeouts and flush timeouts need to be independently adjusted?
-> If you're having trouble with slow operations, it seems likely to be
-> across the board.
-> 
-> Flush timeout could be defined as 2x the read/write timeout.  Any
-> other command-specific timeouts could be scaled the same way.
+> > Yes,
+>
+> I'm not entirely sure what the advantage is of having that logic in this
+> primitive. Shouldn't that be something the user of this rcu_sync stuff
+> does (or not) depending on its needs.
 
-It seems to me that there isn't any reason to expect that the maximum
-amount of time a device might take to perform various operations are
-related by any coefficient.  And, an HBA (particularly iSCSI or FC)
-could very well have different device types connected at different
-target IDs.  So I think the flush timeout should be adjustable on
-a per-device basis.  It's probably related more to the cache size
-on the device than anything else...
+Yes, the user can do the locking itself. But I think this option can help.
+If nothing else it can help to avoid another mutex/whatever and unnecessary
+wakeup/scheule's, even if this is minor.
 
-Also note that there is a SD_WRITE_SAME_TIMEOUT value that is currently
-4x the default SD_TIMEOUT value.  That should probably be adjustable
-as well.
+And. rcu_sync_enter() should be "bool", it should return "need_sync". IOW,
+rcu_sync_enter() == T means that this thread has done the FAST -> SLOW
+transition, this is particularly useful in "exclusive" mode.
 
--Ewan
+Consider percpu_down_write(). It takes rw_sem for writing (and this blocks
+the readers) before clear_fast_ctr(), but we only need to do this this
+after sync_sched(), so it could do
 
+	if (rcu_sync_enter(&brw->rcu_sync))
+		atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+	else
+		; /* the above was already done */
+
+	/* exclude readers */
+	down_write(&brw->rw_sem);
+
+and now ->rw_sem is only needed to serialize readers/writer.
+
+Sure, this all is minor (and we will probably copy the "pending writer"
+logic from cpu_hotplug_begin/get_online_cpus).
+
+But we can get this feature almost for free, so I think it makes sense.
+
+Oleg.
 
