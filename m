@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab3JDHlP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 03:41:15 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51369 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab3JDHlL (ORCPT
+	id S1752311Ab3JDHvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 03:51:45 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:38983 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab3JDHvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 03:41:11 -0400
-Date: Fri, 4 Oct 2013 09:40:53 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
-        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 04/77] PCI/MSI/s390: Remove superfluous check of MSI
- type
-Message-ID: <20131004094053.5e846a29@mschwide>
-In-Reply-To: <bae65aa3e30dfd23bd5ed47add7310cfbb96243a.1380703262.git.agordeev@redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
-	<bae65aa3e30dfd23bd5ed47add7310cfbb96243a.1380703262.git.agordeev@redhat.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100407-2966-0000-0000-000008F19534
+	Fri, 4 Oct 2013 03:51:44 -0400
+Date: Fri, 4 Oct 2013 09:51:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] irq fix
+Message-ID: <20131004075140.GA13294@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Oct 2013 12:48:20 +0200
-Alexander Gordeev <agordeev@redhat.com> wrote:
+Linus,
 
-> arch_setup_msi_irqs() hook can only be called from the generic
-> MSI code which ensures correct MSI type parameter.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  arch/s390/pci/pci.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-> index c79c6e4..61a3c2c 100644
-> --- a/arch/s390/pci/pci.c
-> +++ b/arch/s390/pci/pci.c
-> @@ -425,8 +425,6 @@ int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
->  	int rc;
-> 
->  	pr_debug("%s: requesting %d MSI-X interrupts...", __func__, nvec);
-> -	if (type != PCI_CAP_ID_MSIX && type != PCI_CAP_ID_MSI)
-> -		return -EINVAL;
->  	if (type == PCI_CAP_ID_MSI && nvec > 1)
->  		return 1;
->  	msi_vecs = min(nvec, ZPCI_MSI_VEC_MAX);
+Please pull the latest irq-urgent-for-linus git tree from:
 
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
 
--- 
-blue skies,
-   Martin.
+   HEAD: 0d119fb57614fe947aa9048f61d680bbede64170 Merge branch 'irq/urgent-v2' of git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks into irq/urgent
 
-"Reality continues to ruin my life." - Calvin.
+Frederic's minimal fix for hardirq/softirq nesting crashes.
 
+ Thanks,
+
+	Ingo
+
+------------------>
+Frederic Weisbecker (1):
+      irq: Force hardirq exit's softirq processing on its own stack
+
+
+ kernel/softirq.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 53cc09c..d7d498d 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -328,10 +328,19 @@ void irq_enter(void)
+ 
+ static inline void invoke_softirq(void)
+ {
+-	if (!force_irqthreads)
+-		__do_softirq();
+-	else
++	if (!force_irqthreads) {
++		/*
++		 * We can safely execute softirq on the current stack if
++		 * it is the irq stack, because it should be near empty
++		 * at this stage. But we have no way to know if the arch
++		 * calls irq_exit() on the irq stack. So call softirq
++		 * in its own stack to prevent from any overrun on top
++		 * of a potentially deep task stack.
++		 */
++		do_softirq();
++	} else {
+ 		wakeup_softirqd();
++	}
+ }
+ 
+ static inline void tick_irq_exit(void)
