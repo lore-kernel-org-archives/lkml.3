@@ -1,107 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab3JDFYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 01:24:38 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:35048 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab3JDFYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 01:24:36 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH v2] perf tool: report user-friendly errors from trace
-Date: Fri,  4 Oct 2013 10:47:31 +0530
-Message-Id: <1380863851-14460-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.4.477.g5d89aa9
+	id S1751778Ab3JDFZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 01:25:44 -0400
+Received: from gw.cm.dream.jp ([59.157.128.2]:51059 "EHLO vsmtp02.cm.dti.ne.jp"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750831Ab3JDFZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 01:25:42 -0400
+Date: Fri, 4 Oct 2013 14:25:17 +0900
+From: takasi-y@ops.dti.ne.jp
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] sh: clkfwk: Select sh-/common- clkfwk alternatively
+Message-Id: <20131004142517.590a96bcb63330313ceb5298@ops.dti.ne.jp>
+In-Reply-To: <1663688.MHxO4ng5PY@avalon>
+References: <52410F86.4040301@renesas.com>
+	<20130924131206.d57d07f5faa5cb0773fc328c@ops.dti.ne.jp>
+	<1663688.MHxO4ng5PY@avalon>
+X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, execution of 'perf trace' reports the following cryptic
-message to the user:
+Hi Laurent,
 
-$ perf trace
-Couldn't read the raw_syscalls tracepoints information!
+> While I agree with this patch, I believe the use of the HAVE_MACH_CLKDEV 
+> configuration option to select whether to compile core.o in is a bit of an 
+> abuse. <snip>
+Well, yes, indeed. It does not mean having include/mach/clkdev.h,
+but means somewhat such like !COMMON_CLK.
+# I think there is similar usage in arch/mips, though they define but not use.
+# ... is an execution.
 
-Typically this happens because the user does not have permissions to
-read the debugfs filesystem. Also handle the case when the kernel was
-not compiled with debugfs support or when it isn't mounted.
+> However, as all ARCH_SHMOBILE platforms should be converted to the common 
+> clock framework, this is only temporary and could be revisited later, so I'm 
+> fine with keeping the patch as-is.
+Sure.
 
-Now, the tool prints detailed error messages:
-
-$ perf trace
-Error:  Unable to find debugfs
-Hint:   Was your kernel was compiled with debugfs support?
-Hint:   Is the debugfs filesystem mounted?
-
-$ perf trace
-Error:  No permissions to read $debugfs/tracing/events/raw_syscalls
-Hint:   Change the permissions of the debugfs filesystem
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- We don't want to spoonfeed the user with an exact command-line to
- execute. She is competent enough to Google and find out what debugfs
- is, and how to use it.
-
- tools/perf/builtin-trace.c | 30 +++++++++++++++++++++---------
- 1 file changed, 21 insertions(+), 9 deletions(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 71aa3e3..ee32453 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -915,17 +915,13 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	}
- 
- 	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
--	    perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit)) {
--		fprintf(trace->output, "Couldn't read the raw_syscalls tracepoints information!\n");
--		goto out_delete_evlist;
--	}
-+		perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit))
-+		goto out_error_tp;
- 
- 	if (trace->sched &&
--	    perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
--				   trace__sched_stat_runtime)) {
--		fprintf(trace->output, "Couldn't read the sched_stat_runtime tracepoint information!\n");
--		goto out_delete_evlist;
--	}
-+		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
-+				trace__sched_stat_runtime))
-+		goto out_error_tp;
- 
- 	err = perf_evlist__create_maps(evlist, &trace->opts.target);
- 	if (err < 0) {
-@@ -1041,6 +1037,22 @@ out_delete_evlist:
- 	perf_evlist__delete(evlist);
- out:
- 	return err;
-+out_error_tp:
-+	switch(errno) {
-+	case ENOENT:
-+		fprintf(trace->output, "Error:\tUnable to find debugfs\n");
-+		fprintf(trace->output, "Hint:\tWas your kernel was compiled with debugfs support?\n");
-+		fprintf(trace->output, "Hint:\tIs the debugfs filesystem mounted?\n");
-+		break;
-+	case EACCES:
-+		fprintf(trace->output, "Error:\tNo permissions to read $debugfs/tracing/events/raw_syscalls\n");
-+		fprintf(trace->output, "Hint:\tChange the permissions of the debugfs filesystem\n");
-+		break;
-+	default:
-+		fprintf(trace->output, "Can't trace: %s\n", sys_errlist[errno]);
-+		break;
-+	}
-+	goto out_delete_evlist;
- }
- 
- static int trace__replay(struct trace *trace)
--- 
-1.8.4.477.g5d89aa9
-
+Thank you for your review.
+/yoshii
