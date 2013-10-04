@@ -1,34 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3JDVvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 17:51:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38612 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3JDVvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 17:51:36 -0400
-Date: Fri, 4 Oct 2013 14:51:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: g_ffs: fix compilation warning
-Message-ID: <20131004215156.GA10629@kroah.com>
-References: <1380923326-18546-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1753382Ab3JDV75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 17:59:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49744 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab3JDV74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 17:59:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
+   d="scan'208";a="414196663"
+Message-ID: <524F3B4A.7070107@linux.intel.com>
+Date: Fri, 04 Oct 2013 15:03:54 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380923326-18546-1-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: g_ffs: fix compilation warning
+References: <1380923326-18546-1-git-send-email-david.a.cohen@linux.intel.com> <20131004215156.GA10629@kroah.com>
+In-Reply-To: <20131004215156.GA10629@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 02:48:46PM -0700, David Cohen wrote:
-> Due to lack of "u_ether.h" header file, g_ffs.c compiles with following
-> warning:
+On 10/04/2013 02:51 PM, Greg KH wrote:
+> On Fri, Oct 04, 2013 at 02:48:46PM -0700, David Cohen wrote:
+>> Due to lack of "u_ether.h" header file, g_ffs.c compiles with following
+>> warning:
+>
+> It does?  In what tree/branch/release is this happening?
 
-It does?  In what tree/branch/release is this happening?
+This is intended for Linus' 3.12-rc3. Haven't checked any other kernel.
 
-thanks,
+In my compilation I disabled USB Host support and enabled DWC3 (gadget 
+only) with ePCI + NOP_USB_XCEIV.
 
-greg k-h
+Br, David
+
+>
+> thanks,
+>
+> greg k-h
+>
+
