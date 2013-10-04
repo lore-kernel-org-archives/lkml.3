@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab3JDKc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 06:32:26 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47480 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab3JDKcV (ORCPT
+	id S1754611Ab3JDKch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 06:32:37 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41925 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3JDKcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 06:32:21 -0400
-Subject: [PATCH 13/19] Create ELF Header
+	Fri, 4 Oct 2013 06:32:35 -0400
+Subject: [PATCH 14/19] Create ELF Core notes Data
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@in.ibm.com>
 Cc: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
@@ -19,8 +19,8 @@ Cc: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
         gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
         eparis@redhat.com, d.hatayama@jp.fujitsu.com, james.hogan@imgtec.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org
-Date: Fri, 04 Oct 2013 16:02:08 +0530
-Message-ID: <20131004103208.1612.36010.stgit@f19-x64>
+Date: Fri, 04 Oct 2013 16:02:21 +0530
+Message-ID: <20131004103221.1612.11297.stgit@f19-x64>
 In-Reply-To: <20131004102532.1612.24185.stgit@f19-x64>
 References: <20131004102532.1612.24185.stgit@f19-x64>
 User-Agent: StGit/0.16
@@ -29,243 +29,405 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100410-6102-0000-0000-00000447AAD0
+x-cbid: 13100410-7014-0000-0000-000003B72A09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From:Suzuki K. Poulose <suzuki@in.ibm.com>
 
-Build the ELF header on the fly for the very first read request. The ELF Header,
-Program Headers are stored in a buffer for processing future read() requests.
+Collect the PT_NOTE information for the core.
 
-gencore-elf.c contains the ELF class specific functions.
+There are two "process wide" notes. NT_PRPSINFO and NT_AUXV. These are captured
+in the core_proc structure.
+
+Each thread gets a NT_PRSTATUS note, which will contain the GPR contents. A
+thread may have additional notes depending on the other register sets used by it.
+Uses struct elf_thread_core_info to capture the thread specific information.
+
+fill_thread_core_info() fills in the notes for a thread.
 
 Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Signed-off-by: Ananth N.Mavinakayanahalli <ananth@in.ibm.com>
+Signed-off-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
 ---
- fs/proc/Makefile      |    2 -
- fs/proc/gencore-elf.c |  181 +++++++++++++++++++++++++++++++++++++++++++++++++
- fs/proc/gencore.h     |    7 ++
- 3 files changed, 189 insertions(+), 1 deletion(-)
- create mode 100644 fs/proc/gencore-elf.c
+ fs/proc/gencore-elf.c |  180 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/proc/gencore.c     |   56 +++++++++++++++
+ fs/proc/gencore.h     |   28 ++++++++
+ 3 files changed, 260 insertions(+), 4 deletions(-)
 
-diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-index a456c22..d231ac3 100644
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -23,7 +23,7 @@ proc-y	+= version.o
- proc-y	+= softirqs.o
- proc-y	+= namespaces.o
- proc-y	+= self.o
--proc-$(CONFIG_ELF_CORE)        += gencore.o
-+proc-$(CONFIG_ELF_CORE)        += gencore.o gencore-elf.o
- proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
- proc-$(CONFIG_NET)		+= proc_net.o
- proc-$(CONFIG_PROC_KCORE)	+= kcore.o
 diff --git a/fs/proc/gencore-elf.c b/fs/proc/gencore-elf.c
-new file mode 100644
-index 0000000..0a245f0
---- /dev/null
+index 0a245f0..6e97f6a 100644
+--- a/fs/proc/gencore-elf.c
 +++ b/fs/proc/gencore-elf.c
-@@ -0,0 +1,181 @@
-+/*
-+ * Application core dump - ELF Class specific code
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2010
-+ *
-+ * Authors:
-+ * 	Suzuki K. Poulose <suzuki@in.ibm.com> 
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/freezer.h>
-+#include <linux/elf.h>
-+#include <linux/elfcore.h>
-+#include <linux/elfcore-internal.h>
-+
-+#ifdef CORE_DUMP_USE_REGSET
-+#include <linux/regset.h>
-+#endif
-+
-+#include "gencore.h"
-+
-+static void get_elfhdr_size(struct core_proc *cp)
+@@ -34,6 +34,157 @@
+ 
+ #include "gencore.h"
+ 
++static int notesize(struct memelfnote *men)
 +{
-+	struct vm_area_struct *gate_vma;
-+	int segs;
++	int size = sizeof(struct elf_note);
 +
-+	segs = cp->task->mm->map_count;
-+	segs += elf_core_extra_phdrs();
++	size += roundup(strlen(men->name) + 1, 4);
++	size += roundup(men->datasz, 4);
 +
-+	gate_vma = get_gate_vma(cp->task->mm);
-+	if (gate_vma != NULL)
-+		segs++;
-+
-+	/* One phdr for PT_NOTE */
-+	segs++;
-+
-+	cp->nphdrs = segs;
-+	cp->elf_buflen = sizeof(struct elfhdr) +
-+			(cp->nphdrs * sizeof(struct elf_phdr));
-+	cp->elf_buflen = roundup(cp->elf_buflen, ELF_EXEC_PAGESIZE);
-+
-+	return;
++	return size;
 +}
 +
-+/*
-+ * Fill the elf_hdr and the phdrs
-+ * Returns 0 on success. On error, returns errno
-+ */
-+static int create_elf_header(struct core_proc *cp)
++/* Store the note in the header buffer */
++static char *storenote(struct memelfnote *men, char *bufp)
 +{
-+	struct elfhdr *elf = (struct elfhdr *)cp->elf_buf;
-+	struct elf_phdr *note;
-+	struct vm_area_struct *vma, *gate_vma = get_gate_vma(cp->task->mm);
-+	char *bufp;
-+	off_t dataoff, offset;
-+	short e_phnum = (cp->nphdrs > PN_XNUM ? PN_XNUM : cp->nphdrs);
-+	size_t exphdrs_sz = 0;
-+	unsigned long limit = elf_core_extra_phdrs() * sizeof(struct elf_phdr);
++	struct elf_note *en = (struct elf_note *)bufp;
++
++	en->n_namesz = strlen(men->name) + 1;
++	en->n_descsz = men->datasz;
++	en->n_type = men->type;
++	bufp = (char *) (en + 1);
++
++	memcpy(bufp, men->name, en->n_namesz);
++	bufp = (char *) roundup((unsigned long)bufp + en->n_namesz, 4);
++
++	memcpy(bufp, men->data, men->datasz);
++	bufp = (char *) roundup((unsigned long)bufp + men->datasz, 4);
++
++	return bufp;
++}
 +
 +#ifdef CORE_DUMP_USE_REGSET
-+	const struct user_regset_view *view = task_user_regset_view(cp->task);
++static void do_thread_regset_writeback(struct task_struct *task,
++				const struct user_regset *regset)
++{
++	if (regset->writeback)
++		regset->writeback(task, regset, 1);
++}
 +
-+	fill_elf_header(elf, e_phnum, view->e_machine, view->e_flags);
++static int fill_thread_core_info(struct elf_thread_core_info *tinfo,
++					struct core_proc *cp)
++{
++	unsigned int i;
++	const struct user_regset_view *view = task_user_regset_view(tinfo->task);
++
++	fill_prstatus(&tinfo->prstatus, tinfo->task, 0);
++
++	do_thread_regset_writeback(tinfo->task, &view->regsets[0]);
++	(void) view->regsets[0].get(tinfo->task, &view->regsets[0],
++				0, sizeof(tinfo->prstatus.pr_reg),
++				&tinfo->prstatus.pr_reg, NULL);
++	fill_note(&tinfo->notes[0], "CORE", NT_PRSTATUS,
++			sizeof(tinfo->prstatus), &tinfo->prstatus);
++	cp->notes_size += notesize(&tinfo->notes[0]);
++	tinfo->num_notes = view->n;
++
++	for (i = 1; i < view->n; i++) {
++		const struct user_regset *regset = &view->regsets[i];
++
++		do_thread_regset_writeback(tinfo->task, regset);
++		if (regset->core_note_type &&
++			(!regset->active || regset->active(tinfo->task, regset))) {
++			int ret;
++			size_t size = regset->n * regset->size;
++			void *data = kzalloc(size, GFP_KERNEL);
++			if (!unlikely(data))
++				return 0;
++			ret = regset->get(tinfo->task, regset,
++					0, size, data, NULL);
++			if (unlikely(ret))
++				kfree(data);
++			else {
++				if (regset->core_note_type != NT_PRFPREG)
++					fill_note(&tinfo->notes[i], "LINUX",
++						regset->core_note_type,
++						size, data);
++				else {
++					tinfo->prstatus.pr_fpvalid = 1;
++					fill_note(&tinfo->notes[i], "CORE",
++						NT_PRFPREG, size, data);
++				}
++				cp->notes_size += notesize(&tinfo->notes[i]);
++			}
++		}
++	}
++	return 1;
++}
 +#else
-+	fill_elf_header(elf, e_phnum, ELF_ARCH, ELF_CORE_EFLAGS);
++static int fill_thread_core_info(struct elf_thread_core_info *tinfo,
++					struct core_proc *cp)
++{
++	elf_fpregset_t fpu, *pfpu;
++#ifdef ELF_CORE_COPY_XFPREGS
++	elf_fpxregset_t xfpu, *pxfpu;
 +#endif
-+	offset = sizeof(struct elfhdr);
-+ 	bufp = cp->elf_buf + offset;
-+	dataoff = offset + (cp->nphdrs * sizeof(struct elf_phdr));
 +
-+	/* Setup ELF PT_NOTE */
-+	note = (struct elf_phdr*)bufp;
-+	bufp += sizeof(struct elf_phdr);
-+	offset += sizeof(struct elf_phdr);
-+	note->p_type = PT_NOTE;
-+	note->p_offset = dataoff;
-+	note->p_vaddr = 0;
-+	note->p_paddr = 0;
-+	/* TODO: Needs to be populated with the size of the notes section */
-+	note->p_memsz = 0;
-+	note->p_flags = 0;
-+	note->p_align = 0;
++	fill_prstatus(&tinfo->prstatus, t->task, 0);
++	elf_core_copy_task_regs(t->task, &tinfo->prstatus.pr_reg);
++	fill_note(&tinfo->notes[0], "CORE", NT_PRSTATUS,
++			sizeof(t->prstatus), &t->prstatus);
++	cp->notes_size += notesize(&tinfo->notes[0]);
++	tinfo->num_notes = 1;
 +
-+	dataoff = cp->elf_buflen;
-+
-+	/* Write the phdrs for memory segments */
-+	down_read(&cp->task->mm->mmap_sem);
-+	for (vma = first_vma(cp->task, gate_vma); vma != NULL;
-+			vma = next_vma(vma, gate_vma)) {
-+		struct elf_phdr *phdr = (struct elf_phdr  *)bufp;
-+
-+		bufp += sizeof(struct elf_phdr);
-+		offset += sizeof(struct elf_phdr);
-+
-+		phdr->p_type = PT_LOAD;
-+		phdr->p_offset = dataoff;
-+		phdr->p_vaddr = vma->vm_start;
-+		phdr->p_paddr = 0;
-+		phdr->p_filesz = vma_dump_size(cp->task, vma, cp->task->mm->flags);
-+		phdr->p_memsz = vma->vm_end - vma->vm_start;
-+		phdr->p_flags = (vma->vm_flags & VM_READ) ? PF_R : 0;
-+		if (vma->vm_flags & VM_WRITE)
-+			phdr->p_flags |= PF_W;
-+		if (vma->vm_flags & VM_EXEC)
-+			phdr->p_flags |= PF_X;
-+		phdr->p_align = ELF_EXEC_PAGESIZE;
-+		if (!(phdr->p_flags & (PF_R | PF_W | PF_X)))
-+			phdr->p_filesz=0;
-+		dataoff += phdr->p_filesz;
++	if (tinfo->prstatus.pr_fpvalid = elf_core_copy_task_fpregs(tinfo->task,
++							NULL, &fpu)) {
++		pfpu = kzalloc(sizeof(*pfpu), GFP_KERNEL);
++		if (pfpu == NULL)
++			return 0;
++		memcpy(pfpu, &fpu, sizeof(fpu));
++		fill_note(&tinfo->notes[tinfo->num_notes], "CORE", NT_PRFPREG,
++				sizeof(*pfpu), pfpu);
++		cp->notes_size += notesize(&tinfo->notes[tinfo->num_notes]);
++		tinfo->num_notes++;
 +	}
-+	up_read(&cp->task->mm->mmap_sem);
-+
-+	if (!elf_core_copy_extra_phdrs(bufp, dataoff, &exphdrs_sz, limit))
-+		return -EIO;
-+	bufp += exphdrs_sz;
-+	dataoff += elf_core_extra_data_size();
-+
-+	if (e_phnum == PN_XNUM) {
-+		cp->shdr = kzalloc(sizeof(struct elf_shdr), GFP_KERNEL);
-+		if (!cp->shdr)
-+			return -ENOMEM;
-+		fill_extnum_info(elf, (struct elf_shdr *)cp->shdr,
-+						dataoff, cp->nphdrs);
-+		dataoff += sizeof(struct elf_shdr);
++#ifdef ELF_CORE_COPY_XFPREGS
++	if (elf_core_copy_task_xfpregs(tinfo->task, &xfpu)) {
++		pxfpu = kzalloc(sizeof(*pxfpu), GFP_KERNEL);
++		if (!pxfpu)
++			return 0;
++		memcpy(pxfpu, &xfpu, sizeof(xfpu));
++		fill_note(&tinfo->notes[tinfo->num_notes], "LINUX",
++			ELF_CORE_XFPREG_TYPE, sizeof(*pxfpu), pxfpu);
++		cp->notes_size += notesize(&tinfo->notes[tinfo->num_notes]);
++		tinfo->num_notes++;
 +	}
++#endif
++	return 1;
++}
++#endif
 +
-+	return 0;
++/* Returns 0 on error, 1 on success */
++static int collect_notes(struct core_proc *cp)
++{
++	struct elf_thread_core_info *tinfo;
++
++	/* Fill the 2 process wide notes */
++	fill_psinfo(&cp->prpsinfo, cp->task, cp->task->mm);
++	fill_note(&cp->psinfo, "CORE", NT_PRPSINFO,
++			sizeof(struct elf_prpsinfo), &cp->prpsinfo);
++	cp->notes_size += notesize(&cp->psinfo);
++
++	fill_auxv_note(&cp->auxv, cp->task->mm);
++	cp->notes_size += notesize(&cp->auxv);
++
++	tinfo = cp->tinfo;
++	while (tinfo != NULL) {
++		if (!fill_thread_core_info(tinfo, cp))
++			return 0;
++		tinfo = tinfo->next;
++	}
++	return 1;
 +}
 +
-+ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
-+				size_t buflen, loff_t *fpos)
-+{
-+	ssize_t ret = 0;
+ static void get_elfhdr_size(struct core_proc *cp)
+ {
+ 	struct vm_area_struct *gate_vma;
+@@ -51,7 +202,7 @@ static void get_elfhdr_size(struct core_proc *cp)
+ 
+ 	cp->nphdrs = segs;
+ 	cp->elf_buflen = sizeof(struct elfhdr) +
+-			(cp->nphdrs * sizeof(struct elf_phdr));
++			(cp->nphdrs * sizeof(struct elf_phdr)) + cp->notes_size;
+ 	cp->elf_buflen = roundup(cp->elf_buflen, ELF_EXEC_PAGESIZE);
+ 
+ 	return;
+@@ -66,11 +217,13 @@ static int create_elf_header(struct core_proc *cp)
+ 	struct elfhdr *elf = (struct elfhdr *)cp->elf_buf;
+ 	struct elf_phdr *note;
+ 	struct vm_area_struct *vma, *gate_vma = get_gate_vma(cp->task->mm);
++	struct elf_thread_core_info *tinfo;
+ 	char *bufp;
+ 	off_t dataoff, offset;
+ 	short e_phnum = (cp->nphdrs > PN_XNUM ? PN_XNUM : cp->nphdrs);
+ 	size_t exphdrs_sz = 0;
+ 	unsigned long limit = elf_core_extra_phdrs() * sizeof(struct elf_phdr);
++	int first = 1;
+ 
+ #ifdef CORE_DUMP_USE_REGSET
+ 	const struct user_regset_view *view = task_user_regset_view(cp->task);
+@@ -91,7 +244,7 @@ static int create_elf_header(struct core_proc *cp)
+ 	note->p_offset = dataoff;
+ 	note->p_vaddr = 0;
+ 	note->p_paddr = 0;
+-	/* TODO: Needs to be populated with the size of the notes section */
++	note->p_filesz = cp->notes_size;
+ 	note->p_memsz = 0;
+ 	note->p_flags = 0;
+ 	note->p_align = 0;
+@@ -138,6 +291,22 @@ static int create_elf_header(struct core_proc *cp)
+ 						dataoff, cp->nphdrs);
+ 		dataoff += sizeof(struct elf_shdr);
+ 	}
++	/* Store the notes */
++	tinfo = cp->tinfo;
++	do {
++		int i;
 +
-+	if (!cp->elf_buf) {
-+		get_elfhdr_size(cp);
-+
-+		cp->elf_buf = kzalloc(cp->elf_buflen, GFP_KERNEL);
-+		if (!cp->elf_buf) {
++		bufp = storenote(&tinfo->notes[0], bufp);
++		if (first) {
++			bufp = storenote(&cp->psinfo, bufp);
++			bufp = storenote(&cp->auxv, bufp);
++		}
++		for (i = 1; i < tinfo->num_notes; i++)
++			if (tinfo->notes[i].data != NULL)
++				bufp = storenote(&tinfo->notes[i], bufp);
++		first = 0;
++		tinfo = tinfo->next;
++	} while (tinfo != NULL);
+ 
+ 	return 0;
+ }
+@@ -147,6 +316,13 @@ ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
+ {
+ 	ssize_t ret = 0;
+ 
++	if (!cp->notes_size) {
++		if (!collect_notes(cp)) {
 +			ret = -ENOMEM;
 +			goto out;
 +		}
-+
-+		ret = create_elf_header(cp);
-+		if (ret < 0)
-+			goto out;
 +	}
 +
-+	if (*fpos < cp->elf_buflen) {
-+		size_t bcp = cp->elf_buflen - *fpos;
+ 	if (!cp->elf_buf) {
+ 		get_elfhdr_size(cp);
+ 
+diff --git a/fs/proc/gencore.c b/fs/proc/gencore.c
+index d741f18..463bedd 100644
+--- a/fs/proc/gencore.c
++++ b/fs/proc/gencore.c
+@@ -29,7 +29,7 @@
+ #include <linux/slab.h>
+ #include "internal.h"
+ #include "gencore.h"
+-
++#include <linux/sched.h>
+ static LIST_HEAD(core_list);
+ static DEFINE_MUTEX(core_mutex);
+ 
+@@ -69,6 +69,39 @@ out:
+ 	return ret;
+ }
+ 
++static void free_notes_data(struct elf_thread_core_info *tinfo)
++{
++	int i;
 +
-+		bcp = (bcp < buflen) ? bcp : buflen;
-+		if (copy_to_user(buffer, (cp->elf_buf + *fpos), bcp)) {
-+			ret = -EFAULT;
-+			goto out;
-+		} else {
-+			ret = bcp;
-+			*fpos += bcp;
-+			buflen -= bcp;
-+			buffer += bcp;
++	for (i = 1; i < tinfo->num_notes; i++)
++		if (tinfo->notes[i].data) {
++			kfree(tinfo->notes[i].data);
++			tinfo->notes[i].data = NULL;
 +		}
-+	}
-+out:
-+	return ret;
 +}
 +
++static void cleanup_cp(struct core_proc *cp)
++{
++	struct elf_thread_core_info *tmp, *tinfo = cp->tinfo;
++
++	mutex_lock(&core_mutex);
++	list_del(&cp->list);
++	mutex_unlock(&core_mutex);
++
++	if (tinfo) {
++		do {
++			tmp = tinfo;
++			tinfo = tinfo->next;
++			free_notes_data(tmp);
++			kfree(tmp);
++		} while (tinfo != NULL);
++	}
++	if (cp->shdr)
++		kfree(cp->shdr);
++	kfree(cp->elf_buf);
++	kfree(cp);
++}
++
+ static void gencore_work(struct callback_head *open_work)
+ {
+ 	/* TODO A method to know when all the threads have reached here */ 
+@@ -143,7 +176,8 @@ static int open_gencore(struct inode *inode, struct file *filp)
+ 	struct task_struct *task = get_proc_task(inode);
+ 	struct core_proc *cp;
+ 	struct task_struct *t;
+-	int elf_class;
++	struct elf_thread_core_info *tinfo = NULL;
++	int elf_class, max_regset, i;
+ 	int ret = 0;
+ 	if (!task)
+ 		return -ENOENT;
+@@ -171,12 +205,30 @@ static int open_gencore(struct inode *inode, struct file *filp)
+ 	mutex_lock(&core_mutex);
+ 	list_add(&cp->list, &core_list);
+ 	mutex_unlock(&core_mutex);
++	max_regset = get_max_regsets(task);
++
++	for (i = 0; i < get_nr_threads(task); i++) {
++		tinfo = kzalloc(offsetof(struct elf_thread_core_info,
++					notes[max_regset]), GFP_KERNEL);
++		if (unlikely(!tinfo)) {
++			cleanup_cp(cp);
++			ret = -ENOMEM;
++			goto out;
++		}
++		tinfo->next = cp->tinfo;
++		cp->tinfo = tinfo;
++	}
++
+ 	init_completion(&cp->hold);
+ 	/* Adding the work for all the threads except current */
+ 	t = cp->task;
+ 	init_task_work(&cp->twork, gencore_work);
+ 	read_lock(&tasklist_lock);
+ 	do {
++		if (tinfo) {
++			tinfo->task = t;
++			tinfo = tinfo->next;
++		}
+ 		if (t != current)
+ 			task_work_add(t, &cp->twork, true);
+ 	} while_each_thread(cp->task, t);
 diff --git a/fs/proc/gencore.h b/fs/proc/gencore.h
-index 1a88e24..6c1d57c 100644
+index 6c1d57c..e508417 100644
 --- a/fs/proc/gencore.h
 +++ b/fs/proc/gencore.h
-@@ -11,6 +11,13 @@ struct core_proc {
- 	struct task_struct *task;
- 	struct completion hold;
+@@ -5,6 +5,16 @@
+ #include <linux/list.h>
+ #include <linux/sched.h>
+ #include <linux/completion.h>
++#include <linux/elfcore.h>
++#include <linux/elfcore-internal.h>
++
++struct elf_thread_core_info {
++	unsigned short num_notes;       /* Number of notes for this thread */
++	struct elf_thread_core_info *next;
++	struct task_struct *task;
++	struct elf_prstatus prstatus;
++	struct memelfnote notes[0];
++};
+ 
+ struct core_proc {
+ 	struct list_head list;
+@@ -13,10 +23,28 @@ struct core_proc {
  	struct callback_head twork;
-+	void *shdr;             /* elf_shdr, in case nphdrs > PN_XNUM */
-+	char *elf_buf;          /* buffer for elf_hdr + phdrs + notes */
-+	size_t elf_buflen;      /* size of elf_buf */
-+	size_t nphdrs;          /* number of phdrs */
+ 	void *shdr;             /* elf_shdr, in case nphdrs > PN_XNUM */
+ 	char *elf_buf;          /* buffer for elf_hdr + phdrs + notes */
++	struct elf_thread_core_info *tinfo; 
++	struct memelfnote psinfo; 
++	struct memelfnote auxv;
++	struct elf_prpsinfo prpsinfo;
+ 	size_t elf_buflen;      /* size of elf_buf */
+ 	size_t nphdrs;          /* number of phdrs */
++	size_t notes_size;
  };
  
-+extern ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
-+					size_t buflen, loff_t *foffset);
++#ifdef CORE_DUMP_USE_REGSET
++#include <linux/regset.h>
 +
- #endif
++static inline int  get_max_regsets(struct task_struct *task)
++{  
++	const struct user_regset_view *view = task_user_regset_view(task);
++	return view->n;
++}
++
++#else
++#define get_max_regsets(task)  3 /* GPR, FP, XFP? */
++#endif
++
+ extern ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
+ 					size_t buflen, loff_t *foffset);
+ 
 
