@@ -1,144 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab3JDJyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 05:54:32 -0400
-Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:50365
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753660Ab3JDJy2 (ORCPT
+	id S1753913Ab3JDJ4Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 05:56:24 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:59697 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab3JDJ4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 05:54:28 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h186068h8275bh8275dha509lz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: "joro@8bytes.org" <joro@8bytes.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: RE: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-Thread-Topic: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-Thread-Index: AQHOtQsGaQsPvJ8CfEu+dkEJoOsdkZnWszeAgA2xFOA=
-Date: Fri, 4 Oct 2013 09:54:22 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D0718FD1C@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
- <1380127533.3030.319.camel@ul30vt.home>
-In-Reply-To: <1380127533.3030.319.camel@ul30vt.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.2]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 4 Oct 2013 05:56:21 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-7d-524e90c35324
+Date: Fri, 04 Oct 2013 11:56:12 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 1/6] thermal: exynos: fix: Return from
+ exynos_report_trigger() when therm_dev is NULL
+Message-id: <20131004115612.1017e0f7@amdc308.digital.local>
+In-reply-to: <524DE45E.1060606@ti.com>
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+ <1380010102-25817-2-git-send-email-l.majewski@samsung.com>
+ <524DE45E.1060606@ti.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xoO7hCX5BBlcfG1g0XA2x2DhjPavF
+	/CPnWC3W7P/JZNF59gmzxZtH3BaXd81hs/jce4TRYsb5fUwWtxtXsFn0L+xlsnjysI/NYv2M
+	1ywOvB6L97xk8lg37S2zR9+WVYwejxa3MHocv7GdyePzJrkAtigum5TUnMyy1CJ9uwSujLOt
+	q5kL1olVHO99wdbA+EOwi5GTQ0LARGLD4muMELaYxIV769lAbCGB6YwSB+eodDFyAdntTBIX
+	L3xgBkmwCKhKbPrxEMxmE9CT+Hz3KROILQJk33jxBMxmFnjDLLF6hReILSyQLXH82T2wel4B
+	a4k7M9eygticAmoS568uZ4NYMJ9R4uG6NrAifgFJifZ/P5ghLrKTOPdpAztEs6DEj8n3WCAW
+	aEls3tbECmHLS2xe85Z5AqPgLCRls5CUzUJStoCReRWjaGpBckFxUnquoV5xYm5xaV66XnJ+
+	7iZGcAQ9k9rBuLLB4hCjAAejEg+vQK1vkBBrYllxZe4hRgkOZiUR3j3dfkFCvCmJlVWpRfnx
+	RaU5qcWHGKU5WJTEeQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGDeqqK3dc9lWhGsvC8OT2V2R
+	9zgXL4veNY9b4eOurap8b8tOmohKsJ+axOF6iiHzbZil4eVE/e0a82MEpx4IVTx3afX/dYnS
+	si1igYIqoiYZH/6qTQleYFzqph30asF3by8RzUjNQr7Qq8dLb343PbNml/vBP3kXWJfIc6yb
+	kC7YGfepNvfPWSWW4oxEQy3mouJEAHtZfPGcAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r949sdb7010825
 
+Hi Eduardo,
 
+Thanks for reply.
 
-> -----Original Message-----
-> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-owner@vger.kernel.org]
-> On Behalf Of Alex Williamson
-> Sent: Wednesday, September 25, 2013 10:16 PM
-> To: Bhushan Bharat-R65777
-> Cc: joro@8bytes.org; benh@kernel.crashing.org; galak@kernel.crashing.org; linux-
-> kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> pci@vger.kernel.org; agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> foundation.org; Bhushan Bharat-R65777
-> Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-> 
-> On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> > This api return the iommu domain to which the device is attached.
-> > The iommu_domain is required for making API calls related to iommu.
-> > Follow up patches which use this API to know iommu maping.
-> >
-> > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
+> On 24-09-2013 04:08, Lukasz Majewski wrote:
+> > The commit 4de0bdaa9677d11406c9becb70c60887c957e1f0
+> > ("thermal: exynos: Add support for instance based
+> > register/unregister") broke check for presence of therm_dev at
+> > global thermal zone in exynos_report_trigger().
+> > 
+> > The resulting wrong test prevents thermal_zone_device_update()
+> > call, which calls handlers for situation when trip points are
+> > passed. Such behavior prevents thermal driver from proper reaction
+> > (when TMU interrupt is raised) in a situation when overheating is
+> > detected at TMU hardware. This patch fixes it.
+> > 
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 > > ---
-> >  drivers/iommu/iommu.c |   10 ++++++++++
-> >  include/linux/iommu.h |    7 +++++++
-> >  2 files changed, 17 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c index
-> > fbe9ca7..6ac5f50 100644
-> > --- a/drivers/iommu/iommu.c
-> > +++ b/drivers/iommu/iommu.c
-> > @@ -696,6 +696,16 @@ void iommu_detach_device(struct iommu_domain
-> > *domain, struct device *dev)  }
-> > EXPORT_SYMBOL_GPL(iommu_detach_device);
-> >
-> > +struct iommu_domain *iommu_get_dev_domain(struct device *dev) {
-> > +	struct iommu_ops *ops = dev->bus->iommu_ops;
-> > +
-> > +	if (unlikely(ops == NULL || ops->get_dev_iommu_domain == NULL))
-> > +		return NULL;
-> > +
-> > +	return ops->get_dev_iommu_domain(dev); }
-> > +EXPORT_SYMBOL_GPL(iommu_get_dev_domain);
+> >  drivers/thermal/samsung/exynos_thermal_common.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/thermal/samsung/exynos_thermal_common.c
+> > b/drivers/thermal/samsung/exynos_thermal_common.c index
+> > f10a6ad..55a912a 100644 ---
+> > a/drivers/thermal/samsung/exynos_thermal_common.c +++
+> > b/drivers/thermal/samsung/exynos_thermal_common.c @@ -310,7 +310,7
+> > @@ void exynos_report_trigger(struct thermal_sensor_conf *conf) }
+> >  
+> >  	th_zone = conf->pzone_data;
+> > -	if (th_zone->therm_dev)
+> > +	if (!th_zone->therm_dev)
 > 
-> What prevents this from racing iommu_domain_free()?  There's no references
-> acquired, so there's no reason for the caller to assume the pointer is valid.
+> Fine with this fix, as it really looks obvious. But after reading the
+> code a bit, I am considering if we can remove the above check at all.
 
-Sorry for late query, somehow this email went into a folder and escaped;
-
-Just to be sure, there is not lock at generic "struct iommu_domain", but IP specific structure (link FSL domain) linked in iommu_domain->priv have a lock, so we need to ensure this race in FSL iommu code (say drivers/iommu/fsl_pamu_domain.c), right?
-
-Thanks
--Bharat
+I have just preserved the old behaviour for -rcX fix.
 
 > 
-> >  /*
-> >   * IOMMU groups are really the natrual working unit of the IOMMU, but
-> >   * the IOMMU API works on domains and devices.  Bridge that gap by
-> > diff --git a/include/linux/iommu.h b/include/linux/iommu.h index
-> > 7ea319e..fa046bd 100644
-> > --- a/include/linux/iommu.h
-> > +++ b/include/linux/iommu.h
-> > @@ -127,6 +127,7 @@ struct iommu_ops {
-> >  	int (*domain_set_windows)(struct iommu_domain *domain, u32 w_count);
-> >  	/* Get the numer of window per domain */
-> >  	u32 (*domain_get_windows)(struct iommu_domain *domain);
-> > +	struct iommu_domain *(*get_dev_iommu_domain)(struct device *dev);
-> >
-> >  	unsigned long pgsize_bitmap;
-> >  };
-> > @@ -190,6 +191,7 @@ extern int iommu_domain_window_enable(struct iommu_domain
-> *domain, u32 wnd_nr,
-> >  				      phys_addr_t offset, u64 size,
-> >  				      int prot);
-> >  extern void iommu_domain_window_disable(struct iommu_domain *domain,
-> > u32 wnd_nr);
-> > +extern struct iommu_domain *iommu_get_dev_domain(struct device *dev);
-> >  /**
-> >   * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
-> >   * @domain: the iommu domain where the fault has happened @@ -284,6
-> > +286,11 @@ static inline void iommu_domain_window_disable(struct
-> > iommu_domain *domain,  {  }
-> >
-> > +static inline struct iommu_domain *iommu_get_dev_domain(struct device
-> > +*dev) {
-> > +	return NULL;
-> > +}
-> > +
-> >  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain
-> > *domain, dma_addr_t iova)  {
-> >  	return 0;
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in the body
-> of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+> Reading the driver code piece at drivers/thermal/samsung/exynos_tmu.c,
+> by checking how exynos_register_thermal gets called, and how error is
+> handled, I assume we do not need to check for th_zone->therm_dev.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It looks like we don't need this check (we will not register the
+thermal zone if therm dev is not correct).
+
+> 
+> To me looks like the driver only allows th_zone's exist only with
+> valid therm_dev, isn't it? Except for the probe sequence, maybe, at
+> run time there is a time window that we have valid th_zone with
+> invalid therm_dev. However, reading the probe, still, the irq gets
+> initialized only in very end, so the work queue don't get queue till
+> then at least.
+> 
+> So, my question before acking is, shall we remove this check
+> altogether?
+
+I think that it is up to you to decide how we proceed. 
+
+Shall this patch go into v3.12-rcX since it is "obvious" (and documents
+what and when was broken) or would you require to prepare "new" patch
+with removal of this check?
+
+> 
+> 
+> >  		return;
+> >  
+> >  	if (th_zone->bind == false) {
+> > 
+> 
+> 
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
