@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab3JDApZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:45:25 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:41676 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab3JDApX (ORCPT
+	id S1753791Ab3JDAxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:53:42 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:60470 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3JDAxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 20:45:23 -0400
+	Thu, 3 Oct 2013 20:53:41 -0400
+Message-ID: <524E118F.9080503@gmail.com>
+Date: Fri, 04 Oct 2013 10:53:35 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131004004108.GA9914@jtriplet-mobl1>
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
-	<CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
-	<20131003105130.GE13318@ZenIV.linux.org.uk>
-	<CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
-	<CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
-	<20131003232826.GA6604@jtriplet-mobl1>
-	<CA+55aFxvZV0brpjRERYj6Bb-i2kF+nhfCVvmXV5Bdn2QhEt5sw@mail.gmail.com>
-	<20131004004108.GA9914@jtriplet-mobl1>
-Date: Thu, 3 Oct 2013 17:45:21 -0700
-X-Google-Sender-Auth: DJM52owlmfJMGpghr_Ajuc_VMXU
-Message-ID: <CA+55aFw6DURpj+0Z9pJZdu+VX1Eas8=2AOqamQfR-5S+giyicw@mail.gmail.com>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kees Cook <keescook@chromium.org>, Djalal Harouni <tixxdz@opendz.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>	<871u5gqtw3.fsf@xmission.com>	<20130826172054.GE27005@ZenIV.linux.org.uk>	<20130827172406.GA2664@dztty>	<20130828201141.GA21455@dztty>	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com> <CAGXu5jLSXO_MzLtEn_9gdiWmEru+=o1ZnZ8z-m=KZy37Ry4NDQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jLSXO_MzLtEn_9gdiWmEru+=o1ZnZ8z-m=KZy37Ry4NDQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 5:41 PM, Josh Triplett <josh@joshtriplett.org> wrote:
->
-> Read, yes, but I don't think that's enough to force your example above
-> to work in all cases.  That requires semantics beyond what RCU's
-> primitives guarantee, and I don't think you can draw conclusions about
-> those semantics without talking about CPU memory barriers.
+On 04/10/13 10:41, Kees Cook wrote:
+> On Wed, Aug 28, 2013 at 1:49 PM, Kees Cook <keescook@chromium.org> wrote:
 
-We seriosly depend on nothing leaking out. Not just reads. The "U" in
-RCU is "update". So it's reads, and it's writes. The fact that it says
-"read" in "rcu_read_lock()" doesn't mean that only reads would be
-affected.
+<snip>
 
-And no, this still has nothing to do with memory barriers. Every
-single RCU user depends on the memory freeing being delayed by RCU,
-for example. And again, that's not just reads. It's people taking
-spinlocks on things that are RCU-protected etc.
+> 
+> BTW, this just came to my attention:
+> http://marc.info/?l=linux-kernel&m=138049414321387&w=2
+> 
+> Same problem, just for /proc/kallsyms. This would benefit from the
+> open vs read cred check as well, I think.
 
-So no, there is no question about this. The only question would be
-whether we have some RCU mode that is _buggy_, not whether you need
-extra memory barriers. And that is certainly possible.
+I was actually just about to put together a repost of this. Sorry I
+missed you off the original Cc list, get_maintainer didn't list you.
 
-            Linus
+I wanted to at least change the comment mentioning "badly written"
+setuid binaries. That isn't really true, as George Spelvin pointed out,
+even a setuid binary which opens the file with dropped priviledges, but
+reads it after re-elevating privileges will be susceptible to this.
+
+Setuid apps could be more precautious by doing the open + read into
+memory of user files with the privileges dropped, so that once
+privileges are re-elevated only the in-memory copy is used.
+
+I still think in-kernel fixing is a good idea too though, since it
+hardens against user-space setuid apps that don't do this. This was just
+the simplest approach to fixing the problem that I could think of. I'm
+open to suggestions for a better solution.
+
+~Ryan
+
+
+
