@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab3JDNrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 09:47:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:31786 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab3JDNq7 convert rfc822-to-8bit (ORCPT
+	id S1754624Ab3JDNuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 09:50:08 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:61380 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab3JDNuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 09:46:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1033,1371106800"; 
-   d="scan'208";a="411523764"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
-Subject: RE: [PATCH 23/26] ib: Convert qib_get_user_pages() to
- get_user_pages_unlocked()
-Thread-Topic: [PATCH 23/26] ib: Convert qib_get_user_pages() to
- get_user_pages_unlocked()
-Thread-Index: AQHOv4QLcKrfhiX4106LS7dZ0ASSH5nhidXggAB3bQCAAo3gUIAAAgEQ
-Date: Fri, 4 Oct 2013 13:46:57 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC211B015E@FMSMSX107.amr.corp.intel.com>
-References: <1380724087-13927-1-git-send-email-jack@suse.cz>
- <1380724087-13927-24-git-send-email-jack@suse.cz>
- <32E1700B9017364D9B60AED9960492BC211AEF75@FMSMSX107.amr.corp.intel.com>
- <20131002152811.GC32181@quack.suse.cz>
- <32E1700B9017364D9B60AED9960492BC211AF005@FMSMSX107.amr.corp.intel.com>
- <20131002153842.GD32181@quack.suse.cz>
- <32E1700B9017364D9B60AED9960492BC211B0123@FMSMSX107.amr.corp.intel.com>
-In-Reply-To: <32E1700B9017364D9B60AED9960492BC211B0123@FMSMSX107.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 4 Oct 2013 09:50:05 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] vb2: Allow STREAMOFF for io emulator
+Date: Fri,  4 Oct 2013 15:49:58 +0200
+Message-Id: <1380894598-11242-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inadvertent send!
+A video device opened and streaming in io emulator mode can only stop
+streamming if its file descriptor is closed.
 
-Mike
+There are some parameters that can only be changed if the device is not
+streaming. Also, the power consumption of a device streaming could be
+different than one not streaming.
 
-> -----Original Message-----
-> From: Marciniszyn, Mike
-> Sent: Friday, October 04, 2013 9:39 AM
-> To: Jan Kara
-> Cc: LKML; linux-mm@kvack.org; infinipath; Roland Dreier; linux-
-> rdma@vger.kernel.org
-> Subject: RE: [PATCH 23/26] ib: Convert qib_get_user_pages() to
-> get_user_pages_unlocked()
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Jan Kara [mailto:jack@suse.cz]
-> > Sent: Wednesday, October 02, 2013 11:39 AM
-> > To: Marciniszyn, Mike
-> > Cc: Jan Kara; LKML; linux-mm@kvack.org; infinipath; Roland Dreier;
-> > linux- rdma@vger.kernel.org
-> > Subject: Re: [PATCH 23/26] ib: Convert qib_get_user_pages() to
-> > get_user_pages_unlocked()
-> >
-> > On Wed 02-10-13 15:32:47, Marciniszyn, Mike wrote:
-> > > > > The risk of GUP fast is the loss of the "force" arg on GUP fast,
-> > > > > which I don't see as significant give our use case.
-> > > >   Yes. I was discussing with Roland some time ago whether the
-> > > > force argument is needed and he said it is. So I kept the
-> > > > arguments of
-> > > > get_user_pages() intact and just simplified the locking...
-> > >
-> > > The PSM side of the code is a more traditional use of GUP (like
-> > > direct I/O), so I think it is a different use case than the locking
-> > > for IB memory regions.
-> >   Ah, I see. Whatever suits you best. I don't really care as long as
-> > get_user_pages() locking doesn't leak into IB drivers :)
-> >
-> > 								Honza
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
+With this patch a video device opened in io emulator can be stopped on
+demand.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 9fc4bab..097fba8 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -1686,6 +1686,7 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
+ }
+ EXPORT_SYMBOL_GPL(vb2_streamon);
+ 
++static int __vb2_cleanup_fileio(struct vb2_queue *q);
+ 
+ /**
+  * vb2_streamoff - stop streaming
+@@ -1704,11 +1705,6 @@ EXPORT_SYMBOL_GPL(vb2_streamon);
+  */
+ int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
+ {
+-	if (q->fileio) {
+-		dprintk(1, "streamoff: file io in progress\n");
+-		return -EBUSY;
+-	}
+-
+ 	if (type != q->type) {
+ 		dprintk(1, "streamoff: invalid stream type\n");
+ 		return -EINVAL;
+@@ -1719,6 +1715,11 @@ int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
+ 		return -EINVAL;
+ 	}
+ 
++	if (q->fileio) {
++		__vb2_cleanup_fileio(q);
++		return 0;
++	}
++
+ 	/*
+ 	 * Cancel will pause streaming and remove all buffers from the driver
+ 	 * and videobuf, effectively returning control over them to userspace.
+-- 
+1.8.4.rc3
+
