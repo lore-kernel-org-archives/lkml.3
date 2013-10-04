@@ -1,200 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3JDSMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 14:12:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab3JDSMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 14:12:15 -0400
-Message-ID: <1380910322.25705.56.camel@ul30vt.home>
-Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+	id S1753958Ab3JDSM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 14:12:57 -0400
+Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:47006 "HELO
+	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751169Ab3JDSMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 14:12:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380889136.4010.313.camel@localhost.localdomain>
+References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
+ <20130920203222.GA14306@kroah.com> <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
+ <524180B7.7090307@gmail.com> <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
+ <5241C9E7.2000404@cs.wisc.edu> <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
+ <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
+ <ff6a93ed5d234c14874d03415812a3ec@SN2PR03MB061.namprd03.prod.outlook.com>
+ <1380802143.19256.95.camel@haakon3.risingtidesystems.com> <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
+ <1380889136.4010.313.camel@localhost.localdomain>
+From: Eric Seppanen <eric@purestorage.com>
+Date: Fri, 4 Oct 2013 11:12:34 -0700
+Message-ID: <CADOQvuMY6NMY4U9jpbR+oi5N6=bLGFez0d5_PEf-G85_VWMZuA@mail.gmail.com>
+Subject: Re: Drivers: scsi: FLUSH timeout
+To: emilne@redhat.com
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        KY Srinivasan <kys@microsoft.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Date: Fri, 04 Oct 2013 12:12:02 -0600
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D07191143@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1380127533.3030.319.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0718FD1C@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380901507.2673.204.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07190F35@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380906772.25705.19.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07191143@039-SN2MPN1-011.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 17:23 +0000, Bhushan Bharat-R65777 wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Friday, October 04, 2013 10:43 PM
-> > To: Bhushan Bharat-R65777
-> > Cc: joro@8bytes.org; benh@kernel.crashing.org; galak@kernel.crashing.org; linux-
-> > kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > pci@vger.kernel.org; agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > foundation.org
-> > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-> > 
-> > On Fri, 2013-10-04 at 16:47 +0000, Bhushan Bharat-R65777 wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > Sent: Friday, October 04, 2013 9:15 PM
-> > > > To: Bhushan Bharat-R65777
-> > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux- foundation.org
-> > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > > device
-> > > >
-> > > > On Fri, 2013-10-04 at 09:54 +0000, Bhushan Bharat-R65777 wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: linux-pci-owner@vger.kernel.org
-> > > > > > [mailto:linux-pci-owner@vger.kernel.org]
-> > > > > > On Behalf Of Alex Williamson
-> > > > > > Sent: Wednesday, September 25, 2013 10:16 PM
-> > > > > > To: Bhushan Bharat-R65777
-> > > > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > > > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > > > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > > > > > foundation.org; Bhushan Bharat-R65777
-> > > > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > > > > device
-> > > > > >
-> > > > > > On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> > > > > > > This api return the iommu domain to which the device is attached.
-> > > > > > > The iommu_domain is required for making API calls related to iommu.
-> > > > > > > Follow up patches which use this API to know iommu maping.
-> > > > > > >
-> > > > > > > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-> > > > > > > ---
-> > > > > > >  drivers/iommu/iommu.c |   10 ++++++++++
-> > > > > > >  include/linux/iommu.h |    7 +++++++
-> > > > > > >  2 files changed, 17 insertions(+), 0 deletions(-)
-> > > > > > >
-> > > > > > > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> > > > > > > index
-> > > > > > > fbe9ca7..6ac5f50 100644
-> > > > > > > --- a/drivers/iommu/iommu.c
-> > > > > > > +++ b/drivers/iommu/iommu.c
-> > > > > > > @@ -696,6 +696,16 @@ void iommu_detach_device(struct
-> > > > > > > iommu_domain *domain, struct device *dev)  }
-> > > > > > > EXPORT_SYMBOL_GPL(iommu_detach_device);
-> > > > > > >
-> > > > > > > +struct iommu_domain *iommu_get_dev_domain(struct device *dev) {
-> > > > > > > +	struct iommu_ops *ops = dev->bus->iommu_ops;
-> > > > > > > +
-> > > > > > > +	if (unlikely(ops == NULL || ops->get_dev_iommu_domain == NULL))
-> > > > > > > +		return NULL;
-> > > > > > > +
-> > > > > > > +	return ops->get_dev_iommu_domain(dev); }
-> > > > > > > +EXPORT_SYMBOL_GPL(iommu_get_dev_domain);
-> > > > > >
-> > > > > > What prevents this from racing iommu_domain_free()?  There's no
-> > > > > > references acquired, so there's no reason for the caller to
-> > > > > > assume the
-> > > > pointer is valid.
-> > > > >
-> > > > > Sorry for late query, somehow this email went into a folder and
-> > > > > escaped;
-> > > > >
-> > > > > Just to be sure, there is not lock at generic "struct
-> > > > > iommu_domain", but IP
-> > > > specific structure (link FSL domain) linked in iommu_domain->priv
-> > > > have a lock, so we need to ensure this race in FSL iommu code (say
-> > > > drivers/iommu/fsl_pamu_domain.c), right?
-> > > >
-> > > > No, it's not sufficient to make sure that your use of the interface
-> > > > is race free.  The interface itself needs to be designed so that
-> > > > it's difficult to use incorrectly.
-> > >
-> > > So we can define iommu_get_dev_domain()/iommu_put_dev_domain();
-> > > iommu_get_dev_domain() will return domain with the lock held, and
-> > > iommu_put_dev_domain() will release the lock? And
-> > > iommu_get_dev_domain() must always be followed by
-> > > iommu_get_dev_domain().
-> > 
-> > What lock?  get/put are generally used for reference counting, not locking in
-> > the kernel.
-> > 
-> > > > That's not the case here.  This is a backdoor to get the iommu
-> > > > domain from the iommu driver regardless of who is using it or how.
-> > > > The iommu domain is created and managed by vfio, so shouldn't we be
-> > > > looking at how to do this through vfio?
-> > >
-> > > Let me first describe what we are doing here:
-> > > During initialization:-
-> > >  - vfio talks to MSI system to know the MSI-page and size
-> > >  - vfio then interacts with iommu to map the MSI-page in iommu (IOVA
-> > > is decided by userspace and physical address is the MSI-page)
-> > >  - So the IOVA subwindow mapping is created in iommu and yes VFIO know about
-> > this mapping.
-> > >
-> > > Now do SET_IRQ(MSI/MSIX) ioctl:
-> > >  - calls pci_enable_msix()/pci_enable_msi_block(): which is supposed to set
-> > MSI address/data in device.
-> > >  - So in current implementation (this patchset) msi-subsystem gets the IOVA
-> > from iommu via this defined interface.
-> > >  - Are you saying that rather than getting this from iommu, we should get this
-> > from vfio? What difference does this make?
-> > 
-> > Yes, you just said above that vfio knows the msi to iova mapping, so why go
-> > outside of vfio to find it later?  The difference is one case you can have a
-> > proper reference to data structures to make sure the pointer you get back
-> > actually has meaning at the time you're using it vs the code here where you're
-> > defining an API that returns a meaningless value
-> 
-> With FSL-PAMU we will always get consistant data from iommu or vfio-data structure.
+On Fri, Oct 4, 2013 at 5:18 AM, Ewan Milne <emilne@redhat.com> wrote:
+> On Thu, 2013-10-03 at 13:48 -0700, Eric Seppanen wrote:
+>> Do I/O timeouts and flush timeouts need to be independently adjusted?
+>> If you're having trouble with slow operations, it seems likely to be
+>> across the board.
+>>
+>> Flush timeout could be defined as 2x the read/write timeout.  Any
+>> other command-specific timeouts could be scaled the same way.
+>
+> It seems to me that there isn't any reason to expect that the maximum
+> amount of time a device might take to perform various operations are
+> related by any coefficient.  And, an HBA (particularly iSCSI or FC)
+> could very well have different device types connected at different
+> target IDs.  So I think the flush timeout should be adjustable on
+> a per-device basis.  It's probably related more to the cache size
+> on the device than anything else...
 
-Great, but you're trying to add a generic API to the IOMMU subsystem
-that's difficult to use correctly.  The fact that you use it correctly
-does not justify the API.
+There are two possible delays: how long the device might possibly
+take, and how long the storage fabric might take.
 
-> > because you can't check or
-> > enforce that an arbitrary caller is using it correctly.
-> 
-> I am not sure what is arbitrary caller? pdev is known to vfio, so vfio
-> will only make pci_enable_msix()/pci_enable_msi_block() for this pdev.
-> If anyother code makes then it is some other unexpectedly thing
-> happening in system, no?
+On a local device, only the first matters.  But there are environments
+where the second dominates (e.g. a virtual machine, where the
+hypervisor's storage uses multipath with a long failover delay).
 
-What's proposed here is a generic IOMMU API.  Anybody can call this.
-What if the host SCSI driver decides to go get the iommu domain for it's
-device (or any other device)?  Does that fit your usage model?
+If somebody wants to set flush timeouts > 60 seconds, I would like to
+know if they're trying to address a slow device or a slow fabric.  If
+it's the fabric, then it's kind of silly to make them set three
+different timeouts to address the same problem.
 
-> >  It's not maintainable.
-> > Thanks,
-> 
-> I do not have any issue with this as well, can you also describe the type of API you are envisioning;
-> I can think of defining some function in vfio.c/vfio_iommu*.c, make them global and declare then in include/Linux/vfio.h
-> And include <Linux/vfio.h> in caller file (arch/powerpc/kernel/msi.c)
+An alternate way of handling long fabric delays would be to have a
+fabric_timeout that gets added to all the other timeouts... could be a
+scsi_host parameter but that's probably overengineering the problem.
 
-Do you really want module dependencies between vfio and your core kernel
-MSI setup?  Look at the vfio external user interface that we've already
-defined.  That allows other components of the kernel to get a proper
-reference to a vfio group.  From there you can work out how to get what
-you want.  Another alternative is that vfio could register an MSI to
-IOVA mapping with architecture code when the mapping is created.  The
-MSI setup path could then do a lookup in architecture code for the
-mapping.  You could even store the MSI to IOVA mapping in VFIO and
-create an interface where SET_IRQ passes that mapping into setup code.
-Thanks,
-
-Alex
-
+There are already VM vendors that tell customers to adjust the current
+sysfs timeout, so the least amount of work would be to make all of the
+other timeouts track that one in some way (additive or
+multiplicative).
