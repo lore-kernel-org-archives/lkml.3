@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab3JDSM5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 14:12:57 -0400
-Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:47006 "HELO
-	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751169Ab3JDSMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 14:12:55 -0400
+	id S1754057Ab3JDSNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 14:13:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59282 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169Ab3JDSNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 14:13:21 -0400
+Message-ID: <524F04FD.5020804@zytor.com>
+Date: Fri, 04 Oct 2013 11:12:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1380889136.4010.313.camel@localhost.localdomain>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
- <20130920203222.GA14306@kroah.com> <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
- <524180B7.7090307@gmail.com> <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
- <5241C9E7.2000404@cs.wisc.edu> <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
- <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
- <ff6a93ed5d234c14874d03415812a3ec@SN2PR03MB061.namprd03.prod.outlook.com>
- <1380802143.19256.95.camel@haakon3.risingtidesystems.com> <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
- <1380889136.4010.313.camel@localhost.localdomain>
-From: Eric Seppanen <eric@purestorage.com>
-Date: Fri, 4 Oct 2013 11:12:34 -0700
-Message-ID: <CADOQvuMY6NMY4U9jpbR+oi5N6=bLGFez0d5_PEf-G85_VWMZuA@mail.gmail.com>
-Subject: Re: Drivers: scsi: FLUSH timeout
-To: emilne@redhat.com
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: monstr@monstr.eu
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+References: <cover.1380727889.git.michal.simek@xilinx.com> <524C6D64.8080801@zytor.com> <20131003064915.GB17155@amd.pavel.ucw.cz> <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com> <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com> <524EFE76.70200@monstr.eu>
+In-Reply-To: <524EFE76.70200@monstr.eu>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 5:18 AM, Ewan Milne <emilne@redhat.com> wrote:
-> On Thu, 2013-10-03 at 13:48 -0700, Eric Seppanen wrote:
->> Do I/O timeouts and flush timeouts need to be independently adjusted?
->> If you're having trouble with slow operations, it seems likely to be
->> across the board.
->>
->> Flush timeout could be defined as 2x the read/write timeout.  Any
->> other command-specific timeouts could be scaled the same way.
->
-> It seems to me that there isn't any reason to expect that the maximum
-> amount of time a device might take to perform various operations are
-> related by any coefficient.  And, an HBA (particularly iSCSI or FC)
-> could very well have different device types connected at different
-> target IDs.  So I think the flush timeout should be adjustable on
-> a per-device basis.  It's probably related more to the cache size
-> on the device than anything else...
+On 10/04/2013 10:44 AM, Michal Simek wrote:
+> 
+> If you look at it in general I believe that there is wide range of 
+> applications which just contain one bitstream per fpga and the 
+> bitstream is replaced by newer version in upgrade. For them 
+> firmware interface should be pretty useful. Just setup firmware 
+> name with bitstream and it will be automatically loaded in startup 
+> phase.
+> 
+> Then there is another set of applications especially in connection 
+> to partial reconfiguration where this can be done statically by 
+> pregenerated partial bitstreams or automatically generated on 
+> target cpu. For doing everything on the target firmware interface 
+> is not the best because everything can be handled by user 
+> application and it is easier just to push this bitstream to do 
+> device and not to save it to the fs.
+> 
+> I think the question here is if this subsystem could have several 
+> interfaces. For example Alan is asking for adding char support. 
+> Does it even make sense to have more interfaces with the same 
+> backend driver? When this is answered then we can talk which one 
+> make sense to have. In v2 is sysfs and firmware one. Adding char
+> is also easy to do.
+> 
 
-There are two possible delays: how long the device might possibly
-take, and how long the storage fabric might take.
+Greg, what do you think?
 
-On a local device, only the first matters.  But there are environments
-where the second dominates (e.g. a virtual machine, where the
-hypervisor's storage uses multipath with a long failover delay).
+I agree that the firmware interface makes sense when the use of the
+FPGA is an implementation detail in a fixed hardware configuration,
+but that is a fairly restricted use case all things considered.
 
-If somebody wants to set flush timeouts > 60 seconds, I would like to
-know if they're trying to address a slow device or a slow fabric.  If
-it's the fabric, then it's kind of silly to make them set three
-different timeouts to address the same problem.
+	-hpa
 
-An alternate way of handling long fabric delays would be to have a
-fabric_timeout that gets added to all the other timeouts... could be a
-scsi_host parameter but that's probably overengineering the problem.
-
-There are already VM vendors that tell customers to adjust the current
-sysfs timeout, so the least amount of work would be to make all of the
-other timeouts track that one in some way (additive or
-multiplicative).
