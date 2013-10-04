@@ -1,121 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3JDHdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 03:33:38 -0400
-Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:35648 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751257Ab3JDHdh (ORCPT
+	id S1751363Ab3JDHkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 03:40:17 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:50778 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab3JDHkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 03:33:37 -0400
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Oct 2013 03:33:36 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH v5 0/4] watchdog: at91sam9_wdt: handle already configured wdt
-Date: Fri,  4 Oct 2013 09:24:11 +0200
-Message-Id: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 7862722000626350304
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 4 Oct 2013 03:40:14 -0400
+Date: Fri, 4 Oct 2013 09:39:56 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
+        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
+        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 03/77] PCI/MSI/s390: Fix single MSI only check
+Message-ID: <20131004093956.183f6901@mschwide>
+In-Reply-To: <8c9811b13fd93e73641dab8e3bd1bd5b2dc37a61.1380703262.git.agordeev@redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
+	<8c9811b13fd93e73641dab8e3bd1bd5b2dc37a61.1380703262.git.agordeev@redhat.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100407-0542-0000-0000-000006A4B2F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed,  2 Oct 2013 12:48:19 +0200
+Alexander Gordeev <agordeev@redhat.com> wrote:
 
-This patch series is a porposal to enhance the sam9 watchdog timer support.
+> Multiple MSIs have never been supported on s390 architecture,
+> but the platform code fails to report single MSI only.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  arch/s390/pci/pci.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+> index f17a834..c79c6e4 100644
+> --- a/arch/s390/pci/pci.c
+> +++ b/arch/s390/pci/pci.c
+> @@ -427,6 +427,8 @@ int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
+>  	pr_debug("%s: requesting %d MSI-X interrupts...", __func__, nvec);
+>  	if (type != PCI_CAP_ID_MSIX && type != PCI_CAP_ID_MSI)
+>  		return -EINVAL;
+> +	if (type == PCI_CAP_ID_MSI && nvec > 1)
+> +		return 1;
+>  	msi_vecs = min(nvec, ZPCI_MSI_VEC_MAX);
+>  	msi_vecs = min_t(unsigned int, msi_vecs, CONFIG_PCI_NR_MSI);
+> 
 
-The at91sam9 watchdog timer can only be configured once, and the current
-implementation tries to configure it in a static way:
-- 2 seconds timeout
-- wdt restart every 500ms
-
-If the timer has already been configured with different values, it returns an
-error and do not create any watchdog device.
-
-This is not critical if the watchdog is disabled, but if it has been enabled
-with different timeout values it will lead to a SoC reset.
-
-This patch series tries to address this issue by adapting the heartbeat value
-according the WDT timer config:
-- it first tries to configure the timer as requested.
-- if it fails it fallbacks to the current config, adapting its heartbeat timer
-to the needs
-
-This patch series also move to a dynamically allocated at91wdt device instead
-of the static instance. I'm not sure this is the best solution, so please tell
-me if you prefer to keep static instance of watchdog.
-
-It adds a new at91 wdt type: software. This new type make use of the at91 wdt
-interrupt to trigger a software reboot.
-
-Finally it adds several properties to the device tree bindings.
-
-Best Regards,
-Boris
-
-Changes since v4:
- - fix coding style issues
- - remove unneeded watchdog_active test
-
-Changes since v3:
- - fix a bug in heartbeat time computation
- - fix a bug in at91_wdt_set_timeout when new timeout is bigger than the old
-   one
- - rename at91_wdt_ping into at91_wdt_start
- - remove unneeded ping callback assignment
-
-Changes since v2:
- - fix documentation
- - rework the heartbeat computation to get a more flexible behaviour
- - fix xx_to_yy macros
- - modify warning and error messages
- - remove unneeded parenthesis in arithmetic operations
- - use devm functions to map io memory
- - remove unneeded devm_kfree calls
-
-Change since v1:
- - fix typo in documentaion
- - fix irq dt definition for sama5d3 SoC
-
-
-Boris BREZILLON (4):
-  watchdog: at91sam9_wdt: better watchdog support
-  watchdog: at91sam9_wdt: update device tree doc
-  ARM: at91/dt: add sam9 watchdog default options to SoCs
-  ARM: at91/dt: add watchdog properties to kizbox board
-
- .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 +-
- arch/arm/boot/dts/at91sam9260.dtsi                 |    5 +
- arch/arm/boot/dts/at91sam9263.dtsi                 |    5 +
- arch/arm/boot/dts/at91sam9g45.dtsi                 |    5 +
- arch/arm/boot/dts/at91sam9n12.dtsi                 |    5 +
- arch/arm/boot/dts/at91sam9x5.dtsi                  |    5 +
- arch/arm/boot/dts/kizbox.dts                       |    6 +
- arch/arm/boot/dts/sama5d3.dtsi                     |    5 +
- drivers/watchdog/at91sam9_wdt.c                    |  309 ++++++++++++++------
- 9 files changed, 287 insertions(+), 88 deletions(-)
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
 -- 
-1.7.9.5
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
