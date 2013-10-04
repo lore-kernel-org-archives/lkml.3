@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3JDWEy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 18:04:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40568 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab3JDWEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 18:04:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
-   d="scan'208";a="303345638"
-Message-ID: <524F3C64.70506@linux.intel.com>
-Date: Fri, 04 Oct 2013 15:08:36 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
+	id S1753943Ab3JDWMq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 18:12:46 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48594 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239Ab3JDWMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 18:12:44 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: g_ffs: fix compilation warning
-References: <1380923326-18546-1-git-send-email-david.a.cohen@linux.intel.com> <20131004215156.GA10629@kroah.com> <524F3B4A.7070107@linux.intel.com>
-In-Reply-To: <524F3B4A.7070107@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131004011806.GE20450@dangermouse.emea.sgi.com>
+References: <20131004011806.GE20450@dangermouse.emea.sgi.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 4 Oct 2013 16:11:12 -0600
+Message-ID: <CAErSpo6aE-vxhOHk_mgyWMYrgkG0Juuy8Bs-S2Hjb_7k8S=n8Q@mail.gmail.com>
+Subject: Re: Commit 07f9b61 breaks systems that don't implement a _CBA method
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ethan Zhao <ethan.zhao@oracle.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 03:03 PM, David Cohen wrote:
-> On 10/04/2013 02:51 PM, Greg KH wrote:
->> On Fri, Oct 04, 2013 at 02:48:46PM -0700, David Cohen wrote:
->>> Due to lack of "u_ether.h" header file, g_ffs.c compiles with following
->>> warning:
->>
->> It does?  In what tree/branch/release is this happening?
+On Thu, Oct 3, 2013 at 7:18 PM, Hedi Berriche <hedi@sgi.com> wrote:
+> Chaps,
 >
-> This is intended for Linus' 3.12-rc3. Haven't checked any other kernel.
+> The following failure was encountered on hardware that does *not*
+> implement a _CBA method which is AFAICT (and confirmed to me by BIOS
+> chaps) optional.
+
+_CBA is definitely optional.
+
+> [    1.230647] PCI: MMCONFIG for domain 0000 [bus 00-0c] at [mem 0x80000000-0x80cfffff] (base 0x80000000)
+> [    1.241046] PCI: MMCONFIG for domain 0001 [bus 00-02] at [mem 0xff84000000-0xff842fffff] (base 0xff84000000)
+> [    1.252025] PCI: MMCONFIG for domain 1000 [bus 3f-3f] at [mem 0xff83f00000-0xff83ffffff] (base 0xff80000000)
+> [    1.263006] PCI: MMCONFIG for domain 1001 [bus 3f-3f] at [mem 0xff87f00000-0xff87ffffff] (base 0xff84000000)
+> [    1.273984] PCI: MMCONFIG at [mem 0x80000000-0x80cfffff] reserved in E820
+> [    1.281564] PCI: MMCONFIG at [mem 0xff84000000-0xff842fffff] reserved in E820
+> [    1.289535] PCI: MMCONFIG at [mem 0xff83f00000-0xff83ffffff] reserved in E820
+> [    1.297505] PCI: MMCONFIG at [mem 0xff87f00000-0xff87ffffff] reserved in E820
 >
-> In my compilation I disabled USB Host support and enabled DWC3 (gadget
-> only) with ePCI + NOP_USB_XCEIV.
-
-After checking again this patch is not fixing properly.
-u_ether.h is conditionally included.
-
-I'll solve it in another way. Please do not consider this patch anymore.
-
-BR, David
-
+> <snip>
 >
-> Br, David
->
->>
->> thanks,
->>
->> greg k-h
->>
->
+> [    1.427926] ACPI: PCI Root Bridge [I001] (domain 0001 [bus 00-3d])
+> [    1.434968] acpi PNP0A08:00: fail to add MMCONFIG information, can't access PCI configuration space under this host bridge.
+> [    1.447405] acpi PNP0A08:00: Bus 0001:00 not present in PCI namespace
+...
 
+> Bisection points to this commit (included in full given its brevity):
+>
+> commit 07f9b61c3915e8eb156cb4461b3946736356ad02
+> Author: ethan.zhao <ethan.zhao@oracle.com>
+> Date:   Fri Jul 26 11:21:24 2013 -0600
+>
+>     x86/PCI: MMCONFIG: Check earlier for MMCONFIG region at address zero
+>
+>     We can check for addr being zero earlier and thus avoid the mutex_unlock()
+>     cleanup path.
+>
+>     [bhelgaas: drop warning printk]
+>     Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
+>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>     Acked-by: Yinghai Lu <yinghai@kernel.org>
+...
+
+> So the question is should commit
+>
+>         07f9b61 x86/PCI: MMCONFIG: Check earlier for MMCONFIG region at address zero
+>
+> be reverted? or am I missing something?
+
+I think we should revert it.  As far as I can tell, it was only a
+cleanup and it did not fix anything itself.  So since it did break
+something, we should revert it.
+
+It's regrettable that the code is so subtle.  The obvious thing to do
+would be to check for _CBA, and if it doesn't exist, look for an MCFG
+entry.  But for various historical reasons, the code is a mess, and we
+haven't figured out how to safely simplify it.
+
+Ethan, Yinghai, any objections to reverting 07f9b61?
+
+Bjorn
