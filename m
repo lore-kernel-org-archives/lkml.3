@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab3JDUSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 16:18:40 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:51575 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab3JDUSi (ORCPT
+	id S1753838Ab3JDUV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 16:21:57 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53595 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab3JDUV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 16:18:38 -0400
-From: Erik Faye-Lund <kusmabite@gmail.com>
-To: linux-tegra@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu: host1x: check relocs after all gathers are consumed
-Date: Fri,  4 Oct 2013 20:18:33 +0000
-Message-Id: <1380917913-20482-1-git-send-email-kusmabite@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 4 Oct 2013 16:21:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130928175548.8612.84198.stgit@amt.stowe>
+References: <20130928175548.8612.84198.stgit@amt.stowe>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 4 Oct 2013 14:21:34 -0600
+Message-ID: <CAErSpo69K-xJsjRHYTtZOu+NjZuvegc3n+y1v1dUdQ+TtdNDbA@mail.gmail.com>
+Subject: Re: [PATCH] cris/PCI: Remove pci_mem_start
+To: Myron Stowe <myron.stowe@redhat.com>
+Cc: starvik@axis.com, jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The num_relocs count are passed to the kernel per job, not per gather.
+On Sat, Sep 28, 2013 at 11:55 AM, Myron Stowe <myron.stowe@redhat.com> wrote:
+> Remove unused 'pci_mem_start' variable.
+>
+> CC: Mikael Starvik <starvik@axis.com>
+> CC: Jesper Nilsson <jesper.nilsson@axis.com>
+> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 
-For multi-gather jobs, we would previously fail if there were relocs in
-other gathers aside from the first one.
+Applied to pci/misc, thanks!
 
-Fix this by simply moving the check until all gathers have been
-consumed.
+It'd be nice if we could someday get rid of PCIBIOS_MIN_IO and
+PCIBIOS_MIN_MEM, too.  They're really just relics from the days when
+we assumed there was a single host bridge, and we didn't have any idea
+what the host bridge apertures were (or we assumed the host bridge
+essentially subtractively decoded everything).
 
-Signed-off-by: Erik Faye-Lund <kusmabite@gmail.com>
----
- drivers/gpu/host1x/job.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Now that we can tell the PCI core about host bridge apertures, the
+arch should be able to achieve the effect of PCIBIOS_MIN_MEM by
+clipping the window itself.
 
-diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
-index c4e1050..c9ddff8 100644
---- a/drivers/gpu/host1x/job.c
-+++ b/drivers/gpu/host1x/job.c
-@@ -436,10 +436,6 @@ static int validate(struct host1x_firewall *fw, struct host1x_job_gather *g)
- 		}
- 	}
- 
--	/* No relocs should remain at this point */
--	if (fw->num_relocs)
--		err = -EINVAL;
--
- out:
- 	return err;
- }
-@@ -493,6 +489,10 @@ static inline int copy_gathers(struct host1x_job *job, struct device *dev)
- 		offset += g->words * sizeof(u32);
- 	}
- 
-+	/* No relocs should remain at this point */
-+	if (fw.num_relocs)
-+		return -EINVAL;
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
+Bjorn
 
+> ---
+>
+>  arch/cris/include/asm/pci.h |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/cris/include/asm/pci.h b/arch/cris/include/asm/pci.h
+> index 146da90..f666734 100644
+> --- a/arch/cris/include/asm/pci.h
+> +++ b/arch/cris/include/asm/pci.h
+> @@ -11,7 +11,6 @@
+>
+>  #define pcibios_assign_all_busses(void) 1
+>
+> -extern unsigned long pci_mem_start;
+>  #define PCIBIOS_MIN_IO         0x1000
+>  #define PCIBIOS_MIN_MEM                0x10000000
+>
+>
