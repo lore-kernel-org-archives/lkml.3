@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab3JDRdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:33:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58745 "EHLO
+	id S1754595Ab3JDRd6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:33:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58774 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3JDRdY (ORCPT
+	with ESMTP id S1754533Ab3JDRd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:33:24 -0400
-Date: Fri, 4 Oct 2013 10:32:48 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-f5d05bcec409aec2c41727077ad818f7c4db005b@git.kernel.org>
+	Fri, 4 Oct 2013 13:33:56 -0400
+Date: Fri, 4 Oct 2013 10:33:28 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-2f2a2b60adf368bacd6acd2116c01e32caf936c4@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de,
-        jolsa@redhat.com
+        peterz@infradead.org, oleg@redhat.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1379688044-14173-4-git-send-email-andi@firstfloor.org>
-References: <1379688044-14173-4-git-send-email-andi@firstfloor.org>
+        peterz@infradead.org, tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20131002092527.956416254@infradead.org>
+References: <20131002092527.956416254@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf:
-  Support sorting by in_tx or abort branch flags
-Git-Commit-ID: f5d05bcec409aec2c41727077ad818f7c4db005b
+Subject: [tip:sched/core] sched/wait: Make the signal_pending()
+  checks consistent
+Git-Commit-ID: 2f2a2b60adf368bacd6acd2116c01e32caf936c4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,214 +28,133 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 04 Oct 2013 10:32:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 04 Oct 2013 10:33:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f5d05bcec409aec2c41727077ad818f7c4db005b
-Gitweb:     http://git.kernel.org/tip/f5d05bcec409aec2c41727077ad818f7c4db005b
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Fri, 20 Sep 2013 07:40:41 -0700
+Commit-ID:  2f2a2b60adf368bacd6acd2116c01e32caf936c4
+Gitweb:     http://git.kernel.org/tip/2f2a2b60adf368bacd6acd2116c01e32caf936c4
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 2 Oct 2013 11:22:18 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 4 Oct 2013 10:06:09 +0200
+CommitDate: Fri, 4 Oct 2013 10:14:44 +0200
 
-tools/perf: Support sorting by in_tx or abort branch flags
+sched/wait: Make the signal_pending() checks consistent
 
-Extend the perf branch sorting code to support sorting by in_tx
-or abort_tx qualifiers. Also print out those qualifiers.
+There's two patterns to check signals in the __wait_event*() macros:
 
-This also fixes up some of the existing sort key documentation.
+  if (!signal_pending(current)) {
+	schedule();
+	continue;
+  }
+  ret = -ERESTARTSYS;
+  break;
 
-We do not support no_tx here, because it's simply not showing
-the in_tx flag.
+And the more natural:
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+  if (signal_pending(current)) {
+	ret = -ERESTARTSYS;
+	break;
+  }
+  schedule();
+
+Change them all into the latter form.
+
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1379688044-14173-4-git-send-email-andi@firstfloor.org
+Link: http://lkml.kernel.org/r/20131002092527.956416254@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/Documentation/perf-report.txt |  4 ++-
- tools/perf/Documentation/perf-top.txt    |  3 +-
- tools/perf/builtin-report.c              |  2 +-
- tools/perf/builtin-top.c                 |  3 +-
- tools/perf/perf.h                        |  4 ++-
- tools/perf/util/hist.h                   |  2 ++
- tools/perf/util/sort.c                   | 51 ++++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |  2 ++
- 8 files changed, 66 insertions(+), 5 deletions(-)
+ include/linux/tty.h  | 13 ++++++-------
+ include/linux/wait.h | 35 ++++++++++++++++-------------------
+ 2 files changed, 22 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 2b8097e..ae337e3 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -71,7 +71,7 @@ OPTIONS
- 	entries are displayed as "[other]".
- 	- cpu: cpu number the task ran at the time of sample
- 	- srcline: filename and line number executed at the time of sample.  The
--	DWARF debuggin info must be provided.
-+	DWARF debugging info must be provided.
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 64f8646..0503729 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -686,14 +686,13 @@ do {									\
+ 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+ 		if (condition)						\
+ 			break;						\
+-		if (!signal_pending(current)) {				\
+-			tty_unlock(tty);					\
+-			schedule();					\
+-			tty_lock(tty);					\
+-			continue;					\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
+ 		}							\
+-		ret = -ERESTARTSYS;					\
+-		break;							\
++		tty_unlock(tty);					\
++		schedule();						\
++		tty_lock(tty);						\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index a67fc16..ccf0c52 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -261,12 +261,11 @@ do {									\
+ 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+ 		if (condition)						\
+ 			break;						\
+-		if (!signal_pending(current)) {				\
+-			schedule();					\
+-			continue;					\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
+ 		}							\
+-		ret = -ERESTARTSYS;					\
+-		break;							\
++		schedule();						\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
+@@ -302,14 +301,13 @@ do {									\
+ 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+ 		if (condition)						\
+ 			break;						\
+-		if (!signal_pending(current)) {				\
+-			ret = schedule_timeout(ret);			\
+-			if (!ret)					\
+-				break;					\
+-			continue;					\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
+ 		}							\
+-		ret = -ERESTARTSYS;					\
+-		break;							\
++		ret = schedule_timeout(ret);				\
++		if (!ret)						\
++			break;						\
+ 	}								\
+ 	if (!ret && (condition))					\
+ 		ret = 1;						\
+@@ -439,14 +437,13 @@ do {									\
+ 			finish_wait(&wq, &__wait);			\
+ 			break;						\
+ 		}							\
+-		if (!signal_pending(current)) {				\
+-			schedule();					\
+-			continue;					\
+-		}							\
+-		ret = -ERESTARTSYS;					\
+-		abort_exclusive_wait(&wq, &__wait, 			\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			abort_exclusive_wait(&wq, &__wait, 		\
+ 				TASK_INTERRUPTIBLE, NULL);		\
+-		break;							\
++			break;						\
++		}							\
++		schedule();						\
+ 	}								\
+ } while (0)
  
- 	By default, comm, dso and symbol keys are used.
- 	(i.e. --sort comm,dso,symbol)
-@@ -85,6 +85,8 @@ OPTIONS
- 	- symbol_from: name of function branched from
- 	- symbol_to: name of function branched to
- 	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
-+	- in_tx: branch in TSX transaction
-+	- abort: TSX transaction abort.
- 
- 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
- 	and symbol_to, see '--branch-stack'.
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 58d6598..f852eb5 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -112,7 +112,8 @@ Default is to monitor all CPUS.
- 
- -s::
- --sort::
--	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight, local_weight.
-+	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
-+	local_weight, abort, in_tx
- 
- -n::
- --show-nr-samples::
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 72eae74..89b188d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -787,7 +787,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
- 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
- 		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
--		   "snoop, locked"),
-+		   "snoop, locked, abort, in_tx"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2122141..6534a37 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1103,7 +1103,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
-+		   " abort, in_tx"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index cf20187..acf3d66 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -182,7 +182,9 @@ struct ip_callchain {
- struct branch_flags {
- 	u64 mispred:1;
- 	u64 predicted:1;
--	u64 reserved:62;
-+	u64 in_tx:1;
-+	u64 abort:1;
-+	u64 reserved:60;
- };
- 
- struct branch_entry {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 1329b6b..f743e96 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -45,6 +45,8 @@ enum hist_column {
- 	HISTC_CPU,
- 	HISTC_SRCLINE,
- 	HISTC_MISPREDICT,
-+	HISTC_IN_TX,
-+	HISTC_ABORT,
- 	HISTC_SYMBOL_FROM,
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 5f118a0..1771566 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -858,6 +858,55 @@ struct sort_entry sort_mem_snoop = {
- 	.se_width_idx	= HISTC_MEM_SNOOP,
- };
- 
-+static int64_t
-+sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.abort !=
-+		right->branch_info->flags.abort;
-+}
-+
-+static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.abort)
-+		out = "A";
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_abort = {
-+	.se_header	= "Transaction abort",
-+	.se_cmp		= sort__abort_cmp,
-+	.se_snprintf	= hist_entry__abort_snprintf,
-+	.se_width_idx	= HISTC_ABORT,
-+};
-+
-+static int64_t
-+sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.in_tx !=
-+		right->branch_info->flags.in_tx;
-+}
-+
-+static int hist_entry__in_tx_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.in_tx)
-+		out = "T";
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_in_tx = {
-+	.se_header	= "Branch in transaction",
-+	.se_cmp		= sort__in_tx_cmp,
-+	.se_snprintf	= hist_entry__in_tx_snprintf,
-+	.se_width_idx	= HISTC_IN_TX,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -888,6 +937,8 @@ static struct sort_dimension bstack_sort_dimensions[] = {
- 	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
- 	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
- 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
-+	DIM(SORT_IN_TX, "in_tx", sort_in_tx),
-+	DIM(SORT_ABORT, "abort", sort_abort),
- };
- 
- #undef DIM
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 4e80dbd..9dad3a0 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -153,6 +153,8 @@ enum sort_type {
- 	SORT_SYM_FROM,
- 	SORT_SYM_TO,
- 	SORT_MISPREDICT,
-+	SORT_ABORT,
-+	SORT_IN_TX,
- 
- 	/* memory mode specific sort keys */
- 	__SORT_MEMORY_MODE,
