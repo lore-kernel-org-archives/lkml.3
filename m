@@ -1,168 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab3JDNh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 09:37:28 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:56934 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab3JDNh0 (ORCPT
+	id S1754695Ab3JDNiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 09:38:07 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:42298 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab3JDNiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 09:37:26 -0400
-Message-ID: <524EC491.30701@gmail.com>
-Date: Fri, 04 Oct 2013 22:37:21 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 4 Oct 2013 09:38:05 -0400
+Message-ID: <524EC4B9.7000202@monstr.eu>
+Date: Fri, 04 Oct 2013 15:38:01 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: dm-devel@redhat.com
-CC: linux-kernel@vger.kernel.org
-Subject: [RFC] dm-writeboost: Persistent memory support
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org,
+        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Kedareswara rao Appana <appanad@xilinx.com>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org,
+        =?ISO-8859-1?Q?Richard_R=F6jfors?= <richard.rojfors@pelagicore.com>,
+        "Steven A. Falco" <sfalco@harris.com>
+Subject: Re: [PATCH v2 2/3] i2c: xilinx: Set tx direction in write operation
+References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com> <57a4f5352ce6f03bde7aafe8b880f91b52994379.1380550490.git.michal.simek@xilinx.com> <20131004054636.GC3194@katana> <524E902D.8030809@monstr.eu> <20131004115517.GA2994@katana> <524EB090.2070708@metafoo.de> <524EBDF6.1070605@monstr.eu> <524EC4DC.1020708@metafoo.de>
+In-Reply-To: <524EC4DC.1020708@metafoo.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="92qlV6EmdIdkOk0U6kKAV5KMilO5dC16L"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--92qlV6EmdIdkOk0U6kKAV5KMilO5dC16L
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Let me introduce my future plan
-of applying persistent memory to dm-writeboost.
-dm-writeboost can potentially
-gain many benefits by the persistent memory.
+On 10/04/2013 03:38 PM, Lars-Peter Clausen wrote:
+> On 10/04/2013 03:09 PM, Michal Simek wrote:
+>>
+>>
+>> On 10/04/2013 02:12 PM, Lars-Peter Clausen wrote:
+>>> On 10/04/2013 01:55 PM, Wolfram Sang wrote:
+>>>> On Fri, Oct 04, 2013 at 11:53:49AM +0200, Michal Simek wrote:
+>>>>> On 10/04/2013 07:46 AM, Wolfram Sang wrote:
+>>>>>>
+>>>>>>> +	cr =3D xiic_getreg32(i2c, XIIC_CR_REG_OFFSET);
+>>>>>>> +	cr |=3D XIIC_CR_DIR_IS_TX_MASK;
+>>>>>>> +	xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, cr);
+>>>>>>> +
+>>>>>>
+>>>>>> Is there no need to clear the bit again when receiving?
+>>>>>
+>>>>> This bit is cleared in xiic_xfer() -> xiic_start_xfer() ->xiic_rein=
+it()
+>>>>>
+>>>>> xiic_setreg8(i2c, XIIC_CR_REG_OFFSET, XIIC_CR_TX_FIFO_RESET_MASK);
+>>>>
+>>>> A bit implicit, but OK.
+>>>>
+>>>>>> And did
+>>>>>> transferring ever work if this bit was never set before?
+>>>>>
+>>>>> I really don't know. We have switched from old driver to this new m=
+ainline one
+>>>>> and based on our eeprom testing we have found that this bit hasn't =
+been setup properly.
+>>>>>
+>>>>> It is described here.
+>>>>> http://www.xilinx.com/support/documentation/ip_documentation/axi_ii=
+c/v1_02_a/axi_iic_ds756.pdf
+>>>>> page 28 - step 3.
+>>>>>
+>>>>> IIC Master Transmitter with a Repeated Start
+>>>>> 1. Write the IIC device address to the TX_FIFO.
+>>>>> 2. Write data to TX_FIFO.
+>>>>> 3. Write to Control Register (CR) to set MSMS =3D 1 and TX =3D 1.
+>>>>> 4. Continue writing data to TX_FIFO.
+>>>>> 5. Wait for transmit FIFO empty interrupt. This implies the IIC has=
+ throttled the bus.
+>>>>> 6. Write to CR to set RSTA =3D 1.
+>>>>
+>>>> Repeated start is not happening in the driver as well, or am I
+>>>> overlooking something?
+>>>>
+>>>>> 7. Write IIC device address to TX_FIFO.
+>>>>> 8. Write all data except last byte to TX_FIFO.
+>>>>> 9. Wait for transmit FIFO empty interrupt. This implies the IIC has=
+ throttled the bus.
+>>>>> 10. Write to CR to set MSMS =3D 0. The IIC generates a stop conditi=
+on at the end of the last byte.
+>>>>> 11. Write last byte of data to TX_FIFO.
+>>>>
+>>>> CCing more people who worked on the driver in the past and might hav=
+e
+>>>> experiences
+>>>
+>>> The current version works fine here. The driver uses whats described =
+in the
+>>> datasheet as "dynamic controller logic flow" and not the "standard
+>>> controller logic flow". The sequence Michal mentioned above is from t=
+he
+>>> "standard controller logic flow" section.
+>>
+>> Does this change break "dynamic controller logic flow"?
+>=20
+> Not sure, but I would assume that the bit is ignored in this mode. But =
+I
+> don't think the patch should be applied since this step is not in the
+> sequence of steps that should be done.
 
-(1) Problem
-The basic mechanism of dm-writeboost is
-(i) first stores the write data to RAM buffer
-    whose size is 1MB at maximum and
-    can include 255 * 4KB data.
-(ii) when the RAM buffer is fulfilled
-     it packs the data and its metadata 
-     which indicates where to write back,
-     into a structure called "log" and
-     queues it.
-(iii) the log is flushed to the cache device
-      in background.
-(iv) and later migrated or written back
-     to the backing store in background.
+Kedar: Can you please look at both these modes and provide feedback?
 
-The problem is in handling barrier writes
-flagged with REA_FUA or REQ_FLUSH.
-Upper layer waits for these kind of bios complete
-so waiting for log to be fulfilled and then queued
-may stall the upper layer.
-One of the methods in receiving these bios is that
-dm-writeboost makes a "partial" log and queues it
-which causes potentially random writes to the 
-cache device(SSD) which not only loses its performance
-but also fails to maximize the lifetime of the SSD device.
-Moreover, it consumes CPU cycles to make a partial log
-again and again. It is not free.
+Thanks,
+Michal
 
-So, dm-writeboost provides a tunable parameter called
-barrier_deadline_ms that indicates the
-worst time guaranteed that these unusually flagged bios queued.
-Making a partial log is deferred and
-it means that the log can be fulfilled before the deadline
-if there are many processes submitting writes.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-In summary,
-due to the REQ_FUA and REQ_FLUSH flag
-dm-writeboost can not guarantee the log always fulfilled.
-Imagine there is only one process above the dm-writeboost device
-and rediculously submits REQ_FUAed bio and waits for the completion repeatly.
-This is the worst case for dm-writeboost
-the log is always partial and the process always waits for 
-the deadline.
 
-If the RAM buffer is smaller than 1MB
-the log is likely to be fulfilled.
-The size of the RAM buffer is tunable in constructor.
-However, this is not the ultimate solution.
 
-So, let's find the ultimate solution next.
+--92qlV6EmdIdkOk0U6kKAV5KMilO5dC16L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-(2) What if RAM buffer is non-volatile
-If we use persistent memory for the RAM buffer instead of
-DRAM which is volatile
-we don't need to partially flush the log
-to complete these flagged bios quickly
-but can do away with only writing the data
-to the persistent RAM buffer and then returning ACK.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-This means
-the 1MB log will be always fulfilled
-and the upper layer will never be annoyed with
-how to handle the REQ_FUA or REQ_FLUSH flagged bios.
-This will always maximize the write thoughput to the SSD device
-and maximize its lifetime.
+iEYEARECAAYFAlJOxLkACgkQykllyylKDCG3RwCffeoOTzjdHB+3ujMXj4RcwANm
+/UQAnAv5E+XTXF0wUPrPz9H6UQFBG1W4
+=//BY
+-----END PGP SIGNATURE-----
 
-Futhermore,
-upper layer can eliminate the
-optimization for these bios.
-For example, XFS also does the same technique
-of gathering the barriers as explained by Dave Chinner in
-https://lkml.org/lkml/2013/10/3/804
-
-Using dm-writeboost with persistent memory
-the upper layer will be alliviated
-from doing difficult things.
-Applying persistent memory to dm-writeboost is promising.
-
-Any comment?
-
-(3) Design Change
-I have read this thread in LKML
-"RFC Block Layer Extensions to Support NV-DIMMs"
-https://lkml.org/lkml/2013/9/4/555
- 
-The interface design is still in discussion but
-I hope to see an interface design that deals with
-persistent memory as the new type of memory
-not the block device.
-
-Even if the RAM buffer is switch to 
-volatile to non-volatile
-the basic I/O path of dm-writeboost will not change.
-I think most of the code can be shared between
-volatile mode and non-volatile mode of dm-writeboost.
-So, switching the mode in constructor parameter
-will be my design choice.
-
-Maybe the constructor will be like this
-writeboost <mode> ...
-writeboost 0 <backing store> <cache device> ....
-writeboost 1 <backing store> <cache device> <persistent memory> ...
-
-If the mode is 0 it builds a writeboost device with volatile RAM buffer
-and the mode is 1 it builds with non-volatile RAM buffer.
-
-The current design doesn't have mode parameter
-so adding the parameter right now could be our design choice
-but even if we don't add it right now
-the backward-compatibility can be guaranteed
-by implicitly setting the mode to 0 if the first parameter is not a number.
-I prefer adding it right now for future design consistency.
-
-Should or Shouldn't I add the paramter before
-making a patch to device-mapper tree?
-
-(4) Prototype
-I think I can start prototyping
-by defining a pseudo persistent memory backed by a block device.
-
-The temporary interface will be defined like:
-struct pmem *pmem_alloc(struct block_device *, size_t start, size_t len);
-void pmem_write(struct pmem *, size_t start, size_t len, void *data);
-void pmem_read(struct pmem *, size_t start, size_t len, void *dest);
-void pmem_free(struct pmem *);
-
-Byte-addressableness is implemented by Read-Modify-Write.
-
-The difficulty in using the persistent memory instead
-is in recovering the data both on the RAM buffer and the cache device
-in rebooting.
-The implementation will be complicated but
-can mostly be limited under recover_cache() routine
-and the outside of it will not be badly tainted.
-
-Should I prototype before making patch to device-mapper tree?
-
-Akira
+--92qlV6EmdIdkOk0U6kKAV5KMilO5dC16L--
