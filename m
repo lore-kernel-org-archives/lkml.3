@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab3JDTpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:45:14 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:50529 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab3JDTpL (ORCPT
+	id S1754224Ab3JDTvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:51:38 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:45553 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab3JDTvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:45:11 -0400
-Date: Fri, 4 Oct 2013 12:45:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-next@vger.kernel.org, Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: Re: linux-next: Tree for Oct 3
-Message-ID: <20131004194504.GA32457@roeck-us.net>
-References: <20131004010230.GI27287@sirena.org.uk>
- <524E50DB.3060707@roeck-us.net>
- <20131004102839.GJ27287@sirena.org.uk>
+	Fri, 4 Oct 2013 15:51:36 -0400
+Date: Fri, 4 Oct 2013 15:51:31 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Dave Martin <Dave.Martin@arm.com>
+cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Ben Dooks <ben-linux@fluff.org>, Tarek Dakhran <t.dakhran@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH 3/6] ARM: EXYNOS: add Exynos Dual Cluster Support
+In-Reply-To: <20131002125458.GA3407@localhost.localdomain>
+Message-ID: <alpine.LFD.2.03.1310041543090.3023@syhkavp.arg>
+References: <1380644227-12244-1-git-send-email-v.tyrtov@samsung.com> <1380644227-12244-4-git-send-email-v.tyrtov@samsung.com> <20131002125458.GA3407@localhost.localdomain>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131004102839.GJ27287@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 11:28:39AM +0100, Mark Brown wrote:
-> On Thu, Oct 03, 2013 at 10:23:39PM -0700, Guenter Roeck wrote:
-> > On 10/03/2013 06:02 PM, Mark Brown wrote:
+On Wed, 2 Oct 2013, Dave Martin wrote:
+
+> On Tue, Oct 01, 2013 at 08:17:04PM +0400, Vyacheslav Tyrtov wrote:
+> > +static int exynos_power_up(unsigned int cpu, unsigned int cluster)
+> > +{
+> > +     int ret;
+> > +     local_irq_disable();
 > 
-> > >Due to the length of time taken to run all the allmodconfigs I skipped
-> > >the defconfig tests; I know Olof has the ARM stuff covered in his
-> > >autobuilder.  I'm going to use allyesconfig tomorrow since that should
-> > >run faster so hopefully I can cover the ARM, i386 and x86_64 configs
-> > >again.
-> 
-> > I could try to set up the buildbot farm I am using for -stable candidates
-> > to also test the -next tree. Would that help ?
-> 
-> Yes, that'd be great.  Like Olof said ARM is pretty well covered but
-> adding more platforms would be very helpful.
+> Should there be a local_fiq_disable() here also?
 
-Ok, here are the results based on v3.12-rc3-3771-gedc72f7.
+No.  In fact this is paired with
 
-Build summary:
-	total: 110 pass: 86 skipped: 4 fail: 20
+> > +     arch_spin_lock(&exynos_lock);
 
-'skipped' means the configuration does not (or no longer) exist. 
+to create the equivalent of a arch_spin_lock_irq().  And the reason is:
 
-Failed builds:
-	arm:allmodconfig
-	arm:ape6evm_defconfig
-	arm:marzen_defconfig
-	arm:armadillo800eva_defconfig
-	arm:mackerel_defconfig
-	blackfin:defconfig
-	metag:defconfig
-	metag:meta1_defconfig
-	metag:meta2_defconfig
-	metag:meta2_smp_defconfig
-	mips:defconfig
-	mips:bcm63xx_defconfig
-	mips:nlm_xlp_defconfig
-	mips:fuloong2e_defconfig
-	mips:e55_defconfig
-	mips:malta_defconfig
-	powerpc:ppc64e_defconfig
-	powerpc:chroma_defconfig
-	powerpc:mpc85xx_smp_defconfig
-	sparc64:allmodconfig
+/*
+ * We can't use regular spinlocks. In the switcher case, it is possible
+ * for an outbound CPU to call power_down() after its inbound counterpart
+ * is already live using the same logical CPU number which trips lockdep
+ * debugging.
+ */
 
-mips and mips64 qemu tests fail as well. mips test builds but hangs early in
-boot, mips64 fails to build.
+Otherwise we simply would have used spin_lock_irq().
 
-On the plus side, the sh qemu warning (WARNING traceback during boot)
-is no longer observed.
+No FIQs are supposed to ever race with this code.
 
-Details are at http://server.roeck-us.net:8010/builders.
 
-If everything works as intended, updates to the repository should trigger an
-automatic re-build. No guarantees, though - I had some trouble with the initial
-checkout.
-
-Guenter
-
+Nicolas
