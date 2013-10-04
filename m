@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3JDAYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:24:11 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:32462 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab3JDAYJ (ORCPT
+	id S1753849Ab3JDA2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:28:16 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:63855 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3JDA2N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 20:24:09 -0400
-X-AuditID: cbfec37b-b7fa96d00000716e-cf-524e0aa81237
-Message-id: <524E0AA5.3080604@samsung.com>
-Date: Thu, 03 Oct 2013 18:24:05 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/16] 3.4.65-stable review
-References: <20131003040445.523176877@linuxfoundation.org>
-In-reply-to: <20131003040445.523176877@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX90VXH5BBr39WhZz1q9hs2hevJ7N
-	4vKuOWwWX386WCzY+IjR4lHfW3YHNo+ds+6ye5yY8ZvFY//cNewenzfJBbBEcdmkpOZklqUW
-	6dslcGXs+e5ccJe34sjpJawNjG3cXYycHBICJhIX165ngbDFJC7cW8/WxcjFISSwjFFixozt
-	TBBOL5PE/VMP2ECqhAQ2Mkr8mKINYvMKaEm83d3DBGKzCKhKLG1uZwex2QTUJT6/3sEOUS8n
-	0bRkNTOILSoQIbFyyQNWiF5BiR+T74FtFhEwlug/OwusnlngGKPEwmYTEFsYaP6fx9tYIeZY
-	SdzqOA1WwylgLfHx3n0WiHpriZWTtjFC2PISm9e8ZYaoV5b4c/kU0G0cQJ8pSmxfbTWBUWQW
-	ks2zkHTPQtK9gJF5FaNYaXFyQXFSemqFkV5xYm5xaV66XnJ+7iZGSLxU72C8+9XmEKMAB6MS
-	D69ArW+QEGtiWXFl7iFGCQ5mJRHe05+AQrwpiZVVqUX58UWlOanFhxiZODilGhijr109nHL/
-	xV81m+zrx0LOFmtUFS4TnJ7ilXP3yfe2+1PKEvZlKZdYJmlHWL0zajQzWaFj0u7Zvu2yiJz5
-	kse/v+nwlpWZFrb863OZvDgvdR3LRJu5D7hbns0zPZNZbK3JOk1+8ZEvD/YwsyQvkLT2/i2x
-	cPfXu651cpk5yVMfrN6xy+z9x/tKLMUZiYZazEXFiQA/m5JBdQIAAA==
+	Thu, 3 Oct 2013 20:28:13 -0400
+Subject: Re: [PATCH 0/2] fs/ext4: increase parallelism in updating ext4 orphan list
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1380728283-61038-1-git-send-email-tmac@hp.com>
+Date: Thu, 3 Oct 2013 18:28:10 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, aswin@hp.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <117221D9-7634-4131-95C2-7527C20F1F62@dilger.ca>
+References: <y> <1380728283-61038-1-git-send-email-tmac@hp.com>
+To: T Makphaibulchoke <tmac@hp.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2013 10:05 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.65 release.
-> There are 16 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Oct  5 04:04:34 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.65-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On 2013-10-02, at 9:38 AM, T Makphaibulchoke wrote:
+> Instead of allowing only a single atomic update (both in memory and on disk
+> orphan lists) of an ext4's orphan list via the s_orphan_lock mutex, this patch allows multiple updates of the orphan list, while still maintaing the
+> integrity of both the in memory and on disk orphan lists of each update.
+> 
+> This is accomplished by using a per inode mutex to serialize the oprhan
+> list update of a single inode, and a mutex and a spinlock to serailize
+> the on disk and in memory orphan list respectively.
 
-Patch testing: 3.4.65-rc1-rc1 patch applied with white-space warnings 
-and 3.4.65-rc2 applied cleanly.
+It would also be possible to have a completely contention-free orphan
+inode list by only generating the on-disk orphan linked list in a
+pre-commit callback hook from an efficient in-memory list.  That would
+allow the common "add to orphan list; do something; remove from list"
+operations within a single transaction to run with minimal contention,
+and only the few rare cases of operations that exceed the lifetime of
+a single transaction would need to modify the on-disk list.
 
-Tested 3.4.65-rc1 and 3.4.65-rc2.
-Compile testing: 3.4.65-rc1 and 3.4.65-rc2. Passed
-Boot testing: 3.4.65-rc1 and 3.4.65-rc2. Passed
-dmesg regression testing: passed. dmesgs look good. No regressions 
-compared to the previous dmesgs for this release. dmesg emerg, crit, 
-alert, err are clean. No regressions in warn.
+For example, a per-cpu list would be quite efficient, or a hash table.
+Then, a jbd2 callback run before the transaction commits could modify
+the requisite inodes and superblock.  All of those inodes are already
+(by definition) part of the transaction, so it won't add new buffers
+of the transaction.
 
-Test systems
+I'm not necessarily against the current patch, just thinking aloud about
+how it might be improved further.
 
-Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2 (cross-compile
-testing)
+Cheers, Andreas
 
-Cross-compile tests results
+> Here are some of the becnhmark results with the changes.
+> 
+> On a 90 core machine:
+> 
+> Here are the performance improvements in some of the aim7 workloads,
+> 
+> ---------------------------
+> |             | % increase |
+> ---------------------------
+> | alltests    |      9.56  |
+> ---------------------------
+> | custom      |     12.20  |
+> ---------------------------
+> | fserver     |     15.99  |
+> ---------------------------
+> | new_dbase   |      1.73  |
+> ---------------------------
+> | new_fserver |     17.56  |
+> ---------------------------
+> | shared      |      6.24  |
+> ---------------------------
+> For Swingbench dss workload,
+> 
+> -------------------------------------------------------------------------
+> | Users         | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  |
+> -------------------------------------------------------------------------
+> | % imprvoment  | 7.67 | 9.43 | 7.30 | 0.58 | 0.53 |-2.62 |-3.72 | 3.77 |
+> | without using |      |      |      |      |      |      |      |      |
+> | shared memory |      |      |      |      |      |      |      |      |
+> -------------------------------------------------------------------------
+> 
+> On a 8 core machine:
+> 
+> Here are the performance date from some of the aim7 workloads,
+> 
+> ---------------------------
+> |             | % increase |
+> ---------------------------
+> | alltests    |      3.90  |
+> ---------------------------
+> | custom      |      1.66  |
+> ---------------------------
+> | dbase       |     -2.00  |
+> ---------------------------
+> | fserver     |      1.80  |
+> ---------------------------
+> | new_dbase   |     -1.90  |
+> ---------------------------
+> | new_fserver |      2.18  |
+> ---------------------------
+> | shared      |      7.46  |
+> ---------------------------
+> For Swingbench dss workload,
+> 
+> -------------------------------------------------------------------------
+> | Users         | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  |
+> -------------------------------------------------------------------------
+> | % imprvoment  |-1.32 | 6.45 | 1.18 |-3.13 |-1.13 | 4.68 | 5.75 |-0.37 |
+> | without using |      |      |      |      |      |      |      |      |
+> | shared memory |      |      |      |      |      |      |      |      |
+> -------------------------------------------------------------------------
+> 
+> T Makphaibulchoke (2):
+>  fs/ext4: adding and initalizing new members of ext4_inode_info and
+>    ext4_sb_info
+>  fs/ext4/namei.c: reducing contention on s_orphan_lock mmutex
+> 
+> fs/ext4/ext4.h  |   5 +-
+> fs/ext4/inode.c |   1 +
+> fs/ext4/namei.c | 139 ++++++++++++++++++++++++++++++++++++++++----------------
+> fs/ext4/super.c |   4 +-
+> 4 files changed, 108 insertions(+), 41 deletions(-)
+> 
+> -- 
+> 1.7.11.3
+> 
 
-alpha 	defconfig 	Passed
-arm 	defconfig 	Passed
-arm64 	defconfig 	Not applicable
-blackfin defconfig 	Passed
-c6x 	dsk6455_defconfig 	Passed
-mips 	defconfig 	Passed
-mipsel 	defconfig 	Passed
-powerpc wii_defconfig 	Passed
-sh 	defconfig 	Passed
-sparc 	defconfig 	Passed
-tile 	tilegx_defconfig Passed
 
--- Shuah
+Cheers, Andreas
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+
+
+
+
