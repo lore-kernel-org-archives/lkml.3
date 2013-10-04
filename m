@@ -1,45 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab3JDOuk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:50:40 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:28117 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753531Ab3JDOuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:50:39 -0400
-Date: Fri, 4 Oct 2013 10:50:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] trace-cmd: Report unknown VMX exit reasons with code
-Message-ID: <20131004105034.5d8e8569@gandalf.local.home>
-In-Reply-To: <524EC54D.5060503@web.de>
-References: <5207446F.1090703@web.de>
-	<524EC54D.5060503@web.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	id S1754934Ab3JDOxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:53:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39832 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754224Ab3JDOxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 10:53:43 -0400
+Message-ID: <1380898420.2673.192.camel@ul30vt.home>
+Subject: Re: [PATCH 3/4] kvm: Create non-coherent DMA registeration
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Fri, 04 Oct 2013 08:53:40 -0600
+In-Reply-To: <524E9250.4030904@ozlabs.ru>
+References: <20131001200757.31715.22994.stgit@bling.home>
+	 <20131001201518.31715.50233.stgit@bling.home> <524E9250.4030904@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Oct 2013 15:40:29 +0200
-Jan Kiszka <jan.kiszka@web.de> wrote:
+On Fri, 2013-10-04 at 20:02 +1000, Alexey Kardashevskiy wrote:
+> On 10/02/2013 06:15 AM, Alex Williamson wrote:
+> > We currently use some ad-hoc arch variables tied to legacy KVM device
+> > assignment to manage emulation of instructions that depend on whether
+> > non-coherent DMA is present.  Create an interface for this so that we
+> > can register coherency for other devices, like vfio assigned devices.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  arch/x86/include/asm/kvm_host.h |    2 ++
+> >  arch/x86/kvm/vmx.c              |    3 +--
+> >  arch/x86/kvm/x86.c              |   21 +++++++++++++++++++--
+> >  include/linux/kvm_host.h        |   19 +++++++++++++++++++
+> >  virt/kvm/iommu.c                |    6 ++++++
+> >  5 files changed, 47 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > index 1b6b5f9..50c1e9c1 100644
+> > --- a/arch/x86/include/asm/kvm_host.h
+> > +++ b/arch/x86/include/asm/kvm_host.h
+> > @@ -558,6 +558,8 @@ struct kvm_arch {
+> >  	struct list_head assigned_dev_head;
+> >  	struct iommu_domain *iommu_domain;
+> >  	bool iommu_noncoherent;
+> > +#define __KVM_HAVE_ARCH_NONCOHERENT_DMA
+> > +	atomic_t noncoherent_dma_count;
+> >  	struct kvm_pic *vpic;
+> >  	struct kvm_ioapic *vioapic;
+> >  	struct kvm_pit *vpit;
+> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > index 8b2270a..a982c9e 100644
+> > --- a/arch/x86/kvm/vmx.c
+> > +++ b/arch/x86/kvm/vmx.c
+> > @@ -7404,8 +7404,7 @@ static u64 vmx_get_mt_mask(struct kvm_vcpu *vcpu, gfn_t gfn, bool is_mmio)
+> >  	 */
+> >  	if (is_mmio)
+> >  		ret = MTRR_TYPE_UNCACHABLE << VMX_EPT_MT_EPTE_SHIFT;
+> > -	else if (vcpu->kvm->arch.iommu_domain &&
+> > -		 vcpu->kvm->arch.iommu_noncoherent)
+> > +	else if (kvm_arch_has_noncoherent_dma(vcpu->kvm))
+> >  		ret = kvm_get_guest_memory_type(vcpu, gfn) <<
+> >  		      VMX_EPT_MT_EPTE_SHIFT;
+> >  	else
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index b1231b0..feec86d 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -2715,8 +2715,7 @@ static void wbinvd_ipi(void *garbage)
+> >  
+> >  static bool need_emulate_wbinvd(struct kvm_vcpu *vcpu)
+> >  {
+> > -	return vcpu->kvm->arch.iommu_domain &&
+> > -	       vcpu->kvm->arch.iommu_noncoherent;
+> > +	return kvm_arch_has_noncoherent_dma(vcpu->kvm);
+> >  }
+> >  
+> >  void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> > @@ -7420,6 +7419,24 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
+> >  			kvm_x86_ops->interrupt_allowed(vcpu);
+> >  }
+> >  
+> > +void kvm_arch_register_noncoherent_dma(struct kvm *kvm)
+> > +{
+> > +	atomic_inc(&kvm->arch.noncoherent_dma_count);
+> > +}
+> > +EXPORT_SYMBOL_GPL(kvm_arch_register_noncoherent_dma);
+> > +
+> > +void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm)
+> > +{
+> > +	atomic_dec(&kvm->arch.noncoherent_dma_count);
+> > +}
+> > +EXPORT_SYMBOL_GPL(kvm_arch_unregister_noncoherent_dma);
+> > +
+> > +bool kvm_arch_has_noncoherent_dma(struct kvm *kvm)
+> > +{
+> > +	return atomic_read(&kvm->arch.noncoherent_dma_count);
+> > +}
+> > +EXPORT_SYMBOL_GPL(kvm_arch_has_noncoherent_dma);
+> > +
+> >  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
+> >  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
+> >  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
+> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > index f46da56..e239c93 100644
+> > --- a/include/linux/kvm_host.h
+> > +++ b/include/linux/kvm_host.h
+> > @@ -671,6 +671,25 @@ static inline void kvm_arch_free_vm(struct kvm *kvm)
+> >  }
+> >  #endif
+> >  
+> > +#ifdef __KVM_HAVE_ARCH_NONCOHERENT_DMA
+> > +void kvm_arch_register_noncoherent_dma(struct kvm *kvm);
+> > +void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm);
+> > +bool kvm_arch_has_noncoherent_dma(struct kvm *kvm);
+> > +#else
+> > +static inline void kvm_arch_register_noncoherent_dma(void)
+> 
+> 
+> Wrong prototype here and below, must include *kvm.
 
- 
-> Ping. While my other patch of that time was merged, this one didn't make
-> it yet. Any open issues?
+D'oh.  Thanks
 
-Hmm, no. Not sure how I missed this one. Probably because it didn't
-have the 2/2 patch format and I thought there was only one patch?
+> > +{
+> > +}
+> > +
+> > +static inline void kvm_arch_unregister_noncoherent_dma(void)
+> > +{
+> > +}
+> > +
+> > +static inline bool kvm_arch_has_noncoherent_dma(void)
+> > +{
+> > +	return false;
+> > +}
+> > +#endif
+> > +
+> >  static inline wait_queue_head_t *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
+> >  {
+> >  #ifdef __KVM_HAVE_ARCH_WQP
+> > diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> > index 9cde444..0a54456 100644
+> > --- a/virt/kvm/iommu.c
+> > +++ b/virt/kvm/iommu.c
+> > @@ -140,6 +140,9 @@ static int kvm_iommu_map_memslots(struct kvm *kvm)
+> >  	struct kvm_memslots *slots;
+> >  	struct kvm_memory_slot *memslot;
+> >  
+> > +	if (kvm->arch.iommu_noncoherent)
+> > +		kvm_arch_register_noncoherent_dma(kvm);
+> > +
+> >  	idx = srcu_read_lock(&kvm->srcu);
+> >  	slots = kvm_memslots(kvm);
+> >  
+> > @@ -335,6 +338,9 @@ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
+> >  
+> >  	srcu_read_unlock(&kvm->srcu, idx);
+> >  
+> > +	if (kvm->arch.iommu_noncoherent)
+> > +		kvm_arch_unregister_noncoherent_dma(kvm);
+> > +
+> >  	return 0;
+> >  }
+> >  
+> > 
+> 
+> 
 
-I'll queue it up.
 
-Thanks!
-
--- Steve
 
