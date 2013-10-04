@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab3JDGDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 02:03:15 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:54016 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab3JDGDN (ORCPT
+	id S1752371Ab3JDGFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 02:05:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50914 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3JDGFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 02:03:13 -0400
-X-Originating-IP: 50.43.39.152
-Date: Thu, 3 Oct 2013 23:03:05 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-Message-ID: <20131004060304.GA28411@leaf>
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
- <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
- <20131003105130.GE13318@ZenIV.linux.org.uk>
- <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
- <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
- <20131003232826.GA6604@jtriplet-mobl1>
- <20131004052959.GB5790@linux.vnet.ibm.com>
+	Fri, 4 Oct 2013 02:05:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131004052959.GB5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131003205706.GM13318@ZenIV.linux.org.uk>
+References: <20131003163411.GA17101@www.outflux.net> <20131003175824.GH13318@ZenIV.linux.org.uk>
+ <CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
+ <20131003182311.GI13318@ZenIV.linux.org.uk> <CAGXu5j+4NUKfgKiAK+w2MrsqRxHiYc62LBMx4UsfxUBSxNwNJA@mail.gmail.com>
+ <20131003205706.GM13318@ZenIV.linux.org.uk>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Fri, 4 Oct 2013 10:05:29 +0400
+Message-ID: <CACT4Y+Z_hxVOqUeVtvOH-eCkTLveW3vsPtcXN-jhs7=cbd21Zw@mail.gmail.com>
+Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 10:29:59PM -0700, Paul E. McKenney wrote:
-> On Thu, Oct 03, 2013 at 04:28:27PM -0700, Josh Triplett wrote:
-> > On Thu, Oct 03, 2013 at 01:52:45PM -0700, Linus Torvalds wrote:
-> > > On Thu, Oct 3, 2013 at 1:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > > >
-> > > > The problem is this:
-> > > > A = 1, B = 1
-> > > > CPU1:
-> > > > A = 0
-> > > > <full barrier>
-> > > > synchronize_rcu()
-> > > > read B
-> > > >
-> > > > CPU2:
-> > > > rcu_read_lock()
-> > > > B = 0
-> > > > read A
-> 
-> /me scratches his head...
-> 
-> OK, for CPU2 to see 1 from its read from A, the corresponding RCU
-> read-side critical section must have started before CPU1 did A=0.  This
-> means that this same RCU read-side critical section must have started
-> before CPU1's synchronize_rcu(), which means that it must complete
-> before that synchronize_rcu() returns.  Therefore, CPU2's B=0 must
-> execute before CPU1's read of B, hence that read of B must return zero.
-> 
-> Conversely, if CPU1's read from B returns 1, we know that CPU2's
-> RCU read-side critical section must not have completed until after
-> CPU1's synchronize_rcu() returned, which means that the RCU read-side
-> critical section must have started after that synchronize_rcu() started,
-> so CPU1's assignment to A must also have already happened.  Therefore,
-> CPU2's read from A must return zero.
+On Fri, Oct 4, 2013 at 12:57 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Thu, Oct 03, 2013 at 12:36:08PM -0700, Kees Cook wrote:
+>> > Kees, try to think for a minute[1].  Really.  We have general-purpose
+>> > ...
+>> > [1] yes, yes, I know - the mere mention of security should've prevented such
+>> > arrogant requests.  It's an imperfect universe.
+>>
+>> I want to attempt to disassemble what you've communicating here:
+>>
+>> a) I'm not thinking.
+>> b) Requesting that someone think when they mention security is arrogant.
+>
+> Not really.
+>
+> It's just that all too often completely pointless changes are touted
+> as security hardening.  With replies along the lines of "it doesn't
+> really buy you anything" countered with indignant "but what if
+> <impossible situation>" and/or references to "defense in depth" (used
+> as a magical incantation), etc.
+>
+> You've posted a provably pointless patch.  Happens to all of us.  And in
+> reply to "it's pointless for the following reasons" (with moderate
+> level of sarcasm) you responded pretty much with "but what if allocator
+> changes?  It's more robust that way".  OK, but if you go for that
+> kind of arguments (and they can be valid), you'd better be correct.
+> You were not, and for very obvious reasons.  Let me repeat, this
+> time with sarcasm level down to zero:
+>
+> Let n be some integer between 32 and 4096 and N be equal to n rounded up
+> to word size.  If kmalloc(n) returns a pointer such that fetch from
+> (char *)p[N - 1] triggers an exception, we have a badly broken kernel.
+> It can happen only if there is a page boundary between p[n-1] and p[N-1],
+> which means that p is not word-aligned.
+> Consider the following code:
+>         struct foo {
+>                 unsigned long n;
+>                 char a[];
+>         } *p = kmalloc(offsetof(struct foo, a) + 33);
+>         if (p)
+>                 p->n = 1;
+> and note that it will result in an exception on any architecture that prohibits
+> unaligned accesses in the kernel.  Even on architectures where those are
+> allowed, misaligned structures mean serious correctness problems (atomicity of
+> stores, etc.)
+>
+> In other words, kmalloc() (or, indeed, userland malloc()) demonstrating
+> such behaviour would need immediate fixing.  The only exception I can
+> think of is something with byte granularity of memory protection; in such
+> case we can have that without unaligned return values returned by allocator.
+> Which would require a lot of changes in mm/*, at the very least, and probably
+> would violate a lot of assumptions elsewhere in the kernel (starting with
+> sizeof(void *) == sizeof(unsigned long)).
+>
+>> What the patch does help with, though, is dynamic analysis tools that
+>> are looking for out-of-bound reads, which this clearly is. It should
+>> be considered a violation of the API to attempt to access a range
+>> beyond what was requested for the allocation. Fixing this means lots
+>> of noise vanishes from such analysis of the allocation API, letting
+>> other tools besides just KASAN do work to find other more serious
+>> problems in heap usage.
+>>
+>> Does fixing this to help dynamic analysis tools somehow make the
+>> kernel worse? I think that fixing this makes it easier to find further
+>> bugs that might be much more serious.
+>
+> Possibly true.  But then I'd suggest wrapping that into a different ifdef;
+> grep for ifdef __CHECKER__, with comment along the lines of "to simplify
+> analysis of potential out-of-bounds accesses".
 
-Yeah, that makes sense.
 
-I think too much time spent staring at the *implementation* of RCU and
-the exciting assumptions it has to make about barriers or memory
-operations leaking out of the implementations of the RCU primitives (for
-instance, the fun needed to guarantee a memory barrier on all CPUs, or
-to safely use non-atomic operations inside RCU itself) makes it entirely
-too difficult to look at a perfectly ordinary *use* of RCU primitives
-and see the obvious. :)
+Hi,
 
-- Josh Triplett
+Any single reason to not just fix the code?
+
+With this patch:
++ sticks with "do not access beyond request size", which is a good
+thing all others equal
++ makes static and dynamic verification tools happy
+- ???
+
+Current code:
+- accesses memory beyond requested size, which is a bad thing all others equal
+- makes static and dynamic verification tools unhappy, which makes you
+miss really important things
++ ???
+
+I think we just need to land it as is.
