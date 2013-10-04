@@ -1,253 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab3JDVXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 17:23:10 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:47718 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab3JDVXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 17:23:06 -0400
+	id S1753728Ab3JDVZQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 17:25:16 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:51747 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab3JDVZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 17:25:14 -0400
+Date: Fri, 4 Oct 2013 14:25:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131004212506.GM5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131003190830.GA18672@redhat.com>
+ <20131003194226.GO28601@twins.programming.kicks-ass.net>
+ <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
+ <20131004165044.GV28601@twins.programming.kicks-ass.net>
+ <20131004170954.GK5790@linux.vnet.ibm.com>
+ <20131004185239.GS15690@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1eefe8cfff2f1edef0c3b5550af3a887@countercultured.net>
-References: <20130921225959.GA20388@www.outflux.net>
-	<20131003205629.GG5729@outflux.net>
-	<1eefe8cfff2f1edef0c3b5550af3a887@countercultured.net>
-Date: Fri, 4 Oct 2013 14:23:05 -0700
-X-Google-Sender-Auth: d-tDNrU17tOEtbGA6pzltj_RbzQ
-Message-ID: <CAGXu5j+ZAsp8tBcxNg4N-wF3New7BrTBGqU_pv3PywPy4j8VuQ@mail.gmail.com>
-Subject: Re: [PATCH] LSM: MntRestrict blocks mounts on symlink targets
-From: Kees Cook <keescook@chromium.org>
-To: David Quigley <dpquigl@davequigley.com>
-Cc: Kees Cook <kees@outflux.net>, LKML <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Tyler Hicks <tyhicks@canonical.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-security-module-owner@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004185239.GS15690@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100421-5806-0000-0000-000022F5F862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 9:02 AM, David Quigley <dpquigl@davequigley.com> wrote:
-> Why is this an LSM and not something further up in the VFS? Why not make a
-> sysctl for this and place it further up in the VFS? Has it already been
-> rejected from there? If so why not include it in the things covered by Yama?
-> From a code perspective I can't find anything wrong code wise but it seems
-> odd to make a security module for something which is clearly a change to VFS
-> semantics not really a security module.
+On Fri, Oct 04, 2013 at 08:52:39PM +0200, Peter Zijlstra wrote:
+> On Fri, Oct 04, 2013 at 10:09:54AM -0700, Paul E. McKenney wrote:
+> > On Fri, Oct 04, 2013 at 06:50:44PM +0200, Peter Zijlstra wrote:
+> > > On Fri, Oct 04, 2013 at 09:03:52AM -0700, Paul E. McKenney wrote:
+> > > > The problem exists, but NOCB made it much more probable.  With non-NOCB
+> > > > kernels, an irq-disabled call_rcu() invocation does a wake_up() only if
+> > > > there are more than 10,000 callbacks stacked up on the CPU.  With a NOCB
+> > > > kernel, the wake_up() happens on the first callback.
+> > > 
+> > > Oh I see.. so I was hoping this was some NOCB crackbrained damage we
+> > > could still 'fix'.
+> > > 
+> > > And that wakeup is because we moved grace-period advancing into
+> > > kthreads, right?
+> > 
+> > Yep, in earlier kernels we would instead be doing raise_softirq().
+> > Which would instead wake up ksoftirqd, if I am reading the code
+> > correctly -- spin_lock_irq() does not affect preempt_count.
+> 
+> I suspect you got lost in the indirection fest; but have a look at
+> __raw_spin_lock_irqsave(). It does:
+> 
+> 	local_irq_save();
+> 	preempt_disable();
 
-There is this proposal:
+ETOOMANYLEVELS.  ;-)
 
-http://marc.info/?l=linux-fsdevel&m=137876254501993&w=2
+OK, then I should be able to just do raise_softirq() in this
+situation.  As long as irqs were disabled due to something other than
+local_irq_disable(), but I would get around that by doing an explicit
+preempt_disable() in call_rcu() or friends.
 
-But we're looking for a way to disable it across the entire system.
-Using the LSM hook proved extremely effective.
+The real-time guys won't like that much -- they are trying to get rid
+of softirq -- but hopefully we can come up with something better later.
+Or maybe they have other tricks available to them.
 
--Kees
+> > > Probably; so the regular no-NOCB would be easy to work around by
+> > > providing me a call_rcu variant that never does the wakeup.
+> > 
+> > Well, if we can safely, sanely, and reliably defer the wakeup, there is
+> > no reason not to make plain old call_rcu() do what you need.
+> 
+> Agreed.
+> 
+> > If there
+> > is no such way to defer the wakeup, then I don't see how to make that
+> > variant.
+> 
+> Wouldn't it be a simple matter of making __call_rcu_core() return early,
+> just like it does for irqs_disabled_flags()?
 
->
->
-> On 10/03/2013 16:56, Kees Cook wrote:
->>
->> Pinging on this too. Any feedback?
->>
->> -Kees
->>
->> On Sat, Sep 21, 2013 at 03:59:59PM -0700, Kees Cook wrote:
->>>
->>> On systems where certain filesystem contents cannot be entirely trusted,
->>> it is beneficial to block mounts on symlinks. This makes sure that
->>> malicious filesystem contents cannot trigger the over-mounting of trusted
->>> filesystems. (For example, a bind-mounted subdirectory of /var cannot be
->>> redirected to mount on /etc via a symlink: a daemon cannot elevate privs
->>> to uid-0.)
->>>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> ---
->>>  security/Kconfig                   |    6 ++++
->>>  security/Makefile                  |    2 ++
->>>  security/mntrestrict/Kconfig       |   13 ++++++++
->>>  security/mntrestrict/Makefile      |    1 +
->>>  security/mntrestrict/mntrestrict.c |   63
->>> ++++++++++++++++++++++++++++++++++++
->>>  5 files changed, 85 insertions(+)
->>>  create mode 100644 security/mntrestrict/Kconfig
->>>  create mode 100644 security/mntrestrict/Makefile
->>>  create mode 100644 security/mntrestrict/mntrestrict.c
->>>
->>> diff --git a/security/Kconfig b/security/Kconfig
->>> index e9c6ac7..84d41f4 100644
->>> --- a/security/Kconfig
->>> +++ b/security/Kconfig
->>> @@ -121,6 +121,7 @@ source security/selinux/Kconfig
->>>  source security/smack/Kconfig
->>>  source security/tomoyo/Kconfig
->>>  source security/apparmor/Kconfig
->>> +source security/mntrestrict/Kconfig
->>>  source security/yama/Kconfig
->>>
->>>  source security/integrity/Kconfig
->>> @@ -131,6 +132,7 @@ choice
->>>         default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
->>>         default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
->>>         default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
->>> +       default DEFAULT_SECURITY_MNTRESTRICT if SECURITY_MNTRESTRICT
->>>         default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
->>>         default DEFAULT_SECURITY_DAC
->>>
->>> @@ -150,6 +152,9 @@ choice
->>>         config DEFAULT_SECURITY_APPARMOR
->>>                 bool "AppArmor" if SECURITY_APPARMOR=y
->>>
->>> +       config DEFAULT_SECURITY_MNTRESTRICT
->>> +               bool "MntRestrict" if SECURITY_MNTRESTRICT=y
->>> +
->>>         config DEFAULT_SECURITY_YAMA
->>>                 bool "Yama" if SECURITY_YAMA=y
->>>
->>> @@ -164,6 +169,7 @@ config DEFAULT_SECURITY
->>>         default "smack" if DEFAULT_SECURITY_SMACK
->>>         default "tomoyo" if DEFAULT_SECURITY_TOMOYO
->>>         default "apparmor" if DEFAULT_SECURITY_APPARMOR
->>> +       default "mntrestrict" if DEFAULT_SECURITY_MNTRESTRICT
->>>         default "yama" if DEFAULT_SECURITY_YAMA
->>>         default "" if DEFAULT_SECURITY_DAC
->>>
->>> diff --git a/security/Makefile b/security/Makefile
->>> index c26c81e..33f38b1 100644
->>> --- a/security/Makefile
->>> +++ b/security/Makefile
->>> @@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)       += selinux
->>>  subdir-$(CONFIG_SECURITY_SMACK)                += smack
->>>  subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
->>>  subdir-$(CONFIG_SECURITY_APPARMOR)     += apparmor
->>> +subdir-$(CONFIG_SECURITY_MNTRESTRICT)  += mntrestrict
->>>  subdir-$(CONFIG_SECURITY_YAMA)         += yama
->>>
->>>  # always enable default capabilities
->>> @@ -22,6 +23,7 @@ obj-$(CONFIG_SECURITY_SMACK)          +=
->>> smack/built-in.o
->>>  obj-$(CONFIG_AUDIT)                    += lsm_audit.o
->>>  obj-$(CONFIG_SECURITY_TOMOYO)          += tomoyo/built-in.o
->>>  obj-$(CONFIG_SECURITY_APPARMOR)                += apparmor/built-in.o
->>> +obj-$(CONFIG_SECURITY_MNTRESTRICT)     += mntrestrict/built-in.o
->>>  obj-$(CONFIG_SECURITY_YAMA)            += yama/built-in.o
->>>  obj-$(CONFIG_CGROUP_DEVICE)            += device_cgroup.o
->>>
->>> diff --git a/security/mntrestrict/Kconfig b/security/mntrestrict/Kconfig
->>> new file mode 100644
->>> index 0000000..9a7310d
->>> --- /dev/null
->>> +++ b/security/mntrestrict/Kconfig
->>> @@ -0,0 +1,13 @@
->>> +config SECURITY_MNTRESTRICT
->>> +       bool "Restrict mounts on symlinks system-wide"
->>> +       depends on SECURITY
->>> +       help
->>> +         Enforces that rule that symlinks cannot be used as mount
->>> +         destinations across the entire system. This is to make sure
->>> +         it is never possible to redirect locations using symlinks
->>> +         when the process doing the mount may not be able to strictly
->>> +         trust the contents of the filesystem where it is happening. For
->>> +         example, making sure a bind mounted subdirectory in /var is not
->>> +         redirected into /etc: stops a daemon without full privileges
->>> +         from elevating to uid-0 by tricking the system init filesystem
->>> +         mounting infrastructure.
->>> diff --git a/security/mntrestrict/Makefile
->>> b/security/mntrestrict/Makefile
->>> new file mode 100644
->>> index 0000000..340be1f
->>> --- /dev/null
->>> +++ b/security/mntrestrict/Makefile
->>> @@ -0,0 +1 @@
->>> +obj-$(CONFIG_SECURITY_MNTRESTRICT) += mntrestrict.o
->>> diff --git a/security/mntrestrict/mntrestrict.c
->>> b/security/mntrestrict/mntrestrict.c
->>> new file mode 100644
->>> index 0000000..257ae69
->>> --- /dev/null
->>> +++ b/security/mntrestrict/mntrestrict.c
->>> @@ -0,0 +1,63 @@
->>> +/*
->>> + * Mount Restriction Security Module
->>> + *
->>> + * Copyright 2011-2013 Google Inc.
->>> + *
->>> + * Authors:
->>> + *      Stephan Uphoff  <ups@google.com>
->>> + *      Kees Cook       <keescook@chromium.org>
->>> + *
->>> + * This software is licensed under the terms of the GNU General Public
->>> + * License version 2, as published by the Free Software Foundation, and
->>> + * may be copied, distributed, and modified under those terms.
->>> + *
->>> + * This program is distributed in the hope that it will be useful,
->>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>> + * GNU General Public License for more details.
->>> + */
->>> +
->>> +#define pr_fmt(fmt) "MntRestrict LSM: " fmt
->>> +
->>> +#include <linux/module.h>
->>> +#include <linux/security.h>
->>> +#include <linux/sched.h>
->>> +#include <linux/fs.h>
->>> +#include <linux/fs_struct.h>
->>> +#include <linux/mount.h>
->>> +#include <linux/path.h>
->>> +#include <linux/root_dev.h>
->>> +
->>> +static int mntrestrict_sb_mount(const char *dev_name, struct path *path,
->>> +                               const char *type, unsigned long flags,
->>> +                               void *data)
->>> +{
->>> +       int error = current->total_link_count ? -ELOOP : 0;
->>> +
->>> +       if (error) {
->>> +               pr_notice("Mount path with symlinks prohibited -
->>> pid=%d\n",
->>> +                       task_pid_nr(current));
->>> +       }
->>> +
->>> +       return error;
->>> +}
->>> +
->>> +static struct security_operations mntrestrict_ops = {
->>> +       .name   = "mntrestrict",
->>> +       .sb_mount = mntrestrict_sb_mount,
->>> +};
->>> +
->>> +static int __init mntrestrict_init(void)
->>> +{
->>> +       int error;
->>> +
->>> +       error = register_security(&mntrestrict_ops);
->>> +
->>> +       if (error)
->>> +               panic("Could not register MntRestrict security module");
->>> +
->>> +       pr_info("symlink destinations will be blocked.\n");
->>> +
->>> +       return error;
->>> +}
->>> +security_initcall(mntrestrict_init);
->>> --
->>> 1.7.9.5
->>>
->>>
->>> --
->>> Kees Cook
->>> Chrome OS Security
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-security-module" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Given that raise_softirq() works, it just might be.  Except that I would
+need to leave an indication that there are deferred callbacks and do
+an invoke_rcu_core().  Plus make __rcu_process_callbacks() check this
+indication and do the wakeup.
 
+I should be able to use in_interrupt() despite its inaccuracy near
+the beginnings and ends of interrupt handlers because all I really
+care about is whether one of the scheduler or perf locks might be
+held, and they will cause in_interrupt() to return true regardless.
 
+> > > NOCB might be a little more difficult; depending on the reason why it
+> > > needs to do this wakeup on every single invocation; that seems
+> > > particularly expensive.
+> > 
+> > Not on every single invocation, just on those invocations where the list
+> > is initially empty.  So the first call_rcu() on a CPU whose rcuo kthread
+> > is sleeping will do a wakeup, but subsequent call_rcu()s will just queue,
+> > at least until rcuo goes to sleep again.  Which takes awhile, since it
+> > has to wait for a grace period before invoking that first RCU callback.
+> 
+> So I've not kept up with RCU the last year or so due to circumstance, so
+> please bear with me ( http://www.youtube.com/watch?v=4sxtHODemi0 ).
 
--- 
-Kees Cook
-Chrome OS Security
+I would, but the people sitting near me might be disturbed.  ;-)
+
+>                                                                     Why
+> do we still have a per-cpu kthread in nocb mode? The idea is that we do
+> not disturb the cpu, right? So I suppose these kthreads get to run on
+> another cpu.
+
+Yep, the idea is that usermode figures out where to run them.  Even if
+usermode doesn't do that, this has the effect of getting them to be
+more out of the way of real-time tasks.
+
+> Since its running on another cpu; we get into atomic and memory barriers
+> anyway; so why not keep the logic the same as no-nocb but have another
+> cpu check our nocb cpu's state.
+
+You can do that today by setting rcu_nocb_poll, but that results in
+frequent polling wakeups even when the system is completely idle, which
+is out of the question for the battery-powered embedded guys.
+
+> That is; I'm fumbling to understand how all this works and needs to be
+> different.
+
+Here is an untested patch.  Thoughts?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a33a24d10611..1a0a14349b29 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2310,6 +2310,9 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+ 	/* If there are callbacks ready, invoke them. */
+ 	if (cpu_has_callbacks_ready_to_invoke(rdp))
+ 		invoke_rcu_callbacks(rsp, rdp);
++
++	/* Do any needed deferred wakeups of rcuo kthreads. */
++	do_nocb_deferred_wakeup(rdp);
+ }
+ 
+ /*
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 8e34d8674a4e..c20096cf8206 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -335,6 +335,7 @@ struct rcu_data {
+ 	int nocb_p_count_lazy;		/*  (approximate). */
+ 	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
+ 	struct task_struct *nocb_kthread;
++	bool nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 
+ 	/* 8) RCU CPU stall data. */
+@@ -553,6 +554,7 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+ 			    bool lazy);
+ static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+ 				      struct rcu_data *rdp);
++static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
+ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+ static void rcu_kick_nohz_cpu(int cpu);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 747df70a4d64..7f54fb25a036 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2125,9 +2125,17 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 	}
+ 	len = atomic_long_read(&rdp->nocb_q_count);
+ 	if (old_rhpp == &rdp->nocb_head) {
+-		wake_up(&rdp->nocb_wq); /* ... only if queue was empty ... */
++		if (!in_interrupt()) {
++			wake_up(&rdp->nocb_wq); /* ... if queue was empty ... */
++			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
++					    TPS("WakeEmpty"));
++		} else {
++			rdp->nocb_defer_wakeup = true;
++			invoke_rcu_core();
++			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
++					    TPS("WakeEmptyIsDeferred"));
++		}
+ 		rdp->qlen_last_fqs_check = 0;
+-		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeEmpty"));
+ 	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
+ 		wake_up_process(t); /* ... or if many callbacks queued. */
+ 		rdp->qlen_last_fqs_check = LONG_MAX / 2;
+@@ -2314,6 +2322,16 @@ static int rcu_nocb_kthread(void *arg)
+ 	return 0;
+ }
+ 
++/* Do a deferred wakeup of rcu_nocb_kthread(). */
++static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
++{
++	if (!ACCESS_ONCE(rdp->nocb_defer_wakeup))
++		return;
++	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
++	wake_up(&rdp->nocb_wq);
++	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
++}
++
+ /* Initialize per-rcu_data variables for no-CBs CPUs. */
+ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+ {
+@@ -2384,6 +2402,10 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+ {
+ }
+ 
++static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
++{
++}
++
+ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ {
+ }
+
