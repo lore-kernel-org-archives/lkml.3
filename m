@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab3JDFd2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 01:33:28 -0400
-Received: from sauhun.de ([89.238.76.85]:44610 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3JDFd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 01:33:27 -0400
-Date: Fri, 4 Oct 2013 07:33:23 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        Kedareswara rao Appana <appanad@xilinx.com>,
-        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] i2c: xilinx: Use devm_* functions
-Message-ID: <20131004053323.GB3194@katana>
-References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
- <83ec9558211389896f21d9682e9824cd7979466c.1380550490.git.michal.simek@xilinx.com>
+	id S1751216Ab3JDFlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 01:41:21 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:52349 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3JDFlT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 01:41:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
-Content-Disposition: inline
-In-Reply-To: <83ec9558211389896f21d9682e9824cd7979466c.1380550490.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <524E50DB.3060707@roeck-us.net>
+References: <20131004010230.GI27287@sirena.org.uk>
+	<524E50DB.3060707@roeck-us.net>
+Date: Thu, 3 Oct 2013 22:41:18 -0700
+Message-ID: <CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 3
+From: Olof Johansson <olof@lixom.net>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Mark Brown <broonie@kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 3, 2013 at 10:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 10/03/2013 06:02 PM, Mark Brown wrote:
+>>
+>> Hi all,
+>>
+>> Better late than never I've uploaded today's linux-next tree to the
+>> master branch of the repository below:
+>>
+>>          git://gitorious.org/thierryreding/linux-next.git
+>>
+>> A next-20131003 tag is also provided for convenience.
+>>
+>> A few new conflicts today caused by the removal of the h8300
+>> architecture which I didn't report for triviality.  Several new build
+>> failures were found as a result of running allmodconfig tests between
+>> merges all of which have been reported and I'm still carrying the i.MX
+>> fix that Thierry has been carrying.
+>>
+>> Due to the length of time taken to run all the allmodconfigs I skipped
+>> the defconfig tests; I know Olof has the ARM stuff covered in his
+>> autobuilder.  I'm going to use allyesconfig tomorrow since that should
+>> run faster so hopefully I can cover the ARM, i386 and x86_64 configs
+>> again.
+>>
+>
+> I could try to set up the buildbot farm I am using for -stable candidates
+> to also test the -next tree. Would that help ?
 
---jho1yZJdad60DJr+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ARM is pretty well-covered by my builds, I post results at:
+
+http://lists.linaro.org/mailman/listinfo/kernel-build-reports
+
+But I'm sure others would be useful.
 
 
-> +	i2c->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(i2c->base)) {
-> +		dev_err(&pdev->dev, "Could not allocate iomem\n");
-
-devm_ioremap_resource already prints error messages.
-
-> +	ret = devm_request_irq(&pdev->dev, irq, xiic_isr, 0, pdev->name, i2c);
-
-This is too early. Can you find out why?
-
-> +	pdata = (struct xiic_i2c_platform_data *)dev_get_platdata(&pdev->dev);
-
-Casting a void pointer?
-
-
---jho1yZJdad60DJr+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSTlMiAAoJEBQN5MwUoCm2gJcP/RkSsvPNjrK3RgKAAWfHjHmU
-ZSn12a/jHOfzKEr9ZHiwEsYPk/jFNVljnwDTtzXExyU8ckuG45dTRAwnZUkcX03/
-w3LJsRJtrwXkT8AGLCshaclRxjy0Z45hUD2jJzJqThSH/nRdkUZNu11rbrXaPvSp
-52SZOSg+nqLAXaV/l8zM2Bdi/EHgop6XGY7I0AYy5MSw52zh3yxMgxkD6a91HB5T
-8DH1EF3xJIgqJ79bdeee9AwqQksgSxev83aBhV3dP5H3W6qTN8bUClZPLjzYIF1H
-pAYnXylzPpVTgrJbD7X2+LoYx7j1iTwT4AfoS74SMwT+Oa7+fK9dG89j68EhBd2Z
-zqAMkxURGMd44uX5hTvde+bUHVD6UckHNXgx9s4G6K7b2I6eefv0Po+/8Onnk/VF
-m6MVWRH16GjQlrpdRVLMAyEmItbY5prZL+yRZfcNdHBdL2I+9Nhv5nhp9TAU0Co4
-oajCUdvWzb1XN5KqfKmQprfcp9EpNF7+IthW9Yor6p119G1L9c8ydAVmR2ZGl7FP
-Oz0jk7WdtH9IEEnbMEThWSwC43COMJRoAhoeFkfhIEHNTxc8vjjvgr1q9yMtIF6s
-Y4QKFirG+Vzudn8YT6a9eVRQX9djzcuXHT7J00D0WzQXWHggCpe/Pm80/qziD1aZ
-jpSgEir0YanuehMiE6FN
-=hh5Q
------END PGP SIGNATURE-----
-
---jho1yZJdad60DJr+--
+-Olof
