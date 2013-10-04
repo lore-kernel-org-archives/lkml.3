@@ -1,44 +1,1025 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab3JDT5q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:57:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50672 "EHLO mga02.intel.com"
+	id S1754634Ab3JDT6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:58:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50679 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab3JDT5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:57:44 -0400
+	id S1754296Ab3JDT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 15:57:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
-   d="scan'208";a="388047492"
+   d="scan'208";a="388047495"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: linus.walleij@linaro.org
 Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH 0/3] gpio-langwell: initial support for Intel Merrifield
-Date: Fri,  4 Oct 2013 13:01:39 -0700
-Message-Id: <1380916902-23791-1-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH 2/3] gpio: rename gpio-langwell to gpio-intel-mid
+Date: Fri,  4 Oct 2013 13:01:41 -0700
+Message-Id: <1380916902-23791-3-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1380916902-23791-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1380916902-23791-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set does initial support for Intel Merrifield and does non-function
-changes to make gpio-langwell more friendly to other Intel Mid SoC's.
+gpio-langwell is a deprecated name. Despite the driver was made
+initially for Langwell, it supports now other Intel Mid SoC's.
 
-After these initial changes are accepted, more Merrifield stuff will come :)
+This patch does no change beside the file renaming with Kconfig/Makefile
+update.
 
-David Cohen (3):
-  gpio: langwell: add Intel Merrifield support
-  gpio: rename gpio-langwell to gpio-intel-mid
-  gpio-intel-mid: update prefixes and names from langwell to intel-mid
-
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
  drivers/gpio/Kconfig          |   6 +-
  drivers/gpio/Makefile         |   2 +-
- drivers/gpio/gpio-intel-mid.c | 471 ++++++++++++++++++++++++++++++++++++++++++
- drivers/gpio/gpio-langwell.c  | 397 -----------------------------------
- 4 files changed, 475 insertions(+), 401 deletions(-)
+ drivers/gpio/gpio-intel-mid.c | 468 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/gpio/gpio-langwell.c  | 468 ------------------------------------------
+ 4 files changed, 472 insertions(+), 472 deletions(-)
  create mode 100644 drivers/gpio/gpio-intel-mid.c
  delete mode 100644 drivers/gpio/gpio-langwell.c
 
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index b6ed304..3471962 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -612,12 +612,12 @@ config GPIO_AMD8111
+ 
+ 	  If unsure, say N
+ 
+-config GPIO_LANGWELL
+-	bool "Intel Langwell/Penwell GPIO support"
++config GPIO_INTEL_MID
++	bool "Intel Mid GPIO support"
+ 	depends on PCI && X86
+ 	select IRQ_DOMAIN
+ 	help
+-	  Say Y here to support Intel Langwell/Penwell GPIO.
++	  Say Y here to support Intel Mid GPIO.
+ 
+ config GPIO_PCH
+ 	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 98e23eb..f951866 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -32,7 +32,7 @@ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+ obj-$(CONFIG_GPIO_KEMPLD)	+= gpio-kempld.o
+ obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
+-obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
++obj-$(CONFIG_GPIO_INTEL_MID)	+= gpio-intel-mid.o
+ obj-$(CONFIG_ARCH_LPC32XX)	+= gpio-lpc32xx.o
+ obj-$(CONFIG_GPIO_LYNXPOINT)	+= gpio-lynxpoint.o
+ obj-$(CONFIG_GPIO_MAX730X)	+= gpio-max730x.o
+diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
+new file mode 100644
+index 0000000..bf3b959
+--- /dev/null
++++ b/drivers/gpio/gpio-intel-mid.c
+@@ -0,0 +1,468 @@
++/*
++ * Moorestown platform Langwell chip GPIO driver
++ *
++ * Copyright (c) 2008, 2009, 2013, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++/* Supports:
++ * Moorestown platform Langwell chip.
++ * Medfield platform Penwell chip.
++ */
++
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/platform_device.h>
++#include <linux/kernel.h>
++#include <linux/delay.h>
++#include <linux/stddef.h>
++#include <linux/interrupt.h>
++#include <linux/init.h>
++#include <linux/irq.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/pm_runtime.h>
++#include <linux/irqdomain.h>
++
++#define LNW_IRQ_TYPE_EDGE	(1 << 0)
++#define LNW_IRQ_TYPE_LEVEL	(1 << 1)
++
++/*
++ * Langwell chip has 64 pins and thus there are 2 32bit registers to control
++ * each feature, while Penwell chip has 96 pins for each block, and need 3 32bit
++ * registers to control them, so we only define the order here instead of a
++ * structure, to get a bit offset for a pin (use GPDR as an example):
++ *
++ * nreg = ngpio / 32;
++ * reg = offset / 32;
++ * bit = offset % 32;
++ * reg_addr = reg_base + GPDR * nreg * 4 + reg * 4;
++ *
++ * so the bit of reg_addr is to control pin offset's GPDR feature
++*/
++
++enum GPIO_REG {
++	GPLR = 0,	/* pin level read-only */
++	GPDR,		/* pin direction */
++	GPSR,		/* pin set */
++	GPCR,		/* pin clear */
++	GRER,		/* rising edge detect */
++	GFER,		/* falling edge detect */
++	GEDR,		/* edge detect result */
++	GAFR,		/* alt function */
++};
++
++/* langwell gpio driver data */
++struct lnw_gpio_ddata {
++	u16 ngpio;		/* number of gpio pins */
++	u32 gplr_offset;	/* offset of first GPLR register from base */
++	u32 flis_base;		/* base address of FLIS registers */
++	u32 flis_len;		/* length of FLIS registers */
++	u32 (*get_flis_offset)(int gpio);
++	u32 chip_irq_type;	/* chip interrupt type */
++};
++
++struct lnw_gpio {
++	struct gpio_chip		chip;
++	void __iomem			*reg_base;
++	spinlock_t			lock;
++	struct pci_dev			*pdev;
++	struct irq_domain		*domain;
++};
++
++#define to_lnw_priv(chip)	container_of(chip, struct lnw_gpio, chip)
++
++static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
++			      enum GPIO_REG reg_type)
++{
++	struct lnw_gpio *lnw = to_lnw_priv(chip);
++	unsigned nreg = chip->ngpio / 32;
++	u8 reg = offset / 32;
++
++	return lnw->reg_base + reg_type * nreg * 4 + reg * 4;
++}
++
++static void __iomem *gpio_reg_2bit(struct gpio_chip *chip, unsigned offset,
++				   enum GPIO_REG reg_type)
++{
++	struct lnw_gpio *lnw = to_lnw_priv(chip);
++	unsigned nreg = chip->ngpio / 32;
++	u8 reg = offset / 16;
++
++	return lnw->reg_base + reg_type * nreg * 4 + reg * 4;
++}
++
++static int lnw_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	void __iomem *gafr = gpio_reg_2bit(chip, offset, GAFR);
++	u32 value = readl(gafr);
++	int shift = (offset % 16) << 1, af = (value >> shift) & 3;
++
++	if (af) {
++		value &= ~(3 << shift);
++		writel(value, gafr);
++	}
++	return 0;
++}
++
++static int lnw_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	void __iomem *gplr = gpio_reg(chip, offset, GPLR);
++
++	return readl(gplr) & BIT(offset % 32);
++}
++
++static void lnw_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	void __iomem *gpsr, *gpcr;
++
++	if (value) {
++		gpsr = gpio_reg(chip, offset, GPSR);
++		writel(BIT(offset % 32), gpsr);
++	} else {
++		gpcr = gpio_reg(chip, offset, GPCR);
++		writel(BIT(offset % 32), gpcr);
++	}
++}
++
++static int lnw_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct lnw_gpio *lnw = to_lnw_priv(chip);
++	void __iomem *gpdr = gpio_reg(chip, offset, GPDR);
++	u32 value;
++	unsigned long flags;
++
++	if (lnw->pdev)
++		pm_runtime_get(&lnw->pdev->dev);
++
++	spin_lock_irqsave(&lnw->lock, flags);
++	value = readl(gpdr);
++	value &= ~BIT(offset % 32);
++	writel(value, gpdr);
++	spin_unlock_irqrestore(&lnw->lock, flags);
++
++	if (lnw->pdev)
++		pm_runtime_put(&lnw->pdev->dev);
++
++	return 0;
++}
++
++static int lnw_gpio_direction_output(struct gpio_chip *chip,
++			unsigned offset, int value)
++{
++	struct lnw_gpio *lnw = to_lnw_priv(chip);
++	void __iomem *gpdr = gpio_reg(chip, offset, GPDR);
++	unsigned long flags;
++
++	lnw_gpio_set(chip, offset, value);
++
++	if (lnw->pdev)
++		pm_runtime_get(&lnw->pdev->dev);
++
++	spin_lock_irqsave(&lnw->lock, flags);
++	value = readl(gpdr);
++	value |= BIT(offset % 32);
++	writel(value, gpdr);
++	spin_unlock_irqrestore(&lnw->lock, flags);
++
++	if (lnw->pdev)
++		pm_runtime_put(&lnw->pdev->dev);
++
++	return 0;
++}
++
++static int lnw_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	struct lnw_gpio *lnw = to_lnw_priv(chip);
++	return irq_create_mapping(lnw->domain, offset);
++}
++
++static int lnw_irq_type(struct irq_data *d, unsigned type)
++{
++	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
++	u32 gpio = irqd_to_hwirq(d);
++	unsigned long flags;
++	u32 value;
++	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
++	void __iomem *gfer = gpio_reg(&lnw->chip, gpio, GFER);
++
++	if (gpio >= lnw->chip.ngpio)
++		return -EINVAL;
++
++	if (lnw->pdev)
++		pm_runtime_get(&lnw->pdev->dev);
++
++	spin_lock_irqsave(&lnw->lock, flags);
++	if (type & IRQ_TYPE_EDGE_RISING)
++		value = readl(grer) | BIT(gpio % 32);
++	else
++		value = readl(grer) & (~BIT(gpio % 32));
++	writel(value, grer);
++
++	if (type & IRQ_TYPE_EDGE_FALLING)
++		value = readl(gfer) | BIT(gpio % 32);
++	else
++		value = readl(gfer) & (~BIT(gpio % 32));
++	writel(value, gfer);
++	spin_unlock_irqrestore(&lnw->lock, flags);
++
++	if (lnw->pdev)
++		pm_runtime_put(&lnw->pdev->dev);
++
++	return 0;
++}
++
++static void lnw_irq_unmask(struct irq_data *d)
++{
++}
++
++static void lnw_irq_mask(struct irq_data *d)
++{
++}
++
++static struct irq_chip lnw_irqchip = {
++	.name		= "LNW-GPIO",
++	.irq_mask	= lnw_irq_mask,
++	.irq_unmask	= lnw_irq_unmask,
++	.irq_set_type	= lnw_irq_type,
++};
++
++static const struct lnw_gpio_ddata gpio_lincroft = {
++	.ngpio = 64,
++};
++
++static const struct lnw_gpio_ddata gpio_penwell_aon = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static const struct lnw_gpio_ddata gpio_penwell_core = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static const struct lnw_gpio_ddata gpio_cloverview_aon = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE | LNW_IRQ_TYPE_LEVEL,
++};
++
++static const struct lnw_gpio_ddata gpio_cloverview_core = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static const struct lnw_gpio_ddata gpio_tangier = {
++	.ngpio = 192,
++	.gplr_offset = 4,
++	.flis_base = 0xff0c0000,
++	.flis_len = 0x8000,
++	.get_flis_offset = NULL,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {
++	{
++		/* Lincroft */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f),
++		.driver_data = (kernel_ulong_t)&gpio_lincroft,
++	},
++	{
++		/* Penwell AON */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f),
++		.driver_data = (kernel_ulong_t)&gpio_penwell_aon,
++	},
++	{
++		/* Penwell Core */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a),
++		.driver_data = (kernel_ulong_t)&gpio_penwell_core,
++	},
++	{
++		/* Cloverview Aon */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08eb),
++		.driver_data = (kernel_ulong_t)&gpio_cloverview_aon,
++	},
++	{
++		/* Cloverview Core */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08f7),
++		.driver_data = (kernel_ulong_t)&gpio_cloverview_core,
++	},
++	{
++		/* Tangier */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x1199),
++		.driver_data = (kernel_ulong_t)&gpio_tangier,
++	},
++	{ 0 }
++};
++MODULE_DEVICE_TABLE(pci, lnw_gpio_ids);
++
++static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
++{
++	struct irq_data *data = irq_desc_get_irq_data(desc);
++	struct lnw_gpio *lnw = irq_data_get_irq_handler_data(data);
++	struct irq_chip *chip = irq_data_get_irq_chip(data);
++	u32 base, gpio, mask;
++	unsigned long pending;
++	void __iomem *gedr;
++
++	/* check GPIO controller to check which pin triggered the interrupt */
++	for (base = 0; base < lnw->chip.ngpio; base += 32) {
++		gedr = gpio_reg(&lnw->chip, base, GEDR);
++		while ((pending = readl(gedr))) {
++			gpio = __ffs(pending);
++			mask = BIT(gpio);
++			/* Clear before handling so we can't lose an edge */
++			writel(mask, gedr);
++			generic_handle_irq(irq_find_mapping(lnw->domain,
++							    base + gpio));
++		}
++	}
++
++	chip->irq_eoi(data);
++}
++
++static void lnw_irq_init_hw(struct lnw_gpio *lnw)
++{
++	void __iomem *reg;
++	unsigned base;
++
++	for (base = 0; base < lnw->chip.ngpio; base += 32) {
++		/* Clear the rising-edge detect register */
++		reg = gpio_reg(&lnw->chip, base, GRER);
++		writel(0, reg);
++		/* Clear the falling-edge detect register */
++		reg = gpio_reg(&lnw->chip, base, GFER);
++		writel(0, reg);
++		/* Clear the edge detect status register */
++		reg = gpio_reg(&lnw->chip, base, GEDR);
++		writel(~0, reg);
++	}
++}
++
++static int lnw_gpio_irq_map(struct irq_domain *d, unsigned int virq,
++			    irq_hw_number_t hw)
++{
++	struct lnw_gpio *lnw = d->host_data;
++
++	irq_set_chip_and_handler_name(virq, &lnw_irqchip, handle_simple_irq,
++				      "demux");
++	irq_set_chip_data(virq, lnw);
++	irq_set_irq_type(virq, IRQ_TYPE_NONE);
++
++	return 0;
++}
++
++static const struct irq_domain_ops lnw_gpio_irq_ops = {
++	.map = lnw_gpio_irq_map,
++	.xlate = irq_domain_xlate_twocell,
++};
++
++static int lnw_gpio_runtime_idle(struct device *dev)
++{
++	pm_schedule_suspend(dev, 500);
++	return -EBUSY;
++}
++
++static const struct dev_pm_ops lnw_gpio_pm_ops = {
++	SET_RUNTIME_PM_OPS(NULL, NULL, lnw_gpio_runtime_idle)
++};
++
++static int lnw_gpio_probe(struct pci_dev *pdev,
++			  const struct pci_device_id *id)
++{
++	void __iomem *base;
++	struct lnw_gpio *lnw;
++	u32 gpio_base;
++	u32 irq_base;
++	int retval;
++	struct lnw_gpio_ddata *ddata = (struct lnw_gpio_ddata *)id->driver_data;
++
++	retval = pcim_enable_device(pdev);
++	if (retval)
++		return retval;
++
++	retval = pcim_iomap_regions(pdev, 1 << 0 | 1 << 1, pci_name(pdev));
++	if (retval) {
++		dev_err(&pdev->dev, "I/O memory mapping error\n");
++		return retval;
++	}
++
++	base = pcim_iomap_table(pdev)[1];
++
++	irq_base = readl(base);
++	gpio_base = readl(sizeof(u32) + base);
++
++	/* release the IO mapping, since we already get the info from bar1 */
++	pcim_iounmap_regions(pdev, 1 << 1);
++
++	lnw = devm_kzalloc(&pdev->dev, sizeof(*lnw), GFP_KERNEL);
++	if (!lnw) {
++		dev_err(&pdev->dev, "can't allocate chip data\n");
++		return -ENOMEM;
++	}
++
++	lnw->reg_base = pcim_iomap_table(pdev)[0];
++	lnw->chip.label = dev_name(&pdev->dev);
++	lnw->chip.request = lnw_gpio_request;
++	lnw->chip.direction_input = lnw_gpio_direction_input;
++	lnw->chip.direction_output = lnw_gpio_direction_output;
++	lnw->chip.get = lnw_gpio_get;
++	lnw->chip.set = lnw_gpio_set;
++	lnw->chip.to_irq = lnw_gpio_to_irq;
++	lnw->chip.base = gpio_base;
++	lnw->chip.ngpio = ddata->ngpio;
++	lnw->chip.can_sleep = 0;
++	lnw->pdev = pdev;
++
++	spin_lock_init(&lnw->lock);
++
++	lnw->domain = irq_domain_add_simple(pdev->dev.of_node, ddata->ngpio,
++					    irq_base, &lnw_gpio_irq_ops, lnw);
++	if (!lnw->domain)
++		return -ENOMEM;
++
++	pci_set_drvdata(pdev, lnw);
++	retval = gpiochip_add(&lnw->chip);
++	if (retval) {
++		dev_err(&pdev->dev, "gpiochip_add error %d\n", retval);
++		return retval;
++	}
++
++	lnw_irq_init_hw(lnw);
++
++	irq_set_handler_data(pdev->irq, lnw);
++	irq_set_chained_handler(pdev->irq, lnw_irq_handler);
++
++	pm_runtime_put_noidle(&pdev->dev);
++	pm_runtime_allow(&pdev->dev);
++
++	return 0;
++}
++
++static struct pci_driver lnw_gpio_driver = {
++	.name		= "langwell_gpio",
++	.id_table	= lnw_gpio_ids,
++	.probe		= lnw_gpio_probe,
++	.driver		= {
++		.pm	= &lnw_gpio_pm_ops,
++	},
++};
++
++static int __init lnw_gpio_init(void)
++{
++	return pci_register_driver(&lnw_gpio_driver);
++}
++
++device_initcall(lnw_gpio_init);
+diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+deleted file mode 100644
+index bf3b959..0000000
+--- a/drivers/gpio/gpio-langwell.c
++++ /dev/null
+@@ -1,468 +0,0 @@
+-/*
+- * Moorestown platform Langwell chip GPIO driver
+- *
+- * Copyright (c) 2008, 2009, 2013, Intel Corporation.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/* Supports:
+- * Moorestown platform Langwell chip.
+- * Medfield platform Penwell chip.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/pci.h>
+-#include <linux/platform_device.h>
+-#include <linux/kernel.h>
+-#include <linux/delay.h>
+-#include <linux/stddef.h>
+-#include <linux/interrupt.h>
+-#include <linux/init.h>
+-#include <linux/irq.h>
+-#include <linux/io.h>
+-#include <linux/gpio.h>
+-#include <linux/slab.h>
+-#include <linux/pm_runtime.h>
+-#include <linux/irqdomain.h>
+-
+-#define LNW_IRQ_TYPE_EDGE	(1 << 0)
+-#define LNW_IRQ_TYPE_LEVEL	(1 << 1)
+-
+-/*
+- * Langwell chip has 64 pins and thus there are 2 32bit registers to control
+- * each feature, while Penwell chip has 96 pins for each block, and need 3 32bit
+- * registers to control them, so we only define the order here instead of a
+- * structure, to get a bit offset for a pin (use GPDR as an example):
+- *
+- * nreg = ngpio / 32;
+- * reg = offset / 32;
+- * bit = offset % 32;
+- * reg_addr = reg_base + GPDR * nreg * 4 + reg * 4;
+- *
+- * so the bit of reg_addr is to control pin offset's GPDR feature
+-*/
+-
+-enum GPIO_REG {
+-	GPLR = 0,	/* pin level read-only */
+-	GPDR,		/* pin direction */
+-	GPSR,		/* pin set */
+-	GPCR,		/* pin clear */
+-	GRER,		/* rising edge detect */
+-	GFER,		/* falling edge detect */
+-	GEDR,		/* edge detect result */
+-	GAFR,		/* alt function */
+-};
+-
+-/* langwell gpio driver data */
+-struct lnw_gpio_ddata {
+-	u16 ngpio;		/* number of gpio pins */
+-	u32 gplr_offset;	/* offset of first GPLR register from base */
+-	u32 flis_base;		/* base address of FLIS registers */
+-	u32 flis_len;		/* length of FLIS registers */
+-	u32 (*get_flis_offset)(int gpio);
+-	u32 chip_irq_type;	/* chip interrupt type */
+-};
+-
+-struct lnw_gpio {
+-	struct gpio_chip		chip;
+-	void __iomem			*reg_base;
+-	spinlock_t			lock;
+-	struct pci_dev			*pdev;
+-	struct irq_domain		*domain;
+-};
+-
+-#define to_lnw_priv(chip)	container_of(chip, struct lnw_gpio, chip)
+-
+-static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
+-			      enum GPIO_REG reg_type)
+-{
+-	struct lnw_gpio *lnw = to_lnw_priv(chip);
+-	unsigned nreg = chip->ngpio / 32;
+-	u8 reg = offset / 32;
+-
+-	return lnw->reg_base + reg_type * nreg * 4 + reg * 4;
+-}
+-
+-static void __iomem *gpio_reg_2bit(struct gpio_chip *chip, unsigned offset,
+-				   enum GPIO_REG reg_type)
+-{
+-	struct lnw_gpio *lnw = to_lnw_priv(chip);
+-	unsigned nreg = chip->ngpio / 32;
+-	u8 reg = offset / 16;
+-
+-	return lnw->reg_base + reg_type * nreg * 4 + reg * 4;
+-}
+-
+-static int lnw_gpio_request(struct gpio_chip *chip, unsigned offset)
+-{
+-	void __iomem *gafr = gpio_reg_2bit(chip, offset, GAFR);
+-	u32 value = readl(gafr);
+-	int shift = (offset % 16) << 1, af = (value >> shift) & 3;
+-
+-	if (af) {
+-		value &= ~(3 << shift);
+-		writel(value, gafr);
+-	}
+-	return 0;
+-}
+-
+-static int lnw_gpio_get(struct gpio_chip *chip, unsigned offset)
+-{
+-	void __iomem *gplr = gpio_reg(chip, offset, GPLR);
+-
+-	return readl(gplr) & BIT(offset % 32);
+-}
+-
+-static void lnw_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+-{
+-	void __iomem *gpsr, *gpcr;
+-
+-	if (value) {
+-		gpsr = gpio_reg(chip, offset, GPSR);
+-		writel(BIT(offset % 32), gpsr);
+-	} else {
+-		gpcr = gpio_reg(chip, offset, GPCR);
+-		writel(BIT(offset % 32), gpcr);
+-	}
+-}
+-
+-static int lnw_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+-{
+-	struct lnw_gpio *lnw = to_lnw_priv(chip);
+-	void __iomem *gpdr = gpio_reg(chip, offset, GPDR);
+-	u32 value;
+-	unsigned long flags;
+-
+-	if (lnw->pdev)
+-		pm_runtime_get(&lnw->pdev->dev);
+-
+-	spin_lock_irqsave(&lnw->lock, flags);
+-	value = readl(gpdr);
+-	value &= ~BIT(offset % 32);
+-	writel(value, gpdr);
+-	spin_unlock_irqrestore(&lnw->lock, flags);
+-
+-	if (lnw->pdev)
+-		pm_runtime_put(&lnw->pdev->dev);
+-
+-	return 0;
+-}
+-
+-static int lnw_gpio_direction_output(struct gpio_chip *chip,
+-			unsigned offset, int value)
+-{
+-	struct lnw_gpio *lnw = to_lnw_priv(chip);
+-	void __iomem *gpdr = gpio_reg(chip, offset, GPDR);
+-	unsigned long flags;
+-
+-	lnw_gpio_set(chip, offset, value);
+-
+-	if (lnw->pdev)
+-		pm_runtime_get(&lnw->pdev->dev);
+-
+-	spin_lock_irqsave(&lnw->lock, flags);
+-	value = readl(gpdr);
+-	value |= BIT(offset % 32);
+-	writel(value, gpdr);
+-	spin_unlock_irqrestore(&lnw->lock, flags);
+-
+-	if (lnw->pdev)
+-		pm_runtime_put(&lnw->pdev->dev);
+-
+-	return 0;
+-}
+-
+-static int lnw_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+-{
+-	struct lnw_gpio *lnw = to_lnw_priv(chip);
+-	return irq_create_mapping(lnw->domain, offset);
+-}
+-
+-static int lnw_irq_type(struct irq_data *d, unsigned type)
+-{
+-	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
+-	u32 gpio = irqd_to_hwirq(d);
+-	unsigned long flags;
+-	u32 value;
+-	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
+-	void __iomem *gfer = gpio_reg(&lnw->chip, gpio, GFER);
+-
+-	if (gpio >= lnw->chip.ngpio)
+-		return -EINVAL;
+-
+-	if (lnw->pdev)
+-		pm_runtime_get(&lnw->pdev->dev);
+-
+-	spin_lock_irqsave(&lnw->lock, flags);
+-	if (type & IRQ_TYPE_EDGE_RISING)
+-		value = readl(grer) | BIT(gpio % 32);
+-	else
+-		value = readl(grer) & (~BIT(gpio % 32));
+-	writel(value, grer);
+-
+-	if (type & IRQ_TYPE_EDGE_FALLING)
+-		value = readl(gfer) | BIT(gpio % 32);
+-	else
+-		value = readl(gfer) & (~BIT(gpio % 32));
+-	writel(value, gfer);
+-	spin_unlock_irqrestore(&lnw->lock, flags);
+-
+-	if (lnw->pdev)
+-		pm_runtime_put(&lnw->pdev->dev);
+-
+-	return 0;
+-}
+-
+-static void lnw_irq_unmask(struct irq_data *d)
+-{
+-}
+-
+-static void lnw_irq_mask(struct irq_data *d)
+-{
+-}
+-
+-static struct irq_chip lnw_irqchip = {
+-	.name		= "LNW-GPIO",
+-	.irq_mask	= lnw_irq_mask,
+-	.irq_unmask	= lnw_irq_unmask,
+-	.irq_set_type	= lnw_irq_type,
+-};
+-
+-static const struct lnw_gpio_ddata gpio_lincroft = {
+-	.ngpio = 64,
+-};
+-
+-static const struct lnw_gpio_ddata gpio_penwell_aon = {
+-	.ngpio = 96,
+-	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
+-};
+-
+-static const struct lnw_gpio_ddata gpio_penwell_core = {
+-	.ngpio = 96,
+-	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
+-};
+-
+-static const struct lnw_gpio_ddata gpio_cloverview_aon = {
+-	.ngpio = 96,
+-	.chip_irq_type = LNW_IRQ_TYPE_EDGE | LNW_IRQ_TYPE_LEVEL,
+-};
+-
+-static const struct lnw_gpio_ddata gpio_cloverview_core = {
+-	.ngpio = 96,
+-	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
+-};
+-
+-static const struct lnw_gpio_ddata gpio_tangier = {
+-	.ngpio = 192,
+-	.gplr_offset = 4,
+-	.flis_base = 0xff0c0000,
+-	.flis_len = 0x8000,
+-	.get_flis_offset = NULL,
+-	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
+-};
+-
+-static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {
+-	{
+-		/* Lincroft */
+-		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f),
+-		.driver_data = (kernel_ulong_t)&gpio_lincroft,
+-	},
+-	{
+-		/* Penwell AON */
+-		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f),
+-		.driver_data = (kernel_ulong_t)&gpio_penwell_aon,
+-	},
+-	{
+-		/* Penwell Core */
+-		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a),
+-		.driver_data = (kernel_ulong_t)&gpio_penwell_core,
+-	},
+-	{
+-		/* Cloverview Aon */
+-		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08eb),
+-		.driver_data = (kernel_ulong_t)&gpio_cloverview_aon,
+-	},
+-	{
+-		/* Cloverview Core */
+-		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08f7),
+-		.driver_data = (kernel_ulong_t)&gpio_cloverview_core,
+-	},
+-	{
+-		/* Tangier */
+-		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x1199),
+-		.driver_data = (kernel_ulong_t)&gpio_tangier,
+-	},
+-	{ 0 }
+-};
+-MODULE_DEVICE_TABLE(pci, lnw_gpio_ids);
+-
+-static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
+-{
+-	struct irq_data *data = irq_desc_get_irq_data(desc);
+-	struct lnw_gpio *lnw = irq_data_get_irq_handler_data(data);
+-	struct irq_chip *chip = irq_data_get_irq_chip(data);
+-	u32 base, gpio, mask;
+-	unsigned long pending;
+-	void __iomem *gedr;
+-
+-	/* check GPIO controller to check which pin triggered the interrupt */
+-	for (base = 0; base < lnw->chip.ngpio; base += 32) {
+-		gedr = gpio_reg(&lnw->chip, base, GEDR);
+-		while ((pending = readl(gedr))) {
+-			gpio = __ffs(pending);
+-			mask = BIT(gpio);
+-			/* Clear before handling so we can't lose an edge */
+-			writel(mask, gedr);
+-			generic_handle_irq(irq_find_mapping(lnw->domain,
+-							    base + gpio));
+-		}
+-	}
+-
+-	chip->irq_eoi(data);
+-}
+-
+-static void lnw_irq_init_hw(struct lnw_gpio *lnw)
+-{
+-	void __iomem *reg;
+-	unsigned base;
+-
+-	for (base = 0; base < lnw->chip.ngpio; base += 32) {
+-		/* Clear the rising-edge detect register */
+-		reg = gpio_reg(&lnw->chip, base, GRER);
+-		writel(0, reg);
+-		/* Clear the falling-edge detect register */
+-		reg = gpio_reg(&lnw->chip, base, GFER);
+-		writel(0, reg);
+-		/* Clear the edge detect status register */
+-		reg = gpio_reg(&lnw->chip, base, GEDR);
+-		writel(~0, reg);
+-	}
+-}
+-
+-static int lnw_gpio_irq_map(struct irq_domain *d, unsigned int virq,
+-			    irq_hw_number_t hw)
+-{
+-	struct lnw_gpio *lnw = d->host_data;
+-
+-	irq_set_chip_and_handler_name(virq, &lnw_irqchip, handle_simple_irq,
+-				      "demux");
+-	irq_set_chip_data(virq, lnw);
+-	irq_set_irq_type(virq, IRQ_TYPE_NONE);
+-
+-	return 0;
+-}
+-
+-static const struct irq_domain_ops lnw_gpio_irq_ops = {
+-	.map = lnw_gpio_irq_map,
+-	.xlate = irq_domain_xlate_twocell,
+-};
+-
+-static int lnw_gpio_runtime_idle(struct device *dev)
+-{
+-	pm_schedule_suspend(dev, 500);
+-	return -EBUSY;
+-}
+-
+-static const struct dev_pm_ops lnw_gpio_pm_ops = {
+-	SET_RUNTIME_PM_OPS(NULL, NULL, lnw_gpio_runtime_idle)
+-};
+-
+-static int lnw_gpio_probe(struct pci_dev *pdev,
+-			  const struct pci_device_id *id)
+-{
+-	void __iomem *base;
+-	struct lnw_gpio *lnw;
+-	u32 gpio_base;
+-	u32 irq_base;
+-	int retval;
+-	struct lnw_gpio_ddata *ddata = (struct lnw_gpio_ddata *)id->driver_data;
+-
+-	retval = pcim_enable_device(pdev);
+-	if (retval)
+-		return retval;
+-
+-	retval = pcim_iomap_regions(pdev, 1 << 0 | 1 << 1, pci_name(pdev));
+-	if (retval) {
+-		dev_err(&pdev->dev, "I/O memory mapping error\n");
+-		return retval;
+-	}
+-
+-	base = pcim_iomap_table(pdev)[1];
+-
+-	irq_base = readl(base);
+-	gpio_base = readl(sizeof(u32) + base);
+-
+-	/* release the IO mapping, since we already get the info from bar1 */
+-	pcim_iounmap_regions(pdev, 1 << 1);
+-
+-	lnw = devm_kzalloc(&pdev->dev, sizeof(*lnw), GFP_KERNEL);
+-	if (!lnw) {
+-		dev_err(&pdev->dev, "can't allocate chip data\n");
+-		return -ENOMEM;
+-	}
+-
+-	lnw->reg_base = pcim_iomap_table(pdev)[0];
+-	lnw->chip.label = dev_name(&pdev->dev);
+-	lnw->chip.request = lnw_gpio_request;
+-	lnw->chip.direction_input = lnw_gpio_direction_input;
+-	lnw->chip.direction_output = lnw_gpio_direction_output;
+-	lnw->chip.get = lnw_gpio_get;
+-	lnw->chip.set = lnw_gpio_set;
+-	lnw->chip.to_irq = lnw_gpio_to_irq;
+-	lnw->chip.base = gpio_base;
+-	lnw->chip.ngpio = ddata->ngpio;
+-	lnw->chip.can_sleep = 0;
+-	lnw->pdev = pdev;
+-
+-	spin_lock_init(&lnw->lock);
+-
+-	lnw->domain = irq_domain_add_simple(pdev->dev.of_node, ddata->ngpio,
+-					    irq_base, &lnw_gpio_irq_ops, lnw);
+-	if (!lnw->domain)
+-		return -ENOMEM;
+-
+-	pci_set_drvdata(pdev, lnw);
+-	retval = gpiochip_add(&lnw->chip);
+-	if (retval) {
+-		dev_err(&pdev->dev, "gpiochip_add error %d\n", retval);
+-		return retval;
+-	}
+-
+-	lnw_irq_init_hw(lnw);
+-
+-	irq_set_handler_data(pdev->irq, lnw);
+-	irq_set_chained_handler(pdev->irq, lnw_irq_handler);
+-
+-	pm_runtime_put_noidle(&pdev->dev);
+-	pm_runtime_allow(&pdev->dev);
+-
+-	return 0;
+-}
+-
+-static struct pci_driver lnw_gpio_driver = {
+-	.name		= "langwell_gpio",
+-	.id_table	= lnw_gpio_ids,
+-	.probe		= lnw_gpio_probe,
+-	.driver		= {
+-		.pm	= &lnw_gpio_pm_ops,
+-	},
+-};
+-
+-static int __init lnw_gpio_init(void)
+-{
+-	return pci_register_driver(&lnw_gpio_driver);
+-}
+-
+-device_initcall(lnw_gpio_init);
 -- 
 1.8.4.rc3
 
