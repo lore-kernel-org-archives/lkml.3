@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3JDFpF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 01:45:05 -0400
-Received: from gw.cm.dream.jp ([59.157.128.2]:59996 "EHLO vsmtp02.cm.dti.ne.jp"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751199Ab3JDFpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 01:45:03 -0400
-Date: Fri, 4 Oct 2013 14:44:43 +0900
-From: takasi-y@ops.dti.ne.jp
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: SH-Linux <linux-sh@vger.kernel.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] clk: emev2: Add support for emev2 SMU clocks with
- DT
-Message-Id: <20131004144443.a7590dd81b8901ef264e488f@ops.dti.ne.jp>
-In-Reply-To: <CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
-References: <52410F86.4040301@renesas.com>
-	<20130924131542.f865fad4dec98e024c0d4676@ops.dti.ne.jp>
-	<CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751817Ab3JDFql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 01:46:41 -0400
+Received: from sauhun.de ([89.238.76.85]:57194 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab3JDFqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 01:46:39 -0400
+Date: Fri, 4 Oct 2013 07:46:37 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Kedareswara rao Appana <appanad@xilinx.com>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] i2c: xilinx: Set tx direction in write operation
+Message-ID: <20131004054636.GC3194@katana>
+References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
+ <57a4f5352ce6f03bde7aafe8b880f91b52994379.1380550490.git.michal.simek@xilinx.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bAmEntskrkuBymla"
+Content-Disposition: inline
+In-Reply-To: <57a4f5352ce6f03bde7aafe8b880f91b52994379.1380550490.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
-Thank you for your commnets.
 
-> > +obj-$(CONFIG_ARCH_SHMOBILE)    += shmobile/
-> > +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += shmobile/
-> 
-> Here I believe it is enough that you only use
-> CONFIG_ARCH_SHMOBILE_MULTI. ...
+--bAmEntskrkuBymla
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That is because it supports three configuration,
-1. MULTI + KZM9D_REFERENCE + COMMON_CLK
-2. KZM9D_REFERENCE + COMMON_CLK
-3. KZM9D
-but,
 
-> ... Building common clocks to coexist with the
-> old legacy board code does not make any sense IMO. ...
-I think so, too.
-And from the view of testing, having smaller variants is better.
-# easier :)
+> +	cr = xiic_getreg32(i2c, XIIC_CR_REG_OFFSET);
+> +	cr |= XIIC_CR_DIR_IS_TX_MASK;
+> +	xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, cr);
+> +
 
-> > +ifeq ($(CONFIG_COMMON_CLK), y)
-> > +obj-$(CONFIG_ARCH_EMEV2)       += clk-emev2.o
-> > +endif
-> 
-> I don't think you would need the above ifeq/endif wrapper if you only
-> used CONFIG_ARCH_SHMOBILE_MULTI above.
-Right.
+Is there no need to clear the bit again when receiving? And did
+transferring ever work if this bit was never set before?
 
-Anyway, because you have make kzm9d-reference things simpler,
-now we don't need to worry about it.
 
-Thanks,
-/yoshii
+--bAmEntskrkuBymla
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSTlY8AAoJEBQN5MwUoCm2pHgQAIkZeJvlk/F6iP1KVimtGAR/
+d68d62EUPL4rLuioETJrNcwwfjal5ENIonIE12UmdeKfW8dXWsHloWNRvK57p7S4
+vld3eO9idHvfnFE0pCj1k7VO0mLAy14L0LVTuYVH7Oh65Clps8bpgEsDoGiz/9kK
+Xdi7nQ3VNTx3LIu0gwj9gNz5wfkaRV+Li/ILMJVllXZSN3K0k5cJbHdINhXcUZ1j
+11dzMUFRYp1r2GyFFl1L8iT2ais0KWcE/vqzGKHJ4s78wJcQNnjfx7qpPyKszGLH
+vYlCrBoxUN3a6rgA7n7O0oII/3yDNBXdD4ICEu0GIEpfoD8LJnExvpMZAIotTltD
+Mlipcx3nQmaPzdvwnjYtVQravrJzrc3xG0qRFZSjEs4KSs6UlQfNps31UtYEMAD3
+3lv4jAwRDtTuAFSSVBhUzms9bmcI7ehcoD930/Xw5qTH1g12adIZliNb0gQogOXX
+vT9HojEV+ZId9dF3xIf29lADTuD01KwGe4lD8Q0wYgSxc2D1mmIJ6xkBKWJ8qVoG
+RA6PtLSOZqyUQfr4dUMDEfps3LtobGWzATJAS9A5H6emmZWjd49P8o4wscMMi+J9
+H0EHiSjUzUvAW2jJSIIpbjisBLPrD7wTZhXjN6T+PKWGZx4ON2CmLwgzgWF6h8Kv
+1m265ha7UkXcAkCmdnsO
+=SnUT
+-----END PGP SIGNATURE-----
+
+--bAmEntskrkuBymla--
