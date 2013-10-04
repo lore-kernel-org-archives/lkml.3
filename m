@@ -1,210 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3JDQPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:15:35 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:39544 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3JDQPd (ORCPT
+	id S1755305Ab3JDQPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:15:54 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50273 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530Ab3JDQPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:15:33 -0400
-Message-ID: <524EE9A0.2020404@monstr.eu>
-Date: Fri, 04 Oct 2013 18:15:28 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 4 Oct 2013 12:15:52 -0400
+Date: Fri, 4 Oct 2013 09:15:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131004161548.GA19957@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131003190830.GA18672@redhat.com>
+ <20131003194226.GO28601@twins.programming.kicks-ass.net>
+ <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Alan Tull <atull@altera.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org
-Subject: Re: [RFC PATCH v2] fpga: Introduce new fpga subsystem
-References: <cover.1380727889.git.michal.simek@xilinx.com>  <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com> <1380729996.2081.59.camel@joe-AO722>
-In-Reply-To: <1380729996.2081.59.camel@joe-AO722>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="jxINEbSujp8uRUK2QaNwX02v2cWQwrCIW"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004160352.GF5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100416-0928-0000-0000-00000241F197
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---jxINEbSujp8uRUK2QaNwX02v2cWQwrCIW
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 04, 2013 at 09:03:52AM -0700, Paul E. McKenney wrote:
+> On Fri, Oct 04, 2013 at 08:58:35AM +0200, Peter Zijlstra wrote:
+> > On Thu, Oct 03, 2013 at 12:58:32PM -0700, Paul E. McKenney wrote:
+> > > On Thu, Oct 03, 2013 at 09:42:26PM +0200, Peter Zijlstra wrote:
+> > > > 
+> > > > That's not tty; that's RCU..
+> > > > 
+> > > > On Thu, Oct 03, 2013 at 03:08:30PM -0400, Dave Jones wrote:
+> > > > >  ======================================================
+> > > > >  [ INFO: possible circular locking dependency detected ]
+> > > > >  3.12.0-rc3+ #92 Not tainted
+> > > > >  -------------------------------------------------------
+> > > > >  trinity-child2/15191 is trying to acquire lock:
+> > > > >   (&rdp->nocb_wq){......}, at: [<ffffffff8108ff43>] __wake_up+0x23/0x50
+> > > > >  
+> > > > > but task is already holding lock:
+> > > > >   (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
+> > > > > 
+> > > > > which lock already depends on the new lock.
+> > > > > 
+> > > > > 
+> > > > > the existing dependency chain (in reverse order) is:
+> > > > > 
+> > > > > -> #3 (&ctx->lock){-.-...}:
+> > > > >  
+> > > > > -> #2 (&rq->lock){-.-.-.}:
+> > > > >  
+> > > > > -> #1 (&p->pi_lock){-.-.-.}:
+> > > > >  
+> > > > > -> #0 (&rdp->nocb_wq){......}:
+> > > 
+> > > I suppose I could defer the ->nocb_wq wakeup until the next context switch
+> > > or transition to idle/userspace, but it might be simpler for put_ctx()
+> > > to maintain a per-CPU chain of callbacks which are kfree_rcu()ed when
+> > > ctx->lock is dropped.  Also easier on the kernel/user and kernel/idle
+> > > transition overhead/latency...
+> > > 
+> > > Other thoughts?
+> > 
+> > What's caused this? We've had that kfree_rcu() in there for ages. I need
+> > to audit all the get/put_ctx calls anyway for an unrelated issue but I
+> > fear its going to be messy to defer that kfree_rcu() call, but I can
+> > try.
+> 
+> The problem exists, but NOCB made it much more probable.  With non-NOCB
+> kernels, an irq-disabled call_rcu() invocation does a wake_up() only if
+> there are more than 10,000 callbacks stacked up on the CPU.  With a NOCB
+> kernel, the wake_up() happens on the first callback.
+> 
+> So let's look at what is required to solve this within RCU.  Currently,
+> I cannot safely do any sort of wakeup or even a resched_cpu() from
+> within an call_rcu() that is called with interrupts disabled because of
+> this deadlock.  I could require that the rcu_nocb_poll sysfs parameter
+> always be set, but the energy-efficiency guys are not going to be happy
+> with the resulting wakeups on idle systems.
+> 
+> I could try defering the wake_up(), Lai Jiangshan style.  The question
+> is then "to where do I defer it?"  The straightforward answer is to
+> check on each context switch, each transition to RCU idle, and each
+> scheduling-clock interrupt from userspace execution.  The scenario that
+> defeats this is where the CPU has a single runnable task, but where that
+> task spends much of its time in the kernel, so that the scheduling-clock
+> interrupts always hit kernel-mode execution.  The callback is then
+> deferred forever.
 
-Hi Joe,
+Ah, but it is safe to call wake_up() from a scheduling-clock interrupt,
+because these cannot interrupt an irq-disabled lock critical section.
+So maybe I can unconditionally defer to a scheduling-clock interrupt.
 
-On 10/02/2013 06:06 PM, Joe Perches wrote:
-> On Wed, 2013-10-02 at 17:35 +0200, Michal Simek wrote:
->> This new fpga subsystem core should unify all fpga drivers/managers wh=
-ich
->> do the same things. Load configuration data to fpga or another program=
-mable
->> logic through common interface. It doesn't matter if it is MMIO device=
-,
->> gpio bitbanging, etc. connection. The point is to have the same
->> interface for these drivers.
->=20
-> Does this interface support partial reprogramming/configuration
-> for FPGAs that can do that?
+> We could keep Frederic Weisbecker's kernel/user transition hooks,
+> currently in place only for NO_HZ_FULL, and propagate these to all
+> architectures, and do the additional checking on those transitions.
+> This would work, but is not an immediate solution.  And adds overhead
+> that is not otherwise needed.
 
-Currently we have two interfaces and third one is around (char driver)
-that's why I didn't look at this support.
-But for Xilinx devices init and complete phase is different.
+But if !NO_HZ_FULL, there will eventually be a scheduling-clock interrupt.
 
-We can use one more flag parameter for init and complete functions.
+So maybe check on each context switch, transition to idle, subsequent
+non-irq-disabled call_rcu(), and scheduling-clock interrupt?
 
-It means we can simple extend config states with write_init_partial, etc
-Or the second option is to create new sysfs file to indicate
-that we will work with partial bitstreams.
+Does that actually avoid this deadlock?
 
-> trivial notes:
->=20
-> There are a _lot_ of dev_dbg statements.
->=20
-> I hope some of these would be removed one day,
-> especially the function tracing style ones, because
-> there's already a generic kernel mechanism for that.
->=20
-> Maybe perf/trace support could be added eventually.
+							Thanx, Paul
 
-Are you talking about trace_printk?
+> Another approach that just now occurred to me is to do a mod_timer()
+> each time the first callback is posted with irqs disabled, and to
+> cancel that timer if the wake_up() gets done later.  (I can safely and
+> unconditionally do a wake_up() from a timer handler, IIRC.)  So, does
+> perf ever want to invoke call_rcu() holding a timer lock?
+> 
+> I am not too happy about the complexity of deferring, but maybe it is
+> the right approach, at least assuming perf isn't going to whack me
+> with a timer lock.  ;-)
+> 
+> Any other approaches that I am missing?
+> 
+> 							Thanx, Paul
 
->> diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
-> []
->> +/**
->> + * fpga_mgr_status_write - Write fpga manager status
->> + * @dev: Pointer to the device structure
->> + * @attr: Pointer to the device attribute structure
->> + * @buf: Pointer to the buffer location
->> + * @count: Number of characters in @buf
->> + *
->> + * Returns the number of bytes copied to @buf, a negative error numbe=
-r otherwise
->> + */
->> +static ssize_t fpga_mgr_status_write(struct device *dev,
->> +				     struct device_attribute *attr,
->> +				     const char *buf, size_t count)
->> +{
->> +	struct fpga_manager *mgr =3D dev_get_drvdata(dev);
->> +	int ret;
->> +
->> +	if (test_and_set_bit_lock(FPGA_MGR_DEV_BUSY, &mgr->flags))
->> +		return -EBUSY;
->> +
->> +	ret =3D strcmp(buf, "write_init");
->> +	if (!ret) {
->> +		ret =3D fpga_mgr_write_init(mgr);
->> +		goto out;
->> +	}
->> +
->> +	ret =3D strcmp(buf, "write_complete");
->> +	if (!ret) {
->> +		ret =3D fpga_mgr_write_complete(mgr);
->> +		goto out;
->> +	}
->> +
->> +	ret =3D strcmp(buf, "read_init");
->> +	if (!ret) {
->> +		ret =3D fpga_mgr_read_init(mgr);
->> +		goto out;
->> +	}
->> +
->> +	ret =3D strcmp(buf, "read_complete");
->> +	if (!ret) {
->> +		ret =3D fpga_mgr_read_complete(mgr);
->> +		goto out;
->> +	}
->> +
->> +	ret =3D -EINVAL;
->> +out:
->> +	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
->> +
->> +	return ret ? : count;
->> +}
->=20
-> I think this style is awkward and this would be
-> better written as:
->=20
-> 	if (!strcmp(buf, "write_init"))
-> 		ret =3D fpga_mgr_write_init(mgr);
-> 	else if (!strcmp(buf, "write_complete"))
-> 		ret =3D fpga_mgr_write_complete(mgr);
-> 	else if (!strcmp(buf, "read_init"))
-> 		ret =3D fpga_mgr_read_init(mgr);
-> 	else if (!strcmp(buf, "read_complete"))
-> 		ret =3D fpga_mgr_read_complete(mgr);
-> 	else
-> 		ret =3D -EINVAL;
->=20
-> 	clear_bit_unlock(FPGA_MGR_DEV_BUSY, &mgr->flags);
->=20
-> 	if (ret)
-> 		return ret;
->=20
-> 	return count;
-> }
->=20
-> Maybe use (strcmp(...) =3D=3D 0) if you prefer that.
-> Both styles are commonly used in linux.
-
-
-sure.
-
-
-> Probably all of the "return ret ?: count;" uses
-> would be more easily understood on 3 lines.
-
-This structure is also quite common in the kernel
-git grep "? :"  | wc -l
-415
-
-git grep "?:"  | wc -l
-541
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---jxINEbSujp8uRUK2QaNwX02v2cWQwrCIW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJO6aEACgkQykllyylKDCFh6wCbB7zCka5IcrYIbTtjhxS7TcMv
-tUIAn2Y02thKAoB675Mm5vXqG2PRGk2g
-=toci
------END PGP SIGNATURE-----
-
---jxINEbSujp8uRUK2QaNwX02v2cWQwrCIW--
