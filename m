@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab3JDNpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 09:45:08 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54073 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab3JDNpF (ORCPT
+	id S1754719Ab3JDNrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 09:47:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31786 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753531Ab3JDNq7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 09:45:05 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <524EC658.90706@roeck-us.net>
-Date: Fri, 04 Oct 2013 06:44:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 4 Oct 2013 09:46:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1033,1371106800"; 
+   d="scan'208";a="411523764"
+From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+To: Jan Kara <jack@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: RE: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Thread-Topic: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Thread-Index: AQHOv4QLcKrfhiX4106LS7dZ0ASSH5nhidXggAB3bQCAAo3gUIAAAgEQ
+Date: Fri, 4 Oct 2013 13:46:57 +0000
+Message-ID: <32E1700B9017364D9B60AED9960492BC211B015E@FMSMSX107.amr.corp.intel.com>
+References: <1380724087-13927-1-git-send-email-jack@suse.cz>
+ <1380724087-13927-24-git-send-email-jack@suse.cz>
+ <32E1700B9017364D9B60AED9960492BC211AEF75@FMSMSX107.amr.corp.intel.com>
+ <20131002152811.GC32181@quack.suse.cz>
+ <32E1700B9017364D9B60AED9960492BC211AF005@FMSMSX107.amr.corp.intel.com>
+ <20131002153842.GD32181@quack.suse.cz>
+ <32E1700B9017364D9B60AED9960492BC211B0123@FMSMSX107.amr.corp.intel.com>
+In-Reply-To: <32E1700B9017364D9B60AED9960492BC211B0123@FMSMSX107.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mark Brown <broonie@kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 3
-References: <20131004010230.GI27287@sirena.org.uk>	<524E50DB.3060707@roeck-us.net> <CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>
-In-Reply-To: <CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 10:41 PM, Olof Johansson wrote:
-> On Thu, Oct 3, 2013 at 10:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 10/03/2013 06:02 PM, Mark Brown wrote:
->>>
->>> Hi all,
->>>
->>> Better late than never I've uploaded today's linux-next tree to the
->>> master branch of the repository below:
->>>
->>>           git://gitorious.org/thierryreding/linux-next.git
->>>
->>> A next-20131003 tag is also provided for convenience.
->>>
->>> A few new conflicts today caused by the removal of the h8300
->>> architecture which I didn't report for triviality.  Several new build
->>> failures were found as a result of running allmodconfig tests between
->>> merges all of which have been reported and I'm still carrying the i.MX
->>> fix that Thierry has been carrying.
->>>
->>> Due to the length of time taken to run all the allmodconfigs I skipped
->>> the defconfig tests; I know Olof has the ARM stuff covered in his
->>> autobuilder.  I'm going to use allyesconfig tomorrow since that should
->>> run faster so hopefully I can cover the ARM, i386 and x86_64 configs
->>> again.
->>>
->>
->> I could try to set up the buildbot farm I am using for -stable candidates
->> to also test the -next tree. Would that help ?
->
-> ARM is pretty well-covered by my builds, I post results at:
->
-> http://lists.linaro.org/mailman/listinfo/kernel-build-reports
->
+Inadvertent send!
 
-Great summaries. Do you have a single builder, or several builders and
-collect the results ? Either case, any chance sharing the buildbot scripts ?
+Mike
 
-Thanks,
-Guenter
-
+> -----Original Message-----
+> From: Marciniszyn, Mike
+> Sent: Friday, October 04, 2013 9:39 AM
+> To: Jan Kara
+> Cc: LKML; linux-mm@kvack.org; infinipath; Roland Dreier; linux-
+> rdma@vger.kernel.org
+> Subject: RE: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+> get_user_pages_unlocked()
+> 
+> 
+> 
+> > -----Original Message-----
+> > From: Jan Kara [mailto:jack@suse.cz]
+> > Sent: Wednesday, October 02, 2013 11:39 AM
+> > To: Marciniszyn, Mike
+> > Cc: Jan Kara; LKML; linux-mm@kvack.org; infinipath; Roland Dreier;
+> > linux- rdma@vger.kernel.org
+> > Subject: Re: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+> > get_user_pages_unlocked()
+> >
+> > On Wed 02-10-13 15:32:47, Marciniszyn, Mike wrote:
+> > > > > The risk of GUP fast is the loss of the "force" arg on GUP fast,
+> > > > > which I don't see as significant give our use case.
+> > > >   Yes. I was discussing with Roland some time ago whether the
+> > > > force argument is needed and he said it is. So I kept the
+> > > > arguments of
+> > > > get_user_pages() intact and just simplified the locking...
+> > >
+> > > The PSM side of the code is a more traditional use of GUP (like
+> > > direct I/O), so I think it is a different use case than the locking
+> > > for IB memory regions.
+> >   Ah, I see. Whatever suits you best. I don't really care as long as
+> > get_user_pages() locking doesn't leak into IB drivers :)
+> >
+> > 								Honza
+> > --
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
