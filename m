@@ -1,143 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab3JDW7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 18:59:47 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:39632 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab3JDW7q (ORCPT
+	id S1752971Ab3JDXAQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 19:00:16 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:34337 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab3JDXAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 18:59:46 -0400
+	Fri, 4 Oct 2013 19:00:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAA6KcBBPEc4abvJthxv_LzwBGWwiwE=2Tmamndhgq2B_3GHfRA@mail.gmail.com>
-References: <1380765777.1723.5.camel@desktop.site> <524CEADE.8040300@lwfinger.net>
- <1380784395.1672.7.camel@desktop.site> <524DA43B.3080700@lwfinger.net>
- <1380844258.1708.6.camel@desktop.site> <CAA6KcBBPEc4abvJthxv_LzwBGWwiwE=2Tmamndhgq2B_3GHfRA@mail.gmail.com>
-From: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Date: Fri, 4 Oct 2013 15:59:25 -0700
-Message-ID: <CAA6KcBBTr96nm_ipWmqqHgNAVLLOsrVW11cGPFqS1q+33xEJ7Q@mail.gmail.com>
-Subject: Re: [usb-storage] Re: [opensuse-factory] huawei usb dongle e173 not
- working on tumbleweed
-To: Ron Brickle <rb19495@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        USB Mass Storage on Linux 
-	<usb-storage@lists.one-eyed-alien.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <87fvsgy7cn.fsf@xmission.com>
+References: <20131003201332.GA3500@dztty> <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
+ <20131004085911.GA2157@dztty> <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+ <20131004182353.GA2600@dztty> <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty> <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty> <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+ <20131004194142.GA4524@dztty> <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+ <87fvsgy7cn.fsf@xmission.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 4 Oct 2013 15:59:51 -0700
+Message-ID: <CALCETrVFNcGtsm3N50sZRDWmBOJ3VWn=BidAOV4Q+eDwYhJ+vw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
+ opener may access task
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Kees Cook <keescook@chromium.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Ron replied separately with kernel versions and usb_modeswitch versions.)
-
-Ron, it appears that while Tumbleweed upgraded the kernel version, it
-didn't upgrade the usb_modeswitch version.  You probably need a newer
-version to support that device.  I just checked
-http://www.draisberghof.de/usb_modeswitch/ and the current version
-(2.0.1) has support for your device.
-
-You will either need to update your usb_modeswitch manually or get the
-Tumbleweed maintainers to do so.
-
-Matt
-
-On Thu, Oct 3, 2013 at 4:57 PM, Matthew Dharm
-<mdharm-usb@one-eyed-alien.net> wrote:
-> Ron --
+On Fri, Oct 4, 2013 at 3:55 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 >
-> We're going to need the version numbers of both the kernel and the
-> usb_modeswitch utility from both openSUSE 12.3 and Tumbleweed if we're
-> going to make any sense of the situation.
+>> On Fri, Oct 4, 2013 at 12:41 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>>> On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
+>>>> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
 >
-> Matt
->
-> On Thu, Oct 3, 2013 at 4:50 PM, Ron Brickle <rb19495@gmail.com> wrote:
->> On Thu, 2013-10-03 at 12:07 -0500, Larry Finger wrote:
->>> On 10/03/2013 02:13 AM, Ron Brickle wrote:
->>> > On Wed, 2013-10-02 at 22:56 -0500, Larry Finger wrote:
->>> >> On 10/02/2013 09:02 PM, Ron Brickle wrote:
->>> >>> Hi I have been trying to get my huawei usb dongle working on Tumbleweed
->>> >>> but to no avail so in desperation I am sending  this email. it works
->>> >>> fine on 12.3 opensuse  so hopefully you can fix this problem I tried to
->>> >>> get it working from help from the tumbleweed forum it is recognized in
->>> >>> lsusb but doesn show in network-manager
->>> >>> regards and thanks Ron Brickle
->>> >>
->>> >> Firmware?
->>> >>
->>> >> A device present in lsusb only means that it is connected to the USB system. For
->>> >> NM to have it, any firmware must be present, the wifi-enable switch for *ALL*
->>> >> devices must be on, the device must be recognized by some driver, and that
->>> >> driver must load and initialize correctly. From the information you provided, it
->>> >> is impossible to tell where it is failing.
->>> >>
->>> >> Larry
->>> >>
->>> >> Hi i just put this in terminal as normal user then as root
->>> >
->>> > rpm -ql usb_modeswitch-data|grep 1446
->>> > it returns no answer and it should be this I am told if so the driver
->>> > isnt installed for this usb modem TargetVendor=  0x12d1
->>> > TargetProductList="1001,1406,140b,140c,1412,141b,1433,1436,14ac,1506"
->>> >
->>> > MessageContent="55534243123456780000000000000011062000000100000000000000000000"
->>> > is this any help
->>> > regards ron
->>> > lsusb gives thisron@desktop:~> rpm -ql usb_modeswitch-data|grep 1446
->>> > ron@desktop:~> lsusb
->>> > Bus 001 Device 002: ID 8087:8008 Intel Corp.
->>> > Bus 002 Device 002: ID 8087:8000 Intel Corp.
->>> > Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
->>> > Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
->>> > Bus 001 Device 003: ID 046d:0809 Logitech, Inc. Webcam Pro 9000
->>> > Bus 002 Device 003: ID 174c:2074 ASMedia Technology Inc.
->>> > Bus 002 Device 004: ID 2109:2812
->>> > Bus 002 Device 007: ID 12d1:1446 Huawei Technologies Co., Ltd.
->>> > E1552/E1800/E173 (HSPA modem)
->>> > Bus 002 Device 005: ID 046d:c526 Logitech, Inc. Nano Receiver
->>> > Bus 002 Device 006: ID 046d:c52b Logitech, Inc. Unifying Receiver
->>> > and usb-devices gives this
->>> >   Bus=02 Lev=03 Prnt=04 Port=00 Cnt=01 Dev#=  7 Spd=480 MxCh= 0
->>> > D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
->>> > P:  Vendor=12d1 ProdID=1446 Rev=00.00
->>> > S:  Manufacturer=HUAWEI Technology
->>> > S:  Product=HUAWEI Mobile
->>> > C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=500mA
->>> > I:  If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50
->>> > Driver=usb-storage
->>> > I:  If#= 1 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50
->>> > Driver=usb-storage
->>> >   thanks for your reply regards ron
+>>>> > So sorry Andy, I don't follow what you are describing.
+>>>>
+>>>> And what parameters are you passing to security_ptrace_access_check?
+>>>> It's supposed to be f_cred, right?  Because you want to make sure
+>>>> that, if the opener had some low-privilege label, the target has
+>>>> execed and gotten a more secure label, and the reader has a
+>>>> high-privilege label, that the opener's label is checked against the
+>>>> target's new label.
+>>> The current's cred each time.
+>>
+>> Exactly.  Hence the NAK.
+>>
 >>>
->>>  From the usb-devices output, the device obviously needs to be mode switched.
->>>
->>> There may be a regression from the openSUSE 12.3 kernel (probably 3.7) to the
->>> one used by Tumbleweed. The usb-storage drivers are maintinaed by Matthew Dharm
->>> <mdharm-usb@one-eyed-alien.net>. I suggest you contact him with a Cc to
->>> linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net, and
->>> linux-kernel@vger.kernel.org and and state your problem, that it worked in
->>> kernel 3.7, but fails in the kernel 3.XX with the XX replaced by the version
->>> returned by 'uname -r'.
->>>
->>> Larry
->>>
+>>> Is there some mechanism to check what you describe?
 >>>
 >>
+>> No.  You could try to add one, but getting it to be compatible with
+>> YAMA might be really messy.
 >>
->> --
->> You received this message because you are subscribed to the Google Groups "USB Mass Storage on Linux" group.
->> To unsubscribe from this group and stop receiving emails from it, send an email to usb-storage+unsubscribe@lists.one-eyed-alien.net.
->> To post to this group, send email to usb-storage@lists.one-eyed-alien.net.
->> Visit this group at http://groups.google.com/a/lists.one-eyed-alien.net/group/usb-storage/.
->> For more options, visit https://groups.google.com/a/lists.one-eyed-alien.net/groups/opt_out.
+>> Or you could see if destroying and recreating all the inodes on exec
+>> or some other revoke-like approach would work.
 >
+> This is a revoke like approach, and yes proc has a fully functional
+> revoke infrastructure.  Right now that revoke is based on the process
+> going away.  The problem challenge is that the process is morphing.
 >
+> The practical question is which runtime checks do we want to perform.
 >
-> --
-> Matthew Dharm
-> Maintainer, USB Mass Storage driver for Linux
+> If we can say in no uncertain terms that short of a suid exec that
+> no calls (such as setuid) can change the process permissions beyond
+> our ability to access the file, we can detect and exec and use that
+> as a signal.
 
+If you could ptrace a process before it calls setuid and you can't
+after it calls setuid, then this is stupid and doesn't matter -- once
+you've pwned a process, you retain your pwnership at least until exec.
 
+So yes, except that it's not just suid exec.  It's any exec that any
+LSM would not do if no_new_privs were set.
 
--- 
-Matthew Dharm
-Maintainer, USB Mass Storage driver for Linux
+>
+> Alternatively we may to look at a processes credentials and in all
+> cases where those change use that as a signal that the file must
+> be reopened.
+
+Hmm.  So why don't we just do a revoke whenever an exec that changes
+cred happens?  (This will have some false positives, like unsharing
+userns, I think, but we probably don't care.)
+
+>
+> Right now the model that we do a full permission check at every system
+> call because the morphing process may cause problems.  If analysis can
+> be done to show that we can use a simpler check than a full permission
+> check that would be grand.
+>
+> The problem is not lack of techinical infrastructure (revoke).  The
+> problem is a question of which tests are sufficient.
+
+Can you point us at that infrastructure?  My limited grepping skills
+didn't spot it.
+
+I'd really like a solution where there are no read or write
+implementations in the entire kernel that check permissions.  Failing
+that, just getting it for procfs would be nice.  (uid_map, etc will
+probably need to be revoked on unshare for this to work.)
+
+--Andy
