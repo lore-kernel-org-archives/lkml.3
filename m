@@ -1,65 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab3JDTli (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:41:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54588 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab3JDTlh (ORCPT
+	id S1754411Ab3JDTlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:41:50 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:50822 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab3JDTls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:41:37 -0400
-Date: Fri, 4 Oct 2013 21:41:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	Fri, 4 Oct 2013 15:41:48 -0400
+Date: Fri, 4 Oct 2013 20:41:42 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131004194126.GW15690@laptop.programming.kicks-ass.net>
-References: <20131004071814.GS28601@twins.programming.kicks-ass.net>
- <20131004111513.GA5699@redhat.com>
- <20131004114442.GJ3081@twins.programming.kicks-ass.net>
- <20131004121300.GA7725@redhat.com>
- <20131004123806.GK3081@twins.programming.kicks-ass.net>
- <20131004133135.GA11097@redhat.com>
- <20131004144319.GM3081@twins.programming.kicks-ass.net>
- <20131004151323.GA16440@redhat.com>
- <20131004162546.GQ3081@twins.programming.kicks-ass.net>
- <20131004190653.GA17639@redhat.com>
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131004194142.GA4524@dztty>
+References: <20131003201332.GA3500@dztty>
+ <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
+ <20131004085911.GA2157@dztty>
+ <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+ <20131004182353.GA2600@dztty>
+ <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty>
+ <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty>
+ <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131004190653.GA17639@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 09:06:53PM +0200, Oleg Nesterov wrote:
-> However, yes-yes-yes, I do think that we need the non-exclusive mode
-> too, at least for percpu_down_write_nonexclusive() which I think we
-> need as well.
+On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
+> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Fri, Oct 04, 2013 at 12:16:26PM -0700, Andy Lutomirski wrote:
+> >> On Fri, Oct 4, 2013 at 12:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > On Fri, Oct 04, 2013 at 07:34:08PM +0100, Andy Lutomirski wrote:
+> >> >> On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> >> > On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
+> >> >> >> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> >> >> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
+> >> > [...]
+> >> >> Sorry, I described the obviously broken scenario incorrectly.  Your
+> >> >> patch breaks (in the absence of things like selinux) if a exec
+> >> >> something setuid root.
+> >> >>
+> >> >> [...]
+> >> >>
+> >> >> >
+> >> >> > I did the check in the proc_same_open_cred() function:
+> >> >> >  return (uid_eq(fcred->uid, cred->uid) &&
+> >> >> >          gid_eq(fcred->gid, cred->gid) &&
+> >> >> >          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+> >> >>
+> >> >> Which has nothing to do with anything.  If that check fails, you're
+> >> >> just going on to a different, WRONG check/.
+> >> >>
+> >> >> >
+> >> >> > Check if this is the same uid/gid and the capabilities superset!
+> >> >> >
+> >> >> > But in the proc_allow_access() the capabilities superset is missing.
+> >> >> >
+> >> >> >
+> >> >> > So to fix it:
+> >> >> > 1) if proc_same_open_cred() detects that cred have changed between
+> >> >> > ->open() and ->read() then abort, return zero, the ->read(),write()...
+> >> >>
+> >> >> IMO yuck.
+> >> >>
+> >> >> >
+> >> >> >
+> >> >> > 2) Improve the proc_allow_access() check by:
+> >> >> >    if this is the same user namespace then check uid/gid of f_cred on
+> >> >> >    target cred task, and the capabilities superset:
+> >> >> >    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
+> >> >> >
+> >> >> >    If it fails let security_capable() or file_ns_capable() do its magic.
+> >> >> >
+> >> >>
+> >> >> NAK.  You need to actually call the LSM.  What if the reason to fail
+> >> >> the request isn't that the writer gained capabilities -- what if the
+> >> >> writer's selinux label changed?
+> >> > Sorry I can't follow you here! Can you be more explicit please?
+> >> >
+> >> > For me we are already doing this during ptrace_may_access() on each
+> >> > syscall, which will call LSM to inspect the privileges on each ->open(),
+> >> > ->write()... So LSM hooks are already called. If you want to have more
+> >> > LSM hooks, then perhaps that's another problem?
+> >>
+> >> Can you show me where, in your code, LSMs are asked whether the
+> >> process calling read() is permitted to ptrace the process that the
+> >> proc file points at?
+> > Yes.
+> > [PATCH v2 9/9] procfs: improve permission checks on /proc/*/syscall
+> >
+> > ->read()
+> >   ->syscall_read()
+> >     ->lock_trace()
+> >       ->ptrace_may_access()
+> >         ->__ptrace_may_access()
+> >           ->security_ptrace_access_check()
+> >             ->yama_ptrace_access_check()
+> >             ->security_ops->ptrace_access_check()
+> >
+> >
+> > And also for patch:
+> > [PATCH v2 8/9] procfs: improve permission checks on /proc/*/stack
+> >
+> > And during ->open() and ->read()
+> >
+> >
+> > So sorry Andy, I don't follow what you are describing.
+> 
+> And what parameters are you passing to security_ptrace_access_check?
+> It's supposed to be f_cred, right?  Because you want to make sure
+> that, if the opener had some low-privilege label, the target has
+> execed and gotten a more secure label, and the reader has a
+> high-privilege label, that the opener's label is checked against the
+> target's new label.
+The current's cred each time.
 
-I just need to disagree with the write_nonexclusive() name; the
-construct I quite understand and could even agree with.
+Is there some mechanism to check what you describe?
 
-How about something like:
 
-State excluding 'writers', but not itself:
-	percpu_read_lock()
-	percpu_read_unlock()
+> --Andy
+> 
+> >
+> >> --Andy
+> >
+> > --
+> > Djalal Harouni
+> > http://opendz.org
+> 
+> 
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
 
-State excluding readers, but not itself:
-	percpu_non_read_lock();
-	percpu_non_read_unlock();
-
-Full exclusive state:
-	percpu_write_lock();
-	percpu_write_unlock();
-
-At which point I start to have doubts about the percpu prefix.. ;-)
+-- 
+Djalal Harouni
+http://opendz.org
