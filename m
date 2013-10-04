@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3JDRip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:38:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58963 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab3JDRil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:38:41 -0400
-Message-ID: <524EFCFF.3000003@zytor.com>
-Date: Fri, 04 Oct 2013 10:38:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com,
-        patches@linaro.org
-Subject: Re: [PATCH] Remove redundant and incorrect memset()
-References: <20131003131054.GB27835@gmail.com> <1380902566-30867-1-git-send-email-roy.franz@linaro.org> <20131004173310.GA15689@gmail.com>
-In-Reply-To: <20131004173310.GA15689@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+	id S1755372Ab3JDRjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:39:21 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:55494 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3JDRen (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 13:34:43 -0400
+Message-ID: <524EFC16.80104@gmail.com>
+Date: Fri, 04 Oct 2013 19:34:14 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] net: mv643xx_eth: various small fixes for v3.12
+References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131004165354.GA9065@localhost>
+In-Reply-To: <20131004165354.GA9065@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 10:33 AM, Ingo Molnar wrote:
-> 
-> * Roy Franz <roy.franz@linaro.org> wrote:
-> 
->> Remove a redundant memset() call from efi_relocate_kernel() that
->> was clearing memory that would be used by BSS in non-compressed
->> images loaded with this function.  This clear was redundant with
->> the clearing done in the image itself, and also implemented incorrectly
->> with a 0 length.
+On 10/04/2013 06:53 PM, Ezequiel Garcia wrote:
+> On Wed, Oct 02, 2013 at 12:57:19PM +0200, Sebastian Hesselbarth wrote:
+>> This patch set comprises some one-liners to fix issues with repeated
+>> loading and unloading of a modular mv643xx_eth driver.
 >>
->> Signed-off-by: Roy Franz <roy.franz@linaro.org>
->> Acked-by: Mark Salter <msalter@redhat.com>
-> 
-> Note the title:
-> 
->    [PATCH] Remove redundant and incorrect memset()
-> 
-> if it's both redundant *and* incorrect then the other memset() must be 
-> incorrect too and must be removed as well ;-)
-> 
-> I suspect you wanted the title to say:
-> 
->    [PATCH] Remove redundant memset()
-> 
+>> First two patches take care of the periodic port statistic timer, that
+>> updates statistics by reading port registers using add_timer/mod_timer.
+>>
+>> Patch 1 moves timer re-schedule from mib_counters_update to the timer
+>> callback. As mib_counters_update is also called from non-timer context,
+>> this ensures the timer is reactivated from timer context only.
+>>
+>> Patch 2 moves initial timer schedule from _probe() time to right before
+>> the port is actually started as the corresponding del_timer_sync is at
+>> _stop() time. This fixes a regression, where unloading the driver from a
+>> non-started eth device can cause the timer to access deallocated mem.
+>>
+>> Patch 3 adds an assignment of the ports device_node to the corresponding
+>> self-created platform_device. This is required to allow fixups based on
+>> the device_node's compatible string later. Actually, it is also a potential
+>> regression because we already check compatible string for Kirkwood, but
+>> does not (yet) rely on the fixup.
+>>
+>> All patches are based on v3.12-rc3 and have been tested on Kirkwood-based
+>> Seagate Dockstar.
+>>
+>> Patches 1 and 2 can also possibly queued up for -stable.
+>>
+>> Sebastian Hesselbarth (3):
+>>    net: mv643xx_eth: update statistics timer from timer context only
+>>    net: mv643xx_eth: fix orphaned statistics timer crash
+>>    net: mv643xx_eth: fix missing device_node for port devices
+>>
+>>   drivers/net/ethernet/marvell/mv643xx_eth.c |    7 +++----
+>>   1 file changed, 3 insertions(+), 4 deletions(-)
+>>
+>> ---
+>> Cc: David Miller <davem@davemloft.net>
+>> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>
+> Sorry for missing this series, somehow my filters failed to catch it.
+>
+> Anyway, I would expect these patches to have my Reported-by, but I'm
+> glad to see you've solved all the issues.
 
-And more importantly:
+True, thanks to Ezequiel for initially reporting the issues. I will
+have to be more careful about the Reported-by next time.
 
-[PATCH] boot,efi: Remove redundant memset()
+> I see David has already applied them all, but I'll re-run my tests to
+> check there aren't any more issues if I can find some time next week.
+>
+> Thanks for taking care of it!
+
 
