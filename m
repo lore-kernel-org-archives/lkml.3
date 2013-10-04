@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab3JDPQb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 11:16:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49058 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab3JDPQ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 11:16:29 -0400
-Date: Fri, 4 Oct 2013 17:16:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com
-Subject: Re: [PATCH] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
-Message-ID: <20131004151618.GO3081@twins.programming.kicks-ass.net>
-References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
- <20130927091427.GE24743@yliu-dev.sh.intel.com>
- <20130927152908.GE15690@laptop.programming.kicks-ass.net>
- <20131004080909.GP26785@twins.programming.kicks-ass.net>
- <20131004105342.20c00a41@gandalf.local.home>
+	id S1755095Ab3JDPU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 11:20:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26953 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754551Ab3JDPU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 11:20:56 -0400
+Date: Fri, 4 Oct 2013 17:13:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131004151323.GA16440@redhat.com>
+References: <20131003195026.GT5790@linux.vnet.ibm.com> <20131003200002.GA23768@redhat.com> <20131003211009.GA4127@redhat.com> <20131004071814.GS28601@twins.programming.kicks-ass.net> <20131004111513.GA5699@redhat.com> <20131004114442.GJ3081@twins.programming.kicks-ass.net> <20131004121300.GA7725@redhat.com> <20131004123806.GK3081@twins.programming.kicks-ass.net> <20131004133135.GA11097@redhat.com> <20131004144319.GM3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131004105342.20c00a41@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131004144319.GM3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 10:53:42AM -0400, Steven Rostedt wrote:
-> On Fri, 4 Oct 2013 10:09:09 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Fri, Sep 27, 2013 at 05:29:08PM +0200, Peter Zijlstra wrote:
-> > > Subject: ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
-> > > From: Peter Zijlstra <peterz@infradead.org>
-> > > Date: Fri Sep 27 17:11:00 CEST 2013
-> > > 
-> > > Since we now have two need_resched states; trace the two so we can
-> > > observe discrepancies.
-> > > 
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> > 
-> > Steve, if you're done conferencing.. any objections?
-> > 
-> 
-> Taking a quick look, my only objection so far is that the change log is
-> rather flimsy. What are the two states and what are their dependencies?
-> 
-> In other words, what does these flags in the trace actually mean?
-> Probably need to add comments in the code and/or update the
-> Documentation section
+On 10/04, Peter Zijlstra wrote:
+>
+> On Fri, Oct 04, 2013 at 03:31:35PM +0200, Oleg Nesterov wrote:
+> > > I'm really starting to think we shouldn't do this in rcu_sync at all.
+> >
+> > I do not really understand why you insist that rcu_sync() should not
+> > try to help to the users which need the exclusive mode.
+>
+> But what other users; you yourself said that percpu-rwsem isn't one for
+> long if ever.
 
-Ah, you missed the preemption series?
+Not sure I understand...
 
-1a338ac32ca6 sched, x86: Optimize the preempt_schedule() call
-c2daa3bed53a sched, x86: Provide a per-cpu preempt_count implementation
-a233f1120c37 sched: Prepare for per-cpu preempt_count
-bdb438065890 sched: Extract the basic add/sub preempt_count modifiers
-01028747559a sched: Create more preempt_count accessors
-a787870924db sched, arch: Create asm/preempt.h
-f27dde8deef3 sched: Add NEED_RESCHED to the preempt_count
-4a2b4b222743 sched: Introduce preempt_count accessor functions
-ea8117478918 sched, idle: Fix the idle polling state logic
-315039862646 sched: Remove {set,clear}_need_resched
-b021fe3e2509 sched, rcu: Make RCU use resched_cpu()
-0c44c2d0f459 x86: Use asm goto to implement better modify_and_test() functions
+percpu-rwsem will use exclusive mode, with or without the possible
+improvements we can copy from cpuhp. sb_writers can probably use it
+too (along with other helpers from percpu-rwsem we do not have yet).
 
-preempt_count now includes a NEED_RESCHED and this patch shows which
-is set: N both PREEMPT_NEED_RESCHED and TIF_NEED_RESCHED, n for TIF only
-and p for preempt only.
+If you mean that the "raw" rcu_sync infrastructure will never have
+more users, will I am not sure, it looks "natural". But I can not
+know for sure.
+
+OK, I am not going to argue too much, let me send other patches
+you seem to agree with. I am also going to send this one for the
+record/review (without __complete_locked), please ack-or-nack it
+explicitly.
+
+I am not trying saying this feature is "must have", of course it
+is not. The only problem, I am a bit puzzled why you dislike it
+that much.
+
+Oleg.
+
