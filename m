@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab3JDFlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 01:41:21 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:52349 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab3JDFlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 01:41:19 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <524E50DB.3060707@roeck-us.net>
-References: <20131004010230.GI27287@sirena.org.uk>
-	<524E50DB.3060707@roeck-us.net>
-Date: Thu, 3 Oct 2013 22:41:18 -0700
-Message-ID: <CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Oct 3
-From: Olof Johansson <olof@lixom.net>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Mark Brown <broonie@kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751592Ab3JDFpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 01:45:05 -0400
+Received: from gw.cm.dream.jp ([59.157.128.2]:59996 "EHLO vsmtp02.cm.dti.ne.jp"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751199Ab3JDFpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 01:45:03 -0400
+Date: Fri, 4 Oct 2013 14:44:43 +0900
+From: takasi-y@ops.dti.ne.jp
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        devicetree@vger.kernel.org, linux-serial@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Paul Mundt <lethal@linux-sh.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] clk: emev2: Add support for emev2 SMU clocks with
+ DT
+Message-Id: <20131004144443.a7590dd81b8901ef264e488f@ops.dti.ne.jp>
+In-Reply-To: <CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
+References: <52410F86.4040301@renesas.com>
+	<20130924131542.f865fad4dec98e024c0d4676@ops.dti.ne.jp>
+	<CANqRtoRD35Ei31PK8a_TOp=2uiYPCoaJuDb6tyZtQL8s0PavNw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 10:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 10/03/2013 06:02 PM, Mark Brown wrote:
->>
->> Hi all,
->>
->> Better late than never I've uploaded today's linux-next tree to the
->> master branch of the repository below:
->>
->>          git://gitorious.org/thierryreding/linux-next.git
->>
->> A next-20131003 tag is also provided for convenience.
->>
->> A few new conflicts today caused by the removal of the h8300
->> architecture which I didn't report for triviality.  Several new build
->> failures were found as a result of running allmodconfig tests between
->> merges all of which have been reported and I'm still carrying the i.MX
->> fix that Thierry has been carrying.
->>
->> Due to the length of time taken to run all the allmodconfigs I skipped
->> the defconfig tests; I know Olof has the ARM stuff covered in his
->> autobuilder.  I'm going to use allyesconfig tomorrow since that should
->> run faster so hopefully I can cover the ARM, i386 and x86_64 configs
->> again.
->>
->
-> I could try to set up the buildbot farm I am using for -stable candidates
-> to also test the -next tree. Would that help ?
+Hi Magnus,
+Thank you for your commnets.
 
-ARM is pretty well-covered by my builds, I post results at:
+> > +obj-$(CONFIG_ARCH_SHMOBILE)    += shmobile/
+> > +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += shmobile/
+> 
+> Here I believe it is enough that you only use
+> CONFIG_ARCH_SHMOBILE_MULTI. ...
 
-http://lists.linaro.org/mailman/listinfo/kernel-build-reports
+That is because it supports three configuration,
+1. MULTI + KZM9D_REFERENCE + COMMON_CLK
+2. KZM9D_REFERENCE + COMMON_CLK
+3. KZM9D
+but,
 
-But I'm sure others would be useful.
+> ... Building common clocks to coexist with the
+> old legacy board code does not make any sense IMO. ...
+I think so, too.
+And from the view of testing, having smaller variants is better.
+# easier :)
 
+> > +ifeq ($(CONFIG_COMMON_CLK), y)
+> > +obj-$(CONFIG_ARCH_EMEV2)       += clk-emev2.o
+> > +endif
+> 
+> I don't think you would need the above ifeq/endif wrapper if you only
+> used CONFIG_ARCH_SHMOBILE_MULTI above.
+Right.
 
--Olof
+Anyway, because you have make kzm9d-reference things simpler,
+now we don't need to worry about it.
+
+Thanks,
+/yoshii
