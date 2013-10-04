@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab3JDS7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 14:59:06 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:38572
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1753525Ab3JDTEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:04:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39546 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab3JDS7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 14:59:05 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org, eric@purestorage.com,
-        nab@linux-iscsi.org, linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the basic I/O timeout
-Date: Fri,  4 Oct 2013 12:38:36 -0700
-Message-Id: <1380915516-28720-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751169Ab3JDTEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 15:04:14 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] smaps: show VM_SOFTDIRTY flag in VmFlags line
+Date: Fri,  4 Oct 2013 15:02:14 -0400
+Message-Id: <1380913335-17466-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than having a separate constant for specifying the timeout on FLUSH
-operations, use the basic I/O timeout value that is already configurable
-on a per target basis to derive the FLUSH timeout. Looking at the current
-definitions of these timeout values, the FLUSH operation is supposed to have
-a value that is twice the normal timeout value. This patch preserves this
-relationship while leveraging the flexibility of specifying the I/O timeout.
+This flag shows that soft dirty bit is not enabled yet.
+You can enable it by "echo 4 > /proc/pid/clear_refs."
 
-I would like to thank Eric Seppanen <eric@purestorage.com> and 
-Nicholas A. Bellinger <nab@linux-iscsi.org> for their help in resolving
-this issue.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- drivers/scsi/sd.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ fs/proc/task_mmu.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e62d17d..8aff306 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
- 
- static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
- {
--	rq->timeout = SD_FLUSH_TIMEOUT;
-+	rq->timeout *= 2;
- 	rq->retries = SD_MAX_RETRIES;
- 	rq->cmd[0] = SYNCHRONIZE_CACHE;
- 	rq->cmd_len = 10;
-@@ -1433,6 +1433,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- {
- 	int retries, res;
- 	struct scsi_device *sdp = sdkp->device;
-+	unsigned int timeout = sdp->request_queue->rq_timeout;
- 	struct scsi_sense_hdr sshdr;
- 
- 	if (!scsi_device_online(sdp))
-@@ -1448,7 +1449,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- 		 * flush everything.
- 		 */
- 		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
--					     &sshdr, SD_FLUSH_TIMEOUT,
-+					     &sshdr, timeout * 2,
- 					     SD_MAX_RETRIES, NULL, REQ_PM);
- 		if (res == 0)
- 			break;
+diff --git v3.12-rc2-mmots-2013-09-24-17-03.orig/fs/proc/task_mmu.c v3.12-rc2-mmots-2013-09-24-17-03/fs/proc/task_mmu.c
+index 7366e9d..c591928 100644
+--- v3.12-rc2-mmots-2013-09-24-17-03.orig/fs/proc/task_mmu.c
++++ v3.12-rc2-mmots-2013-09-24-17-03/fs/proc/task_mmu.c
+@@ -561,6 +561,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+ 		[ilog2(VM_NONLINEAR)]	= "nl",
+ 		[ilog2(VM_ARCH_1)]	= "ar",
+ 		[ilog2(VM_DONTDUMP)]	= "dd",
++#ifdef CONFIG_MEM_SOFT_DIRTY
++		[ilog2(VM_SOFTDIRTY)]	= "sd",
++#endif
+ 		[ilog2(VM_MIXEDMAP)]	= "mm",
+ 		[ilog2(VM_HUGEPAGE)]	= "hg",
+ 		[ilog2(VM_NOHUGEPAGE)]	= "nh",
 -- 
-1.7.4.1
+1.8.3.1
 
