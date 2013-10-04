@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3JDQZE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:25:04 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:44156 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab3JDQZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:25:01 -0400
-Message-ID: <524EEB96.6040707@mm-sol.com>
-Date: Fri, 04 Oct 2013 19:23:50 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1755297Ab3JDQ0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:26:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50718 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754729Ab3JDQ0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 12:26:11 -0400
+Date: Fri, 4 Oct 2013 18:25:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131004162546.GQ3081@twins.programming.kicks-ass.net>
+References: <20131003200002.GA23768@redhat.com>
+ <20131003211009.GA4127@redhat.com>
+ <20131004071814.GS28601@twins.programming.kicks-ass.net>
+ <20131004111513.GA5699@redhat.com>
+ <20131004114442.GJ3081@twins.programming.kicks-ass.net>
+ <20131004121300.GA7725@redhat.com>
+ <20131004123806.GK3081@twins.programming.kicks-ass.net>
+ <20131004133135.GA11097@redhat.com>
+ <20131004144319.GM3081@twins.programming.kicks-ass.net>
+ <20131004151323.GA16440@redhat.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
-References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org>
-In-Reply-To: <20131003165130.GA11974@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004151323.GA16440@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
-
-On 10/03/2013 07:51 PM, Theodore Ts'o wrote:
-> On Thu, Oct 03, 2013 at 05:52:33PM +0300, Stanimir Varbanov wrote:
->> This patch set adds hardware RNG driver wich is used to control the
->> Qualcomm's PRNG hardware block.
->> The first patch document the DT bindings needed to sucessfuly probe
->> the driver and the second patch adds the driver.
+On Fri, Oct 04, 2013 at 05:13:23PM +0200, Oleg Nesterov wrote:
+> Not sure I understand...
 > 
-> Is this really a PRNG (pseudo-random number generator)?  What are the
-> guarantees which Qualcomm is providing for the PRNG?  If it's really a
-> PRNG such as AES(i++, NSA_KEY), then kudo to Qualcomm for being
-> honest.
-> 
-> If it is supposed to be (or at least claimed to be) a secure random
-> number generator ala RDRAND suitable for use in cryptographic
-> applications, calling it a PRNG is going to be a bit misleading.
+> percpu-rwsem will use exclusive mode, with or without the possible
+> improvements we can copy from cpuhp. sb_writers can probably use it
+> too (along with other helpers from percpu-rwsem we do not have yet).
 
-I guess that it should follow NIST 800-90 recommendation, but I'm not
-aware what DRBG mechanism is used.
+Oh; I thought to have understood it would go away when you switched to
+the reader scheme from the hotplug bits.
 
-To be honest I really don't know the hardware implementation details. I
-put PRNG abbreviation in the cover letter just because I saw that
-defines for register offsets are prefixed with PRNG_*. I could rename
-all occurrences of PRNG to RNG. Is that will be enough to avoid confusions?
+But thinking a little more; yes you'd still need something to serialize
+writers.
 
-regadrs,
-Stan
+> If you mean that the "raw" rcu_sync infrastructure will never have
+> more users, will I am not sure, it looks "natural". But I can not
+> know for sure.
+
+Right, so this would be something I'd forgo if there were no immediate
+users. We could always reconsider if there was one; but apparently
+percpu-rwsem is one..
+
+> I am not trying saying this feature is "must have", of course it
+> is not. The only problem, I am a bit puzzled why you dislike it
+> that much.
+
+The reason I dislike it is because I feel we're now mixing two objects
+into one; one object doing mutual exclusion and one object being
+terribly smart with sync_rcu.
+
