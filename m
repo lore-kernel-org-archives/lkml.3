@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab3JDPZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 11:25:34 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:37077 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3JDPZc (ORCPT
+	id S1755123Ab3JDP1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 11:27:17 -0400
+Received: from a194-110.smtp-out.amazonses.com ([199.255.194.110]:46149 "EHLO
+	a194-110.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754316Ab3JDP1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 11:25:32 -0400
-Date: Fri, 4 Oct 2013 12:25:24 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
-Message-ID: <20131004152524.GA2265@ghostprotocols.net>
-References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
- <20131001071646.GA20023@gmail.com>
- <524ACD2A.7040902@gmail.com>
- <20131001142154.GA31298@gmail.com>
- <524ADF84.4080801@gmail.com>
- <20131001153309.GA1287@gmail.com>
- <20131001165437.GF2920@ghostprotocols.net>
- <524AFF5A.3030909@gmail.com>
+	Fri, 4 Oct 2013 11:27:16 -0400
+Date: Fri, 4 Oct 2013 15:27:15 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu
+ ops
+In-Reply-To: <20131004082728.GG3081@twins.programming.kicks-ass.net>
+Message-ID: <0000014184145d57-7481d88a-649c-4016-8c59-5da2c822efec-000000@email.amazonses.com>
+References: <20131003182902.174251532@linux.com> <000001417f93fb74-f307f391-26a4-431a-8295-04c5319d1373-000000@email.amazonses.com> <20131004082728.GG3081@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524AFF5A.3030909@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 01, 2013 at 10:59:06AM -0600, David Ahern escreveu:
-> On 10/1/13 10:54 AM, Arnaldo Carvalho de Melo wrote:
-> >Em Tue, Oct 01, 2013 at 05:33:09PM +0200, Ingo Molnar escreveu:
-> >>* David Ahern <dsahern@gmail.com> wrote:
-> >>>On 10/1/13 8:21 AM, Ingo Molnar wrote:
-> >I liked this last one:
-> >
-> >>   WARNING: The perf.data file's data size field is 0 which is unexpected.
-> >>            Was the 'perf record' command properly terminated?
-> >
-> >Can I patch that up into Namhyung's latest patch?
-> >
-> >Sonny, David, from your replies I think I can add Tested-by: tags for
-> >both of you?
-> 
-> I'm fine with the last message. And yes a Tested by
+On Fri, 4 Oct 2013, Peter Zijlstra wrote:
 
-Got to process this now, changing it a bit to replace "perf.data" with
-"%s" + session->filename, ack?
+> > -# define __this_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
+> > +# define __this_cpu_read(pcp) \
+> > +	(__this_cpu_preempt_check(),__pcpu_size_call_return(__this_cpu_read_, (pcp)))
+> >  #endif
+>
+> Would it not be move convenient to implement it in terms of the
+> raw_this_cpu*() thingies? That way you're sure they actually do the same
+> thing and there's only 1 site to change when changing the
+> implementation.
 
-Otherwise the user may have a 'perf.data' file and despite having
-informed -i with a different file name still get confused... ;-)
+The __this_cpu_read_xxx() are asm primitives provided by various arches.
+__this_cpu_read() is currently not overriden by any arches. That is why
+the approach here of replicating only the higher level for raw_cpu_ops
+works. Renaming the __this_cpu_xxx primitives would be a significant
+change.
 
-- Arnaldo
+> >  	if (!printk_ratelimit())
+> >  		goto out_enable;
+> >
+> > -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
+> > -			"code: %s/%d\n",
+> > +	printk(KERN_ERR "%s in preemptible [%08x] "
+> > +			"code: %s/%d\n", what,
+> >  			preempt_count() - 1, current->comm, current->pid);
+>
+> I would argue for keeping the "BUG" string intact and in front of the
+> %s.
+
+Most of the place that I have seen are not bugs but there was a
+reason for the code to run a __this_cpu op without preemption disabled.
