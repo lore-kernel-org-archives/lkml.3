@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab3JDXZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 19:25:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16695 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3JDXZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 19:25:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1036,1371106800"; 
-   d="scan'208";a="370035353"
-Date: Fri, 4 Oct 2013 16:25:03 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        gregkh@linuxfoundation.org, len.brown@intel.com, rjw@sisk.pl,
-        arjan@linux.intel.com
-Subject: Re: [PATCH v2 6/6] Introduce Intel RAPL power capping driver
-Message-ID: <20131004162503.07ec349a@ultegra>
-In-Reply-To: <1380924862.2081.118.camel@joe-AO722>
-References: <1380904616-17519-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-	<1380904616-17519-7-git-send-email-srinivas.pandruvada@linux.intel.com>
-	<1380910065.2081.117.camel@joe-AO722>
-	<20131004131228.54eb7098@ultegra>
-	<1380924862.2081.118.camel@joe-AO722>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752201Ab3JDX1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 19:27:37 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:47405 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3JDX1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 19:27:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131003185630.GJ13318@ZenIV.linux.org.uk>
+References: <20131001145755.GA22729@redhat.com>
+	<20131003185630.GJ13318@ZenIV.linux.org.uk>
+Date: Fri, 4 Oct 2013 16:27:35 -0700
+X-Google-Sender-Auth: sQYymoqVOx6TcVAM7e2_8goeem4
+Message-ID: <CA+55aFxEs=bdtw-SPRSnVz7bGE3Pyi+tM7wsEdwxu+GL5qq5_Q@mail.gmail.com>
+Subject: Re: pipe/cred lockdep warning
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Oct 2013 15:14:22 -0700
-Joe Perches <joe@perches.com> wrote:
+On Thu, Oct 3, 2013 at 11:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Note, BTW, that splice to /proc/<pid>/attr/<something> is broken.
+> proc_pid_attr_write() is *not* supposed to allow partial writes at all.
+> Frankly, I'd consider adding a ->splice_write() instance that would
+> simply return -EINVAL there...
 
-> Isn't LIMIT1/WINDOW1 used as ull anyway?
-> It doesn't hurt to show that the value is also ull.
-sure, I will make that change in the next set.
+That sounds like the right thing to do.
 
-thanks,
+Or possibly go even further, and say that the default is to return
+-EINVAL, and files and filesystems that actually want the
+"default_file_splice_write()" semantics have to say so in their d_op
+structure.
 
-Jacob
+Hmm?
+
+               Linus
