@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab3JDMGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 08:06:43 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:56415
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753036Ab3JDMGl (ORCPT
+	id S1754299Ab3JDMG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 08:06:58 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:53777 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab3JDMG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 08:06:41 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzbb2dI98dI9371I1432I1418I4015Ide40hzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2fh95h839hd24hf0ah119dh1288h12a5h12bdh137ah1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1bceh1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh20f0h34h19b6n1155h192ch)
-Date: Fri, 4 Oct 2013 14:04:06 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 4 Oct 2013 08:06:56 -0400
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        <linux-kernel@vger.kernel.org>,
-        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        Kedareswara rao Appana <appanad@xilinx.com>,
-        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] i2c: xilinx: Use devm_* functions
-References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com> <83ec9558211389896f21d9682e9824cd7979466c.1380550490.git.michal.simek@xilinx.com> <20131004053323.GB3194@katana> <524E8764.4030704@monstr.eu> <20131004115840.GB2994@katana>
-In-Reply-To: <20131004115840.GB2994@katana>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="hoEOJgBKvn1SWB1wqjvd0xDJq7UWwe4U4"
-X-RCIS-Action: ALLOW
-Message-ID: <9b5a6672-2fd9-4900-b018-f044dee60646@VA3EHSMHS021.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <1378895123.5476.83.camel@marge.simpson.net>
+References: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+	<1378362989.18435.2.camel@marge.simpson.net>
+	<20130905111428.GB23362@gmail.com>
+	<1378386697.6567.9.camel@marge.simpson.net>
+	<20130905133750.GA26637@gmail.com>
+	<1378445942.5434.31.camel@marge.simpson.net>
+	<20130909122325.GX31370@twins.programming.kicks-ass.net>
+	<1378730538.5586.30.camel@marge.simpson.net>
+	<20130909133044.GB31370@twins.programming.kicks-ass.net>
+	<20130909134635.GB26785@twins.programming.kicks-ass.net>
+	<20130911085643.GS26785@twins.programming.kicks-ass.net>
+	<1378895123.5476.83.camel@marge.simpson.net>
+Date: Fri, 4 Oct 2013 20:06:55 +0800
+Message-ID: <CABawtvMo+NtTv3a3jj=YTg-Om=MzHhVDARdtTA-DtTMzNeNAJA@mail.gmail.com>
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
+        daniel.lezcano@linaro.org, linux-pm@vger.kernel.org, lenb@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hoEOJgBKvn1SWB1wqjvd0xDJq7UWwe4U4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 10/04/2013 01:58 PM, Wolfram Sang wrote:
-> On Fri, Oct 04, 2013 at 11:16:20AM +0200, Michal Simek wrote:
->> On 10/04/2013 07:33 AM, Wolfram Sang wrote:
->>>
->>>> +	i2c->base =3D devm_ioremap_resource(&pdev->dev, res);
->>>> +	if (IS_ERR(i2c->base)) {
->>>> +		dev_err(&pdev->dev, "Could not allocate iomem\n");
->>>
->>> devm_ioremap_resource already prints error messages.
->>
->> you are right.
->>
->>>
->>>> +	ret =3D devm_request_irq(&pdev->dev, irq, xiic_isr, 0, pdev->name, i=
-2c);
->>>
->>> This is too early. Can you find out why?
->>
->> Why do you think that it is too early?
-> =
-
-> The ISR uses spinlocks which are not initialized by then.
-
-And waitqueue too.  Ok I will keep that request irq in current location
-and I will add xiic_reinit() below this code.
-
->> I am looking at origin code again and I think that the code
->> is also problematic because in xiic_reinit() interrupts are enabled
->> but they are requested later.
->> Shouldn't be there a logic that interrupts should be enabled when
->> interrupts are registered by the kernel?
-> =
-
-> First register the handler, then activate interrupts. You are right,
-> this needs to be fixed, too.
-
-Do you want me to create separate patch just about moving request irq in fr=
-ont of
-xiic_reinit()? And then devm_ conversion?
+Mike, Peter,
+   Seems lots of work has been done these days, studious guys. those
+patches merged in last stable/dev branch (fix performance regression
+caused by extra rtimer programming and rescheduling IPI,confusing
+idle... etc) ? So I could just do a lazy pull for test with my
+environment.  I need catch up with other mail loops with my vacation
+again.
 
 Thanks,
-Michal
+Ethan
 
-
---hoEOJgBKvn1SWB1wqjvd0xDJq7UWwe4U4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJOrrcACgkQykllyylKDCEpCgCfQx6rbawV6CipaHhOJ4Dm/mQW
-qwwAn3IpG6Gm+tuEG6XgZSlsTNMy8iII
-=Htag
------END PGP SIGNATURE-----
-
-
---hoEOJgBKvn1SWB1wqjvd0xDJq7UWwe4U4--
+On Wed, Sep 11, 2013 at 6:25 PM, Mike Galbraith <bitbucket@online.de> wrote:
+> On Wed, 2013-09-11 at 10:56 +0200, Peter Zijlstra wrote:
+>> On Mon, Sep 09, 2013 at 03:46:35PM +0200, Peter Zijlstra wrote:
+>> > On Mon, Sep 09, 2013 at 03:30:44PM +0200, Peter Zijlstra wrote:
+>> > > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+>> > > index fa6964d..486c0ba 100644
+>> > > --- a/drivers/idle/intel_idle.c
+>> > > +++ b/drivers/idle/intel_idle.c
+>> > > @@ -359,6 +359,14 @@ static int intel_idle(struct cpuidle_device *dev,
+>> > >   if (!(lapic_timer_reliable_states & (1 << (cstate))))
+>> > >           clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+>> > >
+>> > > + current_thread_into()->status |= TS_POLLING;
+>> > > +
+>> > > + /*
+>> > > +  * Order against setting of TS_POLLING against the reading of
+>> > > +  * NEED_RESCHED, matched by resched_task().
+>> > > +  */
+>> > > + smp_mb();
+>> > > +
+>> > >   if (!need_resched()) {
+>> > >
+>> > >           __monitor((void *)&current_thread_info()->flags, 0, 0);
+>> > > @@ -367,6 +375,8 @@ static int intel_idle(struct cpuidle_device *dev,
+>> > >                   __mwait(eax, ecx);
+>> > >   }
+>> > >
+>> > > + current_thread_into()->status &= ~TS_POLLING;
+>> > > +
+>> > >   if (!(lapic_timer_reliable_states & (1 << (cstate))))
+>> > >           clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+>> >
+>> > Hmm, arguably it would be better to set this from
+>> > intel_idle_cpuidle_driver_init() and clear it whenever this goes away.
+>> > Not sure how all that works, the cpuidle driver framework seems 'weird'.
+>>
+>> OK, so I went over the idle stuff again, and we do set TS_POLLING like
+>> stuff, it got hidden in current_{clr,set}_polling().
+>>
+>> Still if that patch causes extra IPIs its bound to be broken in some
+>> creative way.. I'll prod.
+>
+> (thanks, when I get a break from testing/poking this'n'that, I'll take a
+> peek too...  well, good_intentions++ anyway;)
+>
