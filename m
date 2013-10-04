@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab3JDI2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 04:28:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20622 "EHLO mx1.redhat.com"
+	id S1753982Ab3JDI3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 04:29:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63184 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab3JDI2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 04:28:04 -0400
-Date: Fri, 4 Oct 2013 10:29:20 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
+	id S1751284Ab3JDI3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 04:29:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1031,1371106800"; 
+   d="scan'208";a="405201491"
+Date: Fri, 4 Oct 2013 16:28:47 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [GIT PULL] x86/asmlinkage changes for v3.12
+Message-ID: <20131004082847.GA30635@localhost>
+References: <20130903143921.GA28290@gmail.com>
+ <CA+55aFxVv==DC0JdS87V+cPr-twN+TujYg5XmgHOjJOAkZ4xwQ@mail.gmail.com>
+ <522763A9.8080708@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
+In-Reply-To: <522763A9.8080708@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 11:49:45PM +0100, Ben Hutchings wrote:
-> On Wed, 2013-10-02 at 12:48 +0200, Alexander Gordeev wrote:
-> > This update converts pci_enable_msix() and pci_enable_msi_block()
-> > interfaces to canonical kernel functions and makes them return a
-> > error code in case of failure or 0 in case of success.
-> [...]
+On Wed, Sep 04, 2013 at 09:45:29AM -0700, H. Peter Anvin wrote:
+[snip]
+> This also exposes an interesting problem with Fengguang's build robot.
 > 
-> I think this is fundamentally flawed: pci_msix_table_size() and
-> pci_get_msi_cap() can only report the limits of the *device* (which the
-> driver usually already knows), whereas MSI allocation can also be
-> constrained due to *global* limits on the number of distinct IRQs.
+> One build:
+> [tip:x86/asmlinkage] 28596b6a8779b736829ad837f95fdc2e81bdd1ee BUILD DONE
+> 28596b6a8779b736829ad837f95fdc2e81bdd1ee  x86, asmlinkage, vdso: Mark
+> vdso variables __visible
+> 
+> ... flags the warnings.  The next build for the branch looks clean:
+> [tip:x86/asmlinkage] eb86b5fd505cb97743d84226140cf247d91a2f03 BUILD SUCCESS
+> eb86b5fd505cb97743d84226140cf247d91a2f03  x86/asmlinkage: Fix warning in
+> xen asmlinkage change
+> 
+> ("DONE" means warnings or errors.)
+> 
+> A human observer would assume that the problem was fixed, since the
+> patch says "fix warnings", but the problem is that it didn't actually
+> fix *all* the warnings.  However, the bot has flagged the warnings as
+> preexisting from the previous build, and thus no new warnings were
+> introduced.
 
-Even the current implementation by no means addresses it. Although it
-might seem a case for architectures to report the number of IRQs available
-for a driver to retry, in fact they all just fail. The same applies to
-*any* other type of resource involved: irq_desc's, CPU interrupt vector
-space, msi_desc's etc. No platform cares about it and just bails out once
-a constrain met (please correct me if I am wrong here). Given that Linux
-has been doing well even on embedded I think we should not change it.
+Yeah sorry! The build robot silently ignored any reported errors,
+which is not the expected behavior when sending BUILD SUCCESS notifications.
 
-The only exception to the above is pSeries platform which takes advantage
-of the current design (to implement MSI quota). There are indications we
-can satisfy pSeries requirements, but the design proposed in this RFC
-is not going to change drastically anyway. The start of the discusstion
-is here: https://lkml.org/lkml/2013/9/5/293
+> It would be better if the bot reported any warnings not present in upstream.
 
-> Currently pci_enable_msix() will report a positive value if it fails due
-> to the global limit.  Your patch 7 removes that.  pci_enable_msi_block()
-> unfortunately doesn't appear to do this.
+I've fixed the robot to remember which tree/branch first introduced
+the build error/warning. If the problem still remains in that branch's
+new HEAD, the robot will be able to send out BUILD DONE reports which
+will include the old error/warning message in the email body.
 
-pci_enable_msi_block() can do more than one MSI only on x86 (with IOMMU),
-but it does not bother to return positive numbers, indeed.
+Sorry for the delay! This feature was added shortly after your report,
+however took long time to confirm that it actually works.
 
-> It seems to me that a more useful interface would take a minimum and
-> maximum number of vectors from the driver.  This wouldn't allow the
-> driver to specify that it could only accept, say, any even number within
-> a certain range, but you could still leave the current functions
-> available for any driver that needs that.
-
-Mmmm.. I am not sure I am getting it. Could you please rephrase?
-
-> Ben.
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Thanks,
+Fengguang
