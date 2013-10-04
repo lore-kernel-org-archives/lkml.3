@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab3JDSNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 14:13:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59282 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169Ab3JDSNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 14:13:21 -0400
-Message-ID: <524F04FD.5020804@zytor.com>
-Date: Fri, 04 Oct 2013 11:12:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752384Ab3JDSTE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 14:19:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59328 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3JDSTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 14:19:01 -0400
+Date: Fri, 4 Oct 2013 11:18:46 -0700
+From: tip-bot for Thomas Petazzoni <tipbot@zytor.com>
+Message-ID: <tip-0dbc6078c06bc002bfacf95f33960b1901c663f5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, thomas.petazzoni@free-electrons.com,
+        bhelgaas@google.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, thomas.petazzoni@free-electrons.com,
+        bhelgaas@google.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1380794354-9079-1-git-send-email-thomas.petazzoni@free-electrons.com>
+References: <1380794354-9079-1-git-send-email-thomas.petazzoni@free-electrons.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, build, pci: Fix PCI_MSI build on !SMP
+Git-Commit-ID: 0dbc6078c06bc002bfacf95f33960b1901c663f5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-References: <cover.1380727889.git.michal.simek@xilinx.com> <524C6D64.8080801@zytor.com> <20131003064915.GB17155@amd.pavel.ucw.cz> <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com> <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com> <524EFE76.70200@monstr.eu>
-In-Reply-To: <524EFE76.70200@monstr.eu>
-X-Enigmail-Version: 1.5.2
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 04 Oct 2013 11:18:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 10:44 AM, Michal Simek wrote:
-> 
-> If you look at it in general I believe that there is wide range of 
-> applications which just contain one bitstream per fpga and the 
-> bitstream is replaced by newer version in upgrade. For them 
-> firmware interface should be pretty useful. Just setup firmware 
-> name with bitstream and it will be automatically loaded in startup 
-> phase.
-> 
-> Then there is another set of applications especially in connection 
-> to partial reconfiguration where this can be done statically by 
-> pregenerated partial bitstreams or automatically generated on 
-> target cpu. For doing everything on the target firmware interface 
-> is not the best because everything can be handled by user 
-> application and it is easier just to push this bitstream to do 
-> device and not to save it to the fs.
-> 
-> I think the question here is if this subsystem could have several 
-> interfaces. For example Alan is asking for adding char support. 
-> Does it even make sense to have more interfaces with the same 
-> backend driver? When this is answered then we can talk which one 
-> make sense to have. In v2 is sysfs and firmware one. Adding char
-> is also easy to do.
-> 
+Commit-ID:  0dbc6078c06bc002bfacf95f33960b1901c663f5
+Gitweb:     http://git.kernel.org/tip/0dbc6078c06bc002bfacf95f33960b1901c663f5
+Author:     Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+AuthorDate: Thu, 3 Oct 2013 11:59:14 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 4 Oct 2013 10:43:34 -0700
 
-Greg, what do you think?
+x86, build, pci: Fix PCI_MSI build on !SMP
 
-I agree that the firmware interface makes sense when the use of the
-FPGA is an implementation detail in a fixed hardware configuration,
-but that is a fairly restricted use case all things considered.
+Commit ebd97be635 ('PCI: remove ARCH_SUPPORTS_MSI kconfig option')
+removed the ARCH_SUPPORTS_MSI option which architectures could select
+to indicate that they support MSI. Now, all architectures are supposed
+to build fine when MSI support is enabled: instead of having the
+architecture tell *when* MSI support can be used, it's up to the
+architecture code to ensure that MSI support can be enabled.
 
-	-hpa
+On x86, commit ebd97be635 removed the following line:
 
+  select ARCH_SUPPORTS_MSI if (X86_LOCAL_APIC && X86_IO_APIC)
+
+Which meant that MSI support was only available when the local APIC
+and I/O APIC were enabled. While this is always true on SMP or x86-64,
+it is not necessarily the case on i386 !SMP.
+
+The below patch makes sure that the local APIC and I/O APIC support is
+always enabled when MSI support is enabled. To do so, it:
+
+ * Ensures the X86_UP_APIC option is not visible when PCI_MSI is
+   enabled. This is the option that allows, on UP machines, to enable
+   or not the APIC support. It is already not visible on SMP systems,
+   or x86-64 systems, for example. We're simply also making it
+   invisible on i386 MSI systems.
+
+ * Ensures that the X86_LOCAL_APIC and X86_IO_APIC options are 'y'
+   when PCI_MSI is enabled.
+
+Notice that this change requires a change in drivers/iommu/Kconfig to
+avoid a recursive Kconfig dependencey. The AMD_IOMMU option selects
+PCI_MSI, but was depending on X86_IO_APIC. This dependency is no
+longer needed: as soon as PCI_MSI is selected, the presence of
+X86_IO_APIC is guaranteed. Moreover, the AMD_IOMMU already depended on
+X86_64, which already guaranteed that X86_IO_APIC was enabled, so this
+dependency was anyway redundant.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: http://lkml.kernel.org/r/1380794354-9079-1-git-send-email-thomas.petazzoni@free-electrons.com
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig      | 6 +++---
+ drivers/iommu/Kconfig | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee2fb9d..145d703 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -860,7 +860,7 @@ source "kernel/Kconfig.preempt"
+ 
+ config X86_UP_APIC
+ 	bool "Local APIC support on uniprocessors"
+-	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
++	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
+ 	---help---
+ 	  A local APIC (Advanced Programmable Interrupt Controller) is an
+ 	  integrated interrupt controller in the CPU. If you have a single-CPU
+@@ -885,11 +885,11 @@ config X86_UP_IOAPIC
+ 
+ config X86_LOCAL_APIC
+ 	def_bool y
+-	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC
++	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
+ 
+ config X86_IO_APIC
+ 	def_bool y
+-	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC
++	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC || PCI_MSI
+ 
+ config X86_VISWS_APIC
+ 	def_bool y
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index fe302e3..c880eba 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -52,7 +52,7 @@ config AMD_IOMMU
+ 	select PCI_PRI
+ 	select PCI_PASID
+ 	select IOMMU_API
+-	depends on X86_64 && PCI && ACPI && X86_IO_APIC
++	depends on X86_64 && PCI && ACPI
+ 	---help---
+ 	  With this option you can enable support for AMD IOMMU hardware in
+ 	  your system. An IOMMU is a hardware component which provides
