@@ -1,57 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3JDTz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:55:56 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:35524 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751544Ab3JDTzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:55:54 -0400
-Date: Fri, 4 Oct 2013 20:55:50 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI changes
-Message-ID: <20131004195550.GA21783@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754569Ab3JDT5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:57:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50672 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754133Ab3JDT5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 15:57:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
+   d="scan'208";a="388047496"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Fei Yang <fei.yang@intel.com>, Ning Li <ning.li@intel.com>
+Subject: [PATCH 1/3] gpio: langwell: add Intel Merrifield support
+Date: Fri,  4 Oct 2013 13:01:40 -0700
+Message-Id: <1380916902-23791-2-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1380916902-23791-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1380916902-23791-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These changes fix a couple of sparse warnings introduced in the last
-pull.
+This patch implements a better way to handle multiple SoC's and adds
+Intel Merrifield support to gpio-langwell.
 
-The following changes since commit 0ce6cda2c75d64175394341ef60e6e1d27dd9c10:
+It was based on previous work from Ning Li <ning.li@intel.com>
 
-  x86 efi: bugfix interrupt disabling sequence (2013-09-30 10:23:11 +0100)
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Fei Yang <fei.yang@intel.com>
+Signed-off-by: Ning Li <ning.li@intel.com>
+---
+ drivers/gpio/gpio-langwell.c | 93 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 82 insertions(+), 11 deletions(-)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
-
-for you to fetch changes up to c158c3bf59951bbb44bd7ccca9e6665dfd1617c5:
-
-  boot, efi: Remove redundant memset() (2013-10-04 20:07:47 +0100)
-
-----------------------------------------------------------------
- * Fix a recently introduced sparse warning caused by using 0 instead of
-   NULL - Leif Lindholm
-
- * Remove a useless memset from the common EFI stub code - Roy Franz
-
-----------------------------------------------------------------
-Leif Lindholm (1):
-      x86/efi: Fix config_table_type array termination
-
-Roy Franz (1):
-      boot, efi: Remove redundant memset()
-
- arch/x86/platform/efi/efi.c            | 2 +-
- drivers/firmware/efi/efi-stub-helper.c | 2 --
- 2 files changed, 1 insertion(+), 3 deletions(-)
-
+diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+index bfa1af1..bf3b959 100644
+--- a/drivers/gpio/gpio-langwell.c
++++ b/drivers/gpio/gpio-langwell.c
+@@ -37,6 +37,9 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/irqdomain.h>
+ 
++#define LNW_IRQ_TYPE_EDGE	(1 << 0)
++#define LNW_IRQ_TYPE_LEVEL	(1 << 1)
++
+ /*
+  * Langwell chip has 64 pins and thus there are 2 32bit registers to control
+  * each feature, while Penwell chip has 96 pins for each block, and need 3 32bit
+@@ -62,6 +65,16 @@ enum GPIO_REG {
+ 	GAFR,		/* alt function */
+ };
+ 
++/* langwell gpio driver data */
++struct lnw_gpio_ddata {
++	u16 ngpio;		/* number of gpio pins */
++	u32 gplr_offset;	/* offset of first GPLR register from base */
++	u32 flis_base;		/* base address of FLIS registers */
++	u32 flis_len;		/* length of FLIS registers */
++	u32 (*get_flis_offset)(int gpio);
++	u32 chip_irq_type;	/* chip interrupt type */
++};
++
+ struct lnw_gpio {
+ 	struct gpio_chip		chip;
+ 	void __iomem			*reg_base;
+@@ -227,13 +240,71 @@ static struct irq_chip lnw_irqchip = {
+ 	.irq_set_type	= lnw_irq_type,
+ };
+ 
+-static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {   /* pin number */
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f), .driver_data = 64 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f), .driver_data = 96 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a), .driver_data = 96 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08eb), .driver_data = 96 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08f7), .driver_data = 96 },
+-	{ 0, }
++static const struct lnw_gpio_ddata gpio_lincroft = {
++	.ngpio = 64,
++};
++
++static const struct lnw_gpio_ddata gpio_penwell_aon = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static const struct lnw_gpio_ddata gpio_penwell_core = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static const struct lnw_gpio_ddata gpio_cloverview_aon = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE | LNW_IRQ_TYPE_LEVEL,
++};
++
++static const struct lnw_gpio_ddata gpio_cloverview_core = {
++	.ngpio = 96,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static const struct lnw_gpio_ddata gpio_tangier = {
++	.ngpio = 192,
++	.gplr_offset = 4,
++	.flis_base = 0xff0c0000,
++	.flis_len = 0x8000,
++	.get_flis_offset = NULL,
++	.chip_irq_type = LNW_IRQ_TYPE_EDGE,
++};
++
++static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {
++	{
++		/* Lincroft */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f),
++		.driver_data = (kernel_ulong_t)&gpio_lincroft,
++	},
++	{
++		/* Penwell AON */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f),
++		.driver_data = (kernel_ulong_t)&gpio_penwell_aon,
++	},
++	{
++		/* Penwell Core */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a),
++		.driver_data = (kernel_ulong_t)&gpio_penwell_core,
++	},
++	{
++		/* Cloverview Aon */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08eb),
++		.driver_data = (kernel_ulong_t)&gpio_cloverview_aon,
++	},
++	{
++		/* Cloverview Core */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08f7),
++		.driver_data = (kernel_ulong_t)&gpio_cloverview_core,
++	},
++	{
++		/* Tangier */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x1199),
++		.driver_data = (kernel_ulong_t)&gpio_tangier,
++	},
++	{ 0 }
+ };
+ MODULE_DEVICE_TABLE(pci, lnw_gpio_ids);
+ 
+@@ -316,7 +387,7 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+ 	u32 gpio_base;
+ 	u32 irq_base;
+ 	int retval;
+-	int ngpio = id->driver_data;
++	struct lnw_gpio_ddata *ddata = (struct lnw_gpio_ddata *)id->driver_data;
+ 
+ 	retval = pcim_enable_device(pdev);
+ 	if (retval)
+@@ -351,14 +422,14 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+ 	lnw->chip.set = lnw_gpio_set;
+ 	lnw->chip.to_irq = lnw_gpio_to_irq;
+ 	lnw->chip.base = gpio_base;
+-	lnw->chip.ngpio = ngpio;
++	lnw->chip.ngpio = ddata->ngpio;
+ 	lnw->chip.can_sleep = 0;
+ 	lnw->pdev = pdev;
+ 
+ 	spin_lock_init(&lnw->lock);
+ 
+-	lnw->domain = irq_domain_add_simple(pdev->dev.of_node, ngpio, irq_base,
+-					    &lnw_gpio_irq_ops, lnw);
++	lnw->domain = irq_domain_add_simple(pdev->dev.of_node, ddata->ngpio,
++					    irq_base, &lnw_gpio_irq_ops, lnw);
+ 	if (!lnw->domain)
+ 		return -ENOMEM;
+ 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.4.rc3
+
