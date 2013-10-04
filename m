@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3JDOWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:22:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57100 "EHLO mail.zytor.com"
+	id S1754906Ab3JDOWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:22:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57122 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab3JDOWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:22:12 -0400
+	id S1754249Ab3JDOWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 10:22:50 -0400
 User-Agent: K-9 Mail for Android
-In-Reply-To: <20131004082847.GA30635@localhost>
-References: <20130903143921.GA28290@gmail.com> <CA+55aFxVv==DC0JdS87V+cPr-twN+TujYg5XmgHOjJOAkZ4xwQ@mail.gmail.com> <522763A9.8080708@zytor.com> <20131004082847.GA30635@localhost>
+In-Reply-To: <20131004141646.GA9396@kroah.com>
+References: <cover.1380727889.git.michal.simek@xilinx.com> <524C6D64.8080801@zytor.com> <20131003064915.GB17155@amd.pavel.ucw.cz> <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
  charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Subject: Re: [GIT PULL] x86/asmlinkage changes for v3.12
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 04 Oct 2013 07:19:05 -0700
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>
-Message-ID: <87685e2f-ea45-452b-8f6c-a2336d9cef67@email.android.com>
+Date: Fri, 04 Oct 2013 07:21:37 -0700
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <monstr@monstr.eu>
+CC: Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perfectly understandable.
+Yes; I never got too corner Greg ;)
 
-Fengguang Wu <fengguang.wu@intel.com> wrote:
->On Wed, Sep 04, 2013 at 09:45:29AM -0700, H. Peter Anvin wrote:
->[snip]
->> This also exposes an interesting problem with Fengguang's build
->robot.
->> 
->> One build:
->> [tip:x86/asmlinkage] 28596b6a8779b736829ad837f95fdc2e81bdd1ee BUILD
->DONE
->> 28596b6a8779b736829ad837f95fdc2e81bdd1ee  x86, asmlinkage, vdso: Mark
->> vdso variables __visible
->> 
->> ... flags the warnings.  The next build for the branch looks clean:
->> [tip:x86/asmlinkage] eb86b5fd505cb97743d84226140cf247d91a2f03 BUILD
->SUCCESS
->> eb86b5fd505cb97743d84226140cf247d91a2f03  x86/asmlinkage: Fix warning
->in
->> xen asmlinkage change
->> 
->> ("DONE" means warnings or errors.)
->> 
->> A human observer would assume that the problem was fixed, since the
->> patch says "fix warnings", but the problem is that it didn't actually
->> fix *all* the warnings.  However, the bot has flagged the warnings as
->> preexisting from the previous build, and thus no new warnings were
->> introduced.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+>On Fri, Oct 04, 2013 at 03:57:57PM +0200, Michal Simek wrote:
+>> But anyway what was resolution from that meeting?
 >
->Yeah sorry! The build robot silently ignored any reported errors,
->which is not the expected behavior when sending BUILD SUCCESS
->notifications.
->
->> It would be better if the bot reported any warnings not present in
->upstream.
->
->I've fixed the robot to remember which tree/branch first introduced
->the build error/warning. If the problem still remains in that branch's
->new HEAD, the robot will be able to send out BUILD DONE reports which
->will include the old error/warning message in the email body.
->
->Sorry for the delay! This feature was added shortly after your report,
->however took long time to confirm that it actually works.
->
->Thanks,
->Fengguang
+>It never happened, we got distracted by lunch :)
 
 -- 
 Sent from my mobile phone.  Please pardon brevity and lack of formatting.
