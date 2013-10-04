@@ -1,137 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab3JDNxJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 09:53:09 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754917Ab3JDNxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 09:53:07 -0400
-Message-ID: <524EC83C.9050309@nod.at>
-Date: Fri, 04 Oct 2013 15:53:00 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754984Ab3JDNxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 09:53:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49231 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754476Ab3JDNxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 09:53:51 -0400
+Date: Fri, 4 Oct 2013 14:53:06 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Steve Capper <steve.capper@linaro.org>
+Cc: Zi Shen Lim <zishen.lim@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linaro-networking@linaro.org" <linaro-networking@linaro.org>,
+        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
+        linux-mm@kvack.org
+Subject: Re: [RFC] ARM: lockless get_user_pages_fast()
+Message-ID: <20131004135306.GK24303@mudshark.cambridge.arm.com>
+References: <1380820515-21100-1-git-send-email-zishen.lim@linaro.org>
+ <20131003172755.GG7408@mudshark.cambridge.arm.com>
+ <CAM1oe53oQ5OBww=89vqcyUt_NqsYfCHDVZkKv0p9=-TchhkHSA@mail.gmail.com>
+ <20131004103140.GA4444@linaro.org>
 MIME-Version: 1.0
-To: Dmitry Vyukov <dvyukov@google.com>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
-References: <20131003163411.GA17101@www.outflux.net> <20131003175824.GH13318@ZenIV.linux.org.uk> <CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com> <20131003182311.GI13318@ZenIV.linux.org.uk> <CAGXu5j+4NUKfgKiAK+w2MrsqRxHiYc62LBMx4UsfxUBSxNwNJA@mail.gmail.com> <20131003205706.GM13318@ZenIV.linux.org.uk> <CACT4Y+Z_hxVOqUeVtvOH-eCkTLveW3vsPtcXN-jhs7=cbd21Zw@mail.gmail.com> <CAFLxGvxo8bvg0Pn8z3qUENFNOUmNdfp5Cz_WP=H5G8kXubdR3A@mail.gmail.com> <CACT4Y+aYuVfe7-xjLC97SKpyFeO_6XeO1OjLMda58TfqxR_MMw@mail.gmail.com>
-In-Reply-To: <CACT4Y+aYuVfe7-xjLC97SKpyFeO_6XeO1OjLMda58TfqxR_MMw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004103140.GA4444@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.10.2013 12:53, schrieb Dmitry Vyukov:
-> On Fri, Oct 4, 2013 at 2:38 PM, Richard Weinberger
-> <richard.weinberger@gmail.com> wrote:
->>>>>> ...
->>>>>> [1] yes, yes, I know - the mere mention of security should've prevented such
->>>>>> arrogant requests.  It's an imperfect universe.
->>>>>
->>>>> I want to attempt to disassemble what you've communicating here:
->>>>>
->>>>> a) I'm not thinking.
->>>>> b) Requesting that someone think when they mention security is arrogant.
->>>>
->>>> Not really.
->>>>
->>>> It's just that all too often completely pointless changes are touted
->>>> as security hardening.  With replies along the lines of "it doesn't
->>>> really buy you anything" countered with indignant "but what if
->>>> <impossible situation>" and/or references to "defense in depth" (used
->>>> as a magical incantation), etc.
->>>>
->>>> You've posted a provably pointless patch.  Happens to all of us.  And in
->>>> reply to "it's pointless for the following reasons" (with moderate
->>>> level of sarcasm) you responded pretty much with "but what if allocator
->>>> changes?  It's more robust that way".  OK, but if you go for that
->>>> kind of arguments (and they can be valid), you'd better be correct.
->>>> You were not, and for very obvious reasons.  Let me repeat, this
->>>> time with sarcasm level down to zero:
->>>>
->>>> Let n be some integer between 32 and 4096 and N be equal to n rounded up
->>>> to word size.  If kmalloc(n) returns a pointer such that fetch from
->>>> (char *)p[N - 1] triggers an exception, we have a badly broken kernel.
->>>> It can happen only if there is a page boundary between p[n-1] and p[N-1],
->>>> which means that p is not word-aligned.
->>>> Consider the following code:
->>>>         struct foo {
->>>>                 unsigned long n;
->>>>                 char a[];
->>>>         } *p = kmalloc(offsetof(struct foo, a) + 33);
->>>>         if (p)
->>>>                 p->n = 1;
->>>> and note that it will result in an exception on any architecture that prohibits
->>>> unaligned accesses in the kernel.  Even on architectures where those are
->>>> allowed, misaligned structures mean serious correctness problems (atomicity of
->>>> stores, etc.)
->>>>
->>>> In other words, kmalloc() (or, indeed, userland malloc()) demonstrating
->>>> such behaviour would need immediate fixing.  The only exception I can
->>>> think of is something with byte granularity of memory protection; in such
->>>> case we can have that without unaligned return values returned by allocator.
->>>> Which would require a lot of changes in mm/*, at the very least, and probably
->>>> would violate a lot of assumptions elsewhere in the kernel (starting with
->>>> sizeof(void *) == sizeof(unsigned long)).
->>>>
->>>>> What the patch does help with, though, is dynamic analysis tools that
->>>>> are looking for out-of-bound reads, which this clearly is. It should
->>>>> be considered a violation of the API to attempt to access a range
->>>>> beyond what was requested for the allocation. Fixing this means lots
->>>>> of noise vanishes from such analysis of the allocation API, letting
->>>>> other tools besides just KASAN do work to find other more serious
->>>>> problems in heap usage.
->>>>>
->>>>> Does fixing this to help dynamic analysis tools somehow make the
->>>>> kernel worse? I think that fixing this makes it easier to find further
->>>>> bugs that might be much more serious.
->>>>
->>>> Possibly true.  But then I'd suggest wrapping that into a different ifdef;
->>>> grep for ifdef __CHECKER__, with comment along the lines of "to simplify
->>>> analysis of potential out-of-bounds accesses".
->>>
->>>
->>> Hi,
->>>
->>> Any single reason to not just fix the code?
->>>
->>> With this patch:
->>> + sticks with "do not access beyond request size", which is a good
->>> thing all others equal
->>> + makes static and dynamic verification tools happy
->>> - ???
->>
->> - It does not fix anything, it only shuts up the checker
->> - It adds another ifdef where it is not obvious why it's needed
->>
->> Therefore it makes more sense to add a ifdef __CHECKER__ such that
->> everyone immediately knows that the issue is only false positive.
+Hi Steve,
+
+[adding linux-mm, since this has turned into a discussion about THP
+splitting]
+
+On Fri, Oct 04, 2013 at 11:31:42AM +0100, Steve Capper wrote:
+> On Thu, Oct 03, 2013 at 11:07:44AM -0700, Zi Shen Lim wrote:
+> > On Thu, Oct 3, 2013 at 10:27 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > > On Thu, Oct 03, 2013 at 06:15:15PM +0100, Zi Shen Lim wrote:
+> > >> Futex uses GUP. Currently on ARM, the default __get_user_pages_fast
+> > >> being used always returns 0, leading to a forever loop in get_futex_key :(
+> > >
+> > > This looks pretty much like an exact copy of the x86 version, which will
+> > > likely also result in another exact copy for arm64. Can none of this code be
+> > > made common? Furthermore, the fact that you've lifted the code and not
+> > > provided much of an explanation in the cover letter hints that you might not
+> > > be aware of all the subtleties involved here...
+
+[...]
+
+> > >> +static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+> > >> +             int write, struct page **pages, int *nr)
+> > >> +{
+> > >> +     unsigned long next;
+> > >> +     pmd_t *pmdp;
+> > >> +
+> > >> +     pmdp = pmd_offset(&pud, addr);
+> > >> +     do {
+> > >> +             pmd_t pmd = *pmdp;
+> > >> +
+> > >> +             next = pmd_addr_end(addr, end);
+> > >> +             /*
+> > >> +              * The pmd_trans_splitting() check below explains why
+> > >> +              * pmdp_splitting_flush has to flush the tlb, to stop
+> > >> +              * this gup-fast code from running while we set the
+> > >> +              * splitting bit in the pmd. Returning zero will take
+> > >> +              * the slow path that will call wait_split_huge_page()
+> > >> +              * if the pmd is still in splitting state. gup-fast
+> > >> +              * can't because it has irq disabled and
+> > >> +              * wait_split_huge_page() would never return as the
+> > >> +              * tlb flush IPI wouldn't run.
+> > >> +              */
+> > >> +             if (pmd_none(pmd) || pmd_trans_splitting(pmd))
+> > >> +                     return 0;
+> > >> +             if (unlikely(pmd_huge(pmd))) {
+> > >> +                     if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
+> > >> +                             return 0;
+> > >> +             } else {
+> > >> +                     if (!gup_pte_range(pmd, addr, next, write, pages, nr))
+> > >> +                             return 0;
+> > >> +             }
+> > >> +     } while (pmdp++, addr = next, addr != end);
+> > >
+> > > ...case in point: we don't (usually) require IPIs to shoot down TLB entries
+> > > in SMP systems, so this is racy under thp splitting.
+
+[...]
+
+> As Will pointed out, ARM does not usually require IPIs to shoot down TLB
+> entries. So the local_irq_disable will not necessarily block pagetables being
+> freed when fast_gup is running.
 > 
+> Transparent huge pages when splitting will set the pmd splitting bit then
+> perform a tlb invalidate, then proceed with the split. Thus a splitting THP
+> will not always be blocked by local_irq_disable on ARM. This does not only
+> affect fast_gup, futexes are also affected. From my understanding of futex on
+> THP tail case in kernel/futex.c, it looks like an assumption is made there also
+> that splitting pmds can be blocked by disabling local irqs.
 > 
-> OK, is it explicitly documented somewhere that it's legal to access
-> memory blocks beyond requested size? Is it a deliberate decision made
-> by community? Or just an ad-hoc argument based on details of current
-> implementation?
+> PowerPC and SPARC, like ARM do not necessarily require IPIs for TLB shootdown
+> either so they make use of tlb_remove_table (CONFIG_HAVE_RCU_TABLE_FREE). This
+> identifies pages backing pagetables that have multiple users and batches them
+> up, and then performs a dummy IPI before freeing them en masse. This reduces
+> the performance impact from the IPIs (by doing considerably fewer of them), and
+> guarantees that pagetables cannot be freed from under the fast_gup.
+> Unfortunately this also means that the fast_gup has to be aware of ptes/pmds
+> changing from under it.
 
-Al explained already why it is legal.
+[...]
 
-> If it's the former then we will need to teach the tools to understand
-> it. But IMVHO it's a very unfortunate decision, because it will hide
-> real harmful bugs. And this is the only place where I observed such
-> out-of-bounds access after months of stress testing, so we are not
-> talking about hundreds and thousands of precedents. We are talking
-> about this particular case vs ability of tools to catch harmful
-> off-by-one accesses to variable-length strings and buffers.
+> There's also the possibility of blocking without an IPI, but it's not obvious
+> to me how to do that (that would probably necessitate a change to
+> kernel/futex.c). I've just picked this up recently and am still trying to
+> understand it fully.
 
-Have you ever used valgrind (or any other checkers in userspace)?
-They all suffer from such issues.
-If a checker reports a violation it is not always a real one and
-you have to review it carefully.
+The IPI solution looks like a hack to me and essentially moves the
+synchronisation down into the csd_lock on the splitting side as part of the
+cross-call to invalidate the TLB. Furthermore, the TLB doesn't even need to
+be invalidated afaict, since we're just updating software bits.
 
-Thanks,
-//richard
+Instead, I wonder whether this can be solved with a simple atomic_t:
+
+	- The fast GUP code (read side) does something like:
+
+		atomic_inc(readers);
+		smp_mb__after_atomic_inc();
+		__get_user_pages_fast(...);
+		smp_mb__before_atomic_dec();
+		atomic_dec(readers);
+
+	- The splitting code (write side) then polls the counter to reach
+	  zero:
+
+		pmd_t pmd = pmd_mksplitting(*pmdp);
+		set_pmd_at(vma->vm_mm, address, pmdp, pmd);
+		smp_mb();
+		while (atomic_read(readers) != 0)
+			cpu_relax();
+
+that way, we don't need to worry about IPIs, we don't need to disable
+interrupts on the read side and we still get away without heavyweight
+locking.
+
+Of course, I could well be missing something here, but what we currently
+have in mainline doesn't work for ARM anyway (since TLB invalidation is
+broadcast in hardware).
+
+Will
