@@ -1,71 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3JDKA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 06:00:58 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:37803 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3JDKA5 (ORCPT
+	id S1753549Ab3JDKDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 06:03:09 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:54617 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3JDKDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 06:00:57 -0400
-Message-ID: <524E91D5.5020804@atmel.com>
-Date: Fri, 4 Oct 2013 12:00:53 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 4 Oct 2013 06:03:07 -0400
+Message-ID: <524E9250.4030904@ozlabs.ru>
+Date: Fri, 04 Oct 2013 20:02:56 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, Marc Pignat <marc.pignat@hevs.ch>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        <john.stultz@linaro.org>, <kernel@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Ronald Wahl <ronald.wahl@raritan.com>
-Subject: Re: Timekeeping on at91rm9200 [Was: [PATCH v2] clockevents: Sanitize
- ticks to nsec conversion]
-References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de> <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de> <20130924211139.GE16106@pengutronix.de>
-In-Reply-To: <20130924211139.GE16106@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+To: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 3/4] kvm: Create non-coherent DMA registeration
+References: <20131001200757.31715.22994.stgit@bling.home> <20131001201518.31715.50233.stgit@bling.home>
+In-Reply-To: <20131001201518.31715.50233.stgit@bling.home>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/09/2013 23:11, Uwe Kleine-König :
-> Hello Nicolas, hello Jean-Christophe,
->
-> I expect you should be able to revert
->
-> 	b7a8ca5 (ARM: at91: rm9200 fix time support)
->
-> which reverted
->
-> 	838a2ae (ARM: use clockevents_config_and_register() where possible)
->
-> for at91rm9200 on top of the patch this mail is a reply to.
->
-> Can you please test that?
+On 10/02/2013 06:15 AM, Alex Williamson wrote:
+> We currently use some ad-hoc arch variables tied to legacy KVM device
+> assignment to manage emulation of instructions that depend on whether
+> non-coherent DMA is present.  Create an interface for this so that we
+> can register coherency for other devices, like vfio assigned devices.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    2 ++
+>  arch/x86/kvm/vmx.c              |    3 +--
+>  arch/x86/kvm/x86.c              |   21 +++++++++++++++++++--
+>  include/linux/kvm_host.h        |   19 +++++++++++++++++++
+>  virt/kvm/iommu.c                |    6 ++++++
+>  5 files changed, 47 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 1b6b5f9..50c1e9c1 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -558,6 +558,8 @@ struct kvm_arch {
+>  	struct list_head assigned_dev_head;
+>  	struct iommu_domain *iommu_domain;
+>  	bool iommu_noncoherent;
+> +#define __KVM_HAVE_ARCH_NONCOHERENT_DMA
+> +	atomic_t noncoherent_dma_count;
+>  	struct kvm_pic *vpic;
+>  	struct kvm_ioapic *vioapic;
+>  	struct kvm_pit *vpit;
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 8b2270a..a982c9e 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -7404,8 +7404,7 @@ static u64 vmx_get_mt_mask(struct kvm_vcpu *vcpu, gfn_t gfn, bool is_mmio)
+>  	 */
+>  	if (is_mmio)
+>  		ret = MTRR_TYPE_UNCACHABLE << VMX_EPT_MT_EPTE_SHIFT;
+> -	else if (vcpu->kvm->arch.iommu_domain &&
+> -		 vcpu->kvm->arch.iommu_noncoherent)
+> +	else if (kvm_arch_has_noncoherent_dma(vcpu->kvm))
+>  		ret = kvm_get_guest_memory_type(vcpu, gfn) <<
+>  		      VMX_EPT_MT_EPTE_SHIFT;
+>  	else
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index b1231b0..feec86d 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2715,8 +2715,7 @@ static void wbinvd_ipi(void *garbage)
+>  
+>  static bool need_emulate_wbinvd(struct kvm_vcpu *vcpu)
+>  {
+> -	return vcpu->kvm->arch.iommu_domain &&
+> -	       vcpu->kvm->arch.iommu_noncoherent;
+> +	return kvm_arch_has_noncoherent_dma(vcpu->kvm);
+>  }
+>  
+>  void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> @@ -7420,6 +7419,24 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
+>  			kvm_x86_ops->interrupt_allowed(vcpu);
+>  }
+>  
+> +void kvm_arch_register_noncoherent_dma(struct kvm *kvm)
+> +{
+> +	atomic_inc(&kvm->arch.noncoherent_dma_count);
+> +}
+> +EXPORT_SYMBOL_GPL(kvm_arch_register_noncoherent_dma);
+> +
+> +void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm)
+> +{
+> +	atomic_dec(&kvm->arch.noncoherent_dma_count);
+> +}
+> +EXPORT_SYMBOL_GPL(kvm_arch_unregister_noncoherent_dma);
+> +
+> +bool kvm_arch_has_noncoherent_dma(struct kvm *kvm)
+> +{
+> +	return atomic_read(&kvm->arch.noncoherent_dma_count);
+> +}
+> +EXPORT_SYMBOL_GPL(kvm_arch_has_noncoherent_dma);
+> +
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index f46da56..e239c93 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -671,6 +671,25 @@ static inline void kvm_arch_free_vm(struct kvm *kvm)
+>  }
+>  #endif
+>  
+> +#ifdef __KVM_HAVE_ARCH_NONCOHERENT_DMA
+> +void kvm_arch_register_noncoherent_dma(struct kvm *kvm);
+> +void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm);
+> +bool kvm_arch_has_noncoherent_dma(struct kvm *kvm);
+> +#else
+> +static inline void kvm_arch_register_noncoherent_dma(void)
 
-I have just tested that on at91rm9200-ek:
-- revert the revert (!)
-- experience the crash
-- then apply the v2 patch
-- and finally see it working nicely!
 
-Thanks a lot for having corrected this. Now, do you want that I stack 
-this revert-of-revert on the AT91 git tree or you are able to apply it 
-through the clock git tree together with the patch that is fixing the 
-issue (it may prevent synchronization difficulties)? (BTW, I do not see 
-it yet in "next").
+Wrong prototype here and below, must include *kvm.
 
-Anyway, if it is required, you can add my:
 
-Tested-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> +{
+> +}
+> +
+> +static inline void kvm_arch_unregister_noncoherent_dma(void)
+> +{
+> +}
+> +
+> +static inline bool kvm_arch_has_noncoherent_dma(void)
+> +{
+> +	return false;
+> +}
+> +#endif
+> +
+>  static inline wait_queue_head_t *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
+>  {
+>  #ifdef __KVM_HAVE_ARCH_WQP
+> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> index 9cde444..0a54456 100644
+> --- a/virt/kvm/iommu.c
+> +++ b/virt/kvm/iommu.c
+> @@ -140,6 +140,9 @@ static int kvm_iommu_map_memslots(struct kvm *kvm)
+>  	struct kvm_memslots *slots;
+>  	struct kvm_memory_slot *memslot;
+>  
+> +	if (kvm->arch.iommu_noncoherent)
+> +		kvm_arch_register_noncoherent_dma(kvm);
+> +
+>  	idx = srcu_read_lock(&kvm->srcu);
+>  	slots = kvm_memslots(kvm);
+>  
+> @@ -335,6 +338,9 @@ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
+>  
+>  	srcu_read_unlock(&kvm->srcu, idx);
+>  
+> +	if (kvm->arch.iommu_noncoherent)
+> +		kvm_arch_unregister_noncoherent_dma(kvm);
+> +
+>  	return 0;
+>  }
+>  
+> 
 
-Thanks, bye,
+
 -- 
-Nicolas Ferre
+Alexey
