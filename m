@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3JDQ2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:28:10 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41968 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754634Ab3JDQ2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:28:05 -0400
-Message-ID: <1380904077.1987.18.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: Drivers: scsi: FLUSH timeout
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Eric Seppanen <eric@purestorage.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Date: Fri, 04 Oct 2013 09:27:57 -0700
-In-Reply-To: <2cc1bcb3a157418eb66bd2d91cf911c1@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
-	 <20130920203222.GA14306@kroah.com>
-	 <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <524180B7.7090307@gmail.com>
-	 <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <5241C9E7.2000404@cs.wisc.edu>
-	 <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
-	 <ff6a93ed5d234c14874d03415812a3ec@SN2PR03MB061.namprd03.prod.outlook.com>
-	 <1380802143.19256.95.camel@haakon3.risingtidesystems.com>
-	 <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
-	 <2cc1bcb3a157418eb66bd2d91cf911c1@SN2PR03MB061.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755426Ab3JDQ2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:28:21 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37844 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754634Ab3JDQ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 12:28:19 -0400
+Date: Fri, 4 Oct 2013 10:28:08 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Peter H?we <PeterHuewe@gmx.de>
+Cc: tpmdd-devel@lists.sourceforge.net, Ashley Lai <ashley@ashleylai.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: TPM.ko module rename (was tpm: Pull everything related to
+ /dev/tpmX into tpm-dev.c)
+Message-ID: <20131004162808.GA10315@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <201310020114.18624.PeterHuewe@gmx.de>
+ <20131003050504.GA2247@obsidianresearch.com>
+ <201310041750.01145.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201310041750.01145.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 15:02 +0000, KY Srinivasan wrote:
+On Fri, Oct 04, 2013 at 05:50:01PM +0200, Peter H?we wrote:
+
+> I'm not 100% sure what's the usual procedure for module renames, especially 
+> since this is visible in userspace.
 > 
-> > -----Original Message-----
-> > From: Eric Seppanen [mailto:eric@purestorage.com]
-> > Sent: Thursday, October 03, 2013 1:49 PM
-> > To: Nicholas A. Bellinger
-> > Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > linux-scsi@vger.kernel.org
-> > Subject: Re: Drivers: scsi: FLUSH timeout
-> > 
-> > On Thu, Oct 3, 2013 at 5:09 AM, Nicholas A. Bellinger
-> > <nab@linux-iscsi.org> wrote:
-> > >
-> > > On Wed, 2013-10-02 at 18:29 +0000, KY Srinivasan wrote:
-> > > > Ideally, I want this to be adjustable like the way we can change the I/O
-> > timeout.
-> > > > Since that has been attempted earlier and rejected (not clear what the
-> > reasons were),
-> > > > I was suggesting that we pick a larger number. James, let me know how I
-> > should proceed here.
-> > > >
-> > >
-> > > I think the objection was to making a module parameter for doing this
-> > > globally for all struct scsi_disk, and not the idea of making it
-> > > adjustable on an individual basis per-say..
-> > >
-> > > What about adding a /sys/class/scsi_disk/$HCTL/flush_timeout..?
-> > 
-> > Do I/O timeouts and flush timeouts need to be independently adjusted?
-> > If you're having trouble with slow operations, it seems likely to be
-> > across the board.
-> > 
-> > Flush timeout could be defined as 2x the read/write timeout.  Any
-> > other command-specific timeouts could be scaled the same way.
-> 
-> I like this idea and would result in minimal changes. James, if it ok with you,
-> I could send you the patch.
+> For users the easiest way would be to rename tpm.c to tpm-core.c and
+> leave the module name as it is.  In git that's just a simple rename
+> operation.
 
-Depends: I still prefer the per-target override, but if the proposal is
-to take the existing variable timeout for the queue and have 2x that for
-the flush, so you plan to increase the per-device timeout with hyper-v
-to 90s via sysfs, then I'm OK with it.
+I agree, keeping the old name seems much safer.
 
-James
+I'm thinking of following the pattern seen in RTC. Rename tpm.c to
+tpm-interface.c and eventually migrate all the driver model support
+items into tpm-class.c.
 
+Does that seem good? I'll respin the patches and test modular rebuilds.
 
+Jason
