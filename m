@@ -1,262 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3JDRXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:23:38 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:51777
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752810Ab3JDRXg (ORCPT
+	id S1753660Ab3JDRYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:24:50 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:37030 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3JDRYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:23:36 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h186068h8275bh8275dhz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: "joro@8bytes.org" <joro@8bytes.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: RE: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-Thread-Topic: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-Thread-Index: AQHOtQsGaQsPvJ8CfEu+dkEJoOsdkZnWszeAgA2xFOCAAGMFgIAAC5rAgAAM6gCAAABh8A==
-Date: Fri, 4 Oct 2013 17:23:30 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D07191143@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1380127533.3030.319.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0718FD1C@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380901507.2673.204.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07190F35@039-SN2MPN1-011.039d.mgd.msft.net>
- <1380906772.25705.19.camel@ul30vt.home>
-In-Reply-To: <1380906772.25705.19.camel@ul30vt.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 4 Oct 2013 13:24:49 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130918095003.GB1783@mudshark.cambridge.arm.com>
+References: <20130917215749.GA11109@obsidianresearch.com>
+	<20130918091748.GA1783@mudshark.cambridge.arm.com>
+	<20130918095003.GB1783@mudshark.cambridge.arm.com>
+Date: Fri, 4 Oct 2013 19:24:48 +0200
+Message-ID: <CAPNxggZ0WesjMdi=Yy=QYd_ASrGRiosimqzqb++1=mgus3RRdA@mail.gmail.com>
+Subject: Re: Commit breaks strace: ARM: entry: allow ARM-private syscalls to
+ be restarted
+From: Arokux X <arokux@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r94HNpOj013291
 
+On Wed, Sep 18, 2013 at 11:50 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Wed, Sep 18, 2013 at 10:17:48AM +0100, Will Deacon wrote:
+>> On Tue, Sep 17, 2013 at 10:57:49PM +0100, Jason Gunthorpe wrote:
+>> > This happens with the latest git head for strace, as well as the 4.7
+>> > release.
+>> >
+>> > Hopefully you can cook up a fix :)
+>>
+>> I'll take a look today, thanks.
+>
+> Ok, looks like the backwards branch to the syscall dispatching logic from
+> the trace entry is busted. Can you try the patch below please?
+>
+> I might also take a look at unifying the function prototypes for arm_syscall
+> and syscall_trace_enter, since it should help us remove some of the argument
+> shuffling in the trace path.
+>
+> Will
+>
+> --->8
+>
+> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+> index 74ad15d1..bc6bd96 100644
+> --- a/arch/arm/kernel/entry-common.S
+> +++ b/arch/arm/kernel/entry-common.S
+> @@ -442,10 +442,10 @@ local_restart:
+>         ldrcc   pc, [tbl, scno, lsl #2]         @ call sys_* routine
+>
+>         add     r1, sp, #S_OFF
+> -       cmp     scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
+> +2:     cmp     scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
+>         eor     r0, scno, #__NR_SYSCALL_BASE    @ put OS number back
+>         bcs     arm_syscall
+> -2:     mov     why, #0                         @ no longer a real syscall
+> +       mov     why, #0                         @ no longer a real syscall
+>         b       sys_ni_syscall                  @ not private func
+>
+>  #if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
 
-
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Friday, October 04, 2013 10:43 PM
-> To: Bhushan Bharat-R65777
-> Cc: joro@8bytes.org; benh@kernel.crashing.org; galak@kernel.crashing.org; linux-
-> kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> pci@vger.kernel.org; agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> foundation.org
-> Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-> 
-> On Fri, 2013-10-04 at 16:47 +0000, Bhushan Bharat-R65777 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > Sent: Friday, October 04, 2013 9:15 PM
-> > > To: Bhushan Bharat-R65777
-> > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux- foundation.org
-> > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > device
-> > >
-> > > On Fri, 2013-10-04 at 09:54 +0000, Bhushan Bharat-R65777 wrote:
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: linux-pci-owner@vger.kernel.org
-> > > > > [mailto:linux-pci-owner@vger.kernel.org]
-> > > > > On Behalf Of Alex Williamson
-> > > > > Sent: Wednesday, September 25, 2013 10:16 PM
-> > > > > To: Bhushan Bharat-R65777
-> > > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > > > > foundation.org; Bhushan Bharat-R65777
-> > > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > > > device
-> > > > >
-> > > > > On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> > > > > > This api return the iommu domain to which the device is attached.
-> > > > > > The iommu_domain is required for making API calls related to iommu.
-> > > > > > Follow up patches which use this API to know iommu maping.
-> > > > > >
-> > > > > > Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-> > > > > > ---
-> > > > > >  drivers/iommu/iommu.c |   10 ++++++++++
-> > > > > >  include/linux/iommu.h |    7 +++++++
-> > > > > >  2 files changed, 17 insertions(+), 0 deletions(-)
-> > > > > >
-> > > > > > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> > > > > > index
-> > > > > > fbe9ca7..6ac5f50 100644
-> > > > > > --- a/drivers/iommu/iommu.c
-> > > > > > +++ b/drivers/iommu/iommu.c
-> > > > > > @@ -696,6 +696,16 @@ void iommu_detach_device(struct
-> > > > > > iommu_domain *domain, struct device *dev)  }
-> > > > > > EXPORT_SYMBOL_GPL(iommu_detach_device);
-> > > > > >
-> > > > > > +struct iommu_domain *iommu_get_dev_domain(struct device *dev) {
-> > > > > > +	struct iommu_ops *ops = dev->bus->iommu_ops;
-> > > > > > +
-> > > > > > +	if (unlikely(ops == NULL || ops->get_dev_iommu_domain == NULL))
-> > > > > > +		return NULL;
-> > > > > > +
-> > > > > > +	return ops->get_dev_iommu_domain(dev); }
-> > > > > > +EXPORT_SYMBOL_GPL(iommu_get_dev_domain);
-> > > > >
-> > > > > What prevents this from racing iommu_domain_free()?  There's no
-> > > > > references acquired, so there's no reason for the caller to
-> > > > > assume the
-> > > pointer is valid.
-> > > >
-> > > > Sorry for late query, somehow this email went into a folder and
-> > > > escaped;
-> > > >
-> > > > Just to be sure, there is not lock at generic "struct
-> > > > iommu_domain", but IP
-> > > specific structure (link FSL domain) linked in iommu_domain->priv
-> > > have a lock, so we need to ensure this race in FSL iommu code (say
-> > > drivers/iommu/fsl_pamu_domain.c), right?
-> > >
-> > > No, it's not sufficient to make sure that your use of the interface
-> > > is race free.  The interface itself needs to be designed so that
-> > > it's difficult to use incorrectly.
-> >
-> > So we can define iommu_get_dev_domain()/iommu_put_dev_domain();
-> > iommu_get_dev_domain() will return domain with the lock held, and
-> > iommu_put_dev_domain() will release the lock? And
-> > iommu_get_dev_domain() must always be followed by
-> > iommu_get_dev_domain().
-> 
-> What lock?  get/put are generally used for reference counting, not locking in
-> the kernel.
-> 
-> > > That's not the case here.  This is a backdoor to get the iommu
-> > > domain from the iommu driver regardless of who is using it or how.
-> > > The iommu domain is created and managed by vfio, so shouldn't we be
-> > > looking at how to do this through vfio?
-> >
-> > Let me first describe what we are doing here:
-> > During initialization:-
-> >  - vfio talks to MSI system to know the MSI-page and size
-> >  - vfio then interacts with iommu to map the MSI-page in iommu (IOVA
-> > is decided by userspace and physical address is the MSI-page)
-> >  - So the IOVA subwindow mapping is created in iommu and yes VFIO know about
-> this mapping.
-> >
-> > Now do SET_IRQ(MSI/MSIX) ioctl:
-> >  - calls pci_enable_msix()/pci_enable_msi_block(): which is supposed to set
-> MSI address/data in device.
-> >  - So in current implementation (this patchset) msi-subsystem gets the IOVA
-> from iommu via this defined interface.
-> >  - Are you saying that rather than getting this from iommu, we should get this
-> from vfio? What difference does this make?
-> 
-> Yes, you just said above that vfio knows the msi to iova mapping, so why go
-> outside of vfio to find it later?  The difference is one case you can have a
-> proper reference to data structures to make sure the pointer you get back
-> actually has meaning at the time you're using it vs the code here where you're
-> defining an API that returns a meaningless value
-
-With FSL-PAMU we will always get consistant data from iommu or vfio-data structure.
-
-> because you can't check or
-> enforce that an arbitrary caller is using it correctly.
-
-I am not sure what is arbitrary caller? pdev is known to vfio, so vfio will only make pci_enable_msix()/pci_enable_msi_block() for this pdev. If anyother code makes then it is some other unexpectedly thing happening in system, no?
-
-
->  It's not maintainable.
-> Thanks,
-
-I do not have any issue with this as well, can you also describe the type of API you are envisioning;
-I can think of defining some function in vfio.c/vfio_iommu*.c, make them global and declare then in include/Linux/vfio.h
-And include <Linux/vfio.h> in caller file (arch/powerpc/kernel/msi.c)
-
-Thanks
--Bharat
-> 
-> Alex
-> 
-> > > It seems like you'd want to use your device to get a vfio group
-> > > reference, from which you could do something with the vfio external
-> > > user interface and get the iommu domain reference.  Thanks,
-> > >
-> > > Alex
-> > >
-> > > > > >  /*
-> > > > > >   * IOMMU groups are really the natrual working unit of the IOMMU, but
-> > > > > >   * the IOMMU API works on domains and devices.  Bridge that
-> > > > > > gap by diff --git a/include/linux/iommu.h
-> > > > > > b/include/linux/iommu.h index 7ea319e..fa046bd 100644
-> > > > > > --- a/include/linux/iommu.h
-> > > > > > +++ b/include/linux/iommu.h
-> > > > > > @@ -127,6 +127,7 @@ struct iommu_ops {
-> > > > > >  	int (*domain_set_windows)(struct iommu_domain *domain, u32
-> > > w_count);
-> > > > > >  	/* Get the numer of window per domain */
-> > > > > >  	u32 (*domain_get_windows)(struct iommu_domain *domain);
-> > > > > > +	struct iommu_domain *(*get_dev_iommu_domain)(struct device
-> > > > > > +*dev);
-> > > > > >
-> > > > > >  	unsigned long pgsize_bitmap;  }; @@ -190,6 +191,7 @@ extern
-> > > > > > int iommu_domain_window_enable(struct iommu_domain
-> > > > > *domain, u32 wnd_nr,
-> > > > > >  				      phys_addr_t offset, u64 size,
-> > > > > >  				      int prot);
-> > > > > >  extern void iommu_domain_window_disable(struct iommu_domain
-> > > > > > *domain,
-> > > > > > u32 wnd_nr);
-> > > > > > +extern struct iommu_domain *iommu_get_dev_domain(struct
-> > > > > > +device *dev);
-> > > > > >  /**
-> > > > > >   * report_iommu_fault() - report about an IOMMU fault to the
-> > > > > > IOMMU
-> > > framework
-> > > > > >   * @domain: the iommu domain where the fault has happened @@
-> > > > > > -284,6
-> > > > > > +286,11 @@ static inline void
-> > > > > > +iommu_domain_window_disable(struct
-> > > > > > iommu_domain *domain,  {  }
-> > > > > >
-> > > > > > +static inline struct iommu_domain
-> > > > > > +*iommu_get_dev_domain(struct device
-> > > > > > +*dev) {
-> > > > > > +	return NULL;
-> > > > > > +}
-> > > > > > +
-> > > > > >  static inline phys_addr_t iommu_iova_to_phys(struct
-> > > > > > iommu_domain *domain, dma_addr_t iova)  {
-> > > > > >  	return 0;
-> > > > >
-> > > > >
-> > > > >
-> > > > > --
-> > > > > To unsubscribe from this list: send the line "unsubscribe linux-pci"
-> > > > > in the body of a message to majordomo@vger.kernel.org More
-> > > > > majordomo info at http://vger.kernel.org/majordomo-info.html
-> > > >
-> > >
-> > >
-> > >
-> >
-> 
-> 
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Just stumbled upon the same issue. The patch seems to cure the problem. Thanks.
