@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab3JDQwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:52:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51382 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab3JDQwd (ORCPT
+	id S1753615Ab3JDQxu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:53:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48145 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751029Ab3JDQxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:52:33 -0400
-Date: Fri, 4 Oct 2013 18:52:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20131004165222.GS3081@twins.programming.kicks-ass.net>
-References: <20131003182902.174251532@linux.com>
- <000001417f93fb74-f307f391-26a4-431a-8295-04c5319d1373-000000@email.amazonses.com>
- <20131004082728.GG3081@twins.programming.kicks-ass.net>
- <0000014184145d57-7481d88a-649c-4016-8c59-5da2c822efec-000000@email.amazonses.com>
+	Fri, 4 Oct 2013 12:53:49 -0400
+Date: Fri, 4 Oct 2013 13:53:55 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] net: mv643xx_eth: various small fixes for v3.12
+Message-ID: <20131004165354.GA9065@localhost>
+References: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <0000014184145d57-7481d88a-649c-4016-8c59-5da2c822efec-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380711442-24735-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 03:27:15PM +0000, Christoph Lameter wrote:
-> On Fri, 4 Oct 2013, Peter Zijlstra wrote:
+On Wed, Oct 02, 2013 at 12:57:19PM +0200, Sebastian Hesselbarth wrote:
+> This patch set comprises some one-liners to fix issues with repeated
+> loading and unloading of a modular mv643xx_eth driver.
 > 
-> > > -# define __this_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
-> > > +# define __this_cpu_read(pcp) \
-> > > +	(__this_cpu_preempt_check(),__pcpu_size_call_return(__this_cpu_read_, (pcp)))
-> > >  #endif
-> >
-> > Would it not be move convenient to implement it in terms of the
-> > raw_this_cpu*() thingies? That way you're sure they actually do the same
-> > thing and there's only 1 site to change when changing the
-> > implementation.
+> First two patches take care of the periodic port statistic timer, that
+> updates statistics by reading port registers using add_timer/mod_timer.
 > 
-> The __this_cpu_read_xxx() are asm primitives provided by various arches.
-> __this_cpu_read() is currently not overriden by any arches. That is why
-> the approach here of replicating only the higher level for raw_cpu_ops
-> works. Renaming the __this_cpu_xxx primitives would be a significant
-> change.
-
-This isn't about read; this is about all of them. Make sure the raw_*
-implementation is the actual real implementation; then implement the
-checking variant in terms of those.
-
-> > >  	if (!printk_ratelimit())
-> > >  		goto out_enable;
-> > >
-> > > -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
-> > > -			"code: %s/%d\n",
-> > > +	printk(KERN_ERR "%s in preemptible [%08x] "
-> > > +			"code: %s/%d\n", what,
-> > >  			preempt_count() - 1, current->comm, current->pid);
-> >
-> > I would argue for keeping the "BUG" string intact and in front of the
-> > %s.
+> Patch 1 moves timer re-schedule from mib_counters_update to the timer
+> callback. As mib_counters_update is also called from non-timer context,
+> this ensures the timer is reactivated from timer context only.
 > 
-> Most of the place that I have seen are not bugs but there was a
-> reason for the code to run a __this_cpu op without preemption disabled.
+> Patch 2 moves initial timer schedule from _probe() time to right before
+> the port is actually started as the corresponding del_timer_sync is at
+> _stop() time. This fixes a regression, where unloading the driver from a
+> non-started eth device can cause the timer to access deallocated mem.
+> 
+> Patch 3 adds an assignment of the ports device_node to the corresponding
+> self-created platform_device. This is required to allow fixups based on
+> the device_node's compatible string later. Actually, it is also a potential
+> regression because we already check compatible string for Kirkwood, but
+> does not (yet) rely on the fixup.
+> 
+> All patches are based on v3.12-rc3 and have been tested on Kirkwood-based
+> Seagate Dockstar.
+> 
+> Patches 1 and 2 can also possibly queued up for -stable.
+> 
+> Sebastian Hesselbarth (3):
+>   net: mv643xx_eth: update statistics timer from timer context only
+>   net: mv643xx_eth: fix orphaned statistics timer crash
+>   net: mv643xx_eth: fix missing device_node for port devices
+> 
+>  drivers/net/ethernet/marvell/mv643xx_eth.c |    7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> ---
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
 
-No; it is an actual BUG; it means that whoemever wrote the code didn't
-think straight and forgot to use the right primitive and comments.
+Sorry for missing this series, somehow my filters failed to catch it.
+
+Anyway, I would expect these patches to have my Reported-by, but I'm
+glad to see you've solved all the issues.
+
+I see David has already applied them all, but I'll re-run my tests to
+check there aren't any more issues if I can find some time next week.
+
+Thanks for taking care of it!
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
