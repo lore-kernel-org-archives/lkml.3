@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab3JDFYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 01:24:08 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:36903 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3JDFYG (ORCPT
+	id S1752883Ab3JDFYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 01:24:38 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35048 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab3JDFYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 01:24:06 -0400
-Message-ID: <524DFBB1.5010101@hp.com>
-Date: Thu, 03 Oct 2013 17:20:17 -0600
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Andreas Dilger <adilger@dilger.ca>
-CC: T Makphaibulchoke <tmac@hp.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, aswin@hp.com
-Subject: Re: [PATCH 0/2] fs/ext4: increase parallelism in updating ext4 orphan
- list
-References: <y> <1380728283-61038-1-git-send-email-tmac@hp.com> <117221D9-7634-4131-95C2-7527C20F1F62@dilger.ca>
-In-Reply-To: <117221D9-7634-4131-95C2-7527C20F1F62@dilger.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Oct 2013 01:24:36 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH v2] perf tool: report user-friendly errors from trace
+Date: Fri,  4 Oct 2013 10:47:31 +0530
+Message-Id: <1380863851-14460-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.4.477.g5d89aa9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2013 06:28 PM, Andreas Dilger wrote:
-> 
-> It would also be possible to have a completely contention-free orphan
-> inode list by only generating the on-disk orphan linked list in a
-> pre-commit callback hook from an efficient in-memory list.  That would
-> allow the common "add to orphan list; do something; remove from list"
-> operations within a single transaction to run with minimal contention,
-> and only the few rare cases of operations that exceed the lifetime of
-> a single transaction would need to modify the on-disk list.
-> 
-> For example, a per-cpu list would be quite efficient, or a hash table.
-> Then, a jbd2 callback run before the transaction commits could modify
-> the requisite inodes and superblock.  All of those inodes are already
-> (by definition) part of the transaction, so it won't add new buffers
-> of the transaction.
-> 
-> I'm not necessarily against the current patch, just thinking aloud about
-> how it might be improved further.
-> 
-> Cheers, Andreas
-> 
+Currently, execution of 'perf trace' reports the following cryptic
+message to the user:
 
-Thanks again for the suggestion.  I'll rework this patch first and look into this possibility next.
+$ perf trace
+Couldn't read the raw_syscalls tracepoints information!
 
-Thanks,
-Mak.
+Typically this happens because the user does not have permissions to
+read the debugfs filesystem. Also handle the case when the kernel was
+not compiled with debugfs support or when it isn't mounted.
 
+Now, the tool prints detailed error messages:
+
+$ perf trace
+Error:  Unable to find debugfs
+Hint:   Was your kernel was compiled with debugfs support?
+Hint:   Is the debugfs filesystem mounted?
+
+$ perf trace
+Error:  No permissions to read $debugfs/tracing/events/raw_syscalls
+Hint:   Change the permissions of the debugfs filesystem
+
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ We don't want to spoonfeed the user with an exact command-line to
+ execute. She is competent enough to Google and find out what debugfs
+ is, and how to use it.
+
+ tools/perf/builtin-trace.c | 30 +++++++++++++++++++++---------
+ 1 file changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 71aa3e3..ee32453 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -915,17 +915,13 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	}
+ 
+ 	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
+-	    perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit)) {
+-		fprintf(trace->output, "Couldn't read the raw_syscalls tracepoints information!\n");
+-		goto out_delete_evlist;
+-	}
++		perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit))
++		goto out_error_tp;
+ 
+ 	if (trace->sched &&
+-	    perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
+-				   trace__sched_stat_runtime)) {
+-		fprintf(trace->output, "Couldn't read the sched_stat_runtime tracepoint information!\n");
+-		goto out_delete_evlist;
+-	}
++		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
++				trace__sched_stat_runtime))
++		goto out_error_tp;
+ 
+ 	err = perf_evlist__create_maps(evlist, &trace->opts.target);
+ 	if (err < 0) {
+@@ -1041,6 +1037,22 @@ out_delete_evlist:
+ 	perf_evlist__delete(evlist);
+ out:
+ 	return err;
++out_error_tp:
++	switch(errno) {
++	case ENOENT:
++		fprintf(trace->output, "Error:\tUnable to find debugfs\n");
++		fprintf(trace->output, "Hint:\tWas your kernel was compiled with debugfs support?\n");
++		fprintf(trace->output, "Hint:\tIs the debugfs filesystem mounted?\n");
++		break;
++	case EACCES:
++		fprintf(trace->output, "Error:\tNo permissions to read $debugfs/tracing/events/raw_syscalls\n");
++		fprintf(trace->output, "Hint:\tChange the permissions of the debugfs filesystem\n");
++		break;
++	default:
++		fprintf(trace->output, "Can't trace: %s\n", sys_errlist[errno]);
++		break;
++	}
++	goto out_delete_evlist;
+ }
+ 
+ static int trace__replay(struct trace *trace)
+-- 
+1.8.4.477.g5d89aa9
 
