@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3JDPsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 11:48:14 -0400
-Received: from mout.gmx.net ([212.227.15.18]:64860 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729Ab3JDPsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 11:48:12 -0400
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net, Ashley Lai <ashley@ashleylai.com>
-Subject: TPM.ko module rename (was tpm: Pull everything related to /dev/tpmX into tpm-dev.c)
-Date: Fri, 4 Oct 2013 17:50:01 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com> <201310020114.18624.PeterHuewe@gmx.de> <20131003050504.GA2247@obsidianresearch.com>
-In-Reply-To: <20131003050504.GA2247@obsidianresearch.com>
+	id S1755002Ab3JDPwo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 11:52:44 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:8530 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754807Ab3JDPwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 11:52:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 04 Oct 2013 08:48:43 -0700
+Date: Fri, 4 Oct 2013 18:52:36 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Mike Turquette" <mturquette@linaro.org>,
+        Joseph Lo <josephl@nvidia.com>, "Paul Walmsley" <pwalmsley@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: replace enum tegra114_clk by binding header
+Message-ID: <20131004155236.GX3973@tbergstrom-lnx.Nvidia.com>
+References: <1378213915-10222-1-git-send-email-pdeschrijver@nvidia.com>
+ <522622F1.70008@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310041750.01145.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:iGFsrWLrAwi9vA8UEPAGPGJ0NrgujSWP7Qt9UTgItAarZPilKeU
- DoX8Zm916rnByCSMv8NxlkKzSTDMiy2etYu1j1x2Z91gQs5tO+kQS1OiC8Jcc8JDchcZzE0
- GNRmcMon0wrYrIiShvP595FRFFb4Ogasoq9alw6nOTzrEmHUyzJs61qjH37A4T53vDh9Hdh
- SBPteo2b0dTObs/B8migA==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <522622F1.70008@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 3. Oktober 2013, 07:05:04 schrieb Jason Gunthorpe:
-> On Wed, Oct 02, 2013 at 01:14:18AM +0200, Peter H?we wrote:
-> > > I botched the makefile changes for the new .c files.
-> > > 
-> > > I believe it should be like this:
-> > > 
-> > > obj-$(CONFIG_TCG_TPM) += tpm-core.o
-> > > tpm-core-y := tpm.o tpm-dev.o tpm-sysfs.o
-> > > 
+On Tue, Sep 03, 2013 at 07:57:05PM +0200, Stephen Warren wrote:
+> On 09/03/2013 07:11 AM, Peter De Schrijver wrote:
+> > As the clock IDs are now specified in a header file, we can use those
+> > definitions instead of maintaining an internal enum.
 > 
-> It looks like my solution changes the tpm module name to tpm-core.o.
-> This should be noted in the commit log:
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 > 
->  In doing so we also change the core tpm module name from 'tpm' to
-> 'tpm-core', this is because kbuild does not like it if a multi-file module
-> has a .c file of the same name.
+> I assume this will go through Mike's clock tree for 3.13.
 > 
-> Is that OK? It follows the pattern other systems have in the kernel.
 
+Mike?
 
-Hmm,
-I'm not 100% sure what's the usual procedure for module renames, especially 
-since this is visible in userspace.
+> I assume similar patches will follow for Tegra20/30?
 
-For users the easiest way would be to rename tpm.c to tpm-core.c and leave the 
-module name as it is.
-In git that's just a simple rename operation.
-
-Thanks,
-Peter
+Yes.
