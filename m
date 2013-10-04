@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab3JDMim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 08:38:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45692 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab3JDMid (ORCPT
+	id S1754567Ab3JDMjq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 08:39:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53617 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab3JDMjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 08:38:33 -0400
-Date: Fri, 4 Oct 2013 14:38:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
-Message-ID: <20131004123806.GK3081@twins.programming.kicks-ass.net>
-References: <20131003192135.GR5790@linux.vnet.ibm.com>
- <20131003193206.GA17796@redhat.com>
- <20131003193319.GB17796@redhat.com>
- <20131003195026.GT5790@linux.vnet.ibm.com>
- <20131003200002.GA23768@redhat.com>
- <20131003211009.GA4127@redhat.com>
- <20131004071814.GS28601@twins.programming.kicks-ass.net>
- <20131004111513.GA5699@redhat.com>
- <20131004114442.GJ3081@twins.programming.kicks-ass.net>
- <20131004121300.GA7725@redhat.com>
+	Fri, 4 Oct 2013 08:39:45 -0400
+Date: Fri, 4 Oct 2013 14:39:28 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>, paul.mckenney@linaro.org,
+        tj@kernel.org, mingo@redhat.com, peterz@infradead.org,
+        Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org,
+        patches@linaro.org, pdsw-power-team@arm.com,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
+Message-ID: <20131004123928.GD19953@linutronix.de>
+References: <CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
+ <CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
+ <CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
+ <CAKohpo=eAGVA540jN8+t0aaqCV9qJRkH0q9-q6QVUYusWQqSYw@mail.gmail.com>
+ <alpine.LFD.2.02.1305131223470.2863@ionos>
+ <CAKohpokfKPQ3EhMf3WB8koXuH2rF6QoejwNOTw08X+XfnVhpEg@mail.gmail.com>
+ <CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
+ <CAKohpon0dC6O_QBXnbyxUOO0DcrRxTzFkZSJNh6VrNL5kzT66Q@mail.gmail.com>
+ <CAKohpomGSoU5VOcrbonD1=NE-6xDVr+pveAmuXdrzjmLotmEug@mail.gmail.com>
+ <CAKohpokzTj-=2BgrAH4UabiCAe_sZXhdyKu1L-VDnYBJ97BAyA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131004121300.GA7725@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAKohpokzTj-=2BgrAH4UabiCAe_sZXhdyKu1L-VDnYBJ97BAyA@mail.gmail.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 02:13:00PM +0200, Oleg Nesterov wrote:
-> On 10/04, Peter Zijlstra wrote:
-> >
-> > On Fri, Oct 04, 2013 at 01:15:13PM +0200, Oleg Nesterov wrote:
-> > > > What's exclusive to mean? One writer at a time?
-> > >
-> > > Yes,
-> >
-> > I'm not entirely sure what the advantage is of having that logic in this
-> > primitive. Shouldn't that be something the user of this rcu_sync stuff
-> > does (or not) depending on its needs.
-> 
-> Yes, the user can do the locking itself. But I think this option can help.
-> If nothing else it can help to avoid another mutex/whatever and unnecessary
-> wakeup/scheule's, even if this is minor.
-> 
-> And. rcu_sync_enter() should be "bool", it should return "need_sync". IOW,
-> rcu_sync_enter() == T means that this thread has done the FAST -> SLOW
-> transition, this is particularly useful in "exclusive" mode.
-> 
-> Consider percpu_down_write(). It takes rw_sem for writing (and this blocks
-> the readers) before clear_fast_ctr(), but we only need to do this this
-> after sync_sched(), so it could do
-> 
-> 	if (rcu_sync_enter(&brw->rcu_sync))
-> 		atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
-> 	else
-> 		; /* the above was already done */
-> 
-> 	/* exclude readers */
-> 	down_write(&brw->rw_sem);
-> 
-> and now ->rw_sem is only needed to serialize readers/writer.
-> 
-> Sure, this all is minor (and we will probably copy the "pending writer"
-> logic from cpu_hotplug_begin/get_online_cpus).
-> 
-> But we can get this feature almost for free, so I think it makes sense.
+* Viresh Kumar | 2013-08-07 15:25:55 [+0530]:
 
-Well, the whole reason I asked is because adding that completion in
-there didn't at all smell like free to me; not to mention that I hadn't
-at all realized you're using it as a semaphore.
+>On 24 July 2013 14:47, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 18 June 2013 10:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>
+>> Hi Thomas,
+>>
+>> Do you still see some light of hope in this patch :) ?
+>
+>Ping!!
 
-Also; what would be the use once you convert the per-cpu rwsem over to
-the scheme I used with hotplug?
+tglx, could you please take a look at this patch / thread?
 
-I'm really starting to think we shouldn't do this in rcu_sync at all.
+Sebastian
