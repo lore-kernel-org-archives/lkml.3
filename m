@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab3JDAxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:53:42 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60470 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3JDAxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 20:53:41 -0400
-Message-ID: <524E118F.9080503@gmail.com>
-Date: Fri, 04 Oct 2013 10:53:35 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754075Ab3JDA7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:59:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7237 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374Ab3JDA7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Oct 2013 20:59:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1029,1371106800"; 
+   d="scan'208";a="411273988"
+Date: Thu, 3 Oct 2013 17:59:13 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
+        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
+        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 01/77] PCI/MSI: Fix return value when
+ populate_msi_sysfs() failed
+Message-ID: <20131004005912.GB4787@jonmason-lab>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <3ff5236944aae69f2cd934b5b6da7c1c269df7c1.1380703262.git.agordeev@redhat.com>
+ <20131003003905.GK6768@jonmason-lab>
+ <1380836781.3419.17.camel@bwh-desktop.uk.level5networks.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, Djalal Harouni <tixxdz@opendz.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>	<871u5gqtw3.fsf@xmission.com>	<20130826172054.GE27005@ZenIV.linux.org.uk>	<20130827172406.GA2664@dztty>	<20130828201141.GA21455@dztty>	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com> <CAGXu5jLSXO_MzLtEn_9gdiWmEru+=o1ZnZ8z-m=KZy37Ry4NDQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jLSXO_MzLtEn_9gdiWmEru+=o1ZnZ8z-m=KZy37Ry4NDQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380836781.3419.17.camel@bwh-desktop.uk.level5networks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/13 10:41, Kees Cook wrote:
-> On Wed, Aug 28, 2013 at 1:49 PM, Kees Cook <keescook@chromium.org> wrote:
+On Thu, Oct 03, 2013 at 10:46:21PM +0100, Ben Hutchings wrote:
+> On Wed, 2013-10-02 at 17:39 -0700, Jon Mason wrote:
+> > On Wed, Oct 02, 2013 at 12:48:17PM +0200, Alexander Gordeev wrote:
+> > > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > 
+> > Since you are changing the behavior of the msix_capability_init
+> > function on populate_msi_sysfs error, a comment describing why in this
+> > commit would be nice.
+> [...]
+> 
+> This function was already treating that error as fatal, and freeing the
+> MSIs.  The change in behaviour is that it now returns the error code in
+> this case, rather than 0.  This is obviously correct and properly
+> described by the one-line summary.
 
-<snip>
+If someone dumb, like me, is looking at this commit and trying to
+figure out what is happening, having ANY commit message is good.  "Fix
+the return value" doesn't tell me anything.  Documenting what issue(s)
+would've been seen had the error case been encountered and what will
+now been seen would be very nice.
 
 > 
-> BTW, this just came to my attention:
-> http://marc.info/?l=linux-kernel&m=138049414321387&w=2
+> Ben.
 > 
-> Same problem, just for /proc/kallsyms. This would benefit from the
-> open vs read cred check as well, I think.
-
-I was actually just about to put together a repost of this. Sorry I
-missed you off the original Cc list, get_maintainer didn't list you.
-
-I wanted to at least change the comment mentioning "badly written"
-setuid binaries. That isn't really true, as George Spelvin pointed out,
-even a setuid binary which opens the file with dropped priviledges, but
-reads it after re-elevating privileges will be susceptible to this.
-
-Setuid apps could be more precautious by doing the open + read into
-memory of user files with the privileges dropped, so that once
-privileges are re-elevated only the in-memory copy is used.
-
-I still think in-kernel fixing is a good idea too though, since it
-hardens against user-space setuid apps that don't do this. This was just
-the simplest approach to fixing the problem that I could think of. I'm
-open to suggestions for a better solution.
-
-~Ryan
-
-
-
+> -- 
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+> 
