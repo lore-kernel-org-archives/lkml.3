@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab3JDQ05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 12:26:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36786 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab3JDQ0z (ORCPT
+	id S1755399Ab3JDQ2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 12:28:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41968 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754634Ab3JDQ2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 12:26:55 -0400
-Date: Fri, 4 Oct 2013 09:26:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Joe Perches <joe@perches.com>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Pavel Machek <pavel@ucw.cz>, Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org
-Subject: Re: [RFC PATCH v2] fpga: Introduce new fpga subsystem
-Message-ID: <20131004162654.GA16666@kroah.com>
-References: <cover.1380727889.git.michal.simek@xilinx.com>
- <fe4f34387011339efe9f5868a7eec9d549462d8f.1380727889.git.michal.simek@xilinx.com>
- <1380729996.2081.59.camel@joe-AO722>
- <524EE9A0.2020404@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524EE9A0.2020404@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Oct 2013 12:28:05 -0400
+Message-ID: <1380904077.1987.18.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: Drivers: scsi: FLUSH timeout
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Eric Seppanen <eric@purestorage.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Fri, 04 Oct 2013 09:27:57 -0700
+In-Reply-To: <2cc1bcb3a157418eb66bd2d91cf911c1@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1379705547-15028-1-git-send-email-kys@microsoft.com>
+	 <20130920203222.GA14306@kroah.com>
+	 <a97d266e2c284d688d2dd7ad43f179b8@SN2PR03MB061.namprd03.prod.outlook.com>
+	 <524180B7.7090307@gmail.com>
+	 <3413dbd7fa254fd380a84fe6d9cd87e1@SN2PR03MB061.namprd03.prod.outlook.com>
+	 <5241C9E7.2000404@cs.wisc.edu>
+	 <bf168ab724a140f989ab3dfe877b750f@SN2PR03MB061.namprd03.prod.outlook.com>
+	 <CAMuHMdV-BsKc-c1YhzqFrUGJhw+jMZEXXTcT2xyDLnw-JQuVaQ@mail.gmail.com>
+	 <ff6a93ed5d234c14874d03415812a3ec@SN2PR03MB061.namprd03.prod.outlook.com>
+	 <1380802143.19256.95.camel@haakon3.risingtidesystems.com>
+	 <CADOQvuPWaSntci+4pNCbsP-Ug6P=xf1_5ZqqoaA+fXumgfHmeA@mail.gmail.com>
+	 <2cc1bcb3a157418eb66bd2d91cf911c1@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 06:15:28PM +0200, Michal Simek wrote:
-> > Probably all of the "return ret ?: count;" uses
-> > would be more easily understood on 3 lines.
+On Fri, 2013-10-04 at 15:02 +0000, KY Srinivasan wrote:
 > 
-> This structure is also quite common in the kernel
-> git grep "? :"  | wc -l
-> 415
+> > -----Original Message-----
+> > From: Eric Seppanen [mailto:eric@purestorage.com]
+> > Sent: Thursday, October 03, 2013 1:49 PM
+> > To: Nicholas A. Bellinger
+> > Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > linux-scsi@vger.kernel.org
+> > Subject: Re: Drivers: scsi: FLUSH timeout
+> > 
+> > On Thu, Oct 3, 2013 at 5:09 AM, Nicholas A. Bellinger
+> > <nab@linux-iscsi.org> wrote:
+> > >
+> > > On Wed, 2013-10-02 at 18:29 +0000, KY Srinivasan wrote:
+> > > > Ideally, I want this to be adjustable like the way we can change the I/O
+> > timeout.
+> > > > Since that has been attempted earlier and rejected (not clear what the
+> > reasons were),
+> > > > I was suggesting that we pick a larger number. James, let me know how I
+> > should proceed here.
+> > > >
+> > >
+> > > I think the objection was to making a module parameter for doing this
+> > > globally for all struct scsi_disk, and not the idea of making it
+> > > adjustable on an individual basis per-say..
+> > >
+> > > What about adding a /sys/class/scsi_disk/$HCTL/flush_timeout..?
+> > 
+> > Do I/O timeouts and flush timeouts need to be independently adjusted?
+> > If you're having trouble with slow operations, it seems likely to be
+> > across the board.
+> > 
+> > Flush timeout could be defined as 2x the read/write timeout.  Any
+> > other command-specific timeouts could be scaled the same way.
 > 
-> git grep "?:"  | wc -l
-> 541
+> I like this idea and would result in minimal changes. James, if it ok with you,
+> I could send you the patch.
 
-And it should all be removed and fixed up properly to make it easier to
-read and understand.  Please don't add new instances of it, I sure will
-not take it.
+Depends: I still prefer the per-target override, but if the proposal is
+to take the existing variable timeout for the queue and have 2x that for
+the flush, so you plan to increase the per-device timeout with hyper-v
+to 90s via sysfs, then I'm OK with it.
 
-greg k-h
+James
+
+
