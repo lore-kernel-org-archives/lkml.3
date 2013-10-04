@@ -1,146 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3JDNu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 09:50:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53085 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab3JDNuW (ORCPT
+	id S1754911Ab3JDNwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 09:52:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9597 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753755Ab3JDNwv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 09:50:22 -0400
-Message-Id: <20131004135015.106146266@bombadil.infradead.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 04 Oct 2013 06:49:13 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] [PATCH 5/5] block: use blk-exec.c infrastructure for blk-mq
-References: <20131004134908.231874670@bombadil.infradead.org>
-Content-Disposition: inline; filename=0005-block-use-blk-exec.c-infrastructure-for-blk-mq.patch
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 4 Oct 2013 09:52:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1033,1371106800"; 
+   d="scan'208";a="414027005"
+From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+To: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: RE: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Thread-Topic: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Thread-Index: AQHOv3vIHe5gOhmSsEGBHPLZHDmcI5nkkbDA
+Date: Fri, 4 Oct 2013 13:52:49 +0000
+Message-ID: <32E1700B9017364D9B60AED9960492BC211B0176@FMSMSX107.amr.corp.intel.com>
+References: <1380724087-13927-1-git-send-email-jack@suse.cz>
+ <1380724087-13927-24-git-send-email-jack@suse.cz>
+In-Reply-To: <1380724087-13927-24-git-send-email-jack@suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to reinvent blk_execute_rq for blk-mq if we can easily
-reuse the sync and async versions already present.
+> Convert qib_get_user_pages() to use get_user_pages_unlocked().  This
+> shortens the section where we hold mmap_sem for writing and also removes
+> the knowledge about get_user_pages() locking from ipath driver. We also fix
+> a bug in testing pinned number of pages when changing the code.
+> 
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-exec.c           |    7 +++++++
- block/blk-mq.c             |   36 ------------------------------------
- drivers/block/virtio_blk.c |    5 ++++-
- include/linux/blk-mq.h     |    1 -
- 4 files changed, 11 insertions(+), 38 deletions(-)
+This patch and the sibling ipath patch will nominally take the mmap_sem twice where the old routine only took it once.   This is a performance issue.
 
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index 7972da7..47aef02 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -5,6 +5,7 @@
- #include <linux/module.h>
- #include <linux/bio.h>
- #include <linux/blkdev.h>
-+#include <linux/blk-mq.h>
- #include <linux/sched/sysctl.h>
- 
- #include "blk.h"
-@@ -58,6 +59,12 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
- 
- 	rq->rq_disk = bd_disk;
- 	rq->end_io = done;
-+
-+	if (q->mq_ops) {
-+		blk_mq_insert_request(q, rq, true);
-+		return;
-+	}
-+
- 	/*
- 	 * need to check this before __blk_run_queue(), because rq can
- 	 * be freed before that returns.
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 709747f..dece2e2 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -958,42 +958,6 @@ run_queue:
- 	blk_mq_run_hw_queue(hctx, !is_sync || is_flush_fua);
- }
- 
--static void blk_mq_execute_end_io(struct request *rq, int error)
--{
--	struct completion *wait = rq->end_io_data;
--
--	complete(wait);
--}
--
--/*
-- * Insert request, pass to device, and wait for it to finish.
-- */
--int blk_mq_execute_rq(struct request_queue *q, struct request *rq)
--{
--	DECLARE_COMPLETION_ONSTACK(wait);
--	unsigned long hang_check;
--	int err = 0;
--
--	rq->end_io_data = &wait;
--	rq->end_io = blk_mq_execute_end_io;
--	blk_mq_insert_request(q, rq, true);
--
--	/* Prevent hang_check timer from firing at us during very long I/O */
--	hang_check = sysctl_hung_task_timeout_secs;
--	if (hang_check)
--		while (!wait_for_completion_io_timeout(&wait, hang_check * (HZ/2)));
--	else
--		wait_for_completion_io(&wait);
--
--	if (rq->errors)
--		err = -EIO;
--
--	blk_mq_finish_request(rq, rq->errors);
--
--	return err;
--}
--EXPORT_SYMBOL(blk_mq_execute_rq);
--
- /*
-  * Default mapping to a software queue, since we use one per CPU.
-  */
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index e0b1115..0352df1 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -410,6 +410,7 @@ static int virtblk_get_id(struct gendisk *disk, char *id_str)
- 	struct virtio_blk *vblk = disk->private_data;
- 	struct request *req;
- 	struct bio *bio;
-+	int err;
- 
- 	bio = bio_map_kern(vblk->disk->queue, id_str, VIRTIO_BLK_ID_BYTES,
- 			   GFP_KERNEL);
-@@ -423,7 +424,9 @@ static int virtblk_get_id(struct gendisk *disk, char *id_str)
- 	}
- 
- 	req->cmd_type = REQ_TYPE_SPECIAL;
--	return blk_mq_execute_rq(vblk->disk->queue, req);
-+	err = blk_execute_rq(vblk->disk->queue, vblk->disk, req, false);
-+	blk_put_request(req);
-+	return err;
- }
- 
- static int virtblk_ioctl(struct block_device *bdev, fmode_t mode,
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index 2fea261..4fddab2 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -121,7 +121,6 @@ void blk_mq_init_commands(struct request_queue *, void (*init)(void *data, struc
- void blk_mq_flush_plug(struct request_queue *, bool);
- void blk_mq_insert_request(struct request_queue *, struct request *, bool);
- void blk_mq_insert_requests(struct request_queue *, struct list_head *, bool, bool);
--int blk_mq_execute_rq(struct request_queue *, struct request *);
- void blk_mq_run_queues(struct request_queue *q, bool async);
- void blk_mq_free_request(struct request *rq);
- bool blk_mq_can_queue(struct blk_mq_hw_ctx *);
--- 
-1.7.10.4
+Is the intent here to deprecate get_user_pages()?
 
+I agree, the old code's lock limit test is broke and needs to be fixed.   I like the elimination of the silly wrapper routine!
 
+Could the lock limit test be pushed into another version of the wrapper so that there is only one set of mmap_sem transactions?
+
+Mike
