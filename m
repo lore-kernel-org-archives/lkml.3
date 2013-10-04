@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab3JDV75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 17:59:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49744 "EHLO mga09.intel.com"
+	id S1754016Ab3JDWAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 18:00:34 -0400
+Received: from mout.gmx.net ([212.227.17.22]:56820 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab3JDV74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 17:59:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
-   d="scan'208";a="414196663"
-Message-ID: <524F3B4A.7070107@linux.intel.com>
-Date: Fri, 04 Oct 2013 15:03:54 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
+	id S1753814Ab3JDWAT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 18:00:19 -0400
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tpmdd-devel@lists.sourceforge.net, Ashley Lai <ashley@ashleylai.com>
+Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs into tpm-sysfs.c
+Date: Sat, 5 Oct 2013 00:02:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
+Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Richard Maciel Costa <richardm@br.ibm.com>,
+        "trousers-tech@lists.sourceforge.net" 
+	<trousers-tech@lists.sourceforge.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+References: <52408E5D.4020904@tycho.nsa.gov> <20131004170803.GB6955@obsidianresearch.com> <524F1450.6060406@linux.vnet.ibm.com>
+In-Reply-To: <524F1450.6060406@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: g_ffs: fix compilation warning
-References: <1380923326-18546-1-git-send-email-david.a.cohen@linux.intel.com> <20131004215156.GA10629@kroah.com>
-In-Reply-To: <20131004215156.GA10629@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201310050002.09320.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:sXQopfHkgxLp+ME8w8kthiP9BRAnuhsgozF2Jc7kLNqHEnw6mZY
+ nouuSNnJmPwz8FsxusuX2xT14XCCiYHyT6JJzPHuNVjDCo9BdFrGc8ZK0Xrz40wL9uVkBVF
+ aBMq1Rof8uGIQO/HhJN9pzYHKfung9O/jhuFmtehFiLIzmps+JOSeWHRTuFW69gIJP3yNQi
+ 5608N9EL7sY+1TflrC+Zg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 02:51 PM, Greg KH wrote:
-> On Fri, Oct 04, 2013 at 02:48:46PM -0700, David Cohen wrote:
->> Due to lack of "u_ether.h" header file, g_ffs.c compiles with following
->> warning:
->
-> It does?  In what tree/branch/release is this happening?
+Am Freitag, 4. Oktober 2013, 21:17:36 schrieb Stefan Berger:
+> On 10/04/2013 01:08 PM, Jason Gunthorpe wrote:
+> > On Mon, Sep 30, 2013 at 05:09:51PM -0500, Joel Schopp wrote:
+> >>> So far, nobody I have talked to has offered any strong opinions on
+> >>> what locality should be used or how it should be set. I think finding
+> >>> a developer of trousers may be the most useful to talk about how the
+> >>> ioctl portion of this would need to be set up - if someone is actually
+> >>> needed.
+> >> 
+> >> I am a TrouSerS developer and am ccing Richard, another TrouSerS
+> >> developer, and ccing the trousers-tech list.  It would be good if you
+> >> could elaborate on the question and context for those not following the
+> >> entire thread, myself included.
+> > 
+> > Two questions:
+> > 
+> > Is userspace interested in using the TPM Locality feature, and if so
+> > is there any thoughts on what the interface should be?
+> 
+> In terms of interface it should probably be an ioctl so that whoever
+> holds the fd to /dev/tpm0 gets to choose the locality.
+> 
+> Locality allows the resetting of certain PCRs. See section 3.7 in
+> 
+> http://www.trustedcomputinggroup.org/files/static_page_files/8E45D739-1A4B-> B294-D06274E7047730FD/TCG_PCClientTPMInterfaceSpecification_TIS__1-3_27_032
+> 12013.pdf
+> 
+> Locality 4 can only be used by the hardware (section 2.2).
 
-This is intended for Linus' 3.12-rc3. Haven't checked any other kernel.
 
-In my compilation I disabled USB Host support and enabled DWC3 (gadget 
-only) with ePCI + NOP_USB_XCEIV.
+Afaik Locality 3 (and sometimes 2) is often also "locked down"/filtered after 
+the bios phase.
 
-Br, David
 
->
-> thanks,
->
-> greg k-h
->
+>From 
+http://www.intel.com/content/dam/www/public/us/en/documents/guides/intel-txt-software-development-guide.pdf
 
+"The storage spaces accessible within a TPM device are grouped by a locality 
+attribute and are a separate set of address ranges from the Intel TXT Public 
+and Private spaces.
+The following localities are defined:
+Locality 0 : Non trusted and legacy TPM operation
+Locality 1 : An environment for use by the Trusted Operating System
+Locality 2 : Trusted OS
+Locality 3 : Authenticated Code Module
+Locality 4 : Intel TXT hardware use only"
+
+(I know that's "only" Intel's view and not a TCG spec)
+
+Thanks,
+Peter
