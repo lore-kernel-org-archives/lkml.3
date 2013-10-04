@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab3JDRmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:42:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:41401 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3JDRmi (ORCPT
+	id S1753887Ab3JDRob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:44:31 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:55653 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3JDRoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:42:38 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-ca-524efe0c233d
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Viresh Kumar <viresh.linux@gmail.com>
-Cc: Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] ARM: SPEAr1340: static-ize SATA functions
-Date: Fri, 04 Oct 2013 19:42:31 +0200
-Message-id: <2240706.IfNdWNvgId@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jAV2ef35BBof/WVicbXrDbrHp8TVW
-	i2M7HjFZXN41h82iobuH3WLOjM2sFisv/mV2YPfYOesuu8fJCydZPDYvqffo27KK0ePpj73M
-	Hp83yQWwRXHZpKTmZJalFunbJXBl/OuZwFzwjrPi+5GlLA2Mizm6GDk5JARMJG4+ecgCYYtJ
-	XLi3nq2LkYtDSGARo8SiP3+ZIZwWJol/776yg1SxCVhJTGxfxQhiiwhoSvzbdI0FpIhZ4Dyj
-	xLrZU1hBEsJARUevTGcCsVkEVCW2zfnNDGLzAjUcv/cJbJ2ogKfEp0lLoeKCEj8m3wOLMwvI
-	S+zbP5UVwtaSWL/zONMERr5ZSMpmISmbhaRsASPzKkbR1ILkguKk9FwjveLE3OLSvHS95Pzc
-	TYzgAH4mvYNxVYPFIUYBDkYlHl6LM35BQqyJZcWVuYcYJTiYlUR4Q38BhXhTEiurUovy44tK
-	c1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTCynUma8mOtmNFEgf/LTW/IZrBn
-	ZSWznH0Y0l49L+0pU8D/PdPSVObL1POwib4Ulv6qIblh+5vTq+KfqBw+IpSzIOrJhhsbzT2n
-	mfUlFyqar8pJvOlxojDn+4IOOxady1/6bWMmCPWkLdB9FHNYTprNpUI+wrx7qfb/JuWdS5ff
-	usFzd/efLBYlluKMREMt5qLiRABmGG8nXAIAAA==
+	Fri, 4 Oct 2013 13:44:30 -0400
+Message-ID: <524EFE76.70200@monstr.eu>
+Date: Fri, 04 Oct 2013 19:44:22 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+References: <cover.1380727889.git.michal.simek@xilinx.com> <524C6D64.8080801@zytor.com> <20131003064915.GB17155@amd.pavel.ucw.cz> <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com> <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com>
+In-Reply-To: <524EF0CE.4040002@zytor.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="cJIjtimtJic7IwV33Rx9Q2BWhshpaACof"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sata_miphy_exit(), sata_suspend() and sata_resume() static.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--cJIjtimtJic7IwV33Rx9Q2BWhshpaACof
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mach-spear/spear1340.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On 10/04/2013 06:46 PM, H. Peter Anvin wrote:
+> On 10/04/2013 07:28 AM, Michal Simek wrote:
+>> On 10/04/2013 04:21 PM, H. Peter Anvin wrote:
+>>> Yes; I never got too corner Greg ;)
+>>>
+>>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+>>>> On Fri, Oct 04, 2013 at 03:57:57PM +0200, Michal Simek wrote:
+>>>>> But anyway what was resolution from that meeting?
+>>>>
+>>>> It never happened, we got distracted by lunch :)
+>>
+>> Then why not to have it here?
+>>
+>=20
+> The essential question is if the firmware interface really is
+> appropriate for FPGAs.  It definitely has a feel of a "square peg in a
+> round hole", especially when you consider the myriad ways FPGAs can be
+> configured (some persistent, some not, some which takes effect now,
+> some which come later, some which involve bytecode interpreters...)
+> and considering reconfiguration and partial reconfiguration.
 
-diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
-index 3fb6834..e0e4251 100644
---- a/arch/arm/mach-spear/spear1340.c
-+++ b/arch/arm/mach-spear/spear1340.c
-@@ -93,7 +93,7 @@ static int sata_miphy_init(struct device *dev, void __iomem *addr)
- 	return 0;
- }
- 
--void sata_miphy_exit(struct device *dev)
-+static void sata_miphy_exit(struct device *dev)
- {
- 	writel(0, SPEAR1340_PCIE_SATA_CFG);
- 	writel(0, SPEAR1340_PCIE_MIPHY_CFG);
-@@ -107,7 +107,7 @@ void sata_miphy_exit(struct device *dev)
- 	msleep(20);
- }
- 
--int sata_suspend(struct device *dev)
-+static int sata_suspend(struct device *dev)
- {
- 	if (dev->power.power_state.event == PM_EVENT_FREEZE)
- 		return 0;
-@@ -117,7 +117,7 @@ int sata_suspend(struct device *dev)
- 	return 0;
- }
- 
--int sata_resume(struct device *dev)
-+static int sata_resume(struct device *dev)
- {
- 	if (dev->power.power_state.event == PM_EVENT_THAW)
- 		return 0;
--- 
-1.8.2.3
+If you look at it in general I believe that there is wide range
+of applications which just contain one bitstream per fpga and the bitstre=
+am is replaced
+by newer version in upgrade. For them firmware interface should be pretty=
+ useful.
+Just setup firmware name with bitstream and it will be automatically load=
+ed in
+startup phase.
+
+Then there is another set of applications especially in connection to par=
+tial reconfiguration
+where this can be done statically by pregenerated partial bitstreams
+or automatically generated on target cpu. For doing everything on the tar=
+get
+firmware interface is not the best because everything can be handled by u=
+ser application
+and it is easier just to push this bitstream to do device and not to save=
+ it
+to the fs.
+
+I think the question here is if this subsystem could have several interfa=
+ces.
+For example Alan is asking for adding char support.
+Does it even make sense to have more interfaces with the same backend dri=
+ver?
+When this is answered then we can talk which one make sense to have.
+In v2 is sysfs and firmware one. Adding char is also easy to do.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
+
+--cJIjtimtJic7IwV33Rx9Q2BWhshpaACof
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJO/nYACgkQykllyylKDCEdPQCeL8aYPCjJkwEm1UslWWKFF816
+Z2AAnjoSJCeVq1OTddOGkLJtxF+PPfvf
+=Cil7
+-----END PGP SIGNATURE-----
+
+--cJIjtimtJic7IwV33Rx9Q2BWhshpaACof--
