@@ -1,161 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3JDGat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 02:30:49 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:39136 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3JDGas (ORCPT
+	id S1751583Ab3JDGlM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 02:41:12 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:36520 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab3JDGlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 02:30:48 -0400
-Date: Fri, 4 Oct 2013 08:30:44 +0200
+	Fri, 4 Oct 2013 02:41:10 -0400
+Date: Fri, 4 Oct 2013 08:41:06 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] PATCH: KGDB/KDB Fix no KDB config problem.
-Message-ID: <20131004063043.GF11399@gmail.com>
-References: <20131003163824.966169920@asylum.americas.sgi.com>
- <20131003163825.184494258@asylum.americas.sgi.com>
- <20131003165122.GB32755@gmail.com>
- <524DA381.2050108@sgi.com>
- <20131003171520.GA5144@gmail.com>
- <524DAF17.8040104@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+Message-ID: <20131004064106.GG11399@gmail.com>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+ <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+ <20131003105130.GE13318@ZenIV.linux.org.uk>
+ <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+ <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
+ <20131003232826.GA6604@jtriplet-mobl1>
+ <CA+55aFxvZV0brpjRERYj6Bb-i2kF+nhfCVvmXV5Bdn2QhEt5sw@mail.gmail.com>
+ <20131004004108.GA9914@jtriplet-mobl1>
+ <CA+55aFw6DURpj+0Z9pJZdu+VX1Eas8=2AOqamQfR-5S+giyicw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524DAF17.8040104@sgi.com>
+In-Reply-To: <CA+55aFw6DURpj+0Z9pJZdu+VX1Eas8=2AOqamQfR-5S+giyicw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mike Travis <travis@sgi.com> wrote:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
+> On Thu, Oct 3, 2013 at 5:41 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> >
+> > Read, yes, but I don't think that's enough to force your example above 
+> > to work in all cases.  That requires semantics beyond what RCU's 
+> > primitives guarantee, and I don't think you can draw conclusions about 
+> > those semantics without talking about CPU memory barriers.
 > 
+> We seriosly depend on nothing leaking out. Not just reads. The "U" in 
+> RCU is "update". So it's reads, and it's writes. The fact that it says 
+> "read" in "rcu_read_lock()" doesn't mean that only reads would be 
+> affected.
 > 
-> On 10/3/2013 10:15 AM, Ingo Molnar wrote:
-> > 
-> > * Mike Travis <travis@sgi.com> wrote:
-> > 
-> >>
-> >>
-> >> On 10/3/2013 9:51 AM, Ingo Molnar wrote:
-> >>>
-> >>> * Mike Travis <travis@sgi.com> wrote:
-> >>>
-> >>>> Some code added to the debug_core module had KDB dependencies
-> >>>> that it shouldn't have.
-> >>>>
-> >>>> Signed-off-by: Mike Travis <travis@sgi.com>
-> >>>> ---
-> >>>>  kernel/debug/debug_core.c |    8 ++++----
-> >>>>  kernel/debug/debug_core.h |    2 ++
-> >>>>  2 files changed, 6 insertions(+), 4 deletions(-)
-> >>>>
-> >>>> --- linux.orig/kernel/debug/debug_core.c
-> >>>> +++ linux/kernel/debug/debug_core.c
-> >>>> @@ -575,8 +575,8 @@ return_normal:
-> >>>>  		raw_spin_lock(&dbg_slave_lock);
-> >>>>  
-> >>>>  #ifdef CONFIG_SMP
-> >>>> -	/* If SYSTEM_NMI, slaves are already waiting */
-> >>>> -	if (ks->err_code == KDB_REASON_SYSTEM_NMI)
-> >>>> +	/* If send_ready set, slaves are already waiting */
-> >>>> +	if (ks->send_ready)
-> >>>>  		atomic_set(ks->send_ready, 1);
-> >>>>  
-> >>>>  	/* Signal the other CPUs to enter kgdb_wait() */
-> >>>> @@ -682,11 +682,11 @@ kgdb_handle_exception(int evector, int s
-> >>>>  	if (arch_kgdb_ops.enable_nmi)
-> >>>>  		arch_kgdb_ops.enable_nmi(0);
-> >>>>  
-> >>>> +	memset(ks, 0, sizeof(struct kgdb_state));
-> >>>>  	ks->cpu			= raw_smp_processor_id();
-> >>>>  	ks->ex_vector		= evector;
-> >>>>  	ks->signo		= signo;
-> >>>>  	ks->err_code		= ecode;
-> >>>> -	ks->kgdb_usethreadid	= 0;
-> >>>>  	ks->linux_regs		= regs;
-> >>>>  
-> >>>>  	if (kgdb_reenter_check(ks))
-> >>>> @@ -750,7 +750,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
-> >>>>  		ks->cpu			= cpu;
-> >>>>  		ks->ex_vector		= trapnr;
-> >>>>  		ks->signo		= SIGTRAP;
-> >>>> -		ks->err_code		= KDB_REASON_SYSTEM_NMI;
-> >>>> +		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
-> >>>>  		ks->linux_regs		= regs;
-> >>>>  		ks->send_ready		= send_ready;
-> >>>>  		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-> >>>> --- linux.orig/kernel/debug/debug_core.h
-> >>>> +++ linux/kernel/debug/debug_core.h
-> >>>> @@ -75,11 +75,13 @@ extern int kdb_stub(struct kgdb_state *k
-> >>>>  extern int kdb_parse(const char *cmdstr);
-> >>>>  extern int kdb_common_init_state(struct kgdb_state *ks);
-> >>>>  extern int kdb_common_deinit_state(void);
-> >>>> +#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
-> >>>>  #else /* ! CONFIG_KGDB_KDB */
-> >>>>  static inline int kdb_stub(struct kgdb_state *ks)
-> >>>>  {
-> >>>>  	return DBG_PASS_EVENT;
-> >>>>  }
-> >>>> +#define KGDB_KDB_REASON_SYSTEM_NMI 0
-> >>>>  #endif /* CONFIG_KGDB_KDB */
-> >>>>  
-> >>>>  #endif /* _DEBUG_CORE_H_ */
-> >>>
-> >>> Hm, the KGDB_KDB_REASON_SYSTEM_NMI definition is a bit ugly. I still think 
-> >>> there are layering violations here and just kludging it around doesn't 
-> >>> solve it - a helper function that keeps kgdb details to the kgdb code 
-> >>> would.
-> >>>
-> >>> Anyway, if Jason is fine with this solution and upholds his Acked-by then 
-> >>> I'll merge this into the first patch and apply the two patches.
-> >>>
-> >>> Thanks,
-> >>>
-> >>> 	Ingo
-> >>>
-> >>
-> >> Would you prefer a simple #ifdef CONFIG_KGDB_KDB around the assignment?
-> > 
-> > An #ifdef doesn't solve the layering violation!
-> > 
-> > kernel/debug/debug_core.c didn't have any serious use of #ifdef 
-> > CONFIG_KGDB_KDB before (it used it to flavor a few printks) and I'm not 
-> > convinced it needs one for this feature either.
-> > 
-> > So if that whole chunk is kdb dependent, why not shuffle that into a 
-> > nicely named function and host it somewhere appropriate in 
-> > kernel/debug/kdb/? That function would turn into an empty inline function 
-> > in the !CONFIG_KGDB_KDB case.
-> > 
-> > But ... it's up to Jason really whether he wants to abstract that piece of 
-> > code out, I'm just kibitzing here really.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
+> And no, this still has nothing to do with memory barriers. Every single 
+> RCU user depends on the memory freeing being delayed by RCU, for 
+> example. And again, that's not just reads. It's people taking spinlocks 
+> on things that are RCU-protected etc.
 > 
-> If I moved it to KDB then we would lose the capability to enter KGDB 
-> mode and the gdb_stub functionality.  The #ifdef could have a comment to 
-> this effect?
+> So no, there is no question about this. The only question would be 
+> whether we have some RCU mode that is _buggy_, not whether you need 
+> extra memory barriers. And that is certainly possible.
 
-No, this really suggests that there's something else broken around there.
+Broken RCU modes are not unheard of, but Paul is extremely methodical 
+about testing and reviewing all the details - including formal proof 
+testing methods. There are lots of high-profile, high-frequency RCU users 
+in the kernel that make use of every aspect of RCU semantics and any 
+breakage would affect them as well.
 
-Removing #ifdefs around non-trivial code and architecting it properly 
-really makes things more reviewable, easier to understand, better 
-specified and generally less bug prone. So adding an #ifdef around a pair 
-of printk()s is probably OK - anything that is longer than a line probably 
-deserves abstracted out.
+There are over 2000 RCU critical sections in the kernel today, so the 
+likelyhood of the VFS triggering an unknown bug, without other users 
+breaking already, is fairly low. If it happens it will be fixed like other 
+RCU bugs.
+
+So I really wouldn't worry about it too much. If you don't mind the 
+additional sys_umount() delay then RCU is goodness.
 
 Thanks,
 
