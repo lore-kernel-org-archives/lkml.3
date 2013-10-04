@@ -1,244 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3JDAlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:41:40 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:64644 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104Ab3JDAli (ORCPT
+	id S1754283Ab3JDAly (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:41:54 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:51257 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab3JDAlv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 20:41:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
-	<871u5gqtw3.fsf@xmission.com>
-	<20130826172054.GE27005@ZenIV.linux.org.uk>
-	<20130827172406.GA2664@dztty>
-	<20130828201141.GA21455@dztty>
-	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
-Date: Thu, 3 Oct 2013 17:41:37 -0700
-X-Google-Sender-Auth: D-0UHy4_Ftz65hE0f277RkalwTM
-Message-ID: <CAGXu5jLSXO_MzLtEn_9gdiWmEru+=o1ZnZ8z-m=KZy37Ry4NDQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
-From: Kees Cook <keescook@chromium.org>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Ryan Mallon <rmallon@gmail.com>, George Spelvin <linux@horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Oct 2013 20:41:51 -0400
+Subject: Re: [PATCH 2/2] fs/ext4/namei.c: reducing contention on s_orphan_lock mmutex
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1380728219-60784-2-git-send-email-tmac@hp.com>
+Date: Thu, 3 Oct 2013 18:41:45 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, aswin@hp.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <139DD231-CA27-40C1-BBB5-B66B29640DC0@dilger.ca>
+References: <1380728219-60784-1-git-send-email-tmac@hp.com> <1380728219-60784-2-git-send-email-tmac@hp.com>
+To: T Makphaibulchoke <tmac@hp.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 1:49 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Aug 28, 2013 at 1:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> Cc'ed more people,
->>
->> On Tue, Aug 27, 2013 at 06:24:06PM +0100, Djalal Harouni wrote:
->>> Hi Al,
->>>
->>> On Mon, Aug 26, 2013 at 06:20:55PM +0100, Al Viro wrote:
->>> > On Mon, Aug 26, 2013 at 09:49:48AM -0700, Eric W. Biederman wrote:
->>> >
->>> > > How does changing the permissions to S_IRUSR prevent someone from
->>> > > opening the file before, and reading the file after a suid exec?
->>> > >
->>> > > > This patch restores the old mode which was 0400
->>> > >
->>> > > Which seems to add no security whatsoever and obscure the fact that
->>> > > anyone who cares can read the file so what is the point?
->>> >
->>> > Two words: "security sclerosis".  Both patches NAKed, of course.
->>> These particular tissues "are being hardened", no cure for them
->>>
->>>
->>> More seriously, Al your commit a9712bc12c40c172e393f85 closes the races
->>> during read() ok, but can you please share some light why the permission
->>> mode was changed ?
->>>
->>> 1)
->>> The commit log states that all these files are "rw-r--r--" which was not
->>> correct, they were "r--------" before that commit.
->>>
->>> 2)
->>> The commit log says also:
->>> "if you open a file before the target does suid-root exec, you'll be still
->>> able to access it." so you do the task is tracable check at read()
->>>
->>> But what if you open a file of a privileged target or a target that does
->>> suid-root exec later, and pass the fd to a suid-root exec to read() from
->>> it later, you will still pass that tracable check.
->>>
->>> And currently a non-privileged process can get an fd on all these
->>> /proc/*/stack files even root owned ones.
->>>
->>> So why not restore the old behaviour and block a process from getting an
->>> fd on /proc/*/stack files that belong to other processes?
->>>
->>>
->>> The original thread that added the /proc/*/stack feature:
->>> https://lkml.org/lkml/2008/11/7/109
->>>
->>> They noted that it should be under 0400 permissions
->
-> Yes, this was discussed years ago -- these files must be 0400 _and_
-> perform at-read checks.
->
-> https://lkml.org/lkml/2011/2/10/21
->
-> This is all related to
-> http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-1020
->
-> Which had the following fixes, but broken file access perms in several places:
->
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=a9712bc12c40c172e393f85a9b2ba8db4bf59509
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=2fadaef41283aad7100fa73f01998cddaca25833
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d6f64b89d7ff22ce05896ab4a93a653e8d0b123d
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ec6fd8a4355cda81cd9f06bebc048e83eb514ac7
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ca6b0bf0e086513b9ee5efc0aa5770ecb57778af
->
-> So instead of needing to survive exec, now the file can just be passed as stdin.
->
->>>
->>> So why remove that, or why not restore the old safe behaviour ?
->>>
->>>
->>> Hope to get a response
->>>
->>> Thanks Al
->>
->> Hope this will convince.
->>
->> Please not I'm just trying to help/contribute and get things right.
->> If there is something obvious that I'm missing let me know, will
->> be happy to learn
->>
->>
->> tixxdz@dztty-qemu:~$ id
->> uid=1000(tixxdz) gid=1000(tixxdz)
->> groups=1000(tixxdz),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev)
->>
->> tixxdz@dztty-qemu:~$ ls -lha ./a.out
->> -rwxr-xr-x 1 tixxdz tixxdz 8.0K Aug 28 20:26 ./a.out
->>
->> tixxdz@dztty-qemu:~$ ls -lha /usr/bin/procmail
->> -rwsr-sr-x 1 root mail 88K Apr 25  2010 /usr/bin/procmail
->>
->> (procmail with -d needs setuid())
->>
->> tixxdz@dztty-qemu:~$ for i in $(seq 1 10); do ./a.out /usr/bin/procmail
->> /proc/$i/stack ; done
->
-> Can you include your C file for your a.out? I assume you're opening
-> /proc/$i/stack and duping to stdin for a "procmail -d tixxdz" call,
-> and I can reproduce this with the following python, but I want to be
-> sure I'm seeing the same bug.
->
-> #!/usr/bin/python
-> import sys
-> from subprocess import call
-> call(["/usr/bin/procmail", "-d", sys.argv[2]], stdin=open(sys.argv[1]))
->
->
-> $ ps -ef | grep apache2 | grep root
-> root      3781     1  0 Jul28 ?        00:00:37 /usr/sbin/apache2 -k start
-> $ cat /proc/3781/stack
-> cat: /proc/3781/stack: Operation not permitted
-> $ /tmp/dup-stdin.py /proc/3781/syscall kees
-> $ cat /var/mail/kees
-> 23 0x0 0x0 0x0 0x0 0x7fffa29c9cf0 0x1 0x7fffa29c9d18 0x7f1b76bbd233
->
-> So, local ASLR bypass using a setuid helper.
->
-> One shouldn't be able to open these files in the first place.
 
-BTW, this just came to my attention:
-http://marc.info/?l=linux-kernel&m=138049414321387&w=2
+On 2013-10-02, at 9:36 AM, T Makphaibulchoke wrote:
 
-Same problem, just for /proc/kallsyms. This would benefit from the
-open vs read cred check as well, I think.
+> Instead of using a single per super block mutex, s_orphan_lock, to serialize
+> all orphan list updates, a separate mutex and spinlock are used to
+> protect the on disk and in memory orphan lists respecvitely.
+> 
+> At the same time, a per inode mutex is used to serialize orphan list
+> updates of a single inode.
+> 
+> Signed-off-by: T. Makphaibulchoke <tmac@hp.com>
+> ---
+> fs/ext4/namei.c | 139 ++++++++++++++++++++++++++++++++++++++++----------------
+> 1 file changed, 100 insertions(+), 39 deletions(-)
+> 
+> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+> index 35f55a0..d7d3d0f 100644
+> --- a/fs/ext4/namei.c
+> +++ b/fs/ext4/namei.c
+> @@ -2554,12 +2554,24 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+> 	struct super_block *sb = inode->i_sb;
+> 	struct ext4_iloc iloc;
+> 	int err = 0, rc;
+> +	struct ext4_inode_info *ext4_inode = EXT4_I(inode);
+> +	struct ext4_sb_info *ext4_sb = EXT4_SB(sb);
+> +	struct mutex *inode_orphan_mutex;
+> +	spinlock_t *orphan_lock;
+> +	struct mutex *ondisk_orphan_mutex;
+> +	struct list_head *prev;
+> +	unsigned int next_inum;
+> +	struct inode *next_inode;
 
--Kees
+Stack space in the kernel is not so abundant that all (or any?) of these
+should get their own local variable.
 
->
-> -Kees
->
->>
->> tixxdz@dztty-qemu:~$ cat /var/mail/tixxdz
->> [<ffffffff811b6537>] poll_schedule_timeout+0x57/0xe0
->> [<ffffffff811b70c7>] do_select+0x8b7/0x9a0
->> [<ffffffff811b766c>] core_sys_select+0x4bc/0x4f0
->> [<ffffffff811b7761>] SyS_select+0xc1/0x110
->> [<ffffffff81aef5e9>] system_call_fastpath+0x16/0x1b
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff8108a6e1>] kthreadd+0xb1/0x150
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff8109389e>] smpboot_thread_fn+0x1be/0x220
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff81081610>] worker_thread+0x2e0/0x370
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff81081610>] worker_thread+0x2e0/0x370
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff81081610>] worker_thread+0x2e0/0x370
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff8109389e>] smpboot_thread_fn+0x1be/0x220
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff811020f3>] rcu_gp_kthread+0xe3/0x620
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff811023b4>] rcu_gp_kthread+0x3a4/0x620
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> [<ffffffff8109389e>] smpboot_thread_fn+0x1be/0x220
->> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
->> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
->> [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> You have mail in /var/mail/tixxdz
->>
->>
->> Thanks
->>
->> --
->> Djalal Harouni
->> http://opendz.org
->
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+> 
+> -	if (!EXT4_SB(sb)->s_journal)
+> +	if (ext4_sb->s_journal)
+> 		return 0;
+> 
+> -	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
+> -	if (!list_empty(&EXT4_I(inode)->i_orphan))
+> +	inode_orphan_mutex = &ext4_inode->i_orphan_mutex;
+> +	orphan_lock = &ext4_sb->s_orphan_lock;
+> +	ondisk_orphan_mutex = &ext4_sb->s_ondisk_orphan_lock;
+> +	mutex_lock(inode_orphan_mutex);
+> +	prev = ext4_inode->i_orphan.prev;
+> +	if (prev != &ext4_inode->i_orphan)
+> 		goto out_unlock;
+> 
+> 	/*
+> @@ -2579,17 +2591,28 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+> 	err = ext4_reserve_inode_write(handle, inode, &iloc);
+> 	if (err)
+> 		goto out_unlock;
+> +	mutex_lock(ondisk_orphan_mutex);
+> 	/*
+> 	 * Due to previous errors inode may be already a part of on-disk
+> 	 * orphan list. If so skip on-disk list modification.
+> 	 */
+> 	if (NEXT_ORPHAN(inode) && NEXT_ORPHAN(inode) <=
+> -		(le32_to_cpu(EXT4_SB(sb)->s_es->s_inodes_count)))
+> +		(le32_to_cpu(EXT4_SB(sb)->s_es->s_inodes_count))) {
+> +			mutex_unlock(ondisk_orphan_mutex);
+> 			goto mem_insert;
+> +	}
+> 
+> 	/* Insert this inode at the head of the on-disk orphan list... */
+> -	NEXT_ORPHAN(inode) = le32_to_cpu(EXT4_SB(sb)->s_es->s_last_orphan);
+> -	EXT4_SB(sb)->s_es->s_last_orphan = cpu_to_le32(inode->i_ino);
+> +	next_inum = le32_to_cpu(EXT4_SB(sb)->s_es->s_last_orphan);
+> +	NEXT_ORPHAN(inode) = next_inum;
+> +	next_inode = ilookup(sb, next_inum);
+> +	if (next_inode)
+> +		EXT4_I(next_inode)->i_prev_orphan = inode->i_ino;
+> +	ext4_sb->s_es->s_last_orphan = cpu_to_le32(inode->i_ino);
+> +	ext4_inode->i_prev_orphan = 0;
+> +	mutex_unlock(ondisk_orphan_mutex);
+> +	if (next_inode)
+> +		iput(next_inode);
+> 	err = ext4_handle_dirty_super(handle, sb);
+> 	rc = ext4_mark_iloc_dirty(handle, inode, &iloc);
+> 	if (!err)
+> @@ -2604,14 +2627,17 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+> 	 * This is safe: on error we're going to ignore the orphan list
+> 	 * anyway on the next recovery. */
+> mem_insert:
+> -	if (!err)
+> -		list_add(&EXT4_I(inode)->i_orphan, &EXT4_SB(sb)->s_orphan);
+> +	if (!err) {
+> +		spin_lock(orphan_lock);
+> +		list_add(&ext4_inode->i_orphan, &ext4_sb->s_orphan);
+> +		spin_unlock(orphan_lock);
+> +	}
+> 
+> 	jbd_debug(4, "superblock will point to %lu\n", inode->i_ino);
+> 	jbd_debug(4, "orphan inode %lu will point to %d\n",
+> 			inode->i_ino, NEXT_ORPHAN(inode));
+> out_unlock:
+> -	mutex_unlock(&EXT4_SB(sb)->s_orphan_lock);
+> +	mutex_unlock(inode_orphan_mutex);
+> 	ext4_std_error(inode->i_sb, err);
+> 	return err;
+> }
+> @@ -2624,71 +2650,106 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
+> {
+> 	struct list_head *prev;
+> 	struct ext4_inode_info *ei = EXT4_I(inode);
+> -	struct ext4_sb_info *sbi;
+> +	struct inode *i_next = NULL;
+> +	struct inode *i_prev = NULL;
+> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> 	__u32 ino_next;
+> +	unsigned int ino_prev;
+> 	struct ext4_iloc iloc;
+> 	int err = 0;
+> +	struct mutex *inode_orphan_mutex;
+> +	spinlock_t *orphan_lock;
+> +	struct mutex *ondisk_orphan_mutex;
+
+Same here.
+
+> -	if ((!EXT4_SB(inode->i_sb)->s_journal) &&
+> -	    !(EXT4_SB(inode->i_sb)->s_mount_state & EXT4_ORPHAN_FS))
+> +	if ((!sbi->s_journal) &&
+> +	    !(sbi->s_mount_state & EXT4_ORPHAN_FS))
+> 		return 0;
+> 
+> -	mutex_lock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
+> -	if (list_empty(&ei->i_orphan))
+> -		goto out;
+> -
+> -	ino_next = NEXT_ORPHAN(inode);
+> +	inode_orphan_mutex = &ei->i_orphan_mutex;
+> +	orphan_lock = &sbi->s_orphan_lock;
+> +	ondisk_orphan_mutex = &sbi->s_ondisk_orphan_lock;
+> +	mutex_lock(inode_orphan_mutex);
+> 	prev = ei->i_orphan.prev;
+> -	sbi = EXT4_SB(inode->i_sb);
+> +	if (prev == &ei->i_orphan) {
+> +		mutex_unlock(inode_orphan_mutex);
+> +		return err;
+> +	}
+> 
+> 	jbd_debug(4, "remove inode %lu from orphan list\n", inode->i_ino);
+> 
+> +	spin_lock(orphan_lock);
+> 	list_del_init(&ei->i_orphan);
+> +	spin_unlock(orphan_lock);
+> 
+> 	/* If we're on an error path, we may not have a valid
+> 	 * transaction handle with which to update the orphan list on
+> 	 * disk, but we still need to remove the inode from the linked
+> 	 * list in memory. */
+> -	if (!handle)
+> -		goto out;
+> +	if (!handle) {
+> +		mutex_unlock(inode_orphan_mutex);
+> +		return err;
+> +	}
+> 
+> 	err = ext4_reserve_inode_write(handle, inode, &iloc);
+> -	if (err)
+> +	if (err) {
+> +		mutex_unlock(inode_orphan_mutex);
+> 		goto out_err;
+> +	}
+> 
+> -	if (prev == &sbi->s_orphan) {
+> +	mutex_lock(ondisk_orphan_mutex);
+> +	ino_next = NEXT_ORPHAN(inode);
+> +	if (ino_next > 0) {
+> +		i_next = ilookup(inode->i_sb, ino_next);
+> +		assert(i_next);
+> +	}
+> +	ino_prev = ei->i_prev_orphan;
+> +	if (!ino_prev) {
+> 		jbd_debug(4, "superblock will point to %u\n", ino_next);
+> 		BUFFER_TRACE(sbi->s_sbh, "get_write_access");
+> 		err = ext4_journal_get_write_access(handle, sbi->s_sbh);
+> -		if (err)
+> -			goto out_brelse;
+> -		sbi->s_es->s_last_orphan = cpu_to_le32(ino_next);
+> -		err = ext4_handle_dirty_super(handle, inode->i_sb);
+> +		if (!err) {
+> +			sbi->s_es->s_last_orphan = cpu_to_le32(ino_next);
+> +			if (i_next)
+> +				EXT4_I(i_next)->i_prev_orphan = 0;
+> +		}
+> +		mutex_unlock(ondisk_orphan_mutex);
+> +		if (!err)
+> +			err = ext4_handle_dirty_super(handle, inode->i_sb);
+> 	} else {
+> 		struct ext4_iloc iloc2;
+> -		struct inode *i_prev =
+> -			&list_entry(prev, struct ext4_inode_info, i_orphan)->vfs_inode;
+> -
+> -		jbd_debug(4, "orphan inode %lu will point to %u\n",
+> -			  i_prev->i_ino, ino_next);
+> -		err = ext4_reserve_inode_write(handle, i_prev, &iloc2);
+> -		if (err)
+> -			goto out_brelse;
+> -		NEXT_ORPHAN(i_prev) = ino_next;
+> -		err = ext4_mark_iloc_dirty(handle, i_prev, &iloc2);
+> +		i_prev = ilookup(inode->i_sb, ino_prev);
+> +
+> +		assert(i_prev);
+> +		if (i_prev) {
+> +			jbd_debug(4, "orphan inode %lu will point to %u\n",
+> +				i_prev->i_ino, ino_next);
+> +			err = ext4_reserve_inode_write(handle, i_prev, &iloc2);
+> +		} else
+> +			err = -ENOENT;
+> +		if (!err) {
+> +			NEXT_ORPHAN(i_prev) = ino_next;
+> +			if (i_next)
+> +				EXT4_I(i_next)->i_prev_orphan = ino_prev;
+> +		}
+> +		mutex_unlock(ondisk_orphan_mutex);
+> +		if (i_prev && !err)
+> +			err = ext4_mark_iloc_dirty(handle, i_prev, &iloc2);
+> 	}
+> 	if (err)
+> 		goto out_brelse;
+> 	NEXT_ORPHAN(inode) = 0;
+> +	mutex_unlock(inode_orphan_mutex);
+> 	err = ext4_mark_iloc_dirty(handle, inode, &iloc);
+> -
+> out_err:
+> +	if (i_next)
+> +		iput(i_next);
+> +	if (i_prev)
+> +		iput(i_prev);
+> 	ext4_std_error(inode->i_sb, err);
+> -out:
+> -	mutex_unlock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
+> 	return err;
+> 
+> out_brelse:
+> +	mutex_unlock(inode_orphan_mutex);
+> 	brelse(iloc.bh);
+> 	goto out_err;
+> }
+> -- 
+> 1.7.11.3
+> 
+
+
+Cheers, Andreas
 
 
 
--- 
-Kees Cook
-Chrome OS Security
+
+
