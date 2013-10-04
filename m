@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab3JDSzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 14:55:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53802 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab3JDSzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 14:55:43 -0400
-Date: Fri, 4 Oct 2013 20:55:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf/x86: Clean up cap_user_time* setting
-Message-ID: <20131004185539.GT15690@laptop.programming.kicks-ass.net>
-References: <tip-nmgn0j0muo1r4c94vlfh23xy@git.kernel.org>
- <524F097A.9010506@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524F097A.9010506@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1752810Ab3JDS7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 14:59:06 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:38572
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab3JDS7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 14:59:05 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org, eric@purestorage.com,
+        nab@linux-iscsi.org, linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the basic I/O timeout
+Date: Fri,  4 Oct 2013 12:38:36 -0700
+Message-Id: <1380915516-28720-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 09:31:22PM +0300, Adrian Hunter wrote:
-> On 4/10/2013 8:31 p.m., tip-bot for Peter Zijlstra wrote:
-> >Commit-ID:  d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32
-> >Gitweb:     http://git.kernel.org/tip/d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32
-> >Author:     Peter Zijlstra <peterz@infradead.org>
-> >AuthorDate: Thu, 3 Oct 2013 16:00:14 +0200
-> >Committer:  Ingo Molnar <mingo@kernel.org>
-> >CommitDate: Fri, 4 Oct 2013 09:58:55 +0200
-> >
-> >perf/x86: Clean up cap_user_time* setting
-> >
-> >Currently the cap_user_time_zero capability has different tests than
-> >cap_user_time; even though they expose the exact same data.
-> >
-> >Switch from CONSTANT && NONSTOP to sched_clock_stable to also deal
-> >with multi cabinet machines and drop the tsc_disabled() check.. non of
-> >this will work sanely without tsc anyway.
-> 
-> Unfortunately in the case that TSC is disabled, sched_clock is still
-> reported as stable, which means removing the tsc_disabled() check breaks
-> the capability bit. e.g.
+Rather than having a separate constant for specifying the timeout on FLUSH
+operations, use the basic I/O timeout value that is already configurable
+on a per target basis to derive the FLUSH timeout. Looking at the current
+definitions of these timeout values, the FLUSH operation is supposed to have
+a value that is twice the normal timeout value. This patch preserves this
+relationship while leveraging the flexibility of specifying the I/O timeout.
 
-I'm wanting to hear from the x86 people on why we have this absurd knob
-to begin with; but I'm tempted to simply disable all of perf if you
-touch it.
+I would like to thank Eric Seppanen <eric@purestorage.com> and 
+Nicholas A. Bellinger <nab@linux-iscsi.org> for their help in resolving
+this issue.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/scsi/sd.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index e62d17d..8aff306 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
+ 
+ static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
+ {
+-	rq->timeout = SD_FLUSH_TIMEOUT;
++	rq->timeout *= 2;
+ 	rq->retries = SD_MAX_RETRIES;
+ 	rq->cmd[0] = SYNCHRONIZE_CACHE;
+ 	rq->cmd_len = 10;
+@@ -1433,6 +1433,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ {
+ 	int retries, res;
+ 	struct scsi_device *sdp = sdkp->device;
++	unsigned int timeout = sdp->request_queue->rq_timeout;
+ 	struct scsi_sense_hdr sshdr;
+ 
+ 	if (!scsi_device_online(sdp))
+@@ -1448,7 +1449,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * flush everything.
+ 		 */
+ 		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
+-					     &sshdr, SD_FLUSH_TIMEOUT,
++					     &sshdr, timeout * 2,
+ 					     SD_MAX_RETRIES, NULL, REQ_PM);
+ 		if (res == 0)
+ 			break;
+-- 
+1.7.4.1
+
