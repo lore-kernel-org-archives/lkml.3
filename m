@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3JDHE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 03:04:57 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:34744 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab3JDHE4 (ORCPT
+	id S1751864Ab3JDHSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 03:18:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39479 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3JDHSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 03:04:56 -0400
-X-Originating-IP: 50.43.39.152
-Date: Fri, 4 Oct 2013 00:04:49 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-Message-ID: <20131004070448.GA29335@leaf>
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
- <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
- <20131003105130.GE13318@ZenIV.linux.org.uk>
- <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
- <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
- <20131003232826.GA6604@jtriplet-mobl1>
- <20131004052959.GB5790@linux.vnet.ibm.com>
- <20131004060304.GA28411@leaf>
- <20131004061503.GC5790@linux.vnet.ibm.com>
+	Fri, 4 Oct 2013 03:18:30 -0400
+Date: Fri, 4 Oct 2013 09:18:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131004071814.GS28601@twins.programming.kicks-ass.net>
+References: <20131002150518.675931976@infradead.org>
+ <20131003164117.GD5790@linux.vnet.ibm.com>
+ <20131003184001.GM28601@twins.programming.kicks-ass.net>
+ <20131003184719.GA11996@redhat.com>
+ <20131003192135.GR5790@linux.vnet.ibm.com>
+ <20131003193206.GA17796@redhat.com>
+ <20131003193319.GB17796@redhat.com>
+ <20131003195026.GT5790@linux.vnet.ibm.com>
+ <20131003200002.GA23768@redhat.com>
+ <20131003211009.GA4127@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131004061503.GC5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131003211009.GA4127@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 11:15:03PM -0700, Paul E. McKenney wrote:
-> On Thu, Oct 03, 2013 at 11:03:05PM -0700, Josh Triplett wrote:
-> > On Thu, Oct 03, 2013 at 10:29:59PM -0700, Paul E. McKenney wrote:
-> > > On Thu, Oct 03, 2013 at 04:28:27PM -0700, Josh Triplett wrote:
-> > > > On Thu, Oct 03, 2013 at 01:52:45PM -0700, Linus Torvalds wrote:
-> > > > > On Thu, Oct 3, 2013 at 1:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > > > > >
-> > > > > > The problem is this:
-> > > > > > A = 1, B = 1
-> > > > > > CPU1:
-> > > > > > A = 0
-> > > > > > <full barrier>
-> > > > > > synchronize_rcu()
-> > > > > > read B
-> > > > > >
-> > > > > > CPU2:
-> > > > > > rcu_read_lock()
-> > > > > > B = 0
-> > > > > > read A
-> > > 
-> > > /me scratches his head...
-> > > 
-> > > OK, for CPU2 to see 1 from its read from A, the corresponding RCU
-> > > read-side critical section must have started before CPU1 did A=0.  This
-> > > means that this same RCU read-side critical section must have started
-> > > before CPU1's synchronize_rcu(), which means that it must complete
-> > > before that synchronize_rcu() returns.  Therefore, CPU2's B=0 must
-> > > execute before CPU1's read of B, hence that read of B must return zero.
-> > > 
-> > > Conversely, if CPU1's read from B returns 1, we know that CPU2's
-> > > RCU read-side critical section must not have completed until after
-> > > CPU1's synchronize_rcu() returned, which means that the RCU read-side
-> > > critical section must have started after that synchronize_rcu() started,
-> > > so CPU1's assignment to A must also have already happened.  Therefore,
-> > > CPU2's read from A must return zero.
-> > 
-> > Yeah, that makes sense.
-> > 
-> > I think too much time spent staring at the *implementation* of RCU and
-> > the exciting assumptions it has to make about barriers or memory
-> > operations leaking out of the implementations of the RCU primitives (for
-> > instance, the fun needed to guarantee a memory barrier on all CPUs, or
-> > to safely use non-atomic operations inside RCU itself) makes it entirely
-> > too difficult to look at a perfectly ordinary *use* of RCU primitives
-> > and see the obvious. :)
+On Thu, Oct 03, 2013 at 11:10:09PM +0200, Oleg Nesterov wrote:
+> On 10/03, Oleg Nesterov wrote:
+> >
+> > So unless Peter objects I'll write the changelogs (always nontrivial task),
+> > test, and send these 2 patches + "add ops->barr() / rcu_sync_wait_for_cb"
+> > tomorrow.
 > 
-> I must confess that my first thought upon seeing Al's example was "but
-> of course CPU2's write to B and read from A can be reordered by either
-> the compiler or the CPU!"  I had to look again myself.  ;-)
+> And, can't resist, probably another patch below (incomplete, needs the
+> obvious change in cpu.c and the new trivial __complete_locked() helper).
+> 
+> Hmm. But when I look at wait_for_completion() I think it is buggy. Will
+> try to send the fix tomorrow.
+> 
+> Oleg.
+> 
+> rcusync: introduce rcu_sync_struct->exclusive mode
 
-Exactly.
+What's exclusive to mean? One writer at a time? Why don't use use the
+waitqueue in exclusive mode and use a single wake_up instead of
+wake_up_all()?
 
-- Josh Triplett
