@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3JDTaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:30:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:54061 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754283Ab3JDTaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:30:18 -0400
-Date: Fri, 4 Oct 2013 15:30:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] rcusync: introduce struct rcu_sync_ops
-Message-ID: <20131004153012.19245adb@gandalf.local.home>
-In-Reply-To: <CA+55aFxfbV2AsOUhL318AH8y4BUe2FXFb8aTFuqPqc_2SdV2MA@mail.gmail.com>
-References: <20131004184614.GA17536@redhat.com>
-	<20131004184629.GA17550@redhat.com>
-	<CA+55aFxfbV2AsOUhL318AH8y4BUe2FXFb8aTFuqPqc_2SdV2MA@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754530Ab3JDTbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:31:05 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:33249 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab3JDTbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 15:31:03 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Oct 2013 15:31:03 EDT
+From: Gene Heskett <gheskett@wdtv.com>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: Re: [PATCH v2 3/6] PowerCap: Added to drivers build
+Date: Fri, 4 Oct 2013 15:24:20 -0400
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        gregkh@linuxfoundation.org, len.brown@intel.com, rjw@sisk.pl,
+        arjan@linux.intel.com, jacob.jun.pan@linux.intel.com
+References: <1380904616-17519-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1380904616-17519-4-git-send-email-srinivas.pandruvada@linux.intel.com>
+In-Reply-To: <1380904616-17519-4-git-send-email-srinivas.pandruvada@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Message-Id: <201310041524.20634.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Oct 2013 12:12:25 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Friday 04 October 2013, Srinivas Pandruvada wrote:
+>Added changes to Makefile and Kconfig to include in driver build.
+>
+>Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+>Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+>Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>---
+> drivers/Kconfig  | 2 ++
+> drivers/Makefile | 1 +
+> 2 files changed, 3 insertions(+)
+>
+>diff --git a/drivers/Kconfig b/drivers/Kconfig
+>index aa43b91..969e987 100644
+>--- a/drivers/Kconfig
+>+++ b/drivers/Kconfig
+>@@ -166,4 +166,6 @@ source "drivers/reset/Kconfig"
+>
+> source "drivers/fmc/Kconfig"
+>
+>+source "drivers/powercap/Kconfig"
+>+
+> endmenu
+>diff --git a/drivers/Makefile b/drivers/Makefile
+>index ab93de8..34c1d55 100644
+>--- a/drivers/Makefile
+>+++ b/drivers/Makefile
+>@@ -152,3 +152,4 @@ obj-$(CONFIG_VME_BUS)		+= vme/
+> obj-$(CONFIG_IPACK_BUS)		+= ipack/
+> obj-$(CONFIG_NTB)		+= ntb/
+> obj-$(CONFIG_FMC)		+= fmc/
+>+obj-$(CONFIG_POWERCAP)		+= powercap/
 
+I would object to this whole premise if it is not under the absolute 
+control of the users program. Linuxcnc for instance is intimately married 
+to a parport whose status for writes is absolutely stable from write to 
+write, and whose status may be in some cases, read at sub 20 u-second 
+intervals.  Anything which would imped this, puts the operator of a 50+ ton 
+piece of machinery's life in jeopardy because its status is not readable in 
+as close to real time as possible as it may be required to initiate a stop 
+from some alarm condition before it has moved far enough to injure, maim or 
+kill. 50 thousandths of an inch in further movement while moving a 70 ton 
+milling machines table at 150 inches a minute is not an unreasonable 
+expectation for us.
 
->  - together with using a few inline functions, suddenly the "indirect"
-> jumps through this type descriptor end up actually being nice direct
-> compile-time constants: iow, they get turned into direct jumps.
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
 
-As all the rcu_synchronization() methods (on non UP) are quite
-expensive, I doubt that this optimization is worth anything.
-
-> 
-> Tadaa. You actually get good code generation, and you use *less*
-> dynamic memory since you don't have to have this pointer to the
-> descriptor.
-
-Getting rid of the extra dynamic memory and the pointer business, on the
-other hand, does make your suggestion worth doing.
-
--- Steve
-
+Q: What does the CE in Windows CE stand for?
+A: Caveat Emptor.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
