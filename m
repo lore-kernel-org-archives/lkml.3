@@ -1,121 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3JCX5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 19:57:55 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:39381 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3JCX5x (ORCPT
+	id S1753488Ab3JDALh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:11:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59268 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3JDALg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 19:57:53 -0400
+	Thu, 3 Oct 2013 20:11:36 -0400
+Date: Thu, 3 Oct 2013 17:11:34 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sudeep Dutt <sudeep.dutt@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>, Tejun Heo <tj@kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: Re: Build failure after merge of the char-misc tree
+Message-ID: <20131004001134.GA29624@kroah.com>
+References: <20131003235419.GG27287@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1380844258.1708.6.camel@desktop.site>
-References: <1380765777.1723.5.camel@desktop.site> <524CEADE.8040300@lwfinger.net>
- <1380784395.1672.7.camel@desktop.site> <524DA43B.3080700@lwfinger.net> <1380844258.1708.6.camel@desktop.site>
-From: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Date: Thu, 3 Oct 2013 16:57:33 -0700
-Message-ID: <CAA6KcBBPEc4abvJthxv_LzwBGWwiwE=2Tmamndhgq2B_3GHfRA@mail.gmail.com>
-Subject: Re: [usb-storage] Re: [opensuse-factory] huawei usb dongle e173 not
- working on tumbleweed
-To: Ron Brickle <rb19495@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        USB Mass Storage on Linux 
-	<usb-storage@lists.one-eyed-alien.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131003235419.GG27287@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ron --
+On Fri, Oct 04, 2013 at 12:54:19AM +0100, Mark Brown wrote:
+> After merging the char-misc tree into -next an x86 allmodconfig build fails
+> with:
+> 
+> drivers/misc/mic/host/mic_main.c: In function ‘mic_probe’:
+> drivers/misc/mic/host/mic_main.c:320:3: error: too many arguments to function ‘sysfs_get_dirent’
+>    NULL, "state");
+>    ^
+> In file included from include/linux/kobject.h:21:0,
+>                  from include/linux/module.h:16,
+>                  from drivers/misc/mic/host/mic_main.c:26:
+> include/linux/sysfs.h:465:1: note: declared here
+>  sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char
+> *name)
+>  ^
+> make[4]: *** [drivers/misc/mic/host/mic_main.o] Error 1
+> 
+> caused by an interaction between the addition of the Intel MIC host
+> driver and commit 388975cccaaf1 (sysfs: clean up sysfs_get_dirent())
+> from the driver-current tree.
+> 
+> I've applied the patch below and can carry it for the time being.
+> 
+> From abbabb4580f45accf74f95aed6fe35b26ae8d009 Mon Sep 17 00:00:00 2001
+> From: Mark Brown <broonie@linaro.org>
+> Date: Fri, 4 Oct 2013 00:53:01 +0100
+> Subject: [PATCH] misc: mic: Update for sysfs_get_dirent() cleanups
+> 
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> ---
+>  drivers/misc/mic/host/mic_main.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-We're going to need the version numbers of both the kernel and the
-usb_modeswitch utility from both openSUSE 12.3 and Tumbleweed if we're
-going to make any sense of the situation.
+That patch looks great, thanks.
 
-Matt
-
-On Thu, Oct 3, 2013 at 4:50 PM, Ron Brickle <rb19495@gmail.com> wrote:
-> On Thu, 2013-10-03 at 12:07 -0500, Larry Finger wrote:
->> On 10/03/2013 02:13 AM, Ron Brickle wrote:
->> > On Wed, 2013-10-02 at 22:56 -0500, Larry Finger wrote:
->> >> On 10/02/2013 09:02 PM, Ron Brickle wrote:
->> >>> Hi I have been trying to get my huawei usb dongle working on Tumbleweed
->> >>> but to no avail so in desperation I am sending  this email. it works
->> >>> fine on 12.3 opensuse  so hopefully you can fix this problem I tried to
->> >>> get it working from help from the tumbleweed forum it is recognized in
->> >>> lsusb but doesn show in network-manager
->> >>> regards and thanks Ron Brickle
->> >>
->> >> Firmware?
->> >>
->> >> A device present in lsusb only means that it is connected to the USB system. For
->> >> NM to have it, any firmware must be present, the wifi-enable switch for *ALL*
->> >> devices must be on, the device must be recognized by some driver, and that
->> >> driver must load and initialize correctly. From the information you provided, it
->> >> is impossible to tell where it is failing.
->> >>
->> >> Larry
->> >>
->> >> Hi i just put this in terminal as normal user then as root
->> >
->> > rpm -ql usb_modeswitch-data|grep 1446
->> > it returns no answer and it should be this I am told if so the driver
->> > isnt installed for this usb modem TargetVendor=  0x12d1
->> > TargetProductList="1001,1406,140b,140c,1412,141b,1433,1436,14ac,1506"
->> >
->> > MessageContent="55534243123456780000000000000011062000000100000000000000000000"
->> > is this any help
->> > regards ron
->> > lsusb gives thisron@desktop:~> rpm -ql usb_modeswitch-data|grep 1446
->> > ron@desktop:~> lsusb
->> > Bus 001 Device 002: ID 8087:8008 Intel Corp.
->> > Bus 002 Device 002: ID 8087:8000 Intel Corp.
->> > Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
->> > Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
->> > Bus 001 Device 003: ID 046d:0809 Logitech, Inc. Webcam Pro 9000
->> > Bus 002 Device 003: ID 174c:2074 ASMedia Technology Inc.
->> > Bus 002 Device 004: ID 2109:2812
->> > Bus 002 Device 007: ID 12d1:1446 Huawei Technologies Co., Ltd.
->> > E1552/E1800/E173 (HSPA modem)
->> > Bus 002 Device 005: ID 046d:c526 Logitech, Inc. Nano Receiver
->> > Bus 002 Device 006: ID 046d:c52b Logitech, Inc. Unifying Receiver
->> > and usb-devices gives this
->> >   Bus=02 Lev=03 Prnt=04 Port=00 Cnt=01 Dev#=  7 Spd=480 MxCh= 0
->> > D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
->> > P:  Vendor=12d1 ProdID=1446 Rev=00.00
->> > S:  Manufacturer=HUAWEI Technology
->> > S:  Product=HUAWEI Mobile
->> > C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=500mA
->> > I:  If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50
->> > Driver=usb-storage
->> > I:  If#= 1 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50
->> > Driver=usb-storage
->> >   thanks for your reply regards ron
->>
->>  From the usb-devices output, the device obviously needs to be mode switched.
->>
->> There may be a regression from the openSUSE 12.3 kernel (probably 3.7) to the
->> one used by Tumbleweed. The usb-storage drivers are maintinaed by Matthew Dharm
->> <mdharm-usb@one-eyed-alien.net>. I suggest you contact him with a Cc to
->> linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net, and
->> linux-kernel@vger.kernel.org and and state your problem, that it worked in
->> kernel 3.7, but fails in the kernel 3.XX with the XX replaced by the version
->> returned by 'uname -r'.
->>
->> Larry
->>
->>
->
->
-> --
-> You received this message because you are subscribed to the Google Groups "USB Mass Storage on Linux" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to usb-storage+unsubscribe@lists.one-eyed-alien.net.
-> To post to this group, send email to usb-storage@lists.one-eyed-alien.net.
-> Visit this group at http://groups.google.com/a/lists.one-eyed-alien.net/group/usb-storage/.
-> For more options, visit https://groups.google.com/a/lists.one-eyed-alien.net/groups/opt_out.
-
-
-
--- 
-Matthew Dharm
-Maintainer, USB Mass Storage driver for Linux
+greg k-h
