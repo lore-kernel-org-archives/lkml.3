@@ -1,87 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab3JDWAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 18:00:34 -0400
-Received: from mout.gmx.net ([212.227.17.22]:56820 "EHLO mout.gmx.net"
+	id S1754199Ab3JDWCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 18:02:39 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55824 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab3JDWAT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 18:00:19 -0400
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net, Ashley Lai <ashley@ashleylai.com>
-Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs into tpm-sysfs.c
-Date: Sat, 5 Oct 2013 00:02:09 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
-Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Richard Maciel Costa <richardm@br.ibm.com>,
-        "trousers-tech@lists.sourceforge.net" 
-	<trousers-tech@lists.sourceforge.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-References: <52408E5D.4020904@tycho.nsa.gov> <20131004170803.GB6955@obsidianresearch.com> <524F1450.6060406@linux.vnet.ibm.com>
-In-Reply-To: <524F1450.6060406@linux.vnet.ibm.com>
+	id S1753921Ab3JDWCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 18:02:37 -0400
+Date: Fri, 4 Oct 2013 15:02:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131004220232.GA8293@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131003190830.GA18672@redhat.com>
+ <20131003194226.GO28601@twins.programming.kicks-ass.net>
+ <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
+ <20131004165044.GV28601@twins.programming.kicks-ass.net>
+ <20131004170954.GK5790@linux.vnet.ibm.com>
+ <20131004185239.GS15690@laptop.programming.kicks-ass.net>
+ <20131004212506.GM5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201310050002.09320.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:sXQopfHkgxLp+ME8w8kthiP9BRAnuhsgozF2Jc7kLNqHEnw6mZY
- nouuSNnJmPwz8FsxusuX2xT14XCCiYHyT6JJzPHuNVjDCo9BdFrGc8ZK0Xrz40wL9uVkBVF
- aBMq1Rof8uGIQO/HhJN9pzYHKfung9O/jhuFmtehFiLIzmps+JOSeWHRTuFW69gIJP3yNQi
- 5608N9EL7sY+1TflrC+Zg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004212506.GM5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100422-5806-0000-0000-000022F60975
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 4. Oktober 2013, 21:17:36 schrieb Stefan Berger:
-> On 10/04/2013 01:08 PM, Jason Gunthorpe wrote:
-> > On Mon, Sep 30, 2013 at 05:09:51PM -0500, Joel Schopp wrote:
-> >>> So far, nobody I have talked to has offered any strong opinions on
-> >>> what locality should be used or how it should be set. I think finding
-> >>> a developer of trousers may be the most useful to talk about how the
-> >>> ioctl portion of this would need to be set up - if someone is actually
-> >>> needed.
-> >> 
-> >> I am a TrouSerS developer and am ccing Richard, another TrouSerS
-> >> developer, and ccing the trousers-tech list.  It would be good if you
-> >> could elaborate on the question and context for those not following the
-> >> entire thread, myself included.
+On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
+> On Fri, Oct 04, 2013 at 08:52:39PM +0200, Peter Zijlstra wrote:
+> > On Fri, Oct 04, 2013 at 10:09:54AM -0700, Paul E. McKenney wrote:
+> > > On Fri, Oct 04, 2013 at 06:50:44PM +0200, Peter Zijlstra wrote:
+> > > > On Fri, Oct 04, 2013 at 09:03:52AM -0700, Paul E. McKenney wrote:
+> > > > > The problem exists, but NOCB made it much more probable.  With non-NOCB
+> > > > > kernels, an irq-disabled call_rcu() invocation does a wake_up() only if
+> > > > > there are more than 10,000 callbacks stacked up on the CPU.  With a NOCB
+> > > > > kernel, the wake_up() happens on the first callback.
+> > > > 
+> > > > Oh I see.. so I was hoping this was some NOCB crackbrained damage we
+> > > > could still 'fix'.
+> > > > 
+> > > > And that wakeup is because we moved grace-period advancing into
+> > > > kthreads, right?
+> > > 
+> > > Yep, in earlier kernels we would instead be doing raise_softirq().
+> > > Which would instead wake up ksoftirqd, if I am reading the code
+> > > correctly -- spin_lock_irq() does not affect preempt_count.
 > > 
-> > Two questions:
+> > I suspect you got lost in the indirection fest; but have a look at
+> > __raw_spin_lock_irqsave(). It does:
 > > 
-> > Is userspace interested in using the TPM Locality feature, and if so
-> > is there any thoughts on what the interface should be?
+> > 	local_irq_save();
+> > 	preempt_disable();
 > 
-> In terms of interface it should probably be an ioctl so that whoever
-> holds the fd to /dev/tpm0 gets to choose the locality.
+> ETOOMANYLEVELS.  ;-)
 > 
-> Locality allows the resetting of certain PCRs. See section 3.7 in
+> OK, then I should be able to just do raise_softirq() in this
+> situation.  As long as irqs were disabled due to something other than
+> local_irq_disable(), but I would get around that by doing an explicit
+> preempt_disable() in call_rcu() or friends.
 > 
-> http://www.trustedcomputinggroup.org/files/static_page_files/8E45D739-1A4B-> B294-D06274E7047730FD/TCG_PCClientTPMInterfaceSpecification_TIS__1-3_27_032
-> 12013.pdf
+> The real-time guys won't like that much -- they are trying to get rid
+> of softirq -- but hopefully we can come up with something better later.
+> Or maybe they have other tricks available to them.
+
+But preempt_disable() won't set anything that in_interrupt() sees...
+And it is a no-op in any case on CONFIG_PREEMPT=n kernels.
+
+> > > > Probably; so the regular no-NOCB would be easy to work around by
+> > > > providing me a call_rcu variant that never does the wakeup.
+> > > 
+> > > Well, if we can safely, sanely, and reliably defer the wakeup, there is
+> > > no reason not to make plain old call_rcu() do what you need.
+> > 
+> > Agreed.
+> > 
+> > > If there
+> > > is no such way to defer the wakeup, then I don't see how to make that
+> > > variant.
+> > 
+> > Wouldn't it be a simple matter of making __call_rcu_core() return early,
+> > just like it does for irqs_disabled_flags()?
 > 
-> Locality 4 can only be used by the hardware (section 2.2).
+> Given that raise_softirq() works, it just might be.  Except that I would
+> need to leave an indication that there are deferred callbacks and do
+> an invoke_rcu_core().  Plus make __rcu_process_callbacks() check this
+> indication and do the wakeup.
+> 
+> I should be able to use in_interrupt() despite its inaccuracy near
+> the beginnings and ends of interrupt handlers because all I really
+> care about is whether one of the scheduler or perf locks might be
+> held, and they will cause in_interrupt() to return true regardless.
 
+So I can't use in_interrupt(), because it doesn't see the bits that
+preempt_disable() sets, even in kernels where preempt_disable isn't
+a no-op.
 
-Afaik Locality 3 (and sometimes 2) is often also "locked down"/filtered after 
-the bios phase.
+I can instead use irqs_disabled_flags(), but then I am back to not
+seeing how raise_softirq() is safe in non-irq-handler contexts where
+the scheduler locks might be held.  The check of in_interrupt() only
+looks at HARDIRQ_MASK, SOFTIRQ_MASK, and NMI_MASK, so it won't see
+local_irq_disable() or spin_lock_irqsave() from process context.
 
+This puts me back into the position of having to check for deferred
+wakeups in many locations.
 
->From 
-http://www.intel.com/content/dam/www/public/us/en/documents/guides/intel-txt-software-development-guide.pdf
+Back to the drawing board...
 
-"The storage spaces accessible within a TPM device are grouped by a locality 
-attribute and are a separate set of address ranges from the Intel TXT Public 
-and Private spaces.
-The following localities are defined:
-Locality 0 : Non trusted and legacy TPM operation
-Locality 1 : An environment for use by the Trusted Operating System
-Locality 2 : Trusted OS
-Locality 3 : Authenticated Code Module
-Locality 4 : Intel TXT hardware use only"
+							Thanx, Paul
 
-(I know that's "only" Intel's view and not a TCG spec)
+> > > > NOCB might be a little more difficult; depending on the reason why it
+> > > > needs to do this wakeup on every single invocation; that seems
+> > > > particularly expensive.
+> > > 
+> > > Not on every single invocation, just on those invocations where the list
+> > > is initially empty.  So the first call_rcu() on a CPU whose rcuo kthread
+> > > is sleeping will do a wakeup, but subsequent call_rcu()s will just queue,
+> > > at least until rcuo goes to sleep again.  Which takes awhile, since it
+> > > has to wait for a grace period before invoking that first RCU callback.
+> > 
+> > So I've not kept up with RCU the last year or so due to circumstance, so
+> > please bear with me ( http://www.youtube.com/watch?v=4sxtHODemi0 ).
+> 
+> I would, but the people sitting near me might be disturbed.  ;-)
+> 
+> >                                                                     Why
+> > do we still have a per-cpu kthread in nocb mode? The idea is that we do
+> > not disturb the cpu, right? So I suppose these kthreads get to run on
+> > another cpu.
+> 
+> Yep, the idea is that usermode figures out where to run them.  Even if
+> usermode doesn't do that, this has the effect of getting them to be
+> more out of the way of real-time tasks.
+> 
+> > Since its running on another cpu; we get into atomic and memory barriers
+> > anyway; so why not keep the logic the same as no-nocb but have another
+> > cpu check our nocb cpu's state.
+> 
+> You can do that today by setting rcu_nocb_poll, but that results in
+> frequent polling wakeups even when the system is completely idle, which
+> is out of the question for the battery-powered embedded guys.
+> 
+> > That is; I'm fumbling to understand how all this works and needs to be
+> > different.
+> 
+> Here is an untested patch.  Thoughts?
+> 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index a33a24d10611..1a0a14349b29 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -2310,6 +2310,9 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+>  	/* If there are callbacks ready, invoke them. */
+>  	if (cpu_has_callbacks_ready_to_invoke(rdp))
+>  		invoke_rcu_callbacks(rsp, rdp);
+> +
+> +	/* Do any needed deferred wakeups of rcuo kthreads. */
+> +	do_nocb_deferred_wakeup(rdp);
+>  }
+>  
+>  /*
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index 8e34d8674a4e..c20096cf8206 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -335,6 +335,7 @@ struct rcu_data {
+>  	int nocb_p_count_lazy;		/*  (approximate). */
+>  	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
+>  	struct task_struct *nocb_kthread;
+> +	bool nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
+>  #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+>  
+>  	/* 8) RCU CPU stall data. */
+> @@ -553,6 +554,7 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+>  			    bool lazy);
+>  static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+>  				      struct rcu_data *rdp);
+> +static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
+>  static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+>  static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+>  static void rcu_kick_nohz_cpu(int cpu);
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 747df70a4d64..7f54fb25a036 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -2125,9 +2125,17 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+>  	}
+>  	len = atomic_long_read(&rdp->nocb_q_count);
+>  	if (old_rhpp == &rdp->nocb_head) {
+> -		wake_up(&rdp->nocb_wq); /* ... only if queue was empty ... */
+> +		if (!in_interrupt()) {
+> +			wake_up(&rdp->nocb_wq); /* ... if queue was empty ... */
+> +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> +					    TPS("WakeEmpty"));
+> +		} else {
+> +			rdp->nocb_defer_wakeup = true;
+> +			invoke_rcu_core();
+> +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> +					    TPS("WakeEmptyIsDeferred"));
+> +		}
+>  		rdp->qlen_last_fqs_check = 0;
+> -		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeEmpty"));
+>  	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
+>  		wake_up_process(t); /* ... or if many callbacks queued. */
+>  		rdp->qlen_last_fqs_check = LONG_MAX / 2;
+> @@ -2314,6 +2322,16 @@ static int rcu_nocb_kthread(void *arg)
+>  	return 0;
+>  }
+>  
+> +/* Do a deferred wakeup of rcu_nocb_kthread(). */
+> +static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
+> +{
+> +	if (!ACCESS_ONCE(rdp->nocb_defer_wakeup))
+> +		return;
+> +	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
+> +	wake_up(&rdp->nocb_wq);
+> +	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
+> +}
+> +
+>  /* Initialize per-rcu_data variables for no-CBs CPUs. */
+>  static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+>  {
+> @@ -2384,6 +2402,10 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+>  {
+>  }
+>  
+> +static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
+> +{
+> +}
+> +
+>  static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+>  {
+>  }
 
-Thanks,
-Peter
