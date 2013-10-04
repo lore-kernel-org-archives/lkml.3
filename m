@@ -1,52 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab3JDTZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 15:25:42 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:48683 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3JDTZk (ORCPT
+	id S1753635Ab3JDT1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 15:27:18 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:50539 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab3JDT1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 15:25:40 -0400
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <mgalbraith@suse.de>, tomk@rgmadvisors.com,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH] sched/rt: Remove redundant nr_cpus_allowed test
-Date: Fri,  4 Oct 2013 14:24:53 -0500
-Message-Id: <1380914693-24634-1-git-send-email-shawn.bohrer@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Fri, 4 Oct 2013 15:27:16 -0400
+Date: Fri, 4 Oct 2013 20:27:12 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131004192712.GA4334@dztty>
+References: <20131003192926.GB2390@dztty>
+ <CALCETrVDqBAcdJDFihzTZ23SJBmP5jmHfqqXyTqre38t8xn7Tg@mail.gmail.com>
+ <20131003201332.GA3500@dztty>
+ <CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
+ <20131004085911.GA2157@dztty>
+ <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+ <20131004182353.GA2600@dztty>
+ <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty>
+ <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+On Fri, Oct 04, 2013 at 12:16:26PM -0700, Andy Lutomirski wrote:
+> On Fri, Oct 4, 2013 at 12:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Fri, Oct 04, 2013 at 07:34:08PM +0100, Andy Lutomirski wrote:
+> >> On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
+> >> >> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> >> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
+> > [...]
+> >> Sorry, I described the obviously broken scenario incorrectly.  Your
+> >> patch breaks (in the absence of things like selinux) if a exec
+> >> something setuid root.
+> >>
+> >> [...]
+> >>
+> >> >
+> >> > I did the check in the proc_same_open_cred() function:
+> >> >  return (uid_eq(fcred->uid, cred->uid) &&
+> >> >          gid_eq(fcred->gid, cred->gid) &&
+> >> >          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
+> >>
+> >> Which has nothing to do with anything.  If that check fails, you're
+> >> just going on to a different, WRONG check/.
+> >>
+> >> >
+> >> > Check if this is the same uid/gid and the capabilities superset!
+> >> >
+> >> > But in the proc_allow_access() the capabilities superset is missing.
+> >> >
+> >> >
+> >> > So to fix it:
+> >> > 1) if proc_same_open_cred() detects that cred have changed between
+> >> > ->open() and ->read() then abort, return zero, the ->read(),write()...
+> >>
+> >> IMO yuck.
+> >>
+> >> >
+> >> >
+> >> > 2) Improve the proc_allow_access() check by:
+> >> >    if this is the same user namespace then check uid/gid of f_cred on
+> >> >    target cred task, and the capabilities superset:
+> >> >    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
+> >> >
+> >> >    If it fails let security_capable() or file_ns_capable() do its magic.
+> >> >
+> >>
+> >> NAK.  You need to actually call the LSM.  What if the reason to fail
+> >> the request isn't that the writer gained capabilities -- what if the
+> >> writer's selinux label changed?
+> > Sorry I can't follow you here! Can you be more explicit please?
+> >
+> > For me we are already doing this during ptrace_may_access() on each
+> > syscall, which will call LSM to inspect the privileges on each ->open(),
+> > ->write()... So LSM hooks are already called. If you want to have more
+> > LSM hooks, then perhaps that's another problem?
+> 
+> Can you show me where, in your code, LSMs are asked whether the
+> process calling read() is permitted to ptrace the process that the
+> proc file points at?
+Yes.
+[PATCH v2 9/9] procfs: improve permission checks on /proc/*/syscall
 
-In 76854c7e8f3f4172fef091e78d88b3b751463ac6 "sched: Use
-rt.nr_cpus_allowed to recover select_task_rq() cycles" an optimization
-was added to select_task_rq_rt() that immediately returns when
-p->nr_cpus_allowed == 1 at the beginning of the function.  This makes
-the latter p->nr_cpus_allowed > 1 check redundant and can be removed.
+->read()
+  ->syscall_read()
+    ->lock_trace()
+      ->ptrace_may_access()
+        ->__ptrace_may_access()
+	  ->security_ptrace_access_check()
+	    ->yama_ptrace_access_check()
+	    ->security_ops->ptrace_access_check()
 
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
----
- kernel/sched/rt.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..ceebfba 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1213,8 +1213,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	 */
- 	if (curr && unlikely(rt_task(curr)) &&
- 	    (curr->nr_cpus_allowed < 2 ||
--	     curr->prio <= p->prio) &&
--	    (p->nr_cpus_allowed > 1)) {
-+	     curr->prio <= p->prio)) {
- 		int target = find_lowest_rq(p);
- 
- 		if (target != -1)
+And also for patch:
+[PATCH v2 8/9] procfs: improve permission checks on /proc/*/stack
+
+And during ->open() and ->read()
+
+
+So sorry Andy, I don't follow what you are describing.
+
+> --Andy
+
 -- 
-1.8.1.4
-
+Djalal Harouni
+http://opendz.org
