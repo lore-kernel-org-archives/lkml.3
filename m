@@ -1,189 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab3JDOdy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 10:33:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50067 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754650Ab3JDOdv (ORCPT
+	id S1754961Ab3JDOeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 10:34:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42613 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab3JDOet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 10:33:51 -0400
-Date: Fri, 4 Oct 2013 15:33:48 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Mark A. Greer" <mgreer@animalcreek.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/9] ARM: dts: Add AES data and documentation for
- AM33XX
-Message-ID: <20131004143348.GJ6999@e106331-lin.cambridge.arm.com>
-References: <1380553986-15910-1-git-send-email-joelf@ti.com>
- <1380553986-15910-5-git-send-email-joelf@ti.com>
+	Fri, 4 Oct 2013 10:34:49 -0400
+Date: Fri, 4 Oct 2013 15:34:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131004143440.GO27287@sirena.org.uk>
+References: <20131004010230.GI27287@sirena.org.uk>
+ <524E50DB.3060707@roeck-us.net>
+ <CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>
+ <524EC658.90706@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eUJndGal4TJgqj0h"
 Content-Disposition: inline
-In-Reply-To: <1380553986-15910-5-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <524EC658.90706@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Oct 3
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 04:13:01PM +0100, Joel Fernandes wrote:
-> From: "Mark A. Greer" <mgreer@animalcreek.com>
-> 
-> Add the generic AM33XX AES module's device tree data and
-> enable it for the am335x-evm, am335x-evmsk, and am335x-bone
-> platforms.  Also add Documentation file describing the data
-> for the AES module.
-> 
-> [joelf@ti.com: Dropped interrupt-parent propert]
-> 
-> CC: Paul Walmsley <paul@pwsan.com>
-> Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
-> ---
->  .../devicetree/bindings/crypto/omap-aes.txt        | 34 ++++++++++++++++++++++
->  arch/arm/boot/dts/am335x-bone.dts                  |  4 +++
->  arch/arm/boot/dts/am335x-evm.dts                   |  4 +++
->  arch/arm/boot/dts/am335x-evmsk.dts                 |  4 +++
->  arch/arm/boot/dts/am33xx.dtsi                      | 10 +++++++
->  5 files changed, 56 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/crypto/omap-aes.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/crypto/omap-aes.txt b/Documentation/devicetree/bindings/crypto/omap-aes.txt
-> new file mode 100644
-> index 0000000..4bb1e27
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/crypto/omap-aes.txt
-> @@ -0,0 +1,34 @@
-> +OMAP SoC AES crypto Module
-> +
-> +Required properties:
-> +
-> +- compatible : Should contain entries for this and backward compatible
-> +  AES versions:
-> +  - "ti,omap2-aes" for OMAP2.
-> +  - "ti,omap3-aes" for OMAP3.
-> +  - "ti,omap4-aes" for OMAP4 and AM33XX.
-> +  Note that the OMAP2 and 3 versions are compatible (OMAP3 supports
-> +  more algorithms) but they are incompatible with OMAP4.
-> +- ti,hwmods: Name of the hwmod associated with the AES odule
-> +- reg : Offset and length of the register set for the module
-> +- interrupt-parent : the phandle for the interrupt controller that
-> +  services interrupts for this module.
-> +- interrupts : the interrupt number for the AES odule.
 
-Similar comments to the SHAM module here:
+--eUJndGal4TJgqj0h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-* s/interrupt number/interrupt-specifier/
-* Drop interrupt-parent.
-* s/AES odule/AES module/
+On Fri, Oct 04, 2013 at 06:44:56AM -0700, Guenter Roeck wrote:
 
-> +
-> +Optional properties:
-> +- dmas: DMA specifier for tx and rx dma. See the DMA client binding,
-> +	Documentation/devicetree/bindings/dma/dma.txt
+> Great summaries. Do you have a single builder, or several builders and
+> collect the results ? Either case, any chance sharing the buildbot scripts ?
 
-s/DMA specifier/DMA specifiers/
+There's a repo at:
 
-> +- dma-names: DMA request names. Should be '"tx", "rx"' if dma is present.
+  git://git.linaro.org/people/khilman/build-scripts.git
 
-Nit: I'd prefer 'Should include "tx" and "rx" if present' -- I hope the
-driver's requesting these by name rather than relying on a specific
-ordering (it makes future expansion and optional components far easier
-to handle sanely).
+(Olof and Kevin have been collaborating on them).
 
-> +
-> +Example:
-> +	/* AM335x */
-> +	aes: aes@53500000 {
-> +		compatible = "ti,omap4-aes";
-> +		ti,hwmods = "aes";
-> +		reg = <0x53500000 0xa0>;
-> +		interrupt-parent = <&intc>;
-> +		interrupts = <102>;
-> +		dmas = <&edma 6
-> +			&edma 5>;
-> +		dma-names = "tx", "rx";
-> +	};
+--eUJndGal4TJgqj0h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Minor nit, but for consistency could you bracket the DMAs individually:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-		dmas = <&edma 6>,
-		       <&edma 5>;
+iQIcBAEBAgAGBQJSTtH9AAoJELSic+t+oim9a18P/RhcKmbkhbzQ0ie8oh4wkh/H
+XJM9DA8+VGkukp+kpWJkAUcgvINw20uztHxHWF6Xvz7NqyZFN0rnsSyatC16vhDk
+IxsS480kIHS81uUfA44nNoM1w1loc1c1n+RrP8K60vX7KzAyC+NBOvlA7/d6cRV1
+ad7R7xqwZcEKARLKKMVMXCW7di3cx2sDDNRWHBB6uSVrv2BgMLogqzcxjCaoFTLK
+OYe1yE3328JaIJcAEMaZZiQcUGO6J4dllAoplnEqAuzSrEXQRZmYcEgvWKltM3h6
+TiU+jGVczk7oZZ7pUh8llJoJwW2KP9ZdPGe6Yvd9x6VJ6yCqHDnK8sMQxzA6Y3lJ
+rAEZvvlXenx2dkKdMM8CGVG8X7Ic7+yjVZsMWht7rIV/4iuG2x49HUV1zBJB5VOi
+/LKfT7PGlgzaaw6VqLa81bSm/9Uj64i/rEtjZg3B2nZj8mtT3ZDau1D4GxL9ftIc
+4ulMe5TgJyJV8La7YnKaQ6IY8Wvf8aB2mvzMJgTaramnA20TmmeTINGu1MWPbDr7
+R9OJPCn8piz5dm93rBAuRaodaxePOqKDfnkcFsaCLXNXqcrKKfuKGUOKNrSuI2c/
+lBWrTlfGgom6T7u/al2ofrC0lzBXWs8yMr3fFmkdJk0MGVRhCkZqtVr9dWj4o1rR
+rGWONTXQQHtoPNqVii8n
+=mffX
+-----END PGP SIGNATURE-----
 
-> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> index 8a9802e..94ee427 100644
-> --- a/arch/arm/boot/dts/am335x-bone.dts
-> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> @@ -23,3 +23,7 @@
->  &sham {
->  	status = "okay";
->  };
-> +
-> +&aes {
-> +	status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-> index d59e51c..86463fa 100644
-> --- a/arch/arm/boot/dts/am335x-evm.dts
-> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> @@ -526,3 +526,7 @@
->  &sham {
->  	status = "okay";
->  };
-> +
-> +&aes {
-> +	status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
-> index d45a330..f577e65 100644
-> --- a/arch/arm/boot/dts/am335x-evmsk.dts
-> +++ b/arch/arm/boot/dts/am335x-evmsk.dts
-> @@ -428,3 +428,7 @@
->  &sham {
->  	status = "okay";
->  };
-> +
-> +&aes {
-> +	status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 299710b..0daa1b2 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -719,5 +719,15 @@
->  			dmas = <&edma 36>;
->  			dma-names = "rx";
->  		};
-> +
-> +		aes: aes@53500000 {
-> +			compatible = "ti,omap4-aes";
-> +			ti,hwmods = "aes";
-> +			reg = <0x53500000 0xa0>;
-> +			interrupts = <102>;
-> +			dmas = <&edma 6
-> +				&edma 5>;
-
-Bracketing here too, please.
-
-Cheers,
-Mark.
-
-> +			dma-names = "tx", "rx";
-> +		};
->  	};
->  };
-> -- 
-> 1.8.1.2
-> 
-> 
+--eUJndGal4TJgqj0h--
