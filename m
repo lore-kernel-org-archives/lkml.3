@@ -1,160 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab3JDVld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 17:41:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30818 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753100Ab3JDVjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 17:39:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1035,1371106800"; 
-   d="scan'208";a="388081443"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, bp@suse.de
-Subject: [PATCH 1/6] perf, x86, amd: Move __get_ibs_caps into common amd CPU file
-Date: Fri,  4 Oct 2013 14:39:43 -0700
-Message-Id: <1380922788-23112-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
-References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
+	id S1754843Ab3JDVms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 17:42:48 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:42319 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3JDVmq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 17:42:46 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "eric@purestorage.com" <eric@purestorage.com>,
+        "nab@linux-iscsi.org" <nab@linux-iscsi.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the
+ basic I/O timeout
+Thread-Topic: [PATCH 1/1] Drivers: scsi: Derive the FLUSH_TIMEOUT from the
+ basic I/O timeout
+Thread-Index: AQHOwTQXtrhMaZFXTEu/YravllNS3JnliCkA
+Date: Fri, 4 Oct 2013 21:42:24 +0000
+Message-ID: <1380922944.3868.8.camel@dabdike.int.hansenpartnership.com>
+References: <1380915516-28720-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1380915516-28720-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.17.213.192]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <3571843CB1EE8A4D8AE3BD839A0DDA3A@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, 2013-10-04 at 12:38 -0700, K. Y. Srinivasan wrote:
+> Rather than having a separate constant for specifying the timeout on FLUSH
+> operations, use the basic I/O timeout value that is already configurable
+> on a per target basis to derive the FLUSH timeout. Looking at the current
+> definitions of these timeout values, the FLUSH operation is supposed to have
+> a value that is twice the normal timeout value. This patch preserves this
+> relationship while leveraging the flexibility of specifying the I/O timeout.
+> 
+> I would like to thank Eric Seppanen <eric@purestorage.com> and 
+> Nicholas A. Bellinger <nab@linux-iscsi.org> for their help in resolving
+> this issue.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/scsi/sd.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index e62d17d..8aff306 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
+>  
+>  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
+>  {
+> -	rq->timeout = SD_FLUSH_TIMEOUT;
+> +	rq->timeout *= 2;
+>  	rq->retries = SD_MAX_RETRIES;
+>  	rq->cmd[0] = SYNCHRONIZE_CACHE;
+>  	rq->cmd_len = 10;
+> @@ -1433,6 +1433,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+>  {
+>  	int retries, res;
+>  	struct scsi_device *sdp = sdkp->device;
+> +	unsigned int timeout = sdp->request_queue->rq_timeout;
 
-__get_ibs_caps is used by both oprofile and perf events.
-This causes oprofile to be dependent on perf.
+The timeout is signed in the function prototype
 
-__get_ibs_caps is actually only a few lines, so we can
-easily move that to the standard AMD CPU initialization
-file.
+>  	struct scsi_sense_hdr sshdr;
+>  
+>  	if (!scsi_device_online(sdp))
+> @@ -1448,7 +1449,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+>  		 * flush everything.
+>  		 */
+>  		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
+> -					     &sshdr, SD_FLUSH_TIMEOUT,
+> +					     &sshdr, timeout * 2,
+>  					     SD_MAX_RETRIES, NULL, REQ_PM);
+>  		if (res == 0)
+>  			break;
 
-It will be always compiled in this way, but it's far
-better than requiring perf always to be compiled in for this.
+Not like this, please: you now leave us with a dangling #define whose
+name makes you think it should be related to flushing and a couple of
+curious magic constants.  It's almost hand crafted to confuse people
+reading the code.
 
-Cc: bp@suse.de
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Please do it like this instead: with a comment explaining what we're
+doing above the #define and a name that clearly relates to the actions.
+
+James
+
 ---
- arch/x86/include/asm/perf_event.h        |  2 ++
- arch/x86/kernel/cpu/amd.c                | 27 +++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_amd_ibs.c | 23 -----------------------
- arch/x86/oprofile/op_model_amd.c         |  4 +++-
- 4 files changed, 32 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 8249df4..866b0f3 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -198,6 +198,8 @@ struct x86_pmu_capability {
- #define IBS_OP_MAX_CNT_EXT	0x007FFFFFULL	/* not a register bit mask */
- #define IBS_RIP_INVALID		(1ULL<<38)
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index e62d17d..5c9496d 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -829,7 +829,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
  
-+extern u32 __get_ibs_caps(void);
-+
- #ifdef CONFIG_X86_LOCAL_APIC
- extern u32 get_ibs_caps(void);
- #else
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 903a264..887ad1e 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -16,6 +16,8 @@
- # include <asm/cacheflush.h>
- #endif
- 
-+#include <asm/perf_event.h>
-+
- #include "cpu.h"
- 
- static inline int rdmsrl_amd_safe(unsigned msr, unsigned long long *p)
-@@ -909,3 +911,28 @@ static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
- 
- 	return false;
- }
-+
-+
-+/* IBS - apic initialization, for perf and oprofile */
-+
-+u32 __get_ibs_caps(void)
-+{
-+	u32 caps;
-+	unsigned int max_level;
-+
-+	if (!boot_cpu_has(X86_FEATURE_IBS))
-+		return 0;
-+
-+	/* check IBS cpuid feature flags */
-+	max_level = cpuid_eax(0x80000000);
-+	if (max_level < IBS_CPUID_FEATURES)
-+		return IBS_CAPS_DEFAULT;
-+
-+	caps = cpuid_eax(IBS_CPUID_FEATURES);
-+	if (!(caps & IBS_CAPS_AVAIL))
-+		/* cpuid flags not valid */
-+		return IBS_CAPS_DEFAULT;
-+
-+	return caps;
-+}
-+EXPORT_SYMBOL(__get_ibs_caps);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index e09f0bf..c4fed71 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -664,29 +664,6 @@ static __init int perf_event_ibs_init(void) { return 0; }
- 
- #endif
- 
--/* IBS - apic initialization, for perf and oprofile */
--
--static __init u32 __get_ibs_caps(void)
--{
--	u32 caps;
--	unsigned int max_level;
--
--	if (!boot_cpu_has(X86_FEATURE_IBS))
--		return 0;
--
--	/* check IBS cpuid feature flags */
--	max_level = cpuid_eax(0x80000000);
--	if (max_level < IBS_CPUID_FEATURES)
--		return IBS_CAPS_DEFAULT;
--
--	caps = cpuid_eax(IBS_CPUID_FEATURES);
--	if (!(caps & IBS_CAPS_AVAIL))
--		/* cpuid flags not valid */
--		return IBS_CAPS_DEFAULT;
--
--	return caps;
--}
--
- u32 get_ibs_caps(void)
+ static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
  {
- 	return ibs_caps;
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index 50d86c0..964171f 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -26,6 +26,8 @@
- #include <asm/processor.h>
- #include <asm/cpufeature.h>
- 
-+#include <asm/perf_event.h> /* for __get_ibs_caps */
-+
- #include "op_x86_model.h"
- #include "op_counter.h"
- 
-@@ -446,7 +448,7 @@ static void op_amd_stop(struct op_msrs const * const msrs)
- 
- static void init_ibs(void)
+-	rq->timeout = SD_FLUSH_TIMEOUT;
++	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
+ 	rq->retries = SD_MAX_RETRIES;
+ 	rq->cmd[0] = SYNCHRONIZE_CACHE;
+ 	rq->cmd_len = 10;
+@@ -1433,6 +1433,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
  {
--	ibs_caps = get_ibs_caps();
-+	ibs_caps = __get_ibs_caps();
+ 	int retries, res;
+ 	struct scsi_device *sdp = sdkp->device;
++	const int timeout = sdp->request_queue->rq_timeout
++		* SD_FLUSH_TIMEOUT_MULTIPLIER;
+ 	struct scsi_sense_hdr sshdr;
  
- 	if (!ibs_caps)
- 		return;
--- 
-1.8.3.1
+ 	if (!scsi_device_online(sdp))
+@@ -1448,8 +1450,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * flush everything.
+ 		 */
+ 		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
+-					     &sshdr, SD_FLUSH_TIMEOUT,
+-					     SD_MAX_RETRIES, NULL, REQ_PM);
++					     &sshdr, timeout, SD_MAX_RETRIES,
++					     NULL, REQ_PM);
+ 		if (res == 0)
+ 			break;
+ 	}
+diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
+index 7a049de..7f7999c 100644
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -13,7 +13,11 @@
+  */
+ #define SD_TIMEOUT		(30 * HZ)
+ #define SD_MOD_TIMEOUT		(75 * HZ)
+-#define SD_FLUSH_TIMEOUT	(60 * HZ)
++/*
++ * Flush timeout is a multiplier over the standard device timeout which is
++ * user modifiable via sysfs but initially set to SD_TIMEOUT
++ */
++#define SD_FLUSH_TIMEOUT_MULTIPLIER	2
+ #define SD_WRITE_SAME_TIMEOUT	(120 * HZ)
+ 
+ /*
 
