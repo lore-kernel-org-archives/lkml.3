@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab3JDAmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Oct 2013 20:42:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3JDAmo (ORCPT
+	id S1754536Ab3JDApZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Oct 2013 20:45:25 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:41676 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab3JDApX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Oct 2013 20:42:44 -0400
-Date: Thu, 3 Oct 2013 17:43:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Laurent Pinchart'" <laurent.pinchart+renesas@ideasonboard.com>,
-        "'Michael Hennerich'" <michael.hennerich@analog.com>,
-        "'Milo Kim'" <milo.kim@ti.com>,
-        "'Daniel Jeong'" <gshark.jeong@gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: remove Richard Purdie as backlight
- maintainer
-Message-Id: <20131003174315.d9aa8af7.akpm@linux-foundation.org>
-In-Reply-To: <003801cec093$6b3c1bf0$41b453d0$%han@samsung.com>
-References: <017f01cebb35$f6a82ac0$e3f88040$%han@samsung.com>
-	<20131003162048.d4be6510f36da5c61dc61c43@linux-foundation.org>
-	<003801cec093$6b3c1bf0$41b453d0$%han@samsung.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Oct 2013 20:45:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131004004108.GA9914@jtriplet-mobl1>
+References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
+	<CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
+	<20131003105130.GE13318@ZenIV.linux.org.uk>
+	<CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
+	<CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
+	<20131003232826.GA6604@jtriplet-mobl1>
+	<CA+55aFxvZV0brpjRERYj6Bb-i2kF+nhfCVvmXV5Bdn2QhEt5sw@mail.gmail.com>
+	<20131004004108.GA9914@jtriplet-mobl1>
+Date: Thu, 3 Oct 2013 17:45:21 -0700
+X-Google-Sender-Auth: DJM52owlmfJMGpghr_Ajuc_VMXU
+Message-ID: <CA+55aFw6DURpj+0Z9pJZdu+VX1Eas8=2AOqamQfR-5S+giyicw@mail.gmail.com>
+Subject: Re: [PATCH 17/17] RCU'd vfsmounts
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Oct 2013 08:50:57 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
+On Thu, Oct 3, 2013 at 5:41 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+>
+> Read, yes, but I don't think that's enough to force your example above
+> to work in all cases.  That requires semantics beyond what RCU's
+> primitives guarantee, and I don't think you can draw conclusions about
+> those semantics without talking about CPU memory barriers.
 
-> On Friday, October 04, 2013 8:21 AM, Andrew Morton wrote:
-> > On Fri, 27 Sep 2013 12:59:28 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
-> > 
-> > > Remove Richard Purdie as backlight subsystem maintainer, since he
-> > > is not responding for a few years.
-> > 
-> > It's nice to give a person a ./CREDITS entry when we remove them from
-> > ./MAINTAINERS.
-> 
-> However, Richard Purdie still remains as maintainers of other two entries
-> as below:
-> In this case, is it still necessary give him a ./CREDITS entry?
+We seriosly depend on nothing leaking out. Not just reads. The "U" in
+RCU is "update". So it's reads, and it's writes. The fact that it says
+"read" in "rcu_read_lock()" doesn't mean that only reads would be
+affected.
 
-Necessary?  No.  Nice?  Yes ;) I like to think that it reduces any of
-the sting from being removed from MAINTAINERS.  Plus it is more
-accurate and costs nothing.
+And no, this still has nothing to do with memory barriers. Every
+single RCU user depends on the memory freeing being delayed by RCU,
+for example. And again, that's not just reads. It's people taking
+spinlocks on things that are RCU-protected etc.
 
+So no, there is no question about this. The only question would be
+whether we have some RCU mode that is _buggy_, not whether you need
+extra memory barriers. And that is certainly possible.
+
+            Linus
