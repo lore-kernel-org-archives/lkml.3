@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab3JDIdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 04:33:51 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:60570 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752846Ab3JDIdo convert rfc822-to-8bit (ORCPT
+	id S1753527Ab3JDIpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 04:45:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34856 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab3JDIph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 04:33:44 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 4 Oct 2013 04:45:37 -0400
+Message-ID: <524E802E.2060802@codeaurora.org>
+Date: Fri, 04 Oct 2013 01:45:34 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement pattern
-Date: Fri, 4 Oct 2013 09:31:49 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7371@saturn3.aculab.com>
-In-Reply-To: <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement pattern
-Thread-Index: Ac7A24Xh24Ru1N/rSJKnB/t2ngSngQAAEvWg
-References: <cover.1380703262.git.agordeev@redhat.com> <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com> <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Alexander Gordeev" <agordeev@redhat.com>,
-        "Ben Hutchings" <bhutchings@solarflare.com>
-Cc: <linux-mips@linux-mips.org>, "VMware, Inc." <pv-drivers@vmware.com>,
-        <linux-nvme@lists.infradead.org>, <linux-ide@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, "Andy King" <acking@vmware.com>,
-        <linux-scsi@vger.kernel.org>, <linux-rdma@vger.kernel.org>,
-        <x86@kernel.org>, "Ingo Molnar" <mingo@redhat.com>,
-        <linux-pci@vger.kernel.org>, <iss_storagedev@hp.com>,
-        <linux-driver@qlogic.com>, "Tejun Heo" <tj@kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Dan Williams" <dan.j.williams@intel.com>,
-        "Jon Mason" <jon.mason@intel.com>,
-        "Solarflare linux maintainers" <linux-net-drivers@solarflare.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        <e1000-devel@lists.sourceforge.net>,
-        "Martin Schwidefsky" <schwidefsky@de.ibm.com>, <linux390@de.ibm.com>,
-        <linuxppc-dev@lists.ozlabs.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCHv4 2/4] ARM: msm: Add support for APQ8074 Dragonboard
+References: <1380841557-2673-1-git-send-email-rvaswani@codeaurora.org>  <1380841557-2673-3-git-send-email-rvaswani@codeaurora.org> <1380875311.24031.17.camel@iivanov-dev.int.mm-sol.com>
+In-Reply-To: <1380875311.24031.17.camel@iivanov-dev.int.mm-sol.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It seems to me that a more useful interface would take a minimum and
-> > maximum number of vectors from the driver.  This wouldn't allow the
-> > driver to specify that it could only accept, say, any even number within
-> > a certain range, but you could still leave the current functions
-> > available for any driver that needs that.
-> 
-> Mmmm.. I am not sure I am getting it. Could you please rephrase?
+On 10/4/2013 1:28 AM, Ivan T. Ivanov wrote:
+> Hi Rohit,
+>
+> On Thu, 2013-10-03 at 16:05 -0700, Rohit Vaswani wrote:
+>> This patch adds basic board support for APQ8074 Dragonboard
+>> which belongs to the Snapdragon 800 family.
+>> For now, just support a basic machine with device tree.
+>>
+>> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+>> ---
+>>   arch/arm/boot/dts/Makefile                     |  3 ++-
+>>   arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
+>>   arch/arm/boot/dts/qcom-msm8974.dtsi            | 35 ++++++++++++++++++++++++++
+>>   arch/arm/mach-msm/Kconfig                      | 13 ++++++++++
+>>   arch/arm/mach-msm/board-dt.c                   |  9 +++++++
+>>   5 files changed, 65 insertions(+), 1 deletion(-)
+>>   create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+>>   create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
+>>
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index 000cf76..e71a3ec 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -102,7 +102,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+>>   	kirkwood-openblocks_a6.dtb
+>>   dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+>>   dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+>> -	msm8960-cdp.dtb
+>> +	msm8960-cdp.dtb \
+>> +	qcom-apq8074-dragonboard.dtb
+>>   dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>>   	armada-370-mirabox.dtb \
+>>   	armada-370-netgear-rn102.dtb \
+>> diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+>> new file mode 100644
+>> index 0000000..bb6f3c4
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+>> @@ -0,0 +1,6 @@
+>> +/include/ "qcom-msm8974.dtsi"
+> Please, could you replace /include/ by #include. This will allow
+> us to use of #define features from C header files. Since[1] we have
+> clocks indexes definitions shared between C code and DT files.
 
-One possibility is for drivers than can use a lot of interrupts to
-request a minimum number initially and then request the additional
-ones much later on.
-That would make it less likely that none will be available for
-devices/drivers that need them but are initialised later.
+Will do.
+>
+> Thanks,
+> Ivan
+>
+> [1] http://www.spinics.net/lists/arm-kernel/msg276937.html
+>
+>
+>
 
-	David
 
+Thanks,
+Rohit Vaswani
 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
 
