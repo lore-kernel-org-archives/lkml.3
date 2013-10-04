@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab3JDPZX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 11:25:23 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9595 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754396Ab3JDPZW (ORCPT
+	id S1754970Ab3JDPZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 11:25:34 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:37077 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab3JDPZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 11:25:22 -0400
-Date: Fri, 4 Oct 2013 11:25:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com
-Subject: Re: [PATCH] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
-Message-ID: <20131004112520.38f6f648@gandalf.local.home>
-In-Reply-To: <20131004151618.GO3081@twins.programming.kicks-ass.net>
-References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
-	<20130927091427.GE24743@yliu-dev.sh.intel.com>
-	<20130927152908.GE15690@laptop.programming.kicks-ass.net>
-	<20131004080909.GP26785@twins.programming.kicks-ass.net>
-	<20131004105342.20c00a41@gandalf.local.home>
-	<20131004151618.GO3081@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 4 Oct 2013 11:25:32 -0400
+Date: Fri, 4 Oct 2013 12:25:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH] perf session: Fix infinite loop on invalid perf.data file
+Message-ID: <20131004152524.GA2265@ghostprotocols.net>
+References: <1380529188-27193-1-git-send-email-namhyung@kernel.org>
+ <20131001071646.GA20023@gmail.com>
+ <524ACD2A.7040902@gmail.com>
+ <20131001142154.GA31298@gmail.com>
+ <524ADF84.4080801@gmail.com>
+ <20131001153309.GA1287@gmail.com>
+ <20131001165437.GF2920@ghostprotocols.net>
+ <524AFF5A.3030909@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524AFF5A.3030909@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Oct 2013 17:16:18 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
- > Documentation section
+Em Tue, Oct 01, 2013 at 10:59:06AM -0600, David Ahern escreveu:
+> On 10/1/13 10:54 AM, Arnaldo Carvalho de Melo wrote:
+> >Em Tue, Oct 01, 2013 at 05:33:09PM +0200, Ingo Molnar escreveu:
+> >>* David Ahern <dsahern@gmail.com> wrote:
+> >>>On 10/1/13 8:21 AM, Ingo Molnar wrote:
+> >I liked this last one:
+> >
+> >>   WARNING: The perf.data file's data size field is 0 which is unexpected.
+> >>            Was the 'perf record' command properly terminated?
+> >
+> >Can I patch that up into Namhyung's latest patch?
+> >
+> >Sonny, David, from your replies I think I can add Tested-by: tags for
+> >both of you?
 > 
-> Ah, you missed the preemption series?
+> I'm fine with the last message. And yes a Tested by
 
-Yeah, I've seen them, just haven't looked at them too deeply yet.
+Got to process this now, changing it a bit to replace "perf.data" with
+"%s" + session->filename, ack?
 
-> 
-> 1a338ac32ca6 sched, x86: Optimize the preempt_schedule() call
-> c2daa3bed53a sched, x86: Provide a per-cpu preempt_count implementation
-> a233f1120c37 sched: Prepare for per-cpu preempt_count
-> bdb438065890 sched: Extract the basic add/sub preempt_count modifiers
-> 01028747559a sched: Create more preempt_count accessors
-> a787870924db sched, arch: Create asm/preempt.h
-> f27dde8deef3 sched: Add NEED_RESCHED to the preempt_count
-> 4a2b4b222743 sched: Introduce preempt_count accessor functions
-> ea8117478918 sched, idle: Fix the idle polling state logic
-> 315039862646 sched: Remove {set,clear}_need_resched
-> b021fe3e2509 sched, rcu: Make RCU use resched_cpu()
-> 0c44c2d0f459 x86: Use asm goto to implement better modify_and_test() functions
-> 
-> preempt_count now includes a NEED_RESCHED and this patch shows which
-> is set: N both PREEMPT_NEED_RESCHED and TIF_NEED_RESCHED, n for TIF only
-> and p for preempt only.
+Otherwise the user may have a 'perf.data' file and despite having
+informed -i with a different file name still get confused... ;-)
 
-You still need to update Documentation/trace/ftrace.txt. Search for
-"need-resched" and that part will need to be updated.
-
-Thanks,
-
--- Steve
+- Arnaldo
