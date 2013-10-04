@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab3JDGPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 02:15:11 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37141 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab3JDGPJ (ORCPT
+	id S1751379Ab3JDGWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 02:22:42 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:48388 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3JDGWk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 02:15:09 -0400
-Date: Thu, 3 Oct 2013 23:15:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/17] RCU'd vfsmounts
-Message-ID: <20131004061503.GC5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <E1VRcGm-0008Er-EO@ZenIV.linux.org.uk>
- <CA+55aFzeDP6J4ekdn4-85yoXzX3xmEp_qc3npvqepJM+MFn=6Q@mail.gmail.com>
- <20131003105130.GE13318@ZenIV.linux.org.uk>
- <CA+55aFzh+n_2fs=aWcT_5gnLC_pWSHqQPJeQ+fg=+Xw7ib9=dQ@mail.gmail.com>
- <CA+55aFybjMDwdfV2uoGL=8U4c1tytjMwk4sU187e6ha2xQ=3+Q@mail.gmail.com>
- <20131003232826.GA6604@jtriplet-mobl1>
- <20131004052959.GB5790@linux.vnet.ibm.com>
- <20131004060304.GA28411@leaf>
-MIME-Version: 1.0
+	Fri, 4 Oct 2013 02:22:40 -0400
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat4gtPvyOmM
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131004060304.GA28411@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100406-6688-0000-0000-00000239D866
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <20131003.160049.199880461500344692.davem@davemloft.net>
+Date: Fri, 4 Oct 2013 08:22:37 +0200
+Cc: j.dumon@option.com, marek.belisko@gmail.com, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4893FFB3-2A82-4AD4-A6B6-20270798051F@goldelico.com>
+References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com> <20131003.152907.2144013596237714581.davem@davemloft.net> <C7520082-95CC-4D4F-BCE4-96A7D6346DB3@goldelico.com> <20131003.160049.199880461500344692.davem@davemloft.net>
+To: David Miller <davem@davemloft.net>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 11:03:05PM -0700, Josh Triplett wrote:
-> On Thu, Oct 03, 2013 at 10:29:59PM -0700, Paul E. McKenney wrote:
-> > On Thu, Oct 03, 2013 at 04:28:27PM -0700, Josh Triplett wrote:
-> > > On Thu, Oct 03, 2013 at 01:52:45PM -0700, Linus Torvalds wrote:
-> > > > On Thu, Oct 3, 2013 at 1:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > > > >
-> > > > > The problem is this:
-> > > > > A = 1, B = 1
-> > > > > CPU1:
-> > > > > A = 0
-> > > > > <full barrier>
-> > > > > synchronize_rcu()
-> > > > > read B
-> > > > >
-> > > > > CPU2:
-> > > > > rcu_read_lock()
-> > > > > B = 0
-> > > > > read A
-> > 
-> > /me scratches his head...
-> > 
-> > OK, for CPU2 to see 1 from its read from A, the corresponding RCU
-> > read-side critical section must have started before CPU1 did A=0.  This
-> > means that this same RCU read-side critical section must have started
-> > before CPU1's synchronize_rcu(), which means that it must complete
-> > before that synchronize_rcu() returns.  Therefore, CPU2's B=0 must
-> > execute before CPU1's read of B, hence that read of B must return zero.
-> > 
-> > Conversely, if CPU1's read from B returns 1, we know that CPU2's
-> > RCU read-side critical section must not have completed until after
-> > CPU1's synchronize_rcu() returned, which means that the RCU read-side
-> > critical section must have started after that synchronize_rcu() started,
-> > so CPU1's assignment to A must also have already happened.  Therefore,
-> > CPU2's read from A must return zero.
+
+Am 03.10.2013 um 22:00 schrieb David Miller:
+
+> From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+> Date: Thu, 3 Oct 2013 21:40:34 +0200
 > 
-> Yeah, that makes sense.
+>> I have made the bug observation from debug log that this bit is set in a response
+>> each time the modem has a RING message. It might be specific to this modem
+>> and firmware version, i.e. a firmware bug. But we have no means to verify or even
+>> change it in the firmware.
+>> 
+>> I.e. the driver must handle it in a better way.
+>> 
+>> Because the notification is rejected by the driver, the driver will hang up and the
+>> whole modem connection breaks down.
+>> 
+>> With this patch, the problem was never observed again in ~2 years.
+>> 
+>> I'd hope the maintainer of this driver can shed some light on it.
 > 
-> I think too much time spent staring at the *implementation* of RCU and
-> the exciting assumptions it has to make about barriers or memory
-> operations leaking out of the implementations of the RCU primitives (for
-> instance, the fun needed to guarantee a memory barrier on all CPUs, or
-> to safely use non-atomic operations inside RCU itself) makes it entirely
-> too difficult to look at a perfectly ordinary *use* of RCU primitives
-> and see the obvious. :)
+> I think if you suspect the bit is set in response to RING messages
+> then you should define a macro so that the number is not just magic,
+> and put a descriptrive comment above the macro definition for that
+> bit.
 
-I must confess that my first thought upon seeing Al's example was "but
-of course CPU2's write to B and read from A can be reordered by either
-the compiler or the CPU!"  I had to look again myself.  ;-)
+Good idea! I will resend the patch.
 
-							Thanx, Paul
-
+--- hns
