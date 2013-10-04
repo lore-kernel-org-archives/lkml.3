@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab3JDNUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 09:20:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48389 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753983Ab3JDNUB (ORCPT
+	id S1754605Ab3JDNUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 09:20:44 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37646 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab3JDNUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 09:20:01 -0400
-Date: Fri, 4 Oct 2013 14:19:56 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Daniel Mack <zonque@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] input: rotary-encoder: Add 'on-each-step' to
- binding documentation
-Message-ID: <20131004131956.GE6999@e106331-lin.cambridge.arm.com>
-References: <1380891203-17617-1-git-send-email-ezequiel@vanguardiasur.com.ar>
- <1380891203-17617-3-git-send-email-ezequiel@vanguardiasur.com.ar>
+	Fri, 4 Oct 2013 09:20:43 -0400
+Date: Fri, 4 Oct 2013 09:20:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Frediano Ziglio <frediano.ziglio@citrix.com>
+Cc: Andrew Cooper <andrew.cooper3@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector
+ corruption
+Message-ID: <20131004132033.GA26673@phenom.dumpdata.com>
+References: <1380788677.30462.1.camel@hamster.uk.xensource.com>
+ <524D4132.3000809@citrix.com>
+ <1380804692.30462.3.camel@hamster.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380891203-17617-3-git-send-email-ezequiel@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1380804692.30462.3.camel@hamster.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 01:53:23PM +0100, Ezequiel Garcia wrote:
-> The driver now supports a new mode to handle the interruptions generated
-> by the device: on this new mode an input event is generated on each step
-> (i.e. on each IRQ). Therefore, add a new DT property, to select the
-> mode: 'rotary-encoder,on-each-step'.
+On Thu, Oct 03, 2013 at 01:51:32PM +0100, Frediano Ziglio wrote:
+> On Thu, 2013-10-03 at 11:04 +0100, Andrew Cooper wrote:
+> > On 03/10/13 09:24, Frediano Ziglio wrote:
+> > > Due to the way kernel is initialized under Xen is possible that the ring1
+> > > selector used by the kernel for the boot cpu end up to be copied to
+> > > userspace leading to segmentation fault in the userspace.
+> > >
+> > >
+> > > Xen code in the kernel initialize no-boot cpus with correct selectors (ds
+> > > and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
+> > > On task context switch (switch_to) we assume that ds, es and cs already
+> > > point to __USER_DS and __KERNEL_CSso these selector are not changed.
+> > >
+> > > If processor is an Intel that support sysenter instruction sysenter/sysexit
+> > > is used so ds and es are not restored switching back from kernel to
+> > > userspace. In the case the selectors point to a ring1 instead of __USER_DS
+> > > the userspace code will crash on first memory access attempt (to be
+> > > precise Xen on the emulated iret used to do sysexit will detect and set ds
+> > > and es to zero which lead to GPF anyway).
+> > >
+> > > Now if an userspace process call kernel using sysenter and get rescheduled
+> > > (for me it happen on a specific init calling wait4) could happen that the
+> > > ring1 selector is set to ds and es.
+> > >
+> > > This is quite hard to detect cause after a while these selectors are fixed
+> > > (__USER_DS seems sticky).
+> > >
+> > > Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
+> > > to be the first one that have this issue.
+> > >
+> > > Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+> > 
+> > In terms of the correctness of the fix,
+> > 
+> > Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
+
+Should this also go in stable tree?
+> > 
+> > However, I am not sure the comment is necessary.  The prevailing style
+> > is for no justification of loads of segment selectors on boot, and the
+> > comment itself refers simply to an interaction issue of 32bit on Xen
+> > when making use of sysenter.
+> > 
 > 
-> Cc: Daniel Mack <zonque@gmail.com>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-> ---
-> I'm not at all happy with this DT binding as it's way to customized
-> for the current driver. For instance, if we want to support mapping
-> key events (or better arbitrary linux-input event types) it seems
-> there's no easy way to fix the binding.
+> Suggestion for the comment ??
 > 
-> Maybe a better way of handling the different 'modes' is through
-> compatible strings?
-
-I'd prefer not to have more pseudo-devices in DT, and would prefer not
-to have compatible strings that boil down to driver options. We end up
-just embedding a tonne of Linux-specific driver configuration in the DT
-rather than describing hardware.
-
-That said, I'm not sure what the best solution is here.
-
+> Frediano
 > 
-> I'm not really sure, so I hope the DT guys have some comment on this.
+> > > ---
+> > >  arch/x86/xen/smp.c |   12 ++++++++++++
+> > >  1 file changed, 12 insertions(+)
+> > >
+> > > diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> > > index d1e4777..2a47241 100644
+> > > --- a/arch/x86/xen/smp.c
+> > > +++ b/arch/x86/xen/smp.c
+> > > @@ -278,6 +278,18 @@ static void __init xen_smp_prepare_boot_cpu(void)
+> > >  		   old memory can be recycled */
+> > >  		make_lowmem_page_readwrite(xen_initial_gdt);
+> > >  
+> > > +#ifdef CONFIG_X86_32
+> > > +		/*
+> > > +		 * Assure we use segments with user level access.
+> > > +		 * During switching of task these segments got not reloaded
+> > > +		 * so it could happen that userspace tasks get Xen ring1
+> > > +		 * selector causing exit with sysenter failures on next
+> > > +		 * userspace memory operation.
+> > > +		 */
+> > > +		loadsegment(ds, __USER_DS);
+> > > +		loadsegment(es, __USER_DS);
+> > > +#endif
+> > > +
+> > >  		xen_filter_cpu_maps();
+> > >  		xen_setup_vcpu_info_placement();
+> > >  	}
+> > 
 > 
->  Documentation/devicetree/bindings/input/rotary-encoder.txt | 1 +
->  1 file changed, 1 insertion(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/input/rotary-encoder.txt b/Documentation/devicetree/bindings/input/rotary-encoder.txt
-> index 3315495..b89e38d 100644
-> --- a/Documentation/devicetree/bindings/input/rotary-encoder.txt
-> +++ b/Documentation/devicetree/bindings/input/rotary-encoder.txt
-> @@ -15,6 +15,7 @@ Optional properties:
->  - rotary-encoder,rollover: Automatic rollove when the rotary value becomes
->    greater than the specified steps or smaller than 0. For absolute axis only.
->  - rotary-encoder,half-period: Makes the driver work on half-period mode.
-> +- rotary-encoder,on-each-step: Makes the driver send an event on each step.
-
-Could this not be something requested at runtime?
-
-Could you explain what you want to achieve with this? -- what events do
-you want to occur when, to be handled in what way?
-
-Cheers,
-Mark.
