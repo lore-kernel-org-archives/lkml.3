@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3JDRYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 13:24:50 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:37030 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3JDRYt (ORCPT
+	id S1753754Ab3JDR0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 13:26:30 -0400
+Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:41900 "EHLO
+	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751352Ab3JDR03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 13:24:49 -0400
+	Fri, 4 Oct 2013 13:26:29 -0400
+Date: Fri, 4 Oct 2013 17:26:27 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [pchecks v2 2/2] percpu: Add preemption checks to __this_cpu
+ ops
+In-Reply-To: <20131004165222.GS3081@twins.programming.kicks-ass.net>
+Message-ID: <0000014184818fb7-dc609dac-5ba0-4449-b24f-4e8bdfdac65b-000000@email.amazonses.com>
+References: <20131003182902.174251532@linux.com> <000001417f93fb74-f307f391-26a4-431a-8295-04c5319d1373-000000@email.amazonses.com> <20131004082728.GG3081@twins.programming.kicks-ass.net> <0000014184145d57-7481d88a-649c-4016-8c59-5da2c822efec-000000@email.amazonses.com>
+ <20131004165222.GS3081@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130918095003.GB1783@mudshark.cambridge.arm.com>
-References: <20130917215749.GA11109@obsidianresearch.com>
-	<20130918091748.GA1783@mudshark.cambridge.arm.com>
-	<20130918095003.GB1783@mudshark.cambridge.arm.com>
-Date: Fri, 4 Oct 2013 19:24:48 +0200
-Message-ID: <CAPNxggZ0WesjMdi=Yy=QYd_ASrGRiosimqzqb++1=mgus3RRdA@mail.gmail.com>
-Subject: Re: Commit breaks strace: ARM: entry: allow ARM-private syscalls to
- be restarted
-From: Arokux X <arokux@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.04-54.240.10.51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2013 at 11:50 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Sep 18, 2013 at 10:17:48AM +0100, Will Deacon wrote:
->> On Tue, Sep 17, 2013 at 10:57:49PM +0100, Jason Gunthorpe wrote:
->> > This happens with the latest git head for strace, as well as the 4.7
->> > release.
->> >
->> > Hopefully you can cook up a fix :)
->>
->> I'll take a look today, thanks.
->
-> Ok, looks like the backwards branch to the syscall dispatching logic from
-> the trace entry is busted. Can you try the patch below please?
->
-> I might also take a look at unifying the function prototypes for arm_syscall
-> and syscall_trace_enter, since it should help us remove some of the argument
-> shuffling in the trace path.
->
-> Will
->
-> --->8
->
-> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-> index 74ad15d1..bc6bd96 100644
-> --- a/arch/arm/kernel/entry-common.S
-> +++ b/arch/arm/kernel/entry-common.S
-> @@ -442,10 +442,10 @@ local_restart:
->         ldrcc   pc, [tbl, scno, lsl #2]         @ call sys_* routine
->
->         add     r1, sp, #S_OFF
-> -       cmp     scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
-> +2:     cmp     scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
->         eor     r0, scno, #__NR_SYSCALL_BASE    @ put OS number back
->         bcs     arm_syscall
-> -2:     mov     why, #0                         @ no longer a real syscall
-> +       mov     why, #0                         @ no longer a real syscall
->         b       sys_ni_syscall                  @ not private func
->
->  #if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
+On Fri, 4 Oct 2013, Peter Zijlstra wrote:
 
-Just stumbled upon the same issue. The patch seems to cure the problem. Thanks.
+> > The __this_cpu_read_xxx() are asm primitives provided by various arches.
+> > __this_cpu_read() is currently not overriden by any arches. That is why
+> > the approach here of replicating only the higher level for raw_cpu_ops
+> > works. Renaming the __this_cpu_xxx primitives would be a significant
+> > change.
+>
+> This isn't about read; this is about all of them. Make sure the raw_*
+> implementation is the actual real implementation; then implement the
+> checking variant in terms of those.
+
+Yes this is valid for all of them. The __this_cpu op is the low level
+implementation.
+
+> > > >  	if (!printk_ratelimit())
+> > > >  		goto out_enable;
+> > > >
+> > > > -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
+> > > > -			"code: %s/%d\n",
+> > > > +	printk(KERN_ERR "%s in preemptible [%08x] "
+> > > > +			"code: %s/%d\n", what,
+> > > >  			preempt_count() - 1, current->comm, current->pid);
+> > >
+> > > I would argue for keeping the "BUG" string intact and in front of the
+> > > %s.
+> >
+> > Most of the place that I have seen are not bugs but there was a
+> > reason for the code to run a __this_cpu op without preemption disabled.
+>
+> No; it is an actual BUG; it means that whoemever wrote the code didn't
+> think straight and forgot to use the right primitive and comments.
+
+??? The assumption needs to be that they used the function as it was
+documented. No checks because they knew they were not needed in a
+particular context.
+
+
+
