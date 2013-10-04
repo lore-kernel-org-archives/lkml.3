@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab3JDXkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 19:40:00 -0400
-Received: from sirokuusama.dnainternet.net ([83.102.40.133]:57023 "EHLO
-	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751126Ab3JDXj7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 19:39:59 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <524F51C6.7050203@iki.fi>
-Date: Sat, 05 Oct 2013 02:39:50 +0300
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130914 Thunderbird/17.0.9
+	id S1751502Ab3JDXuP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 19:50:15 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37912 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab3JDXuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 19:50:13 -0400
+Date: Fri, 4 Oct 2013 17:49:29 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, monstr@monstr.eu,
+        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+Message-ID: <20131004234929.GB3652@obsidianresearch.com>
+References: <524C6D64.8080801@zytor.com>
+ <20131003064915.GB17155@amd.pavel.ucw.cz>
+ <524EC965.70701@monstr.eu>
+ <20131004141646.GA9396@kroah.com>
+ <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
+ <524ED081.1040600@monstr.eu>
+ <524EF0CE.4040002@zytor.com>
+ <524EFE76.70200@monstr.eu>
+ <524F04FD.5020804@zytor.com>
+ <20131004233341.GA4028@kroah.com>
 MIME-Version: 1.0
-To: Olivier Langlois <olivier@trillion01.com>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>,
-        =?UTF-8?B?UmFmYQ==?= =?UTF-8?B?xYIgTWnFgmVja2k=?= 
-	<zajec5@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/RFT v2 0/4] ALSA: hda - hdmi: ATI/AMD multi-channel and
- HBR support
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi> <1380870371.875.14.camel@Wailaba2>
-In-Reply-To: <1380870371.875.14.camel@Wailaba2>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131004233341.GA4028@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-04.10.2013 10:06, Olivier Langlois kirjoitti:
-> Anssi,
+On Fri, Oct 04, 2013 at 04:33:41PM -0700, Greg Kroah-Hartman wrote:
+
+> > I agree that the firmware interface makes sense when the use of the
+> > FPGA is an implementation detail in a fixed hardware configuration,
+> > but that is a fairly restricted use case all things considered.
 > 
-> Your patch has been applied on 3.11.3
+> Ideally I thought this would be just like "firmware", you dump the file
+> to the FPGA, it validates it and away you go with a new image running in
+> the chip.
 
-OK.
+That is 99% of the use cases. The other stuff people are talking about
+is fringe.
 
->>
->> I'm especially interested in testers with:
->>
->> - Older codecs other than 0x1002aa01. My best guess still is that the
->>   new code works on them as well.
->>   o On these I'd like to know if multichannel and the new formats
->>     work, i.e. e.g.
->>     speaker-test -D hdmi:CARD=Generic,DEV=0 -c8 -r192000 -F S32_LE
-> 
-> This is working with Codec 0x1002aa01 revisions 0x100300 (Rev ID 3)
-> except for a small detail. I cannot tell if it is a regression from v1
-> of the patch or it was there and I did not noticed when I tested.
-> 
-> Rear left and rear right channels are flipped.
+I've been doing FPGAs for > 10 years and I've never once used read back
+via the config bus. In fact all my FPGAs turn that feature off once
+they are loaded.
 
-Thanks for testing.
+Partial reconfiguration is very specialized, and hard to use from a
+FPGA design standpoint.
 
-That seems a bit strange, I would've expected everything to be flipped
-if there was a bug there.
+I also think it is sensible to focus this interface on simple SRAM
+FPGAs, not FLASH based stuff, or whatever complex device required a
+byte code interpreter (never heard of that before).
 
-Are you sure about that? Note that speaker-test speaker order is
-reversed in the rear when compared to front, i.e. "front left, front
-right, center, rear right, rear left", since it uses a circular pattern.
-
-If you can confirm this, could you enable SND_CONFIG_DEBUG and
-SND_CONFIG_DEBUG_VERBOSE and CONFIG_SND_VERBOSE_PRINTK, and then provide
-the dmesg during playback?
-
-Thanks.
-
->>
->> - Codec 0x1002aa01 revisions 0x100300 (Rev ID 3) or later (see
->>   /proc/asound/cardX/codec#Y). These are HD7750+ I think. Stuff to be
->>   tested on these:
->>   o The ramp up/down stuff, i.e. patch 4. Is there any difference seen
->>     with these, in the beginning/end (i.e. fade-out/in):
->>     speaker-test -D hdmi:CARD=Generic,DEV=0,AES0=0x04 -c2 -r48000
-> 
-> No noticeable difference than when it is run without the AES0 param
-> 
->>     speaker-test -D hdmi:CARD=Generic,DEV=0,AES0=0x06 -c2 -r48000
-> 
-> From the application the sound is sent normally but no sound at all is
-> outputed from the speakers.
-> 
->>     Also, is there a difference in the beginning of these
->>     (maybe garbage sound and/or slightly slower startup?):
->>     aplay -Dhdmi:CARD=Generic,DEV=0,AES0=4 -r44100 -f s16_le -c2 testi.dts.cut.spdif
->>     aplay -Dhdmi:CARD=Generic,DEV=0,AES0=6 -r44100 -f s16_le -c2 testi.dts.cut.spdif
-> 
-> Both works. No garbage is heard from neither of them. maybe maybe AES04
-> starts playing few ms earlier but if there is a difference, it is
-> extremely subtle.
-
-OK, that is actually reverse what I would've expected.
-
-Takashi, do you think we should add the ramp-up/down setting (to spec
-recommended pcm/non-pcm values) anyway?
-
->>
->>   o Contents of /proc/asound/cardX/eld#0. I'd like to see the contents
->>     both with radeon and with the proprietary fglrx driver in use
->>
-> With fglrx 13.10 Beta 2:
-> 
-> lano1106@whippet2 /proc/asound/card0 $ cat codec#0 
-
-Note I said eld#0, not codec#0 :)
-
-Though I guess the correct filename is actually eld#0.0.
-
-[...]
-
--- 
-Anssi Hannula
+Jason
