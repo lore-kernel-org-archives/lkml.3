@@ -1,154 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab3JDUbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 16:31:41 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:52307 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751174Ab3JDUbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 16:31:40 -0400
-Date: Fri, 4 Oct 2013 15:31:47 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
+	id S1753170Ab3JDUm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 16:42:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55434 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286Ab3JDUm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 16:42:26 -0400
+Date: Fri, 4 Oct 2013 22:41:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCHv4 00/10] split page table lock for PMD tables
-Message-ID: <20131004203147.GE32110@sgi.com>
-References: <1380287787-30252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20131004201213.GB32110@sgi.com>
- <20131004202602.2D389E0090@blue.fi.intel.com>
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] rcusync: introduce rcu_sync_struct->exclusive mode
+Message-ID: <20131004204159.GT3081@twins.programming.kicks-ass.net>
+References: <20131004184614.GA17536@redhat.com>
+ <20131004184640.GA17567@redhat.com>
+ <20131004192944.GU15690@laptop.programming.kicks-ass.net>
+ <20131004195623.GA19436@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131004202602.2D389E0090@blue.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131004195623.GA19436@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 11:26:02PM +0300, Kirill A. Shutemov wrote:
-> Alex Thorlton wrote:
-> > Kirill,
-> > 
-> > I've pasted in my results for 512 cores below.  Things are looking 
-> > really good here.  I don't have a test for HUGETLBFS, but if you want to
-> > pass me the one you used, I can run that too.  I suppose I could write
-> > one, but why reinvent the wheel? :)
-> 
-> Patch below.
+On Fri, Oct 04, 2013 at 09:56:23PM +0200, Oleg Nesterov wrote:
 
-Good deal, thanks.  I'll get some test results put up soon.
+> Hmm. perhaps you meant that this should be done before rcu_sync_enter()
+> increments ->gp_count. Perhaps this can work, but the code will be more
+> complex and this way rcu_sync_exit() will always schedule the callback?
 
-> 
-> > Sorry for the delay on these results.  I hit some strange issues with
-> > running thp_memscale on systems with either of the following
-> > combinations of configuration options set:
-> > 
-> > [thp off]
-> > HUGETLBFS=y
-> > HUGETLB_PAGE=y
-> > NUMA_BALANCING=y
-> > NUMA_BALANCING_DEFAULT_ENABLED=y
-> > 
-> > [thp on or off]
-> > HUGETLBFS=n
-> > HUGETLB_PAGE=n
-> > NUMA_BALANCING=y
-> > NUMA_BALANCING_DEFAULT_ENABLED=y
-> > 
-> > I'm getting segfaults intermittently, as well as some weird RCU sched
-> > errors.  This happens in vanilla 3.12-rc2, so it doesn't have anything
-> > to do with your patches, but I thought I'd let you know.  There didn't
-> > used to be any issues with this test, so I think there's a subtle kernel
-> > bug here.  That's, of course, an entirely separate issue though.
-> 
-> I'll take a look next week, if nobody does it before.
+Yah, however see below.
 
-I'm starting a bisect now.  Not sure how long it'll take, but I'll keep
-you posted.
+> And again, we do want to increment ->gp_count asap to disable this cb
+> if it is already pending.
 
-> 
-> > 
-> > As far as these patches go, I think everything looks good (save for the
-> > bit of discussion you were having with Andrew earlier, which I think
-> > you've worked out).  My testing shows that the page fault rates are
-> > actually better on this threaded test than in the non-threaded case!
-> > 
-> > - Alex
-> > 
-> > THP on, v3.12-rc2:
-> > ------------------
-> > 
-> >  Performance counter stats for './thp_memscale -C 0 -m 0 -c 512 -b 512m' (5 runs):
-> > 
-> >   568668865.944994 task-clock                #  528.547 CPUs utilized            ( +-  0.21% ) [100.00%]
-> >          1,491,589 context-switches          #    0.000 M/sec                    ( +-  0.25% ) [100.00%]
-> >              1,085 CPU-migrations            #    0.000 M/sec                    ( +-  1.80% ) [100.00%]
-> >            400,822 page-faults               #    0.000 M/sec                    ( +-  0.41% )
-> > 1,306,612,476,049,478 cycles                    #    2.298 GHz                      ( +-  0.23% ) [100.00%]
-> > 1,277,211,694,318,724 stalled-cycles-frontend   #   97.75% frontend cycles idle     ( +-  0.21% ) [100.00%]
-> > 1,163,736,844,232,064 stalled-cycles-backend    #   89.07% backend  cycles idle     ( +-  0.20% ) [100.00%]
-> > 53,855,178,678,230 instructions              #    0.04  insns per cycle        
-> >                                              #   23.72  stalled cycles per insn  ( +-  1.15% ) [100.00%]
-> > 21,041,661,816,782 branches                  #   37.002 M/sec                    ( +-  0.64% ) [100.00%]
-> >        606,665,092 branch-misses             #    0.00% of all branches          ( +-  0.63% )
-> > 
-> >     1075.909782795 seconds time elapsed                                          ( +-  0.21% )
-> >
-> > THP on, patched:
-> > ----------------
-> > 
-> >  Performance counter stats for './runt -t -c 512 -b 512m' (5 runs):
-> > 
-> >    15836198.490485 task-clock                #  533.304 CPUs utilized            ( +-  0.95% ) [100.00%]
-> >            127,507 context-switches          #    0.000 M/sec                    ( +-  1.65% ) [100.00%]
-> >              1,223 CPU-migrations            #    0.000 M/sec                    ( +-  3.23% ) [100.00%]
-> >            302,080 page-faults               #    0.000 M/sec                    ( +-  6.88% )
-> > 18,925,875,973,975 cycles                    #    1.195 GHz                      ( +-  0.43% ) [100.00%]
-> > 18,325,469,464,007 stalled-cycles-frontend   #   96.83% frontend cycles idle     ( +-  0.44% ) [100.00%]
-> > 17,522,272,147,141 stalled-cycles-backend    #   92.58% backend  cycles idle     ( +-  0.49% ) [100.00%]
-> >  2,686,490,067,197 instructions              #    0.14  insns per cycle        
-> >                                              #    6.82  stalled cycles per insn  ( +-  2.16% ) [100.00%]
-> >    944,712,646,402 branches                  #   59.655 M/sec                    ( +-  2.03% ) [100.00%]
-> >        145,956,565 branch-misses             #    0.02% of all branches          ( +-  0.88% )
-> > 
-> >       29.694499652 seconds time elapsed                                          ( +-  0.95% )
-> > 
-> > (these results are from the test suite that I ripped thp_memscale out
-> > of, but it's the same test)
-> 
-> 36 times faster. Not bad I think. ;)
-> 
-> Naive patch to use HUGETLB:
-> 
-> --- thp_memscale/thp_memscale.c	2013-09-23 23:44:21.000000000 +0300
-> +++ thp_memscale/thp_memscale.c	2013-09-26 17:45:47.878429885 +0300
-> @@ -191,7 +191,10 @@
->  	int id, i, cnt;
->  
->  	id = (long)arg;
-> -	p = malloc(bytes);
-> +	p = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
-> +			MAP_ANONYMOUS | MAP_PRIVATE | MAP_HUGETLB, 0, 0);
-> +	if (p == MAP_FAILED)
-> +		perrorx("mmap failed");
->  	ps = p;
->  
->  	if (runon(basecpu + id) < 0)
-> -- 
->  Kirill A. Shutemov
+Ah indeed, I forgot about that. We'd have to wait until we'd get
+scheduled to increment gp_count again. However I think we can fix this
+and the above problem by introduction of rcu_sync_busy() which checks
+for eiter gp_count or pending waiters.
+
+But yes, slightly more complex code :/
+
+That would yield something like so I suppose:
+
+void rcu_sync_enter(struct rcu_sync_struct *rss)
+{
+	bool need_wait, need_sync;
+
+	spin_lock_irq(&rss->rss_lock);
+	if (rss->exclusive && rss->gp_count) {
+		__wait_event_locked(rss->gp_wait, rss->gp_count);
+		rss->gp_count++;
+		need_wait = need_sync = false;
+	} else {
+		need_wait = rss->gp_count++;
+		need_sync = rss->gp_state == GP_IDLE;
+		if (need_sync)
+			rss->gp_state = GP_PENDING;
+	}
+	spin_unlock_irq(&rss->lock);
+
+	if (need_sync) {
+		rss->sync();
+		rss->gp_state = GP_PASSED;
+		wake_up_all(&rss->gp_wait);
+	} else if (need_wait) {
+		wait_event(rss->gp_wait, rss->gp_state == GP_PASSED);
+	} else {
+		BUG_ON(rss->gp_state != GP_PASSED);
+	}
+}
+
+static bool rcu_sync_busy(struct rcu_sync_struct *rss)
+{
+	return rss->gp_count ||
+		(rss->exclusive && waitqueue_active(&rss->gp_wait));
+}
+
+static void rcu_sync_func(struct rcu_head *rcu)
+{
+	struct rcu_sync_struct *rss =
+		container_of(rcu, struct rcu_sync_struct, cb_head);
+	unsigned long flags;
+
+	BUG_ON(rss->gp_state != GP_PASSED);
+	BUG_ON(rss->cb_state == CB_IDLE);
+
+	spin_lock_irqsave(&rss->rss_lock, flags);
+	if (rcu_sync_busy(rss)) {
+		/*
+		 * A new rcu_sync_begin() has happened; drop the callback.
+		 */
+		rss->cb_state = CB_IDLE;
+	} else if (rss->cb_state == CB_REPLAY) {
+		/*
+		 * A new rcu_sync_exit() has happened; requeue the callback
+		 * to catch a later GP.
+		 */
+		rss->cb_state = CB_PENDING;
+		rss->call(&rss->cb_head, rcu_sync_func);
+	} else {
+		/*
+		 * We're at least a GP after rcu_sync_exit(); eveybody will now
+		 * have observed the write side critical section. Let 'em rip!.
+		 */
+		rss->cb_state = CB_IDLE;
+		rss->gp_state = GP_IDLE;
+	}
+	spin_unlock_irqrestore(&rss->rss_lock, flags);
+}
+
+void rcu_sync_exit(struct rcu_sync_struct *rss)
+{
+	spin_lock_irq(&rss->rss_lock);
+	if (!--rss->gp_count) {
+		if (!rcu_sync_busy(rss)) {
+			if (rss->cb_state == CB_IDLE) {
+				rss->cb_state = CB_PENDING;
+				rss->call(&rss->cb_head, rcu_sync_func);
+			} else if (rss->cb_state == CB_PENDING) {
+				rss->cb_state = CB_REPLAY;
+			}
+		} else {
+			__wake_up_locked(&rss->gp_wait, TASK_NORMAL, 1);
+		}
+	}
+	spin_unlock_irq(&rss->rss_lock);
+}
