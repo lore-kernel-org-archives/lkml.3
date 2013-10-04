@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3JDIJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 04:09:11 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:35843
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751346Ab3JDIJF (ORCPT
+	id S1753249Ab3JDIJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 04:09:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40261 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab3JDIJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 04:09:05 -0400
-Message-ID: <524E779E.5040804@newflow.co.uk>
-Date: Fri, 04 Oct 2013 09:09:02 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 4 Oct 2013 04:09:24 -0400
+Date: Fri, 4 Oct 2013 10:09:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
+Message-ID: <20131004080909.GP26785@twins.programming.kicks-ass.net>
+References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
+ <20130927091427.GE24743@yliu-dev.sh.intel.com>
+ <20130927152908.GE15690@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        device-tree <devicetree-discuss@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v3] Add support for Newflow NanoBone board
-References: <524298FE.4090200@newflow.co.uk>
-In-Reply-To: <524298FE.4090200@newflow.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130927152908.GE15690@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/09/13 09:04, Mark Jackson wrote:
-> NanoBone Specification:
-> -----------------------
-> CPU:
->   TI AM335x
+On Fri, Sep 27, 2013 at 05:29:08PM +0200, Peter Zijlstra wrote:
+> Subject: ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Fri Sep 27 17:11:00 CEST 2013
 > 
-> Memory:
->   256MB DDR3
->   128MB NOR flash
->   128KB FRAM
+> Since we now have two need_resched states; trace the two so we can
+> observe discrepancies.
 > 
-> Ethernet:
->   2 x 10/100 connected to SMSC LAN8710 PHY
-> 
-> USB:
->   1 x USB2.0 Type A
-> 
-> I2C:
->   2Kbit EEPROM (Microchip 24AA02)
->   RTC (Maxim DS1338)
->   GPIO Expander (Microchip MCP23017)
-> 
-> Expansion connector:
->   6 x UART
->   1 x MMC/SD
->   1 x USB2.0
-> 
-> Signed-off-by: Mark Jackson <mpfj@newflow.co.uk>
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-<snip>
+Steve, if you're done conferencing.. any objections?
 
-Any chance someone could accept / comment on this patch ?
-
-Cheers
-Mark J.
+> ---
+>  kernel/trace/trace.c        |    3 ++-
+>  kernel/trace/trace.h        |    1 +
+>  kernel/trace/trace_output.c |   13 +++++++++++--
+>  3 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1509,7 +1509,8 @@ tracing_generic_entry_update(struct trac
+>  #endif
+>  		((pc & HARDIRQ_MASK) ? TRACE_FLAG_HARDIRQ : 0) |
+>  		((pc & SOFTIRQ_MASK) ? TRACE_FLAG_SOFTIRQ : 0) |
+> -		(need_resched() ? TRACE_FLAG_NEED_RESCHED : 0);
+> +		(tif_need_resched() ? TRACE_FLAG_NEED_RESCHED : 0) |
+> +		(test_preempt_need_resched() ? TRACE_FLAG_PREEMPT_RESCHED : 0);
+>  }
+>  EXPORT_SYMBOL_GPL(tracing_generic_entry_update);
+>  
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -124,6 +124,7 @@ enum trace_flag_type {
+>  	TRACE_FLAG_NEED_RESCHED		= 0x04,
+>  	TRACE_FLAG_HARDIRQ		= 0x08,
+>  	TRACE_FLAG_SOFTIRQ		= 0x10,
+> +	TRACE_FLAG_PREEMPT_RESCHED	= 0x20,
+>  };
+>  
+>  #define TRACE_BUF_SIZE		1024
+> --- a/kernel/trace/trace_output.c
+> +++ b/kernel/trace/trace_output.c
+> @@ -618,8 +618,17 @@ int trace_print_lat_fmt(struct trace_seq
+>  		(entry->flags & TRACE_FLAG_IRQS_OFF) ? 'd' :
+>  		(entry->flags & TRACE_FLAG_IRQS_NOSUPPORT) ? 'X' :
+>  		'.';
+> -	need_resched =
+> -		(entry->flags & TRACE_FLAG_NEED_RESCHED) ? 'N' : '.';
+> +
+> +	if ((entry->flags & TRACE_FLAG_NEED_RESCHED) &&
+> +	    (entry->flags & TRACE_FLAG_PREEMPT_RESCHED))
+> +		need_resched = 'N';
+> +	else if (entry->flags & TRACE_FLAG_NEED_RESCHED)
+> +		need_resched = 'n';
+> +	else if (entry->flags & TRACE_FLAG_PREEMPT_RESCHED)
+> +		need_resched = 'p';
+> +	else
+> +		need_resched = '.';
+> +
+>  	hardsoft_irq =
+>  		(hardirq && softirq) ? 'H' :
+>  		hardirq ? 'h' :
