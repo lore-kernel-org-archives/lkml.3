@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab3JEFft (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 01:35:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35317 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab3JEFfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 01:35:47 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131005051056.GA7698@obsidianresearch.com>
-References: <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com> <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com> <524EFE76.70200@monstr.eu> <524F04FD.5020804@zytor.com> <20131004233341.GA4028@kroah.com> <20131004234929.GB3652@obsidianresearch.com> <875b2a01-be5a-47d1-b89a-9385d54b9b64@email.android.com> <20131005051056.GA7698@obsidianresearch.com>
+	id S1751408Ab3JEFyd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 01:54:33 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:18949 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab3JEFyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 01:54:32 -0400
+X-Spam-Score: -100.9
+Message-ID: <524FA956.9080100@asianux.com>
+Date: Sat, 05 Oct 2013 13:53:26 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 04 Oct 2013 22:34:10 -0700
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, monstr@monstr.eu,
-        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <1c9db96e-7a36-4ec9-ab16-885780ce6de5@email.android.com>
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/exit.c: call read_unlock() when failure occurs after
+ already called read_lock() in do_wait().
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I do it all the time.
+If failure occurs after called read_lock(), need call read_unlock() too.
 
-JAM/STAPL seems to me to be more used for exotic connections to serial flash for persistent programming.
+It can fail in multiple position, so add new tag 'fail_lock' for it
+(also can let 'if' only content one jump statement).
 
-Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
->On Fri, Oct 04, 2013 at 09:00:28PM -0700, H. Peter Anvin wrote:
->
->> Every FPGA toolchain I know of has a way to emit JAM/STAPL bytecode
->> files... and a fair number of programming scenarios need them.
->
->Yes, but now you are talking about JTAG.
->
->JTAG is a very different problem than configuring over the
->configuration bus, I don't think it makes much sense to try and
->combine those two things into a single subsystem.
->
->The majority use of JAM/STAPL output is for manufacturing
->automation. In system, In field programming of SRAM FPGAs via JTAG is
->uncommon.
->
->Jason
 
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/exit.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index a949819..3da5476 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1527,11 +1527,11 @@ repeat:
+ 	do {
+ 		retval = do_wait_thread(wo, tsk);
+ 		if (retval)
+-			goto end;
++			goto fail_lock;
+ 
+ 		retval = ptrace_do_wait(wo, tsk);
+ 		if (retval)
+-			goto end;
++			goto fail_lock;
+ 
+ 		if (wo->wo_flags & __WNOTHREAD)
+ 			break;
+@@ -1551,6 +1551,10 @@ end:
+ 	__set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&current->signal->wait_chldexit, &wo->child_wait);
+ 	return retval;
++
++fail_lock:
++	read_unlock(&tasklist_lock);
++	goto end;
+ }
+ 
+ SYSCALL_DEFINE5(waitid, int, which, pid_t, upid, struct siginfo __user *,
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.7.7.6
