@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab3JECHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 22:07:36 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65523 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab3JECHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 22:07:34 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <524F7461.4010703@roeck-us.net>
-Date: Fri, 04 Oct 2013 19:07:29 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mark Brown <broonie@kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 3
-References: <20131004010230.GI27287@sirena.org.uk>	<524E50DB.3060707@roeck-us.net>	<CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>	<524EC658.90706@roeck-us.net> <CAOesGMj_DoC4iHsTMdbZ4sSOkbt-6nhaQgyFxtdvN96gXxyaxg@mail.gmail.com>
-In-Reply-To: <CAOesGMj_DoC4iHsTMdbZ4sSOkbt-6nhaQgyFxtdvN96gXxyaxg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751830Ab3JECOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 22:14:19 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:48824 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab3JECOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 22:14:17 -0400
+Message-ID: <1380939244.23565.6.camel@fishsauce>
+Subject: Re: [tpmdd-devel] [PATCH 06/13] tpm: Remove redundant
+ dev_set_drvdata
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Date: Fri, 04 Oct 2013 21:14:04 -0500
+In-Reply-To: <1379960083-8942-7-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1379960083-8942-1-git-send-email-jgunthorpe@obsidianresearch.com>
+	 <1379960083-8942-7-git-send-email-jgunthorpe@obsidianresearch.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100502-0320-0000-0000-0000014004DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 10:04 AM, Olof Johansson wrote:
-> On Fri, Oct 4, 2013 at 6:44 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 10/03/2013 10:41 PM, Olof Johansson wrote:
->>>
->>> On Thu, Oct 3, 2013 at 10:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>>
->>>> On 10/03/2013 06:02 PM, Mark Brown wrote:
->>>>>
->>>>>
->>>>> Hi all,
->>>>>
->>>>> Better late than never I've uploaded today's linux-next tree to the
->>>>> master branch of the repository below:
->>>>>
->>>>>            git://gitorious.org/thierryreding/linux-next.git
->>>>>
->>>>> A next-20131003 tag is also provided for convenience.
->>>>>
->>>>> A few new conflicts today caused by the removal of the h8300
->>>>> architecture which I didn't report for triviality.  Several new build
->>>>> failures were found as a result of running allmodconfig tests between
->>>>> merges all of which have been reported and I'm still carrying the i.MX
->>>>> fix that Thierry has been carrying.
->>>>>
->>>>> Due to the length of time taken to run all the allmodconfigs I skipped
->>>>> the defconfig tests; I know Olof has the ARM stuff covered in his
->>>>> autobuilder.  I'm going to use allyesconfig tomorrow since that should
->>>>> run faster so hopefully I can cover the ARM, i386 and x86_64 configs
->>>>> again.
->>>>>
->>>>
->>>> I could try to set up the buildbot farm I am using for -stable candidates
->>>> to also test the -next tree. Would that help ?
->>>
->>>
->>> ARM is pretty well-covered by my builds, I post results at:
->>>
->>> http://lists.linaro.org/mailman/listinfo/kernel-build-reports
->>>
->>
->> Great summaries. Do you have a single builder, or several builders and
->> collect the results ? Either case, any chance sharing the buildbot scripts ?
->
-> My buildbot scripts are some pretty ugly hacks that I don't
-> particularly feel like publishing to the world. I can send you a copy
-> though.
->
-Not much different to the quality of mine :). Would be great if you can send me a copy.
+On Mon, 2013-09-23 at 12:14 -0600, Jason Gunthorpe wrote:
+> TPM drivers should not call dev_set_drvdata (or aliases), only the core
+> code is allowed to call dev_set_drvdata, and it does it during
+> tpm_register_hardware.
+> 
+> These extra sets are harmless, but are an anti-pattern that many drivers
+> have copied.
+> 
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-For my scripts, I still have some secrets in there like my gmail password
-in the clear. I'll have to make sure it is removed before I can publish it.
+> diff --git a/drivers/char/tpm/tpm_spi_stm_st33.c b/drivers/char/tpm/tpm_spi_stm_st33.c
+> index 8d3e8e2..f5e3cd6 100644
+> --- a/drivers/char/tpm/tpm_spi_stm_st33.c
+> +++ b/drivers/char/tpm/tpm_spi_stm_st33.c
+> @@ -779,7 +779,6 @@ tpm_st33_spi_probe(struct spi_device *dev)
+>  	tpm_get_timeouts(chip);
+> 
+>  	/* attach chip datas to client */
+Looks good except this comment needs to be removed.  Since this driver
+is not merged, please remove this line in the new driver.
 
-> The builder is one single beefy machine that i have on loan. It
-> wouldn't be hard to make it distributed instead though; I've toyed
-> around with prototypes for that in the past.
->
-I would love to have something like that .. mine essentially consists
-of four PCs with quad-core CPUs, plus two smaller systems which are
-not always online.
+> -	spi_set_drvdata(dev, chip);
+>  	platform_data->bchipf = false;
+> 
+
+Acked-by: Ashley Lai <adlai@linux.vnet.ibm.com>
 
 Thanks,
-Guenter
+--Ashley Lai
+
 
