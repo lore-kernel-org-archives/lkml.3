@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab3JEViL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 17:38:11 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40187 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752610Ab3JEViJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 17:38:09 -0400
-X-Sasl-enc: 7ExebRv/pahfuZJUVQnoN+4b7b0YK+ZTMS16lONM2ltP 1381009086
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH] 6lowpan: Sync default hardware address of lowpan links to their wpan
-Date: Sat,  5 Oct 2013 17:38:00 -0400
-Message-Id: <1381009080-15945-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753068Ab3JEVmD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 17:42:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab3JEVl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 17:41:59 -0400
+Date: Sat, 5 Oct 2013 23:43:04 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Matt Porter <mporter@kernel.crashing.org>, stable@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
+        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
+        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 54/77] ntb: Ensure number of MSIs on SNB is enough
+ for the link interrupt
+Message-ID: <20131005214303.GA21589@dhcp-26-207.brq.redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <5d9c5b2d3bbc444ff32bddeece7a239d046bd79c.1380703263.git.agordeev@redhat.com>
+ <20131003004805.GL6768@jonmason-lab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003004805.GL6768@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a lowpan link to a wpan device is created, set the hardware address
-of the lowpan link to that of the wpan device.
+On Wed, Oct 02, 2013 at 05:48:05PM -0700, Jon Mason wrote:
+> On Wed, Oct 02, 2013 at 12:49:10PM +0200, Alexander Gordeev wrote:
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > ---
+> >  drivers/ntb/ntb_hw.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> > index de2062c..eccd5e5 100644
+> > --- a/drivers/ntb/ntb_hw.c
+> > +++ b/drivers/ntb/ntb_hw.c
+> > @@ -1066,7 +1066,7 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+> >  		/* On SNB, the link interrupt is always tied to 4th vector.  If
+> >  		 * we can't get all 4, then we can't use MSI-X.
+> >  		 */
+> > -		if (ndev->hw_type != BWD_HW) {
+> > +		if ((rc < SNB_MSIX_CNT) && (ndev->hw_type != BWD_HW)) {
+> 
+> Nack, this check is unnecessary.
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- net/ieee802154/6lowpan.c | 3 +++
- 1 file changed, 3 insertions(+)
+If SNB can do more than SNB_MSIX_CNT MSI-Xs then this check is needed
+to enable less than maximum MSI-Xs in case the maximum was not allocated.
+Otherwise SNB will fallback to single MSI instead of multiple MSI-Xs.
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index c85e71e..fb89133 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -1386,6 +1386,9 @@ static int lowpan_newlink(struct net *src_net, struct net_device *dev,
- 
- 	entry->ldev = dev;
- 
-+	BUG_ON(IEEE802154_ADDR_LEN != dev->addr_len);
-+	memcpy(dev->dev_addr, real_dev->dev_addr, IEEE802154_ADDR_LEN);
-+
- 	mutex_lock(&lowpan_dev_info(dev)->dev_list_mtx);
- 	INIT_LIST_HEAD(&entry->list);
- 	list_add_tail(&entry->list, &lowpan_devices);
 -- 
-1.8.1.2
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
