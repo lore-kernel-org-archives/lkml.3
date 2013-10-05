@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab3JEQLr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 12:11:47 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:45249 "HELO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752559Ab3JEQLZ (ORCPT
+	id S1752400Ab3JEQ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 12:28:24 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57080 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab3JEQ2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 12:11:25 -0400
-From: Matthias Beyer <mail@beyermatthias.de>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthias Beyer <mail@beyermatthias.de>
-Subject: [PATCH 4/5] drivers: usb: core: hcd: removed braces for return statements
-Date: Sat,  5 Oct 2013 18:02:09 +0200
-Message-Id: <9bf587e8b1031f3187f1123c4b546eb8d72cfe86.1380986962.git.mail@beyermatthias.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1380986962.git.mail@beyermatthias.de>
-References: <cover.1380986962.git.mail@beyermatthias.de>
-In-Reply-To: <cover.1380986962.git.mail@beyermatthias.de>
-References: <cover.1380986962.git.mail@beyermatthias.de>
+	Sat, 5 Oct 2013 12:28:23 -0400
+Date: Sat, 5 Oct 2013 09:28:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131005162802.GP5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131003190830.GA18672@redhat.com>
+ <20131003194226.GO28601@twins.programming.kicks-ass.net>
+ <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
+ <20131004165044.GV28601@twins.programming.kicks-ass.net>
+ <20131004170954.GK5790@linux.vnet.ibm.com>
+ <20131004185239.GS15690@laptop.programming.kicks-ass.net>
+ <20131004212506.GM5790@linux.vnet.ibm.com>
+ <20131005160511.GV3081@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131005160511.GV3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100516-9332-0000-0000-000001A8E13B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
----
- drivers/usb/core/hcd.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On Sat, Oct 05, 2013 at 06:05:11PM +0200, Peter Zijlstra wrote:
+> On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
+> > >                                                                     Why
+> > > do we still have a per-cpu kthread in nocb mode? The idea is that we do
+> > > not disturb the cpu, right? So I suppose these kthreads get to run on
+> > > another cpu.
+> > 
+> > Yep, the idea is that usermode figures out where to run them.  Even if
+> > usermode doesn't do that, this has the effect of getting them to be
+> > more out of the way of real-time tasks.
+> > 
+> > > Since its running on another cpu; we get into atomic and memory barriers
+> > > anyway; so why not keep the logic the same as no-nocb but have another
+> > > cpu check our nocb cpu's state.
+> > 
+> > You can do that today by setting rcu_nocb_poll, but that results in
+> > frequent polling wakeups even when the system is completely idle, which
+> > is out of the question for the battery-powered embedded guys.
+> 
+> So its this polling I don't get.. why is the different behaviour
+> required? And why would you continue polling if the cpus were actually
+> idle.
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 3a2667c..5d13d6c 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1120,18 +1120,18 @@ long usb_calc_bus_time (int speed, int is_input, int isoc, int bytecount)
- 	case USB_SPEED_LOW: 	/* INTR only */
- 		if (is_input) {
- 			tmp = (67667L * (31L + 10L * BitTime (bytecount))) / 1000L;
--			return (64060L + (2 * BW_HUB_LS_SETUP) + BW_HOST_DELAY + tmp);
-+			return 64060L + (2 * BW_HUB_LS_SETUP) + BW_HOST_DELAY + tmp;
- 		} else {
- 			tmp = (66700L * (31L + 10L * BitTime (bytecount))) / 1000L;
--			return (64107L + (2 * BW_HUB_LS_SETUP) + BW_HOST_DELAY + tmp);
-+			return 64107L + (2 * BW_HUB_LS_SETUP) + BW_HOST_DELAY + tmp;
- 		}
- 	case USB_SPEED_FULL:	/* ISOC or INTR */
- 		if (isoc) {
- 			tmp = (8354L * (31L + 10L * BitTime (bytecount))) / 1000L;
--			return (((is_input) ? 7268L : 6265L) + BW_HOST_DELAY + tmp);
-+			return ((is_input) ? 7268L : 6265L) + BW_HOST_DELAY + tmp;
- 		} else {
- 			tmp = (8354L * (31L + 10L * BitTime (bytecount))) / 1000L;
--			return (9107L + BW_HOST_DELAY + tmp);
-+			return 9107L + BW_HOST_DELAY + tmp;
- 		}
- 	case USB_SPEED_HIGH:	/* ISOC or INTR */
- 		/* FIXME adjust for input vs output */
--- 
-1.8.4
+The idea is to offload the overhead of doing the wakeup from (say)
+a real-time thread/CPU onto some housekeeping CPU.
+
+> Is there some confusion between the nr_running==1 extended quiescent
+> state and the nr_running==0 extended quiescent state?
+
+This is independent of the nr_running=1 extended quiescent state.  The
+wakeups only happen when runnning in the kernel.  That said, a real-time
+thread might want both rcu_nocb_poll=y and CONFIG_NO_HZ_FULL=y.
+
+> Now, none of this solves the issue at hand because event the 'regular'
+> no-nocb rcu mode has this issue of needing to wake kthreads, but I'd
+> like to get a better understanding of why nocb mode is as it is.
+> 
+> 
+> I've seen you've since send a few more emails; I might find some of the
+> answers in there. Let me go read the :-)
+
+I -think- I have solved it, but much testing and review will of course
+be required.  And fixing last night's test failures...
+
+							Thanx, Paul
 
