@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3JEAw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 20:52:58 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59838 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751307Ab3JEAw5 (ORCPT
+	id S1751576Ab3JEBcH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 21:32:07 -0400
+Received: from mailcleaner.wika.co.id ([202.159.16.230]:32892 "EHLO
+	mailcleaner.wika.co.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab3JEBcF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 20:52:57 -0400
-Date: Fri, 4 Oct 2013 20:52:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/6] trace: Make UPROBES depend on PERF_EVENTS
-Message-ID: <20131004205253.64dc04c9@gandalf.local.home>
-In-Reply-To: <1380922788-23112-5-git-send-email-andi@firstfloor.org>
-References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
-	<1380922788-23112-5-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Fri, 4 Oct 2013 21:32:05 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1037,1371056400"; 
+   d="scan'208";a="1688409"
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Millionaire,
+To: Recipients <fendy@wika.co.id>
+From: fendy@wika.co.id
+Date: Sat, 05 Oct 2013 02:10:48 +0100
+Reply-To: millionairecentre@qq.com
+X-Antivirus: avast! (VPS 131004-1, 10/04/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20131005004553.1D6D1842D4@mail.wika.co.id>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  4 Oct 2013 14:39:46 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+This is to inform you that,You have won a prize money of 
+(USD$800,000,00 United state dollars) 
+For the year of 2013 Lottery promotion which is 
+organized by MTN Who wants to be a Millionaire, 
+MTN only collects all the email addresses of the final winner of the 
+MTN on line lottery we only select five people every Month as our 
+winners through electronic balloting System without the winner applying, 
+we congratulate you for being one of the people selected. fill and submit 
+1.Full name       
+2.Address    
+3.Age      
+4.Tel   
+5.Sex    
+6.Occupation    
+7.Country
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> UPROBES need the perf events code, so add a dependency
-> from PERF_EVENTS to UPROBES.
 
-Can you please be a bit more specific on what uprobes requires of perf?
-That is, what part of the perf events code is needed, and why?
-
--- Steve
-
-> 
-> Cc: rostedt@goodmis.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  kernel/trace/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> index 015f85a..8639819 100644
-> --- a/kernel/trace/Kconfig
-> +++ b/kernel/trace/Kconfig
-> @@ -424,6 +424,7 @@ config UPROBE_EVENT
->  	bool "Enable uprobes-based dynamic events"
->  	depends on ARCH_SUPPORTS_UPROBES
->  	depends on MMU
-> +	depends on PERF_EVENTS
->  	select UPROBES
->  	select PROBE_EVENTS
->  	select TRACING
+call us +91858701370  
+Email: millionairecentre@qq.com
+Best Regards 
+Mr. Peter Williams
 
