@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab3JEJl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 05:41:57 -0400
-Received: from smtp-out-063.synserver.de ([212.40.185.63]:1060 "EHLO
-	smtp-out-062.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751447Ab3JEJl4 (ORCPT
+	id S1751584Ab3JEJxR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 05:53:17 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:48617 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3JEJxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 05:41:56 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 8292
-Message-ID: <524FDF54.5000207@metafoo.de>
-Date: Sat, 05 Oct 2013 11:43:48 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Sat, 5 Oct 2013 05:53:15 -0400
+Date: Sat, 5 Oct 2013 11:53:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Stephen Boyd <sboyd@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>, patches@linaro.org,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH V2] tick: Make sleep length calculation more accurate
+Message-ID: <20131005095310.GB28647@localhost.localdomain>
+References: <1380709565-22153-1-git-send-email-daniel.lezcano@linaro.org>
+ <CAFTL4hw-yawRUO-8ePsonvh1o2P7T5yb+GFPVop5OHzH6HTobw@mail.gmail.com>
+ <524C4845.5060800@linaro.org>
+ <20131002164221.GI7941@localhost.localdomain>
+ <524C5FFB.6020504@linaro.org>
 MIME-Version: 1.0
-To: leroy christophe <christophe.leroy@c-s.fr>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, patrick.vasseur@c-s.fr
-Subject: Re: [PATCH] IIO AD7923 iio_consumer support
-References: <201310050821.r958LBqP012933@localhost.localdomain> <524FD0AB.7020209@metafoo.de> <524FD976.9060708@c-s.fr> <524FDD4F.7080406@metafoo.de> <524FDE35.3050008@c-s.fr>
-In-Reply-To: <524FDE35.3050008@c-s.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <524C5FFB.6020504@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2013 11:39 AM, leroy christophe wrote:
+On Wed, Oct 02, 2013 at 08:03:39PM +0200, Daniel Lezcano wrote:
+> On 10/02/2013 06:42 PM, Frederic Weisbecker wrote:
+> >On Wed, Oct 02, 2013 at 06:22:29PM +0200, Daniel Lezcano wrote:
+> >>On 10/02/2013 05:57 PM, Frederic Weisbecker wrote:
+> >>>2013/10/2 Daniel Lezcano <daniel.lezcano@linaro.org>:
+> >>>>The sleep_length is computed in the tick_nohz_stop_sched_tick function but it
+> >>>>is used later in the code with in between the local irq enabled.
+> >>>>
+> >>>>cpu_idle_loop
+> >>>>   tick_nohz_idle_enter         [ exits with local irq enabled ]
+> >>>>    __tick_nohz_idle_enter
+> >>>>      tick_nohz_stop_sched_tick
+> >>>>   ...
+> >>>>
+> >>>>   arch_cpu_idle
+> >>>>      menu_select               [ uses here 'sleep_length' ]
+> >>>>   ...
+> >>>>
+> >>>>Between the computation of the sleep length and its usage, some interrupts
+> >>>>may occur, making the sleep length shorter than actually it is because of the
+> >>>>interrupt processing
+> >>>
+> >>>So, do you mean that the ts->sleep_length would return a value that is too long
+> >>>given that the CPU already spent some time to service the irqs since we computed
+> >>>the sleep length in tick_nohz_idle_enter()?
+> >>>
+> >>>But then tick_nohz_irq_exit() should take care of that as it calls
+> >>>again tick_nohz_stop_sched_tick().
+> >>>So I'm a bit confused.
+> >>>
+> >>>>or different if the timer itself expired.
+> >>>
+> >>>Same here, if the timer expired, it triggers an interrupt which can do
+> >>>two things:
+> >>>
+> >>>1) reprogram a new timer and this recompute sleep_length
+> >>>2) set_need_resched() and then exit the idle loop, so arch_cpu_idle() won't even
+> >>>be called. Or the timer interrupts hlt, but then menu_select() was
+> >>>called before.
+> >>>
+> >>>So I probably missed something here.
+> >>
+> >>No you did not :)
+> >>
+> >>Indeed... At the first glance, this issue sounded so obvious I
+> >>suspected there must be a trick somewhere but I did not think to
+> >>look at the irq_exit, the code is very complex. Thanks for
+> >>clarifying this.
+> >>
+> >>For my personal information, is there any particular reason to set
+> >>an intermediate 'sleep_length' in tick_nohz_stop_sched_tick instead
+> >>of doing what does this patch ?
+> >
+> >May be we could do it that way yeah. Is menu_select() called only there?
+> >I don't know how much difference that would make.
 > 
-> Le 05/10/2013 11:35, Lars-Peter Clausen a écrit :
->> On 10/05/2013 11:18 AM, leroy christophe wrote:
->>> Le 05/10/2013 10:41, Lars-Peter Clausen a écrit :
->>>> On 10/05/2013 10:21 AM, Christophe Leroy wrote:
->>>>> +        .consumer_channel = "channel_0",
->>>>> +        .adc_channel_label = "0",
->>>>> +    },
->>>>> +    {
->>>>> +        .consumer_dev_name = AD7923_NAME,
->>>>> +        .consumer_channel = "channel_1",
->>>>> +        .adc_channel_label = "1",
->>>>> +    },
->>>>> +    {
->>>>> +        .consumer_dev_name = AD7923_NAME,
->>>>> +        .consumer_channel = "channel_2",
->>>>> +        .adc_channel_label = "2",
->>>>> +    },
->>>>> +    {
->>>>> +        .consumer_dev_name = AD7923_NAME,
->>>>> +        .consumer_channel = "channel_3",
->>>>> +        .adc_channel_label = "3",
->>>>> +    },
->>>>> +    { }
->>>>> +};
->>>> This is a mapping between channel names of the provider between the channel
->>>> names of the consumer. So it is specific to a certain combination of
->>>> consumer and provider and usually depend on how things are physically wired
->>>> on your board. As such there can be no generic mapping and this needs to go
->>>> into your machine/board driver. The mapping is usually passed to the IIO
->>>> driver via its platform data.
->>>>
->>>> So e.g. imagine you have a provider like this driver and you have a
->>>> consumer
->>>> that has a "voltage" channel. And on your board channel 3 of the ADC is
->>>> what
->>>> you want to route to that consumer. Then your mapping would look like this:
->>>>
->>>> {
->>>>      .consumer_dev_name = "your_consumer_device.1",
->>>>      .consumer_channel = "voltage",
->>>>      .adc_channel_label = "AIN3",
->>>> }
->>>>
->>>> And in your consumer driver you'd do:
->>>>
->>>> channel = iio_channel_get(dev, "voltage");
->>>>
->>>>
->>> Thanks for the explanation.
->>>
->>> Can the mapping be retrieved via of_platform ?
->>>
->>> Indeed, the only exemple I found was in the lp8788_adc driver, which
->>> includes iio/machine.h and declares a default mapping, but it is based on
->>> platform_data, not of_platform.
->>>
->> If you are using device tree you can specify the mapping inside the
->> devicetree. Have a look at
->> Documentation/devicetree/bindings/iio/iio-bindings.txt
->>
->>
-> Yes, I saw that. Is there anything that shall be done in the driver to
-> support it, or is it automatic ?
+> Yes, it is called just one time in all the code. The benefit would
+> be just to cleanup a field in the struct tick_sched.
 
-It should work out of the box. Just make sure to set the #io-channel-cells
-property for the ADC device node in the devicetree.
+Yeah, why not.
 
-- Lars
+Thanks.
 
+> 
+> 
+> -- 
+>  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+> 
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+> 
