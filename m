@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3JECTB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 22:19:01 -0400
-Received: from mail-ye0-f178.google.com ([209.85.213.178]:39778 "EHLO
-	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab3JECTA (ORCPT
+	id S1751748Ab3JECZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 22:25:39 -0400
+Received: from [207.46.163.28] ([207.46.163.28]:1607 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751196Ab3JECZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 22:19:00 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: benh@kernel.crashing.org
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] irq: irqdomain: Include <linux/of_irq.h>
-Date: Fri,  4 Oct 2013 23:18:46 -0300
-Message-Id: <1380939526-17619-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 4 Oct 2013 22:25:37 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sat, 5 Oct 2013 10:24:23 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Sascha Hauer <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: imx: Include linux/err.h
+Message-ID: <20131005022422.GF2734@S2101-09.ap.freescale.net>
+References: <1380542691-24756-1-git-send-email-treding@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1380542691-24756-1-git-send-email-treding@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On Mon, Sep 30, 2013 at 02:04:51PM +0200, Thierry Reding wrote:
+> The IS_ERR() macro is defined in the linux/err.h header file, so include
+> it explicitly.
 
-Fix the following sparse warning:
+Hmm, I can not find IS_ERR() in arch/arm/mach-imx/cpu.c
 
-kernel/irq/irqdomain.c:468:14: warning: symbol 'irq_create_of_mapping' was not declared. Should it be static?
+Shawn
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- kernel/irq/irqdomain.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 706724e..37cc657 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -10,6 +10,7 @@
- #include <linux/mutex.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-+#include <linux/of_irq.h>
- #include <linux/topology.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--- 
-1.8.1.2
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  arch/arm/mach-imx/cpu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/cpu.c b/arch/arm/mach-imx/cpu.c
+> index fae2c9a..ba3b498 100644
+> --- a/arch/arm/mach-imx/cpu.c
+> +++ b/arch/arm/mach-imx/cpu.c
+> @@ -1,4 +1,4 @@
+> -
+> +#include <linux/err.h>
+>  #include <linux/module.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+> -- 
+> 1.8.4
+> 
 
