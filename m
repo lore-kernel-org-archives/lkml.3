@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab3JESvw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 14:51:52 -0400
-Received: from smtprelay0025.hostedemail.com ([216.40.44.25]:39536 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752305Ab3JESvv (ORCPT
+	id S1752741Ab3JESxy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 14:53:54 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:49174 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab3JESxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 14:51:51 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:966:982:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3698:3742:3865:3866:3867:3868:3870:3871:3873:4250:4321:4385:4605:5007:6119:6120:7652:7901:10004:10226:10400:10848:11026:11232:11473:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: word59_fe4f87c2e915
-X-Filterd-Recvd-Size: 1997
-Message-ID: <1380999108.2081.138.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch.pl: Check for the FSF mailing address
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 05 Oct 2013 11:51:48 -0700
-In-Reply-To: <20131005184307.GA6429@leaf>
-References: <20131005184307.GA6429@leaf>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Oct 2013 14:53:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131005173403.GA4811@kroah.com>
+References: <20131005173403.GA4811@kroah.com>
+Date: Sat, 5 Oct 2013 11:53:52 -0700
+X-Google-Sender-Auth: abDJQIDLL2LR0SF1ZT6EXfbr_hY
+Message-ID: <CA+55aFzEtnOOB4yPbWg4tmvWTPjQL1_YsZks6wgpGimaQdOEtA@mail.gmail.com>
+Subject: Re: [GIT PATCH] TTY/Serial fixes for 3.12-rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-05 at 11:43 -0700, Josh Triplett wrote:
-> Kernel maintainers reject new instances of the GPL boilerplate paragraph
-> directing people to write to the FSF for a copy of the GPL, since the
-> FSF has moved in the past and may do so again.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -1859,6 +1859,16 @@ sub process {
->  			$rpt_cleaners = 1;
->  		}
->  
-> +# Check for FSF mailing addresses.
-> +		if ($rawline =~ /You should have received a copy/ ||
+On Sat, Oct 5, 2013 at 10:34 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> One fixes the reported regression in the n_tty code that a number of
+> people found recently
 
-There are over 9,000 of these in the tree.
+That one looks broken.
 
-> +		    $rawline =~ /write to the Free Software/ ||
+Well, it looks like it might "work", but do so by hiding the issue for
+one case, while leaving it in the more general case.
 
-Over 7,000
+Why does it do that
 
-> +		    $rawline =~ /59 Temple Place/ ||
+    up_read(&tty->termios_rwsem);
+    tty_flush_to_ldisc(tty);
+    down_read(&tty->termios_rwsem);
 
-Over 3,500
+only if TTY_OTHER_CLOSED is set? If flushing the ldisc can generate
+more data, then we should do it *unconditionally* when we see that we
+currently have no data to read.
 
-> +		    $rawline =~ /51 Franklin Street/) {
+As it is, it looks like the patch fixes the TTY_OTHER_CLOSED case
+("read all pending data before returning -EIO"), but it leaves the
+same broken case for the O_NONBLOCK case and for a hung up tty.
 
-Over 1,500
+The O_NONBLOCK case is presumably just a performance problem (the data
+will come at _some_ point later), but it just looks bad in general.
+And the tty_hung_up_p() looks actiely buggy, with the same bug as the
+TTY_OTHER_CLOSED case that the patch tried to fix.
 
-> +			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
-> +			ERROR("FSF_MAILING_ADDRESS",
-> +			      "Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
+Hmm? Am I missing something?
 
-Is this really a useful ERROR condition?
-Maybe a CHK --strict test or a warning instead?
+The code is a bit confusing in *other* ways too: if you look later, it
+does this:
 
+    n_tty_set_room(tty);
+
+which is documented to have to happen inside the termios_rwsem.
+HOWEVER, what does that do? It actually does an _asynchronous_
+queue_work() of &tty->port->buf.work, in case there is now more room,
+and the previous one was blocked. And guess what that workqueue is all
+about? Right: it's flush_to_ldisc() - which is the work that
+tty_flush_to_ldisc() is trying to flush. So we're actually basically
+making sure we've flush the previous pending work.
+
+So even the tty_flush_to_ldisc(tty) that gets done in that patch is
+not necessarily sufficient, because the work might not have been
+scheduled because the flip buffer used to be full. Then flushing the
+work won't do anything, even though there is actually more data. Now,
+that is a very unlikely situation (I think it requires two concurrent
+readers), but it looks like it might be real.
+
+So I suspect we should *unconditionally* do
+
+     n_tty_set_room(tty);
+     up_read(&tty->termios_rwsem);
+     tty_flush_to_ldisc(tty);
+     down_read(&tty->termios_rwsem);
+
+if we don't have any pending input. And then test input_available_p()
+again. And only if we don't have any input after that flushing do we
+start doing the whole TTY_OTHER_CLOSED and tty_hung_up_p() tests.
+
+Hmm?
+
+            Linus
