@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3JEUAF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 16:00:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38983 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3JEUAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 16:00:03 -0400
-Date: Sat, 5 Oct 2013 21:59:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, peter@hurleysoftware.com
-Subject: Re: tty^Wrcu/perf lockdep trace.
-Message-ID: <20131005195949.GW3081@twins.programming.kicks-ass.net>
-References: <20131003194226.GO28601@twins.programming.kicks-ass.net>
- <20131003195832.GU5790@linux.vnet.ibm.com>
- <20131004065835.GP28601@twins.programming.kicks-ass.net>
- <20131004160352.GF5790@linux.vnet.ibm.com>
- <20131004165044.GV28601@twins.programming.kicks-ass.net>
- <20131004170954.GK5790@linux.vnet.ibm.com>
- <20131004185239.GS15690@laptop.programming.kicks-ass.net>
- <20131004212506.GM5790@linux.vnet.ibm.com>
- <20131005160511.GV3081@twins.programming.kicks-ass.net>
- <20131005162802.GP5790@linux.vnet.ibm.com>
+	id S1752564Ab3JEUVL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 16:21:11 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:51350 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354Ab3JEUVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 16:21:10 -0400
+Message-ID: <52507475.3050305@cs.wisc.edu>
+Date: Sat, 05 Oct 2013 15:20:05 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131005162802.GP5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] [PATCH 2/5] revert: "blk-mq: blk-mq should free bios
+ in pass through case"
+References: <20131004134908.231874670@bombadil.infradead.org> <20131004135014.524075942@bombadil.infradead.org> <524EFD55.4050701@cs.wisc.edu> <20131005105008.GA19022@infradead.org>
+In-Reply-To: <20131005105008.GA19022@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 09:28:02AM -0700, Paul E. McKenney wrote:
-> On Sat, Oct 05, 2013 at 06:05:11PM +0200, Peter Zijlstra wrote:
-> > On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
-> > > >                                                                     Why
-> > > > do we still have a per-cpu kthread in nocb mode? The idea is that we do
-> > > > not disturb the cpu, right? So I suppose these kthreads get to run on
-> > > > another cpu.
-> > > 
-> > > Yep, the idea is that usermode figures out where to run them.  Even if
-> > > usermode doesn't do that, this has the effect of getting them to be
-> > > more out of the way of real-time tasks.
-> > > 
-> > > > Since its running on another cpu; we get into atomic and memory barriers
-> > > > anyway; so why not keep the logic the same as no-nocb but have another
-> > > > cpu check our nocb cpu's state.
-> > > 
-> > > You can do that today by setting rcu_nocb_poll, but that results in
-> > > frequent polling wakeups even when the system is completely idle, which
-> > > is out of the question for the battery-powered embedded guys.
-> > 
-> > So its this polling I don't get.. why is the different behaviour
-> > required? And why would you continue polling if the cpus were actually
-> > idle.
+On 10/05/2013 05:50 AM, Christoph Hellwig wrote:
+> On Fri, Oct 04, 2013 at 12:39:33PM -0500, Mike Christie wrote:
+>> Sorry, messed up function name. I meant blk_end_request*.
+>>
+>> For blk_execute_rq_nowait/blk_execute_rq and normal request use, the
+>> lower levels free the bios as they are completed by one of the
+>> blk_finish_request* calls. The caller of of
+>> blk_execute_rq_nowait/blk_execute_rq does not have to worry about
+>> freeing bios. It just frees the request when it is done with it.
 > 
-> The idea is to offload the overhead of doing the wakeup from (say)
-> a real-time thread/CPU onto some housekeeping CPU.
+> Are you talking about bios or requests?  All these functions deal with
+> requests, so the talk of bios really confuses me.
 
-Sure I get that that is the idea; what I don't get is why it needs to
-behave differently depending on NOCB.
+The functions take in requests as the argument, but they end up
+operating on bios too. The scsi layer does
+scsi_io_completion->scsi_end_request-> blk_end_request ->
+blk_end_bidi_request -> blk_update_bidi_request -> blk_update_request.
+That function will then complete bios on the request passed in. It does
+not matter if the request is a REQ_TYPE_FS or REQ_TYPE_BLOCK_PC.
 
-Why does a NOCB thingy need to wake up the kthread far more often?
+With my patch I was trying to make the block layer do the same for mq
+REQ_TYPE_BLOCK_PC requests inserted into the queue with
+blk_execute_rq_nowait (Nick's patch had support for something like that)
+by having the block mq layer call blk_mq_finish_request instead of
+making the code that calls blk_execute_rq_nowait do it.
 
-> > Is there some confusion between the nr_running==1 extended quiescent
-> > state and the nr_running==0 extended quiescent state?
+
 > 
-> This is independent of the nr_running=1 extended quiescent state.  The
-> wakeups only happen when runnning in the kernel.  That said, a real-time
-> thread might want both rcu_nocb_poll=y and CONFIG_NO_HZ_FULL=y.
+> That beeing said the old ones all require the caller to free the
+> request, and complicate that with the useless refcounting that my patch
+> 3 removes.  Take a look at the other patches how all the calling
+> conventions can be nicely unified.
 
-So there's 3 behaviours?
+I agree. I like them. I am saying though it could be better because even
+with your patches the rq->end_io functions need to have the mq_ops check
+like the flush_end_io does. If my patch worked as intended we would have
+your improvements and we would not need the rq->end_io functions to have
+that check and call blk_mq_finish_request because the blk mq layer was
+doing it for them.
 
- - CONFIG_NO_HZ_FULL=n
- - CONFIG_NO_HZ_FULL=y, rcu_nocb_poll=n
- - CONFIG_NO_HZ_FULL=y, rcu_nocb_poll=y
-
-What I'm trying to understand is why do all those things behave
-differently? For all 3 configs there's kthreads that do the GP advancing
-and can run on different cpus.
-
-And why does rcu_nocb_poll=y need to be terrible for power usage; surely
-we know when cpus are actually idle and can stop polling them.
+That is all I am saying. I would like to be able to remove that check
+and blk_mq_finish_request call from the rq->end_io callouts.
