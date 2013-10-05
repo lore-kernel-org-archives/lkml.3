@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3JEWpV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 18:45:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45652 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab3JEWpU (ORCPT
+	id S1752759Ab3JEXHr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 19:07:47 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:48759 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab3JEXHp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 18:45:20 -0400
-Date: Sat, 5 Oct 2013 23:44:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: linux-next@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131005224454.GA21581@sirena.org.uk>
+	Sat, 5 Oct 2013 19:07:45 -0400
+Date: Sat, 05 Oct 2013 18:07:42 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <87li281wx6.fsf_-_@xmission.com> (from ebiederm@xmission.com on
+	Fri Oct  4 17:41:25 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1381014462.1974.162@driftwood>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-X-Cookie: Penalty for private use.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Oct 4
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/04/2013 05:41:25 PM, Eric W. Biederman wrote:
+> 
+> This patchset is an attempt to address two problems:
+> 1) Not all modifications to the filesystems happen through the vfs and
+>    since the vfs can not cope with a mount point being unlinked or
+>    renamed filesystems whose modifications that do not come through  
+> the
+>    vfs are required to lie.
+> 
+> 2) Through an oversight it is now possible for one unprivileged user  
+> to
+>    mount something on another unprivileged users dentry and make it
+>    impossible for the other user to unlink or rename that dentry.
+> 
+> It is now technically possible to easily lift the restriction on
+> unlinking and renaming files with mount points on them, with a
+> corresponding reduction in complexity of the vfs semantics and a small
+> code side reduction.
 
---vtzGhvizbBRQ85DL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+A todo item I've had _forever_ is fixing chroot() to not be broken so  
+that you can trivially break out of a chroot via:
 
-Hi all,
+   chdir("/");
+   mkdir("sub");
+   chroot("sub");
+   chdir("./../../../../../../../..");
 
-Better late than never I've uploaded today's linux-next tree to the
-master branch of the repository below:
+(Because chroot() affects where "/" points but NOT where "." points to,  
+and chdir does an == check with the dentry "/" points at to know when  
+to stop, so if you move "/" under "." you can back up to the actual  
+root of the tree.)
 
-        git://gitorious.org/thierryreding/linux-next.git
+The above is why lxc uses pivot_root() instead of chroot().
 
-A next-20131004 tag is also provided for convenience.
+These days, we have multiple mount trees so there's no reason chroot()  
+can't trim the process local mount tree (creating a new bind mount if  
+necessary). Except my todo list runneth over and I haven't had a chance  
+to dig in and see what would be involved. (Last time I brought this up  
+people were wondering why chroot() didn't just move "." to the new "/"  
+if it wasn't under it. I had no idea, still don't.)
 
-Each merge was tested with x86_664 allyesconfig.  A few new conflicts
-and build test failures came up along the way - these have all been
-reported.
-
-Thanks,
-Mark
-
---vtzGhvizbBRQ85DL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSUJZiAAoJELSic+t+oim9Cv4P/1jVgCbk77VpUv7BPA536mo0
-WFc7cmj+KGyDL4PrwhRcN0VJeB1B9oC5SSddW2jqfPnDi3Ysajvlx3W4sOSPiKca
-TH4vpXaPGXXXngbQ5kU2C2t3KVgGSn65uu/kbA6Cgm7Z5adovGXJiUg5r3m9ff8F
-0Jg63Q/X6hMYOiUuijeuJd6I/hk6bJVvwCe3QBs6qLA+hGRveMhpn5o1293Hj0N0
-GJUL4g8zmDxk7Ls4xDEylI/5C7+raV69rEYhygP/wT3a8a/KtUm4ELL7Irhq+emA
-LxcwtyLGAs6IOzbPgqLaTvJhKgdfUaOA9pP+1cY+QkNkuepkYhC+1x9K4WbQ3A47
-royC2COf5DJiE+EmlI7xISyVl5aXZx1zd1mKzGzTHMeF5P0ngaiETD/8a+Lr+6F/
-RtrQWRLUevhJJryfGP46TMeiKxC7cLGS2DqgrL4c872cMU6WYcqQI2zLQFAL1Onv
-o+c2JfNbRn0KwZuVW4JRSIoRRUPpmEuRheDSinJc2WrNgYJGvR5PBjeqVCnONwES
-fKsaeN117zTnSwHPhDqCrg4Su2+pVivb2GgW1RChj//vlTC2DCG1IvgP5AFLnmUc
-nCfYP582joFTQaZM1vRopnohtVBTOp8Kg7ToAoKZP5vuz6bLkTt+vo3HG8Nwsbq/
-dUb6RGfMAv/2KEv8Spma
-=j70u
------END PGP SIGNATURE-----
-
---vtzGhvizbBRQ85DL--
+Rob
