@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3JELUB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 07:20:01 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:64431 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab3JELT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 07:19:58 -0400
-From: Andreas Fenkart <afenkart@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Felipe Balbi <balbi@ti.com>, Venkatraman S <svenkatr@ti.com>,
-        Balaji T K <balajitk@ti.com>, zonque@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-omap@vger.kernel.org, Andreas Fenkart <afenkart@gmail.com>
-Subject: [PATCH v3 4/4] mmc: omap_hsmmc: debugfs entries for SDIO IRQ detection and GPIO remuxing.
-Date: Sat,  5 Oct 2013 13:17:10 +0200
-Message-Id: <1380971830-21492-5-git-send-email-afenkart@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1380971830-21492-1-git-send-email-afenkart@gmail.com>
-References: <1380971830-21492-1-git-send-email-afenkart@gmail.com>
+	id S1752010Ab3JEMKI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 08:10:08 -0400
+Received: from plane.gmane.org ([80.91.229.3]:51633 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751847Ab3JEMKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 08:10:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Simon Easter <simon.easter@gmail.com>
+Subject: Re: [PATCH 1/1] Fix SD card detection and use correct transfer interval.
+Date: Sat, 5 Oct 2013 12:06:10 +0000 (UTC)
+Message-ID: <loom.20131005T140209-999@post.gmane.org>
+References: <1370103731-5667-1-git-send-email-marcus.overhagen@gmail.com> <1370103731-5667-2-git-send-email-marcus.overhagen@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 79.148.28.163 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.76 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the debugfs related code for the SDIO IRQ support.
-Note that PSTATE shows current state of data lines, incl.
-SDIO IRQ pending
+Marcus Overhagen <marcus.overhagen <at> gmail.com> writes:
 
-Signed-off-by: Andreas Fenkart <afenkart@gmail.com>
+> 
+> Increasing the timeout when polling for card status to 100ms
+> as used at other places in this driver fixes SD card detection.
+> 
+> Also use correct interval when doing the interrupt transfer,
+> this fixes the "xhci_queue_intr_tx: 74 callbacks suppressed"
+> spamming to syslog that was occuring when this driver is used.
+> 
+> Signed-off-by: Marcus Overhagen <marcus.overhagen <at> gmail.com>
+> ---
+>  drivers/staging/rts5139/rts51x_transport.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/rts5139/rts51x_transport.c 
+b/drivers/staging/rts5139/rts51x_transport.c
+> index 89e4d80..c172f4a 100644
+> --- a/drivers/staging/rts5139/rts51x_transport.c
+> +++ b/drivers/staging/rts5139/rts51x_transport.c
+>  <at>  <at>  -635,12 +635,12  <at>  <at>  int rts51x_get_epc_status(struct 
+rts51x_chip *chip, u16 *status)
+>  	ep = chip->usb->pusb_dev->ep_in[usb_pipeendpoint(pipe)];
+> 
+>  	/* fill and submit the URB */
+> -	/* We set interval to 1 here, so the polling interval is controlled
+> -	 * by our polling thread */
+> +	/* Set interval to 10 here to match the endpoint descriptor,
+> +	 * the polling interval is controlled by the polling thread */
+>  	usb_fill_int_urb(chip->usb->intr_urb, chip->usb->pusb_dev, pipe,
+> -			 status, 2, urb_done_completion, &urb_done, 1);
+> +			 status, 2, urb_done_completion, &urb_done, 10);
+> 
+> -	result = rts51x_msg_common(chip, chip->usb->intr_urb, 50);
+> +	result = rts51x_msg_common(chip, chip->usb->intr_urb, 100);
+> 
+>  	return interpret_urb_result(chip, pipe, 2, result,
+>  				    chip->usb->intr_urb->actual_length);
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index a8894ee..f7fe06f 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -81,6 +81,7 @@ static void apply_clk_hack(struct device *dev)
- #define OMAP_HSMMC_RSP54	0x0118
- #define OMAP_HSMMC_RSP76	0x011C
- #define OMAP_HSMMC_DATA		0x0120
-+#define OMAP_HSMMC_PSTATE	0x0124
- #define OMAP_HSMMC_HCTL		0x0128
- #define OMAP_HSMMC_SYSCTL	0x012C
- #define OMAP_HSMMC_STAT		0x0130
-@@ -1812,6 +1813,22 @@ static int omap_hsmmc_regs_show(struct seq_file *s, void *data)
- {
- 	struct mmc_host *mmc = s->private;
- 	struct omap_hsmmc_host *host = mmc_priv(mmc);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&host->irq_lock, flags);
-+	seq_puts(s, "\n");
-+	seq_printf(s, "sdio irq\t%s\n", ((host->flags & HSMMC_SDIO_IRQ_ENABLED)
-+					 ? "enabled" : "disabled"));
-+	if (host->flags & HSMMC_SWAKEUP_QUIRK) {
-+		seq_printf(s, "pinmux config\t%s\n", ((host->flags &
-+						       HSMMC_RUNTIME_SUSPENDED)
-+						      ?  "gpio" : "sdio"));
-+		if (host->flags & HSMMC_RUNTIME_SUSPENDED)
-+			seq_printf(s, "sdio irq pin\t%s\n",
-+				   gpio_get_value(mmc_slot(host).gpio_cirq) ?
-+				   "high" : "low");
-+	}
-+	spin_unlock_irqrestore(&host->irq_lock, flags);
- 
- 	if (host->suspended) {
- 		seq_printf(s, "host suspended, can't read registers\n");
-@@ -1819,9 +1836,11 @@ static int omap_hsmmc_regs_show(struct seq_file *s, void *data)
- 	}
- 
- 	pm_runtime_get_sync(host->dev);
--
-+	seq_puts(s, "\nregs:\n");
- 	seq_printf(s, "CON:\t\t0x%08x\n",
- 			OMAP_HSMMC_READ(host->base, CON));
-+	seq_printf(s, "PSTATE:\t\t0x%08x\n",
-+		   OMAP_HSMMC_READ(host->base, PSTATE));
- 	seq_printf(s, "HCTL:\t\t0x%08x\n",
- 			OMAP_HSMMC_READ(host->base, HCTL));
- 	seq_printf(s, "SYSCTL:\t\t0x%08x\n",
--- 
-1.7.10.4
+
+Hi Marcus, 
+ I'm trying to apply this patch to 3.8.0-18 kernel tree but looks like it 
+doesn't want to take (Ubuntu 13.04 stock) 
+
+I don't suppose you have a patch for this version?, not quite sure if 
+reading 
+the patch file properly but assuming I get changes in what is the  correct 
+way to just compile this module and insert into running config?
+
+Thanks
+
+Simon
+
 
