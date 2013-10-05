@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab3JEOUb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 10:20:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50023 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752239Ab3JEOU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 10:20:29 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: wim@iguana.be
-Cc: linux-arm-kernel@lists.infradead.org, carlo.caione@gmail.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH] wdt: sunxi: Fix section mismatch
-Date: Sat,  5 Oct 2013 16:20:17 +0200
-Message-Id: <1380982817-10234-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.4
+	id S1752487Ab3JEOVa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 10:21:30 -0400
+Received: from imap.thunk.org ([74.207.234.97]:42395 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab3JEOV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 10:21:28 -0400
+Date: Sat, 5 Oct 2013 10:21:21 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Dilger, Andreas" <andreas.dilger@intel.com>
+Cc: Greg KH <greg@kroah.com>, Peng Tao <tao.peng@emc.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: lustre: why does cfs_get_random_bytes() exist?
+Message-ID: <20131005142121.GA22773@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Dilger, Andreas" <andreas.dilger@intel.com>,
+	Greg KH <greg@kroah.com>, Peng Tao <tao.peng@emc.com>,
+	"devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20131003234545.GA19796@thunk.org>
+ <CE750681.752DF%andreas.dilger@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CE750681.752DF%andreas.dilger@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver has a section mismatch, for probe and remove functions,
-leading to the following warning during the compilation.
+On Sat, Oct 05, 2013 at 06:10:54AM +0000, Dilger, Andreas wrote:
+> >With modern kernels, the /dev/random driver has the
+> >add_device_randomness() interface which is used to mix in
+> >personalization information, which includes the network MAC address.
+> >So that particular concern should be covered without the hack of
+> >mixing in cfs_rand().
+> 
+> I think that depends on the network driver.  The Cray systems have some
+> very strange networking hardware that is beyond our control - definitely
+> not ethernet or Infiniband.
 
-WARNING: drivers/watchdog/built-in.o(.data+0x24): Section mismatch in
-reference from the variable sunxi_wdt_driver to the function
-.init.text:sunxi_wdt_probe()
-The variable sunxi_wdt_driver references
-the function __init sunxi_wdt_probe()
+add_device_randomness() is called from __dev_open() and
+dev_set_mac_address() in net/core/dev.c.  This is above the ethernet
+and infiniband level.  So as long as it looks like a Linux network
+device, and they are setting the hardware media access address in the
+standard place (dev->dev_addr), it should work fine.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/watchdog/sunxi_wdt.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+If they don't then they should fix their drivers to call
+add_device_randomness(); the answer shouldn't be to make every single
+users of the Linux random number generation infrastructure work around
+the problem at the subsystem or file system level!
 
-diff --git a/drivers/watchdog/sunxi_wdt.c b/drivers/watchdog/sunxi_wdt.c
-index 1f94b42..f6caa77 100644
---- a/drivers/watchdog/sunxi_wdt.c
-+++ b/drivers/watchdog/sunxi_wdt.c
-@@ -146,7 +146,7 @@ static const struct watchdog_ops sunxi_wdt_ops = {
- 	.set_timeout	= sunxi_wdt_set_timeout,
- };
- 
--static int __init sunxi_wdt_probe(struct platform_device *pdev)
-+static int sunxi_wdt_probe(struct platform_device *pdev)
- {
- 	struct sunxi_wdt_dev *sunxi_wdt;
- 	struct resource *res;
-@@ -187,7 +187,7 @@ static int __init sunxi_wdt_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int __exit sunxi_wdt_remove(struct platform_device *pdev)
-+static int sunxi_wdt_remove(struct platform_device *pdev)
- {
- 	struct sunxi_wdt_dev *sunxi_wdt = platform_get_drvdata(pdev);
- 
--- 
-1.8.4
-
+						- Ted
