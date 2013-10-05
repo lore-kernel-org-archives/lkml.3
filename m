@@ -1,122 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3JEXVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 19:21:53 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:43040 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab3JEXVH (ORCPT
+	id S1753668Ab3JEXWT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 19:22:19 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:61111 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab3JEXWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 19:21:07 -0400
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH net-next v2 7/8] tcp: switch tcp_fastopen key generation to net_get_random_once
-Date: Sun,  6 Oct 2013 01:20:57 +0200
-Message-Id: <1381015258-7667-8-git-send-email-hannes@stressinduktion.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381015258-7667-1-git-send-email-hannes@stressinduktion.org>
-References: <1381015258-7667-1-git-send-email-hannes@stressinduktion.org>
+	Sat, 5 Oct 2013 19:22:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFy-5UhwZukWj2uemaCy3pczpA0nGxxzZGnPCU0=Bv7bHg@mail.gmail.com>
+References: <87li281wx6.fsf_-_@xmission.com>
+	<1381014462.1974.162@driftwood>
+	<CA+55aFy-5UhwZukWj2uemaCy3pczpA0nGxxzZGnPCU0=Bv7bHg@mail.gmail.com>
+Date: Sat, 5 Oct 2013 16:22:15 -0700
+X-Google-Sender-Auth: KPLvIdeZz3S5VEZ9ex6bcHo6KTQ
+Message-ID: <CA+55aFxgUMnZts-RXFh1qL1u+De_HNdMrC34skyWurbzvqpUdg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed key initialization of tcp_fastopen cookies to net_get_random_once.
+On Sat, Oct 5, 2013 at 4:17 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So learn this pattern: every time you use chroot, add a simple
+>
+>   chdir("/");
+>
+> immediately after the chroot call.
 
-If the user sets a custom key net_get_random_once must be called at
-least once to ensure we don't overwrite the user provided key when the
-first cookie is generated later on.
+.. btw, also make sure that you close all non-essential file
+descriptors. Having any open directory file descriptors pointing to
+outside the chroot is also a classic escape.
 
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
----
- include/net/tcp.h          |  2 +-
- net/ipv4/sysctl_net_ipv4.c |  5 +++++
- net/ipv4/tcp_fastopen.c    | 27 ++++++++++++++++-----------
- 3 files changed, 22 insertions(+), 12 deletions(-)
+Even then, escaping chroot is usually fairly easy. Making a
+escape-proof chroot is really quite hard. Basically impossible if you
+allow root.
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 9299560..2a26100 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -1322,7 +1322,7 @@ extern struct tcp_fastopen_context __rcu *tcp_fastopen_ctx;
- int tcp_fastopen_reset_cipher(void *key, unsigned int len);
- void tcp_fastopen_cookie_gen(__be32 src, __be32 dst,
- 			     struct tcp_fastopen_cookie *foc);
--
-+void tcp_fastopen_init_key_once(bool publish);
- #define TCP_FASTOPEN_KEY_LENGTH 16
- 
- /* Fastopen key context */
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index c08f096..4b161d5 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -274,6 +274,11 @@ static int proc_tcp_fastopen_key(struct ctl_table *ctl, int write,
- 			ret = -EINVAL;
- 			goto bad_key;
- 		}
-+		/* Generate a dummy secret but don't publish it. This
-+		 * is needed so we don't regenerate a new key on the
-+		 * first invocation of tcp_fastopen_cookie_gen
-+		 */
-+		tcp_fastopen_init_key_once(false);
- 		tcp_fastopen_reset_cipher(user_key, TCP_FASTOPEN_KEY_LENGTH);
- 	}
- 
-diff --git a/net/ipv4/tcp_fastopen.c b/net/ipv4/tcp_fastopen.c
-index ab7bd35..766032b 100644
---- a/net/ipv4/tcp_fastopen.c
-+++ b/net/ipv4/tcp_fastopen.c
-@@ -14,6 +14,20 @@ struct tcp_fastopen_context __rcu *tcp_fastopen_ctx;
- 
- static DEFINE_SPINLOCK(tcp_fastopen_ctx_lock);
- 
-+void tcp_fastopen_init_key_once(bool publish)
-+{
-+	static u8 key[TCP_FASTOPEN_KEY_LENGTH];
-+
-+	/* tcp_fastopen_reset_cipher publishes the new context
-+	 * atomically, so we allow this race happening here.
-+	 *
-+	 * All call sites of tcp_fastopen_cookie_gen also check
-+	 * for a valid cookie, so this is an acceptable risk.
-+	 */
-+	if (net_get_random_once(key, sizeof(key)) && publish)
-+		tcp_fastopen_reset_cipher(key, sizeof(key));
-+}
-+
- static void tcp_fastopen_ctx_free(struct rcu_head *head)
- {
- 	struct tcp_fastopen_context *ctx =
-@@ -70,6 +84,8 @@ void tcp_fastopen_cookie_gen(__be32 src, __be32 dst,
- 	__be32 path[4] = { src, dst, 0, 0 };
- 	struct tcp_fastopen_context *ctx;
- 
-+	tcp_fastopen_init_key_once(true);
-+
- 	rcu_read_lock();
- 	ctx = rcu_dereference(tcp_fastopen_ctx);
- 	if (ctx) {
-@@ -78,14 +94,3 @@ void tcp_fastopen_cookie_gen(__be32 src, __be32 dst,
- 	}
- 	rcu_read_unlock();
- }
--
--static int __init tcp_fastopen_init(void)
--{
--	__u8 key[TCP_FASTOPEN_KEY_LENGTH];
--
--	get_random_bytes(key, sizeof(key));
--	tcp_fastopen_reset_cipher(key, sizeof(key));
--	return 0;
--}
--
--late_initcall(tcp_fastopen_init);
--- 
-1.8.3.1
-
+                 Linus
