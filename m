@@ -1,138 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3JERgz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 13:36:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55288 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313Ab3JERgy (ORCPT
+	id S1753396Ab3JERhJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 13:37:09 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:39953 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab3JERhG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 13:36:54 -0400
-Date: Sat, 5 Oct 2013 19:36:20 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Vinod Koul <vinod.koul@intel.com>, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] DMA: extend documentation to provide more API details
-Message-ID: <Pine.LNX.4.64.1310051925170.8097@axis700.grange>
+	Sat, 5 Oct 2013 13:37:06 -0400
+X-ASG-Debug-ID: 1380994625-0421b50f4ec0be0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:Lc4GRa4niWOQX2gGsoZe6EDsgDzF1tfHf62NeN1K29+
- 2b6kqwRaGKijr70i//rU4937P4FSghAvD8C16pA8in68Czr9lK
- wGhyP1BkpAT1BzFrk+ONnJrIfUhWgKhreQJ4VREmkRkrtdDskd
- nmkHJ6pxY1EjC8aeu8Z4daIom8FBY30IFj0twpo3ki+YN3Gm4X
- 8HZx81GE9qk31y45aeU8uycPqgit4OTdoOPcN//QRBoKeGsHMe
- AXv3zJfQsZM/XtARS7j8DaviN2F8xdpZMlbXtSr7Qxi+lQqBev
- IM654+Qi0Jy4WQ4iQub1q3/GbVUGs4z2H3lxFgGqPBkcIazz2v
- kN4nrTyyYxgZWGC9+DO5jBO3H7v6DWCIKiKHaleq9beJ0nMLf0
- cRQDWMFM6wEmA==
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <20131005173659.12433.93614@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs
+Date: Sat, 5 Oct 2013 13:36:59 -0400
+X-ASG-Orig-Subj: [GIT PULL] Btrfs
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1380994625
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.141204
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends dmaengine documentation to provide more details
-on descriptor prepare stage, transaction completion requirements
-and DMA error processing.
+Hi Linus,
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+Please pull my for-linus branch:
 
-These extensions reflect my understanding of some aspects of the dmaengine 
-API. If it is wrong, I'd be happy if someone could correct me. If or where 
-I'm right, I think, those aspects might want an update. Once we understand 
-exactly the situation we can think about improvements to the API.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
- Documentation/dmaengine.txt |   58 ++++++++++++++++++++++++++++++++++++------
- 1 files changed, 49 insertions(+), 9 deletions(-)
+I've merged my for-linus up to 3.12-rc3 because the top commit is only
+meant for 3.12.  The rest of the fixes are also available in my master
+branch on top of my last 3.11 based pull.
 
-diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
-index 879b6e3..21bb72d 100644
---- a/Documentation/dmaengine.txt
-+++ b/Documentation/dmaengine.txt
-@@ -133,8 +133,17 @@ The slave DMA usage consists of following steps:
- 	locks before calling the callback function which may cause a
- 	deadlock.
- 
--	Note that callbacks will always be invoked from the DMA
--	engines tasklet, never from interrupt context.
-+	Note that callbacks will always be invoked from the DMA engine's
-+	interrupt processing bottom half, never from interrupt context.
-+
-+   Note 2:
-+	A DMA transaction descriptor, returned to the user by one of "prep"
-+	methods is considered as belogning to the user until it is submitted
-+	to the dmaengine driver for transfer. However, it is recommended, that
-+	the dmaengine driver keeps references to prepared descriptors too,
-+	because if dmaengine_terminate_all() is called at that time, the driver
-+	will have to recycle all allocated descriptors for the respective
-+	channel.
- 
- 4. Submit the transaction
- 
-@@ -150,15 +159,27 @@ The slave DMA usage consists of following steps:
-    dmaengine_submit() will not start the DMA operation, it merely adds
-    it to the pending queue.  For this, see step 5, dma_async_issue_pending.
- 
--5. Issue pending DMA requests and wait for callback notification
-+5. Issue pending DMA requests and (optionally) request callback notification
- 
--   The transactions in the pending queue can be activated by calling the
--   issue_pending API. If channel is idle then the first transaction in
--   queue is started and subsequent ones queued up.
-+   Dmaengine drivers accumulate submitted transactions on a pending queue.
-+   After this call all such pending transactions are activated. Transactions,
-+   submitted after this call will be queued again in a deactivated state until
-+   this function is called again. If at the time of this call the channel is
-+   idle then the first transaction in queue is started and subsequent ones are
-+   queued up.
- 
--   On completion of each DMA operation, the next in queue is started and
--   a tasklet triggered. The tasklet will then call the client driver
--   completion callback routine for notification, if set.
-+   On completion of each DMA operation, the next active transaction in queue is
-+   started and the ISR bottom half, e.g. a tasklet or a kernel thread is
-+   triggered. The tasklet will then call the client driver completion callback
-+   routine for notification, if set.
-+
-+   The dmaengine driver also has to check the DMA_CTRL_ACK flag by calling
-+   async_tx_test_ack() on the transaction. If the function returns true, i.e.
-+   if the transaction either has been flagged from the very beginning, or
-+   the user has flagged it later, then the transaction descriptor can be
-+   recycled immediately by the dmaengine driver. If the function returns
-+   false, the descriptor cannot be recycled yet and the dmaengine driver has
-+   to keep polling the descriptor until it is acknowledged by the user.
- 
-    Interface:
- 	void dma_async_issue_pending(struct dma_chan *chan);
-@@ -171,6 +192,14 @@ Further APIs:
-    discard data in the DMA FIFO which hasn't been fully transferred.
-    No callback functions will be called for any incomplete transfers.
- 
-+   Note:
-+	Transactions, aborted by this call are considered as failed. However,
-+	if the user requests their status, using dma_async_is_complete() /
-+	dma_async_is_complete(), as described below, one of DMA_IN_PROGRESS and
-+	DMA_SUCCESS will be returned. So, drivers are advised not to use those
-+	calls on transactions, submitted before a call to
-+	dmaengine_terminate_all().
-+
- 2. int dmaengine_pause(struct dma_chan *chan)
- 
-    This pauses activity on the DMA channel without data loss.
-@@ -196,3 +225,14 @@ Further APIs:
- 	a running DMA channel.  It is recommended that DMA engine users
- 	pause or stop (via dmaengine_terminate_all) the channel before
- 	using this API.
-+
-+DMA error handling
-+
-+1. If a DMA error occurs, usually the DMA driver has to abort the transaction in
-+   progress. Since transactions, queued after the aborted one can depend on it,
-+   they usually have to be dropped too. There is currently no way to notify
-+   users about such a problem, so, users should normally start all DMA
-+   transactions with a timeout handler. If a timeout occurs, the user shall
-+   assume, that the DMA transaction failed. However, due to the same reason, as
-+   described in a note to the dmaengine_terminate_all() description above,
-+   enquiring status of timed out transactions is unreliable.
--- 
-1.7.2.5
+This is a small collection of fixes, including a regression fix from Liu
+Bo that solves rare crashes with compression on.
 
+Ilya Dryomov (2) commits (+28/-11):
+    Btrfs: fix a use-after-free bug in btrfs_dev_replace_finishing (+7/-5)
+    Btrfs: eliminate races in worker stopping code (+21/-6)
+
+Darrick J. Wong (1) commits (+8/-0):
+    btrfs: Fix crash due to not allocating integrity data for a bioset
+
+Liu Bo (1) commits (+1/-1):
+    Btrfs: fix crash of compressed writes
+
+Josef Bacik (1) commits (+2/-5):
+    Btrfs: fix transid verify errors when recovering log tree
+
+Total: (5) commits (+39/-17)
+
+ fs/btrfs/async-thread.c | 25 +++++++++++++++++++------
+ fs/btrfs/async-thread.h |  2 ++
+ fs/btrfs/dev-replace.c  |  5 +----
+ fs/btrfs/extent_io.c    | 10 +++++++++-
+ fs/btrfs/transaction.c  |  7 ++-----
+ fs/btrfs/volumes.c      |  7 ++++++-
+ 6 files changed, 39 insertions(+), 17 deletions(-)
