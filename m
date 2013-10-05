@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab3JERct (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 13:32:49 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:36060 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab3JERcs (ORCPT
+	id S1753111Ab3JEReT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 13:34:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43416 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3JEReR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 13:32:48 -0400
-Message-ID: <52504D38.1030402@gmail.com>
-Date: Sun, 06 Oct 2013 01:32:40 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Sat, 5 Oct 2013 13:34:17 -0400
+Date: Sat, 5 Oct 2013 10:34:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial fixes for 3.12-rc4
+Message-ID: <20131005173403.GA4811@kroah.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] mm/page_alloc.c: Get rid of unused marco LONG_ALIGN
-References: <52504CF8.6000708@gmail.com>
-In-Reply-To: <52504CF8.6000708@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+The following changes since commit 15c03dd4859ab16f9212238f29dd315654aa94f6:
 
-The macro is nowhere used, so remove it.
+  Linux 3.12-rc3 (2013-09-29 15:02:38 -0700)
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/page_alloc.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+are available in the git repository at:
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1fb13b6..9d8508d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3881,8 +3881,6 @@ static inline unsigned long wait_table_bits(unsigned long size)
- 	return ffz(~size);
- }
- 
--#define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
--
- /*
-  * Check if a pageblock contains reserved pages
-  */
--- 
-1.7.1
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.12-rc4
 
+for you to fetch changes up to a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3:
+
+  xen/hvc: allow xenboot console to be used again (2013-10-03 16:12:58 -0700)
+
+----------------------------------------------------------------
+TTY fixes for 3.12-rc4
+
+Here are 2 tty driver fixes for 3.12-rc4.
+
+One fixes the reported regression in the n_tty code that a number of
+people found recently, and the other one fixes an issue with xen
+consoles that broke in 3.10.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+David Vrabel (1):
+      xen/hvc: allow xenboot console to be used again
+
+Peter Hurley (1):
+      tty: Fix pty master read() after slave closes
+
+ drivers/tty/hvc/hvc_xen.c |  1 +
+ drivers/tty/n_tty.c       | 46 ++++++++++++++++++++++++++--------------------
+ 2 files changed, 27 insertions(+), 20 deletions(-)
