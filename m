@@ -1,64 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab3JESfq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 14:35:46 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57282 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab3JESfo (ORCPT
+	id S1752564Ab3JESlP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 14:41:15 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60968 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3JESlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 14:35:44 -0400
+	Sat, 5 Oct 2013 14:41:12 -0400
+Message-ID: <525052F5.5080204@pengutronix.de>
+Date: Sat, 05 Oct 2013 19:57:09 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
 MIME-Version: 1.0
-Date: Sat, 5 Oct 2013 20:35:44 +0200
-Message-ID: <CACRpkdZBzFTtoFHTiFS8HXXFy_6cmuMTTTv6C-VLubc64NgsQA@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for v3.12
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Fabio Estevam <festevam@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH|RFC] of: let of_match_device() always return best match
+References: <1380826284-18381-1-git-send-email-mkl@pengutronix.de> <CAOMZO5BekS_BvJzrt8vM1=7LjsiO=3hKL=mMfTjxkO3aZ4qwRQ@mail.gmail.com>
+In-Reply-To: <CAOMZO5BekS_BvJzrt8vM1=7LjsiO=3hKL=mMfTjxkO3aZ4qwRQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="NBB3Wr9PH9B3QJ3m4PWwrcB4RbHIE9xdk"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--NBB3Wr9PH9B3QJ3m4PWwrcB4RbHIE9xdk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-here are two GPIO fixes for v3.12, both dealing with setting up
-IRQs properly on the OMAP for the device tree boot path.
-The subject as such is pretty tricky and we're still discussing how
-we want to handle this long-term, but this fix is widely ACKed
-and tested.
+On 10/05/2013 07:46 PM, Fabio Estevam wrote:
+> Hi Marc,
+>=20
+> On Thu, Oct 3, 2013 at 3:51 PM, Marc Kleine-Budde <mkl@pengutronix.de> =
+wrote:
+>=20
+>> For example:
+>>
+>> The imx28.dtsi gives this compatible string for its CAN core:
+>>
+>>>       compatible =3D "fsl,imx28-flexcan", "fsl,p1010-flexcan";
+>>
+>> The flexcan driver defines:
+>>
+>>> static const struct of_device_id flexcan_of_match[] =3D {
+>>>       { .compatible =3D "fsl,p1010-flexcan", .data =3D &fsl_p1010_dev=
+type_data, },
+>>>       { .compatible =3D "fsl,imx28-flexcan", .data =3D &fsl_imx28_dev=
+type_data, },
+>>>       { .compatible =3D "fsl,imx6q-flexcan", .data =3D &fsl_imx6q_dev=
+type_data, },
+>>>       { /* sentinel */ },
+>>> };
+>>
+>> The "p1010" was the first Freescale SoC with the flexcan core. But thi=
+s SoC has
+>> a bug, so a workaround has to be enabled in the driver. The mx28 has t=
+his bug
+>> fixed, so we don't need this quite costly workaround.
+>=20
+> What about defining in imx28.dtsi:
+> compatible =3D "fsl,imx28-flexcan".
 
-In the absence of linux-next I've done some additional builds and
-tests to make sure nothing is wrecked.
+It already works with changing only the driver.
 
-Please pull it in!
+> and the in the flexcan driver we could do the same as in the fec_main d=
+river:
+>=20
+> static struct platform_device_id fec_devtype[] =3D {
 
-Yours,
-Linus Walleij
+For DT based probing I need to modify the struct of_device_id, but I got
+the idea :)
 
-The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
+>     {
+>         /* keep it for coldfire */
+>         .name =3D DRIVER_NAME,
+>         .driver_data =3D 0,
+>     }, {
+>         .name =3D "imx25-fec",
+>         .driver_data =3D FEC_QUIRK_USE_GASKET,
+>     }, {
+>         .name =3D "imx27-fec",
+>         .driver_data =3D 0,
+>     }, {
+>         .name =3D "imx28-fec",
+>         .driver_data =3D FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME,
+>     }, {
+>         .name =3D "imx6q-fec",
+>         .driver_data =3D FEC_QUIRK_ENET_MAC | FEC_QUIRK_HAS_GBIT |
+>                 FEC_QUIRK_HAS_BUFDESC_EX | FEC_QUIRK_HAS_CSUM |
+>                 FEC_QUIRK_HAS_VLAN | FEC_QUIRK_ERR006358,
+>     }, {
+>         .name =3D "mvf600-fec",
+>         .driver_data =3D FEC_QUIRK_ENET_MAC,
+>     }, {
+>         /* sentinel */
+>     }
+> };
+>=20
+> So that we know which SoC needs to have the workaround applied or not.
 
-  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
+I've already created a patch that rearranges the struct of_device_id in
+the driver, works for me. I posted it (with another fix) for review on
+linux-can[1].
 
-are available in the git repository at:
+Thanks,
+Marc
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.12-2
+[1] http://comments.gmane.org/gmane.linux.can/4050
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-for you to fetch changes up to fac7fa162a19100298d5d91359960037dc5bfca9:
 
-  gpio/omap: auto-setup a GPIO when used as an IRQ (2013-10-01 13:16:02 +0200)
+--NBB3Wr9PH9B3QJ3m4PWwrcB4RbHIE9xdk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-----------------------------------------------------------------
-Fixes for the GPIO tree for v3.12:
-- Two patches for the OMAP driver, dealing with setting up IRQs
-  properly on the device tree boot path.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-----------------------------------------------------------------
-Javier Martinez Canillas (2):
-      gpio/omap: maintain GPIO and IRQ usage separately
-      gpio/omap: auto-setup a GPIO when used as an IRQ
+iEYEARECAAYFAlJQUvUACgkQjTAFq1RaXHOoaQCfRxK4tcOy/dIQV7FSxVAw1PnH
+TuoAn3Lx8rYIXPqg27zTNytZsXnmFr7Z
+=og5H
+-----END PGP SIGNATURE-----
 
- drivers/gpio/gpio-omap.c | 158 ++++++++++++++++++++++++++++++-----------------
- 1 file changed, 101 insertions(+), 57 deletions(-)
+--NBB3Wr9PH9B3QJ3m4PWwrcB4RbHIE9xdk--
