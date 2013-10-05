@@ -1,27 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3JECCy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 22:02:54 -0400
-Received: from 118-163-14-55.HINET-IP.hinet.net ([118.163.14.55]:19832 "EHLO
-	mail.fet.fujielectric.com.tw" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751307Ab3JECCx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 22:02:53 -0400
-X-Greylist: delayed 10607 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Oct 2013 22:02:53 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1751839Ab3JECHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 22:07:36 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65523 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3JECHe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 22:07:34 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <524F7461.4010703@roeck-us.net>
+Date: Fri, 04 Oct 2013 19:07:29 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Good News
-To: Recipients <info@chnbk.com>
-From: "Mr. Zhu" <info@chnbk.com>
-Date: Fri, 04 Oct 2013 17:38:05 +0100
-Reply-To: mr.xiaohuang1@yahoo.com.hk
-Message-Id: <20131004231331.15CE2796E63C@mail.fet.fujielectric.com.tw>
+To: Olof Johansson <olof@lixom.net>
+CC: Mark Brown <broonie@kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 3
+References: <20131004010230.GI27287@sirena.org.uk>	<524E50DB.3060707@roeck-us.net>	<CAOesGMhc5WYRFcBVSHShg6h8hn4HueGZtGCFKkzfX4SQEe_5LQ@mail.gmail.com>	<524EC658.90706@roeck-us.net> <CAOesGMj_DoC4iHsTMdbZ4sSOkbt-6nhaQgyFxtdvN96gXxyaxg@mail.gmail.com>
+In-Reply-To: <CAOesGMj_DoC4iHsTMdbZ4sSOkbt-6nhaQgyFxtdvN96gXxyaxg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I need to discuss with you about George. Please contact me immediately.
-Mr. Zhu
+On 10/04/2013 10:04 AM, Olof Johansson wrote:
+> On Fri, Oct 4, 2013 at 6:44 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 10/03/2013 10:41 PM, Olof Johansson wrote:
+>>>
+>>> On Thu, Oct 3, 2013 at 10:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>
+>>>> On 10/03/2013 06:02 PM, Mark Brown wrote:
+>>>>>
+>>>>>
+>>>>> Hi all,
+>>>>>
+>>>>> Better late than never I've uploaded today's linux-next tree to the
+>>>>> master branch of the repository below:
+>>>>>
+>>>>>            git://gitorious.org/thierryreding/linux-next.git
+>>>>>
+>>>>> A next-20131003 tag is also provided for convenience.
+>>>>>
+>>>>> A few new conflicts today caused by the removal of the h8300
+>>>>> architecture which I didn't report for triviality.  Several new build
+>>>>> failures were found as a result of running allmodconfig tests between
+>>>>> merges all of which have been reported and I'm still carrying the i.MX
+>>>>> fix that Thierry has been carrying.
+>>>>>
+>>>>> Due to the length of time taken to run all the allmodconfigs I skipped
+>>>>> the defconfig tests; I know Olof has the ARM stuff covered in his
+>>>>> autobuilder.  I'm going to use allyesconfig tomorrow since that should
+>>>>> run faster so hopefully I can cover the ARM, i386 and x86_64 configs
+>>>>> again.
+>>>>>
+>>>>
+>>>> I could try to set up the buildbot farm I am using for -stable candidates
+>>>> to also test the -next tree. Would that help ?
+>>>
+>>>
+>>> ARM is pretty well-covered by my builds, I post results at:
+>>>
+>>> http://lists.linaro.org/mailman/listinfo/kernel-build-reports
+>>>
+>>
+>> Great summaries. Do you have a single builder, or several builders and
+>> collect the results ? Either case, any chance sharing the buildbot scripts ?
+>
+> My buildbot scripts are some pretty ugly hacks that I don't
+> particularly feel like publishing to the world. I can send you a copy
+> though.
+>
+Not much different to the quality of mine :). Would be great if you can send me a copy.
+
+For my scripts, I still have some secrets in there like my gmail password
+in the clear. I'll have to make sure it is removed before I can publish it.
+
+> The builder is one single beefy machine that i have on loan. It
+> wouldn't be hard to make it distributed instead though; I've toyed
+> around with prototypes for that in the past.
+>
+I would love to have something like that .. mine essentially consists
+of four PCs with quad-core CPUs, plus two smaller systems which are
+not always online.
+
+Thanks,
+Guenter
+
