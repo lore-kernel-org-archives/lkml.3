@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab3JEUVL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 16:21:11 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:51350 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab3JEUVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 16:21:10 -0400
-Message-ID: <52507475.3050305@cs.wisc.edu>
-Date: Sat, 05 Oct 2013 15:20:05 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.3
+	id S1752698Ab3JEUYw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 16:24:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47604 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3JEUYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 16:24:51 -0400
+Date: Sat, 5 Oct 2013 22:24:30 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: provide public clk_is_enabled function
+Message-ID: <20131005202430.GI10079@pengutronix.de>
+References: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] [PATCH 2/5] revert: "blk-mq: blk-mq should free bios
- in pass through case"
-References: <20131004134908.231874670@bombadil.infradead.org> <20131004135014.524075942@bombadil.infradead.org> <524EFD55.4050701@cs.wisc.edu> <20131005105008.GA19022@infradead.org>
-In-Reply-To: <20131005105008.GA19022@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2013 05:50 AM, Christoph Hellwig wrote:
-> On Fri, Oct 04, 2013 at 12:39:33PM -0500, Mike Christie wrote:
->> Sorry, messed up function name. I meant blk_end_request*.
->>
->> For blk_execute_rq_nowait/blk_execute_rq and normal request use, the
->> lower levels free the bios as they are completed by one of the
->> blk_finish_request* calls. The caller of of
->> blk_execute_rq_nowait/blk_execute_rq does not have to worry about
->> freeing bios. It just frees the request when it is done with it.
-> 
-> Are you talking about bios or requests?  All these functions deal with
-> requests, so the talk of bios really confuses me.
+On Fri, Oct 04, 2013 at 12:08:30PM +0200, Sebastian Hesselbarth wrote:
+> To determine if a clk has been previously enabled, provide a public
+> clk_is_enabled function. This is especially helpful to check the state
+> of clk-gate without actually changing the state of the gate.
+I wonder what you want to do with the return value.
 
-The functions take in requests as the argument, but they end up
-operating on bios too. The scsi layer does
-scsi_io_completion->scsi_end_request-> blk_end_request ->
-blk_end_bidi_request -> blk_update_bidi_request -> blk_update_request.
-That function will then complete bios on the request passed in. It does
-not matter if the request is a REQ_TYPE_FS or REQ_TYPE_BLOCK_PC.
+When doing
 
-With my patch I was trying to make the block layer do the same for mq
-REQ_TYPE_BLOCK_PC requests inserted into the queue with
-blk_execute_rq_nowait (Nick's patch had support for something like that)
-by having the block mq layer call blk_mq_finish_request instead of
-making the code that calls blk_execute_rq_nowait do it.
+	if (clk_is_enabled(someclk))
+		do_something();
 
+you cannot in general know if the clock is still on when you start to
+do_something.
 
-> 
-> That beeing said the old ones all require the caller to free the
-> request, and complicate that with the useless refcounting that my patch
-> 3 removes.  Take a look at the other patches how all the calling
-> conventions can be nicely unified.
+Best regards
+Uwe
 
-I agree. I like them. I am saying though it could be better because even
-with your patches the rq->end_io functions need to have the mq_ops check
-like the flush_end_io does. If my patch worked as intended we would have
-your improvements and we would not need the rq->end_io functions to have
-that check and call blk_mq_finish_request because the blk mq layer was
-doing it for them.
-
-That is all I am saying. I would like to be able to remove that check
-and blk_mq_finish_request call from the rq->end_io callouts.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
