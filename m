@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab3JEQ2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 12:28:24 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57080 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab3JEQ2X (ORCPT
+	id S1752354Ab3JEQqJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 12:46:09 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35471 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab3JEQqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 12:28:23 -0400
-Date: Sat, 5 Oct 2013 09:28:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, peter@hurleysoftware.com
-Subject: Re: tty^Wrcu/perf lockdep trace.
-Message-ID: <20131005162802.GP5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131003190830.GA18672@redhat.com>
- <20131003194226.GO28601@twins.programming.kicks-ass.net>
- <20131003195832.GU5790@linux.vnet.ibm.com>
- <20131004065835.GP28601@twins.programming.kicks-ass.net>
- <20131004160352.GF5790@linux.vnet.ibm.com>
- <20131004165044.GV28601@twins.programming.kicks-ass.net>
- <20131004170954.GK5790@linux.vnet.ibm.com>
- <20131004185239.GS15690@laptop.programming.kicks-ass.net>
- <20131004212506.GM5790@linux.vnet.ibm.com>
- <20131005160511.GV3081@twins.programming.kicks-ass.net>
+	Sat, 5 Oct 2013 12:46:07 -0400
+Message-ID: <52504239.8090803@gmail.com>
+Date: Sun, 06 Oct 2013 00:45:45 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131005160511.GV3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100516-9332-0000-0000-000001A8E13B
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Wen Congyang <wency@cn.fujitsu.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, isimatu.yasuaki@jp.fujitsu.com,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] mm/sparsemem: Fix a bug in free_map_bootmem when
+ CONFIG_SPARSEMEM_VMEMMAP
+References: <524CE4C1.8060508@gmail.com> <524CE532.1030001@gmail.com> <20131003134204.e408977b42cb85984473cfd6@linux-foundation.org>
+In-Reply-To: <20131003134204.e408977b42cb85984473cfd6@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 06:05:11PM +0200, Peter Zijlstra wrote:
-> On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
-> > >                                                                     Why
-> > > do we still have a per-cpu kthread in nocb mode? The idea is that we do
-> > > not disturb the cpu, right? So I suppose these kthreads get to run on
-> > > another cpu.
-> > 
-> > Yep, the idea is that usermode figures out where to run them.  Even if
-> > usermode doesn't do that, this has the effect of getting them to be
-> > more out of the way of real-time tasks.
-> > 
-> > > Since its running on another cpu; we get into atomic and memory barriers
-> > > anyway; so why not keep the logic the same as no-nocb but have another
-> > > cpu check our nocb cpu's state.
-> > 
-> > You can do that today by setting rcu_nocb_poll, but that results in
-> > frequent polling wakeups even when the system is completely idle, which
-> > is out of the question for the battery-powered embedded guys.
+Hello andrew,
+
+On 10/04/2013 04:42 AM, Andrew Morton wrote:
+> On Thu, 03 Oct 2013 11:32:02 +0800 Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
 > 
-> So its this polling I don't get.. why is the different behaviour
-> required? And why would you continue polling if the cpus were actually
-> idle.
-
-The idea is to offload the overhead of doing the wakeup from (say)
-a real-time thread/CPU onto some housekeeping CPU.
-
-> Is there some confusion between the nr_running==1 extended quiescent
-> state and the nr_running==0 extended quiescent state?
-
-This is independent of the nr_running=1 extended quiescent state.  The
-wakeups only happen when runnning in the kernel.  That said, a real-time
-thread might want both rcu_nocb_poll=y and CONFIG_NO_HZ_FULL=y.
-
-> Now, none of this solves the issue at hand because event the 'regular'
-> no-nocb rcu mode has this issue of needing to wake kthreads, but I'd
-> like to get a better understanding of why nocb mode is as it is.
+>> We pass the number of pages which hold page structs of a memory
+>> section to function free_map_bootmem. This is right when
+>> !CONFIG_SPARSEMEM_VMEMMAP but wrong when CONFIG_SPARSEMEM_VMEMMAP.
+>> When CONFIG_SPARSEMEM_VMEMMAP, we should pass the number of pages
+>> of a memory section to free_map_bootmem.
+>>
+>> So the fix is removing the nr_pages parameter. When
+>> CONFIG_SPARSEMEM_VMEMMAP, we directly use the prefined marco
+>> PAGES_PER_SECTION in free_map_bootmem. When !CONFIG_SPARSEMEM_VMEMMAP,
+>> we calculate page numbers needed to hold the page structs for a
+>> memory section and use the value in free_map_bootmem.
 > 
+> What were the runtime user-visible effects of that bug?
 > 
-> I've seen you've since send a few more emails; I might find some of the
-> answers in there. Let me go read the :-)
+> Please always include this information when fixing a bug.
 
-I -think- I have solved it, but much testing and review will of course
-be required.  And fixing last night's test failures...
 
-							Thanx, Paul
+Sorry....This was found by reading the code. And I have no machine that
+support memory hot-remove to test the bug now. But I believe it is a bug.
 
+BTW, I've made a mistake in this patch which was found by wanpeng. I'll
+send v2.
+
+-- 
+Thanks.
+Zhang Yanfei
