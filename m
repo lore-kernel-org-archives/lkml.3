@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab3JEAqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 20:46:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50188 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab3JEAqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 20:46:15 -0400
-Date: Sat, 5 Oct 2013 01:46:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: pipe/cred lockdep warning
-Message-ID: <20131005004612.GS13318@ZenIV.linux.org.uk>
-References: <20131001145755.GA22729@redhat.com>
- <20131003185630.GJ13318@ZenIV.linux.org.uk>
- <CA+55aFxEs=bdtw-SPRSnVz7bGE3Pyi+tM7wsEdwxu+GL5qq5_Q@mail.gmail.com>
+	id S1751577Ab3JEAwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 20:52:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab3JEAwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 20:52:20 -0400
+Date: Fri, 4 Oct 2013 20:52:10 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
+Subject: fs/attr.c:notify_change locking warning.
+Message-ID: <20131005005210.GA25773@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxEs=bdtw-SPRSnVz7bGE3Pyi+tM7wsEdwxu+GL5qq5_Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 04:27:35PM -0700, Linus Torvalds wrote:
-> On Thu, Oct 3, 2013 at 11:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Note, BTW, that splice to /proc/<pid>/attr/<something> is broken.
-> > proc_pid_attr_write() is *not* supposed to allow partial writes at all.
-> > Frankly, I'd consider adding a ->splice_write() instance that would
-> > simply return -EINVAL there...
-> 
-> That sounds like the right thing to do.
-> 
-> Or possibly go even further, and say that the default is to return
-> -EINVAL, and files and filesystems that actually want the
-> "default_file_splice_write()" semantics have to say so in their d_op
-> structure.
-> 
-> Hmm?
+WARNING: CPU: 3 PID: 26128 at fs/attr.c:178 notify_change+0x34d/0x360()
+Modules linked in: dlci 8021q garp sctp snd_seq_dummy bridge stp tun fuse rfcomm hidp ipt_ULOG nfc caif_socket caif af_802154 phonet af_rxrpc bnep bluetooth rfkill can_bcm can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds scsi_transport_iscsi nfnetlink af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_hdmi xfs snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc libcrc32c snd_timer crct10dif_pclmul crc32c_intel snd ghash_clmulni_intel e1000e microcode usb_debug serio_raw pcspkr ptp soundcore pps_core shpchp
+CPU: 3 PID: 26128 Comm: trinity-child57 Not tainted 3.12.0-rc3+ #93 
+ ffffffff81a3e2ec ffff880071d71bb8 ffffffff8172a763 0000000000000000
+ ffff880071d71bf0 ffffffff810552cd 0000000000000a00 ffff88023d6e8b90
+ 0000000000008ad0 ffff880071d71c50 ffff8802392882c8 ffff880071d71c00
+Call Trace:
+ [<ffffffff8172a763>] dump_stack+0x4e/0x82
+ [<ffffffff810552cd>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff810553aa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff811e388d>] notify_change+0x34d/0x360
+ [<ffffffff811e18e7>] file_remove_suid+0x87/0xa0
+ [<ffffffff811e9019>] ? __mnt_drop_write+0x29/0x50
+ [<ffffffff811e90a2>] ? __mnt_drop_write_file+0x12/0x20
+ [<ffffffff811e1e6a>] ? file_update_time+0x8a/0xd0
+ [<ffffffffa01a4e7a>] xfs_file_aio_write_checks+0xea/0xf0 [xfs]
+ [<ffffffffa01a4f50>] xfs_file_dio_aio_write+0xd0/0x3e0 [xfs]
+ [<ffffffffa01a5629>] xfs_file_aio_write+0x129/0x130 [xfs]
+ [<ffffffff811c45dc>] do_sync_readv_writev+0x4c/0x80
+ [<ffffffff811c5aab>] do_readv_writev+0xbb/0x240
+ [<ffffffffa01a5500>] ? xfs_file_buffered_aio_write+0x2a0/0x2a0 [xfs]
+ [<ffffffff811c4500>] ? do_sync_read+0x90/0x90
+ [<ffffffff81734721>] ? _raw_spin_unlock+0x31/0x60
+ [<ffffffff810c9a86>] ? trace_hardirqs_on_caller+0x16/0x1e0
+ [<ffffffff811c5cc8>] vfs_writev+0x38/0x60
+ [<ffffffff811c5e10>] SyS_writev+0x50/0xd0
+ [<ffffffff8173d8e4>] tracesys+0xdd/0xe2
+---[ end trace 201843ae71ab5a7c ]---
 
-f_op, unfortunately...  That's going to be a _lot_ of churn, I'm afraid ;-/
-We have 2002 instances of file_operations in the tree.  774 of those
-have ->write.  60 have both ->aio_write and ->write, 4 - only ->aio_write.
 
-->splice_write is present only for 25.  Which leaves 753 instances of
-file_operations to review and decide whether we keep the current behaviour
-or start giving -EINVAL.  In a lot of those the answer will be EINVAL,
-but which ones those are?
+177 
+178         WARN_ON_ONCE(!mutex_is_locked(&inode->i_mutex));
+179 
 
-We could, I suppose, generate a commit that would add default_file_splice_write
-to those 753 instances and then get rid of them one by one (e.g. provide
-the same thing under different name and use that name in already reviewed
-cases if behaviour is right, so that we could keep track of what's left
-to do), but...
-	a) if we go that way, I would suggest doing the first commit as
-right-after-rc1 special
-	b) I'd expect that review and removal to take at least a full cycle
-and contain quite a few mistaken decisions ;-/
+
