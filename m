@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3JEQId (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 12:08:33 -0400
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:60103 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab3JEQIc (ORCPT
+	id S1752441Ab3JEQLP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 12:11:15 -0400
+Received: from libra.uberspace.de ([95.143.172.171]:45184 "HELO
+	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752135Ab3JEQLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 12:08:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <52503441.2030009@asianux.com>
-References: <52502E14.5040507@asianux.com>
-	<1380987671.2081.122.camel@joe-AO722>
-	<52503441.2030009@asianux.com>
-Date: Sat, 5 Oct 2013 18:08:31 +0200
-Message-ID: <CAFLxGvy0+9tu5PF2kKrUyVRobixtLaSs_u_b9zwFj64YvQrxgw@mail.gmail.com>
-Subject: Re: [PATCH] kernel/irq/proc.c: set MAX_NAMELEN 11 instead of 10 which
- express the maximize size of "%d" or "%u".
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Joe Perches <joe@perches.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 5 Oct 2013 12:11:13 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Oct 2013 12:11:12 EDT
+From: Matthias Beyer <mail@beyermatthias.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthias Beyer <mail@beyermatthias.de>
+Subject: [PATCH 1/5] drivers: usb: core: hcd: moved asterix to variable
+Date: Sat,  5 Oct 2013 18:02:06 +0200
+Message-Id: <79a196f5038eebeead7ca0d28d1d5adfc0a4afa2.1380986962.git.mail@beyermatthias.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <cover.1380986962.git.mail@beyermatthias.de>
+References: <cover.1380986962.git.mail@beyermatthias.de>
+In-Reply-To: <cover.1380986962.git.mail@beyermatthias.de>
+References: <cover.1380986962.git.mail@beyermatthias.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 5, 2013 at 5:46 PM, Chen Gang <gang.chen@asianux.com> wrote:
-> On 10/05/2013 11:41 PM, Joe Perches wrote:
->> On Sat, 2013-10-05 at 23:19 +0800, Chen Gang wrote:
->>> Theoretically, the maximize size of "%d" or "%u" is 11 (10 + '\0'), so
->>> need set MAX_NAMELEN 11 instead of 10.
->>
->> %d can be negative.
->>
->>
->>
->>
->
-> Oh, really, it is incorrect. Al Viro succeeds once.  :-(
->
-> And I should send patch v2 for it.
+instead of type
 
-irq is in both register_irq_proc() and unregister_irq_proc() an unsigned int.
-Therefore %d makes not really sense. Both should use %u.
-IMHO sprintf() should also get replaced by snprintf() but that's a
-matter of taste.
+Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
+---
+ drivers/usb/core/hcd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index d6a8d23..9036794 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2818,7 +2818,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+ EXPORT_SYMBOL_GPL(usb_remove_hcd);
+ 
+ void
+-usb_hcd_platform_shutdown(struct platform_device* dev)
++usb_hcd_platform_shutdown(struct platform_device *dev)
+ {
+ 	struct usb_hcd *hcd = platform_get_drvdata(dev);
+ 
 -- 
-Thanks,
-//richard
+1.8.4
+
