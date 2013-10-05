@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab3JEHev (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 03:34:51 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:4295 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3JEHeu (ORCPT
+	id S1751445Ab3JEHv1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 03:51:27 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:33135 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab3JEHv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 03:34:50 -0400
-X-Spam-Score: -100.9
-Message-ID: <524FC0D4.9070407@asianux.com>
-Date: Sat, 05 Oct 2013 15:33:40 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sat, 5 Oct 2013 03:51:26 -0400
+Message-ID: <524FC4F4.6050401@gmail.com>
+Date: Sat, 05 Oct 2013 16:51:16 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/exit.c: call read_unlock() when failure occurs
- after already called read_lock() in do_wait().
-References: <524FA956.9080100@asianux.com> <20131005063431.GU13318@ZenIV.linux.org.uk>
-In-Reply-To: <20131005063431.GU13318@ZenIV.linux.org.uk>
+To: david@fromorbit.com
+CC: mpatocka@redhat.com, thornber@redhat.com, devel@driverdev.osuosl.org,
+        snitzer@redhat.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com,
+        joe@perches.com, akpm@linux-foundation.org, dan.carpenter@oracle.com,
+        ejt@redhat.com, cesarb@cesarb.net, m.chehab@samsung.com,
+        ruby.wktk@gmail.com
+Subject: Re: [dm-devel] Reworking dm-writeboost [was: Re: staging: Add dm-writeboost]
+References: <5223208D.4000008@gmail.com> <20130916215357.GA5015@redhat.com> <52384E66.6050101@gmail.com> <20130917205936.GB12001@redhat.com> <523E3522.2060607@gmail.com> <524183A2.9050301@gmail.com> <20130926034325.GO26872@dastard> <20131001082654.GA10326@debian> <alpine.LRH.2.02.1310021956130.22612@file01.intranet.prod.int.rdu2.redhat.com> <20131004020417.GF4446@dastard>
+In-Reply-To: <20131004020417.GF4446@dastard>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2013 02:34 PM, Al Viro wrote:
-> On Sat, Oct 05, 2013 at 01:53:26PM +0800, Chen Gang wrote:
->> If failure occurs after called read_lock(), need call read_unlock() too.
->>
->> It can fail in multiple position, so add new tag 'fail_lock' for it
->> (also can let 'if' only content one jump statement).
-> 
-> You know, this is getting too frequent...  You really need to do
-> something about it.  OK, you've formed a hypothesis (in this case,
-> that ptrace_do_wait() returns non-zero with tasklist_lock still held).
-> If that hypothesis was correct, you would've found a bug and yes,
-> this patch would probably be more or less a fix for that bug.
-> 
-> Do you see what's missing?  That's right, verifying that hypothesis.
-> Which isn't hard to do, either by slapping a printk into these
-> exits, or by trying to build a proof.  As it is, hypothesis is
-> incorrect and your patch introduces breakage.  The same would have
-> happened if _some_ exits from that function returned non-zero
-> values with tasklist_lock held and some returned non-zero values
-> with tasklist_lock released.
-> 
-> You really need to realize that pattern-matching is not enough - you
-> need to prove that your fix is correct and that requires an analysis
-> of what's there.
-> 
-> "I see something odd" is a good reason to ask or to try and figure out
-> what's going on.  It's not a good reason for blindly making changes
-> like that - not until you've done the analysis and can at least show
-> that it won't _break_ things.
-> 
-> 
+Dave,
 
-Oh, it is my fault, this is incorrect patch. Hmm... I realize a mistake
-of me: I have said "when finding issues, I need consider about LTP in q4
-2013, need let it can be tested by LTP".
+> That's where arbitrary delays in the storage stack below XFS cause
+> problems - if the first FUA log write is delayed, the next log
+> buffer will get filled, issued and delayed, and when we run out of
+> log buffers (there are 8 maximum) the entire log subsystem will
+> stall, stopping *all* log commit operations until log buffer
+> IOs complete and become free again. i.e. it can stall modifications
+> across the entire filesystem while we wait for batch timeouts to
+> expire and issue and complete FUA requests.
+To me, this sounds like design failure in XFS log subsystem.
+Or just the limitation of metadata journal.
 
-And you feel "this is getting too frequent...", can you provide my
-failure/succeed ratio?
+> IMNSHO, REQ_FUA/REQ_FLUSH optimisations should be done at the
+> point where they are issued - any attempt to further optimise them
+> by adding delays down in the stack to aggregate FUA operations will
+> only increase latency of the operations that the issuer want to have
+> complete as fast as possible....
+That lower layer stack attempts to optimize further
+can benefit any filesystems.
+So, your opinion is not always correct although
+it is always correct in error handling or memory management.
 
-Or for a short proof: next, I will try to find 2 patches by reading code
-within "./kernel" sub-directory, if all of them are incorrect, I will
-*never* send patches again by reading code. Is it OK?
+I have proposed future plan of using persistent memory.
+I believe with this leap forward
+filesystems are free from doing such optimization
+relevant to write barriers. For more detail, please see my post.
+https://lkml.org/lkml/2013/10/4/186
 
+However,
+I think I should leave option to disable the optimization
+in case the upper layer doesn't like it.
+Maybe, writeboost should disable deferring barriers
+if barrier_deadline_ms parameter is especially 0.
+Linux kernel's layered architecture is obviously not always perfect
+so there are similar cases in other boundaries
+such as O_DIRECT to bypass the page cache.
 
-Hmm... but all together, I still will use compiler and test tools to
-find/solve issues (I have found 3-4 issues by LTP test tools, now just
-analyzing them, although I am not sure they must be kernel's issue).
+Maybe, dm-thin and dm-cache should add such switch.
 
-
-Thanks.
--- 
-Chen Gang
+Akira
