@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3JERyv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 13:54:51 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55807 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab3JERyt (ORCPT
+	id S1752441Ab3JER5i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 13:57:38 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61283 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3JER5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 13:54:49 -0400
-Date: Sun, 6 Oct 2013 01:54:20 +0800
+	Sat, 5 Oct 2013 13:57:36 -0400
+Date: Sun, 6 Oct 2013 01:57:15 +0800
 From: Wang YanQing <udknight@gmail.com>
-To: Martin Walch <walch.martin@web.de>
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Jiri Kosina <trivial@kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Benjamin Poirier <bpoirier@suse.de>, Dirk Gouders <dirk@gouders.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] kconfig: fix bug in search results string: use
- strlen(gstr->s), not gstr->len
-Message-ID: <20131005175420.GA28058@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Martin Walch <walch.martin@web.de>, linux-kbuild@vger.kernel.org,
-	Michal Marek <mmarek@suse.cz>,
-	Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-	Jiri Kosina <trivial@kernel.org>,
-	"Yann E. MORIN" <yann.morin.1998@free.fr>,
-	Benjamin Poirier <bpoirier@suse.de>,
-	Dirk Gouders <dirk@gouders.net>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jean Delvare <jdelvare@suse.de>, Kees Cook <keescook@chromium.org>,
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, yann.morin.1998@free.fr, bpoirier@suse.de,
+        walch.martin@web.de, jdelvare@suse.de, linux-kernel@vger.kernel.org
+Subject: [PATCH]kconfig:mconf: avoid unneeded memcpy
+Message-ID: <20131005175715.GA28091@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
+	linux-kbuild@vger.kernel.org, yann.morin.1998@free.fr,
+	bpoirier@suse.de, walch.martin@web.de, jdelvare@suse.de,
 	linux-kernel@vger.kernel.org
-References: <2458916.eNjWPdyz4y@tacticalops>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2458916.eNjWPdyz4y@tacticalops>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 07:25:53PM +0200, Martin Walch wrote:
-> From: Martin Walch <walch.martin@web.de>
-> Date: Thu, 3 Oct 2013 18:35:16 +0200
-> Subject: [PATCH v2 5/5] kconfig: fix bug in search results string: use strlen(gstr->s), not gstr->len
-> 
-> The struct gstr has a capacity that may differ from the actual string length.
-> 
-> However, a string manipulation in the function search_conf made the assumption
-> that it is the same, which led to messing up some search results, especially
-> when the content of the gstr in use had not yet reached at least 63 chars.
-> 
-> Signed-off-by: Martin Walch <walch.martin@web.de>
-Acked-by: Wang YanQing <udknight@gmail.com>
+In function update_text we assign jump key label
+per page (1)-(9) cycled, and use three space char
+as the header after k exceed JUMP_NB.
 
-Thanks.
+We don't need to call memcpy with header of three
+space char, because it changes nothing, it just
+copy what was there.
+
+I don't think we need to clear old jump key label in
+current implementation, I can't image out any case
+which a search result could change its jump key label,
+unless user search new string, but then we will re-assign
+jump key label, and it will be fix after that.
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ scripts/kconfig/mconf.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 2c39631..ff9d737 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -379,11 +379,8 @@ static void update_text(char *buf, size_t start, size_t end, void *_data)
+ 				data->keys[k] = key;
+ 				data->targets[k] = pos->target;
+ 				k++;
+-			} else {
+-				sprintf(header, "   ");
++				memcpy(buf + pos->offset, header, sizeof(header) - 1);
+ 			}
+-
+-			memcpy(buf + pos->offset, header, sizeof(header) - 1);
+ 		}
+ 	}
+ 	data->keys[k] = 0;
+-- 
+1.7.12.4.dirty
