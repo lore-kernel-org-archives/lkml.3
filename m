@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3JEMKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 08:10:08 -0400
-Received: from plane.gmane.org ([80.91.229.3]:51633 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab3JEMKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 08:10:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Simon Easter <simon.easter@gmail.com>
-Subject: Re: [PATCH 1/1] Fix SD card detection and use correct transfer interval.
-Date: Sat, 5 Oct 2013 12:06:10 +0000 (UTC)
-Message-ID: <loom.20131005T140209-999@post.gmane.org>
-References: <1370103731-5667-1-git-send-email-marcus.overhagen@gmail.com> <1370103731-5667-2-git-send-email-marcus.overhagen@gmail.com>
+	id S1751970Ab3JEMdY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 08:33:24 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:33464 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751685Ab3JEMdX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 08:33:23 -0400
+X-Greylist: delayed 1957 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Oct 2013 08:33:23 EDT
+Message-ID: <1380974541.1905.12.camel@palomino.walls.org>
+Subject: Re: [PATCH 19/26] ivtv: Convert driver to use
+ get_user_pages_unlocked()
+From: Andy Walls <awalls@md.metrocast.net>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-media@vger.kernel.org
+Date: Sat, 05 Oct 2013 08:02:21 -0400
+In-Reply-To: <1380724087-13927-20-git-send-email-jack@suse.cz>
+References: <1380724087-13927-1-git-send-email-jack@suse.cz>
+	 <1380724087-13927-20-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 79.148.28.163 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.76 Safari/537.36)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-05_01:2013-10-04,2013-10-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1305240000 definitions=main-1310050038
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcus Overhagen <marcus.overhagen <at> gmail.com> writes:
+Hi Jan:
 
-> 
-> Increasing the timeout when polling for card status to 100ms
-> as used at other places in this driver fixes SD card detection.
-> 
-> Also use correct interval when doing the interrupt transfer,
-> this fixes the "xhci_queue_intr_tx: 74 callbacks suppressed"
-> spamming to syslog that was occuring when this driver is used.
-> 
-> Signed-off-by: Marcus Overhagen <marcus.overhagen <at> gmail.com>
+<rant>
+This patch alone does not have suffcient information for me to evaluate
+it.  get_user_pages_unlocked() is added in another patch which I did not
+receive, and which I cannot find in any list archives.
+
+I wasted quite a bit of time looking for this additional patch:
+
+https://git.kernel.org/cgit/linux/kernel/git/jack/linux-fs.git/commit/?h=get_user_pages&id=624fc1bfb70fb65d32d31fbd16427ad9c234653e
+
+</rant>
+
+If I found the correct patch for adding get_user_pages_unlocked(), then
+the patch below looks fine.
+
+Reviewed-by: Andy Walls <awalls@md.metrocast.net>
+Acked-by: Andy Walls <awalls@md.metrocast.net>
+
+Regards,
+Andy
+
+On Wed, 2013-10-02 at 16:28 +0200, Jan Kara wrote:
+> CC: Andy Walls <awalls@md.metrocast.net>
+> CC: linux-media@vger.kernel.org
+> Signed-off-by: Jan Kara <jack@suse.cz>
 > ---
->  drivers/staging/rts5139/rts51x_transport.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  drivers/media/pci/ivtv/ivtv-udma.c |  6 ++----
+>  drivers/media/pci/ivtv/ivtv-yuv.c  | 12 ++++++------
+>  2 files changed, 8 insertions(+), 10 deletions(-)
 > 
-> diff --git a/drivers/staging/rts5139/rts51x_transport.c 
-b/drivers/staging/rts5139/rts51x_transport.c
-> index 89e4d80..c172f4a 100644
-> --- a/drivers/staging/rts5139/rts51x_transport.c
-> +++ b/drivers/staging/rts5139/rts51x_transport.c
->  <at>  <at>  -635,12 +635,12  <at>  <at>  int rts51x_get_epc_status(struct 
-rts51x_chip *chip, u16 *status)
->  	ep = chip->usb->pusb_dev->ep_in[usb_pipeendpoint(pipe)];
-> 
->  	/* fill and submit the URB */
-> -	/* We set interval to 1 here, so the polling interval is controlled
-> -	 * by our polling thread */
-> +	/* Set interval to 10 here to match the endpoint descriptor,
-> +	 * the polling interval is controlled by the polling thread */
->  	usb_fill_int_urb(chip->usb->intr_urb, chip->usb->pusb_dev, pipe,
-> -			 status, 2, urb_done_completion, &urb_done, 1);
-> +			 status, 2, urb_done_completion, &urb_done, 10);
-> 
-> -	result = rts51x_msg_common(chip, chip->usb->intr_urb, 50);
-> +	result = rts51x_msg_common(chip, chip->usb->intr_urb, 100);
-> 
->  	return interpret_urb_result(chip, pipe, 2, result,
->  				    chip->usb->intr_urb->actual_length);
-
-
-Hi Marcus, 
- I'm trying to apply this patch to 3.8.0-18 kernel tree but looks like it 
-doesn't want to take (Ubuntu 13.04 stock) 
-
-I don't suppose you have a patch for this version?, not quite sure if 
-reading 
-the patch file properly but assuming I get changes in what is the  correct 
-way to just compile this module and insert into running config?
-
-Thanks
-
-Simon
+> diff --git a/drivers/media/pci/ivtv/ivtv-udma.c b/drivers/media/pci/ivtv/ivtv-udma.c
+> index 7338cb2d0a38..6012e5049076 100644
+> --- a/drivers/media/pci/ivtv/ivtv-udma.c
+> +++ b/drivers/media/pci/ivtv/ivtv-udma.c
+> @@ -124,10 +124,8 @@ int ivtv_udma_setup(struct ivtv *itv, unsigned long ivtv_dest_addr,
+>  	}
+>  
+>  	/* Get user pages for DMA Xfer */
+> -	down_read(&current->mm->mmap_sem);
+> -	err = get_user_pages(current, current->mm,
+> -			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map, NULL);
+> -	up_read(&current->mm->mmap_sem);
+> +	err = get_user_pages_unlocked(current, current->mm, user_dma.uaddr,
+> +				      user_dma.page_count, 0, 1, dma->map);
+>  
+>  	if (user_dma.page_count != err) {
+>  		IVTV_DEBUG_WARN("failed to map user pages, returned %d instead of %d\n",
+> diff --git a/drivers/media/pci/ivtv/ivtv-yuv.c b/drivers/media/pci/ivtv/ivtv-yuv.c
+> index 2ad65eb29832..9365995917d8 100644
+> --- a/drivers/media/pci/ivtv/ivtv-yuv.c
+> +++ b/drivers/media/pci/ivtv/ivtv-yuv.c
+> @@ -75,15 +75,15 @@ static int ivtv_yuv_prep_user_dma(struct ivtv *itv, struct ivtv_user_dma *dma,
+>  	ivtv_udma_get_page_info (&uv_dma, (unsigned long)args->uv_source, 360 * uv_decode_height);
+>  
+>  	/* Get user pages for DMA Xfer */
+> -	down_read(&current->mm->mmap_sem);
+> -	y_pages = get_user_pages(current, current->mm, y_dma.uaddr, y_dma.page_count, 0, 1, &dma->map[0], NULL);
+> +	y_pages = get_user_pages_unlocked(current, current->mm, y_dma.uaddr,
+> +					  y_dma.page_count, 0, 1, &dma->map[0]);
+>  	uv_pages = 0; /* silence gcc. value is set and consumed only if: */
+>  	if (y_pages == y_dma.page_count) {
+> -		uv_pages = get_user_pages(current, current->mm,
+> -					  uv_dma.uaddr, uv_dma.page_count, 0, 1,
+> -					  &dma->map[y_pages], NULL);
+> +		uv_pages = get_user_pages_unlocked(current, current->mm,
+> +						   uv_dma.uaddr,
+> +						   uv_dma.page_count, 0, 1,
+> +						   &dma->map[y_pages]);
+>  	}
+> -	up_read(&current->mm->mmap_sem);
+>  
+>  	if (y_pages != y_dma.page_count || uv_pages != uv_dma.page_count) {
+>  		int rc = -EFAULT;
 
 
