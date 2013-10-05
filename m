@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab3JEV1t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 17:27:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44226 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3JEV1s (ORCPT
+	id S1752860Ab3JEViL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 17:38:11 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40187 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752610Ab3JEViJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 17:27:48 -0400
-Date: Sat, 5 Oct 2013 14:28:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: P J P <ppandit@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Fix NULL pointer dereference while loading
- initramfs
-Message-Id: <20131005142824.d8e49226.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.03.1310060211420.2830@erqung.pbz>
-References: <alpine.LFD.2.03.1309151431180.7830@erqung.pbz>
-	<20130923124110.9b8aebd78c2b602255f1dc1f@linux-foundation.org>
-	<alpine.LFD.2.03.1310060211420.2830@erqung.pbz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Oct 2013 17:38:09 -0400
+X-Sasl-enc: 7ExebRv/pahfuZJUVQnoN+4b7b0YK+ZTMS16lONM2ltP 1381009086
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH] 6lowpan: Sync default hardware address of lowpan links to their wpan
+Date: Sat,  5 Oct 2013 17:38:00 -0400
+Message-Id: <1381009080-15945-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Oct 2013 02:12:15 +0530 (IST) P J P <ppandit@redhat.com> wrote:
+When a lowpan link to a wpan device is created, set the hardware address
+of the lowpan link to that of the wpan device.
 
->   Hello Andrew,
-> 
-> Just to check, did you have chance to review an updated patch?
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ net/ieee802154/6lowpan.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Not yet, but it's in the queue.
+diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
+index c85e71e..fb89133 100644
+--- a/net/ieee802154/6lowpan.c
++++ b/net/ieee802154/6lowpan.c
+@@ -1386,6 +1386,9 @@ static int lowpan_newlink(struct net *src_net, struct net_device *dev,
+ 
+ 	entry->ldev = dev;
+ 
++	BUG_ON(IEEE802154_ADDR_LEN != dev->addr_len);
++	memcpy(dev->dev_addr, real_dev->dev_addr, IEEE802154_ADDR_LEN);
++
+ 	mutex_lock(&lowpan_dev_info(dev)->dev_list_mtx);
+ 	INIT_LIST_HEAD(&entry->list);
+ 	list_add_tail(&entry->list, &lowpan_devices);
+-- 
+1.8.1.2
+
