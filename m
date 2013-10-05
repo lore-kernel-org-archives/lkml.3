@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab3JETOX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 15:14:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51428 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab3JETOV (ORCPT
+	id S1752528Ab3JEUAF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 16:00:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38983 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3JEUAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 15:14:21 -0400
-Date: Sat, 5 Oct 2013 20:14:13 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Message-ID: <20131005191413.GY27287@sirena.org.uk>
+	Sat, 5 Oct 2013 16:00:03 -0400
+Date: Sat, 5 Oct 2013 21:59:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131005195949.GW3081@twins.programming.kicks-ass.net>
+References: <20131003194226.GO28601@twins.programming.kicks-ass.net>
+ <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
+ <20131004165044.GV28601@twins.programming.kicks-ass.net>
+ <20131004170954.GK5790@linux.vnet.ibm.com>
+ <20131004185239.GS15690@laptop.programming.kicks-ass.net>
+ <20131004212506.GM5790@linux.vnet.ibm.com>
+ <20131005160511.GV3081@twins.programming.kicks-ass.net>
+ <20131005162802.GP5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CgKfkX9/bwndGexZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Conflict in merge of the the random tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20131005162802.GP5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 05, 2013 at 09:28:02AM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 05, 2013 at 06:05:11PM +0200, Peter Zijlstra wrote:
+> > On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
+> > > >                                                                     Why
+> > > > do we still have a per-cpu kthread in nocb mode? The idea is that we do
+> > > > not disturb the cpu, right? So I suppose these kthreads get to run on
+> > > > another cpu.
+> > > 
+> > > Yep, the idea is that usermode figures out where to run them.  Even if
+> > > usermode doesn't do that, this has the effect of getting them to be
+> > > more out of the way of real-time tasks.
+> > > 
+> > > > Since its running on another cpu; we get into atomic and memory barriers
+> > > > anyway; so why not keep the logic the same as no-nocb but have another
+> > > > cpu check our nocb cpu's state.
+> > > 
+> > > You can do that today by setting rcu_nocb_poll, but that results in
+> > > frequent polling wakeups even when the system is completely idle, which
+> > > is out of the question for the battery-powered embedded guys.
+> > 
+> > So its this polling I don't get.. why is the different behaviour
+> > required? And why would you continue polling if the cpus were actually
+> > idle.
+> 
+> The idea is to offload the overhead of doing the wakeup from (say)
+> a real-time thread/CPU onto some housekeeping CPU.
 
---CgKfkX9/bwndGexZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sure I get that that is the idea; what I don't get is why it needs to
+behave differently depending on NOCB.
 
-While merging the random tree into -next there was a trivial conflict
-in drivers/char/random.c between 0244ad004a54e3 (Remove GENERIC_HARDIRQ
-config option) and 557360455b (random: push extra entropy to the output
-pools).
+Why does a NOCB thingy need to wake up the kthread far more often?
 
-I've fixed this up as below:
+> > Is there some confusion between the nr_running==1 extended quiescent
+> > state and the nr_running==0 extended quiescent state?
+> 
+> This is independent of the nr_running=1 extended quiescent state.  The
+> wakeups only happen when runnning in the kernel.  That said, a real-time
+> thread might want both rcu_nocb_poll=y and CONFIG_NO_HZ_FULL=y.
 
-diff --cc drivers/char/random.c
-index 7737b5b,f126bd2..0000000
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@@ -255,8 -255,12 +255,9 @@@
-  #include <linux/fips.h>
-  #include <linux/ptrace.h>
-  #include <linux/kmemcheck.h>
- +#include <linux/irq.h>
-+ #include <linux/workqueue.h>
- =20
- -#ifdef CONFIG_GENERIC_HARDIRQS
- -# include <linux/irq.h>
- -#endif
- -
-  #include <asm/processor.h>
-  #include <asm/uaccess.h>
-  #include <asm/irq.h>
+So there's 3 behaviours?
 
---CgKfkX9/bwndGexZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ - CONFIG_NO_HZ_FULL=n
+ - CONFIG_NO_HZ_FULL=y, rcu_nocb_poll=n
+ - CONFIG_NO_HZ_FULL=y, rcu_nocb_poll=y
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+What I'm trying to understand is why do all those things behave
+differently? For all 3 configs there's kthreads that do the GP advancing
+and can run on different cpus.
 
-iQIcBAEBAgAGBQJSUGUBAAoJELSic+t+oim9KhoP/2MIOkvzCSwZZR0nW77MN+mM
-l+p+5JLYdPod65BSbg2BVG11Zc/tdCFN2nPJ02tIUyhyWZPqwm9e4nN+FhzcRSzO
-FNzSaZbKfbph3gkBFObK7UPKYtMeZOXZ21fqhZ3e4/WAUh+KekTXxMPT2msQue23
-eG24hp2uCmrPEP8znM/Fif5CgdXVtRvreWevHKds18AfhP4tRK0kLn2IaYx+m0JG
-UIKibch8cAQ5YLKxXOXYJ3OUrwRiA9BDqO77lfS7spJADrHug4Fj7s150/7yYzE+
-rO6wvYNt5jPTMfL9HBvGruM46BT+WV6rfudKW0uOpXoDt5huVtM0uKen/MSTNcro
-bymqmXO8DTRK3XHav34r+enNPLVAUvYrXxciP2I/WnJH8ZKqczPWVX21cHYhUjhl
-xpwHqlBFWyhXJjmytQXJGI8RX5DBm3B8F9pe5TicWByyLbF/AGlU6pxnNhVwbY2J
-Nz0fOklspDUXq2spm3bUS/NfFrVZa/5VHLBHJAkfIXLgO71p2PFdtfs5N79NLjGK
-B8gRRs0KEH1TcBYaLVlFfn+CgoRJI4MWQ4res19UvehKeeyQNFPCIYUz7lGtBA3M
-AHw6jwGE7o39jXdbJspUeqE+8p5fXkNd0jAQFicNAuZJve4AGJjhGDWFr2GaebuG
-3N45Hyw83n0o2v318cop
-=m1iq
------END PGP SIGNATURE-----
-
---CgKfkX9/bwndGexZ--
+And why does rcu_nocb_poll=y need to be terrible for power usage; surely
+we know when cpus are actually idle and can stop polling them.
