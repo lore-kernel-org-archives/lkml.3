@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab3JECpY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 22:45:24 -0400
-Received: from mail-gg0-f181.google.com ([209.85.161.181]:61359 "EHLO
-	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab3JECpW (ORCPT
+	id S1751841Ab3JEDTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 23:19:24 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:60747 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751469Ab3JEDTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 22:45:22 -0400
-X-Greylist: delayed 103126 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Oct 2013 22:45:21 EDT
-Date: Fri, 4 Oct 2013 20:45:17 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hedi Berriche <hedi@sgi.com>, "ethan.zhao" <ethan.zhao@oracle.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [GIT PULL] PCI updates for v3.12
-Message-ID: <20131005024517.GC26108@google.com>
+	Fri, 4 Oct 2013 23:19:23 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah4HADiET1J5LPFV/2dsb2JhbABTBoIlYrxohTyBFRd0giUBAQUnExwzCAMYCSUPBSUDIQESiAW7F4E+Fo4OgTSEIwOYAIo9h0ODNio
+Date: Sat, 5 Oct 2013 13:19:18 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
+Subject: Re: fs/attr.c:notify_change locking warning.
+Message-ID: <20131005031918.GL4446@dastard>
+References: <20131005005210.GA25773@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131005005210.GA25773@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Oct 04, 2013 at 08:52:10PM -0400, Dave Jones wrote:
+> WARNING: CPU: 3 PID: 26128 at fs/attr.c:178 notify_change+0x34d/0x360()
+> Modules linked in: dlci 8021q garp sctp snd_seq_dummy bridge stp tun fuse rfcomm hidp ipt_ULOG nfc caif_socket caif af_802154 phonet af_rxrpc bnep bluetooth rfkill can_bcm can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds scsi_transport_iscsi nfnetlink af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_hdmi xfs snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc libcrc32c snd_timer crct10dif_pclmul crc32c_intel snd ghash_clmulni_intel e1000e microcode usb_debug serio_raw pcspkr ptp soundcore pps_core shpchp
+> CPU: 3 PID: 26128 Comm: trinity-child57 Not tainted 3.12.0-rc3+ #93 
+>  ffffffff81a3e2ec ffff880071d71bb8 ffffffff8172a763 0000000000000000
+>  ffff880071d71bf0 ffffffff810552cd 0000000000000a00 ffff88023d6e8b90
+>  0000000000008ad0 ffff880071d71c50 ffff8802392882c8 ffff880071d71c00
+> Call Trace:
+>  [<ffffffff8172a763>] dump_stack+0x4e/0x82
+>  [<ffffffff810552cd>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff810553aa>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff811e388d>] notify_change+0x34d/0x360
+>  [<ffffffff811e18e7>] file_remove_suid+0x87/0xa0
+>  [<ffffffff811e9019>] ? __mnt_drop_write+0x29/0x50
+>  [<ffffffff811e90a2>] ? __mnt_drop_write_file+0x12/0x20
+>  [<ffffffff811e1e6a>] ? file_update_time+0x8a/0xd0
+>  [<ffffffffa01a4e7a>] xfs_file_aio_write_checks+0xea/0xf0 [xfs]
+>  [<ffffffffa01a4f50>] xfs_file_dio_aio_write+0xd0/0x3e0 [xfs]
+>  [<ffffffffa01a5629>] xfs_file_aio_write+0x129/0x130 [xfs]
+>  [<ffffffff811c45dc>] do_sync_readv_writev+0x4c/0x80
+>  [<ffffffff811c5aab>] do_readv_writev+0xbb/0x240
+>  [<ffffffffa01a5500>] ? xfs_file_buffered_aio_write+0x2a0/0x2a0 [xfs]
+>  [<ffffffff811c4500>] ? do_sync_read+0x90/0x90
+>  [<ffffffff81734721>] ? _raw_spin_unlock+0x31/0x60
+>  [<ffffffff810c9a86>] ? trace_hardirqs_on_caller+0x16/0x1e0
+>  [<ffffffff811c5cc8>] vfs_writev+0x38/0x60
+>  [<ffffffff811c5e10>] SyS_writev+0x50/0xd0
+>  [<ffffffff8173d8e4>] tracesys+0xdd/0xe2
+> ---[ end trace 201843ae71ab5a7c ]---
+> 
+> 
+> 177 
+> 178         WARN_ON_ONCE(!mutex_is_locked(&inode->i_mutex));
 
-Here's a fix for v3.12.  We merged what was intended to be an MMCONFIG
-cleanup, but in fact, for systems without _CBA (which is almost
-everything), it broke extended config space for domain 0 and it
-broke all config space for other domains.  This reverts the change.
+Yup, we don't hold the i_mutex *at all* through the fast path for
+direct IO writes. Having to grab the i_mutex on every IO just for
+the extremely unlikely case we need to remove a suid bit on the file
+would add a significant serialisation point into the direct Io model
+that XFS uses, and is the difference between 50,000 and 2+ million
+direct IO IOPS to a single file.
 
-Bjorn
+I'm unwilling to sacrifice the concurrency of direct IO writes just
+to shut up ths warning, especially as the actual modifications that
+are made to remove SUID bits are correctly serialised within XFS
+once notify_change() calls ->setattr(). If it really matters, I'll
+just open code file_remove_suid() into XFS like ocfs2 does just so
+we don't get that warning being emitted by trinity.
 
+FWIW, buffered IO on XFS - the normal case for most operations -
+holds the i_mutex over the call to file_remove_suid(), and that's
+why this warning is pretty much never seen - direct IO writes to
+suid files is very unusual....
 
-The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+Cheers,
 
-  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.12-fixes-1
-
-for you to fetch changes up to 67d470e0e1711ca4a4c3a0e5524e0d580654053e:
-
-  Revert "x86/PCI: MMCONFIG: Check earlier for MMCONFIG region at address zero" (2013-10-04 16:15:29 -0600)
-
-----------------------------------------------------------------
-PCI update for v3.12:
-
-  MMCONFIG
-      Revert "x86/PCI: MMCONFIG: Check earlier for MMCONFIG region at address zero"
-
-----------------------------------------------------------------
-Bjorn Helgaas (1):
-      Revert "x86/PCI: MMCONFIG: Check earlier for MMCONFIG region at address zero"
-
- arch/x86/pci/mmconfig-shared.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
