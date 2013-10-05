@@ -1,601 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583Ab3JEAX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 20:23:56 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:60842 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab3JEAXx (ORCPT
+	id S1751592Ab3JEAfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 20:35:37 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:55574 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab3JEAff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 20:23:53 -0400
-Date: Fri, 4 Oct 2013 17:23:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, peter@hurleysoftware.com
-Subject: Re: tty^Wrcu/perf lockdep trace.
-Message-ID: <20131005002348.GA11762@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131003190830.GA18672@redhat.com>
- <20131003194226.GO28601@twins.programming.kicks-ass.net>
- <20131003195832.GU5790@linux.vnet.ibm.com>
- <20131004065835.GP28601@twins.programming.kicks-ass.net>
- <20131004160352.GF5790@linux.vnet.ibm.com>
- <20131004165044.GV28601@twins.programming.kicks-ass.net>
- <20131004170954.GK5790@linux.vnet.ibm.com>
- <20131004185239.GS15690@laptop.programming.kicks-ass.net>
- <20131004212506.GM5790@linux.vnet.ibm.com>
- <20131004220232.GA8293@linux.vnet.ibm.com>
+	Fri, 4 Oct 2013 20:35:35 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Kees Cook <keescook@chromium.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening\@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+References: <20131003201332.GA3500@dztty>
+	<CALCETrUOMF8MU9xpkQKYub-95fh9DAVBgPBXpAmMdmsb74HcTg@mail.gmail.com>
+	<20131004085911.GA2157@dztty>
+	<CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+	<20131004182353.GA2600@dztty>
+	<CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+	<20131004191113.GA3916@dztty>
+	<CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+	<20131004192712.GA4334@dztty>
+	<CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+	<20131004194142.GA4524@dztty>
+	<CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+	<87fvsgy7cn.fsf@xmission.com>
+	<CALCETrVFNcGtsm3N50sZRDWmBOJ3VWn=BidAOV4Q+eDwYhJ+vw@mail.gmail.com>
+Date: Fri, 04 Oct 2013 17:35:22 -0700
+In-Reply-To: <CALCETrVFNcGtsm3N50sZRDWmBOJ3VWn=BidAOV4Q+eDwYhJ+vw@mail.gmail.com>
+	(Andy Lutomirski's message of "Fri, 4 Oct 2013 15:59:51 -0700")
+Message-ID: <871u40r1v9.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131004220232.GA8293@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100500-8236-0000-0000-0000026A7E5F
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+mCQvp8wfP+yEIZcNnhWGXw/qJa1uLO50=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.4 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4245]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's opener may access task
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 03:02:32PM -0700, Paul E. McKenney wrote:
-> On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
-> > On Fri, Oct 04, 2013 at 08:52:39PM +0200, Peter Zijlstra wrote:
-> > > On Fri, Oct 04, 2013 at 10:09:54AM -0700, Paul E. McKenney wrote:
-> > > > On Fri, Oct 04, 2013 at 06:50:44PM +0200, Peter Zijlstra wrote:
-> > > > > On Fri, Oct 04, 2013 at 09:03:52AM -0700, Paul E. McKenney wrote:
-> > > > > > The problem exists, but NOCB made it much more probable.  With non-NOCB
-> > > > > > kernels, an irq-disabled call_rcu() invocation does a wake_up() only if
-> > > > > > there are more than 10,000 callbacks stacked up on the CPU.  With a NOCB
-> > > > > > kernel, the wake_up() happens on the first callback.
-> > > > > 
-> > > > > Oh I see.. so I was hoping this was some NOCB crackbrained damage we
-> > > > > could still 'fix'.
-> > > > > 
-> > > > > And that wakeup is because we moved grace-period advancing into
-> > > > > kthreads, right?
-> > > > 
-> > > > Yep, in earlier kernels we would instead be doing raise_softirq().
-> > > > Which would instead wake up ksoftirqd, if I am reading the code
-> > > > correctly -- spin_lock_irq() does not affect preempt_count.
-> > > 
-> > > I suspect you got lost in the indirection fest; but have a look at
-> > > __raw_spin_lock_irqsave(). It does:
-> > > 
-> > > 	local_irq_save();
-> > > 	preempt_disable();
-> > 
-> > ETOOMANYLEVELS.  ;-)
-> > 
-> > OK, then I should be able to just do raise_softirq() in this
-> > situation.  As long as irqs were disabled due to something other than
-> > local_irq_disable(), but I would get around that by doing an explicit
-> > preempt_disable() in call_rcu() or friends.
-> > 
-> > The real-time guys won't like that much -- they are trying to get rid
-> > of softirq -- but hopefully we can come up with something better later.
-> > Or maybe they have other tricks available to them.
-> 
-> But preempt_disable() won't set anything that in_interrupt() sees...
-> And it is a no-op in any case on CONFIG_PREEMPT=n kernels.
-> 
-> > > > > Probably; so the regular no-NOCB would be easy to work around by
-> > > > > providing me a call_rcu variant that never does the wakeup.
-> > > > 
-> > > > Well, if we can safely, sanely, and reliably defer the wakeup, there is
-> > > > no reason not to make plain old call_rcu() do what you need.
-> > > 
-> > > Agreed.
-> > > 
-> > > > If there
-> > > > is no such way to defer the wakeup, then I don't see how to make that
-> > > > variant.
-> > > 
-> > > Wouldn't it be a simple matter of making __call_rcu_core() return early,
-> > > just like it does for irqs_disabled_flags()?
-> > 
-> > Given that raise_softirq() works, it just might be.  Except that I would
-> > need to leave an indication that there are deferred callbacks and do
-> > an invoke_rcu_core().  Plus make __rcu_process_callbacks() check this
-> > indication and do the wakeup.
-> > 
-> > I should be able to use in_interrupt() despite its inaccuracy near
-> > the beginnings and ends of interrupt handlers because all I really
-> > care about is whether one of the scheduler or perf locks might be
-> > held, and they will cause in_interrupt() to return true regardless.
-> 
-> So I can't use in_interrupt(), because it doesn't see the bits that
-> preempt_disable() sets, even in kernels where preempt_disable isn't
-> a no-op.
-> 
-> I can instead use irqs_disabled_flags(), but then I am back to not
-> seeing how raise_softirq() is safe in non-irq-handler contexts where
-> the scheduler locks might be held.  The check of in_interrupt() only
-> looks at HARDIRQ_MASK, SOFTIRQ_MASK, and NMI_MASK, so it won't see
-> local_irq_disable() or spin_lock_irqsave() from process context.
-> 
-> This puts me back into the position of having to check for deferred
-> wakeups in many locations.
-> 
-> Back to the drawing board...
+Andy Lutomirski <luto@amacapital.net> writes:
 
-OK, so I used whether or not irqs are disabled to defer the wakeup.
-I will try testing this, but in the meantime...
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Break call_rcu() deadlock involving scheduler and perf
-
-Dave Jones got the following lockdep splat:
-
->  ======================================================
->  [ INFO: possible circular locking dependency detected ]
->  3.12.0-rc3+ #92 Not tainted
->  -------------------------------------------------------
->  trinity-child2/15191 is trying to acquire lock:
->   (&rdp->nocb_wq){......}, at: [<ffffffff8108ff43>] __wake_up+0x23/0x50
+> On Fri, Oct 4, 2013 at 3:55 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Andy Lutomirski <luto@amacapital.net> writes:
+>>
+>>> On Fri, Oct 4, 2013 at 12:41 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>>>> On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
+>>>>> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>>
+>>>>> > So sorry Andy, I don't follow what you are describing.
+>>>>>
+>>>>> And what parameters are you passing to security_ptrace_access_check?
+>>>>> It's supposed to be f_cred, right?  Because you want to make sure
+>>>>> that, if the opener had some low-privilege label, the target has
+>>>>> execed and gotten a more secure label, and the reader has a
+>>>>> high-privilege label, that the opener's label is checked against the
+>>>>> target's new label.
+>>>> The current's cred each time.
+>>>
+>>> Exactly.  Hence the NAK.
+>>>
+>>>>
+>>>> Is there some mechanism to check what you describe?
+>>>>
+>>>
+>>> No.  You could try to add one, but getting it to be compatible with
+>>> YAMA might be really messy.
+>>>
+>>> Or you could see if destroying and recreating all the inodes on exec
+>>> or some other revoke-like approach would work.
+>>
+>> This is a revoke like approach, and yes proc has a fully functional
+>> revoke infrastructure.  Right now that revoke is based on the process
+>> going away.  The problem challenge is that the process is morphing.
+>>
+>> The practical question is which runtime checks do we want to perform.
+>>
+>> If we can say in no uncertain terms that short of a suid exec that
+>> no calls (such as setuid) can change the process permissions beyond
+>> our ability to access the file, we can detect and exec and use that
+>> as a signal.
 >
-> but task is already holding lock:
->   (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
->
-> which lock already depends on the new lock.
->
->
-> the existing dependency chain (in reverse order) is:
->
-> -> #3 (&ctx->lock){-.-...}:
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff81733f90>] _raw_spin_lock+0x40/0x80
->         [<ffffffff811500ff>] __perf_event_task_sched_out+0x2df/0x5e0
->         [<ffffffff81091b83>] perf_event_task_sched_out+0x93/0xa0
->         [<ffffffff81732052>] __schedule+0x1d2/0xa20
->         [<ffffffff81732f30>] preempt_schedule_irq+0x50/0xb0
->         [<ffffffff817352b6>] retint_kernel+0x26/0x30
->         [<ffffffff813eed04>] tty_flip_buffer_push+0x34/0x50
->         [<ffffffff813f0504>] pty_write+0x54/0x60
->         [<ffffffff813e900d>] n_tty_write+0x32d/0x4e0
->         [<ffffffff813e5838>] tty_write+0x158/0x2d0
->         [<ffffffff811c4850>] vfs_write+0xc0/0x1f0
->         [<ffffffff811c52cc>] SyS_write+0x4c/0xa0
->         [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
->
-> -> #2 (&rq->lock){-.-.-.}:
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff81733f90>] _raw_spin_lock+0x40/0x80
->         [<ffffffff810980b2>] wake_up_new_task+0xc2/0x2e0
->         [<ffffffff81054336>] do_fork+0x126/0x460
->         [<ffffffff81054696>] kernel_thread+0x26/0x30
->         [<ffffffff8171ff93>] rest_init+0x23/0x140
->         [<ffffffff81ee1e4b>] start_kernel+0x3f6/0x403
->         [<ffffffff81ee1571>] x86_64_start_reservations+0x2a/0x2c
->         [<ffffffff81ee1664>] x86_64_start_kernel+0xf1/0xf4
->
-> -> #1 (&p->pi_lock){-.-.-.}:
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
->         [<ffffffff810979d1>] try_to_wake_up+0x31/0x350
->         [<ffffffff81097d62>] default_wake_function+0x12/0x20
->         [<ffffffff81084af8>] autoremove_wake_function+0x18/0x40
->         [<ffffffff8108ea38>] __wake_up_common+0x58/0x90
->         [<ffffffff8108ff59>] __wake_up+0x39/0x50
->         [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
->         [<ffffffff81111450>] __call_rcu+0x140/0x820
->         [<ffffffff81111b8d>] call_rcu+0x1d/0x20
->         [<ffffffff81093697>] cpu_attach_domain+0x287/0x360
->         [<ffffffff81099d7e>] build_sched_domains+0xe5e/0x10a0
->         [<ffffffff81efa7fc>] sched_init_smp+0x3b7/0x47a
->         [<ffffffff81ee1f4e>] kernel_init_freeable+0xf6/0x202
->         [<ffffffff817200be>] kernel_init+0xe/0x190
->         [<ffffffff8173d22c>] ret_from_fork+0x7c/0xb0
->
-> -> #0 (&rdp->nocb_wq){......}:
->         [<ffffffff810cb7ca>] __lock_acquire+0x191a/0x1be0
->         [<ffffffff810cc243>] lock_acquire+0x93/0x200
->         [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
->         [<ffffffff8108ff43>] __wake_up+0x23/0x50
->         [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
->         [<ffffffff81111450>] __call_rcu+0x140/0x820
->         [<ffffffff81111bb0>] kfree_call_rcu+0x20/0x30
->         [<ffffffff81149abf>] put_ctx+0x4f/0x70
->         [<ffffffff81154c3e>] perf_event_exit_task+0x12e/0x230
->         [<ffffffff81056b8d>] do_exit+0x30d/0xcc0
->         [<ffffffff8105893c>] do_group_exit+0x4c/0xc0
->         [<ffffffff810589c4>] SyS_exit_group+0x14/0x20
->         [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
->
-> other info that might help us debug this:
->
-> Chain exists of:
->   &rdp->nocb_wq --> &rq->lock --> &ctx->lock
->
->   Possible unsafe locking scenario:
->
->         CPU0                    CPU1
->         ----                    ----
->    lock(&ctx->lock);
->                                 lock(&rq->lock);
->                                 lock(&ctx->lock);
->    lock(&rdp->nocb_wq);
->
->  *** DEADLOCK ***
->
-> 1 lock held by trinity-child2/15191:
->  #0:  (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
->
-> stack backtrace:
-> CPU: 2 PID: 15191 Comm: trinity-child2 Not tainted 3.12.0-rc3+ #92
->  ffffffff82565b70 ffff880070c2dbf8 ffffffff8172a363 ffffffff824edf40
->  ffff880070c2dc38 ffffffff81726741 ffff880070c2dc90 ffff88022383b1c0
->  ffff88022383aac0 0000000000000000 ffff88022383b188 ffff88022383b1c0
-> Call Trace:
->  [<ffffffff8172a363>] dump_stack+0x4e/0x82
->  [<ffffffff81726741>] print_circular_bug+0x200/0x20f
->  [<ffffffff810cb7ca>] __lock_acquire+0x191a/0x1be0
->  [<ffffffff810c6439>] ? get_lock_stats+0x19/0x60
->  [<ffffffff8100b2f4>] ? native_sched_clock+0x24/0x80
->  [<ffffffff810cc243>] lock_acquire+0x93/0x200
->  [<ffffffff8108ff43>] ? __wake_up+0x23/0x50
->  [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
->  [<ffffffff8108ff43>] ? __wake_up+0x23/0x50
->  [<ffffffff8108ff43>] __wake_up+0x23/0x50
->  [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
->  [<ffffffff81111450>] __call_rcu+0x140/0x820
->  [<ffffffff8109bc8f>] ? local_clock+0x3f/0x50
->  [<ffffffff81111bb0>] kfree_call_rcu+0x20/0x30
->  [<ffffffff81149abf>] put_ctx+0x4f/0x70
->  [<ffffffff81154c3e>] perf_event_exit_task+0x12e/0x230
->  [<ffffffff81056b8d>] do_exit+0x30d/0xcc0
->  [<ffffffff810c9af5>] ? trace_hardirqs_on_caller+0x115/0x1e0
->  [<ffffffff810c9bcd>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff8105893c>] do_group_exit+0x4c/0xc0
->  [<ffffffff810589c4>] SyS_exit_group+0x14/0x20
->  [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
+> If you could ptrace a process before it calls setuid and you can't
+> after it calls setuid, then this is stupid and doesn't matter -- once
+> you've pwned a process, you retain your pwnership at least until exec.
 
-The underlying problem is that perf is invoking call_rcu() with the
-scheduler locks held, but in NOCB mode, call_rcu() will with high
-probability invoke the scheduler -- which just might want to use its
-locks.  The reason that call_rcu() needs to invoke the scheduler is
-to wake up the corresponding rcuo callback-offload kthread, which
-does the job of starting up a grace period and invoking the callbacks
-afterwards.
+That is a reasonable principle to work from.  Still I am seeing cases
+where dumpable can change in principle if not in fact with a cred
+change.
 
-One solution (championed on a related problem by Lai Jiangshan) is to
-simply defer the wakeup to some point where scheduler locks are no longer
-held.  Since we don't want to unnecessarily incur the cost of such
-deferral, the task before us is threefold:
+But yes exec does appear to be the event to focus on.
 
-1.	Determine when it is likely that a relevant scheduler lock is held.
+> So yes, except that it's not just suid exec.  It's any exec that any
+> LSM would not do if no_new_privs were set.
 
-2.	Defer the wakeup in such cases.
+>> Alternatively we may to look at a processes credentials and in all
+>> cases where those change use that as a signal that the file must
+>> be reopened.
+>
+> Hmm.  So why don't we just do a revoke whenever an exec that changes
+> cred happens?  (This will have some false positives, like unsharing
+> userns, I think, but we probably don't care.)
 
-3.	Ensure that all deferred wakeups eventually happen, preferably
-    	sooner rather than later.
+But because it is proc and because people do crazy things we have to
+investigate and test before we merge something like that.  I believe
+there was a patch not long ago that would fail an access if the openers
+and and the accessors creds which blew up rather quickly.
 
-We use irqs_disabled_flags() as a proxy for relevant scheduler locks
-being held.  This works because the relevant locks are always acquired
-with interrupts disabled.  We may defer more often than needed, but that
-is at least safe.
+But it is definitely worth looking at.
 
-The wakeup deferral is tracked via a new field in the per-CPU and
-per-RCU-flavor rcu_data structure, namely ->nocb_defer_wakeup.
+>> Right now the model that we do a full permission check at every system
+>> call because the morphing process may cause problems.  If analysis can
+>> be done to show that we can use a simpler check than a full permission
+>> check that would be grand.
+>>
+>> The problem is not lack of techinical infrastructure (revoke).  The
+>> problem is a question of which tests are sufficient.
+>
+> Can you point us at that infrastructure?  My limited grepping skills
+> didn't spot it.
 
-This flag is checked by the RCU core processing.  The __rcu_pending()
-function now checks this flag, which causes rcu_check_callbacks()
-to initiate RCU core processing at each scheduling-clock interrupt
-where this flag is set.  Of course this is not sufficient because
-scheduling-clock interrupts are often turned off (the things we used to
-be able to count on!).  So the flags are also checked on entry to any
-state that RCU considers to be idle, which includes both NO_HZ_IDLE idle
-state and NO_HZ_FULL user-mode-execution state.
+There are about 3 implementations in proc.  One for sysctl, one for the
+generic files and one for the pid files.
 
-This approach should allow call_rcu() to be invoked regardless of what
-locks you might be holding, the key word being "should".
+For pid files it is a lazy implementation.  Look at get_proc_task
+and pid_revalidate.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+The code that handles proc generic files and the related code that
+handles the removal of sysfs files is more like a classic revoke.
 
-diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index f3778f8952da..b8c3c813ea57 100644
---- a/Documentation/RCU/trace.txt
-+++ b/Documentation/RCU/trace.txt
-@@ -396,14 +396,14 @@ o	Each element of the form "3/3 ..>. 0:7 ^0" represents one rcu_node
- 
- The output of "cat rcu/rcu_sched/rcu_pending" looks as follows:
- 
--  0!np=26111 qsp=29 rpq=5386 cbr=1 cng=570 gpc=3674 gps=577 nn=15903
--  1!np=28913 qsp=35 rpq=6097 cbr=1 cng=448 gpc=3700 gps=554 nn=18113
--  2!np=32740 qsp=37 rpq=6202 cbr=0 cng=476 gpc=4627 gps=546 nn=20889
--  3 np=23679 qsp=22 rpq=5044 cbr=1 cng=415 gpc=3403 gps=347 nn=14469
--  4!np=30714 qsp=4 rpq=5574 cbr=0 cng=528 gpc=3931 gps=639 nn=20042
--  5 np=28910 qsp=2 rpq=5246 cbr=0 cng=428 gpc=4105 gps=709 nn=18422
--  6!np=38648 qsp=5 rpq=7076 cbr=0 cng=840 gpc=4072 gps=961 nn=25699
--  7 np=37275 qsp=2 rpq=6873 cbr=0 cng=868 gpc=3416 gps=971 nn=25147
-+  0!np=26111 qsp=29 rpq=5386 cbr=1 cng=570 gpc=3674 gps=577 nn=15903 ndw=0
-+  1!np=28913 qsp=35 rpq=6097 cbr=1 cng=448 gpc=3700 gps=554 nn=18113 ndw=0
-+  2!np=32740 qsp=37 rpq=6202 cbr=0 cng=476 gpc=4627 gps=546 nn=20889 ndw=0
-+  3 np=23679 qsp=22 rpq=5044 cbr=1 cng=415 gpc=3403 gps=347 nn=14469 ndw=0
-+  4!np=30714 qsp=4 rpq=5574 cbr=0 cng=528 gpc=3931 gps=639 nn=20042 ndw=0
-+  5 np=28910 qsp=2 rpq=5246 cbr=0 cng=428 gpc=4105 gps=709 nn=18422 ndw=0
-+  6!np=38648 qsp=5 rpq=7076 cbr=0 cng=840 gpc=4072 gps=961 nn=25699 ndw=0
-+  7 np=37275 qsp=2 rpq=6873 cbr=0 cng=868 gpc=3416 gps=971 nn=25147 ndw=0
- 
- The fields are as follows:
- 
-@@ -432,6 +432,10 @@ o	"gpc" is the number of times that an old grace period had
- o	"gps" is the number of times that a new grace period had started,
- 	but this CPU was not yet aware of it.
- 
-+o	"ndw" is the number of times that a wakeup of an rcuo
-+	callback-offload kthread had to be deferred in order to avoid
-+	deadlock.
-+
- o	"nn" is the number of times that this CPU needed nothing.
- 
- 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a33a24d10611..106f7f5cdd1d 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -362,6 +362,9 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
- static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
- 				bool user)
- {
-+	struct rcu_state *rsp;
-+	struct rcu_data *rdp;
-+
- 	trace_rcu_dyntick(TPS("Start"), oldval, rdtp->dynticks_nesting);
- 	if (!user && !is_idle_task(current)) {
- 		struct task_struct *idle __maybe_unused =
-@@ -373,6 +376,10 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
-+	for_each_rcu_flavor(rsp) {
-+		rdp = this_cpu_ptr(rsp->rda);
-+		do_nocb_deferred_wakeup(rdp);
-+	}
- 	rcu_prepare_for_idle(smp_processor_id());
- 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
- 	smp_mb__before_atomic_inc();  /* See above. */
-@@ -1908,13 +1915,13 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
-  * Adopt the RCU callbacks from the specified rcu_state structure's
-  * orphanage.  The caller must hold the ->orphan_lock.
-  */
--static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
-+static void rcu_adopt_orphan_cbs(struct rcu_state *rsp, unsigned long flags)
- {
- 	int i;
- 	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
- 
- 	/* No-CBs CPUs are handled specially. */
--	if (rcu_nocb_adopt_orphan_cbs(rsp, rdp))
-+	if (rcu_nocb_adopt_orphan_cbs(rsp, rdp, flags))
- 		return;
- 
- 	/* Do the accounting first. */
-@@ -1993,7 +2000,7 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
- 
- 	/* Orphan the dead CPU's callbacks, and adopt them if appropriate. */
- 	rcu_send_cbs_to_orphanage(cpu, rsp, rnp, rdp);
--	rcu_adopt_orphan_cbs(rsp);
-+	rcu_adopt_orphan_cbs(rsp, flags);
- 
- 	/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
- 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
-@@ -2310,6 +2317,9 @@ __rcu_process_callbacks(struct rcu_state *rsp)
- 	/* If there are callbacks ready, invoke them. */
- 	if (cpu_has_callbacks_ready_to_invoke(rdp))
- 		invoke_rcu_callbacks(rsp, rdp);
-+
-+	/* Do any needed deferred wakeups of rcuo kthreads. */
-+	do_nocb_deferred_wakeup(rdp);
- }
- 
- /*
-@@ -2444,7 +2454,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
- 
- 		if (cpu != -1)
- 			rdp = per_cpu_ptr(rsp->rda, cpu);
--		offline = !__call_rcu_nocb(rdp, head, lazy);
-+		offline = !__call_rcu_nocb(rdp, head, lazy, flags);
- 		WARN_ON_ONCE(offline);
- 		/* _call_rcu() is illegal on offline CPU; leak the callback. */
- 		local_irq_restore(flags);
-@@ -2797,6 +2807,12 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
- 		return 1;
- 	}
- 
-+	/* Does this CPU need a deferred NOCB wakeup? */
-+	if (rcu_nocb_need_deferred_wakeup(rdp)) {
-+		rdp->n_rp_nocb_defer_wakeup++;
-+		return 1;
-+	}
-+
- 	/* nothing to do */
- 	rdp->n_rp_need_nothing++;
- 	return 0;
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 8e34d8674a4e..a87adfc2916b 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -317,6 +317,7 @@ struct rcu_data {
- 	unsigned long n_rp_cpu_needs_gp;
- 	unsigned long n_rp_gp_completed;
- 	unsigned long n_rp_gp_started;
-+	unsigned long n_rp_nocb_defer_wakeup;
- 	unsigned long n_rp_need_nothing;
- 
- 	/* 6) _rcu_barrier() and OOM callbacks. */
-@@ -335,6 +336,7 @@ struct rcu_data {
- 	int nocb_p_count_lazy;		/*  (approximate). */
- 	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
- 	struct task_struct *nocb_kthread;
-+	bool nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
- #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
- 
- 	/* 8) RCU CPU stall data. */
-@@ -550,9 +552,12 @@ static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
- static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
- static void rcu_init_one_nocb(struct rcu_node *rnp);
- static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
--			    bool lazy);
-+			    bool lazy, unsigned long flags);
- static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
--				      struct rcu_data *rdp);
-+				      struct rcu_data *rdp,
-+				      unsigned long flags);
-+static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
-+static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
- static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
- static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
- static void rcu_kick_nohz_cpu(int cpu);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 747df70a4d64..d42e193c44c0 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2104,7 +2104,8 @@ bool rcu_is_nocb_cpu(int cpu)
- static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
- 				    struct rcu_head *rhp,
- 				    struct rcu_head **rhtp,
--				    int rhcount, int rhcount_lazy)
-+				    int rhcount, int rhcount_lazy,
-+				    unsigned long flags)
- {
- 	int len;
- 	struct rcu_head **old_rhpp;
-@@ -2125,9 +2126,16 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
- 	}
- 	len = atomic_long_read(&rdp->nocb_q_count);
- 	if (old_rhpp == &rdp->nocb_head) {
--		wake_up(&rdp->nocb_wq); /* ... only if queue was empty ... */
-+		if (!irqs_disabled_flags(flags)) {
-+			wake_up(&rdp->nocb_wq); /* ... if queue was empty ... */
-+			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+					    TPS("WakeEmpty"));
-+		} else {
-+			rdp->nocb_defer_wakeup = true;
-+			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
-+					    TPS("WakeEmptyIsDeferred"));
-+		}
- 		rdp->qlen_last_fqs_check = 0;
--		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeEmpty"));
- 	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
- 		wake_up_process(t); /* ... or if many callbacks queued. */
- 		rdp->qlen_last_fqs_check = LONG_MAX / 2;
-@@ -2148,12 +2156,12 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
-  * "rcuo" kthread can find it.
-  */
- static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
--			    bool lazy)
-+			    bool lazy, unsigned long flags)
- {
- 
- 	if (!rcu_is_nocb_cpu(rdp->cpu))
- 		return 0;
--	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy);
-+	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy, flags);
- 	if (__is_kfree_rcu_offset((unsigned long)rhp->func))
- 		trace_rcu_kfree_callback(rdp->rsp->name, rhp,
- 					 (unsigned long)rhp->func,
-@@ -2171,7 +2179,8 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
-  * not a no-CBs CPU.
-  */
- static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
--						     struct rcu_data *rdp)
-+						     struct rcu_data *rdp,
-+						     unsigned long flags)
- {
- 	long ql = rsp->qlen;
- 	long qll = rsp->qlen_lazy;
-@@ -2185,14 +2194,14 @@ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
- 	/* First, enqueue the donelist, if any.  This preserves CB ordering. */
- 	if (rsp->orphan_donelist != NULL) {
- 		__call_rcu_nocb_enqueue(rdp, rsp->orphan_donelist,
--					rsp->orphan_donetail, ql, qll);
-+					rsp->orphan_donetail, ql, qll, flags);
- 		ql = qll = 0;
- 		rsp->orphan_donelist = NULL;
- 		rsp->orphan_donetail = &rsp->orphan_donelist;
- 	}
- 	if (rsp->orphan_nxtlist != NULL) {
- 		__call_rcu_nocb_enqueue(rdp, rsp->orphan_nxtlist,
--					rsp->orphan_nxttail, ql, qll);
-+					rsp->orphan_nxttail, ql, qll, flags);
- 		ql = qll = 0;
- 		rsp->orphan_nxtlist = NULL;
- 		rsp->orphan_nxttail = &rsp->orphan_nxtlist;
-@@ -2314,6 +2323,22 @@ static int rcu_nocb_kthread(void *arg)
- 	return 0;
- }
- 
-+/* Is a deferred wakeup of rcu_nocb_kthread() required? */
-+static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
-+{
-+	return ACCESS_ONCE(rdp->nocb_defer_wakeup);
-+}
-+
-+/* Do a deferred wakeup of rcu_nocb_kthread(). */
-+static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
-+{
-+	if (rcu_nocb_need_deferred_wakeup(rdp))
-+		return;
-+	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
-+	wake_up(&rdp->nocb_wq);
-+	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
-+}
-+
- /* Initialize per-rcu_data variables for no-CBs CPUs. */
- static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
- {
-@@ -2369,13 +2394,14 @@ static void rcu_init_one_nocb(struct rcu_node *rnp)
- }
- 
- static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
--			    bool lazy)
-+			    bool lazy, unsigned long flags)
- {
- 	return 0;
- }
- 
- static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
--						     struct rcu_data *rdp)
-+						     struct rcu_data *rdp,
-+						     unsigned long flags)
- {
- 	return 0;
- }
-@@ -2384,6 +2410,15 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
- {
- }
- 
-+static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
-+{
-+	return false;
-+}
-+
-+static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
-+{
-+}
-+
- static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
- {
- }
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index cf6c17412932..77a6831b9c51 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -364,9 +364,10 @@ static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
- 		   rdp->n_rp_report_qs,
- 		   rdp->n_rp_cb_ready,
- 		   rdp->n_rp_cpu_needs_gp);
--	seq_printf(m, "gpc=%ld gps=%ld nn=%ld\n",
-+	seq_printf(m, "gpc=%ld gps=%ld nn=%ld ndw%ld\n",
- 		   rdp->n_rp_gp_completed,
- 		   rdp->n_rp_gp_started,
-+		   rdp->n_rp_nocb_defer_wakeup,
- 		   rdp->n_rp_need_nothing);
- }
- 
+> I'd really like a solution where there are no read or write
+> implementations in the entire kernel that check permissions.  Failing
+> that, just getting it for procfs would be nice.  (uid_map, etc will
+> probably need to be revoked on unshare for this to work.)
+
+I am certainly in favor of open acting as a capability grant and
+arranging things so permission checks are not needed later.
+
+uid_map has the interesting case that it doesn't know what permissions
+you need until after you have written the data.  Mapping just your one
+uid doesn't require any of root privileges.  So to move that permission
+check into open it would have to become a flag.  Allow to write
+arbitrary uids, which we could test at write time.
+
+But that is a weird case and let's concentrate on the common case of
+proc files.
+
+Eric
 
