@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab3JFGHZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 02:07:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51151 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751306Ab3JFGHY (ORCPT
+	id S1751762Ab3JFGKq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 02:10:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46093 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab3JFGKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 02:07:24 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [SCSI] ibmvstgt: remove deprecated IRQF_DISABLED
-Date: Sun,  6 Oct 2013 08:07:15 +0200
-Message-Id: <1381039635-12187-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 6 Oct 2013 02:10:45 -0400
+Date: Sat, 5 Oct 2013 16:41:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Alex Williamson <alex.williamson@redhat.com>, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, ddutile@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] intel-iommu: Fix leaks in pagetable freeing
+Message-ID: <20131005234148.GB18223@kroah.com>
+References: <20130615161614.2107.41044.stgit@bling.home>
+ <20131002084431.GA20568@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002084431.GA20568@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the use of the IRQF_DISABLED flag
+On Wed, Oct 02, 2013 at 10:44:31AM +0200, Borislav Petkov wrote:
+> On Sat, Jun 15, 2013 at 10:27:19AM -0600, Alex Williamson wrote:
+> > At best the current code only seems to free the leaf pagetables and
+> > the root.  If you're unlucky enough to have a large gap (like any
+> > QEMU guest with more than 3G of memory), only the first chunk of leaf
+> > pagetables are freed (plus the root).  This is a massive memory leak.
+> > This patch re-writes the pagetable freeing function to use a
+> > recursive algorithm and manages to not only free all the pagetables,
+> > but does it without any apparent performance loss versus the current
+> > broken version.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > Cc: stable@vger.kernel.org
+> > ---
+> > 
+> > Suggesting for stable, would like to see some soak time, but it's
+> > hard to imagine this being any worse than the current code.
+> 
+> Btw, I have a backport for the 3.0.x series which builds fine here, in
+> case you guys are interested :)
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+Thanks, now applied.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/scsi/ibmvscsi/ibmvstgt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/ibmvscsi/ibmvstgt.c b/drivers/scsi/ibmvscsi/ibmvstgt.c
-index bf9eca8..56f8a86 100644
---- a/drivers/scsi/ibmvscsi/ibmvstgt.c
-+++ b/drivers/scsi/ibmvscsi/ibmvstgt.c
-@@ -589,7 +589,7 @@ static int crq_queue_create(struct crq_queue *queue, struct srp_target *target)
- 	}
- 
- 	err = request_irq(vport->dma_dev->irq, &ibmvstgt_interrupt,
--			  IRQF_DISABLED, "ibmvstgt", target);
-+			  0, "ibmvstgt", target);
- 	if (err)
- 		goto req_irq_failed;
- 
--- 
-1.8.1.2
-
+greg k-h
