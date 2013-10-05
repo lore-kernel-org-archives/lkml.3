@@ -1,163 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab3JENXr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 09:23:47 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:39831 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab3JENXp (ORCPT
+	id S1752135Ab3JEOGk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 10:06:40 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:42272 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3JEOGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 09:23:45 -0400
-Date: Sat, 5 Oct 2013 14:23:37 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
- file's opener may access task
-Message-ID: <20131005132337.GA4095@dztty>
-References: <20131004085911.GA2157@dztty>
- <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
- <20131004182353.GA2600@dztty>
- <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
- <20131004191113.GA3916@dztty>
- <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
- <20131004192712.GA4334@dztty>
- <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
- <20131004194142.GA4524@dztty>
- <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sat, 5 Oct 2013 10:06:38 -0400
+Date: Sat, 5 Oct 2013 16:06:36 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Oussama Ghorbel <ou.ghorbel@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
+Message-ID: <20131005140636.GA25076@order.stressinduktion.org>
+Mail-Followup-To: Oussama Ghorbel <ou.ghorbel@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 03:17:08PM -0700, Andy Lutomirski wrote:
-> On Fri, Oct 4, 2013 at 12:41 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
-> >> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> > On Fri, Oct 04, 2013 at 12:16:26PM -0700, Andy Lutomirski wrote:
-> >> >> On Fri, Oct 4, 2013 at 12:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> >> > On Fri, Oct 04, 2013 at 07:34:08PM +0100, Andy Lutomirski wrote:
-> >> >> >> On Fri, Oct 4, 2013 at 7:23 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> >> >> > On Fri, Oct 04, 2013 at 04:40:01PM +0100, Andy Lutomirski wrote:
-> >> >> >> >> On Fri, Oct 4, 2013 at 9:59 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> >> >> >> > On Thu, Oct 03, 2013 at 02:09:55PM -0700, Andy Lutomirski wrote:
-> >> >> > [...]
-> >> >> >> Sorry, I described the obviously broken scenario incorrectly.  Your
-> >> >> >> patch breaks (in the absence of things like selinux) if a exec
-> >> >> >> something setuid root.
-> >> >> >>
-> >> >> >> [...]
-> >> >> >>
-> >> >> >> >
-> >> >> >> > I did the check in the proc_same_open_cred() function:
-> >> >> >> >  return (uid_eq(fcred->uid, cred->uid) &&
-> >> >> >> >          gid_eq(fcred->gid, cred->gid) &&
-> >> >> >> >          cap_issubset(cred->cap_permitted, fcred->cap_permitted));
-> >> >> >>
-> >> >> >> Which has nothing to do with anything.  If that check fails, you're
-> >> >> >> just going on to a different, WRONG check/.
-> >> >> >>
-> >> >> >> >
-> >> >> >> > Check if this is the same uid/gid and the capabilities superset!
-> >> >> >> >
-> >> >> >> > But in the proc_allow_access() the capabilities superset is missing.
-> >> >> >> >
-> >> >> >> >
-> >> >> >> > So to fix it:
-> >> >> >> > 1) if proc_same_open_cred() detects that cred have changed between
-> >> >> >> > ->open() and ->read() then abort, return zero, the ->read(),write()...
-> >> >> >>
-> >> >> >> IMO yuck.
-> >> >> >>
-> >> >> >> >
-> >> >> >> >
-> >> >> >> > 2) Improve the proc_allow_access() check by:
-> >> >> >> >    if this is the same user namespace then check uid/gid of f_cred on
-> >> >> >> >    target cred task, and the capabilities superset:
-> >> >> >> >    cap_issubset(tcred->cap_permitted, fcred->cap_permitted));
-> >> >> >> >
-> >> >> >> >    If it fails let security_capable() or file_ns_capable() do its magic.
-> >> >> >> >
-> >> >> >>
-> >> >> >> NAK.  You need to actually call the LSM.  What if the reason to fail
-> >> >> >> the request isn't that the writer gained capabilities -- what if the
-> >> >> >> writer's selinux label changed?
-> >> >> > Sorry I can't follow you here! Can you be more explicit please?
-> >> >> >
-> >> >> > For me we are already doing this during ptrace_may_access() on each
-> >> >> > syscall, which will call LSM to inspect the privileges on each ->open(),
-> >> >> > ->write()... So LSM hooks are already called. If you want to have more
-> >> >> > LSM hooks, then perhaps that's another problem?
-> >> >>
-> >> >> Can you show me where, in your code, LSMs are asked whether the
-> >> >> process calling read() is permitted to ptrace the process that the
-> >> >> proc file points at?
-> >> > Yes.
-> >> > [PATCH v2 9/9] procfs: improve permission checks on /proc/*/syscall
-> >> >
-> >> > ->read()
-> >> >   ->syscall_read()
-> >> >     ->lock_trace()
-> >> >       ->ptrace_may_access()
-> >> >         ->__ptrace_may_access()
-> >> >           ->security_ptrace_access_check()
-> >> >             ->yama_ptrace_access_check()
-> >> >             ->security_ops->ptrace_access_check()
-> >> >
-> >> >
-> >> > And also for patch:
-> >> > [PATCH v2 8/9] procfs: improve permission checks on /proc/*/stack
-> >> >
-> >> > And during ->open() and ->read()
-> >> >
-> >> >
-> >> > So sorry Andy, I don't follow what you are describing.
-> >>
-> >> And what parameters are you passing to security_ptrace_access_check?
-> >> It's supposed to be f_cred, right?  Because you want to make sure
-> >> that, if the opener had some low-privilege label, the target has
-> >> execed and gotten a more secure label, and the reader has a
-> >> high-privilege label, that the opener's label is checked against the
-> >> target's new label.
-> > The current's cred each time.
+On Fri, Oct 04, 2013 at 10:52:13AM +0100, Oussama Ghorbel wrote:
+> Unlike ipv4, the struct member hlen holds the length of the GRE and ipv6
+> headers. This length is also counted in dev->hard_header_len.
+> Perhaps, it's more clean to modify the hlen to count only the GRE header
+> without ipv6 header as the variable name suggest, but the simple way to fix
+> this without regression risk is simply modify the calculation of the limit
+> in ip6gre_tunnel_change_mtu function.
+> Verified in kernel version v3.11.
 > 
-> Exactly.  Hence the NAK.
-But Having two LSM Hooks there is really not practical!
-
-Note to mention some of these redundancy checks...
-
-> >
-> > Is there some mechanism to check what you describe?
-> >
+> Signed-off-by: Oussama Ghorbel <ou.ghorbel@gmail.com>
+> ---
+>  net/ipv6/ip6_gre.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> No.  You could try to add one, but getting it to be compatible with
-> YAMA might be really messy.
-LSM is limitted in this situation, and it can't work with YAMA, or
-perhaps YAMA will just return -EPERM
+> diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+> index 90747f1..41487ab 100644
+> --- a/net/ipv6/ip6_gre.c
+> +++ b/net/ipv6/ip6_gre.c
+> @@ -1175,9 +1175,8 @@ done:
+>  
+>  static int ip6gre_tunnel_change_mtu(struct net_device *dev, int new_mtu)
+>  {
+> -	struct ip6_tnl *tunnel = netdev_priv(dev);
+>  	if (new_mtu < 68 ||
+> -	    new_mtu > 0xFFF8 - dev->hard_header_len - tunnel->hlen)
+> +	    new_mtu > 0xFFF8 - dev->hard_header_len)
+>  		return -EINVAL;
+>  	dev->mtu = new_mtu;
+>  	return 0;
 
-So this LSM protections are currently vulnerable too!
+Hmmm...
 
+dev->hard_header_len is initialized to LL_MAX_HEADER + sizeof(struct ipv6hdr)
++ 4 but won't include the additional head space needed for GRE_SEQ, GRE_KEY
+etc. if at time of tunnel creation the routing table did not had a good guess
+for the outgoing device.
 
-> Or you could see if destroying and recreating all the inodes on exec
-> or some other revoke-like approach would work.
-> 
-> --Andy
+To make this correct we would have to refactor the usage of the variables a
+bit as is done in ipv4/ip_tunnel.c. The safest thing would be to leave this
+check as-is currently although we exclude some allowed mtus.
 
--- 
-Djalal Harouni
-http://opendz.org
+Perhaps you want to take a look how to achieve that? ;)
+
+Greetings,
+
+  Hannes
+
