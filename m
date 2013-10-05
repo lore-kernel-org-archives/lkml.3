@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab3JEGK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 02:10:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11596 "EHLO mga02.intel.com"
+	id S1751434Ab3JEG1r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 02:27:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52727 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3JEGK4 convert rfc822-to-8bit (ORCPT
+	id S1751345Ab3JEG1p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 02:10:56 -0400
+	Sat, 5 Oct 2013 02:27:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1038,1371106800"; 
-   d="scan'208";a="388203951"
+   d="scan'208";a="303455857"
 From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: Greg KH <greg@kroah.com>, Peng Tao <tao.peng@emc.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: lustre: why does cfs_get_random_bytes() exist?
-Thread-Topic: lustre: why does cfs_get_random_bytes() exist?
-Thread-Index: AQHOwFckUwawBx6iCEW+T1+NaTzynpnjsASAgAAj3QD//9a5AIAAb2uAgAGZW4A=
-Date: Sat, 5 Oct 2013 06:10:54 +0000
-Message-ID: <CE750681.752DF%andreas.dilger@intel.com>
-In-Reply-To: <20131003234545.GA19796@thunk.org>
+To: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Peng Tao <tao.peng@emc.com>,
+        "hpdd-discuss@lists.01.org" <hpdd-discuss@ml01.01.org>
+Subject: Re: [PATCH 10/26] lustre: Convert ll_get_user_pages() to use
+ get_user_pages_fast()
+Thread-Topic: [PATCH 10/26] lustre: Convert ll_get_user_pages() to use
+ get_user_pages_fast()
+Thread-Index: AQHOv3vFlEOI4G32yk6DS75n0qPGCpnluckA
+Date: Sat, 5 Oct 2013 06:27:43 +0000
+Message-ID: <CE750CA8.75301%andreas.dilger@intel.com>
+In-Reply-To: <1380724087-13927-11-git-send-email-jack@suse.cz>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.254.125.217]
 Content-Type: text/plain; charset="us-ascii"
-Content-ID: <3B30AF005B76F3439231F225D4F9F3B2@intel.com>
+Content-ID: <78094AFAA7D9084EB3F62453362B75D3@intel.com>
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/10/03 5:45 PM, "Theodore Ts'o" <tytso@mit.edu> wrote:
->On Thu, Oct 03, 2013 at 11:06:58PM +0000, Dilger, Andreas wrote:
->> 
->> The Lustre cfs_get_random_bytes() incorporates (via cfs_rand()) a seed
->> which also hashes in the addresses from any network interfaces that are
->> configured.
->> Conversely, cfs_rand() also is seeded at startup from
->>get_random_bytes() in
->> case a hardware RNG is available.  This ensures even with identical
->>initial
->> conditions cfs_get_random_bytes() gets a different random stream on each
->> node.
->
->With modern kernels, the /dev/random driver has the
->add_device_randomness() interface which is used to mix in
->personalization information, which includes the network MAC address.
->So that particular concern should be covered without the hack of
->mixing in cfs_rand().
+On 2013/10/02 8:27 AM, "Jan Kara" <jack@suse.cz> wrote:
+>CC: Greg Kroah-Hartman <greg@kroah.com>
+>CC: Peng Tao <tao.peng@emc.com>
+>CC: Andreas Dilger <andreas.dilger@intel.com>
+>CC: hpdd-discuss@lists.01.org
+>Signed-off-by: Jan Kara <jack@suse.cz>
 
-I think that depends on the network driver.  The Cray systems have some
-very strange networking hardware that is beyond our control - definitely
-not ethernet or Infiniband.
+Acked-by: Andreas Dilger <andreas.dilger@intel.com>
 
-I'll have to ask the Cray folks if their network drivers do this today.
-
->> I'm not against cleaning this up, if there is some mechanism for the
->> startup code to add in the node interface addresses into the entropy
->> pool, and this is also used to perturb the prandom_u32() sequence
->> after that point.
+>---
+> drivers/staging/lustre/lustre/llite/rw26.c | 7 ++-----
+> 1 file changed, 2 insertions(+), 5 deletions(-)
 >
->That's handled too, via the late initcall prandom_reseed().
->
->Cheers,
->
->					- Ted
->
+>diff --git a/drivers/staging/lustre/lustre/llite/rw26.c
+>b/drivers/staging/lustre/lustre/llite/rw26.c
+>index 96c29ad2fc8c..7e3e0967993b 100644
+>--- a/drivers/staging/lustre/lustre/llite/rw26.c
+>+++ b/drivers/staging/lustre/lustre/llite/rw26.c
+>@@ -202,11 +202,8 @@ static inline int ll_get_user_pages(int rw, unsigned
+>long user_addr,
+> 
+> 	OBD_ALLOC_LARGE(*pages, *max_pages * sizeof(**pages));
+> 	if (*pages) {
+>-		down_read(&current->mm->mmap_sem);
+>-		result = get_user_pages(current, current->mm, user_addr,
+>-					*max_pages, (rw == READ), 0, *pages,
+>-					NULL);
+>-		up_read(&current->mm->mmap_sem);
+>+		result = get_user_pages_fast(user_addr, *max_pages,
+>+					     (rw == READ), *pages);
+> 		if (unlikely(result <= 0))
+> 			OBD_FREE_LARGE(*pages, *max_pages * sizeof(**pages));
+> 	}
 
 
 Cheers, Andreas
