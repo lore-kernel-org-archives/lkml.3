@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab3JEDTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Oct 2013 23:19:24 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:60747 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751469Ab3JEDTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Oct 2013 23:19:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah4HADiET1J5LPFV/2dsb2JhbABTBoIlYrxohTyBFRd0giUBAQUnExwzCAMYCSUPBSUDIQESiAW7F4E+Fo4OgTSEIwOYAIo9h0ODNio
-Date: Sat, 5 Oct 2013 13:19:18 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
-Subject: Re: fs/attr.c:notify_change locking warning.
-Message-ID: <20131005031918.GL4446@dastard>
-References: <20131005005210.GA25773@redhat.com>
+	id S1751817Ab3JEDZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Oct 2013 23:25:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63901 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab3JEDZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Oct 2013 23:25:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1037,1371106800"; 
+   d="scan'208";a="370099200"
+Date: Fri, 4 Oct 2013 20:25:40 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org
+Subject: Re: [PATCH 4/6] trace: Make UPROBES depend on PERF_EVENTS
+Message-ID: <20131005032540.GA3363@tassilo.jf.intel.com>
+References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
+ <1380922788-23112-5-git-send-email-andi@firstfloor.org>
+ <20131004205253.64dc04c9@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131005005210.GA25773@redhat.com>
+In-Reply-To: <20131004205253.64dc04c9@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 08:52:10PM -0400, Dave Jones wrote:
-> WARNING: CPU: 3 PID: 26128 at fs/attr.c:178 notify_change+0x34d/0x360()
-> Modules linked in: dlci 8021q garp sctp snd_seq_dummy bridge stp tun fuse rfcomm hidp ipt_ULOG nfc caif_socket caif af_802154 phonet af_rxrpc bnep bluetooth rfkill can_bcm can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds scsi_transport_iscsi nfnetlink af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_hdmi xfs snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc libcrc32c snd_timer crct10dif_pclmul crc32c_intel snd ghash_clmulni_intel e1000e microcode usb_debug serio_raw pcspkr ptp soundcore pps_core shpchp
-> CPU: 3 PID: 26128 Comm: trinity-child57 Not tainted 3.12.0-rc3+ #93 
->  ffffffff81a3e2ec ffff880071d71bb8 ffffffff8172a763 0000000000000000
->  ffff880071d71bf0 ffffffff810552cd 0000000000000a00 ffff88023d6e8b90
->  0000000000008ad0 ffff880071d71c50 ffff8802392882c8 ffff880071d71c00
-> Call Trace:
->  [<ffffffff8172a763>] dump_stack+0x4e/0x82
->  [<ffffffff810552cd>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff810553aa>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff811e388d>] notify_change+0x34d/0x360
->  [<ffffffff811e18e7>] file_remove_suid+0x87/0xa0
->  [<ffffffff811e9019>] ? __mnt_drop_write+0x29/0x50
->  [<ffffffff811e90a2>] ? __mnt_drop_write_file+0x12/0x20
->  [<ffffffff811e1e6a>] ? file_update_time+0x8a/0xd0
->  [<ffffffffa01a4e7a>] xfs_file_aio_write_checks+0xea/0xf0 [xfs]
->  [<ffffffffa01a4f50>] xfs_file_dio_aio_write+0xd0/0x3e0 [xfs]
->  [<ffffffffa01a5629>] xfs_file_aio_write+0x129/0x130 [xfs]
->  [<ffffffff811c45dc>] do_sync_readv_writev+0x4c/0x80
->  [<ffffffff811c5aab>] do_readv_writev+0xbb/0x240
->  [<ffffffffa01a5500>] ? xfs_file_buffered_aio_write+0x2a0/0x2a0 [xfs]
->  [<ffffffff811c4500>] ? do_sync_read+0x90/0x90
->  [<ffffffff81734721>] ? _raw_spin_unlock+0x31/0x60
->  [<ffffffff810c9a86>] ? trace_hardirqs_on_caller+0x16/0x1e0
->  [<ffffffff811c5cc8>] vfs_writev+0x38/0x60
->  [<ffffffff811c5e10>] SyS_writev+0x50/0xd0
->  [<ffffffff8173d8e4>] tracesys+0xdd/0xe2
-> ---[ end trace 201843ae71ab5a7c ]---
+On Fri, Oct 04, 2013 at 08:52:53PM -0400, Steven Rostedt wrote:
+> On Fri,  4 Oct 2013 14:39:46 -0700
+> Andi Kleen <andi@firstfloor.org> wrote:
 > 
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > UPROBES need the perf events code, so add a dependency
+> > from PERF_EVENTS to UPROBES.
 > 
-> 177 
-> 178         WARN_ON_ONCE(!mutex_is_locked(&inode->i_mutex));
+> Can you please be a bit more specific on what uprobes requires of perf?
+> That is, what part of the perf events code is needed, and why?
 
-Yup, we don't hold the i_mutex *at all* through the fast path for
-direct IO writes. Having to grab the i_mutex on every IO just for
-the extremely unlikely case we need to remove a suid bit on the file
-would add a significant serialisation point into the direct Io model
-that XFS uses, and is the difference between 50,000 and 2+ million
-direct IO IOPS to a single file.
+Without this dependency, when UPROBE_EVENT is enabled and PERF_EVENTS disabled 
+I first get
 
-I'm unwilling to sacrifice the concurrency of direct IO writes just
-to shut up ths warning, especially as the actual modifications that
-are made to remove SUID bits are correctly serialised within XFS
-once notify_change() calls ->setattr(). If it really matters, I'll
-just open code file_remove_suid() into XFS like ocfs2 does just so
-we don't get that warning being emitted by trinity.
+warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENT && PERF_EVENTS)
+warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENT && PERF_EVENTS)
 
-FWIW, buffered IO on XFS - the normal case for most operations -
-holds the i_mutex over the call to file_remove_suid(), and that's
-why this warning is pretty much never seen - direct IO writes to
-suid files is very unusual....
+and then later lots of errors like 
 
-Cheers,
+arch/x86/built-in.o: In function `do_notify_resume':
+/home/ak/lsrc/git/linux-2.6/arch/x86/kernel/signal.c:743: undefined reference to `uprobe_notify_resume'
+arch/x86/built-in.o: In function `arch_uprobe_exception_notify':
+/home/ak/lsrc/git/linux-2.6/arch/x86/kernel/uprobes.c:637: undefined reference to `uprobe_pre_sstep_notifier'
+/home/ak/lsrc/git/linux-2.6/arch/x86/kernel/uprobes.c:643: undefined reference to `uprobe_post_sstep_notifier'
+kernel/built-in.o: In function `mmput':
+/home/ak/lsrc/git/linux-2.6/kernel/fork.c:608: undefined reference to `uprobe_clear_state'
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+I'm not fully sure why UPROBES has the && PERF_EVENTS; I didn't add that.
+
+-Andi
