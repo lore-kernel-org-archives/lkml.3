@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab3JEG1r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 02:27:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52727 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3JEG1p convert rfc822-to-8bit (ORCPT
+	id S1751469Ab3JEGfD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 02:35:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50637 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab3JEGfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 02:27:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1038,1371106800"; 
-   d="scan'208";a="303455857"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Greg Kroah-Hartman <greg@kroah.com>, Peng Tao <tao.peng@emc.com>,
-        "hpdd-discuss@lists.01.org" <hpdd-discuss@ml01.01.org>
-Subject: Re: [PATCH 10/26] lustre: Convert ll_get_user_pages() to use
- get_user_pages_fast()
-Thread-Topic: [PATCH 10/26] lustre: Convert ll_get_user_pages() to use
- get_user_pages_fast()
-Thread-Index: AQHOv3vFlEOI4G32yk6DS75n0qPGCpnluckA
-Date: Sat, 5 Oct 2013 06:27:43 +0000
-Message-ID: <CE750CA8.75301%andreas.dilger@intel.com>
-In-Reply-To: <1380724087-13927-11-git-send-email-jack@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.125.217]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <78094AFAA7D9084EB3F62453362B75D3@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Sat, 5 Oct 2013 02:35:01 -0400
+Date: Sat, 5 Oct 2013 07:34:32 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/exit.c: call read_unlock() when failure occurs
+ after already called read_lock() in do_wait().
+Message-ID: <20131005063431.GU13318@ZenIV.linux.org.uk>
+References: <524FA956.9080100@asianux.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524FA956.9080100@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/10/02 8:27 AM, "Jan Kara" <jack@suse.cz> wrote:
->CC: Greg Kroah-Hartman <greg@kroah.com>
->CC: Peng Tao <tao.peng@emc.com>
->CC: Andreas Dilger <andreas.dilger@intel.com>
->CC: hpdd-discuss@lists.01.org
->Signed-off-by: Jan Kara <jack@suse.cz>
-
-Acked-by: Andreas Dilger <andreas.dilger@intel.com>
-
->---
-> drivers/staging/lustre/lustre/llite/rw26.c | 7 ++-----
-> 1 file changed, 2 insertions(+), 5 deletions(-)
->
->diff --git a/drivers/staging/lustre/lustre/llite/rw26.c
->b/drivers/staging/lustre/lustre/llite/rw26.c
->index 96c29ad2fc8c..7e3e0967993b 100644
->--- a/drivers/staging/lustre/lustre/llite/rw26.c
->+++ b/drivers/staging/lustre/lustre/llite/rw26.c
->@@ -202,11 +202,8 @@ static inline int ll_get_user_pages(int rw, unsigned
->long user_addr,
+On Sat, Oct 05, 2013 at 01:53:26PM +0800, Chen Gang wrote:
+> If failure occurs after called read_lock(), need call read_unlock() too.
 > 
-> 	OBD_ALLOC_LARGE(*pages, *max_pages * sizeof(**pages));
-> 	if (*pages) {
->-		down_read(&current->mm->mmap_sem);
->-		result = get_user_pages(current, current->mm, user_addr,
->-					*max_pages, (rw == READ), 0, *pages,
->-					NULL);
->-		up_read(&current->mm->mmap_sem);
->+		result = get_user_pages_fast(user_addr, *max_pages,
->+					     (rw == READ), *pages);
-> 		if (unlikely(result <= 0))
-> 			OBD_FREE_LARGE(*pages, *max_pages * sizeof(**pages));
-> 	}
+> It can fail in multiple position, so add new tag 'fail_lock' for it
+> (also can let 'if' only content one jump statement).
 
+You know, this is getting too frequent...  You really need to do
+something about it.  OK, you've formed a hypothesis (in this case,
+that ptrace_do_wait() returns non-zero with tasklist_lock still held).
+If that hypothesis was correct, you would've found a bug and yes,
+this patch would probably be more or less a fix for that bug.
 
-Cheers, Andreas
--- 
-Andreas Dilger
+Do you see what's missing?  That's right, verifying that hypothesis.
+Which isn't hard to do, either by slapping a printk into these
+exits, or by trying to build a proof.  As it is, hypothesis is
+incorrect and your patch introduces breakage.  The same would have
+happened if _some_ exits from that function returned non-zero
+values with tasklist_lock held and some returned non-zero values
+with tasklist_lock released.
 
-Lustre Software Architect
-Intel High Performance Data Division
+You really need to realize that pattern-matching is not enough - you
+need to prove that your fix is correct and that requires an analysis
+of what's there.
 
-
+"I see something odd" is a good reason to ask or to try and figure out
+what's going on.  It's not a good reason for blindly making changes
+like that - not until you've done the analysis and can at least show
+that it won't _break_ things.
