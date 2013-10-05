@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab3JEWgE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 18:36:04 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51883 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752312Ab3JEWgB (ORCPT
+	id S1752827Ab3JEWpV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 18:45:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45652 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab3JEWpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 18:36:01 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        fei.li@intel.com
-Subject: Re: [PATCH] PCI/PM: Removing the function pci_pm_complete()
-Date: Sun, 06 Oct 2013 00:47:36 +0200
-Message-ID: <4130856.aaSGkRrri4@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAErSpo6Sm1hDWRFaMYtiZN6_KJ8N05eiRHj_GKJ6AhMjdR91Bw@mail.gmail.com>
-References: <1378809966.26153.23.camel@cliu38-desktop-build> <CAErSpo6Sm1hDWRFaMYtiZN6_KJ8N05eiRHj_GKJ6AhMjdR91Bw@mail.gmail.com>
+	Sat, 5 Oct 2013 18:45:20 -0400
+Date: Sat, 5 Oct 2013 23:44:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: linux-next@vger.kernel.org
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20131005224454.GA21581@sirena.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Disposition: inline
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: linux-next: Tree for Oct 4
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 04, 2013 11:47:25 AM Bjorn Helgaas wrote:
-> On Tue, Sep 10, 2013 at 4:46 AM, Chuansheng Liu
-> <chuansheng.liu@intel.com> wrote:
-> >
-> > Commit(88d2613) removed the pm_runtime_put_sync() from pci_pm_complete()
-> > to PM core code device_complete().
-> >
-> > Here the pci_pm_complete() is doing the same work which can be done in
-> > device_complete(), so we can remove it directly.
-> >
-> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > ---
-> >  drivers/pci/pci-driver.c |    9 ---------
-> >  1 files changed, 0 insertions(+), 9 deletions(-)
-> 
-> This looks correct to me, but I'd like Rafael to ack it before I apply it.
 
-Yes, it should work, so ACK.
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sorry for the delay.
+Hi all,
 
-> > diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> > index 98f7b9b..736ef3f 100644
-> > --- a/drivers/pci/pci-driver.c
-> > +++ b/drivers/pci/pci-driver.c
-> > @@ -599,18 +599,10 @@ static int pci_pm_prepare(struct device *dev)
-> >         return error;
-> >  }
-> >
-> > -static void pci_pm_complete(struct device *dev)
-> > -{
-> > -       struct device_driver *drv = dev->driver;
-> > -
-> > -       if (drv && drv->pm && drv->pm->complete)
-> > -               drv->pm->complete(dev);
-> > -}
-> >
-> >  #else /* !CONFIG_PM_SLEEP */
-> >
-> >  #define pci_pm_prepare NULL
-> > -#define pci_pm_complete        NULL
-> >
-> >  #endif /* !CONFIG_PM_SLEEP */
-> >
-> > @@ -1123,7 +1115,6 @@ static int pci_pm_runtime_idle(struct device *dev)
-> >
-> >  const struct dev_pm_ops pci_dev_pm_ops = {
-> >         .prepare = pci_pm_prepare,
-> > -       .complete = pci_pm_complete,
-> >         .suspend = pci_pm_suspend,
-> >         .resume = pci_pm_resume,
-> >         .freeze = pci_pm_freeze,
-> > --
-> > 1.7.0.4
+Better late than never I've uploaded today's linux-next tree to the
+master branch of the repository below:
 
-Thanks!
+        git://gitorious.org/thierryreding/linux-next.git
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+A next-20131004 tag is also provided for convenience.
+
+Each merge was tested with x86_664 allyesconfig.  A few new conflicts
+and build test failures came up along the way - these have all been
+reported.
+
+Thanks,
+Mark
+
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSUJZiAAoJELSic+t+oim9Cv4P/1jVgCbk77VpUv7BPA536mo0
+WFc7cmj+KGyDL4PrwhRcN0VJeB1B9oC5SSddW2jqfPnDi3Ysajvlx3W4sOSPiKca
+TH4vpXaPGXXXngbQ5kU2C2t3KVgGSn65uu/kbA6Cgm7Z5adovGXJiUg5r3m9ff8F
+0Jg63Q/X6hMYOiUuijeuJd6I/hk6bJVvwCe3QBs6qLA+hGRveMhpn5o1293Hj0N0
+GJUL4g8zmDxk7Ls4xDEylI/5C7+raV69rEYhygP/wT3a8a/KtUm4ELL7Irhq+emA
+LxcwtyLGAs6IOzbPgqLaTvJhKgdfUaOA9pP+1cY+QkNkuepkYhC+1x9K4WbQ3A47
+royC2COf5DJiE+EmlI7xISyVl5aXZx1zd1mKzGzTHMeF5P0ngaiETD/8a+Lr+6F/
+RtrQWRLUevhJJryfGP46TMeiKxC7cLGS2DqgrL4c872cMU6WYcqQI2zLQFAL1Onv
+o+c2JfNbRn0KwZuVW4JRSIoRRUPpmEuRheDSinJc2WrNgYJGvR5PBjeqVCnONwES
+fKsaeN117zTnSwHPhDqCrg4Su2+pVivb2GgW1RChj//vlTC2DCG1IvgP5AFLnmUc
+nCfYP582joFTQaZM1vRopnohtVBTOp8Kg7ToAoKZP5vuz6bLkTt+vo3HG8Nwsbq/
+dUb6RGfMAv/2KEv8Spma
+=j70u
+-----END PGP SIGNATURE-----
+
+--vtzGhvizbBRQ85DL--
