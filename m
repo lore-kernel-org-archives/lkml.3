@@ -1,142 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3JFRbo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 13:31:44 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54237 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753791Ab3JFRbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 13:31:41 -0400
-Message-ID: <52519E7A.40804@ti.com>
-Date: Sun, 6 Oct 2013 12:31:38 -0500
-From: Dan Murphy <dmurphy@ti.com>
+	id S1754076Ab3JFRmJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 13:42:09 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:37392 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3JFRmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 13:42:07 -0400
+Message-ID: <5251BD09.3050900@gmail.com>
+Date: Sun, 06 Oct 2013 21:42:01 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Steve Glendinning <steve.glendinning@shawell.net>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, <mugunthanvnm@ti.com>
-Subject: Re: [PATCH] usbnet: smsc95xx: Add device tree input for MAC address
-References: <1380911156-14112-1-git-send-email-dmurphy@ti.com> <CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>
-In-Reply-To: <CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Andrew Lunn <andrew@lunn.ch>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: provide public clk_is_enabled function
+References: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131005202430.GI10079@pengutronix.de> <20131005204208.GB28106@lunn.ch> <20131006090609.GK14747@book.gsilab.sittig.org> <20131006163011.GA30818@lunn.ch>
+In-Reply-To: <20131006163011.GA30818@lunn.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2013 10:05 AM, Ming Lei wrote:
-> On Sat, Oct 5, 2013 at 2:25 AM, Dan Murphy <dmurphy@ti.com> wrote:
->> If the smsc95xx does not have a valid MAC address stored within
->> the eeprom then a random number is generated.  The MAC can also
->> be set by uBoot but the smsc95xx does not have a way to read this.
+On 10/06/2013 06:30 PM, Andrew Lunn wrote:
+> On Sun, Oct 06, 2013 at 11:06:09AM +0200, Gerhard Sittig wrote:
+>> On Sat, Oct 05, 2013 at 22:42 +0200, Andrew Lunn wrote:
+>>>
+>>> On Sat, Oct 05, 2013 at 10:24:30PM +0200, Uwe Kleine-König wrote:
+>>>> On Fri, Oct 04, 2013 at 12:08:30PM +0200, Sebastian Hesselbarth wrote:
+>>>>> To determine if a clk has been previously enabled, provide a public
+>>>>> clk_is_enabled function. This is especially helpful to check the state
+>>>>> of clk-gate without actually changing the state of the gate.
+>>>> I wonder what you want to do with the return value.
+>>>>
+>>>> When doing
+>>>>
+>>>> 	if (clk_is_enabled(someclk))
+>>>> 		do_something();
+>>>>
+>>>> you cannot in general know if the clock is still on when you start to
+>>>> do_something.
+>>>
+>>> Hi Uwe
+>>>
+>>> At least in the use case Sebastian needs it for, we don't need an "in
+>>> general" solution. It is used early boot time to see if the boot
+>>> loader left the clock running.
 >>
->> Create the binding for the smsc95xx so that uBoot can set the MAC
->> and the code can retrieve the MAC from the modified DTB file.
-> Suppose there are two smsc95xx usbnet devices connected to usb bus, and
-> one is built-in, another is hotplug device, can your patch handle the situation
-> correctly?
-
-Look at this line in the patch below
-
-sprintf(of_name, "%s%i", SMSC95XX_OF_NAME, dev->udev->dev.id);
-
-I am appending the dev ID of the device to the of_name here.  As long as init_mac_address is called, the dev.id and the uBoot
-entry match then yes.
-
-
->> Signed-off-by: Dan Murphy <dmurphy@ti.com>
->> ---
->>  Documentation/devicetree/bindings/net/smsc95xx.txt |   17 ++++++++++++++
->>  drivers/net/usb/smsc95xx.c                         |   24 ++++++++++++++++++++
->>  2 files changed, 41 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/net/smsc95xx.txt
->>
->> diff --git a/Documentation/devicetree/bindings/net/smsc95xx.txt b/Documentation/devicetree/bindings/net/smsc95xx.txt
->> new file mode 100644
->> index 0000000..4c37280
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/net/smsc95xx.txt
->> @@ -0,0 +1,17 @@
->> +* Smart Mixed-Signal Connectivity (SMSC) 95xx Controller
->> +
->> +Required properties:
->> +None
->> +
->> +Optional properties:
->> +- mac-address - Read the mac address that was stored by uBoot
->> +- local-address - Read the mac address that was stored by uBoot
->> +- address - Read the mac address that was stored by uBoot
->> +
->> +Examples:
->> +
->> +smsc0: smsc95xx@0 {
->> +       /* Filled in by U-Boot */
->> +       mac-address = [ 00 00 00 00 00 00 ];
->> +};
->> +
->> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
->> index 3f38ba8..baee0bd 100644
->> --- a/drivers/net/usb/smsc95xx.c
->> +++ b/drivers/net/usb/smsc95xx.c
->> @@ -31,6 +31,9 @@
->>  #include <linux/crc32.h>
->>  #include <linux/usb/usbnet.h>
->>  #include <linux/slab.h>
->> +#include <linux/of.h>
->> +#include <linux/of_net.h>
->> +
->>  #include "smsc95xx.h"
->>
->>  #define SMSC_CHIPNAME                  "smsc95xx"
->> @@ -62,6 +65,8 @@
->>  #define SUSPEND_ALLMODES               (SUSPEND_SUSPEND0 | SUSPEND_SUSPEND1 | \
->>                                          SUSPEND_SUSPEND2 | SUSPEND_SUSPEND3)
->>
->> +#define SMSC95XX_OF_NAME       "/smsc95xx@"
->> +
->>  struct smsc95xx_priv {
->>         u32 mac_cr;
->>         u32 hash_hi;
->> @@ -767,6 +772,25 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
->>
->>  static void smsc95xx_init_mac_address(struct usbnet *dev)
->>  {
->> +
->> +#ifdef CONFIG_OF
->> +       struct device_node *ap;
->> +       const char *mac = NULL;
->> +       char *of_name = SMSC95XX_OF_NAME;
->> +
->> +       sprintf(of_name, "%s%i", SMSC95XX_OF_NAME, dev->udev->dev.id);
->> +       ap = of_find_node_by_path(of_name);
->> +       if (ap) {
->> +               mac = of_get_mac_address(ap);
->> +               if (is_valid_ether_addr(mac)) {
->> +                       /* Device tree has a mac for this so use that */
->> +                       memcpy(dev->net->dev_addr, mac, ETH_ALEN);
->> +                       netif_dbg(dev, ifup, dev->net, "MAC address read from DTB\n");
->> +                       return;
->> +               }
->> +       }
->> +#endif
->> +
->>         /* try reading mac address from EEPROM */
->>         if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
->>                         dev->net->dev_addr) == 0) {
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>> Wait, unless I'm missing something, the clk_is_enabled() call
+>> _won't_ determine whether the clock is enabled in hardware
+>> (whether the boot loader created or left this condition), instead
+>> it only determines whether clk_enable() was called previously and
+>> thus the clock _shall_ be enabled.
 >
-> Thanks,
+> Nope, you are wrong.
+>
+> static int clk_gate_is_enabled(struct clk_hw *hw)
+> {
+> 	u32 reg;
+> 	struct clk_gate *gate = to_clk_gate(hw);
+>
+> 	reg = clk_readl(gate->reg);
+>
+> 	/* if a set bit disables this clk, flip it before masking */
+> 	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+> 	   reg ^= BIT(gate->bit_idx);
+>
+> 	   reg &= BIT(gate->bit_idx);
+>
+> 	   return reg ? 1 : 0;
+> }
+>
+> It reads the hardware state.
+>
+>> AFAIK the kernel's CCF support is "self contained" and does not
+>> consider any data or state that was "inherited" from boot staged
+>> before the kernel.  That's why the "disable unused" step disables
+>> everything that wasn't acquired _in the kernel_ regardless of
+>> what the boot loader may have done or what is enabled at reset.
+>
+> Not quite true. It uses the is_enabled(), which gets the real hardware
+> state, to turn off clocks which are unused but on. It will not turn
+> off clock which are already off. So it is inheriting some state from
+> the boot loader, in that it knows if the bootloader turned it
+> on. However this is not propagated into prepare/enable status.
+>
+>>> The other user of the clock is the
+>>> ethernet driver, which we know cannot change it yet, because driver
+>>> probing has not started yet.
+>>
+>> I understand that the situation here is, that the ethernet driver
+>> hasn't probed yet, but the clock driver did.  You are in early setup
+>> code and want to (check and) fetch data from the hardware which the
+>> ethernet driver later needs.
+>
+> Nearly, but not quite. If there is an enabled DT node for the device,
+> and that node does not have a valid local-mac-address property in the
+> node, the bootloader should of programmed the MAC address into the
+> device. If it has done that, the clock should be running, because as
+> soon as you turn the clock off, it forgets the MAC address. Thus, if
+> we find an enabled device in DT, without a valid local-mac-address,
+> and the clock is off, we have a bootloader bug, which we want to
+> report.
+>
+>> What's wrong with an explicit enable/disable around the data
+>> acquisition?
+>
+> It avoids the CPU locking hard, but will not get us a valid MAC
+> address, which is the point of the exercise.
 
+While I agree to all Andew explained above, I somehow have the strong
+feeling that an clk_is_enabled will just be abused where possible. We
+already have two ppl complaining about it - even though a quick look at
+clk/core.c should have cleared out most of it.
 
--- 
-------------------
-Dan Murphy
+Maybe we should just enable the clock, get the (possibly bogus) MAC
+and disable it again. We loose one possible FW_BUG report and overwrite
+an invalid local-mac-address property with another invalid one.
 
+Sebastian
