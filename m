@@ -1,110 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab3JFB3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 21:29:23 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:60832 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab3JFB3V (ORCPT
+	id S1753382Ab3JFCLd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 22:11:33 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58893 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752759Ab3JFCLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 21:29:21 -0400
-Date: Sun, 6 Oct 2013 03:29:08 +0200
-From: Alexander Aring <alex.aring@gmail.com>
-To: Alan Ott <alan@signal11.us>
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 6lowpan: Sync default hardware address of lowpan links
- to their wpan
-Message-ID: <20131006012907.GA25606@omega>
-References: <1381009080-15945-1-git-send-email-alan@signal11.us>
- <20131006002451.GA22623@omega>
- <5250B680.2080301@signal11.us>
+	Sat, 5 Oct 2013 22:11:31 -0400
+Message-ID: <5250C6CD.1040803@hurleysoftware.com>
+Date: Sat, 05 Oct 2013 22:11:25 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5250B680.2080301@signal11.us>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY/Serial fixes for 3.12-rc4
+References: <20131005173403.GA4811@kroah.com> <CA+55aFzEtnOOB4yPbWg4tmvWTPjQL1_YsZks6wgpGimaQdOEtA@mail.gmail.com> <5250A74E.4070805@hurleysoftware.com>
+In-Reply-To: <5250A74E.4070805@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 09:01:52PM -0400, Alan Ott wrote:
-> On 10/05/2013 08:24 PM, Alexander Aring wrote:
-> >Hi Alan,
-> >
-> >On Sat, Oct 05, 2013 at 05:38:00PM -0400, Alan Ott wrote:
-> >>When a lowpan link to a wpan device is created, set the hardware address
-> >>of the lowpan link to that of the wpan device.
-> >>
-> >>Signed-off-by: Alan Ott<alan@signal11.us>
-> >>---
-> >>  net/ieee802154/6lowpan.c | 3 +++
-> >>  1 file changed, 3 insertions(+)
-> >>
-> >>diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-> >>index c85e71e..fb89133 100644
-> >>--- a/net/ieee802154/6lowpan.c
-> >>+++ b/net/ieee802154/6lowpan.c
-> >>@@ -1386,6 +1386,9 @@ static int lowpan_newlink(struct net *src_net, struct net_device *dev,
-> >>  	entry->ldev = dev;
-> >>+	BUG_ON(IEEE802154_ADDR_LEN != dev->addr_len);
-> >So if somebody make a:
-> >"ip link add link $NOT_8BYTE_HWADDR_DEV name $NAME type lowpan"
-> >
-> >the kernel creates a BUG_ON? Okay it seems that case is very unusual but
-> >better is to return a errno so "maybe(I don't know it)" the userspace
-> >software will generate a error and the whole kernel doesn't crash.
-> 
-> That line checks the length of the address of the lowpan device, not
-> the real device the lowpan device is attached to (and on second
-> look, I don't like the Yoda code; didn't notice that before).
-> 
-> Further, running:
->     ip link add link eth0 name lowpan0 type lowpan
-> 
-> like you suggest, crashes the kernel hard, with or without my patch.
-> More stuff to fix....
+On 10/05/2013 07:57 PM, Peter Hurley wrote:
+> On 10/05/2013 02:53 PM, Linus Torvalds wrote:
+>> On Sat, Oct 5, 2013 at 10:34 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>>
+>>> One fixes the reported regression in the n_tty code that a number of
+>>> people found recently
+>>
+>> That one looks broken.
+>>
+>> Well, it looks like it might "work", but do so by hiding the issue for
+>> one case, while leaving it in the more general case.
+>>
+>> Why does it do that
+>>
+>>      up_read(&tty->termios_rwsem);
+>>      tty_flush_to_ldisc(tty);
+>>      down_read(&tty->termios_rwsem);
+>>
+>> only if TTY_OTHER_CLOSED is set? If flushing the ldisc can generate
+>> more data, then we should do it *unconditionally* when we see that we
+>> currently have no data to read.
+>>
+>> As it is, it looks like the patch fixes the TTY_OTHER_CLOSED case
+>> ("read all pending data before returning -EIO"), but it leaves the
+>> same broken case for the O_NONBLOCK case and for a hung up tty.
+>>
+>> The O_NONBLOCK case is presumably just a performance problem (the data
+>> will come at _some_ point later), but it just looks bad in general.
+>> And the tty_hung_up_p() looks actiely buggy, with the same bug as the
+>> TTY_OTHER_CLOSED case that the patch tried to fix.
+>>
+>> Hmm? Am I missing something?
+
+Apologies, I realized I didn't address the O_NONBLOCK case.
+
+My reasoning for excluding O_NONBLOCK is that tty_flush_to_ldisc()
+_waits_ for flush_to_ldisc() to complete. In the worst (admittedly
+contrived) case, this could be unbounded running time: a sufficiently
+fast source could keep flush_to_ldisc() running forever by writing
+4K chars and then 4k backspaces, ad infinitum.
+
+
+> When a slave pty is closed, it's not hung up specifically so the
+> master pty can be read.
 >
+> The same is not true for a regular tty; when a regular tty is hung up,
+> all the pending data is vaporized (ie., what the tty layer refers
+> to as 'flushed'). So checking for more data when tty_hung_up_p() is
+> true is pointless.
+>
+> The distinction is clearer when you consider that even after the slave
+> pty is closed, the master pty can still be read() even if it wasn't
+> waiting in n_tty_read() at the time; this is not true of a regular tty, which
+> cannot be read() after a hangup [tty_hung_up_p() tests if the
+> file_operations pointer is set to non-operational read/write/ioctl functions].
+>
+> The patch fixes a race condition which is peculiar to ptys only.
+>
+>> The code is a bit confusing in *other* ways too: if you look later, it
+>> does this:
+>>
+>>      n_tty_set_room(tty);
+>>
+>> which is documented to have to happen inside the termios_rwsem.
+>> HOWEVER, what does that do? It actually does an _asynchronous_
+>> queue_work() of &tty->port->buf.work, in case there is now more room,
+>> and the previous one was blocked. And guess what that workqueue is all
+>> about? Right: it's flush_to_ldisc() - which is the work that
+>> tty_flush_to_ldisc() is trying to flush. So we're actually basically
+>> making sure we've flush the previous pending work.
+>
+> The flush_to_ldisc() worker no longer re-schedules itself.
+>
+> The flush_to_ldisc() worker is scheduled when one of two events
+> happen; 1) the driver has just written received data to the tty
+> buffers, or 2) space has just become available in the N_TTY line
+> discipline's read buffer when it was previously full.
+>
+> The flush_to_ldisc() worker continues to run as long as space
+> is available in the line discipline's read buffer or until the
+> tty buffers are empty.
+>
+> Concurrently with the flush_to_ldisc() worker, a reader may have
+> an empty read buffer; the flush_to_ldisc() worker may or may not
+> generate more input to be read.
+>
+> Generally when a reader has an empty read buffer, it will sleep unless
+> one of the other conditions is met (TTY_OTHER_CLOSED, tty_hung_up_p,
+> non-blocking, etc).
+>
+> Before sleeping, the reader will (re-)schedule the flush_to_ldisc()
+> worker in case it read some input on the previous loop iteration
+> (thus creating space in the read buffer when there was none previously).
+>
+> (That doesn't preclude that flush_to_ldisc() may already be running
+> but isn't processing as fast as the reader is reading.)
+>
+>
+>> So even the tty_flush_to_ldisc(tty) that gets done in that patch is
+>> not necessarily sufficient, because the work might not have been
+>> scheduled because the flip buffer used to be full. Then flushing the
+>> work won't do anything, even though there is actually more data. Now,
+>> that is a very unlikely situation (I think it requires two concurrent
+>> readers), but it looks like it might be real.
+>
+> I don't think this condition is possible for a single reader (because
+> the read condition will be satisfied and the reader will return).
+> Multiple concurrent readers are excluded by the atomic_read_lock mutex
+> at the the top of n_tty_read().
 
-Okay isn't the dev->addr_len some static value?
+However, the atomic_read_lock exclusion needs to cover the
+unconditional n_tty_set_room() when leaving n_tty_read() and
+it doesn't. Thus, the departing reader fails to ensure the subsequent
+reader has a running flush_to_ldisc() worker.
 
-Maybe we should check than for:
+Patch forthcoming.
 
-if (real_dev->type != ARPHRD_IEEE802154)
-	return -EINVAL;
+>> So I suspect we should *unconditionally* do
+>>
+>>       n_tty_set_room(tty);
+>>       up_read(&tty->termios_rwsem);
+>>       tty_flush_to_ldisc(tty);
+>>       down_read(&tty->termios_rwsem);
+>>
+>> if we don't have any pending input. And then test input_available_p()
+>> again. And only if we don't have any input after that flushing do we
+>> start doing the whole TTY_OTHER_CLOSED and tty_hung_up_p() tests.
+>>
+>> Hmm?
+>
+> flush_to_ldisc() should not be rescheduled via n_tty_set_room() after
+> the tty has been hung up. This will trigger the diagnostic warning that
+> was introduced back in 3.8 which proved that the line discipline
+> was still running after the tty had been released.
 
-after we set real_dev. It's all ARPHRD_IEEE802154 specific code.
+Apologies again. This is not true for any existing reader.
 
-> 
-> >>+	memcpy(dev->dev_addr, real_dev->dev_addr, IEEE802154_ADDR_LEN);
-> >Is there one case where we read the dev->dev_addr? I saw a case when we
-> >set this [1], but I don't know why we need this. Did you detect some
-> >problems because this isn't the "real" hw addr?
-> >
-> >Other case is I am feeling uneasy when we have two netdev devices with
-> >the same hw addr.
-> >[1]https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/net/ieee802154/6lowpan.c?id=refs/tags/v3.12-rc3#n1102
-> 
-> In my testing, lowpan devices need a hardware address which is the
-> same as the wpan, or else stuff like ping doesn't work at all. In
-> all the examples I've ever seen, the lowpan's hardware address has
-> been set manually.
-> 
-Ah ok.
+Regards,
+Peter Hurley
 
-> What does your test setup look like that you don't have a hardware
-> address for your lowpan device? Are you able to ping other Linux
-> hosts?
-> 
-
-I have a little script for setting up a lowpan device.
-I set the hardware address with:
-
-ip link set $LOWPAN_DEV address $EUI64_ADDR
-
-after I add the lowpan link. I am able to ping linux and contiki(without
-fragmentation).
-
-- Alex
