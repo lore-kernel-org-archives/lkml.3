@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3JFJGV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 05:06:21 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:54589 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab3JFJGT convert rfc822-to-8bit (ORCPT
+	id S1752100Ab3JFJK7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 05:10:59 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:57003 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab3JFJK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 05:06:19 -0400
-X-Auth-Info: HX1St+YzbnsF6YsHm9CeWTn0Gg0knVcqZYUA8VwEhWw=
-Date: Sun, 6 Oct 2013 11:06:09 +0200
-From: Gerhard Sittig <gsi@denx.de>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] clk: provide public clk_is_enabled function
-Message-ID: <20131006090609.GK14747@book.gsilab.sittig.org>
-Mail-Followup-To: Andrew Lunn <andrew@lunn.ch>,
-	Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= <u.kleine-koenig@pengutronix.de>,
-	Russell King <linux@arm.linux.org.uk>,
-	Jason Cooper <jason@lakedaemon.net>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linux-kernel@vger.kernel.org,
-	Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-	Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-	Grant Likely <grant.likely@linaro.org>,
-	Mike Turquette <mturquette@linaro.org>,
-	linux-arm-kernel@lists.infradead.org,
-	Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-References: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20131005202430.GI10079@pengutronix.de>
- <20131005204208.GB28106@lunn.ch>
+	Sun, 6 Oct 2013 05:10:57 -0400
+Date: Sun, 6 Oct 2013 11:10:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86: Clean up cap_user_time* setting
+Message-ID: <20131006091054.GA4342@gmail.com>
+References: <tip-nmgn0j0muo1r4c94vlfh23xy@git.kernel.org>
+ <524F097A.9010506@intel.com>
+ <20131004185539.GT15690@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20131005204208.GB28106@lunn.ch>
-Organization: DENX Software Engineering GmbH
+In-Reply-To: <20131004185539.GT15690@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 22:42 +0200, Andrew Lunn wrote:
-> 
-> On Sat, Oct 05, 2013 at 10:24:30PM +0200, Uwe Kleine-König wrote:
-> > On Fri, Oct 04, 2013 at 12:08:30PM +0200, Sebastian Hesselbarth wrote:
-> > > To determine if a clk has been previously enabled, provide a public
-> > > clk_is_enabled function. This is especially helpful to check the state
-> > > of clk-gate without actually changing the state of the gate.
-> > I wonder what you want to do with the return value.
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Fri, Oct 04, 2013 at 09:31:22PM +0300, Adrian Hunter wrote:
+> > On 4/10/2013 8:31 p.m., tip-bot for Peter Zijlstra wrote:
+> > >Commit-ID:  d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32
+> > >Gitweb:     http://git.kernel.org/tip/d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32
+> > >Author:     Peter Zijlstra <peterz@infradead.org>
+> > >AuthorDate: Thu, 3 Oct 2013 16:00:14 +0200
+> > >Committer:  Ingo Molnar <mingo@kernel.org>
+> > >CommitDate: Fri, 4 Oct 2013 09:58:55 +0200
+> > >
+> > >perf/x86: Clean up cap_user_time* setting
+> > >
+> > >Currently the cap_user_time_zero capability has different tests than
+> > >cap_user_time; even though they expose the exact same data.
+> > >
+> > >Switch from CONSTANT && NONSTOP to sched_clock_stable to also deal
+> > >with multi cabinet machines and drop the tsc_disabled() check.. non of
+> > >this will work sanely without tsc anyway.
 > > 
-> > When doing
-> > 
-> > 	if (clk_is_enabled(someclk))
-> > 		do_something();
-> > 
-> > you cannot in general know if the clock is still on when you start to
-> > do_something.
+> > Unfortunately in the case that TSC is disabled, sched_clock is still
+> > reported as stable, which means removing the tsc_disabled() check breaks
+> > the capability bit. e.g.
 > 
-> Hi Uwe
-> 
-> At least in the use case Sebastian needs it for, we don't need an "in
-> general" solution. It is used early boot time to see if the boot
-> loader left the clock running.
+> I'm wanting to hear from the x86 people on why we have this absurd knob 
+> to begin with; but I'm tempted to simply disable all of perf if you 
+> touch it.
 
-Wait, unless I'm missing something, the clk_is_enabled() call
-_won't_ determine whether the clock is enabled in hardware
-(whether the boot loader created or left this condition), instead
-it only determines whether clk_enable() was called previously and
-thus the clock _shall_ be enabled.
+I'm fully with you, please zap the 'notsc' boot option - it's an ancient 
+relic, if any box is still broken with the TSC on we want to hear about it 
+and fix it!
 
-AFAIK the kernel's CCF support is "self contained" and does not
-consider any data or state that was "inherited" from boot staged
-before the kernel.  That's why the "disable unused" step disables
-everything that wasn't acquired _in the kernel_ regardless of
-what the boot loader may have done or what is enabled at reset.
+Thanks,
 
-> The other user of the clock is the
-> ethernet driver, which we know cannot change it yet, because driver
-> probing has not started yet.
-
-I understand that the situation here is, that the ethernet driver
-hasn't probed yet, but the clock driver did.  You are in early
-setup code and want to (check and) fetch data from the hardware
-which the ethernet driver later needs.
-
-What's wrong with an explicit enable/disable around the data
-acquisition?  This allows to reliably fetch and store the
-information (into the device tree data?) for later use, and is
-neutral to the enable counter.  If the clock was enabled before,
-it remains enabled.  If the clock was disabled before, it will
-get disabled again.  In any case clock only may be turned off
-after you have grabbed the data, the data is only taken when it's
-available and valid.
-
-This approach of explicit enable/disable around data access only
-breaks if the ethernet driver won't acquire its related clock
-appropriately, which would be a bug in the ethernet driver that
-should be easy to fix.  (Strictly speaking it's not the data
-gathering that breaks, but the already broken network driver
-which accesses the hardware without acquiring the clock, and not
-finds the clock disabled.)
-
-
-virtually yours
-Gerhard Sittig
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+	Ingo
