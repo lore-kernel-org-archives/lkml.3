@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab3JFAZF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 20:25:05 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:41389 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3JFAZD (ORCPT
+	id S1753189Ab3JFAh1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 20:37:27 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:55707 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab3JFAhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 20:25:03 -0400
-Date: Sun, 6 Oct 2013 02:24:52 +0200
-From: Alexander Aring <alex.aring@gmail.com>
-To: Alan Ott <alan@signal11.us>
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 6lowpan: Sync default hardware address of lowpan links
- to their wpan
-Message-ID: <20131006002451.GA22623@omega>
-References: <1381009080-15945-1-git-send-email-alan@signal11.us>
+	Sat, 5 Oct 2013 20:37:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381009080-15945-1-git-send-email-alan@signal11.us>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381018693.1974.166@driftwood>
+References: <87li281wx6.fsf_-_@xmission.com>
+	<1381014462.1974.162@driftwood>
+	<CA+55aFy-5UhwZukWj2uemaCy3pczpA0nGxxzZGnPCU0=Bv7bHg@mail.gmail.com>
+	<CA+55aFxgUMnZts-RXFh1qL1u+De_HNdMrC34skyWurbzvqpUdg@mail.gmail.com>
+	<1381018693.1974.166@driftwood>
+Date: Sat, 5 Oct 2013 17:37:24 -0700
+X-Google-Sender-Auth: Nd9WSny1HHahmO1IiGCBUY2Nxds
+Message-ID: <CA+55aFzLh9Ey6RgkSq_Ny033TbcB0PHBVVejEaX65vLv=NC2Pg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Sat, Oct 5, 2013 at 5:18 PM, Rob Landley <rob@landley.net> wrote:
+>
+> Which is why containers have all sorts of extra plumbing. But that extra
+> plumbing is currently built on pivot_root(), not on chroot(). And I'd
+> dismissed pivot_root() as residue from initramfs with all that kernel thread
+> reparenting, so it seemed like the wrong tool for the job, but obviously
+> I'll take your and Al's word it's not...
 
-On Sat, Oct 05, 2013 at 05:38:00PM -0400, Alan Ott wrote:
-> When a lowpan link to a wpan device is created, set the hardware address
-> of the lowpan link to that of the wpan device.
-> 
-> Signed-off-by: Alan Ott <alan@signal11.us>
-> ---
->  net/ieee802154/6lowpan.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-> index c85e71e..fb89133 100644
-> --- a/net/ieee802154/6lowpan.c
-> +++ b/net/ieee802154/6lowpan.c
-> @@ -1386,6 +1386,9 @@ static int lowpan_newlink(struct net *src_net, struct net_device *dev,
->  
->  	entry->ldev = dev;
->  
-> +	BUG_ON(IEEE802154_ADDR_LEN != dev->addr_len);
-So if somebody make a:
-"ip link add link $NOT_8BYTE_HWADDR_DEV name $NAME type lowpan"
+Yeah, chroot() really doesn't cut it if you allow root access - and
+thus internal chroot() calls - as you noticed (I didn't realize that
+your example was meant to be run _inside_ a chroot).
 
-the kernel creates a BUG_ON? Okay it seems that case is very unusual but
-better is to return a errno so "maybe(I don't know it)" the userspace
-software will generate a error and the whole kernel doesn't crash.
+There are generally other ways to escape chroot too if you're root.
+It's just too hard to plug. That doesn't make chroot() useless - it
+just means that the uses are elsewhere (it's useful for various
+non-security issues like development environments, but it can also be
+useful as one small _part_ of some bigger model, like a VM etc).
 
-> +	memcpy(dev->dev_addr, real_dev->dev_addr, IEEE802154_ADDR_LEN);
-Is there one case where we read the dev->dev_addr? I saw a case when we
-set this [1], but I don't know why we need this. Did you detect some
-problems because this isn't the "real" hw addr?
+pivot_root() does end up being a "better chroot than chroot" if you're
+looking for containment. It may not be a pretty system call, but it
+does avoid at least the most obvious gotchas with chroot()..
 
-Other case is I am feeling uneasy when we have two netdev devices with
-the same hw addr.
-
-- Alex
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/net/ieee802154/6lowpan.c?id=refs/tags/v3.12-rc3#n1102
+            Linus
