@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3JFTx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 15:53:28 -0400
-Received: from smtprelay0159.hostedemail.com ([216.40.44.159]:35563 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754289Ab3JFTx1 (ORCPT
+	id S1754493Ab3JFT6K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 15:58:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50289 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab3JFT6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 15:53:27 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:7652:7903:7904:10004:10400:10848:11232:11658:11914:12043:12517:12519:12679:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: quill63_1dcae308f4b4e
-X-Filterd-Recvd-Size: 1630
-Message-ID: <1381089202.2081.157.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] tpm: Rename tpm.c to tpm-interface.c
-From: Joe Perches <joe@perches.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter H?we <PeterHuewe@gmx.de>, tpmdd-devel@lists.sourceforge.net,
-        Ashley Lai <ashley@ashleylai.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Date: Sun, 06 Oct 2013 12:53:22 -0700
-In-Reply-To: <20131006193824.GA19123@obsidianresearch.com>
-References: <20131006193824.GA19123@obsidianresearch.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Oct 2013 15:58:08 -0400
+Date: Sun, 6 Oct 2013 12:18:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Joe Perches <joe@perches.com>, Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch.pl: Check for the FSF mailing address
+Message-ID: <20131006191804.GB27140@kroah.com>
+References: <20131005184307.GA6429@leaf>
+ <1380999108.2081.138.camel@joe-AO722>
+ <20131006062739.GA5218@kroah.com>
+ <1381042912.2081.146.camel@joe-AO722>
+ <20131006070557.GA1679@kroah.com>
+ <20131006081033.GA18109@pd.tnic>
+ <20131006134404.GB4706@kroah.com>
+ <20131006135507.GA18082@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131006135507.GA18082@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-10-06 at 13:38 -0600, Jason Gunthorpe wrote:
-> This is preparation for making the tpm module multi-file. kbuild does
-> not like having a .c file with the same name as a module. We wish to
-> keep the tpm module name so that userspace doesn't see this change.
+On Sun, Oct 06, 2013 at 03:55:07PM +0200, Borislav Petkov wrote:
+> On Sun, Oct 06, 2013 at 06:44:04AM -0700, Greg Kroah-Hartman wrote:
+> > On Sun, Oct 06, 2013 at 10:10:33AM +0200, Borislav Petkov wrote:
+> > > On Sun, Oct 06, 2013 at 12:05:57AM -0700, Greg Kroah-Hartman wrote:
+> > > > As an individual file is not the sum of the "program", I would argue
+> > > > that it is not needed, but some companies like to feel better by
+> > > > adding it. So I really don't mind either way, as it would involve
+> > > > arguing with lawyers about this type of thing, and I do enough of that
+> > > > already that I don't go out of my way to do it more...
+> > > 
+> > > What about a short sentence pointing at 'COPYING' instead?
+> > 
+> > Why?  What would that do?
+> 
+> Save us the short one or two lines "this file is ..."
+> 
+> > Listen, all we really need is a short one or two line "this file is
+> > released under the FOO license" in the file.  The SPDX project has the
+> 
+> All I'm suggesting is that it might be even simpler to add
+> 
+> "See COPYING in the kernel source repository for the license of this file."
+> 
+> or a similar text as COPYING contains the full text of the license.
+> Basically a pointer to it.
 
-If that's true, and I don't believe it is,
-then Kbuild should be fixed instead.
+You can do that, but I know a whole lot of lawyers who will not like
+that, as you aren't being explicit about what the license of the file
+is, and relying on something else.
 
-There are a lot of examples of .c files named
-the same as the directory they reside in.
+Remember, Linux kernel source files are licensed with all sorts of
+different licenses, all of which are compatable and default to GPL when
+used as a whole, but can be different on their own.
 
-For example:
+> This has the added advantage to your short line that it points to the
+> exact license text and lawyers are happy.
 
-drivers/net/ethernet/myricom/myri10ge/myri10ge.ko
+Lawyers, just like kernel developers, are never happy, it's not in their
+nature...
 
-$ find drivers -type d  | while read file ; do if [ -f $file/$(basename $file).c ] ; then echo $file ; fi ; done
-
-
+greg k-h
