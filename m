@@ -1,151 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab3JFTTT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 15:19:19 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:37027 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab3JFTTS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 15:19:18 -0400
-Date: Sun, 06 Oct 2013 14:19:14 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] checkpatch.pl: Check for the FSF mailing address
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-In-Reply-To: <1381042912.2081.146.camel@joe-AO722> (from joe@perches.com on
-	Sun Oct  6 02:01:52 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1381087154.1974.172@driftwood>
+	id S1754348Ab3JFTbl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 15:31:41 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:60940 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754283Ab3JFTbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 15:31:40 -0400
+Date: Sun, 6 Oct 2013 13:31:20 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Ashley Lai <ashley@ashleylai.com>
+Cc: Peter H?we <PeterHuewe@gmx.de>, tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: TPM patches for 2.13
+Message-ID: <20131006193120.GA26137@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2013 02:01:52 AM, Joe Perches wrote:
-> On Sat, 2013-10-05 at 23:27 -0700, Greg Kroah-Hartman wrote:
-> > On Sat, Oct 05, 2013 at 11:51:48AM -0700, Joe Perches wrote:
-> > > On Sat, 2013-10-05 at 11:43 -0700, Josh Triplett wrote:
-> > > > Kernel maintainers reject new instances of the GPL boilerplate  
-> paragraph
-> > > > directing people to write to the FSF for a copy of the GPL,  
-> since the
-> > > > FSF has moved in the past and may do so again.
-> > > []
-> > > > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > > []
-> > > > +# Check for FSF mailing addresses.
-> > > > +		if ($rawline =~ /You should have received a  
-> copy/ ||
-> > > There are over 9,000 of these in the tree.
-> > > > +		    $rawline =~ /write to the Free Software/ ||
-> > > Over 7,000
-> > > > +		    $rawline =~ /59 Temple Place/ ||
-> > > Over 3,500
-> > > > +		    $rawline =~ /51 Franklin Street/) {
-> > > Over 1,500
-> >
-> > Then we should remove them all.
-> []
-> > I don't want to see this get worse over time, Josh, thanks for doing
-> > this checkpatch patch.
-> 
-> What about the warranty disclaimer?
-> 
-> This program is distributed in the hope that it will be useful,
-> but WITHOUT ANY WARRANTY; without even the implied warranty of
-> MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> GNU General Public License for more details.
+I've prepared this branch:
 
-It's a historical artifact with little if any legal meaning, but  
-lawyers love ass-covering so they'll never tell you to remove a  
-raincoat just beacause you live in a desert?
+https://github.com/jgunthorpe/linux/commits/for-tpm
+dd783708a8c6fd713c784be68fcbcb7000c43c49
 
-A) It's still in the top level license file (and if you're using a  
-distro that has its own collective boilerplate).
+Jason Gunthorpe (11):
+      tpm: ibmvtpm: Use %zd formatting for size_t format arguments
+      tpm atmel: Call request_region with the correct base
+      tpm: Store devname in the tpm_chip
+      tpm: Use container_of to locate the tpm_chip in tpm_open
+      tpm: Remove redundant dev_set_drvdata
+      tpm: st33: Remove chip->data_buffer access from this driver
+      tpm: Remove tpm_show_caps_1_2
+      tpm: Rename tpm.c to tpm-interface.c
+      tpm: Merge the tpm-bios module with tpm.o
+      tpm: Add support for the Nuvoton NPCT501 I2C TPM
+      tpm: Add support for Atmel I2C TPMs
 
-If having it in the program's license file isn't enough, why would  
-having it at the top of some files help? (Would having it block copied  
-before every single function be enough? How about between every line of  
-code? THIS line has no warantee. THIS line has no warantee either.)
+Which contains the first half of the clean-up patches and my two
+drivers. The cleanups are well ack'd now, and I've done quite a bit of
+testing with the two drivers, so I'd like to see agreement that this
+batch can move forward as a series, and the other patches can sit
+ontop of this series.
 
-B) If you have deep enough pockets to be a target they'll go after you  
-with a spurious patent suit, not a spurious liability suit.
+I will post the two new patches to the list, the others are not really
+changed from prior postings except the commit comments are revised to
+reflect acks/etc. Please advise if people would like to see this whole
+series posted again.
 
-C) Does your blog have a liability disclaimer? When you visit a website  
-like google.com, does it present you with a liability disclaimer on  
-each page? (You can navigate to site terms if you try hard enough, but  
-"oh no please don't sue us for this thing you never gave us any money  
-for and volunteered to use in the first place" is not the first thing  
-that comes to mind.)
+I've prepared a 2nd branch:
 
-D) Please show me the high profile lawsuit that made people start doing  
-this. We started signed-off-by after SCO filed suit, where's the suit  
-that made people do this? I just pulled my copy of Lawrence Graham's  
-"Legal Battles that Shaped the Computer Industry" off the shelf and  
-neither "Warantee" nor "Disclaimer" are listed in the index.
+https://github.com/jgunthorpe/linux/commits/tpm-devel
+bba72a2e956230af28a7a448f25b4b1076559b40
 
-As far as I can tell current usage is one of those anklets that keep  
-sharks away on dry land. ("But there are no sharks around here." "See,  
-it's working!" Complete security blanket.)
+Jason Gunthorpe:
+      TPM: STMicroelectronics st33 driver SPI
+      tpm: Pull everything related to /dev/tpmX into tpm-dev.c
+      tpm: Pull everything related to sysfs into tpm-sysfs.c
+      tpm: Create a tpm_class_ops structure and use it in the drivers
+      tpm: Use the ops structure instead of a copy in tpm_vendor_specific
+      tpm: Make tpm-dev allocate a per-file structure
 
-ORIGINAL usage seems to have been an attempt at coming up with more  
-legal boilerplate to look big in the early 80's back before the Apple  
-vs Franklin decision extended copyright to cover binaries in 1983. When  
-I got a copy of Zork for my commodore 64 in 1982 of course Infocom had  
-a card in the box full of big words, saber rattling with meaningless  
-legal boilerplate to scare people into "don't copy that floppy" when it  
-wasn't actually illegal to do so yet. (This evolved into the  
-"shrinkwrap license" nonsense a few years later; by breaking the  
-shrinkwrap you agree to the license in the box which you can't read  
-without breaking the shrinkwrap, oh yeah THAT instance of "informed  
-consent" will hold up in court. Yet software manufacturers did it  
-widely for many years before the DMCA made it even sort of greyish.  
-Impressive looking legal documents that would never hold up in court  
-are as old as the hills...)
+Which contains the clean up patches that have not yet had any Acks,
+rebased ontop of for-tpm
 
-No lawyer will ever tell you _not_ to gratuitously cover your ass,  
-especially if everybody _else_ is carrying crosses to ward off vampires  
-and fully prepared for the coming zombie apocalypse. But where is an  
-example of this ever having been a real threat on the level of spurious  
-patent suits?
+For reference, here is a top level diff of all source changes relative
+to my last posting:
 
-Where are the lawsuits against qmail, whose author famously refused to  
-license his code at all for over a decade, and when he did get explicit  
-about it he didn't bother with a warantee disclaimer:
-
-   http://cr.yp.to/qmail/dist.html
-
-Or how about libtomcrypt (at the heart of things like the dropbear ssh  
-implementation) which has a dual license:
-
-   https://github.com/libtom/libtomcrypt/blob/master/LICENSE
-
-There are hundreds of such packages out there, and we happily use 'em.  
-Anyone come up with a warantee lawsuit against someone without a  
-disclaimer? Anyone? Bueller? Bueller?
-
-(tl;dr I strongly suspect _one_ Linus Blanket is enough for the tree.  
-The one in COPYING.)
-
-Rob
-
-(I'd love to be corrected on this, I've been looking for years. Nobody  
-knows, they just keep doing it "just in case". Things like  
-http://www.contractstandards.com/contract-structure/representations-and-warranties/software-warranty  
-say "Under common law an implied warranty is applied to the sale of  
-real property and goods." but there's no _sale_ of a free download, and  
-even that goes on in the next paragraph to say nobody ever does this in  
-software, I.E. it's NOT common there. And don't get me started on the  
-places that can't distinguish between a contract and a license...)
-
-(Oh, did I mention that the lawyers at the Software Freedom Law Center  
-were of the opinion that changing the legal boilerplate at the top of  
-the files AT ALL, even to correct inaccurate information, was a  
-violation of GPLv2? See "the last straw" in  
-https://lwn.net/Articles/202120/ except, like patents, it's apparently  
-ok to do if you don't know about it so don't read it! Sigh...)
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index 2c876a9..2c23374 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -1,14 +1,15 @@
+ #
+ # Makefile for the kernel tpm device drivers.
+ #
+-obj-$(CONFIG_TCG_TPM) += tpm.o tpm-dev.o tpm-sysfs.o
++obj-$(CONFIG_TCG_TPM) += tpm.o
++tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o
++tpm-$(CONFIG_ACPI) += tpm_ppi.o
++
+ ifdef CONFIG_ACPI
+-	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+-	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o tpm_ppi.o
++	tpm-y += tpm_eventlog.o tpm_acpi.o
+ else
+ ifdef CONFIG_TCG_IBMVTPM
+-	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+-	tpm_bios-objs += tpm_eventlog.o tpm_of.o
++	tpm-y += tpm_eventlog.o tpm_of.o
+ endif
+ endif
+ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm-interface.c
+similarity index 100%
+rename from drivers/char/tpm/tpm.c
+rename to drivers/char/tpm/tpm-interface.c
+diff --git a/drivers/char/tpm/tpm_eventlog.c b/drivers/char/tpm/tpm_eventlog.c
+index 84ddc55..59f7cb2 100644
+--- a/drivers/char/tpm/tpm_eventlog.c
++++ b/drivers/char/tpm/tpm_eventlog.c
+@@ -406,7 +406,6 @@ out_tpm:
+ out:
+ 	return NULL;
+ }
+-EXPORT_SYMBOL_GPL(tpm_bios_log_setup);
+ 
+ void tpm_bios_log_teardown(struct dentry **lst)
+ {
+@@ -415,5 +414,3 @@ void tpm_bios_log_teardown(struct dentry **lst)
+ 	for (i = 0; i < 3; i++)
+ 		securityfs_remove(lst[i]);
+ }
+-EXPORT_SYMBOL_GPL(tpm_bios_log_teardown);
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/char/tpm/tpm_i2c_atmel.c b/drivers/char/tpm/tpm_i2c_atmel.c
+index ecdd32a..7576abc 100644
+--- a/drivers/char/tpm/tpm_i2c_atmel.c
++++ b/drivers/char/tpm/tpm_i2c_atmel.c
+@@ -74,7 +74,7 @@ static int i2c_atmel_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+ 	struct i2c_client *client = to_i2c_client(chip->dev);
+ 	struct tpm_output_header *hdr =
+ 		(struct tpm_output_header *)priv->buffer;
+-	unsigned int expected_len;
++	u32 expected_len;
+ 	int rc;
+ 
+ 	if (priv->len == 0)
+@@ -89,7 +89,7 @@ static int i2c_atmel_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+ 
+ 	if (priv->len >= expected_len) {
+ 		dev_dbg(chip->dev,
+-			"%s early(buf=%*ph count=%0zx) -> ret=%zd\n", __func__,
++			"%s early(buf=%*ph count=%0zx) -> ret=%d\n", __func__,
+ 			(int)min_t(size_t, 64, expected_len), buf, count,
+ 			expected_len);
+ 		memcpy(buf, priv->buffer, expected_len);
+@@ -98,7 +98,7 @@ static int i2c_atmel_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+ 
+ 	rc = i2c_master_recv(client, buf, expected_len);
+ 	dev_dbg(chip->dev,
+-		"%s reread(buf=%*ph count=%0zx) -> ret=%zd\n", __func__,
++		"%s reread(buf=%*ph count=%0zx) -> ret=%d\n", __func__,
+ 		(int)min_t(size_t, 64, expected_len), buf, count,
+ 		expected_len);
+ 	return rc;
+diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+index 2168d15..8e562dc 100644
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -452,12 +452,8 @@ int tpm_add_ppi(struct kobject *parent)
+ {
+ 	return sysfs_create_group(parent, &ppi_attr_grp);
+ }
+-EXPORT_SYMBOL_GPL(tpm_add_ppi);
+ 
+ void tpm_remove_ppi(struct kobject *parent)
+ {
+ 	sysfs_remove_group(parent, &ppi_attr_grp);
+ }
+-EXPORT_SYMBOL_GPL(tpm_remove_ppi);
+-
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/char/tpm/tpm_spi_stm_st33.c b/drivers/char/tpm/tpm_spi_stm_st33.c
+index 81c61f6..3060d57 100644
+--- a/drivers/char/tpm/tpm_spi_stm_st33.c
++++ b/drivers/char/tpm/tpm_spi_stm_st33.c
+@@ -743,7 +743,6 @@ tpm_st33_spi_probe(struct spi_device *dev)
+ 
+ 	tpm_get_timeouts(chip);
+ 
+-	/* attach chip datas to client */
+ 	platform_data->bchipf = false;
+ 
+ 	pr_info("TPM SPI Initialized\n");
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index a14bf63..fff1d09 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -41,9 +41,6 @@ struct tpm_class_ops {
+ 	u8 (*status) (struct tpm_chip *chip);
+ };
+ 
+-struct tpm_chip *tpmm_alloc_dev(struct device *dev,
+-				const struct tpm_class_ops *ops);
+-
+ #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
+ 
+ extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
