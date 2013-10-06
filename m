@@ -1,130 +1,496 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3JFAoh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 20:44:37 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:49058 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab3JFAof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 20:44:35 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Rob Landley <rob@landley.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-References: <1381016564.1974.163@driftwood>
-Date: Sat, 05 Oct 2013 17:44:21 -0700
-In-Reply-To: <1381016564.1974.163@driftwood> (Rob Landley's message of "Sat,
-	05 Oct 2013 18:42:44 -0500")
-Message-ID: <87hacvcjoa.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753529Ab3JFArc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 20:47:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752523Ab3JFArb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 20:47:31 -0400
+Date: Sat, 5 Oct 2013 20:47:09 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+cc: dm-devel@redhat.com, devel@driverdev.osuosl.org, thornber@redhat.com,
+        snitzer@redhat.com, cesarb@cesarb.net, gregkh@linuxfoundation.org,
+        david@fromorbit.com, linux-kernel@vger.kernel.org, tj@kernel.org,
+        agk@redhat.com, joe@perches.com, akpm@linux-foundation.org,
+        ejt@redhat.com, dan.carpenter@oracle.com, m.chehab@samsung.com
+Subject: Re: [dm-devel] dm-writeboost testing
+In-Reply-To: <524FBA3F.3050409@gmail.com>
+Message-ID: <alpine.LRH.2.02.1310052044070.30547@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1310021125150.19199@file01.intranet.prod.int.rdu2.redhat.com> <524E27DD.2050809@gmail.com> <alpine.LRH.2.02.1310040923320.8473@file01.intranet.prod.int.rdu2.redhat.com> <524ECFC9.3000603@gmail.com>
+ <alpine.LRH.2.02.1310041113230.22029@file01.intranet.prod.int.rdu2.redhat.com> <524FBA3F.3050409@gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+nJ2IjHMeNuZw2nl/KLiUw2IeNdcUWU30=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0874]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Rob Landley <rob@landley.net>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Landley <rob@landley.net> writes:
-
-> On 10/04/2013 07:03:23 PM, Eric W. Biederman wrote:
->>
->> In principle I have no problems tweaking rmdir to check for that case.
->> 
->> At the same time the real reason that this is safe is that mount  
->> points
->> are almost always part of trusted paths to important files and you  
->> just
->> don't mess with those paths.
->> 
->> So tweaking rmdir to fail would be more about making stupid mistakes
->> like running "rm -rf /" fail than it would be about security or
->> correctness.
->
-> If you do an rm -rf descending through a mount point, it's going to  
-> delete the contents of the mount point before _trying_ to unlink the  
-> mount point, which may be bad for the thing you mounted. Then there's  
-> the fun corner case of "the directory wasn't empty before it was  
-> mounted on, and umounting revealed the overmounted files, so the unlink  
-> fails for that reason even after magic umount".
-
-Yes.  Adding the restrictions I added in 4/3 are really just about
-preserving peoples experience that rmdir on a directory ls shows files
-in fails.  Just to be a little less surprising.
-
-> Doing rmdir on a non-empty directory won't delete it if it _isn't_ a  
-> mount point, and presumably we require write access to directories to  
-> mount on them, so in what ways is this different than another user  
-> mucking about with my files asynchronously?
-
-We don't require write access to files or directories before we mount on
-them.
-
-The permissions we require to mount is that the directory or file is
-visible aka execute permissions all of the way to /, and that the
-mounter has CAP_SYS_ADMIN in the user namespace that created the mount
-namespace.  Basically that the mounter is locally root.
-
-In practice this means that if someone mounts something on your
-directory it happens in another mount namespace and you don't care.
-You don't even know about it unless you call rmdir and today that
-returns -EBUSY.
-
-The permission checks could be extended to ensure that the uid of the
-file or directory is mapped in to the mounter's user namespace.  However
-that would arguably require extending the vfs -EBUSY handling to chown
-or chmod.  And even without that we are still left with the mess that
-is the current magic insertion of -EBUSY because we have to deal with
-mount point somehow.
-
-So what I am proposing is removing the -EBUSY handling making it up to
-whoever creates a mount to put the mount on path they trust if they
-don't want the path to go away. 
-
-So for the owner of the directory who doesn't see the mount it is
-nothing like a user scribbling into the directory.
-
-With these patches it becomes almost exactly like scribling in someone
-elses directory for the creator of the mount.
 
 
-Further even without user namespaces and with root creating all of the
-mounts we remove a current challenge in the VFS that requires
-filesystems to lie about their directory structure.
+On Sat, 5 Oct 2013, Akira Hayakawa wrote:
 
+> Mikulas,
+> 
+> > nvidia binary driver, but it may happen in other parts of the kernel too. 
+> > The fact that it works in your setup doesn't mean that it is correct.
+> You are right. I am convinced.
+> 
+> As far as I looked around the kernel code,
+> it seems to be choosing kthread when one needs looping in background.
+> There are other examples such as loop_thread in drivers/block/loop.c .
+> 
+> And done. Please git pull.
+> commit b6d2d3892e09145cd0b9c5ad69ea2d8c410fdeab is tested in my environment.
+> All the looping daemons are running on kthread now.
+> 
+> The diff between the older version (with wq) and the new version (with kthread)
+> is shown below. I defined fancy CREATE_DAEMON macro.
+> 
+> Another by-product is that
+> you are no longer in need to wait for long time in dmsetup remove
+> since kthread_stop() forcefully wakes the thread up.
 
-Unless there is someone crazy enough to put mount points in directories
-that are world writable I think my current patchset is a very nice
-cleanup.
+The change seems ok. Please, also move this piece of code in flush_proc
+out of the spinlock:
+                        if (kthread_should_stop())
+                                return 0;
 
-I have meandered all over the field.  Did I answer your question?
-I wasn't exactly certain what you were asking.
+It caused the workqueue warning I reported before and still causes warning 
+with kthreads:
+note: flush_daemon[5145] exited with preempt_count 1
 
-FYI: As for chroot you can not create a user namespace if you are
-chrooted, so I suggest you file chroot under that old thing that was
-an early poor approximation of mount namespaces that we don't need
-anymore.
+I will send you next email with more bugs that I found in your code.
 
-Eric
+Mikulas
+
+> diff --git a/Driver/dm-writeboost-daemon.c b/Driver/dm-writeboost-daemon.c
+> index 6090661..65974e2 100644
+> --- a/Driver/dm-writeboost-daemon.c
+> +++ b/Driver/dm-writeboost-daemon.c
+> @@ -10,12 +10,11 @@
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void flush_proc(struct work_struct *work)
+> +int flush_proc(void *data)
+>  {
+>  	unsigned long flags;
+>  
+> -	struct wb_cache *cache =
+> -		container_of(work, struct wb_cache, flush_work);
+> +	struct wb_cache *cache = data;
+>  
+>  	while (true) {
+>  		struct flush_job *job;
+> @@ -32,8 +31,12 @@ void flush_proc(struct work_struct *work)
+>  				msecs_to_jiffies(100));
+>  			spin_lock_irqsave(&cache->flush_queue_lock, flags);
+>  
+> -			if (cache->on_terminate)
+> -				return;
+> +			/*
+> +			 * flush daemon can exit
+> +			 * only if no flush job is queued.
+> +			 */
+> +			if (kthread_should_stop())
+> +				return 0;
+>  		}
+>  
+>  		/*
+> @@ -84,6 +87,7 @@ void flush_proc(struct work_struct *work)
+>  
+>  		kfree(job);
+>  	}
+> +	return 0;
+>  }
+>  
+>  /*----------------------------------------------------------------*/
+> @@ -353,19 +357,15 @@ migrate_write:
+>  	}
+>  }
+>  
+> -void migrate_proc(struct work_struct *work)
+> +int migrate_proc(void *data)
+>  {
+> -	struct wb_cache *cache =
+> -		container_of(work, struct wb_cache, migrate_work);
+> +	struct wb_cache *cache = data;
+>  
+> -	while (true) {
+> +	while (!kthread_should_stop()) {
+>  		bool allow_migrate;
+>  		size_t i, nr_mig_candidates, nr_mig, nr_max_batch;
+>  		struct segment_header *seg, *tmp;
+>  
+> -		if (cache->on_terminate)
+> -			return;
+> -
+>  		/*
+>  		 * If reserving_id > 0
+>  		 * Migration should be immediate.
+> @@ -430,6 +430,7 @@ void migrate_proc(struct work_struct *work)
+>  			list_del(&seg->migrate_list);
+>  		}
+>  	}
+> +	return 0;
+>  }
+>  
+>  /*
+> @@ -453,19 +454,16 @@ void wait_for_migration(struct wb_cache *cache, u64 id)
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void modulator_proc(struct work_struct *work)
+> +int modulator_proc(void *data)
+>  {
+> -	struct wb_cache *cache =
+> -		container_of(work, struct wb_cache, modulator_work);
+> +	struct wb_cache *cache = data;
+>  	struct wb_device *wb = cache->wb;
+>  
+>  	struct hd_struct *hd = wb->device->bdev->bd_part;
+>  	unsigned long old = 0, new, util;
+>  	unsigned long intvl = 1000;
+>  
+> -	while (true) {
+> -		if (cache->on_terminate)
+> -			return;
+> +	while (!kthread_should_stop()) {
+>  
+>  		new = jiffies_to_msecs(part_stat_read(hd, io_ticks));
+>  
+> @@ -484,6 +482,7 @@ modulator_update:
+>  
+>  		schedule_timeout_interruptible(msecs_to_jiffies(intvl));
+>  	}
+> +	return 0;
+>  }
+>  
+>  /*----------------------------------------------------------------*/
+> @@ -517,16 +516,12 @@ static void update_superblock_record(struct wb_cache *cache)
+>  	kfree(buf);
+>  }
+>  
+> -void recorder_proc(struct work_struct *work)
+> +int recorder_proc(void *data)
+>  {
+> -	struct wb_cache *cache =
+> -		container_of(work, struct wb_cache, recorder_work);
+> +	struct wb_cache *cache = data;
+>  	unsigned long intvl;
+>  
+> -	while (true) {
+> -		if (cache->on_terminate)
+> -			return;
+> -
+> +	while (!kthread_should_stop()) {
+>  		/* sec -> ms */
+>  		intvl = cache->update_record_interval * 1000;
+>  
+> @@ -539,20 +534,17 @@ void recorder_proc(struct work_struct *work)
+>  
+>  		schedule_timeout_interruptible(msecs_to_jiffies(intvl));
+>  	}
+> +	return 0;
+>  }
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void sync_proc(struct work_struct *work)
+> +int sync_proc(void *data)
+>  {
+> -	struct wb_cache *cache =
+> -		container_of(work, struct wb_cache, sync_work);
+> +	struct wb_cache *cache = data;
+>  	unsigned long intvl;
+>  
+> -	while (true) {
+> -		if (cache->on_terminate)
+> -			return;
+> -
+> +	while (!kthread_should_stop()) {
+>  		/* sec -> ms */
+>  		intvl = cache->sync_interval * 1000;
+>  
+> @@ -566,4 +558,5 @@ void sync_proc(struct work_struct *work)
+>  
+>  		schedule_timeout_interruptible(msecs_to_jiffies(intvl));
+>  	}
+> +	return 0;
+>  }
+> diff --git a/Driver/dm-writeboost-daemon.h b/Driver/dm-writeboost-daemon.h
+> index 3bdd862..d21d66c 100644
+> --- a/Driver/dm-writeboost-daemon.h
+> +++ b/Driver/dm-writeboost-daemon.h
+> @@ -9,7 +9,7 @@
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void flush_proc(struct work_struct *);
+> +int flush_proc(void *);
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> @@ -19,20 +19,20 @@ void flush_barrier_ios(struct work_struct *);
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void migrate_proc(struct work_struct *);
+> +int migrate_proc(void *);
+>  void wait_for_migration(struct wb_cache *, u64 id);
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void modulator_proc(struct work_struct *);
+> +int modulator_proc(void *);
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void sync_proc(struct work_struct *);
+> +int sync_proc(void *);
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> -void recorder_proc(struct work_struct *);
+> +int recorder_proc(void *);
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> diff --git a/Driver/dm-writeboost-metadata.c b/Driver/dm-writeboost-metadata.c
+> index 1cd9e0c..4f5fa5e 100644
+> --- a/Driver/dm-writeboost-metadata.c
+> +++ b/Driver/dm-writeboost-metadata.c
+> @@ -994,6 +994,17 @@ void free_migration_buffer(struct wb_cache *cache)
+>  
+>  /*----------------------------------------------------------------*/
+>  
+> +#define CREATE_DAEMON(name)\
+> +	cache->name##_daemon = kthread_create(name##_proc, cache,\
+> +					      #name "_daemon");\
+> +	if (IS_ERR(cache->name##_daemon)) {\
+> +		r = PTR_ERR(cache->name##_daemon);\
+> +		cache->name##_daemon = NULL;\
+> +		WBERR("couldn't spawn" #name "daemon");\
+> +		goto bad_##name##_daemon;\
+> +	}\
+> +	wake_up_process(cache->name##_daemon);
+> +
+>  int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
+>  {
+>  	int r = 0;
+> @@ -1010,8 +1021,6 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
+>  
+>  	mutex_init(&cache->io_lock);
+>  
+> -	cache->on_terminate = false;
+> -
+>  	/*
+>  	 * (i) Harmless Initializations
+>  	 */
+> @@ -1042,12 +1051,6 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
+>  	 * Recovering the cache metadata
+>  	 * prerequires the migration daemon working.
+>  	 */
+> -	cache->migrate_wq = create_singlethread_workqueue("migratewq");
+> -	if (!cache->migrate_wq) {
+> -		r = -ENOMEM;
+> -		WBERR();
+> -		goto bad_migratewq;
+> -	}
+>  
+>  	/* Migration Daemon */
+>  	atomic_set(&cache->migrate_fail_count, 0);
+> @@ -1070,9 +1073,7 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
+>  
+>  	cache->allow_migrate = true;
+>  	cache->reserving_segment_id = 0;
+> -	INIT_WORK(&cache->migrate_work, migrate_proc);
+> -	queue_work(cache->migrate_wq, &cache->migrate_work);
+> -
+> +	CREATE_DAEMON(migrate);
+>  
+>  	r = recover_cache(cache);
+>  	if (r) {
+> @@ -1086,19 +1087,12 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
+>  	 * These are only working
+>  	 * after the logical device created.
+>  	 */
+> -	cache->flush_wq = create_singlethread_workqueue("flushwq");
+> -	if (!cache->flush_wq) {
+> -		r = -ENOMEM;
+> -		WBERR();
+> -		goto bad_flushwq;
+> -	}
+>  
+>  	/* Flush Daemon */
+> -	INIT_WORK(&cache->flush_work, flush_proc);
+>  	spin_lock_init(&cache->flush_queue_lock);
+>  	INIT_LIST_HEAD(&cache->flush_queue);
+>  	init_waitqueue_head(&cache->flush_wait_queue);
+> -	queue_work(cache->flush_wq, &cache->flush_work);
+> +	CREATE_DAEMON(flush);
+>  
+>  	/* Deferred ACK for barrier writes */
+>  
+> @@ -1118,29 +1112,30 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
+>  
+>  	/* Migartion Modulator */
+>  	cache->enable_migration_modulator = true;
+> -	INIT_WORK(&cache->modulator_work, modulator_proc);
+> -	schedule_work(&cache->modulator_work);
+> +	CREATE_DAEMON(modulator);
+>  
+>  	/* Superblock Recorder */
+>  	cache->update_record_interval = 60;
+> -	INIT_WORK(&cache->recorder_work, recorder_proc);
+> -	schedule_work(&cache->recorder_work);
+> +	CREATE_DAEMON(recorder);
+>  
+>  	/* Dirty Synchronizer */
+>  	cache->sync_interval = 60;
+> -	INIT_WORK(&cache->sync_work, sync_proc);
+> -	schedule_work(&cache->sync_work);
+> +	CREATE_DAEMON(sync);
+>  
+>  	return 0;
+>  
+> -bad_flushwq:
+> +bad_sync_daemon:
+> +	kthread_stop(cache->recorder_daemon);
+> +bad_recorder_daemon:
+> +	kthread_stop(cache->modulator_daemon);
+> +bad_modulator_daemon:
+> +	kthread_stop(cache->flush_daemon);
+> +bad_flush_daemon:
+>  bad_recover:
+> -	cache->on_terminate = true;
+> -	cancel_work_sync(&cache->migrate_work);
+> +	kthread_stop(cache->migrate_daemon);
+> +bad_migrate_daemon:
+>  	free_migration_buffer(cache);
+>  bad_alloc_migrate_buffer:
+> -	destroy_workqueue(cache->migrate_wq);
+> -bad_migratewq:
+>  	free_ht(cache);
+>  bad_alloc_ht:
+>  	free_segment_header_array(cache);
+> @@ -1153,20 +1148,21 @@ bad_init_rambuf_pool:
+>  
+>  void free_cache(struct wb_cache *cache)
+>  {
+> -	cache->on_terminate = true;
+> +	/*
+> +	 * Must clean up all the volatile data
+> +	 * before termination.
+> +	 */
+> +	flush_current_buffer(cache);
+>  
+> -	/* Kill in-kernel daemons */
+> -	cancel_work_sync(&cache->sync_work);
+> -	cancel_work_sync(&cache->recorder_work);
+> -	cancel_work_sync(&cache->modulator_work);
+> +	kthread_stop(cache->sync_daemon);
+> +	kthread_stop(cache->recorder_daemon);
+> +	kthread_stop(cache->modulator_daemon);
+>  
+> -	cancel_work_sync(&cache->flush_work);
+> -	destroy_workqueue(cache->flush_wq);
+> +	kthread_stop(cache->flush_daemon);
+>  
+>  	cancel_work_sync(&cache->barrier_deadline_work);
+>  
+> -	cancel_work_sync(&cache->migrate_work);
+> -	destroy_workqueue(cache->migrate_wq);
+> +	kthread_stop(cache->migrate_daemon);
+>  	free_migration_buffer(cache);
+>  
+>  	/* Destroy in-core structures */
+> diff --git a/Driver/dm-writeboost-target.c b/Driver/dm-writeboost-target.c
+> index 6aa4c7c..4b5b7aa 100644
+> --- a/Driver/dm-writeboost-target.c
+> +++ b/Driver/dm-writeboost-target.c
+> @@ -973,12 +973,6 @@ static void writeboost_dtr(struct dm_target *ti)
+>  	struct wb_device *wb = ti->private;
+>  	struct wb_cache *cache = wb->cache;
+>  
+> -	/*
+> -	 * Synchronize all the dirty writes
+> -	 * before termination.
+> -	 */
+> -	cache->sync_interval = 1;
+> -
+>  	free_cache(cache);
+>  	kfree(cache);
+>  
+> diff --git a/Driver/dm-writeboost.h b/Driver/dm-writeboost.h
+> index 74ff194..092c100 100644
+> --- a/Driver/dm-writeboost.h
+> +++ b/Driver/dm-writeboost.h
+> @@ -16,6 +16,7 @@
+>  #include <linux/list.h>
+>  #include <linux/slab.h>
+>  #include <linux/mutex.h>
+> +#include <linux/kthread.h>
+>  #include <linux/sched.h>
+>  #include <linux/timer.h>
+>  #include <linux/device-mapper.h>
+> @@ -265,8 +266,7 @@ struct wb_cache {
+>  	 * and flush daemon asynchronously
+>  	 * flush them to the cache device.
+>  	 */
+> -	struct work_struct flush_work;
+> -	struct workqueue_struct *flush_wq;
+> +	struct task_struct *flush_daemon;
+>  	spinlock_t flush_queue_lock;
+>  	struct list_head flush_queue;
+>  	wait_queue_head_t flush_wait_queue;
+> @@ -288,8 +288,7 @@ struct wb_cache {
+>  	 * migrate daemon goes into migration
+>  	 * if they are segments to migrate.
+>  	 */
+> -	struct work_struct migrate_work;
+> -	struct workqueue_struct *migrate_wq;
+> +	struct task_struct *migrate_daemon;
+>  	bool allow_migrate; /* param */
+>  
+>  	/*
+> @@ -314,7 +313,7 @@ struct wb_cache {
+>  	 * the migration
+>  	 * according to the load of backing store.
+>  	 */
+> -	struct work_struct modulator_work;
+> +	struct task_struct *modulator_daemon;
+>  	bool enable_migration_modulator; /* param */
+>  
+>  	/*
+> @@ -323,7 +322,7 @@ struct wb_cache {
+>  	 * Update the superblock record
+>  	 * periodically.
+>  	 */
+> -	struct work_struct recorder_work;
+> +	struct task_struct *recorder_daemon;
+>  	unsigned long update_record_interval; /* param */
+>  
+>  	/*
+> @@ -332,16 +331,9 @@ struct wb_cache {
+>  	 * Sync the dirty writes
+>  	 * periodically.
+>  	 */
+> -	struct work_struct sync_work;
+> +	struct task_struct *sync_daemon;
+>  	unsigned long sync_interval; /* param */
+>  
+> -	/*
+> -	 * on_terminate is true
+> -	 * to notify all the background daemons to
+> -	 * stop their operations.
+> -	 */
+> -	bool on_terminate;
+> -
+>  	atomic64_t stat[STATLEN];
+>  };
+> 
+> Akira
+> 
