@@ -1,33 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3JFMj3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 08:39:29 -0400
-Received: from email22.mywebmailserver.com ([199.231.136.161]:4373 "EHLO
-	email22.mywebmailserver.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751427Ab3JFMj2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 08:39:28 -0400
-Message-ID: <39A476FC461F4A6BB348733FB13CAC15@xrijah>
-Reply-To: "xyjtigan" <gonik74@ffni.com>
-From: "xyjtigan" <admin@tedwhitegreenlight.com>
-To: <linux-kernel@vger.kernel.org>, <belinda@etudes.freeserve.co.uk>,
-        <info@mymunami.rugestour>, <trade@tvmed.tvcom.ru>,
-        <klevanov@hotbox.ru>
-Subject: =?windows-1251?B?0+Hu8OrgIMri4PDy6PD7IOgg5O7s4C4g0fP1?=
-	=?windows-1251?B?4P8g6CDi6+Dm7eD/LiDK4Pfl8fLi5e3t7i4=?=
-Date: Sun, 6 Oct 2013 14:38:55 +0200
+	id S1752719Ab3JFMp6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 08:45:58 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:45884 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752046Ab3JFMpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 08:45:55 -0400
+Message-ID: <73b57dda33c9204f1cea02687f24807a.squirrel@www.mm-sol.com>
+In-Reply-To: <CAJAp7OjvU2mi_TDiA5d-ut-Q9fHvKSbW_LfdpQGSTprsyPDU0g@mail.gmail.com>
+References: <1380301041-26405-1-git-send-email-gdjakov@mm-sol.com>
+    <1380301041-26405-3-git-send-email-gdjakov@mm-sol.com>
+    <CAJAp7OjvU2mi_TDiA5d-ut-Q9fHvKSbW_LfdpQGSTprsyPDU0g@mail.gmail.com>
+Date: Sun, 6 Oct 2013 15:45:53 +0300
+Subject: Re: [PATCH v6 2/2] mmc: sdhci-msm: Initial support for MSM chipsets
+From: "Georgi Djakov" <gdjakov@mm-sol.com>
+To: "Bjorn Andersson" <bjorn@kryo.se>
+Cc: "Georgi Djakov" <gdjakov@mm-sol.com>, linux-mmc@vger.kernel.org,
+        "Chris Ball" <cjb@laptop.org>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        "Rob Herring" <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Asutosh Das" <asutoshd@codeaurora.org>,
+        "Venkat Gopalakrishnan" <venkatg@codeaurora.org>,
+        "Sahitya Tummala" <stummala@codeaurora.org>,
+        "Subhash Jadavani" <subhashj@codeaurora.org>
+User-Agent: SquirrelMail/1.4.23 [SVN]
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="windows-1251";
-	reply-type=original
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8089.726
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8089.726
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Наведем чистоту и порядок у Вас дома, за разумные денежки. http://sticker.yadro.ru/go?url=http://www.hi2.com/MYjA0T
+Hi Bjorn,
+
+> Hi Georgi,
+>
+> Thanks for working on this, unfortunately it seems like I need to port
+> the rpm regulators to be able to test this.
+> But I did find that...
+>
+
+Yes, the regulators support is still missing upstream. Until then, a basic
+testing can be done by bypassing the regulators init part in order to use
+the power on defaults for regulators and maybe also clocks.
+
+> On Fri, Sep 27, 2013 at 9:57 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+>> ...
+>> +static irqreturn_t sdhci_msm_pwr_irq(int irq, void *data)
+>> +{
+>> +       struct sdhci_msm_host *msm_host = (struct sdhci_msm_host *)data;
+>> ...
+>> +static int sdhci_msm_probe(struct platform_device *pdev)
+>> +{
+>> +       struct sdhci_host *host;
+>> +       struct sdhci_msm_host *msm_host;
+>> ...
+>> +       ret = devm_request_threaded_irq(&pdev->dev, msm_host->pwr_irq,
+>> NULL,
+>> +                                       sdhci_msm_pwr_irq, IRQF_ONESHOT,
+>> +                                       dev_name(&pdev->dev), host);
+>> ...
+>
+> ...sdhci_msm_pwr_irq() expects the data pointer to be msm_host, not
+> sdhci_host, so right now I only get a panic. So I suspect you mean
+> msm_host as the last param here.
+
+Yes, you are right, I have also noticed this and it is fixed in the next
+version which i will be posting in the next few days. Thanks!
+
+BR,
+Georgi
+
