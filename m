@@ -1,202 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3JFOoU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 10:44:20 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:57174 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3JFOoP (ORCPT
+	id S1753474Ab3JFPDG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 11:03:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60666 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab3JFPDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 10:44:15 -0400
-Message-ID: <5251772A.2050509@gmail.com>
-Date: Sun, 06 Oct 2013 22:43:54 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Sun, 6 Oct 2013 11:03:05 -0400
+Date: Sun, 6 Oct 2013 08:02:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] [PATCH 2/5] revert: "blk-mq: blk-mq should free bios
+ in pass through case"
+Message-ID: <20131006150247.GA15624@infradead.org>
+References: <20131004134908.231874670@bombadil.infradead.org>
+ <20131004135014.524075942@bombadil.infradead.org>
+ <524EFD55.4050701@cs.wisc.edu>
+ <20131005105008.GA19022@infradead.org>
+ <52507475.3050305@cs.wisc.edu>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com,
-        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH part1 v6 update 6/6] mem-hotplug: Introduce movable_node boot
- option
-References: <524E2032.4020106@gmail.com> <524E21BC.7090104@gmail.com> <1381012134.5429.86.camel@misato.fc.hp.com>
-In-Reply-To: <1381012134.5429.86.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52507475.3050305@cs.wisc.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+On Sat, Oct 05, 2013 at 03:20:05PM -0500, Mike Christie wrote:
+> The functions take in requests as the argument, but they end up
+> operating on bios too. The scsi layer does
+> scsi_io_completion->scsi_end_request-> blk_end_request ->
+> blk_end_bidi_request -> blk_update_bidi_request -> blk_update_request.
+> That function will then complete bios on the request passed in. It does
+> not matter if the request is a REQ_TYPE_FS or REQ_TYPE_BLOCK_PC.
+> 
+> With my patch I was trying to make the block layer do the same for mq
+> REQ_TYPE_BLOCK_PC requests inserted into the queue with
+> blk_execute_rq_nowait (Nick's patch had support for something like that)
+> by having the block mq layer call blk_mq_finish_request instead of
+> making the code that calls blk_execute_rq_nowait do it.
 
-The hot-Pluggable field in SRAT specifies which memory is hotpluggable.
-As we mentioned before, if hotpluggable memory is used by the kernel,
-it cannot be hot-removed. So memory hotplug users may want to set all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
+Ok, I get the point now.  Didn't see that issue because I've only been
+testing the non-bio REQ_TYPE_BLOCK_PC case as exposed by the virtio-blk
+serial attribute so far.
 
-Memory hotplug users may also set a node as movable node, which has
-ZONE_MOVABLE only, so that the whole node can be hot-removed.
+> > That beeing said the old ones all require the caller to free the
+> > request, and complicate that with the useless refcounting that my patch
+> > 3 removes.  Take a look at the other patches how all the calling
+> > conventions can be nicely unified.
+> 
+> I agree. I like them. I am saying though it could be better because even
+> with your patches the rq->end_io functions need to have the mq_ops check
+> like the flush_end_io does. If my patch worked as intended we would have
+> your improvements and we would not need the rq->end_io functions to have
+> that check and call blk_mq_finish_request because the blk mq layer was
+> doing it for them.
+> 
+> That is all I am saying. I would like to be able to remove that check
+> and blk_mq_finish_request call from the rq->end_io callouts.
 
-But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
-kernel cannot use memory in movable nodes. This will cause NUMA
-performance down. And other users may be unhappy.
+I've found the bug that caused the regression with your patch, it's that
+blk-mq incorrectly completes bios midway through a flush sequence, while
+the old path didn't.
 
-So we need a way to allow users to enable and disable this functionality.
-In this patch, we introduce movable_node boot option to allow users to
-choose to not to consume hotpluggable memory at early boot time and
-later we can set it as ZONE_MOVABLE.
-
-To achieve this, the movable_node boot option will control the memblock
-allocation direction. That said, after memblock is ready, before SRAT is
-parsed, we should allocate memory near the kernel image as we explained
-in the previous patches. So if movable_node boot option is set, the kernel
-does the following:
-
-1. After memblock is ready, make memblock allocate memory bottom up.
-2. After SRAT is parsed, make memblock behave as default, allocate memory
-   top down.
-
-Users can specify "movable_node" in kernel commandline to enable this
-functionality. For those who don't use memory hotplug or who don't want
-to lose their NUMA performance, just don't specify anything. The kernel
-will work as before.
-
-Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- Documentation/kernel-parameters.txt |    3 +++
- arch/x86/mm/numa.c                  |   11 +++++++++++
- mm/Kconfig                          |   17 ++++++++++++-----
- mm/memory_hotplug.c                 |   31 +++++++++++++++++++++++++++++++
- 4 files changed, 57 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 539a236..13201d4 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1769,6 +1769,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
- 
-+	movable_node	[KNL,X86] Boot-time switch to enable the effects
-+			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
-+
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
- 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 8bf93ba..24aec58 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -567,6 +567,17 @@ static int __init numa_init(int (*init_func)(void))
- 	ret = init_func();
- 	if (ret < 0)
- 		return ret;
-+
-+	/*
-+	 * We reset memblock back to the top-down direction
-+	 * here because if we configured ACPI_NUMA, we have
-+	 * parsed SRAT in init_func(). It is ok to have the
-+	 * reset here even if we did't configure ACPI_NUMA
-+	 * or acpi numa init fails and fallbacks to dummy
-+	 * numa init.
-+	 */
-+	memblock_set_bottom_up(false);
-+
- 	ret = numa_cleanup_meminfo(&numa_meminfo);
- 	if (ret < 0)
- 		return ret;
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 026771a..0db1cc6 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -153,11 +153,18 @@ config MOVABLE_NODE
- 	help
- 	  Allow a node to have only movable memory.  Pages used by the kernel,
- 	  such as direct mapping pages cannot be migrated.  So the corresponding
--	  memory device cannot be hotplugged.  This option allows users to
--	  online all the memory of a node as movable memory so that the whole
--	  node can be hotplugged.  Users who don't use the memory hotplug
--	  feature are fine with this option on since they don't online memory
--	  as movable.
-+	  memory device cannot be hotplugged.  This option allows the following
-+	  two things:
-+	  - When the system is booting, node full of hotpluggable memory can
-+	  be arranged to have only movable memory so that the whole node can
-+	  be hot-removed. (need movable_node boot option specified).
-+	  - After the system is up, the option allows users to online all the
-+	  memory of a node as movable memory so that the whole node can be
-+	  hot-removed.
-+
-+	  Users who don't use the memory hotplug feature are fine with this
-+	  option on since they don't specify movable_node boot option or they
-+	  don't online memory as movable.
- 
- 	  Say Y here if you want to hotplug a whole node.
- 	  Say N here if you want kernel to use memory on all nodes evenly.
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ed85fe3..6874c31 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -31,6 +31,7 @@
- #include <linux/firmware-map.h>
- #include <linux/stop_machine.h>
- #include <linux/hugetlb.h>
-+#include <linux/memblock.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -1412,6 +1413,36 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
- }
- #endif /* CONFIG_MOVABLE_NODE */
- 
-+static int __init cmdline_parse_movable_node(char *p)
-+{
-+#ifdef CONFIG_MOVABLE_NODE
-+	/*
-+	 * Memory used by the kernel cannot be hot-removed because Linux
-+	 * cannot migrate the kernel pages. When memory hotplug is
-+	 * enabled, we should prevent memblock from allocating memory
-+	 * for the kernel.
-+	 *
-+	 * ACPI SRAT records all hotpluggable memory ranges. But before
-+	 * SRAT is parsed, we don't know about it.
-+	 *
-+	 * The kernel image is loaded into memory at very early time. We
-+	 * cannot prevent this anyway. So on NUMA system, we set any
-+	 * node the kernel resides in as un-hotpluggable.
-+	 *
-+	 * Since on modern servers, one node could have double-digit
-+	 * gigabytes memory, we can assume the memory around the kernel
-+	 * image is also un-hotpluggable. So before SRAT is parsed, just
-+	 * allocate memory near the kernel image to try the best to keep
-+	 * the kernel away from hotpluggable memory.
-+	 */
-+	memblock_set_bottom_up(true);
-+#else
-+	pr_warn("movable_node option not supported\n");
-+#endif
-+	return 0;
-+}
-+early_param("movable_node", cmdline_parse_movable_node);
-+
- /* check which state of node_states will be changed when offline memory */
- static void node_states_check_changes_offline(unsigned long nr_pages,
- 		struct zone *zone, struct memory_notify *arg)
--- 
-1.7.1
+I'll send out a series soon that fixes this and re-reverts your patch,
+although I split that re-revert into two patches in addition to my new
+fix, given that I think your mixing up of the blk_mq_finish_request /
+blk_mq_free_spit plus the confusing description made it really hard to
+grasp, but I'll leave it to Jens how he wants to apply it to his tree
+and make it look after the next rebase.
