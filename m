@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3JFTNj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 15:13:39 -0400
-Received: from mout.gmx.net ([212.227.17.21]:51842 "EHLO mout.gmx.net"
+	id S1754329Ab3JFTNp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 15:13:45 -0400
+Received: from mout.gmx.net ([212.227.17.22]:64099 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab3JFTNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 15:13:38 -0400
+	id S1754295Ab3JFTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 15:13:43 -0400
 From: Hans-Frieder Vogt <hfvogt@gmx.net>
 To: zbr@ioremap.net, gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] w1 - fix fops in w1_bus_notify
-Date: Sun, 06 Oct 2013 21:13:35 +0200
-Message-ID: <49341335.BT4urmCfm2@maximilian>
+Subject: [PATCH 2/2] w1 - call request_module with w1 master mutex unlocked
+Date: Sun, 06 Oct 2013 21:13:40 +0200
+Message-ID: <2740843.j7PY66riEd@maximilian>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc2-a64; KDE/4.11.2; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:SODU08V4puXOSWmVQmDkm6mUXRvg8eNzowd+hmyr5IJBjZJGePw
- c5sP36Klz3wni4Nh63BLl2I0OcLanChsA+1CHpXlopuAGH5ITrOtkeuiv5H+UFWulNqiy0N
- Nl0pxiWFj2cDFzrM3DQXALYkse1n1dVJnqllkvoogcb00Zw1PYgJoJtF8LD0BS9ljjQRHjA
- lFWMS9bL9fQgZF0JygvKA==
+X-Provags-ID: V03:K0:DU2G9V3rtW7sextJlSDojv/+4xuGMbf78aZ4DomhDPzFLE+D/m3
+ k/YXx04SYI2ewirivW8x70xF/0fk9kl/G65P47eIIqvcPcIoEgdVC1BmOYgaBCxJx71wb1l
+ F1JSG88QKtpLw95K/eAxxHv7Mp6YkvsohfLPbr6Yk0btVq6CXKOXovhieEWcO/rAaAWlXK9
+ amac2npEEzFAofyXjh1lA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a check to make sure that fops are only called if they have been
-defined by the slave module.
-Without this check modules like w1_smem cause a NULL pointer
-dereference bug.
+request_module for w1 slave modules needs to be called with the w1 master 
+mutex
+unlocked. Because w1_attach_slave_device gets always(?) called with mutex
+locked, we need to temporarily unlock the w1 master mutex for the loading of 
+the
+w1 slave module.
 
 Signed-off by: Hans-Frieder Vogt <hfvogt@gmx.net>
 ---
  drivers/w1/w1.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/drivers/w1/w1.c	2013-09-24 21:24:20.803261482 +0200
-+++ b/drivers/w1/w1.c	2013-10-06 14:58:45.246528318 +0200
-@@ -613,6 +613,9 @@ static int w1_bus_notify(struct notifier
- 	sl = dev_to_w1_slave(dev);
- 	fops = sl->family->fops;
+--- a/drivers/w1/w1.c	2013-10-06 14:58:45.246528318 +0200
++++ b/drivers/w1/w1.c	2013-10-06 19:13:04.115279322 +0200
+@@ -716,7 +716,10 @@ static int w1_attach_slave_device(struct
+ 	atomic_set(&sl->refcnt, 0);
+ 	init_completion(&sl->released);
  
-+	if (!fops)
-+		return 0;
-+
- 	switch (action) {
- 	case BUS_NOTIFY_ADD_DEVICE:
- 		/* if the family driver needs to initialize something... */
++	/* slave modules need to be loaded in a context with unlocked mutex */
++	mutex_unlock(&dev->mutex);
+ 	request_module("w1-family-0x%0x", rn->family);
++	mutex_lock(&dev->mutex);
+ 
+ 	spin_lock(&w1_flock);
+ 	f = w1_family_registered(rn->family);
 
 Hans-Frieder Vogt                       e-mail: hfvogt <at> gmx .dot. net
 
