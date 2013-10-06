@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3JFUao (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 16:30:44 -0400
-Received: from ring0.de ([91.143.88.219]:45482 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358Ab3JFU2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 16:28:22 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        =?UTF-8?q?=27Beno=C3=AEt=20Cousson=27?= <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        =?UTF-8?q?=27Pali=20Roh=C3=A1r=27?= <pali.rohar@gmail.com>,
-        =?UTF-8?q?=27=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE=20=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2=27?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Sebastian Reichel <sre@debian.org>
-Subject: [RFCv3 5/7] HSI: hsi-char: fix driver for multiport scenarios
-Date: Sun,  6 Oct 2013 22:27:13 +0200
-Message-Id: <1381091235-18293-6-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381091235-18293-1-git-send-email-sre@debian.org>
-References: <1381091235-18293-1-git-send-email-sre@debian.org>
+	id S1754594Ab3JFUeA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 16:34:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:55401 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3JFUd6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 16:33:58 -0400
+Date: Sun, 6 Oct 2013 21:33:53 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] acpi: update win8 OSI blacklist
+Message-ID: <20131006203353.GA19795@srcf.ucam.org>
+References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com>
+ <20131004161226.GA22784@srcf.ucam.org>
+ <CAMP44s0tqKBgUTzFnbTMqDVVWLcaDC5VKd9mq_w+T_Yu19KXqQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s0tqKBgUTzFnbTMqDVVWLcaDC5VKd9mq_w+T_Yu19KXqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix return code check of alloc_chrdev_region, which
-returns 0 on success.
+On Sun, Oct 06, 2013 at 03:29:10PM -0500, Felipe Contreras wrote:
+> On Fri, Oct 4, 2013 at 11:12 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > On Thu, Oct 03, 2013 at 12:13:03PM -0500, Felipe Contreras wrote:
+> >> More people have reported they need this for their machines to work
+> >> correctly.
+> >
+> > Can you add a comment to each indicating why they're being added so we
+> > can easily remove them again once the problem is fixed?
+> 
+> Because that's what users report:
+> https://bugzilla.kernel.org/show_bug.cgi?id=60682
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- drivers/hsi/clients/hsi_char.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes. For each entry, add a comment describing the specific bug seen.
 
-diff --git a/drivers/hsi/clients/hsi_char.c b/drivers/hsi/clients/hsi_char.c
-index e3302ed..5457690 100644
---- a/drivers/hsi/clients/hsi_char.c
-+++ b/drivers/hsi/clients/hsi_char.c
-@@ -706,7 +706,7 @@ static int hsc_probe(struct device *dev)
- 	if (!hsc_major) {
- 		ret = alloc_chrdev_region(&hsc_dev, hsc_baseminor,
- 						HSC_DEVS, devname);
--		if (ret > 0)
-+		if (ret == 0)
- 			hsc_major = MAJOR(hsc_dev);
- 	} else {
- 		hsc_dev = MKDEV(hsc_major, hsc_baseminor);
 -- 
-1.8.4.rc3
-
+Matthew Garrett | mjg59@srcf.ucam.org
