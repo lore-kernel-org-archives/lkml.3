@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3JFSMA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 14:12:00 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:17486 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab3JFSL6 (ORCPT
+	id S1754168Ab3JFSNQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 14:13:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62834 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab3JFSNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 14:11:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 06 Oct 2013 11:07:54 -0700
-Message-ID: <5251A7E4.8080204@nvidia.com>
-Date: Sun, 6 Oct 2013 11:11:48 -0700
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
+	Sun, 6 Oct 2013 14:13:15 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5251A835.9070706@roeck-us.net>
+Date: Sun, 06 Oct 2013 11:13:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>
-CC: "gnurou@gmail.com" <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+To: Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org
+CC: Thierry Reding <thierry.reding@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 0/5] ARM: support for Trusted Foundations secure monito
-References: <1380904635-18113-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1380904635-18113-1-git-send-email-acourbot@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: linux-next: Tree for Oct 4
+References: <20131005224454.GA21581@sirena.org.uk>
+In-Reply-To: <20131005224454.GA21581@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 09:37 AM, Alexandre Courbot wrote:
-> Hopefully final version of this patchset. If I'm not mistaken the last thing
-> that prevents Stephen from merging it is Russel's Ack. Russel, could you check
-> it?
+On 10/05/2013 03:44 PM, Mark Brown wrote:
+> Hi all,
+>
+> Better late than never I've uploaded today's linux-next tree to the
+> master branch of the repository below:
+>
+>          git://gitorious.org/thierryreding/linux-next.git
+>
+> A next-20131004 tag is also provided for convenience.
+>
+> Each merge was tested with x86_664 allyesconfig.  A few new conflicts
+> and build test failures came up along the way - these have all been
+> reported.
+>
 
-Oops.
+Auto-build results:
+	total: 110 pass: 81 skipped: 4 fail: 25
 
-s/Russel/Russell/g, with apologies for the continuous misspelling. m(__)m
+This is worse than with the October 3 tree; reason is that all mips builds now fail.
+Ralf, any idea what is going on ? Looks like it is caused by a couple of your patches.
 
-Alex.
+Please see http://server.roeck-us.net:8010/builders for details.
+
+Guenter
 
