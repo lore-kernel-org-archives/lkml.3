@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab3JFVeA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 17:34:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55782 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab3JFVd7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 17:33:59 -0400
-Date: Sun, 6 Oct 2013 22:33:58 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] apparently broken RLIMIT_CORE
-Message-ID: <20131006213358.GZ13318@ZenIV.linux.org.uk>
-References: <20131006004331.GY13318@ZenIV.linux.org.uk>
- <CA+55aFy8TAeeTA0YVRs8w=MjUC0idvNqB+9BcLWVLPw_LEQajg@mail.gmail.com>
+	id S1754766Ab3JFVjx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 17:39:53 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:40159 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753628Ab3JFVjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 17:39:52 -0400
+Date: Sun, 6 Oct 2013 23:35:36 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: provide public clk_is_enabled function
+Message-ID: <20131006213536.GC30818@lunn.ch>
+References: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20131005202430.GI10079@pengutronix.de>
+ <20131005204208.GB28106@lunn.ch>
+ <20131006090609.GK14747@book.gsilab.sittig.org>
+ <20131006163011.GA30818@lunn.ch>
+ <5251BD09.3050900@gmail.com>
+ <20131006200223.32214.4440@quantum>
+ <5251E334.2070008@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy8TAeeTA0YVRs8w=MjUC0idvNqB+9BcLWVLPw_LEQajg@mail.gmail.com>
+In-Reply-To: <5251E334.2070008@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06, 2013 at 01:42:05PM -0700, Linus Torvalds wrote:
-> On Sat, Oct 5, 2013 at 5:43 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> >         In other words, the size of notes section is ignored for
-> > RLIMIT_CORE purposes.  Is that intentional?
+> Andrew has mentioned, that some bootloaders might disable clocks but
+> leave the nodes enabled. Reading those registers would lock up
+> the HW, of course. So we thought about to check clk gate status first,
+> which this patch is about.
 > 
-> I doubt it is intentional, but I also cannot really feel that we care
-> deeply. Afaik we don't really honor the size limit exactly anyway, ie
-> we tend to check only at page boundaries etc. So do we really care?
+> Of course, we can do clk_enable, read, clk_disable as said before - and
+> given the amount of questions and misinterpretation, I think it is the
+> saner way.
 
-It's actually easier to put the counter of already written data into
-coredump_params and have a new primitive both check that we won't
-exceed the limit and update that counter, rather than doing it manually
-(and somewhat inconsistently) in load_elf_binary() and the stuff it
-calls.  As the matter of fact, after that change we get code looking
-so:
-        if (!elf_core_write_extra_phdrs(cprm, offset))
-                goto end_coredump;
+Hi Sebastian
 
-        size = cprm->written;
-        /* write out the notes section */
-        if (!write_note_info(&info, cprm))
-                goto end_coredump;
+I agree. As you say, too many people have asked questions or
+misinterpretation what is happening, so lets go for the simpler method
+people can understand.
 
-        if (elf_coredump_extra_notes_write(cprm))
-                goto end_coredump;
+I would also suggest in the ethernet driver, maybe set_params(), check
+if we have a valid MAC address, and if not, issue a warning and call
+to eth_hw_addr_random(dev) to get a random one.
 
-        /* Align to page */   
-        if (!dump_seek(cprm->file, dataoff - cprm->written))
-                goto end_coredump;
-
-        cprm->written = size;
-        for (vma = first_vma(current, gate_vma); vma != NULL;
-                        vma = next_vma(vma, gate_vma)) {
-and that's the only remaining reason to have size as local variable at all.
-IOW, making the it consistent would mean getting rid of this "save and restore
-cprm->written" thing around write_note_info()/elf_coredump_extra_notes_write()
-in there...
-
-Objections?
-
-PS: I've ended up modifying aout32 coredump code (after fixing the bitrot in
-there), now the problem is how to test it.  I'm grabbing something I hadn't
-seen in a _long_ time - i386 Slackware 2.3; that should still contain live
-a.out toolchain and as long as it's run under KVM and isolated from network...
+   Andrew
