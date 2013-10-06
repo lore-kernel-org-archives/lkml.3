@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab3JFAh1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 20:37:27 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:55707 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab3JFAhZ (ORCPT
+	id S1753436Ab3JFAjF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 20:39:05 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:5832 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759Ab3JFAjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 20:37:25 -0400
+	Sat, 5 Oct 2013 20:39:04 -0400
+X-Spam-Score: -100.9
+Message-ID: <5250B0E3.3070500@asianux.com>
+Date: Sun, 06 Oct 2013 08:37:55 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1381018693.1974.166@driftwood>
-References: <87li281wx6.fsf_-_@xmission.com>
-	<1381014462.1974.162@driftwood>
-	<CA+55aFy-5UhwZukWj2uemaCy3pczpA0nGxxzZGnPCU0=Bv7bHg@mail.gmail.com>
-	<CA+55aFxgUMnZts-RXFh1qL1u+De_HNdMrC34skyWurbzvqpUdg@mail.gmail.com>
-	<1381018693.1974.166@driftwood>
-Date: Sat, 5 Oct 2013 17:37:24 -0700
-X-Google-Sender-Auth: Nd9WSny1HHahmO1IiGCBUY2Nxds
-Message-ID: <CA+55aFzLh9Ey6RgkSq_Ny033TbcB0PHBVVejEaX65vLv=NC2Pg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rob Landley <rob@landley.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+To: Richard Weinberger <richard@nod.at>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        Joe Perches <joe@perches.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/irq/proc.c: set MAX_NAMELEN 11 instead of 10 which
+ express the maximize size of "%d" or "%u".
+References: <52502E14.5040507@asianux.com> <1380987671.2081.122.camel@joe-AO722> <52503441.2030009@asianux.com> <CAFLxGvy0+9tu5PF2kKrUyVRobixtLaSs_u_b9zwFj64YvQrxgw@mail.gmail.com> <52504373.8070606@asianux.com> <52504718.30303@asianux.com> <52505048.8000604@nod.at>
+In-Reply-To: <52505048.8000604@nod.at>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 5, 2013 at 5:18 PM, Rob Landley <rob@landley.net> wrote:
->
-> Which is why containers have all sorts of extra plumbing. But that extra
-> plumbing is currently built on pivot_root(), not on chroot(). And I'd
-> dismissed pivot_root() as residue from initramfs with all that kernel thread
-> reparenting, so it seemed like the wrong tool for the job, but obviously
-> I'll take your and Al's word it's not...
+On 10/06/2013 01:45 AM, Richard Weinberger wrote:
+> Am 05.10.2013 19:06, schrieb Chen Gang:
+>> On 10/06/2013 12:50 AM, Chen Gang wrote:
+>>> On 10/06/2013 12:08 AM, Richard Weinberger wrote:
+>>>> On Sat, Oct 5, 2013 at 5:46 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>> On 10/05/2013 11:41 PM, Joe Perches wrote:
+>>>>>> On Sat, 2013-10-05 at 23:19 +0800, Chen Gang wrote:
+>>>>>>> Theoretically, the maximize size of "%d" or "%u" is 11 (10 + '\0'), so
+>>>>>>> need set MAX_NAMELEN 11 instead of 10.
+>>>>>>
+>>>>>> %d can be negative.
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>
+>>>>> Oh, really, it is incorrect. Al Viro succeeds once.  :-(
+>>>>>
+>>>>> And I should send patch v2 for it.
+>>>>
+>>>> irq is in both register_irq_proc() and unregister_irq_proc() an unsigned int.
+>>>> Therefore %d makes not really sense. Both should use %u.
+>>>> IMHO sprintf() should also get replaced by snprintf() but that's a
+>>>> matter of taste.
+>>>>
+>>
+>> Oh, commonly, snprintf() are used for the string which can be truncated,
+>> and can not be used for the string which contents must not be truncated.
+>>
+>> In our case, the name string must be not truncated (or may not unique,
+>> theoretically), so we have to still use sprintf().
+> 
+> Of course you would have to check the return value of snprintf() to detect
+> a truncation and abort...
+> 
 
-Yeah, chroot() really doesn't cut it if you allow root access - and
-thus internal chroot() calls - as you noticed (I didn't realize that
-your example was meant to be run _inside_ a chroot).
+OK, thanks, that sounds reasonable to me, so I feel that's not a matter
+of taste.
 
-There are generally other ways to escape chroot too if you're root.
-It's just too hard to plug. That doesn't make chroot() useless - it
-just means that the uses are elsewhere (it's useful for various
-non-security issues like development environments, but it can also be
-useful as one small _part_ of some bigger model, like a VM etc).
+In my opinion, when we know the maximized length, we need always use
+s(c)nprintf instead of sprintf, if the string can be truncated, use
+scnprintf, else use snprintf and also check the return value.
 
-pivot_root() does end up being a "better chroot than chroot" if you're
-looking for containment. It may not be a pretty system call, but it
-does avoid at least the most obvious gotchas with chroot()..
+sprintf is 'dangrous', need try to use s(c)nprintf instead of. We can
+scan whole kernel, I guess quite a few of sprintf may be related with
+memory overflow 'theoretically' (welcome any members to give a check).
 
-            Linus
+
+Thanks.
+
+> Thanks,
+> //richard
+> 
+> 
+> 
+
+-- 
+Chen Gang
