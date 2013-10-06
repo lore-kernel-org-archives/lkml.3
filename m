@@ -1,29 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3JFLPY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 07:15:24 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:48019 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3JFLPX (ORCPT
+	id S1752580Ab3JFLya (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 07:54:30 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:41689
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752022Ab3JFLy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 07:15:23 -0400
+	Sun, 6 Oct 2013 07:54:29 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dIda00h1432Idc73hzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h1de097h8275bhz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sun, 6 Oct 2013 19:54:31 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Fabio Estevam <festevam@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH 1/3] ARM: dts: imx53-qsb: SDHC3 is connected in 8-bit mode
+Message-ID: <20131006115429.GO2734@S2101-09.ap.freescale.net>
+References: <1380903328-17598-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1381055141-25209-1-git-send-email-artagnon@gmail.com>
-References: <1381055141-25209-1-git-send-email-artagnon@gmail.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Sun, 6 Oct 2013 16:44:42 +0530
-Message-ID: <CALkWK0mVOnCe=LgfgHBmPO2rFKj3x8vF-A++mk+QPRQvnL9uww@mail.gmail.com>
-Subject: Re: [PATCH] perf tool: don't open-code TEST_EVENTS macro
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1380903328-17598-1-git-send-email-festevam@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramkumar Ramachandra wrote:
-> The TEST_EVENTS macro is open-coded towards the end of
-> test__parse_events(). While at it, undef it cleanly after its usage.
+On Fri, Oct 04, 2013 at 01:15:26PM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+> 
+> SDHC3 is 8 bit-wide, so pass the bus-width property to reflect that.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Kindly ignore this patch; I made a trivial mistake.
+Applied all 3, thanks.
+
