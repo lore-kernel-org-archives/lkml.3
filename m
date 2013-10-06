@@ -1,138 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3JFUwp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 16:52:45 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:36910 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab3JFUwn (ORCPT
+	id S1754841Ab3JFUzt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 16:55:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50587 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab3JFUzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 16:52:43 -0400
-Message-ID: <5251CD98.70807@linaro.org>
-Date: Sun, 06 Oct 2013 21:52:40 +0100
-From: Julien Grall <julien.grall@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 6 Oct 2013 16:55:48 -0400
+Date: Sun, 6 Oct 2013 13:56:13 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Hans-Frieder Vogt <hfvogt@gmx.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] w1 fixes for broken subsystem
+Message-ID: <20131006205613.GA5655@kroah.com>
+References: <9348473.dVMUCnY2zF@maximilian>
+ <65711381092344@web10h.yandex.ru>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: ian.campbell@citrix.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM guests.
-References: <1380317117-21719-1-git-send-email-konrad.wilk@oracle.com> <5245FD71.3080408@linaro.org> <20130930144513.GM3106@phenom.dumpdata.com>
-In-Reply-To: <20130930144513.GM3106@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <65711381092344@web10h.yandex.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2013 03:45 PM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 27, 2013 at 10:49:37PM +0100, Julien Grall wrote:
->> On 09/27/2013 10:25 PM, Konrad Rzeszutek Wilk wrote:
->>
->>> @@ -641,7 +641,20 @@ struct console xenboot_console = {
->>>
->>>   void xen_raw_console_write(const char *str)
->>>   {
->>> -	dom0_write_console(0, str, strlen(str));
->>> +	ssize_t len = strlen(str);
->>> +	int rc = 0;
->>> +
->>> +	if (xen_domain()) {
->>> +		dom0_write_console(0, str, len);
->>> +		if (rc == -ENOSYS && xen_hvm_domain())
->>> +			goto outb_print;
->>> +
->>> +	} else if (xen_cpuid_base()) {
->>> +		int i;
->>> +outb_print:
->>> +		for (i = 0; i < len; i++)
->>> +			outb(str[i], 0xe9);
->>> +	}
->>>   }
->>
->> xen_cpuid_base and outb(0xe9) is x86 specific and won't compile on ARM.
->
-> Odd, I see outb defined in arch/arm and arch/arm64 ?(arch/arm[|64]/include/asm.io.h)
+On Mon, Oct 07, 2013 at 12:45:44AM +0400, Evgeniy Polyakov wrote:
+> Hi
+> 
+> 06.10.2013, 23:13, "Hans-Frieder Vogt" <hfvogt@gmx.net>:
+> > In recent kernels the 1-wire kernel modules do not work any more. The module
+> > wire got broken in 3.11-rc1 and 3.12-rc1 introduced a further problem:
+> 
+> Looks like I somehow missed it and bugs got in
+> 
+> > 1: 3.11-rc1 introduced the automatic loading of slave modules. This blocks
+> > modprobe, because request_module is called with a locked mutex of the w1
+> > master.
+> > Loading of the slave module calls  w1_register_family, which calls in turn
+> > w1_reconnect_slaves and there mutex_lock(&dev->mutex) will wait forever....
+> 
+> That's correct
+> 
+> > 2: 3.12-rc1 introduced w1_bus_notify which assumes that all slaves have fops
+> > defined. This is not the case for e.g. w1_smem and maybe also breaks custom
+> > written modules.
+> 
+> Isn't fops are supposed to be in the slave device?
+> Although they look meaningless for most of devices, I would introduce them everywhere...
+> 
+> But anyway, your patches fix those problems, thanks a lot.
+> Greg, please queue them into appropriate trees.
+> 
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
-On ARM32 the IO access is memory mapped (the exact address depends on 
-Linux configuration).
-The main problem is not the outb macro but the ioport 0xe9.On ARM, this 
-ioport is not trapped by Xen.
+Thanks for reviewing this, I'll queue them up in a bit.
 
-> You are of course right about xen_cpuid_base.
->
-> How about this:
-
-For the ARM side, the code looks good.
-
->  From 04b772d2b819f0dda2163e3193fa7cd447a6245c Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Fri, 27 Sep 2013 17:18:13 -0400
-> Subject: [PATCH] xen/hvc: If we use xen_raw_printk let it also work on HVM
->   guests.
->
-> The xen_raw_printk works great for debugging purposes. We use
-> for PV guests and we can also use it for HVM guests.
->
-> However, for HVM guests we have a fallback of using the 0xe9
-> port in case the hypervisor does not support an HVM guest of
-> using the console_io hypercall. As such lets use 0xe9 during
-> early bootup, and once the hyper-page is setup and if the
-> console_io hypercall is supported - use that. Otherwise we
-> will fallback to using the 0xe9 after early bootup.
->
-> We also alter the return value for dom0_write_console to return
-> an error value instead of zero. The HVC API has been supporting
-> returning error values for quite some time.
->
-> P.S.
-> To use (and to see the output in the Xen ring buffer) one has to build
-> the hypervisor with 'debug=y'.
->
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> [v1: ifdef xen_cpuid_base as it is X86 specific]
-> ---
->   drivers/tty/hvc/hvc_xen.c | 19 +++++++++++++++++--
->   1 file changed, 17 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> index e61c36c..6458c9f 100644
-> --- a/drivers/tty/hvc/hvc_xen.c
-> +++ b/drivers/tty/hvc/hvc_xen.c
-> @@ -183,7 +183,7 @@ static int dom0_write_console(uint32_t vtermno, const char *str, int len)
->   {
->   	int rc = HYPERVISOR_console_io(CONSOLEIO_write, len, (char *)str);
->   	if (rc < 0)
-> -		return 0;
-> +		return rc;
->
->   	return len;
->   }
-> @@ -641,7 +641,22 @@ struct console xenboot_console = {
->
->   void xen_raw_console_write(const char *str)
->   {
-> -	dom0_write_console(0, str, strlen(str));
-> +	ssize_t len = strlen(str);
-> +	int rc = 0;
-> +
-> +	if (xen_domain()) {
-> +		rc = dom0_write_console(0, str, len);
-> +#ifdef CONFIG_X86
-> +		if (rc == -ENOSYS && xen_hvm_domain())
-> +			goto outb_print;
-> +
-> +	} else if (xen_cpuid_base()) {
-> +		int i;
-> +outb_print:
-> +		for (i = 0; i < len; i++)
-> +			outb(str[i], 0xe9);
-> +#endif
-> +	}
->   }
->
->   void xen_raw_printk(const char *fmt, ...)
->
-
-
--- 
-Julien Grall
+greg k-h
