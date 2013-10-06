@@ -1,76 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab3JFQTO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 12:19:14 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:43961 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab3JFQTM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 12:19:12 -0400
-Date: Sun, 6 Oct 2013 18:19:10 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Oussama Ghorbel <ou.ghorbel@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
-Message-ID: <20131006161910.GC9295@order.stressinduktion.org>
-Mail-Followup-To: Oussama Ghorbel <ou.ghorbel@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com> <20131005140636.GA25076@order.stressinduktion.org> <CABfLueFYZkzpEpDJ7YcHJaXfm-=QcgnL3-Es8gybea2cAacQQw@mail.gmail.com> <20131006151351.GB9295@order.stressinduktion.org> <CABfLueGefWM6m6h44yAMBo7=BMUcA=OvcFVYka06QvsxXUAJtw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753794Ab3JFQeT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 12:34:19 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:40116 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202Ab3JFQeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 12:34:18 -0400
+Date: Sun, 6 Oct 2013 18:30:11 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Andrew Lunn <andrew@lunn.ch>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] clk: provide public clk_is_enabled function
+Message-ID: <20131006163011.GA30818@lunn.ch>
+References: <1380881310-24345-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20131005202430.GI10079@pengutronix.de>
+ <20131005204208.GB28106@lunn.ch>
+ <20131006090609.GK14747@book.gsilab.sittig.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CABfLueGefWM6m6h44yAMBo7=BMUcA=OvcFVYka06QvsxXUAJtw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131006090609.GK14747@book.gsilab.sittig.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06, 2013 at 04:36:56PM +0100, Oussama Ghorbel wrote:
-> On Sun, Oct 6, 2013 at 4:13 PM, Hannes Frederic Sowa
-> <hannes@stressinduktion.org> wrote:
-> > On Sun, Oct 06, 2013 at 03:42:15PM +0100, Oussama Ghorbel wrote:
-> >> The initialization  in ip6gre_tnl_link_config is done as the following:
-> >> static void ip6gre_tnl_link_config(struct ip6_tnl *t, int set_mtu)
-> >> {
-> >> ...
-> >> int addend = sizeof(struct ipv6hdr) + 4;
-> >> ...
-> >> /* Precalculate GRE options length */
-> >> if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
-> >> if (t->parms.o_flags&GRE_CSUM)
-> >> addend += 4;
-> >> if (t->parms.o_flags&GRE_KEY)
-> >> addend += 4;
-> >> if (t->parms.o_flags&GRE_SEQ)
-> >> addend += 4;
-> >> }
-> >> ...
-> >> dev->hard_header_len = rt->dst.dev->hard_header_len + addend;
-> >> ...
-> >> t->hlen = addend;
-> >> ..
-> >> }
-> >>
-> >> Unless they are other reasons, the hard_header_len is taken into
-> >> account the GRE_KEY, GRE_SEQ ..
-> >
-> > But only if a new route is found. The hard_header_len reinitialization is
-> > guarded by a (rt == NULL). We may have not found one on boot up.
-> >
-> In that case the function will make a return and hlen will be zero.
-> Subtracting hlen in  ip6gre_tunnel_change_mtu has no effect ...
+On Sun, Oct 06, 2013 at 11:06:09AM +0200, Gerhard Sittig wrote:
+> On Sat, Oct 05, 2013 at 22:42 +0200, Andrew Lunn wrote:
+> > 
+> > On Sat, Oct 05, 2013 at 10:24:30PM +0200, Uwe Kleine-König wrote:
+> > > On Fri, Oct 04, 2013 at 12:08:30PM +0200, Sebastian Hesselbarth wrote:
+> > > > To determine if a clk has been previously enabled, provide a public
+> > > > clk_is_enabled function. This is especially helpful to check the state
+> > > > of clk-gate without actually changing the state of the gate.
+> > > I wonder what you want to do with the return value.
+> > > 
+> > > When doing
+> > > 
+> > > 	if (clk_is_enabled(someclk))
+> > > 		do_something();
+> > > 
+> > > you cannot in general know if the clock is still on when you start to
+> > > do_something.
+> > 
+> > Hi Uwe
+> > 
+> > At least in the use case Sebastian needs it for, we don't need an "in
+> > general" solution. It is used early boot time to see if the boot
+> > loader left the clock running.
+> 
+> Wait, unless I'm missing something, the clk_is_enabled() call
+> _won't_ determine whether the clock is enabled in hardware
+> (whether the boot loader created or left this condition), instead
+> it only determines whether clk_enable() was called previously and
+> thus the clock _shall_ be enabled.
 
-Oh yes, somehow I missed that.
+Nope, you are wrong.
 
-We depend on t->hlen when pushing the gre header onto the skb. t->hlen == 0
-should never be the case because we assume t->hlen > sizeof(struct ipv6_hdr).
+static int clk_gate_is_enabled(struct clk_hw *hw)
+{
+	u32 reg;
+	struct clk_gate *gate = to_clk_gate(hw);
 
+	reg = clk_readl(gate->reg);
+
+	/* if a set bit disables this clk, flip it before masking */
+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+	   reg ^= BIT(gate->bit_idx);
+
+	   reg &= BIT(gate->bit_idx);
+
+	   return reg ? 1 : 0;
+}
+
+It reads the hardware state.
+
+> AFAIK the kernel's CCF support is "self contained" and does not
+> consider any data or state that was "inherited" from boot staged
+> before the kernel.  That's why the "disable unused" step disables
+> everything that wasn't acquired _in the kernel_ regardless of
+> what the boot loader may have done or what is enabled at reset.
+
+Not quite true. It uses the is_enabled(), which gets the real hardware
+state, to turn off clocks which are unused but on. It will not turn
+off clock which are already off. So it is inheriting some state from
+the boot loader, in that it knows if the bootloader turned it
+on. However this is not propagated into prepare/enable status.
+
+> > The other user of the clock is the
+> > ethernet driver, which we know cannot change it yet, because driver
+> > probing has not started yet.
+> 
+> I understand that the situation here is, that the ethernet driver
+> hasn't probed yet, but the clock driver did.  You are in early setup
+> code and want to (check and) fetch data from the hardware which the
+> ethernet driver later needs.
+
+Nearly, but not quite. If there is an enabled DT node for the device,
+and that node does not have a valid local-mac-address property in the
+node, the bootloader should of programmed the MAC address into the
+device. If it has done that, the clock should be running, because as
+soon as you turn the clock off, it forgets the MAC address. Thus, if
+we find an enabled device in DT, without a valid local-mac-address,
+and the clock is off, we have a bootloader bug, which we want to
+report.
+
+> What's wrong with an explicit enable/disable around the data
+> acquisition?
+
+It avoids the CPU locking hard, but will not get us a valid MAC
+address, which is the point of the exercise.
+
+	 Andrew
