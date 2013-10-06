@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab3JFTNp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 15:13:45 -0400
-Received: from mout.gmx.net ([212.227.17.22]:64099 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab3JFTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 15:13:43 -0400
-From: Hans-Frieder Vogt <hfvogt@gmx.net>
-To: zbr@ioremap.net, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] w1 - call request_module with w1 master mutex unlocked
-Date: Sun, 06 Oct 2013 21:13:40 +0200
-Message-ID: <2740843.j7PY66riEd@maximilian>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc2-a64; KDE/4.11.2; x86_64; ; )
+	id S1754335Ab3JFTSR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 15:18:17 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:45456 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab3JFTSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 15:18:16 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:DU2G9V3rtW7sextJlSDojv/+4xuGMbf78aZ4DomhDPzFLE+D/m3
- k/YXx04SYI2ewirivW8x70xF/0fk9kl/G65P47eIIqvcPcIoEgdVC1BmOYgaBCxJx71wb1l
- F1JSG88QKtpLw95K/eAxxHv7Mp6YkvsohfLPbr6Yk0btVq6CXKOXovhieEWcO/rAaAWlXK9
- amac2npEEzFAofyXjh1lA==
+In-Reply-To: <20131006161910.GC9295@order.stressinduktion.org>
+References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com>
+	<20131005140636.GA25076@order.stressinduktion.org>
+	<CABfLueFYZkzpEpDJ7YcHJaXfm-=QcgnL3-Es8gybea2cAacQQw@mail.gmail.com>
+	<20131006151351.GB9295@order.stressinduktion.org>
+	<CABfLueGefWM6m6h44yAMBo7=BMUcA=OvcFVYka06QvsxXUAJtw@mail.gmail.com>
+	<20131006161910.GC9295@order.stressinduktion.org>
+Date: Sun, 6 Oct 2013 20:18:15 +0100
+Message-ID: <CABfLueGW34XnTEJWsb5FA=pWfwwKqTTj31xCZyr78CNtTZWx6Q@mail.gmail.com>
+Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
+From: Oussama Ghorbel <ou.ghorbel@gmail.com>
+To: Oussama Ghorbel <ou.ghorbel@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_module for w1 slave modules needs to be called with the w1 master 
-mutex
-unlocked. Because w1_attach_slave_device gets always(?) called with mutex
-locked, we need to temporarily unlock the w1 master mutex for the loading of 
-the
-w1 slave module.
+Yes, to summarize, the idea of this patch was to fix the incoherence
+in the condition of ip6gre_tunnel_change_mtu function
 
-Signed-off by: Hans-Frieder Vogt <hfvogt@gmx.net>
----
- drivers/w1/w1.c |    3 +++
- 1 file changed, 3 insertions(+)
+  if (new_mtu < 68 ||
+   new_mtu > 0xFFF8 - dev->hard_header_len - tunnel->hlen)
 
---- a/drivers/w1/w1.c	2013-10-06 14:58:45.246528318 +0200
-+++ b/drivers/w1/w1.c	2013-10-06 19:13:04.115279322 +0200
-@@ -716,7 +716,10 @@ static int w1_attach_slave_device(struct
- 	atomic_set(&sl->refcnt, 0);
- 	init_completion(&sl->released);
- 
-+	/* slave modules need to be loaded in a context with unlocked mutex */
-+	mutex_unlock(&dev->mutex);
- 	request_module("w1-family-0x%0x", rn->family);
-+	mutex_lock(&dev->mutex);
- 
- 	spin_lock(&w1_flock);
- 	f = w1_family_registered(rn->family);
+>From the ip6gre_tnl_link_config function we can see that:
+The variable addend is equal the ipv6 header + gre header (including
+the gre options)
+On the other hand hard_header_len equal to the header of the lower
+layer + addend.
+So the quantity - (dev->hard_header_len + tunnel->hlen) equals - (eth
+header + ipv6 header + gre header + ipv6 header + gre header) which by
+no means this would represent anything!  (I've just taken ipv6 over
+ethernet as example)
 
-Hans-Frieder Vogt                       e-mail: hfvogt <at> gmx .dot. net
+As we have seen there is another approach to fix this issue is to
+re-factor the hlen to hold only the length of gre as it's done for
+ipv4 gre, however the solution provided in the patch seems to be
+regression risk-less.
+Although the value hold by hlen is not coherent with the variable name
+nor with ipv4, I think there is an advantage of the current approach
+of ipv6 hlen over ipv4 hlen, because we save the calculation of ipv6
+header each time. Ex:
+In ipv4 gre and in the function ipgre_header:
+iph = (struct iphdr *)skb_push(skb, t->hlen + sizeof(*iph));
+In ipv6 and in the function ip6gre_header
+ipv6h = (struct ipv6hdr *)skb_push(skb, t->hlen);
 
+Thanks,
+Oussama
+
+On Sun, Oct 6, 2013 at 5:19 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Sun, Oct 06, 2013 at 04:36:56PM +0100, Oussama Ghorbel wrote:
+>> On Sun, Oct 6, 2013 at 4:13 PM, Hannes Frederic Sowa
+>> <hannes@stressinduktion.org> wrote:
+>> > On Sun, Oct 06, 2013 at 03:42:15PM +0100, Oussama Ghorbel wrote:
+>> >> The initialization  in ip6gre_tnl_link_config is done as the following:
+>> >> static void ip6gre_tnl_link_config(struct ip6_tnl *t, int set_mtu)
+>> >> {
+>> >> ...
+>> >> int addend = sizeof(struct ipv6hdr) + 4;
+>> >> ...
+>> >> /* Precalculate GRE options length */
+>> >> if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
+>> >> if (t->parms.o_flags&GRE_CSUM)
+>> >> addend += 4;
+>> >> if (t->parms.o_flags&GRE_KEY)
+>> >> addend += 4;
+>> >> if (t->parms.o_flags&GRE_SEQ)
+>> >> addend += 4;
+>> >> }
+>> >> ...
+>> >> dev->hard_header_len = rt->dst.dev->hard_header_len + addend;
+>> >> ...
+>> >> t->hlen = addend;
+>> >> ..
+>> >> }
+>> >>
+>> >> Unless they are other reasons, the hard_header_len is taken into
+>> >> account the GRE_KEY, GRE_SEQ ..
+>> >
+>> > But only if a new route is found. The hard_header_len reinitialization is
+>> > guarded by a (rt == NULL). We may have not found one on boot up.
+>> >
+>> In that case the function will make a return and hlen will be zero.
+>> Subtracting hlen in  ip6gre_tunnel_change_mtu has no effect ...
+>
+> Oh yes, somehow I missed that.
+>
+> We depend on t->hlen when pushing the gre header onto the skb. t->hlen == 0
+> should never be the case because we assume t->hlen > sizeof(struct ipv6_hdr).
+>
