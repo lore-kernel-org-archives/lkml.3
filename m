@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3JFArc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 20:47:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15998 "EHLO mx1.redhat.com"
+	id S1753360Ab3JFAu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 20:50:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab3JFArb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 20:47:31 -0400
-Date: Sat, 5 Oct 2013 20:47:09 -0400 (EDT)
+	id S1752494Ab3JFAuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Oct 2013 20:50:55 -0400
+Date: Sat, 5 Oct 2013 20:50:36 -0400 (EDT)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: Akira Hayakawa <ruby.wktk@gmail.com>
 cc: dm-devel@redhat.com, devel@driverdev.osuosl.org, thornber@redhat.com,
-        snitzer@redhat.com, cesarb@cesarb.net, gregkh@linuxfoundation.org,
-        david@fromorbit.com, linux-kernel@vger.kernel.org, tj@kernel.org,
-        agk@redhat.com, joe@perches.com, akpm@linux-foundation.org,
-        ejt@redhat.com, dan.carpenter@oracle.com, m.chehab@samsung.com
-Subject: Re: [dm-devel] dm-writeboost testing
-In-Reply-To: <524FBA3F.3050409@gmail.com>
-Message-ID: <alpine.LRH.2.02.1310052044070.30547@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1310021125150.19199@file01.intranet.prod.int.rdu2.redhat.com> <524E27DD.2050809@gmail.com> <alpine.LRH.2.02.1310040923320.8473@file01.intranet.prod.int.rdu2.redhat.com> <524ECFC9.3000603@gmail.com>
- <alpine.LRH.2.02.1310041113230.22029@file01.intranet.prod.int.rdu2.redhat.com> <524FBA3F.3050409@gmail.com>
+        snitzer@redhat.com, gregkh@linuxfoundation.org, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        joe@perches.com, akpm@linux-foundation.org, m.chehab@samsung.com,
+        ejt@redhat.com, agk@redhat.com, cesarb@cesarb.net, tj@kernel.org,
+        ruby.wktk@gmail.com
+Subject: A review of dm-writeboost
+Message-ID: <alpine.LRH.2.02.1310031719340.24440@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,470 +25,304 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
+
+I looked at dm-writeboost source code and here I'm sending the list of 
+problems I found:
 
 
-On Sat, 5 Oct 2013, Akira Hayakawa wrote:
+Polling for state
+-----------------
 
-> Mikulas,
-> 
-> > nvidia binary driver, but it may happen in other parts of the kernel too. 
-> > The fact that it works in your setup doesn't mean that it is correct.
-> You are right. I am convinced.
-> 
-> As far as I looked around the kernel code,
-> it seems to be choosing kthread when one needs looping in background.
-> There are other examples such as loop_thread in drivers/block/loop.c .
-> 
-> And done. Please git pull.
-> commit b6d2d3892e09145cd0b9c5ad69ea2d8c410fdeab is tested in my environment.
-> All the looping daemons are running on kthread now.
-> 
-> The diff between the older version (with wq) and the new version (with kthread)
-> is shown below. I defined fancy CREATE_DAEMON macro.
-> 
-> Another by-product is that
-> you are no longer in need to wait for long time in dmsetup remove
-> since kthread_stop() forcefully wakes the thread up.
+Some of the kernel threads that you spawn poll for data in one-second 
+interval - see migrate_proc, modulator_proc, recorder_proc, sync_proc.
 
-The change seems ok. Please, also move this piece of code in flush_proc
-out of the spinlock:
-                        if (kthread_should_stop())
-                                return 0;
+flush_proc correctly contains wait_event, but there is still some 100ms 
+polling timeout in flush_proc that shouldn't be there.
 
-It caused the workqueue warning I reported before and still causes warning 
-with kthreads:
-note: flush_daemon[5145] exited with preempt_count 1
 
-I will send you next email with more bugs that I found in your code.
+Don't do this. You can do polling in a piece of code that is executed 
+infrequently, such as driver unload, but general functionality must not 
+depend on polling.
+
+
+If you set the polling interval too low, it wastes CPU cycle and it wastes 
+energy due to CPU wake-ups. If you set the polling interval too high, it 
+causes artifical delays. For example, current middle-class SSDs can do 
+writes at a rate 500MB/s. Now, think that the user uses 400MB partition 
+for the cache - the partition is filled up in 0.8s and the kernel waits 
+for additional 0.2s doing absolutely nothing, until your polling code 
+wakes up and notices that it should start flusing the cache.
+
+So - the polling code introduces artifical delays that can cause 
+performance degradation. You may think about lowering the polling interval 
+to lessen the performance impact, but if you lower the polling interval, 
+it increases CPU and power consumption when the driver is idle. Either 
+way, it is wrong. Just don't use polling.
+
+
+Lack of locking/barriers
+------------------------
+
+migrate_proc lacks any lock or barrier. Note that processors may execute 
+instructions out of order, and thus concurrent access without locks or 
+barriers is always wrong.
+
+Think of this piece of code:
+nr_mig_candidates = cache->last_flushed_segment_id -
+                    cache->last_migrated_segment_id;
+...
+nr_mig = min(nr_mig_candidates,
+             cache->nr_cur_batched_migration);
+...
+for (i = 1; i <= nr_mig; i++) {
+	        seg = get_segment_header_by_id(
+                        cache,
+                        cache->last_migrated_segment_id + i);
+        list_add_tail(&seg->migrate_list, &cache->migrate_list);
+}
+
+The processor may reorder all memory accesses - for example it may read 
+the data accessed in the "for" cycle before reading the variables 
+"cache->last_flushed_segment_id" and "cache->last_migrated_segment_id". If 
+this happens, the code may work with invalid data.
+
+Similarly, the processor that updates cache->last_flushed_segment_id can 
+update it before updating the segment variables itself.
+
+You need to use smp_wmb() before incrementing 
+cache->last_flushed_segment_id in the producer process and smp_rmb() after 
+reading cache->last_flushed_segment_id in the consumer process. Read 
+Documentation/memory-barriers.txt for full explanation.
+
+You can use locks instead of memory barriers, locks are simpler to use and 
+simpler to verify, but they are usually slower than memory barriers.
+
+
+Nonatomic 64-bit variables
+--------------------------
+
+Note that 64-bit variables are not atomic on 32-bit architectures.
+
+Linux assumes that 32-bit variables are atomic on 32-bit architectures and 
+64-bit or 32-bit variables are atomic on 64-bit architectures. That is, 
+variables having the "long" or "int" type are atomic. Atomicity means that 
+if you read and modify the variable at the same time, you read either the 
+old value or the new values.
+
+64-bit variables on 32-bit architectures are usually read and written in 
+two steps, and thus the atomicity requirement isn't true.
+
+For example, suppose that you change cache->last_flushed_segment_id from 
+0x00000000ffffffff to 0x0000000100000000. Now, the function migrate_proc 
+that asynchronously reads cache->last_flushed_segment_id can read 
+0x00000000ffffffff or 0x0000000100000000 (if it reads one of these values, 
+it behaves correctly), but it can also read 0x0000000000000000 or 
+0x00000001ffffffff - if migrate_proc reads one of these two values, it 
+goes wild, migrating segments that weren't ever supposed to be migrated, 
+and likely causes a crash or data corruption.
+
+I found this bug in migrate_proc and update_superblock_record (but it may 
+be also in other parts of the code).
+
+You can use atomic64_t type for atomic 64-bit variables (plus memory 
+barriers as explained in the previous section). Or you can use locks.
+
+reserving_segment_id is also affected. However, you never actually need 
+the value of reserving_segment_id, you only compare it to zero. Thus, you 
+can change this variable to the "int" type and set it to "0" or "1". (you 
+must use int and not bool, see the next section).
+
+
+Variables smaller than 32 bits must not be asynchronously modified
+------------------------------------------------------------------
+
+Early Alpha processors can't access memory objects smaller than 32 bits - 
+so, for example, if your code writes 8-bit char or bool variable, the 
+processor reads 32 bits to a register, modifies 8-bit part of the register 
+and writes 32 bits from the register back to memory. Now, if you define
+something like
+unsigned char a;
+unsigned char b;
+and modify "a" from one "thread 1" and modify "b" from "thread 2", the 
+threads could destroy each other's modification - the "thread 1" can 
+destroy "b" (although in the C code it never references "b") and "thread 
+2" can destroy "a" (although in the C code it never references "a") - for 
+this reason - if you have variables that you modify asynchronously, they 
+shouldn't have a type smaller than 32 bits.
+
+bool allow_migrate, bool enable_migration_modulator, bool on_terminate 
+have this problem, change them to int.
+
+
+Lack of ACCESS_ONCE
+-------------------
+
+You can read a variable while you modify it (the variable must not be 
+bigger than "long" type, see the section "Nonatomic 64-bit variables").
+
+However, if you read a variable that may be modified, you must use the 
+ACCESS_ONCE macro.
+
+For example see this:
+if (cache->on_terminate)
+        return;
+cache->on_terminate may change while you are reading it, so you should use
+if (ACCESS_ONCE(cache->on_terminate))
+	return;
+
+There are many other variables that are read while modifying them and that 
+need ACCESS_ONCE, for example cache->allow_migrate. There are plenty of 
+other variables in your code that may be read and modified at the same 
+time.
+
+The reason why you need ACCESS_ONCE is that the C compiler assumes that 
+the variable that you read doesn't change. Thus, it can perform certain 
+optimizations. ACCESS_ONCE suppresses these optimizations.
+
+In most cases, omitting ACCESS_ONCE doesn't cause any misbehavior, for the 
+reason that the compiler doesn't use the assumption, that the variable 
+doesn't change, to perform optimizations. But the compiler may use this 
+assumption, and if it does, it triggers a hard to find bug.
+
+
+GFP_NOIO allocations
+--------------------
+
+If possible, you should use mempool instead. Mempool allocation doesn't 
+fail (if memory is exhausted, it waits until some objects are returned to 
+the mempool).
+
+kmalloc_retry is not needed - there's a flag __GFP_NOFAIL that does 
+infinite retry.
+
+The problem with GFP_IO is that if the system is in such a state when all 
+memory is dirty and the only way how to free memory is to write pages to 
+the swap, it deadlocks - the memory manager waits for your driver to write 
+some data to the swap - and your driver is waiting for the memory manager 
+to free some memory so that you can allocate memory and process the write.
+
+To avoid this problem, use mempools.
+
+
+64-bit divide and modulo
+------------------------
+
+You can't use divide and modulo operators ('/' and '%') on 64-bit values. 
+On 32-bit architectures, these operators need library functions and these 
+functions are not present in the kernel. You need to use div64_u64 
+(divides 64-bit value by 64-bit value), div64_u64_rem (divides 64-bit 
+value by 64-bit value and also returns a remainder), You can also use 
+do_div (it divides a 64-bit value by a 32-bit value), or sector_div (it 
+divides sector_t by a 32-bit value).
+
+Try to compile your driver with 32-bit kernel and you will see that '/' 
+and '%' doesn't work on 64-bit values.
+
+
+Wrong printf arguments
+----------------------
+
+Try to compile your driver on 32-bit system. You get some warnings.
+
+size_t x;
+printf("%lu", x) - this is wrong because %lu says that the type is 
+unsigned long and the type is size_t (size_t may be unsigned or unsigned 
+long on different architectures). It should be
+printf("%zu", z);
+
+sector_t s;
+printf("%lu", s) - this is wrong because the sector_t may not have the 
+same type as unsigned long. (on 32-bit architectures, you can select 
+32-bit sector_t or 64-bit sector_t in kernel configuration). It should be
+printf("%llu", (unsigned long long)s);
+
+DMEMIT("%lu ", atomic64_read(v)); - wrong, because format is unsigned long 
+and type is 64-bit. It should be
+DMEMIT("%llu ", (unsigned long long)atomic64_read(v));
+
+
+Infinite retry on I/O error in dm_safe_io_retry
+-----------------------------------------------
+
+Don't do this. If the cache disk fails for some reason, it kills the 
+system by doing inifinite retry.
+
+Generally, I/O retry is handler by the lowest level driver (for example, 
+if ATA disk fails to respond, the driver tries to reset the disk and 
+reissue the request). If you get I/O error, you can assume that the lowest 
+level driver retried as much as it could and you shouldn't do additional 
+retry.
+
+If you can't handle a specific I/O request failure gracefully, you should 
+mark the driver as dead, don't do any more I/Os to the disk or cache 
+device and return -EIO on all incoming requests.
+
+Always think that I/O failures can happen because of connection problems, 
+not data corruption problems - for example, a disk cable can go loose, a 
+network may lose connectivity, etc. In these cases, it is best to stop 
+doing any I/O at all and let the user resolve the situation.
+
+I think that you should always stop the driver on write error (stopping it 
+minimizes data damage when there is connectivity problem such as loose 
+cable). On read error you should stop the driver if the error is 
+non-recoverable (for example, when you get error when reading the cache 
+device in the migration process). You don't have to stop on read error, if 
+it is recoverable (for example, when you see read error on the disk, you 
+can just return -EIO to the user without stopping the driver).
+
+
+Pointless modulator_proc
+------------------------
+
+This thread does no work, it just turns cache->allow_migrate on and off. 
+Thus, the thread is useless, you can just remove it. In the place where 
+you read cache->allow_migrate (in migrate_proc) you could just do the work 
+that used to be performed in modulator_proc.
+
+
+Rewrite consideration
+---------------------
+
+Some of the above problems can be fixed easily, but others can't - for 
+example, if the code uses timed polling, it is not trivial to convert it 
+to event-based processing. Similarly, the lack of locks or memory barriers 
+when acessing shared data can't be easily fixed - I pinpointed some cases 
+where they are missing, but I didn't find all the problems - if you wrote 
+the code without considering the need for synchronization primitives, it 
+is not trivial to add them afterwards.
+
+I think the best thing would be two rewrite the code and take the above 
+notes into account (in the rewriting you can use pieces of code already 
+written).
+
+
+First, you must design some event model - (a bunch of threads polling in 1 
+second interval doesn't seem viable). For example, you can use workqueues 
+correctly this way:
+
+* You create a workqueue for migration, but you don't submit any work to 
+  it.
+* If you fill the cache device above the watermark, you submit a work item 
+  to the migration workqueue (you can submit the same work item to the 
+  same workqueue multiple times - if the work item is still queued and 
+  hasn't started executing, the second submit is ignored; if the work item 
+  has started executing, the second submit causes that it is executed once
+  more).
+* The work item does a little bit of work, it finds data to be migrated, 
+  submits the bios to do the migration and exits. (you can use dm-kcopyd 
+  to do actual migration, it simplifies your code)
+* If you need more migration, you just submit the work item again.
+
+If you design it this way, you avoid the polling timers (migration starts 
+as soon as it is needed) and also you avoid the problem with the looping 
+workqueue.
+
+
+Next, you need to design some locking - which variables are protected by 
+which locks. If you use shared variables without locks, you need to use 
+memory barriers (it is harder to design code using memory barriers than 
+locks).
+
 
 Mikulas
-
-> diff --git a/Driver/dm-writeboost-daemon.c b/Driver/dm-writeboost-daemon.c
-> index 6090661..65974e2 100644
-> --- a/Driver/dm-writeboost-daemon.c
-> +++ b/Driver/dm-writeboost-daemon.c
-> @@ -10,12 +10,11 @@
->  
->  /*----------------------------------------------------------------*/
->  
-> -void flush_proc(struct work_struct *work)
-> +int flush_proc(void *data)
->  {
->  	unsigned long flags;
->  
-> -	struct wb_cache *cache =
-> -		container_of(work, struct wb_cache, flush_work);
-> +	struct wb_cache *cache = data;
->  
->  	while (true) {
->  		struct flush_job *job;
-> @@ -32,8 +31,12 @@ void flush_proc(struct work_struct *work)
->  				msecs_to_jiffies(100));
->  			spin_lock_irqsave(&cache->flush_queue_lock, flags);
->  
-> -			if (cache->on_terminate)
-> -				return;
-> +			/*
-> +			 * flush daemon can exit
-> +			 * only if no flush job is queued.
-> +			 */
-> +			if (kthread_should_stop())
-> +				return 0;
->  		}
->  
->  		/*
-> @@ -84,6 +87,7 @@ void flush_proc(struct work_struct *work)
->  
->  		kfree(job);
->  	}
-> +	return 0;
->  }
->  
->  /*----------------------------------------------------------------*/
-> @@ -353,19 +357,15 @@ migrate_write:
->  	}
->  }
->  
-> -void migrate_proc(struct work_struct *work)
-> +int migrate_proc(void *data)
->  {
-> -	struct wb_cache *cache =
-> -		container_of(work, struct wb_cache, migrate_work);
-> +	struct wb_cache *cache = data;
->  
-> -	while (true) {
-> +	while (!kthread_should_stop()) {
->  		bool allow_migrate;
->  		size_t i, nr_mig_candidates, nr_mig, nr_max_batch;
->  		struct segment_header *seg, *tmp;
->  
-> -		if (cache->on_terminate)
-> -			return;
-> -
->  		/*
->  		 * If reserving_id > 0
->  		 * Migration should be immediate.
-> @@ -430,6 +430,7 @@ void migrate_proc(struct work_struct *work)
->  			list_del(&seg->migrate_list);
->  		}
->  	}
-> +	return 0;
->  }
->  
->  /*
-> @@ -453,19 +454,16 @@ void wait_for_migration(struct wb_cache *cache, u64 id)
->  
->  /*----------------------------------------------------------------*/
->  
-> -void modulator_proc(struct work_struct *work)
-> +int modulator_proc(void *data)
->  {
-> -	struct wb_cache *cache =
-> -		container_of(work, struct wb_cache, modulator_work);
-> +	struct wb_cache *cache = data;
->  	struct wb_device *wb = cache->wb;
->  
->  	struct hd_struct *hd = wb->device->bdev->bd_part;
->  	unsigned long old = 0, new, util;
->  	unsigned long intvl = 1000;
->  
-> -	while (true) {
-> -		if (cache->on_terminate)
-> -			return;
-> +	while (!kthread_should_stop()) {
->  
->  		new = jiffies_to_msecs(part_stat_read(hd, io_ticks));
->  
-> @@ -484,6 +482,7 @@ modulator_update:
->  
->  		schedule_timeout_interruptible(msecs_to_jiffies(intvl));
->  	}
-> +	return 0;
->  }
->  
->  /*----------------------------------------------------------------*/
-> @@ -517,16 +516,12 @@ static void update_superblock_record(struct wb_cache *cache)
->  	kfree(buf);
->  }
->  
-> -void recorder_proc(struct work_struct *work)
-> +int recorder_proc(void *data)
->  {
-> -	struct wb_cache *cache =
-> -		container_of(work, struct wb_cache, recorder_work);
-> +	struct wb_cache *cache = data;
->  	unsigned long intvl;
->  
-> -	while (true) {
-> -		if (cache->on_terminate)
-> -			return;
-> -
-> +	while (!kthread_should_stop()) {
->  		/* sec -> ms */
->  		intvl = cache->update_record_interval * 1000;
->  
-> @@ -539,20 +534,17 @@ void recorder_proc(struct work_struct *work)
->  
->  		schedule_timeout_interruptible(msecs_to_jiffies(intvl));
->  	}
-> +	return 0;
->  }
->  
->  /*----------------------------------------------------------------*/
->  
-> -void sync_proc(struct work_struct *work)
-> +int sync_proc(void *data)
->  {
-> -	struct wb_cache *cache =
-> -		container_of(work, struct wb_cache, sync_work);
-> +	struct wb_cache *cache = data;
->  	unsigned long intvl;
->  
-> -	while (true) {
-> -		if (cache->on_terminate)
-> -			return;
-> -
-> +	while (!kthread_should_stop()) {
->  		/* sec -> ms */
->  		intvl = cache->sync_interval * 1000;
->  
-> @@ -566,4 +558,5 @@ void sync_proc(struct work_struct *work)
->  
->  		schedule_timeout_interruptible(msecs_to_jiffies(intvl));
->  	}
-> +	return 0;
->  }
-> diff --git a/Driver/dm-writeboost-daemon.h b/Driver/dm-writeboost-daemon.h
-> index 3bdd862..d21d66c 100644
-> --- a/Driver/dm-writeboost-daemon.h
-> +++ b/Driver/dm-writeboost-daemon.h
-> @@ -9,7 +9,7 @@
->  
->  /*----------------------------------------------------------------*/
->  
-> -void flush_proc(struct work_struct *);
-> +int flush_proc(void *);
->  
->  /*----------------------------------------------------------------*/
->  
-> @@ -19,20 +19,20 @@ void flush_barrier_ios(struct work_struct *);
->  
->  /*----------------------------------------------------------------*/
->  
-> -void migrate_proc(struct work_struct *);
-> +int migrate_proc(void *);
->  void wait_for_migration(struct wb_cache *, u64 id);
->  
->  /*----------------------------------------------------------------*/
->  
-> -void modulator_proc(struct work_struct *);
-> +int modulator_proc(void *);
->  
->  /*----------------------------------------------------------------*/
->  
-> -void sync_proc(struct work_struct *);
-> +int sync_proc(void *);
->  
->  /*----------------------------------------------------------------*/
->  
-> -void recorder_proc(struct work_struct *);
-> +int recorder_proc(void *);
->  
->  /*----------------------------------------------------------------*/
->  
-> diff --git a/Driver/dm-writeboost-metadata.c b/Driver/dm-writeboost-metadata.c
-> index 1cd9e0c..4f5fa5e 100644
-> --- a/Driver/dm-writeboost-metadata.c
-> +++ b/Driver/dm-writeboost-metadata.c
-> @@ -994,6 +994,17 @@ void free_migration_buffer(struct wb_cache *cache)
->  
->  /*----------------------------------------------------------------*/
->  
-> +#define CREATE_DAEMON(name)\
-> +	cache->name##_daemon = kthread_create(name##_proc, cache,\
-> +					      #name "_daemon");\
-> +	if (IS_ERR(cache->name##_daemon)) {\
-> +		r = PTR_ERR(cache->name##_daemon);\
-> +		cache->name##_daemon = NULL;\
-> +		WBERR("couldn't spawn" #name "daemon");\
-> +		goto bad_##name##_daemon;\
-> +	}\
-> +	wake_up_process(cache->name##_daemon);
-> +
->  int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
->  {
->  	int r = 0;
-> @@ -1010,8 +1021,6 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
->  
->  	mutex_init(&cache->io_lock);
->  
-> -	cache->on_terminate = false;
-> -
->  	/*
->  	 * (i) Harmless Initializations
->  	 */
-> @@ -1042,12 +1051,6 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
->  	 * Recovering the cache metadata
->  	 * prerequires the migration daemon working.
->  	 */
-> -	cache->migrate_wq = create_singlethread_workqueue("migratewq");
-> -	if (!cache->migrate_wq) {
-> -		r = -ENOMEM;
-> -		WBERR();
-> -		goto bad_migratewq;
-> -	}
->  
->  	/* Migration Daemon */
->  	atomic_set(&cache->migrate_fail_count, 0);
-> @@ -1070,9 +1073,7 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
->  
->  	cache->allow_migrate = true;
->  	cache->reserving_segment_id = 0;
-> -	INIT_WORK(&cache->migrate_work, migrate_proc);
-> -	queue_work(cache->migrate_wq, &cache->migrate_work);
-> -
-> +	CREATE_DAEMON(migrate);
->  
->  	r = recover_cache(cache);
->  	if (r) {
-> @@ -1086,19 +1087,12 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
->  	 * These are only working
->  	 * after the logical device created.
->  	 */
-> -	cache->flush_wq = create_singlethread_workqueue("flushwq");
-> -	if (!cache->flush_wq) {
-> -		r = -ENOMEM;
-> -		WBERR();
-> -		goto bad_flushwq;
-> -	}
->  
->  	/* Flush Daemon */
-> -	INIT_WORK(&cache->flush_work, flush_proc);
->  	spin_lock_init(&cache->flush_queue_lock);
->  	INIT_LIST_HEAD(&cache->flush_queue);
->  	init_waitqueue_head(&cache->flush_wait_queue);
-> -	queue_work(cache->flush_wq, &cache->flush_work);
-> +	CREATE_DAEMON(flush);
->  
->  	/* Deferred ACK for barrier writes */
->  
-> @@ -1118,29 +1112,30 @@ int __must_check resume_cache(struct wb_cache *cache, struct dm_dev *dev)
->  
->  	/* Migartion Modulator */
->  	cache->enable_migration_modulator = true;
-> -	INIT_WORK(&cache->modulator_work, modulator_proc);
-> -	schedule_work(&cache->modulator_work);
-> +	CREATE_DAEMON(modulator);
->  
->  	/* Superblock Recorder */
->  	cache->update_record_interval = 60;
-> -	INIT_WORK(&cache->recorder_work, recorder_proc);
-> -	schedule_work(&cache->recorder_work);
-> +	CREATE_DAEMON(recorder);
->  
->  	/* Dirty Synchronizer */
->  	cache->sync_interval = 60;
-> -	INIT_WORK(&cache->sync_work, sync_proc);
-> -	schedule_work(&cache->sync_work);
-> +	CREATE_DAEMON(sync);
->  
->  	return 0;
->  
-> -bad_flushwq:
-> +bad_sync_daemon:
-> +	kthread_stop(cache->recorder_daemon);
-> +bad_recorder_daemon:
-> +	kthread_stop(cache->modulator_daemon);
-> +bad_modulator_daemon:
-> +	kthread_stop(cache->flush_daemon);
-> +bad_flush_daemon:
->  bad_recover:
-> -	cache->on_terminate = true;
-> -	cancel_work_sync(&cache->migrate_work);
-> +	kthread_stop(cache->migrate_daemon);
-> +bad_migrate_daemon:
->  	free_migration_buffer(cache);
->  bad_alloc_migrate_buffer:
-> -	destroy_workqueue(cache->migrate_wq);
-> -bad_migratewq:
->  	free_ht(cache);
->  bad_alloc_ht:
->  	free_segment_header_array(cache);
-> @@ -1153,20 +1148,21 @@ bad_init_rambuf_pool:
->  
->  void free_cache(struct wb_cache *cache)
->  {
-> -	cache->on_terminate = true;
-> +	/*
-> +	 * Must clean up all the volatile data
-> +	 * before termination.
-> +	 */
-> +	flush_current_buffer(cache);
->  
-> -	/* Kill in-kernel daemons */
-> -	cancel_work_sync(&cache->sync_work);
-> -	cancel_work_sync(&cache->recorder_work);
-> -	cancel_work_sync(&cache->modulator_work);
-> +	kthread_stop(cache->sync_daemon);
-> +	kthread_stop(cache->recorder_daemon);
-> +	kthread_stop(cache->modulator_daemon);
->  
-> -	cancel_work_sync(&cache->flush_work);
-> -	destroy_workqueue(cache->flush_wq);
-> +	kthread_stop(cache->flush_daemon);
->  
->  	cancel_work_sync(&cache->barrier_deadline_work);
->  
-> -	cancel_work_sync(&cache->migrate_work);
-> -	destroy_workqueue(cache->migrate_wq);
-> +	kthread_stop(cache->migrate_daemon);
->  	free_migration_buffer(cache);
->  
->  	/* Destroy in-core structures */
-> diff --git a/Driver/dm-writeboost-target.c b/Driver/dm-writeboost-target.c
-> index 6aa4c7c..4b5b7aa 100644
-> --- a/Driver/dm-writeboost-target.c
-> +++ b/Driver/dm-writeboost-target.c
-> @@ -973,12 +973,6 @@ static void writeboost_dtr(struct dm_target *ti)
->  	struct wb_device *wb = ti->private;
->  	struct wb_cache *cache = wb->cache;
->  
-> -	/*
-> -	 * Synchronize all the dirty writes
-> -	 * before termination.
-> -	 */
-> -	cache->sync_interval = 1;
-> -
->  	free_cache(cache);
->  	kfree(cache);
->  
-> diff --git a/Driver/dm-writeboost.h b/Driver/dm-writeboost.h
-> index 74ff194..092c100 100644
-> --- a/Driver/dm-writeboost.h
-> +++ b/Driver/dm-writeboost.h
-> @@ -16,6 +16,7 @@
->  #include <linux/list.h>
->  #include <linux/slab.h>
->  #include <linux/mutex.h>
-> +#include <linux/kthread.h>
->  #include <linux/sched.h>
->  #include <linux/timer.h>
->  #include <linux/device-mapper.h>
-> @@ -265,8 +266,7 @@ struct wb_cache {
->  	 * and flush daemon asynchronously
->  	 * flush them to the cache device.
->  	 */
-> -	struct work_struct flush_work;
-> -	struct workqueue_struct *flush_wq;
-> +	struct task_struct *flush_daemon;
->  	spinlock_t flush_queue_lock;
->  	struct list_head flush_queue;
->  	wait_queue_head_t flush_wait_queue;
-> @@ -288,8 +288,7 @@ struct wb_cache {
->  	 * migrate daemon goes into migration
->  	 * if they are segments to migrate.
->  	 */
-> -	struct work_struct migrate_work;
-> -	struct workqueue_struct *migrate_wq;
-> +	struct task_struct *migrate_daemon;
->  	bool allow_migrate; /* param */
->  
->  	/*
-> @@ -314,7 +313,7 @@ struct wb_cache {
->  	 * the migration
->  	 * according to the load of backing store.
->  	 */
-> -	struct work_struct modulator_work;
-> +	struct task_struct *modulator_daemon;
->  	bool enable_migration_modulator; /* param */
->  
->  	/*
-> @@ -323,7 +322,7 @@ struct wb_cache {
->  	 * Update the superblock record
->  	 * periodically.
->  	 */
-> -	struct work_struct recorder_work;
-> +	struct task_struct *recorder_daemon;
->  	unsigned long update_record_interval; /* param */
->  
->  	/*
-> @@ -332,16 +331,9 @@ struct wb_cache {
->  	 * Sync the dirty writes
->  	 * periodically.
->  	 */
-> -	struct work_struct sync_work;
-> +	struct task_struct *sync_daemon;
->  	unsigned long sync_interval; /* param */
->  
-> -	/*
-> -	 * on_terminate is true
-> -	 * to notify all the background daemons to
-> -	 * stop their operations.
-> -	 */
-> -	bool on_terminate;
-> -
->  	atomic64_t stat[STATLEN];
->  };
-> 
-> Akira
-> 
