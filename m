@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3JFPuN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 11:50:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41415 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009Ab3JFPuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 11:50:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1044,1371106800"; 
-   d="scan'208";a="406205495"
-Message-ID: <525186B2.1000205@linux.intel.com>
-Date: Sun, 06 Oct 2013 08:50:10 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753774Ab3JFP6T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 11:58:19 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:52908 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3JFP6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 11:58:18 -0400
+X-Spam-Score: -101.5
+Message-ID: <52518850.6050303@asianux.com>
+Date: Sun, 06 Oct 2013 23:57:04 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>
-CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH v2 3/6] PowerCap: Added to drivers build
-References: <1380904616-17519-1-git-send-email-srinivas.pandruvada@linux.intel.com> <201310041622.29259.gheskett@wdtv.com> <524F2B4C.7080702@linux.intel.com> <201310041917.01126.gheskett@wdtv.com>
-In-Reply-To: <201310041917.01126.gheskett@wdtv.com>
-Content-Type: text/plain; charset=windows-1256; format=flowed
+To: Richard Weinberger <richard@nod.at>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        Joe Perches <joe@perches.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/irq/proc.c: set MAX_NAMELEN 11 instead of 10 which
+ express the maximize size of "%d" or "%u".
+References: <52502E14.5040507@asianux.com> <1380987671.2081.122.camel@joe-AO722> <52503441.2030009@asianux.com> <CAFLxGvy0+9tu5PF2kKrUyVRobixtLaSs_u_b9zwFj64YvQrxgw@mail.gmail.com> <52504373.8070606@asianux.com> <52504718.30303@asianux.com> <52505048.8000604@nod.at> <5250B0E3.3070500@asianux.com>
+In-Reply-To: <5250B0E3.3070500@asianux.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/4/2013 4:17 PM, Gene Heskett wrote:
->>> I hope this is a better explanation. :)
+On 10/06/2013 08:37 AM, Chen Gang wrote:
+> On 10/06/2013 01:45 AM, Richard Weinberger wrote:
+>> Am 05.10.2013 19:06, schrieb Chen Gang:
+>>> On 10/06/2013 12:50 AM, Chen Gang wrote:
+>>>> On 10/06/2013 12:08 AM, Richard Weinberger wrote:
+>>>>> On Sat, Oct 5, 2013 at 5:46 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>>> On 10/05/2013 11:41 PM, Joe Perches wrote:
+>>>>>>> On Sat, 2013-10-05 at 23:19 +0800, Chen Gang wrote:
+>>>>>>>> Theoretically, the maximize size of "%d" or "%u" is 11 (10 + '\0'), so
+>>>>>>>> need set MAX_NAMELEN 11 instead of 10.
+>>>>>>>
+>>>>>>> %d can be negative.
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>> Oh, really, it is incorrect. Al Viro succeeds once.  :-(
+>>>>>>
+>>>>>> And I should send patch v2 for it.
+>>>>>
+>>>>> irq is in both register_irq_proc() and unregister_irq_proc() an unsigned int.
+>>>>> Therefore %d makes not really sense. Both should use %u.
+>>>>> IMHO sprintf() should also get replaced by snprintf() but that's a
+>>>>> matter of taste.
+>>>>>
+>>>
+>>> Oh, commonly, snprintf() are used for the string which can be truncated,
+>>> and can not be used for the string which contents must not be truncated.
+>>>
+>>> In our case, the name string must be not truncated (or may not unique,
+>>> theoretically), so we have to still use sprintf().
 >>
->> The idea of power capping is to cap total power not power down and also
->> need root level access to modify.
->
-> No.  Restricting it to root control only is NOT an option.  There has to be
-> some mechanism whereby the users non-root program can control it.  We don't
-> run this software as root, ever.  And the part of this software that needs
-> the parport (or a pci card access) is running on a cpu core that has been
-> isolated for its use by an isocpus= statement, not visible to top or any
-> other system monitoring utility, so you would never know we are pounding on
-> that port, both reads and multiple writes, at least 3 times every 23
-> microseconds.  So you might see it as idle and turn it off.
+>> Of course you would have to check the return value of snprintf() to detect
+>> a truncation and abort...
+>>
+> 
+> OK, thanks, that sounds reasonable to me, so I feel that's not a matter
+> of taste.
+> 
 
-I understand that you do not want to see powercapping in effect.
-I think I mostly understand the realtime angle you're coming from as well.
-
-However, powercapping is not done for energy savings, it is done for SURVIVAL.
-It is not something optional that you can just turn off and ignore;
-if you ignore it... something either has a thermal meltdown or trips a circuit breaker... or
-in the case of a laptop/tablet kind of shape, you give the user burn blisters.
-
-(the thermal meltdown effect can be either damage to the system or a hard reset done by a hardware safety
-mechanism.. neither is what you want for your realtime workload)
-
-The solution to not use powercapping in combination with realtime is to make sure there
-is ample cooling for the system, and to make sure the circuit breakers are big enough...
-.... not ways to try to turn it off from non-root.
-
-(and note that powerclamp for example takes realtime priority into account by only running at "half priority"...
-... but if the real realtime prevents clamping altogether, other, more dracionian things will kick in)
+Hmm... does 'taste' means: "for string which can not be truncated, if
+maximized length is obvious (e.g. our case 11 for "%u"), sprintf() is
+more clearer than snprintf() for both readers and writers"?
 
 
-and if you wonder what linux does today without the framework; there are mechanisms that kick in
-at the very end of the range, that are very draconian like taking the 3.0Ghz processor down to
-effectively 100MHz, or even a system reboot. The point of what Jacob and Srinivas are trying to add
-is to intervene slightly earlier (these failsafe mechanisms are still there) but much much more gently.
+BTW: when MAX_NAMELEN is defined as 128, is it suitable to check the
+return value of snprintf() in register_handler_proc(), and WARN_ON() if
+it is not less than 128?
 
+
+Thanks.
+
+> In my opinion, when we know the maximized length, we need always use
+> s(c)nprintf instead of sprintf, if the string can be truncated, use
+> scnprintf, else use snprintf and also check the return value.
+> 
+> sprintf is 'dangrous', need try to use s(c)nprintf instead of. We can
+> scan whole kernel, I guess quite a few of sprintf may be related with
+> memory overflow 'theoretically' (welcome any members to give a check).
+> 
+> 
+> Thanks.
+> 
+>> Thanks,
+>> //richard
+>>
+>>
+>>
+> 
+
+
+-- 
+Chen Gang
