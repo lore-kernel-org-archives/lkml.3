@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3JFNxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 09:53:49 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:44989 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752647Ab3JFNxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 09:53:48 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1044,1371074400"; 
-   d="scan'208";a="35771322"
-Date: Sun, 6 Oct 2013 15:53:27 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Wolfram Sang <wsa@the-dreams.de>
-cc: linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
-        cocci@systeme.lip6.fr
-Subject: Re: [PATCH] scripts/coccinelle/api: remove
- devm_request_and_ioremap.cocci
-In-Reply-To: <20131006134921.GA4173@katana>
-Message-ID: <alpine.DEB.2.02.1310061552541.2037@localhost6.localdomain6>
-References: <1376562633-16204-1-git-send-email-wsa@the-dreams.de> <20131006134921.GA4173@katana>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753533Ab3JFNzR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 09:55:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35805 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752715Ab3JFNzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 09:55:15 -0400
+Date: Sun, 6 Oct 2013 15:55:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Joe Perches <joe@perches.com>, Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch.pl: Check for the FSF mailing address
+Message-ID: <20131006135507.GA18082@pd.tnic>
+References: <20131005184307.GA6429@leaf>
+ <1380999108.2081.138.camel@joe-AO722>
+ <20131006062739.GA5218@kroah.com>
+ <1381042912.2081.146.camel@joe-AO722>
+ <20131006070557.GA1679@kroah.com>
+ <20131006081033.GA18109@pd.tnic>
+ <20131006134404.GB4706@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131006134404.GB4706@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Oct 2013, Wolfram Sang wrote:
-
-> On Thu, Aug 15, 2013 at 12:30:25PM +0200, Wolfram Sang wrote:
-> > Use of this function is discouraged in favour of
-> > devm_ioremap_resource(). Don't advertise it.
+On Sun, Oct 06, 2013 at 06:44:04AM -0700, Greg Kroah-Hartman wrote:
+> On Sun, Oct 06, 2013 at 10:10:33AM +0200, Borislav Petkov wrote:
+> > On Sun, Oct 06, 2013 at 12:05:57AM -0700, Greg Kroah-Hartman wrote:
+> > > As an individual file is not the sum of the "program", I would argue
+> > > that it is not needed, but some companies like to feel better by
+> > > adding it. So I really don't mind either way, as it would involve
+> > > arguing with lawyers about this type of thing, and I do enough of that
+> > > already that I don't go out of my way to do it more...
 > > 
-> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> > What about a short sentence pointing at 'COPYING' instead?
+> 
+> Why?  What would that do?
 
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Save us the short one or two lines "this file is ..."
 
-> 
-> Ping.
-> 
-> 
+> Listen, all we really need is a short one or two line "this file is
+> released under the FOO license" in the file.  The SPDX project has the
+
+All I'm suggesting is that it might be even simpler to add
+
+"See COPYING in the kernel source repository for the license of this file."
+
+or a similar text as COPYING contains the full text of the license.
+Basically a pointer to it.
+
+This has the added advantage to your short line that it points to the
+exact license text and lawyers are happy.
+
+<snip stuff we agree about anyway>
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
