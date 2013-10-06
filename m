@@ -1,44 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab3JFKu5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 06:50:57 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41090 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3JFKuz (ORCPT
+	id S1752553Ab3JFLPY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 07:15:24 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:48019 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab3JFLPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 06:50:55 -0400
-Date: Sun, 6 Oct 2013 18:50:42 +0800
-From: ZHAO Gang <gamerh2o@gmail.com>
-To: trivial@kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH TRIVIAL] cleanup: add spaces around bitwise operator
-Message-ID: <20131006105042.GA2898@will>
+	Sun, 6 Oct 2013 07:15:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381055141-25209-1-git-send-email-artagnon@gmail.com>
+References: <1381055141-25209-1-git-send-email-artagnon@gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Sun, 6 Oct 2013 16:44:42 +0530
+Message-ID: <CALkWK0mVOnCe=LgfgHBmPO2rFKj3x8vF-A++mk+QPRQvnL9uww@mail.gmail.com>
+Subject: Re: [PATCH] perf tool: don't open-code TEST_EVENTS macro
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
----
- net/core/rtnetlink.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ramkumar Ramachandra wrote:
+> The TEST_EVENTS macro is open-coded towards the end of
+> test__parse_events(). While at it, undef it cleanly after its usage.
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 2a0e21d..bc04f15 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -2658,7 +2658,7 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	if (kind != 2 && !ns_capable(net->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
--	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {
-+	if (kind == 2 && nlh->nlmsg_flags & NLM_F_DUMP) {
- 		struct sock *rtnl;
- 		rtnl_dumpit_func dumpit;
- 		rtnl_calcit_func calcit;
--- 
-1.8.3.1
-
+Kindly ignore this patch; I made a trivial mistake.
