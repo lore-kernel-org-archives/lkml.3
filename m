@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3JFASS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Oct 2013 20:18:18 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:36405 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab3JFASP convert rfc822-to-8bit (ORCPT
+	id S1753313Ab3JFAWF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Oct 2013 20:22:05 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38561 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab3JFAWC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Oct 2013 20:18:15 -0400
-Date: Sat, 05 Oct 2013 19:18:13 -0500
+	Sat, 5 Oct 2013 20:22:02 -0400
+Date: Sat, 05 Oct 2013 19:22:00 -0500
 From: Rob Landley <rob@landley.net>
 Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Miklos Szeredi <miklos@szeredi.hu>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
         Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
         Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>
 References: <87li281wx6.fsf_-_@xmission.com> <1381014462.1974.162@driftwood>
 	<CA+55aFy-5UhwZukWj2uemaCy3pczpA0nGxxzZGnPCU0=Bv7bHg@mail.gmail.com>
-	<CA+55aFxgUMnZts-RXFh1qL1u+De_HNdMrC34skyWurbzvqpUdg@mail.gmail.com>
-In-Reply-To: <CA+55aFxgUMnZts-RXFh1qL1u+De_HNdMrC34skyWurbzvqpUdg@mail.gmail.com>
-	(from torvalds@linux-foundation.org on Sat Oct  5 18:22:15 2013)
+	<20131005232451.GX13318@ZenIV.linux.org.uk>
+In-Reply-To: <20131005232451.GX13318@ZenIV.linux.org.uk> (from
+	viro@ZenIV.linux.org.uk on Sat Oct  5 18:24:51 2013)
 X-Mailer: Balsa 2.4.11
-Message-Id: <1381018693.1974.166@driftwood>
+Message-Id: <1381018920.1974.167@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
@@ -33,28 +33,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2013 06:22:15 PM, Linus Torvalds wrote:
-> On Sat, Oct 5, 2013 at 4:17 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
+On 10/05/2013 06:24:51 PM, Al Viro wrote:
+> On Sat, Oct 05, 2013 at 04:17:55PM -0700, Linus Torvalds wrote:
+> > On Sat, Oct 5, 2013 at 4:07 PM, Rob Landley <rob@landley.net> wrote:
+> > >
+> > > A todo item I've had _forever_ is fixing chroot() to not be  
+> broken so that
+> > > you can trivially break out of a chroot via:
 > >
-> > So learn this pattern: every time you use chroot, add a simple
+> > What drugs are you on?
 > >
-> >   chdir("/");
-> >
-> > immediately after the chroot call.
+> > Your example is moronic, and against all _documented_ uses of  
+> chroot.
 > 
-> .. btw, also make sure that you close all non-essential file
-> descriptors. Having any open directory file descriptors pointing to
-> outside the chroot is also a classic escape.
-> 
-> Even then, escaping chroot is usually fairly easy. Making a
-> escape-proof chroot is really quite hard. Basically impossible if you
-> allow root.
+> ... and even fixing that example (chroot *can* be escaped, if you can
+> call chroot(2) - mkdir /foo, chdir /, chroot /foo, chroot .. and you  
+> are out)
 
-Which is why containers have all sorts of extra plumbing. But that  
-extra plumbing is currently built on pivot_root(), not on chroot(). And  
-I'd dismissed pivot_root() as residue from initramfs with all that  
-kernel thread reparenting, so it seemed like the wrong tool for the  
-job, but obviously I'll take your and Al's word it's not...
+Um, wasn't that my example?
+
+> the whole thing is idiocy - chroot() is not and has never been  
+> root-proof
+> and anybody expecting it to be has failed to read any number of FAQs  
+> out
+> there.
+
+Which is why I was proposing modifying it so lxc and containers didn't  
+have to use pivot_root() instead, with all the logic to rehome existing  
+processes and the weird "this path is relative the old root, this path  
+is relative to the new root" syntax from initial ramdisks.
 
 Rob
