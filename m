@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3JFG1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 02:27:24 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51223 "EHLO
+	id S1751843Ab3JFGaW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 02:30:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51239 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751394Ab3JFG1X (ORCPT
+	with ESMTP id S1751359Ab3JFGaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 02:27:23 -0400
+	Sun, 6 Oct 2013 02:30:21 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: sonic.zhang@analog.com, gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: gregkh@linuxfoundation.org, jslaby@suse.cz, swarren@wwwdotorg.org
+Cc: linux-serial@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] serial: bfin_uart: remove deprecated IRQF_DISABLED
-Date: Sun,  6 Oct 2013 08:27:18 +0200
-Message-Id: <1381040838-12748-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] serial: tegra: remove deprecated IRQF_DISABLED
+Date: Sun,  6 Oct 2013 08:30:17 +0200
+Message-Id: <1381041017-12806-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,22 +26,22 @@ It's a NOOP since 2.6.35 and it will be removed one day.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/tty/serial/bfin_uart.c | 2 +-
+ drivers/tty/serial/serial-tegra.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index 3c75e8e..5e85f35 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -726,7 +726,7 @@ static int bfin_serial_startup(struct uart_port *port)
- #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
- 	if (uart->cts_pin >= 0) {
- 		if (request_irq(uart->status_irq, bfin_serial_mctrl_cts_int,
--			IRQF_DISABLED, "BFIN_UART_MODEM_STATUS", uart)) {
-+			0, "BFIN_UART_MODEM_STATUS", uart)) {
- 			uart->cts_pin = -1;
- 			dev_info(port->dev, "Unable to attach BlackFin UART Modem Status interrupt.\n");
- 		}
+diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
+index 0489a2b..dfe79cc 100644
+--- a/drivers/tty/serial/serial-tegra.c
++++ b/drivers/tty/serial/serial-tegra.c
+@@ -1018,7 +1018,7 @@ static int tegra_uart_startup(struct uart_port *u)
+ 		goto fail_hw_init;
+ 	}
+ 
+-	ret = request_irq(u->irq, tegra_uart_isr, IRQF_DISABLED,
++	ret = request_irq(u->irq, tegra_uart_isr, 0,
+ 				dev_name(u->dev), tup);
+ 	if (ret < 0) {
+ 		dev_err(u->dev, "Failed to register ISR for IRQ %d\n", u->irq);
 -- 
 1.8.1.2
 
