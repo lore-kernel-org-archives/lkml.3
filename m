@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab3JFSPL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 14:15:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48656 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab3JFSPJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 14:15:09 -0400
-Date: Sun, 6 Oct 2013 12:15:08 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC] block: use a separate plug list for blk-mq requests
-Message-ID: <20131006181508.GF8252@kernel.dk>
-References: <20131006160430.GA5959@infradead.org>
+	id S1754115Ab3JFSZb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 14:25:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37777 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab3JFSZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 14:25:30 -0400
+Date: Sun, 6 Oct 2013 21:25:12 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [PATCH] tun: don't look at current when non-blocking
+Message-ID: <20131006182512.GA16504@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131006160430.GA5959@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06 2013, Christoph Hellwig wrote:
-> blk_flush_plug_list became a bit of a mess with the introduction of blk-mq,
-> so I started looking into separating the blk-mq handling from it.  Turns
-> out that by doing this we can streamline the blk-mq submission path a lot.
-> 
-> If we branch out to a blk-mq specific code path early we can do the list sort
-> based on the hw ctx instead of the queue and thus avoid the later improvised
-> loop to sort again.  In addition we can also remove the hw irq disabling in
-> the submission path entirely and collapse a couple of functions in blk-mq.c,
-> all at the cost of an additional list_head in struct blk_plug which can go
-> away again as soon as we remove old-school request_fn based drivers.
+We play with a wait queue even if socket is
+non blocking. This is an obvious waste.
+Besides, it will prevent calling the non blocking
+variant when current is not valid.
 
-Thanks, I'll take a look at this. The plugging was done mostly hacky
-when implementing it, it was meant to be revisited. So definitely room
-for improvement there.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/tun.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 807815f..7cb105c 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1293,7 +1293,8 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+ 	if (unlikely(!noblock))
+ 		add_wait_queue(&tfile->wq.wait, &wait);
+ 	while (len) {
+-		current->state = TASK_INTERRUPTIBLE;
++		if (unlikely(!noblock))
++			current->state = TASK_INTERRUPTIBLE;
+ 
+ 		/* Read frames from the queue */
+ 		if (!(skb = skb_dequeue(&tfile->socket.sk->sk_receive_queue))) {
+@@ -1320,9 +1321,10 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+ 		break;
+ 	}
+ 
+-	current->state = TASK_RUNNING;
+-	if (unlikely(!noblock))
++	if (unlikely(!noblock)) {
++		current->state = TASK_RUNNING;
+ 		remove_wait_queue(&tfile->wq.wait, &wait);
++	}
+ 
+ 	return ret;
+ }
 -- 
-Jens Axboe
-
+MST
