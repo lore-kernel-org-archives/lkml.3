@@ -1,75 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab3JFPDG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 11:03:06 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60666 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789Ab3JFPDF (ORCPT
+	id S1753662Ab3JFPFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 11:05:25 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:52682 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab3JFPFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 11:03:05 -0400
-Date: Sun, 6 Oct 2013 08:02:47 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] [PATCH 2/5] revert: "blk-mq: blk-mq should free bios
- in pass through case"
-Message-ID: <20131006150247.GA15624@infradead.org>
-References: <20131004134908.231874670@bombadil.infradead.org>
- <20131004135014.524075942@bombadil.infradead.org>
- <524EFD55.4050701@cs.wisc.edu>
- <20131005105008.GA19022@infradead.org>
- <52507475.3050305@cs.wisc.edu>
+	Sun, 6 Oct 2013 11:05:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52507475.3050305@cs.wisc.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1380911156-14112-1-git-send-email-dmurphy@ti.com>
+References: <1380911156-14112-1-git-send-email-dmurphy@ti.com>
+Date: Sun, 6 Oct 2013 23:05:22 +0800
+Message-ID: <CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>
+Subject: Re: [PATCH] usbnet: smsc95xx: Add device tree input for MAC address
+From: Ming Lei <tom.leiming@gmail.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: Steve Glendinning <steve.glendinning@shawell.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, mugunthanvnm@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 03:20:05PM -0500, Mike Christie wrote:
-> The functions take in requests as the argument, but they end up
-> operating on bios too. The scsi layer does
-> scsi_io_completion->scsi_end_request-> blk_end_request ->
-> blk_end_bidi_request -> blk_update_bidi_request -> blk_update_request.
-> That function will then complete bios on the request passed in. It does
-> not matter if the request is a REQ_TYPE_FS or REQ_TYPE_BLOCK_PC.
-> 
-> With my patch I was trying to make the block layer do the same for mq
-> REQ_TYPE_BLOCK_PC requests inserted into the queue with
-> blk_execute_rq_nowait (Nick's patch had support for something like that)
-> by having the block mq layer call blk_mq_finish_request instead of
-> making the code that calls blk_execute_rq_nowait do it.
+On Sat, Oct 5, 2013 at 2:25 AM, Dan Murphy <dmurphy@ti.com> wrote:
+> If the smsc95xx does not have a valid MAC address stored within
+> the eeprom then a random number is generated.  The MAC can also
+> be set by uBoot but the smsc95xx does not have a way to read this.
+>
+> Create the binding for the smsc95xx so that uBoot can set the MAC
+> and the code can retrieve the MAC from the modified DTB file.
 
-Ok, I get the point now.  Didn't see that issue because I've only been
-testing the non-bio REQ_TYPE_BLOCK_PC case as exposed by the virtio-blk
-serial attribute so far.
+Suppose there are two smsc95xx usbnet devices connected to usb bus, and
+one is built-in, another is hotplug device, can your patch handle the situation
+correctly?
 
-> > That beeing said the old ones all require the caller to free the
-> > request, and complicate that with the useless refcounting that my patch
-> > 3 removes.  Take a look at the other patches how all the calling
-> > conventions can be nicely unified.
-> 
-> I agree. I like them. I am saying though it could be better because even
-> with your patches the rq->end_io functions need to have the mq_ops check
-> like the flush_end_io does. If my patch worked as intended we would have
-> your improvements and we would not need the rq->end_io functions to have
-> that check and call blk_mq_finish_request because the blk mq layer was
-> doing it for them.
-> 
-> That is all I am saying. I would like to be able to remove that check
-> and blk_mq_finish_request call from the rq->end_io callouts.
+>
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+> ---
+>  Documentation/devicetree/bindings/net/smsc95xx.txt |   17 ++++++++++++++
+>  drivers/net/usb/smsc95xx.c                         |   24 ++++++++++++++++++++
+>  2 files changed, 41 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/net/smsc95xx.txt
+>
+> diff --git a/Documentation/devicetree/bindings/net/smsc95xx.txt b/Documentation/devicetree/bindings/net/smsc95xx.txt
+> new file mode 100644
+> index 0000000..4c37280
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/smsc95xx.txt
+> @@ -0,0 +1,17 @@
+> +* Smart Mixed-Signal Connectivity (SMSC) 95xx Controller
+> +
+> +Required properties:
+> +None
+> +
+> +Optional properties:
+> +- mac-address - Read the mac address that was stored by uBoot
+> +- local-address - Read the mac address that was stored by uBoot
+> +- address - Read the mac address that was stored by uBoot
+> +
+> +Examples:
+> +
+> +smsc0: smsc95xx@0 {
+> +       /* Filled in by U-Boot */
+> +       mac-address = [ 00 00 00 00 00 00 ];
+> +};
+> +
+> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+> index 3f38ba8..baee0bd 100644
+> --- a/drivers/net/usb/smsc95xx.c
+> +++ b/drivers/net/usb/smsc95xx.c
+> @@ -31,6 +31,9 @@
+>  #include <linux/crc32.h>
+>  #include <linux/usb/usbnet.h>
+>  #include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/of_net.h>
+> +
+>  #include "smsc95xx.h"
+>
+>  #define SMSC_CHIPNAME                  "smsc95xx"
+> @@ -62,6 +65,8 @@
+>  #define SUSPEND_ALLMODES               (SUSPEND_SUSPEND0 | SUSPEND_SUSPEND1 | \
+>                                          SUSPEND_SUSPEND2 | SUSPEND_SUSPEND3)
+>
+> +#define SMSC95XX_OF_NAME       "/smsc95xx@"
+> +
+>  struct smsc95xx_priv {
+>         u32 mac_cr;
+>         u32 hash_hi;
+> @@ -767,6 +772,25 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+>
+>  static void smsc95xx_init_mac_address(struct usbnet *dev)
+>  {
+> +
+> +#ifdef CONFIG_OF
+> +       struct device_node *ap;
+> +       const char *mac = NULL;
+> +       char *of_name = SMSC95XX_OF_NAME;
+> +
+> +       sprintf(of_name, "%s%i", SMSC95XX_OF_NAME, dev->udev->dev.id);
+> +       ap = of_find_node_by_path(of_name);
+> +       if (ap) {
+> +               mac = of_get_mac_address(ap);
+> +               if (is_valid_ether_addr(mac)) {
+> +                       /* Device tree has a mac for this so use that */
+> +                       memcpy(dev->net->dev_addr, mac, ETH_ALEN);
+> +                       netif_dbg(dev, ifup, dev->net, "MAC address read from DTB\n");
+> +                       return;
+> +               }
+> +       }
+> +#endif
+> +
+>         /* try reading mac address from EEPROM */
+>         if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
+>                         dev->net->dev_addr) == 0) {
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I've found the bug that caused the regression with your patch, it's that
-blk-mq incorrectly completes bios midway through a flush sequence, while
-the old path didn't.
 
-I'll send out a series soon that fixes this and re-reverts your patch,
-although I split that re-revert into two patches in addition to my new
-fix, given that I think your mixing up of the blk_mq_finish_request /
-blk_mq_free_spit plus the confusing description made it really hard to
-grasp, but I'll leave it to Jens how he wants to apply it to his tree
-and make it look after the next rebase.
+Thanks,
+-- 
+Ming Lei
