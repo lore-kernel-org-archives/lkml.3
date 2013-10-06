@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3JFPYM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 11:24:12 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60742 "EHLO
+	id S1754062Ab3JFPZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 11:25:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60747 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab3JFPYL (ORCPT
+	with ESMTP id S1753066Ab3JFPYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Oct 2013 11:24:11 -0400
-Message-Id: <20131006152410.524512593@bombadil.infradead.org>
+Message-Id: <20131006152411.068995974@bombadil.infradead.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 06 Oct 2013 08:22:39 -0700
+Date: Sun, 06 Oct 2013 08:22:42 -0700
 From: Christoph Hellwig <hch@infradead.org>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] blk-mq: dont call blk_mq_free_request from blk_mq_finish_request
+Subject: [PATCH 5/5] blk-mq: cleanup blk_mq_bio_to_request
 References: <20131006152237.612666544@bombadil.infradead.org>
-Content-Disposition: inline; filename=0002-blk-mq-don-t-call-blk_mq_free_request-from-blk_mq_fi.patch
+Content-Disposition: inline; filename=0005-blk-mq-cleanup-blk_mq_bio_to_request.patch
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+Remove dead code and a dead argument.
 
-These are fundamentally different operations, so keep them separate.
-
-[hch: split up and reworded the changelog]
-
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- block/blk-flush.c |    1 +
- block/blk-mq.c    |    5 +++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ block/blk-mq.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index c56c37d..d835243 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -232,6 +232,7 @@ static void flush_end_io(struct request *flush_rq, int error)
- 
- 	if (q->mq_ops) {
- 		blk_mq_finish_request(flush_rq, error);
-+		blk_mq_free_request(flush_rq);
- 		spin_lock_irqsave(&q->mq_flush_lock, flags);
- 	}
- 	running = &q->flush_queue[q->flush_running_idx];
 diff --git a/block/blk-mq.c b/block/blk-mq.c
-index d2e568e..9c32719 100644
+index 99a600e..2b85029 100644
 --- a/block/blk-mq.c
 +++ b/block/blk-mq.c
-@@ -300,7 +300,6 @@ void blk_mq_finish_request(struct request *rq, int error)
- 
- 	blk_account_io_completion(rq, bytes);
- 	blk_account_io_done(rq);
--	blk_mq_free_request(rq);
+@@ -857,15 +857,8 @@ void blk_mq_insert_requests(struct request_queue *q, struct list_head *list,
+ 						from_schedule);
  }
  
- void blk_mq_complete_request(struct request *rq, int error)
-@@ -313,8 +312,10 @@ void blk_mq_complete_request(struct request *rq, int error)
- 	 */
- 	if (rq->end_io)
- 		rq->end_io(rq, error);
--	else
-+	else {
- 		blk_mq_finish_request(rq, error);
-+		blk_mq_free_request(rq);
-+	}
- 
+-static void blk_mq_bio_to_request(struct request_queue *q,
+-				  struct request *rq, struct bio *bio)
++static void blk_mq_bio_to_request(struct request *rq, struct bio *bio)
+ {
+-	unsigned int rw_flags;
+-
+-	rw_flags = bio_data_dir(bio);
+-	if (rw_is_sync(bio->bi_rw))
+-		rw_flags |= REQ_SYNC;
+-
+ 	init_request_from_bio(rq, bio);
+ 	blk_account_io_start(rq, 1);
  }
+@@ -915,7 +908,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+ 	hctx->queued++;
+ 
+ 	if (unlikely(is_flush_fua)) {
+-		blk_mq_bio_to_request(q, rq, bio);
++		blk_mq_bio_to_request(rq, bio);
+ 		blk_mq_put_ctx(ctx);
+ 		blk_insert_flush(rq);
+ 		goto run_queue;
+@@ -930,7 +923,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+ 		struct blk_plug *plug = current->plug;
+ 
+ 		if (plug) {
+-			blk_mq_bio_to_request(q, rq, bio);
++			blk_mq_bio_to_request(rq, bio);
+ 			if (list_empty(&plug->list))
+ 				trace_block_plug(q);
+ 			else if (request_count >= BLK_MAX_REQUEST_COUNT) {
+@@ -949,7 +942,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+ 	    blk_mq_attempt_merge(q, ctx, bio))
+ 		__blk_mq_free_request(hctx, ctx, rq);
+ 	else {
+-		blk_mq_bio_to_request(q, rq, bio);
++		blk_mq_bio_to_request(rq, bio);
+ 		__blk_mq_insert_request(hctx, rq);
+ 	}
  
 -- 
 1.7.10.4
