@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab3JFLya (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 07:54:30 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:41689
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752022Ab3JFLy3 (ORCPT
+	id S1752636Ab3JFMHt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 08:07:49 -0400
+Received: from tulikuusama.dnainternet.net ([83.102.40.132]:36150 "EHLO
+	tulikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751427Ab3JFMHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 07:54:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIda00h1432Idc73hzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h1de097h8275bhz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sun, 6 Oct 2013 19:54:31 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH 1/3] ARM: dts: imx53-qsb: SDHC3 is connected in 8-bit mode
-Message-ID: <20131006115429.GO2734@S2101-09.ap.freescale.net>
-References: <1380903328-17598-1-git-send-email-festevam@gmail.com>
+	Sun, 6 Oct 2013 08:07:47 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Message-ID: <5251528B.4010506@iki.fi>
+Date: Sun, 06 Oct 2013 15:07:39 +0300
+From: Anssi Hannula <anssi.hannula@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130914 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1380903328-17598-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Olivier Langlois <olivier@trillion01.com>
+CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>
+Subject: Re: [alsa-devel] [RFC/RFT v2 0/4] ALSA: hda - hdmi: ATI/AMD multi-channel
+ and HBR support
+References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>  <1380870371.875.14.camel@Wailaba2> <524F51C6.7050203@iki.fi> <1381031338.10109.2.camel@Wailaba2>
+In-Reply-To: <1381031338.10109.2.camel@Wailaba2>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 01:15:26PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
+06.10.2013 06:48, Olivier Langlois kirjoitti:
 > 
-> SDHC3 is 8 bit-wide, so pass the bus-width property to reflect that.
+>>>>
+>>>>   o Contents of /proc/asound/cardX/eld#0. I'd like to see the contents
+>>>>     both with radeon and with the proprietary fglrx driver in use
+>>>>
+>>> With fglrx 13.10 Beta 2:
+>>>
+>>> lano1106@whippet2 /proc/asound/card0 $ cat codec#0 
+>>
+>> Note I said eld#0, not codec#0 :)
+>>
+>> Though I guess the correct filename is actually eld#0.0.
+>>
+>> [...]
+>>
+> My mistake.
 > 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> Here is the good content:
+[...]
 
-Applied all 3, thanks.
+Does not look right. And after looking at the code I saw quite a big bug
+which caused all of the rev3+ features to not work :)
 
+Please change 0x1002791a to 0x1002aa01 in this part in the end of
+sound/pci/hda/hda_local.h:
+
+#define is_amdhdmi_rev3(codec) \
+	((codec)->vendor_id == 0x1002791a && ((codec)->revisi
+
+Then please test everything again. I.e.
+  o speaker-test -D hdmi:CARD=Generic,DEV=0 -c8 -r192000 -F S32_LE
+
+  o Is there any difference seen
+    with these, in the beginning/end (i.e. fade-out/in):
+    speaker-test -D hdmi:CARD=Generic,DEV=0,AES0=0x04 -c2 -r48000
+    speaker-test -D hdmi:CARD=Generic,DEV=0,AES0=0x06 -c2 -r48000
+
+  o Also, is there a difference in the beginning of these
+    (maybe garbage sound and/or slightly slower startup?):
+    aplay -Dhdmi:CARD=Generic,DEV=0,AES0=4 -r44100 -f s16_le -c2
+testi.dts.cut.spdif
+    aplay -Dhdmi:CARD=Generic,DEV=0,AES0=6 -r44100 -f s16_le -c2
+testi.dts.cut.spdif
+
+  o Contents of /proc/asound/cardX/eld#0.0
+
+Thanks a lot :)
+
+-- 
+Anssi Hannula
