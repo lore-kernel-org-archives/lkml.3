@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3JFSZb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 14:25:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754012Ab3JFSZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 14:25:30 -0400
-Date: Sun, 6 Oct 2013 21:25:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] tun: don't look at current when non-blocking
-Message-ID: <20131006182512.GA16504@redhat.com>
+	id S1754168Ab3JFS0d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 14:26:33 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53850 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab3JFS0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 14:26:31 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5251AB52.3000506@roeck-us.net>
+Date: Sun, 06 Oct 2013 11:26:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Rob Herring <rob.herring@calxeda.com>
+CC: James Hogan <james.hogan@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, linux-metag@vger.kernel.org
+Subject: Commit f26150004 (metag: use common of_flat_dt_match_machine) causes
+ metag build failures in linux-next
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We play with a wait queue even if socket is
-non blocking. This is an obvious waste.
-Besides, it will prevent calling the non blocking
-variant when current is not valid.
+arch/metag/kernel/devtree.c: In function 'setup_machine_fdt':
+arch/metag/kernel/devtree.c:52: error: 'arch_get_next_mach' undeclared (first use in this function)
+arch/metag/kernel/devtree.c:52: error: (Each undeclared identifier is reported only once
+arch/metag/kernel/devtree.c:52: error: for each function it appears in.)
+arch/metag/kernel/devtree.c:52: warning: assignment discards qualifiers from pointer target type
+make[1]: *** [arch/metag/kernel/devtree.o] Error 1
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/tun.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Not surprising, since arch_get_next_mach() is not defined for metag.
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 807815f..7cb105c 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1293,7 +1293,8 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 	if (unlikely(!noblock))
- 		add_wait_queue(&tfile->wq.wait, &wait);
- 	while (len) {
--		current->state = TASK_INTERRUPTIBLE;
-+		if (unlikely(!noblock))
-+			current->state = TASK_INTERRUPTIBLE;
- 
- 		/* Read frames from the queue */
- 		if (!(skb = skb_dequeue(&tfile->socket.sk->sk_receive_queue))) {
-@@ -1320,9 +1321,10 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 		break;
- 	}
- 
--	current->state = TASK_RUNNING;
--	if (unlikely(!noblock))
-+	if (unlikely(!noblock)) {
-+		current->state = TASK_RUNNING;
- 		remove_wait_queue(&tfile->wq.wait, &wait);
-+	}
- 
- 	return ret;
- }
--- 
-MST
+Guenter
