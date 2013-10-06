@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3JFTN0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 15:13:26 -0400
-Received: from mout.gmx.net ([212.227.15.19]:55629 "EHLO mout.gmx.net"
+	id S1754289Ab3JFTNj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 15:13:39 -0400
+Received: from mout.gmx.net ([212.227.17.21]:51842 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab3JFTNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 15:13:25 -0400
+	id S1754264Ab3JFTNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 15:13:38 -0400
 From: Hans-Frieder Vogt <hfvogt@gmx.net>
-To: gregkh@linuxfoundation.org, zbr@ioremap.net
+To: zbr@ioremap.net, gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] w1 fixes for broken subsystem
-Date: Sun, 06 Oct 2013 21:13:13 +0200
-Message-ID: <9348473.dVMUCnY2zF@maximilian>
+Subject: [PATCH 1/2] w1 - fix fops in w1_bus_notify
+Date: Sun, 06 Oct 2013 21:13:35 +0200
+Message-ID: <49341335.BT4urmCfm2@maximilian>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc2-a64; KDE/4.11.2; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:SbTo0eopMlwYgIOYmVxhFDptqyIh0YPAt1ge28B0RQJsi6adROZ
- kBBOja0jLSD7BKg+UqHW+J1lUZ3csnojBSc2vUpgjTG392manjUU8I4A/Fbpce7NBonn9C0
- 9gigJzEi1gH2xQcIqDdN39LcymzZhOXXfeMgwQ+dc4sChmvkigevbWHLZ6+QOGDZfni7gj8
- IsjHmsHn01I+BgH7jjyGw==
+X-Provags-ID: V03:K0:SODU08V4puXOSWmVQmDkm6mUXRvg8eNzowd+hmyr5IJBjZJGePw
+ c5sP36Klz3wni4Nh63BLl2I0OcLanChsA+1CHpXlopuAGH5ITrOtkeuiv5H+UFWulNqiy0N
+ Nl0pxiWFj2cDFzrM3DQXALYkse1n1dVJnqllkvoogcb00Zw1PYgJoJtF8LD0BS9ljjQRHjA
+ lFWMS9bL9fQgZF0JygvKA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In recent kernels the 1-wire kernel modules do not work any more. The module 
-wire got broken in 3.11-rc1 and 3.12-rc1 introduced a further problem:
+Introduce a check to make sure that fops are only called if they have been
+defined by the slave module.
+Without this check modules like w1_smem cause a NULL pointer
+dereference bug.
 
-1: 3.11-rc1 introduced the automatic loading of slave modules. This blocks 
-modprobe, because request_module is called with a locked mutex of the w1 
-master.
-Loading of the slave module calls  w1_register_family, which calls in turn
-w1_reconnect_slaves and there mutex_lock(&dev->mutex) will wait forever....
+Signed-off by: Hans-Frieder Vogt <hfvogt@gmx.net>
+---
+ drivers/w1/w1.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-2: 3.12-rc1 introduced w1_bus_notify which assumes that all slaves have fops 
-defined. This is not the case for e.g. w1_smem and maybe also breaks custom 
-written modules.
-
-This very small patch set is split in 2 parts:
-
-PATCH 1/2: w1 - fix fops in w1_bus_notify
-fixes problem 2 above
-
-PATCH 2/2: w1 - call request_module with w1 master mutex unlocked
-fixes problem 1 above
-
-Please include these patches in 3.12-rc4 and in 3.11 stable.
-
-Best regards,
+--- a/drivers/w1/w1.c	2013-09-24 21:24:20.803261482 +0200
++++ b/drivers/w1/w1.c	2013-10-06 14:58:45.246528318 +0200
+@@ -613,6 +613,9 @@ static int w1_bus_notify(struct notifier
+ 	sl = dev_to_w1_slave(dev);
+ 	fops = sl->family->fops;
+ 
++	if (!fops)
++		return 0;
++
+ 	switch (action) {
+ 	case BUS_NOTIFY_ADD_DEVICE:
+ 		/* if the family driver needs to initialize something... */
 
 Hans-Frieder Vogt                       e-mail: hfvogt <at> gmx .dot. net
+
