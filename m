@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab3JFPNy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 11:13:54 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:43862 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab3JFPNx (ORCPT
+	id S1753555Ab3JFPSp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 11:18:45 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52393 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab3JFPSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 11:13:53 -0400
-Date: Sun, 6 Oct 2013 17:13:51 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Oussama Ghorbel <ou.ghorbel@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+	Sun, 6 Oct 2013 11:18:43 -0400
+Date: Sun, 6 Oct 2013 23:18:21 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: mmarek@suse.cz, linux-kbuild@vger.kernel.org, yann.morin.1998@free.fr,
+        bpoirier@suse.de, walch.martin@web.de, jdelvare@suse.de,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
-Message-ID: <20131006151351.GB9295@order.stressinduktion.org>
-Mail-Followup-To: Oussama Ghorbel <ou.ghorbel@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+Subject: Re: [PATCH]kconfig:mconf: avoid unneeded memcpy
+Message-ID: <20131006151821.GA3346@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
+	linux-kbuild@vger.kernel.org, yann.morin.1998@free.fr,
+	bpoirier@suse.de, walch.martin@web.de, jdelvare@suse.de,
 	linux-kernel@vger.kernel.org
-References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com> <20131005140636.GA25076@order.stressinduktion.org> <CABfLueFYZkzpEpDJ7YcHJaXfm-=QcgnL3-Es8gybea2cAacQQw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+References: <20131005175715.GA28091@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABfLueFYZkzpEpDJ7YcHJaXfm-=QcgnL3-Es8gybea2cAacQQw@mail.gmail.com>
+In-Reply-To: <20131005175715.GA28091@udknight>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06, 2013 at 03:42:15PM +0100, Oussama Ghorbel wrote:
-> The initialization  in ip6gre_tnl_link_config is done as the following:
-> static void ip6gre_tnl_link_config(struct ip6_tnl *t, int set_mtu)
-> {
-> ...
-> int addend = sizeof(struct ipv6hdr) + 4;
-> ...
-> /* Precalculate GRE options length */
-> if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
-> if (t->parms.o_flags&GRE_CSUM)
-> addend += 4;
-> if (t->parms.o_flags&GRE_KEY)
-> addend += 4;
-> if (t->parms.o_flags&GRE_SEQ)
-> addend += 4;
-> }
-> ...
-> dev->hard_header_len = rt->dst.dev->hard_header_len + addend;
-> ...
-> t->hlen = addend;
-> ..
-> }
+On Sun, Oct 06, 2013 at 01:57:15AM +0800, Wang YanQing wrote:
+> In function update_text we assign jump key label
+> per page (1)-(9) cycled, and use three space char
+> as the header after k exceed JUMP_NB.
 > 
-> Unless they are other reasons, the hard_header_len is taken into
-> account the GRE_KEY, GRE_SEQ ..
+> We don't need to call memcpy with header of three
+> space char, because it changes nothing, it just
+> copy what was there.
+> 
+> I don't think we need to clear old jump key label in
+> current implementation, I can't image out any case
+> which a search result could change its jump key label,
+> unless user search new string, but then we will re-assign
+> jump key label, and it will be fix after that.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  scripts/kconfig/mconf.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+> index 2c39631..ff9d737 100644
+> --- a/scripts/kconfig/mconf.c
+> +++ b/scripts/kconfig/mconf.c
+> @@ -379,11 +379,8 @@ static void update_text(char *buf, size_t start, size_t end, void *_data)
+>  				data->keys[k] = key;
+>  				data->targets[k] = pos->target;
+>  				k++;
+> -			} else {
+> -				sprintf(header, "   ");
+> +				memcpy(buf + pos->offset, header, sizeof(header) - 1);
+>  			}
+> -
+> -			memcpy(buf + pos->offset, header, sizeof(header) - 1);
+>  		}
+>  	}
+>  	data->keys[k] = 0;
+> -- 
+> 1.7.12.4.dirty
 
-But only if a new route is found. The hard_header_len reinitialization is
-guarded by a (rt == NULL). We may have not found one on boot up.
+Hi all, please ignore this patch.
 
-> > To make this correct we would have to refactor the usage of the variables a
-> > bit as is done in ipv4/ip_tunnel.c. The safest thing would be to leave this
-> > check as-is currently although we exclude some allowed mtus.
-> >
-> > Perhaps you want to take a look how to achieve that? ;)
-> >
-> Why not, consistency is good ...
+I image out that we need to clear old jump label when we run 
+make menuconfig in a x11 terminal with high resolution that
+could show more than 9 item in one page.
 
-Thanks,
-
-  Hannes
-
+Sorry.
