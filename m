@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3JFUOf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 16:14:35 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:51052 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab3JFUOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 16:14:32 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, david@fromorbit.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH RESEND 7/7] manpage: update FALLOC_FL_COLLAPSE_RANGE flag in fallocate
-Date: Mon,  7 Oct 2013 05:14:21 +0900
-Message-Id: <1381090461-2931-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754799Ab3JFUPo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 16:15:44 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:50348 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754362Ab3JFUPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 16:15:42 -0400
+Date: Sun, 6 Oct 2013 14:15:29 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Joe Perches <joe@perches.com>
+Cc: Peter H?we <PeterHuewe@gmx.de>, tpmdd-devel@lists.sourceforge.net,
+        Ashley Lai <ashley@ashleylai.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [PATCH 1/2] tpm: Rename tpm.c to tpm-interface.c
+Message-ID: <20131006201529.GA10426@obsidianresearch.com>
+References: <20131006193824.GA19123@obsidianresearch.com>
+ <1381089202.2081.157.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381089202.2081.157.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Sun, Oct 06, 2013 at 12:53:22PM -0700, Joe Perches wrote:
+> On Sun, 2013-10-06 at 13:38 -0600, Jason Gunthorpe wrote:
+> > This is preparation for making the tpm module multi-file. kbuild does
+> > not like having a .c file with the same name as a module. We wish to
+> > keep the tpm module name so that userspace doesn't see this change.
+> 
+> If that's true, and I don't believe it is,
+> then Kbuild should be fixed instead.
+> 
+> There are a lot of examples of .c files named
+> the same as the directory they reside in.
 
-Update FALLOC_FL_COLLAPSE_RANGE flag in fallocate.
+That isn't the trouble, it is having a module named tpm, comprised of
+tpm.c, tpm-foo.c, and tpm-bar.c
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
----
- man2/fallocate.2 |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+The issue is that assembling the tpm module uses tpm.o as an
+intermediate file, and compiling tmp.c uses tpm.o as a intermediate
+file - they conflict, things don't work right and make throws a
+circular dependency warning.
 
-diff --git a/man2/fallocate.2 b/man2/fallocate.2
-index f5c395d..b042c59 100644
---- a/man2/fallocate.2
-+++ b/man2/fallocate.2
-@@ -7,6 +7,7 @@
- .\"
- .\" 2011-09-19: Added FALLOC_FL_PUNCH_HOLE
- .\" 2011-09-19: Substantial restructuring of the page
-+.\" 2013-09-01: Added FALLOC_FL_COLLAPSE_RANGE
- .\"
- .TH FALLOCATE 2 2013-06-10 "Linux" "Linux Programmer's Manual"
- .SH NAME
-@@ -109,6 +110,19 @@ does not change.
- Not all filesystems support
- .BR FALLOC_FL_PUNCH_HOLE ;
- if a filesystem doesn't support the operation, an error is returned.
-+.SS Collapsing file space
-+Specifiying the
-+.BR FALLOC_FL_COLLAPSE_RANGE
-+flag in
-+.I mode
-+collapse space in the byte range starting at
-+.I offset
-+and continuing for
-+.I len
-+bytes, where the offset and len are aligned with block size of filesystem.
-+Within the specified range, it first de-allocates blocks and eliminates
-+the hole created in this process by shifting data blocks into the hole.
-+
- .SH RETURN VALUE
- On success,
- .BR fallocate ()
-@@ -139,7 +153,8 @@ was less than 0, or
- .\" See "Re: [PATCH] fallocate.2: add FALLOC_FL_PUNCH_HOLE flag definition"
- .\" 21 Sep 2012
- .\" http://thread.gmane.org/gmane.linux.file-systems/48331/focus=1193526
--was less than or equal to 0.
-+was less than or equal to 0 or in case of FALLOC_FL_COLLAPSE_RANGE
-+offset and len are not aligned with file system's block size.
- .TP
- .B EIO
- An I/O error occurred while reading from or writing to a filesystem.
--- 
-1.7.9.5
+The Makefile I started with looks like this:
 
+obj-m += tpm.o
+tpm-y := tpm.o tpm-foo.o tpm-bar.o
+
+Is there some other solution?
+
+In any event, this patch is part of a series that splits tpm.c up,
+renaming it at this point in the series is to make kbuild work, but
+at the end of the series it should be renamed anyhow :)
+
+Regards,
+Jason
