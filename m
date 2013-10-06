@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab3JFJK7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 05:10:59 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:57003 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3JFJK5 (ORCPT
+	id S1752062Ab3JFJ1l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 05:27:41 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:47598 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab3JFJ1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 05:10:57 -0400
-Date: Sun, 6 Oct 2013 11:10:54 +0200
+	Sun, 6 Oct 2013 05:27:36 -0400
+Date: Sun, 6 Oct 2013 11:27:32 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf/x86: Clean up cap_user_time* setting
-Message-ID: <20131006091054.GA4342@gmail.com>
-References: <tip-nmgn0j0muo1r4c94vlfh23xy@git.kernel.org>
- <524F097A.9010506@intel.com>
- <20131004185539.GT15690@laptop.programming.kicks-ass.net>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI changes
+Message-ID: <20131006092732.GA4535@gmail.com>
+References: <20131004195550.GA21783@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131004185539.GT15690@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131004195550.GA21783@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* Matt Fleming <matt@console-pimps.org> wrote:
 
-> On Fri, Oct 04, 2013 at 09:31:22PM +0300, Adrian Hunter wrote:
-> > On 4/10/2013 8:31 p.m., tip-bot for Peter Zijlstra wrote:
-> > >Commit-ID:  d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32
-> > >Gitweb:     http://git.kernel.org/tip/d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32
-> > >Author:     Peter Zijlstra <peterz@infradead.org>
-> > >AuthorDate: Thu, 3 Oct 2013 16:00:14 +0200
-> > >Committer:  Ingo Molnar <mingo@kernel.org>
-> > >CommitDate: Fri, 4 Oct 2013 09:58:55 +0200
-> > >
-> > >perf/x86: Clean up cap_user_time* setting
-> > >
-> > >Currently the cap_user_time_zero capability has different tests than
-> > >cap_user_time; even though they expose the exact same data.
-> > >
-> > >Switch from CONSTANT && NONSTOP to sched_clock_stable to also deal
-> > >with multi cabinet machines and drop the tsc_disabled() check.. non of
-> > >this will work sanely without tsc anyway.
-> > 
-> > Unfortunately in the case that TSC is disabled, sched_clock is still
-> > reported as stable, which means removing the tsc_disabled() check breaks
-> > the capability bit. e.g.
+> These changes fix a couple of sparse warnings introduced in the last
+> pull.
 > 
-> I'm wanting to hear from the x86 people on why we have this absurd knob 
-> to begin with; but I'm tempted to simply disable all of perf if you 
-> touch it.
+> The following changes since commit 0ce6cda2c75d64175394341ef60e6e1d27dd9c10:
+> 
+>   x86 efi: bugfix interrupt disabling sequence (2013-09-30 10:23:11 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+> 
+> for you to fetch changes up to c158c3bf59951bbb44bd7ccca9e6665dfd1617c5:
+> 
+>   boot, efi: Remove redundant memset() (2013-10-04 20:07:47 +0100)
+> 
+> ----------------------------------------------------------------
+>  * Fix a recently introduced sparse warning caused by using 0 instead of
+>    NULL - Leif Lindholm
+> 
+>  * Remove a useless memset from the common EFI stub code - Roy Franz
+> 
+> ----------------------------------------------------------------
+> Leif Lindholm (1):
+>       x86/efi: Fix config_table_type array termination
+> 
+> Roy Franz (1):
+>       boot, efi: Remove redundant memset()
+> 
+>  arch/x86/platform/efi/efi.c            | 2 +-
+>  drivers/firmware/efi/efi-stub-helper.c | 2 --
+>  2 files changed, 1 insertion(+), 3 deletions(-)
 
-I'm fully with you, please zap the 'notsc' boot option - it's an ancient 
-relic, if any box is still broken with the TSC on we want to hear about it 
-and fix it!
-
-Thanks,
+Pulled into tip:x86/efi, thanks Matt!
 
 	Ingo
