@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3JFImJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 04:42:09 -0400
-Received: from mout.gmx.net ([212.227.17.20]:65053 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab3JFImF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 04:42:05 -0400
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="utf-8"
-Date: Sun, 06 Oct 2013 10:42:00 +0200
-From: "Tibor Billes" <tbilles@gmx.com>
-Message-ID: <20131006084200.302560@gmx.com>
+	id S1752580Ab3JFImm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 04:42:42 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:44431 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab3JFImi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 04:42:38 -0400
+Date: Sun, 06 Oct 2013 03:42:35 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC] extending splice for copy offloading
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Zach Brown <zab@redhat.com>,
+        Anna Schumaker <schumaker.anna@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+	<CAELBmZBGD4rph=gjLCPKCdEj+nzEQ-F=DExoL+h3vRm7qF7dCQ@mail.gmail.com>
+	<20130925183828.GA30372@lenny.home.zabbo.net>
+	<CAFX2JfnyF8kyMYzCdqdr2JkoyQCom1bFLpFj89wODjoju54-Ow@mail.gmail.com>
+	<20130925190620.GB30372@lenny.home.zabbo.net>
+	<20130925195526.GA18971@fieldses.org>
+	<20130925210742.GG30372@lenny.home.zabbo.net>
+	<CAJfpegsQ0A3T+46o9nsPwaH83JCbgyhgRNGPgzTqs0EcsmDuiQ@mail.gmail.com>
+	<20130926153359.GE704@fieldses.org>
+	<CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
+In-Reply-To: <CAJfpegsUchb0eX+Hi3rN5Ypje3Y-dgo=pxgM1Y3BQbHVp=1hSw@mail.gmail.com>
+	(from miklos@szeredi.hu on Thu Sep 26 13:06:41 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1381048955.1974.171@driftwood>
 MIME-Version: 1.0
-Subject: Re: Unusually high system CPU usage with recent kernels
-To: paulmck@linux.vnet.ibm.com
-X-Flags: 0001
-X-Mailer: GMX.com Web Mailer
-x-registered: 0
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: D0cjclQXeSEqJL5QQHchLP1+IGRvb0A4
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney Sent: 10/01/13 10:27 PM
-> To: Tibor Billes
-> Subject: Re: Unusually high system CPU usage with recent kernels
+On 09/26/2013 01:06:41 PM, Miklos Szeredi wrote:
+> On Thu, Sep 26, 2013 at 5:34 PM, J. Bruce Fields  
+> <bfields@fieldses.org> wrote:
+> > On Thu, Sep 26, 2013 at 10:58:05AM +0200, Miklos Szeredi wrote:
+> >> On Wed, Sep 25, 2013 at 11:07 PM, Zach Brown <zab@redhat.com>  
+> wrote:
+> >> >> A client-side copy will be slower, but I guess it does have the
+> >> >> advantage that the application can track progress to some  
+> degree, and
+> >> >> abort it fairly quickly without leaving the file in a totally  
+> undefined
+> >> >> state--and both might be useful if the copy's not a simple  
+> constant-time
+> >> >> operation.
+> >> >
+> >> > I suppose, but can't the app achieve a nice middle ground by  
+> copying the
+> >> > file in smaller syscalls?  Avoid bulk data motion back to the  
+> client,
+> >> > but still get notification every, I dunno, few hundred meg?
+> >>
+> >> Yes.  And if "cp"  could just be switched from a read+write syscall
+> >> pair to a single splice syscall using the same buffer size.
+> >
+> > Will the various magic fs-specific copy operations become  
+> inefficient
+> > when the range copied is too small?
 > 
-> On Sat, Sep 14, 2013 at 03:59:51PM +0200, Tibor Billes wrote:
-> > > From: Paul E. McKenney Sent: 09/13/13 02:19 AM
-> > > On Wed, Sep 11, 2013 at 08:46:04AM +0200, Tibor Billes wrote:
-> > > > > From: Paul E. McKenney Sent: 09/09/13 10:44 PM
+> We could treat spice-copy operations just like write operations (can
+> be buffered, coalesced, synced).
 > 
-> [ . . . ]
-> 
-> > > > Sure. The attached tar file contains traces of good kernels. The first is with
-> > > > version 3.9.7 (no patch applied) which was the last stable kernel I tried and
-> > > > didn't have this issue. The second is version 3.11 with your fix applied.
-> > > > Judging by the size of the traces, 3.11.0+ is still doing more work than
-> > > > 3.9.7.
-> > > 
-> > > Indeed, though quite a bit less than the problematic traces.
-> > > 
-> > > Did you have all three patches applied to 3.11.0, or just the last one?
-> > > If the latter, could you please try it with all three?
-> > 
-> > Only the last one was applied to 3.11.0. The attachement now contains the
-> > RCU trace with all thee applied. It seems to be smaller in size, but still
-> > not close to 3.9.7.
-> > 
-> > > > > > I'm not sure about LKML policies about attaching not-so-small files to
-> > > > > > emails, so I've dropped LKML from the CC list. Please CC the mailing
-> > > > > > list in your reply.
-> > > > > 
-> > > > > Done!
-> > > > > 
-> > > > > Another approach is to post the traces on the web and send the URL to
-> > > > > LKML. But whatever works for you is fine by me.
-> > > > 
-> > > > Sending directly to you won again :) Could you please CC the list in your
-> > > > reply?
-> > > 
-> > > Done! ;-)
-> > 
-> > Could you please CC the list in your reply again? :)
-> 
-> This trace is quite strange -- there are a number of processes that sleep
-> and then wake up almost immediately, as in within a microsecond or so.
-> I don't know why they would be doing that, and I also cannot think of
-> what RCU might be doing to make them do that.
-> 
-> I am unfortunately out of ideas on this one.
+> But I'm not sure it's worth the effort; 99% of the use of this
+> interface will be copying whole files.
 
-Okay. Thank you for all your help! :)
+My "patch" implementation (in busybox and toybox) hits a point where it  
+wants to copy the rest of the file, once there are no more hunks to  
+apply. This is not copying a whole file. A similar thing happens with  
+tail when you use the +N syntax to skip start instead of end lines. I  
+can see sed doing a similar thing when told to operate on line ranges...
 
-Tibor
+Note sure your 99% holds up here.
+
+Rob
