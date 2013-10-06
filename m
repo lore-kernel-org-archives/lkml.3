@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3JFIln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 04:41:43 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40569 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab3JFIll (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 04:41:41 -0400
-Date: Sun, 6 Oct 2013 09:41:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: sleeping function called from invalid context at
-	mm/slab.c:3060
-Message-ID: <20131006084120.GB12758@n2100.arm.linux.org.uk>
-References: <20131006075811.GA22562@localhost>
+	id S1752438Ab3JFImJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 04:42:09 -0400
+Received: from mout.gmx.net ([212.227.17.20]:65053 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752022Ab3JFImF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 04:42:05 -0400
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Date: Sun, 06 Oct 2013 10:42:00 +0200
+From: "Tibor Billes" <tbilles@gmx.com>
+Message-ID: <20131006084200.302560@gmx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131006075811.GA22562@localhost>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Subject: Re: Unusually high system CPU usage with recent kernels
+To: paulmck@linux.vnet.ibm.com
+X-Flags: 0001
+X-Mailer: GMX.com Web Mailer
+x-registered: 0
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: D0cjclQXeSEqJL5QQHchLP1+IGRvb0A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06, 2013 at 03:58:11PM +0800, Fengguang Wu wrote:
-> Greetings,
+From: Paul E. McKenney Sent: 10/01/13 10:27 PM
+> To: Tibor Billes
+> Subject: Re: Unusually high system CPU usage with recent kernels
 > 
-> I got the below dmesg and the first bad commit is
+> On Sat, Sep 14, 2013 at 03:59:51PM +0200, Tibor Billes wrote:
+> > > From: Paul E. McKenney Sent: 09/13/13 02:19 AM
+> > > On Wed, Sep 11, 2013 at 08:46:04AM +0200, Tibor Billes wrote:
+> > > > > From: Paul E. McKenney Sent: 09/09/13 10:44 PM
 > 
-> commit c817a67ecba7c3c2aaa104796d78f160af60920d
-> Author: Russell King <rmk+kernel@arm.linux.org.uk>
-> Date:   Thu Jun 27 15:06:14 2013 +0100
+> [ . . . ]
 > 
->     kobject: delayed kobject release: help find buggy drivers
->     
->     Implement debugging for kobject release functions.  kobjects are
->     reference counted, so the drop of the last reference to them is not
->     predictable. However, the common case is for the last reference to be
->     the kobject's removal from a subsystem, which results in the release
->     function being immediately called.
->     
->     This can hide subtle bugs, which can occur when another thread holds a
->     reference to the kobject at the same time that a kobject is removed.
->     This results in the release method being delayed.
->     
->     In order to make these kinds of problems more visible, the following
->     patch implements a delayed release; this has the effect that the
->     release function will be out of order with respect to the removal of
->     the kobject in the same manner that it would be if a reference was
->     being held.
->     
->     This provides us with an easy way to allow driver writers to debug
->     their drivers and fix otherwise hidden problems.
->     
->     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > Sure. The attached tar file contains traces of good kernels. The first is with
+> > > > version 3.9.7 (no patch applied) which was the last stable kernel I tried and
+> > > > didn't have this issue. The second is version 3.11 with your fix applied.
+> > > > Judging by the size of the traces, 3.11.0+ is still doing more work than
+> > > > 3.9.7.
+> > > 
+> > > Indeed, though quite a bit less than the problematic traces.
+> > > 
+> > > Did you have all three patches applied to 3.11.0, or just the last one?
+> > > If the latter, could you please try it with all three?
+> > 
+> > Only the last one was applied to 3.11.0. The attachement now contains the
+> > RCU trace with all thee applied. It seems to be smaller in size, but still
+> > not close to 3.9.7.
+> > 
+> > > > > > I'm not sure about LKML policies about attaching not-so-small files to
+> > > > > > emails, so I've dropped LKML from the CC list. Please CC the mailing
+> > > > > > list in your reply.
+> > > > > 
+> > > > > Done!
+> > > > > 
+> > > > > Another approach is to post the traces on the web and send the URL to
+> > > > > LKML. But whatever works for you is fine by me.
+> > > > 
+> > > > Sending directly to you won again :) Could you please CC the list in your
+> > > > reply?
+> > > 
+> > > Done! ;-)
+> > 
+> > Could you please CC the list in your reply again? :)
 > 
-> mount: mounting proc on /proc failed: No such device
-> grep: /proc/filesystems: No such file or directory
-> [    4.188118] BUG: sleeping function called from invalid context at mm/slab.c:3060
-> [    4.190236] in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
-> [    4.191696] 1 lock held by swapper/0/0:
-> Starting Bootlog daemon: 
-> [    4.192991]  #0:  (H
+> This trace is quite strange -- there are a number of processes that sleep
+> and then wake up almost immediately, as in within a microsecond or so.
+> I don't know why they would be doing that, and I also cannot think of
+> what RCU might be doing to make them do that.
+> 
+> I am unfortunately out of ideas on this one.
 
-Sorry, I don't believe this one.  This patch adds no new allocation.
-How does device_not_available() end up being called, or
-math_state_restore() ?
+Okay. Thank you for all your help! :)
+
+Tibor
