@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab3JFJgT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 05:36:19 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:64588 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab3JFJgS (ORCPT
+	id S1752376Ab3JFJmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 05:42:32 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:45813 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3JFJma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 05:36:18 -0400
-Date: Sun, 6 Oct 2013 11:36:14 +0200
+	Sun, 6 Oct 2013 05:42:30 -0400
+Date: Sun, 6 Oct 2013 11:42:27 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/early_iounmap: Let the compiler enter the function
- name
-Message-ID: <20131006093614.GB4535@gmail.com>
-References: <524D56CB.9080205@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, bp@suse.de
+Subject: Re: [PATCH] x86: Don't make AMD_GART depend on EXPERT and default y
+Message-ID: <20131006094227.GC4535@gmail.com>
+References: <1380922676-23007-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <524D56CB.9080205@gmail.com>
+In-Reply-To: <1380922676-23007-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> To be consistent with early_ioremap which had a change in
-> commit 4f4319a ("x86/ioremap: Correct function name output"),
-> let the complier enter the function name too.
+> The AMD_GART driver was made EXPERT/EMBEDDED a long time
+> ago to avoid unbootable 64bit systems with 32bit only devices.
 > 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/mm/ioremap.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+> This was before swiotlb was there, which does the job
+> of this fallback today. SWIOTLB is always on, so systems
+> should always boot.
 > 
-> diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-> index 799580c..577bd8e 100644
-> --- a/arch/x86/mm/ioremap.c
-> +++ b/arch/x86/mm/ioremap.c
-> @@ -585,21 +585,21 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
->  	}
->  
->  	if (slot < 0) {
-> -		printk(KERN_INFO "early_iounmap(%p, %08lx) not found slot\n",
-> +		printk(KERN_INFO "%s(%p, %08lx) not found slot\n", __func__,
+> The drawback is that every system has to compile that
+> driver in (it cannot be a module).
+> 
+> Also:
+> - Newer AMD CPUs (the APUs) don't seem to have AMD_GART support
+> at all anymore.
+> - Newer AMD platforms have a much better real IOMMU
+> - The AMD GART driver was never very good (lots of overhead, e.g.
+> in flushing due to some workarounds) and it's doubtful it's really
+> better than SWIOTLB.
+> - On older K8 systems it didn't even work with all chipsets.
+> - The 32bit device bounce buffer case should be rare/
+> non performance critical these days anyways.
+> - On non AMD systems it is not needed at all.
+> 
+> So drop the EXPERT dependency on AMD_GART and remove the
+> default y. The driver can be still compiled in, just
+> it's an explicit decision now, and people who don't want
+> it can unselect it.
+> 
+> I also clarified the description a bit.
+> 
+> This allows to save ~8K text on most modern x86-64 systems.
+> 
+> Cc: bp@suse.de
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Would be nice to fix the spelling here as well then.
-
->  			 addr, size);
->  		WARN_ON(1);
->  		return;
->  	}
->  
->  	if (prev_size[slot] != size) {
-> -		printk(KERN_INFO "early_iounmap(%p, %08lx) [%d] size not consistent %08lx\n",
-> -			 addr, size, slot, prev_size[slot]);
-> +		printk(KERN_INFO "%s(%p, %08lx) [%d] size not consistent %08lx\n",
-> +			 __func__, addr, size, slot, prev_size[slot]);
-
-and here too, i.e. write:
-
-	slot [%d] size [%08lx] not consistent with previous size [%08lx]
-
-(Note that size can be duplicated there for completeness - even though 
-it's included in the early_iounmap() printout already.)
-
->  	if (early_ioremap_debug) {
-> -		printk(KERN_INFO "early_iounmap(%p, %08lx) [%d]\n", addr,
-> +		printk(KERN_INFO "%s(%p, %08lx) [%d]\n", __func__, addr,
->  		       size, slot);
->  		dump_stack();
-
-
-I'd also stick that into a debug_print() helper define that prints the 
-standard bits, leaving only the important bits at actual call sites:
-
-		debug_print("size [%08lx] not consistent with previous size [%08lx]\n
-		debug_print("call\n", addr, size, slot);
+Btw., this is a perfect changelog!
 
 Thanks,
 
