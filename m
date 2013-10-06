@@ -1,31 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3JFUnT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 16:43:19 -0400
-Received: from mail.suza.ac.tz ([41.204.150.68]:57960 "EHLO mail.suza.ac.tz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317Ab3JFUnR convert rfc822-to-8bit (ORCPT
+	id S1754708Ab3JFUpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 16:45:23 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:55587 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab3JFUpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 16:43:17 -0400
-X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Oct 2013 16:43:16 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 6 Oct 2013 16:45:21 -0400
+Date: Sun, 6 Oct 2013 21:45:18 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] acpi: update win8 OSI blacklist
+Message-ID: <20131006204518.GA20077@srcf.ucam.org>
+References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com>
+ <20131004161226.GA22784@srcf.ucam.org>
+ <CAMP44s0tqKBgUTzFnbTMqDVVWLcaDC5VKd9mq_w+T_Yu19KXqQ@mail.gmail.com>
+ <20131006203353.GA19795@srcf.ucam.org>
+ <CAMP44s0N5xqD2W7-r-j1k3efo1k0qY2gCeqn+tbHsvOsrqOJgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: VERY URGENT..!
-To: Recipients <curtisbarlow001@live.com>
-From: "Mr. M. Barlow" <curtisbarlow001@live.com>
-Date: Sun, 06 Oct 2013 21:30:31 +0100
-Reply-To: curtisbarlow001@live.com
-X-Priority: 1 (High)
-Message-Id: <20131007033034.3BF5D4913D6@mail.suza.ac.tz>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s0N5xqD2W7-r-j1k3efo1k0qY2gCeqn+tbHsvOsrqOJgg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, I am Mr. M. Barlow from Paris, France. I have been advised to contact you regarding my business investment in your country. For urgent response and more details, kindly get back to me via this E-mail: bc82022@gmail.com or Telephone number below. Thank you as I wait for your response.
+On Sun, Oct 06, 2013 at 03:40:42PM -0500, Felipe Contreras wrote:
 
-Mr. M. Barlow.
-+33-753-194-496
+> In case you didn't hear, the plan was to add an entry if a user
+> reports the backlight not working correctly, and acpi_osi="!Windows
+> 2012" fixing it with no negative effects. and that's what users did in
+> bug #60682.
 
-Sent from Orange Wireless BlackBerry Smartphone, France.
+So add that to each entry you're adding to the list.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
