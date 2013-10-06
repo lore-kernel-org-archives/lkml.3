@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3JFKcr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 06:32:47 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:42273 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab3JFKcp (ORCPT
+	id S1752510Ab3JFKu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 06:50:57 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41090 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab3JFKuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 06:32:45 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Robert Richter <robert.richter@amd.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf tool: don't open-code TEST_EVENTS macro
-Date: Sun,  6 Oct 2013 15:55:41 +0530
-Message-Id: <1381055141-25209-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.4.477.g5d89aa9
+	Sun, 6 Oct 2013 06:50:55 -0400
+Date: Sun, 6 Oct 2013 18:50:42 +0800
+From: ZHAO Gang <gamerh2o@gmail.com>
+To: trivial@kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH TRIVIAL] cleanup: add spaces around bitwise operator
+Message-ID: <20131006105042.GA2898@will>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TEST_EVENTS macro is open-coded towards the end of
-test__parse_events(). While at it, undef it cleanly after its usage.
-
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
 ---
- tools/perf/tests/parse-events.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/core/rtnetlink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 48114d1..a6f51ff 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1531,9 +1531,9 @@ do {							\
- 			return ret;
- 	}
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 2a0e21d..bc04f15 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -2658,7 +2658,7 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	if (kind != 2 && !ns_capable(net->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
  
--	ret1 = test_terms(test__terms, ARRAY_SIZE(test__terms));
--	if (!ret2)
--		ret2 = ret1;
-+	TEST_EVENTS(test__terms);
-+
-+#undef TEST_EVENTS
- 
- 	return ret2;
- }
+-	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {
++	if (kind == 2 && nlh->nlmsg_flags & NLM_F_DUMP) {
+ 		struct sock *rtnl;
+ 		rtnl_dumpit_func dumpit;
+ 		rtnl_calcit_func calcit;
 -- 
-1.8.4.477.g5d89aa9
+1.8.3.1
 
