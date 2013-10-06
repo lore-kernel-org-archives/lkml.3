@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab3JFOF1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 10:05:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46681 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab3JFOFY (ORCPT
+	id S1753491Ab3JFOmR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 10:42:17 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:59527 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab3JFOmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 10:05:24 -0400
-Date: Sun, 6 Oct 2013 07:04:19 -0700
-From: tip-bot for Shawn Bohrer <tipbot@zytor.com>
-Message-ID: <tip-6bfa687c19b7ab8adee03f0d43c197c2945dd869@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, sbohrer@rgmadvisors.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mgalbraith@suse.de,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        sbohrer@rgmadvisors.com, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1380914693-24634-1-git-send-email-shawn.bohrer@gmail.com>
-References: <1380914693-24634-1-git-send-email-shawn.bohrer@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt: Remove redundant nr_cpus_allowed test
-Git-Commit-ID: 6bfa687c19b7ab8adee03f0d43c197c2945dd869
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 6 Oct 2013 10:42:16 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 06 Oct 2013 07:04:27 -0700 (PDT)
+In-Reply-To: <20131005140636.GA25076@order.stressinduktion.org>
+References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com>
+	<20131005140636.GA25076@order.stressinduktion.org>
+Date: Sun, 6 Oct 2013 15:42:15 +0100
+Message-ID: <CABfLueFYZkzpEpDJ7YcHJaXfm-=QcgnL3-Es8gybea2cAacQQw@mail.gmail.com>
+Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
+From: Oussama Ghorbel <ou.ghorbel@gmail.com>
+To: Oussama Ghorbel <ou.ghorbel@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6bfa687c19b7ab8adee03f0d43c197c2945dd869
-Gitweb:     http://git.kernel.org/tip/6bfa687c19b7ab8adee03f0d43c197c2945dd869
-Author:     Shawn Bohrer <sbohrer@rgmadvisors.com>
-AuthorDate: Fri, 4 Oct 2013 14:24:53 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 6 Oct 2013 11:28:40 +0200
+On Sat, Oct 5, 2013 at 3:06 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Fri, Oct 04, 2013 at 10:52:13AM +0100, Oussama Ghorbel wrote:
+>> Unlike ipv4, the struct member hlen holds the length of the GRE and ipv6
+>> headers. This length is also counted in dev->hard_header_len.
+>> Perhaps, it's more clean to modify the hlen to count only the GRE header
+>> without ipv6 header as the variable name suggest, but the simple way to fix
+>> this without regression risk is simply modify the calculation of the limit
+>> in ip6gre_tunnel_change_mtu function.
+>> Verified in kernel version v3.11.
+>>
+>> Signed-off-by: Oussama Ghorbel <ou.ghorbel@gmail.com>
+>> ---
+>>  net/ipv6/ip6_gre.c |    3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+>> index 90747f1..41487ab 100644
+>> --- a/net/ipv6/ip6_gre.c
+>> +++ b/net/ipv6/ip6_gre.c
+>> @@ -1175,9 +1175,8 @@ done:
+>>
+>>  static int ip6gre_tunnel_change_mtu(struct net_device *dev, int new_mtu)
+>>  {
+>> -     struct ip6_tnl *tunnel = netdev_priv(dev);
+>>       if (new_mtu < 68 ||
+>> -         new_mtu > 0xFFF8 - dev->hard_header_len - tunnel->hlen)
+>> +         new_mtu > 0xFFF8 - dev->hard_header_len)
+>>               return -EINVAL;
+>>       dev->mtu = new_mtu;
+>>       return 0;
+>
+> Hmmm...
+>
+> dev->hard_header_len is initialized to LL_MAX_HEADER + sizeof(struct ipv6hdr)
+> + 4 but won't include the additional head space needed for GRE_SEQ, GRE_KEY
+> etc. if at time of tunnel creation the routing table did not had a good guess
+> for the outgoing device.
+>
+This hard_header_len initialization that you have shown above is taken
+from ip6gre_tunnel_setup, however this same variable seems to be
+reinitialized in ip6gre_tnl_link_config() which are called from
+ip6gre_newlink()
+The initialization  in ip6gre_tnl_link_config is done as the following:
+static void ip6gre_tnl_link_config(struct ip6_tnl *t, int set_mtu)
+{
+...
+int addend = sizeof(struct ipv6hdr) + 4;
+...
+/* Precalculate GRE options length */
+if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
+if (t->parms.o_flags&GRE_CSUM)
+addend += 4;
+if (t->parms.o_flags&GRE_KEY)
+addend += 4;
+if (t->parms.o_flags&GRE_SEQ)
+addend += 4;
+}
+...
+dev->hard_header_len = rt->dst.dev->hard_header_len + addend;
+...
+t->hlen = addend;
+..
+}
 
-sched/rt: Remove redundant nr_cpus_allowed test
+Unless they are other reasons, the hard_header_len is taken into
+account the GRE_KEY, GRE_SEQ ..
 
-In 76854c7e8f3f4172fef091e78d88b3b751463ac6 ("sched: Use
-rt.nr_cpus_allowed to recover select_task_rq() cycles") an
-optimization was added to select_task_rq_rt() that immediately
-returns when p->nr_cpus_allowed == 1 at the beginning of the
-function.
+> To make this correct we would have to refactor the usage of the variables a
+> bit as is done in ipv4/ip_tunnel.c. The safest thing would be to leave this
+> check as-is currently although we exclude some allowed mtus.
+>
+> Perhaps you want to take a look how to achieve that? ;)
+>
+Why not, consistency is good ...
 
-This makes the latter p->nr_cpus_allowed > 1 check redundant,
-which can now be removed.
+> Greetings,
+>
+>   Hannes
+>
 
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <mgalbraith@suse.de>
-Cc: tomk@rgmadvisors.com
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1380914693-24634-1-git-send-email-shawn.bohrer@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/rt.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..ceebfba 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1213,8 +1213,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	 */
- 	if (curr && unlikely(rt_task(curr)) &&
- 	    (curr->nr_cpus_allowed < 2 ||
--	     curr->prio <= p->prio) &&
--	    (p->nr_cpus_allowed > 1)) {
-+	     curr->prio <= p->prio)) {
- 		int target = find_lowest_rq(p);
- 
- 		if (target != -1)
+Thanks,
+Oussama
