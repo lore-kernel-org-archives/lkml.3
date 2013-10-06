@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3JFTIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 15:08:24 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:52023 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab3JFTIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 15:08:22 -0400
-Message-ID: <5251B524.3000101@gmail.com>
-Date: Sun, 06 Oct 2013 21:08:20 +0200
-From: Jan Klos <honza.klos@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	id S1754249Ab3JFTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 15:13:26 -0400
+Received: from mout.gmx.net ([212.227.15.19]:55629 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754108Ab3JFTNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 15:13:25 -0400
+From: Hans-Frieder Vogt <hfvogt@gmx.net>
+To: gregkh@linuxfoundation.org, zbr@ioremap.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] w1 fixes for broken subsystem
+Date: Sun, 06 Oct 2013 21:13:13 +0200
+Message-ID: <9348473.dVMUCnY2zF@maximilian>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc2-a64; KDE/4.11.2; x86_64; ; )
 MIME-Version: 1.0
-To: Steve French <sfrench@samba.org>
-CC: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Jan Klos <honza.klos@gmail.com>
-Subject: cifs: Fix inability to write files >2GB to SMB2/3 shares (THIS TIME
- I GOT IT RIGHT, PROMISE!)
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:SbTo0eopMlwYgIOYmVxhFDptqyIh0YPAt1ge28B0RQJsi6adROZ
+ kBBOja0jLSD7BKg+UqHW+J1lUZ3csnojBSc2vUpgjTG392manjUU8I4A/Fbpce7NBonn9C0
+ 9gigJzEi1gH2xQcIqDdN39LcymzZhOXXfeMgwQ+dc4sChmvkigevbWHLZ6+QOGDZfni7gj8
+ IsjHmsHn01I+BgH7jjyGw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
+In recent kernels the 1-wire kernel modules do not work any more. The module 
+wire got broken in 3.11-rc1 and 3.12-rc1 introduced a further problem:
 
-The patch fixes this by checking for the correct bit according to the protocol version.
+1: 3.11-rc1 introduced the automatic loading of slave modules. This blocks 
+modprobe, because request_module is called with a locked mutex of the w1 
+master.
+Loading of the slave module calls  w1_register_family, which calls in turn
+w1_reconnect_slaves and there mutex_lock(&dev->mutex) will wait forever....
 
-Sorry for the TWO reposts, Gmail messed up the first mail, Thunderbird added spaces to the patch part in the second. I am really sorry! I think I fixed a quite significant bug, so have mercy on me...
+2: 3.12-rc1 introduced w1_bus_notify which assumes that all slaves have fops 
+defined. This is not the case for e.g. w1_smem and maybe also breaks custom 
+written modules.
 
+This very small patch set is split in 2 parts:
 
-Signed-off-by: Jan Klos <honza.klos@gmail.com>
+PATCH 1/2: w1 - fix fops in w1_bus_notify
+fixes problem 2 above
 
----
+PATCH 2/2: w1 - call request_module with w1 master mutex unlocked
+fixes problem 1 above
 
-diff -uprN a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
---- a/fs/cifs/cifsfs.c	2013-10-05 16:18:07.000000000 +0200
-+++ b/fs/cifs/cifsfs.c	2013-10-06 16:18:13.488378000 +0200
-@@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
- {
- 	struct inode *inode;
- 	struct cifs_sb_info *cifs_sb;
-+	struct cifs_tcon *tcon;
- 	int rc = 0;
- 
- 	cifs_sb = CIFS_SB(sb);
-+	tcon = cifs_sb_master_tcon(cifs_sb);
- 
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
- 		sb->s_flags |= MS_POSIXACL;
- 
--	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
-+	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
- 		sb->s_maxbytes = MAX_LFS_FILESIZE;
- 	else
- 		sb->s_maxbytes = MAX_NON_LFS;
-@@ -147,7 +149,7 @@ cifs_read_super(struct super_block *sb)
- 		goto out_no_root;
- 	}
- 
--	if (cifs_sb_master_tcon(cifs_sb)->nocase)
-+	if (tcon->nocase)
- 		sb->s_d_op = &cifs_ci_dentry_ops;
- 	else
- 		sb->s_d_op = &cifs_dentry_ops;
+Please include these patches in 3.12-rc4 and in 3.11 stable.
+
+Best regards,
+
+Hans-Frieder Vogt                       e-mail: hfvogt <at> gmx .dot. net
