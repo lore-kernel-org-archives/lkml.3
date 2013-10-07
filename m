@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3JGWVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 18:21:15 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:50984 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab3JGWVK (ORCPT
+	id S1752846Ab3JGWXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 18:23:14 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:34914 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3JGWXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 18:21:10 -0400
+	Mon, 7 Oct 2013 18:23:13 -0400
 From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org
+To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
+        v9fs-developer@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, kernel-br@googlegroups.com,
         "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH] x86: mkpiggy.c: fix resource leakage
-Date: Mon,  7 Oct 2013 19:16:59 -0300
-Message-Id: <1381184219-10985-1-git-send-email-geyslan@gmail.com>
+Subject: [PATCH] 9p: unsigned/signed wrap in p9/unix modes.
+Date: Mon,  7 Oct 2013 19:19:00 -0300
+Message-Id: <1381184340-11190-1-git-send-email-geyslan@gmail.com>
 X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though the resource is released when the application is closed or
-when returned from main function, modified to make it in accordance.
-Now FILE pointer is always verified.
+Changes the sign type to unsigned, avoiding the possibility of
+wrap when ORing the p9 or unix bit modes.
 
 Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- arch/x86/boot/compressed/mkpiggy.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ fs/9p/vfs_inode.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/mkpiggy.c b/arch/x86/boot/compressed/mkpiggy.c
-index 958a641..b669ab6 100644
---- a/arch/x86/boot/compressed/mkpiggy.c
-+++ b/arch/x86/boot/compressed/mkpiggy.c
-@@ -36,11 +36,12 @@ int main(int argc, char *argv[])
- 	uint32_t olen;
- 	long ilen;
- 	unsigned long offs;
--	FILE *f;
-+	FILE *f = NULL;
-+	int retval = 1;
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index b352457..574095e 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -63,7 +63,7 @@ static const struct inode_operations v9fs_symlink_inode_operations;
  
- 	if (argc < 2) {
- 		fprintf(stderr, "Usage: %s compressed_file\n", argv[0]);
--		return 1;
-+		goto bail;
- 	}
+ static u32 unixmode2p9mode(struct v9fs_session_info *v9ses, umode_t mode)
+ {
+-	int res;
++	u32 res;
+ 	res = mode & 0777;
+ 	if (S_ISDIR(mode))
+ 		res |= P9_DMDIR;
+@@ -125,7 +125,7 @@ static int p9mode2perm(struct v9fs_session_info *v9ses,
+ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
+ 			       struct p9_wstat *stat, dev_t *rdev)
+ {
+-	int res;
++	umode_t res;
+ 	u32 mode = stat->mode;
  
- 	/* Get the information for the compressed kernel image first */
-@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
- 	f = fopen(argv[1], "r");
- 	if (!f) {
- 		perror(argv[1]);
--		return 1;
-+		goto bail;
- 	}
+ 	*rdev = 0;
+@@ -144,7 +144,7 @@ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
+ 	else if ((mode & P9_DMDEVICE) && (v9fs_proto_dotu(v9ses))
+ 		 && (v9ses->nodev == 0)) {
+ 		char type = 0, ext[32];
+-		int major = -1, minor = -1;
++		u32 major = 0, minor = 0;
  
- 
-@@ -58,12 +59,11 @@ int main(int argc, char *argv[])
- 
- 	if (fread(&olen, sizeof(olen), 1, f) != 1) {
- 		perror(argv[1]);
--		return 1;
-+		goto bail;
- 	}
- 
- 	ilen = ftell(f);
- 	olen = get_unaligned_le32(&olen);
--	fclose(f);
- 
- 	/*
- 	 * Now we have the input (compressed) and output (uncompressed)
-@@ -91,5 +91,9 @@ int main(int argc, char *argv[])
- 	printf(".incbin \"%s\"\n", argv[1]);
- 	printf("input_data_end:\n");
- 
--	return 0;
-+	retval = 0;
-+bail:
-+	if (f)
-+		fclose(f);
-+	return retval;
- }
+ 		strlcpy(ext, stat->extension, sizeof(ext));
+ 		sscanf(ext, "%c %u %u", &type, &major, &minor);
 -- 
 1.8.4
 
