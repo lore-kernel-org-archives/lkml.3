@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab3JGB1I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 21:27:08 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57421 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab3JGB1G (ORCPT
+	id S1755190Ab3JGB3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 21:29:46 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:41886 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005Ab3JGB3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 21:27:06 -0400
-Date: Mon, 7 Oct 2013 02:27:04 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] acpi: update win8 OSI blacklist
-Message-ID: <20131007012704.GA22371@srcf.ucam.org>
-References: <20131006205928.GA20296@srcf.ucam.org>
- <CAMP44s33CByGsRz7vsNAoOLnbEMY+fz73NzHJq07BzSuCEGJUg@mail.gmail.com>
- <20131006233106.GA21562@srcf.ucam.org>
- <CAMP44s1-vCgOkE_h1ZEmCA2WiQyLTOvnis2MOjdu8kdDB39kFg@mail.gmail.com>
- <20131006235702.GA21738@srcf.ucam.org>
- <CAMP44s3+GdeN6ZFxi6dKZ_1kyTgmgjTf4ET=pJnkSwoirZQMjw@mail.gmail.com>
- <20131007003247.GA21999@srcf.ucam.org>
- <CAMP44s1knbxW5C_tRSqopRLd+b2fXfuH=E3_L4EdOAUG4RMVhg@mail.gmail.com>
- <20131007005355.GA22211@srcf.ucam.org>
- <CAMP44s0jCvzrBDuiGe=q=tJyQGSGt47aAeJJyPgEtrQB_qXq1Q@mail.gmail.com>
+	Sun, 6 Oct 2013 21:29:45 -0400
+Date: Mon, 7 Oct 2013 12:30:58 +1100
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Input: introduce ABS_MAX2/CNT2 and friends
+Message-ID: <20131007013058.GA20549@yabbi.redhat.com>
+References: <1380751836-10829-1-git-send-email-dh.herrmann@gmail.com>
+ <20131003233223.GA21255@yabbi.bne.redhat.com>
+ <20131006074700.GA19155@core.coreip.homeip.net>
+ <20131006231955.GA26952@yabbi.redhat.com>
+ <f37ea673-a597-4dd2-88b4-bf190d8eeff5@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMP44s0jCvzrBDuiGe=q=tJyQGSGt47aAeJJyPgEtrQB_qXq1Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <f37ea673-a597-4dd2-88b4-bf190d8eeff5@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Mon, 07 Oct 2013 11:59:35 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06, 2013 at 08:01:34PM -0500, Felipe Contreras wrote:
-> On Sun, Oct 6, 2013 at 7:53 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > No, it demonstrably doesn't. The comments that do exist refer to only a
-> > subset of the entries underneath them.
+On Sun, Oct 06, 2013 at 05:04:36PM -0700, Dmitry Torokhov wrote:
+> Peter Hutterer <peter.hutterer@who-t.net> wrote:
+> >On Sun, Oct 06, 2013 at 12:47:00AM -0700, Dmitry Torokhov wrote:
+> >> On Fri, Oct 04, 2013 at 09:32:23AM +1000, Peter Hutterer wrote:
+> >> > On Thu, Oct 03, 2013 at 12:10:36AM +0200, David Herrmann wrote:
+> >> > > As we painfully noticed during the 3.12 merge-window our
+> >> > > EVIOCGABS/EVIOCSABS API is limited to ABS_MAX<=0x3f. We tried
+> >several
+> >> > > hacks to work around it but if we ever decide to increase
+> >ABS_MAX, the
+> >> > > EVIOCSABS ioctl ABI might overflow into the next byte causing
+> >horrible
+> >> > > misinterpretations in the kernel that we cannot catch.
+> >> > > 
+> >> > > Therefore, we decided to go with ABS_MAX2/CNT2 and introduce two
+> >new
+> >> > > ioctls to get/set abs-params. They no longer encode the ABS code
+> >in the
+> >> > > ioctl number and thus allow up to 4 billion ABS codes.
+> >> > > 
+> >> > > Unfortunately, the uinput API also hard-coded the ABS_CNT value
+> >in its
+> >> > > ABI. To avoid any hacks in uinput, we simply introduce a new
+> >> > > uinput_user_dev2 to replace the old one. The new API allows
+> >growing
+> >> > > ABS_CNT2 values without any API changes.
+> >> > > 
+> >> > > Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+> >> > > ---
+> >> > > Hi
+> >> > > 
+> >> > > This is only compile-tested but I wanted to get a first revision
+> >out to let
+> >> > > people know what we're working on. Unfortunately, the ABS API has
+> >this horribly
+> >> > > low ABS_MAX limit and we couldn't figure out a way to increase it
+> >while keeping
+> >> > > ABI compatibility.
+> >> > > 
+> >> > > Any feedback and review is welcome. And if anyone spots ABI
+> >breakage by this
+> >> > > patch, please let me know. If nothing comes up I will patch
+> >libevdev to use the
+> >> > > new API, write some extensive test-cases and push this forward.
+> >> > > 
+> >> > > As a sidenote: I didn't modify joydev to use the new values.
+> >Fortunately, the
+> >> > > joydev API would allow switching to ABS_CNT2 without breaking
+> >API, but it would
+> >> > > limit the new ABS_CNT2 to 16k. This is quite high but nothing
+> >compared to the
+> >> > >  2^32 that we can theoretically support now. If you think 16k
+> >ought to be enough
+> >> > > (probably?) I can adjust the joydev API, too.
+> >> > > All other kernel users were converted to the new values. Nothing
+> >left behind..
+> >> > 
+> >> > 
+> >> > just a comment from skimming the patch:
+> >> > if you need a new uinput abi anyway, can we add the resolution
+> >here? it's
+> >> > sorely needed for some tests. see also the patch Benjamin sent a
+> >while ago
+> >> > ("input/uinput: support abs resolution", July 15 2013)
+> >> 
+> >> Indeed. Also, while we are at it, would it make sense to allow
+> >> requesting a range of ABS infos at once?
+> >
+> >yes, but what API did you have in mind?
+> >
 > 
-> That's not true.
-> 
-> /*
-> * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
-> * Linux ignores it, except for the machines enumerated below.
-> */
+> I was thinking about specifying the start ABS but and the count and array of absinfo structures to be filled.
 
-You appear to have missed the continuation of that comment directly 
-underneath which lists a subset of the devices covered by the quirks.
+yeah, that works for me (I suspect 90% of users will use ABS_MAX anyway :)
 
-> > Having a per-entry comment is significantly clearer.
-> 
-> That is your opinion, it's not a demonstrable fact.
+Cheers,
+   Peter
 
-Say one of the machines turns out to need the quirk for two different 
-reasons. How do we document that? Look, how about you add the comments 
-and I'll do a patch that adds documentation to the existing entries? I'm 
-not asking you to make up for other people's past mistakes, I'm asking 
-you not to perpetuate them.
-
-> And just to be clear, you are saying that in the following code, you
-> have no idea which statements correspond to which sections. Am I
-> correct?
-
-No, that's not what I'm saying. But I'm now going to a bar and drink 
-instead of having to justify why *clearly documenting this code* is a 
-worthwhile thing to do.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
