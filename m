@@ -1,158 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3JGCmN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 22:42:13 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16917 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042Ab3JGCmJ (ORCPT
+	id S1755427Ab3JGCpi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 22:45:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49956 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab3JGCpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 22:42:09 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-b7f1e6d000004e8d-45-52521f7f4e4d
-Content-transfer-encoding: 8BIT
-Message-id: <1381113703.4529.61.camel@kjgkr>
-Subject: Re: [f2fs-dev][PATCH]f2fs: avoid congestion_wait when do_checkpoint
- for better performance
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: yuan zhong <yuan.mark.zhong@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, shu.tan@samsung.com
-Date: Mon, 07 Oct 2013 11:41:43 +0900
-In-reply-to: <000201cebdc7$dec4bce0$9c4e36a0$%mark.zhong@samsung.com>
-References: <000201cebdc7$dec4bce0$9c4e36a0$%mark.zhong@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zQ916+aAgg4v/RCwuLXK32LP3JIvF
-	5V1z2CxaF55ntvizqZPJgdVj94LPTB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CV8eXPJ8aC
-	TTIVqw8eZ2pgnCTexcjBISFgInF1n0AXIyeQKSZx4d56ti5GLg4hgWWMEo9O3maDSJhI3Pv7
-	ixEiMZ1RonN+K1iCV0BQ4sfkeywgg5gF5CWOXMoGCTMLqEtMmreIGaL+FaNE7/pL7CA1vAI6
-	Ehv2FIDUCAukSnR197GBhNkEtCU27zcACQsJKEq83X+XFcQWAaru2LiQHWJknUTrzAfMIDaL
-	gKrEsfOdLCA2p4CrxLL2U4wQvS4Snz48A6vnFxCVOLxwOzPE+UoSu9s72UHOkRA4xy5xs+8G
-	I8QgAYlvkw+xQMJBVmLTAah6SYmDK26wTGCUmIXkyVkIT85C8uQCRuZVjKKpBckFxUnpRcZ6
-	xYm5xaV56XrJ+bmbGCFR17+D8e4B60OMyUAbJzJLiSbnA6M2ryTe0NjMyMLUxNTYyNzSjDRh
-	JXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MHWVf42rYMxNeOObO41Wv+RR7QnmN
-	ejX78+Xp4eISmu+u9jhyf28U4T2/srXrsvyi4Hty7pZRJy6qXa9cc1X7q4ZiWr9RfVV8n+DC
-	rwu3/9l63sgj/Y1x2otJibxx/gKh6+aFC7G6mX47+0a+qDvpy9IXpxoL5WTO37T25BbZHH5h
-	jZHWu1wlluKMREMt5qLiRACYsV0e0AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd16+aAgg9svBSwuLXK32LP3JIvF
-	5V1z2CxaF55ntvizqZPJgdVj94LPTB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r
-	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
-	TGOErm9IEFyPkQEaSFjHmPHlzyfGgk0yFasPHmdqYJwk3sXIySEhYCJx7+8vRghbTOLCvfVs
-	XYxcHEIC0xklOue3soEkeAUEJX5MvsfSxcjBwSwgL3HkUjZImFlAXWLSvEXMEPWvGCV6119i
-	B6nhFdCR2LCnAKRGWCBVoqu7jw0kzCagLbF5vwFIWEhAUeLt/rusILYIUHXHxoXsECPrJFpn
-	PmAGsVkEVCWOne9kAbE5BVwllrWfYoTodZH49OEZWD2/gKjE4YXbmSHOV5LY3d7JPoFRaBaS
-	o2chHD0LydELGJlXMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH9TPpHYyrGiwOMQpwMCrx
-	8O64HxgkxJpYVlyZe4hRgoNZSYT3Uh1QiDclsbIqtSg/vqg0J7X4EGMy0OETmaVEk/OBCSev
-	JN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhgTazwyZlT0rbuZ
-	fSWz527IQ4+5kb8dM72/XFp90dSvePF5KRe5g4Irf73rbN2WKMQR0WF8qTbsqPnfovKPzRp+
-	rBt/dYnt115asOXB5s4LS0sLE7ceydrdmXGiYf+zYwYm/ze84Y3X1Eq4pfr1IHfw3KoJC+qF
-	V5p3M005xjyrU1ptz/2dVwKVWIozEg21mIuKEwHvccBxLgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 6 Oct 2013 22:45:36 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52521FA5.3040101@jp.fujitsu.com>
+Date: Mon, 07 Oct 2013 11:42:45 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, Vivek Goyal <vgoyal@redhat.com>,
+        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: mmap for /proc/vmcore broken since 3.12-rc1
+References: <20131002140356.63706540@holzheu> <524D0ADF.2010507@jp.fujitsu.com>
+In-Reply-To: <524D0ADF.2010507@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2013/10/03 15:12), HATAYAMA Daisuke wrote:
+> (2013/10/02 21:03), Michael Holzheu wrote:
+>> Hello Alexey,
+>>
+>> Looks like the following commit broke mmap for /proc/vmcore:
+>>
+>> commit c4fe24485729fc2cbff324c111e67a1cc2f9adea
+>> Author: Alexey Dobriyan <adobriyan@gmail.com>
+>> Date:   Tue Aug 20 22:17:24 2013 +0300
+>>
+>>      sparc: fix PCI device proc file mmap(2)
+>>
+>> Because /proc/vmcore (fs/proc/vmcore.c) does not implement the
+>> get_unmapped_area() fops function mmap now always returns EIO.
+>>
+>> Michael
+>>
+>
+> I confirmed the bug on v3.12-rc3. According to makedumpfile's log,
+> mmap failed on /proc/vmcore.
+>
+> mem_map (271)
+>    mem_map    : ffffea001da40000
+>    pfn_start  : 878000
+>    pfn_end    : 880000
+> Kernel can't mmap vmcore, using reads.
+> STEP [Excluding unnecessary pages] : 1.268799 seconds
+> STEP [Excluding unnecessary pages] : 1.268756 seconds
+> STEP [Copying data               ] : 44.847924 seconds
+> Writing erase info...
+>
+> I'll post a patch later.
+>
 
-Please do checkpatch.pl before sending a patch.
-Thanks,
+I've not completed this. I thought it was short task but after I
+tried to fix, makedumpfile became frequently failing with -ENOMEM and
+I'm not sure why even now.
 
-2013-09-30 (월), 18:28 +0800, yuan zhong:
-> Previously,  do_checkpoint() will call congestion_wait() for waiting the pages (previous submitted node/meta/data pages) to be written back.
-> Because congestion_wait() will set a regular period (e.g. HZ / 50 ) for waiting.
-> For this reason, there is a situation that after the pages have been written back, but the checkpoint thread still wait for congestion_wait to exit.
-> This is a problem here, especially, when sync a large number of small files or dirs.
-> In order to avoid this, a wait_list is introduced, the checkpoint thread will be dropped into the wait_list if the pages have not been written back, and will be waked up by contrast.
-> 
-> Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
-> ---
->  fs/f2fs/checkpoint.c |  3 +--
->  fs/f2fs/f2fs.h       | 19 +++++++++++++++++++
->  fs/f2fs/segment.c    |  1 +
->  fs/f2fs/super.c      |  1 +
->  4 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c index bb31220..cf6b4a5 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -756,8 +756,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
->  	f2fs_put_page(cp_page, 1);
->  
->  	/* wait for previous submitted node/meta pages writeback */
-> -	while (get_pages(sbi, F2FS_WRITEBACK))
-> -		congestion_wait(BLK_RW_ASYNC, HZ / 50);
-> +	f2fs_writeback_wait(sbi);
->  
->  	filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
->  	filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX); diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h index 608f0df..f8b62cc 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -18,6 +18,7 @@
->  #include <linux/crc32.h>
->  #include <linux/magic.h>
->  #include <linux/kobject.h>
-> +#include <linux/wait.h>
->  
->  /*
->   * For mount options
-> @@ -430,6 +431,8 @@ struct f2fs_sb_info {
->  	/* For sysfs suppport */
->  	struct kobject s_kobj;
->  	struct completion s_kobj_unregister;
-> +	
-> +	wait_queue_head_t writeback_wqh;
->  };
->  
->  /*
-> @@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
->  	return sb->s_flags & MS_RDONLY;
->  }
->  
-> +static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi) {
-> +	DEFINE_WAIT(wait);
-> +
-> +	prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
-> +	if (get_pages(sbi, F2FS_WRITEBACK))
-> +		io_schedule();
-> +	finish_wait(&sbi->writeback_wqh, &wait); }
-> +
-> +static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi) {
-> +	if (!get_pages(sbi, F2FS_WRITEBACK))
-> +		wake_up_all(&sbi->writeback_wqh);
-> +}
-> +
->  /*
->   * file.c
->   */
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c index 09af9c7..79293fe 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
->  
->  	if (p->is_sync)
->  		complete(p->wait);
-> +	f2fs_writeback_wake(p->sbi);	
->  	kfree(p);
->  	bio_put(bio);
->  }
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c index 13d0a0f..b31f686 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -818,6 +818,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
->  	mutex_init(&sbi->gc_mutex);
->  	mutex_init(&sbi->writepages);
->  	mutex_init(&sbi->cp_mutex);
-> +	init_waitqueue_head(&sbi->writeback_wqh);
->  	for (i = 0; i < NR_GLOBAL_LOCKS; i++)
->  		mutex_init(&sbi->fs_lock[i]);
->  	mutex_init(&sbi->node_write);
-> 
+Here's current progress.
+
+First, on v3.12-rc3 mmap() on /proc/vmcore fails while returning -EIO.
+This is due to the commit c4fe24485729fc2cbff324c111e67a1cc2f9adea,
+just as reported by Holzheu, where proc_reg_get_unmapped_area was
+newly added to proc_reg_file_ops_no_compat file operations as
+get_unmapped_area method. Looking at get_unmapped_area function,
+it calls current->mm->get_unmapped_area at default, but calls
+f_ops->get_unmapped_area_function if it's assigned.
+
+         get_area = current->mm->get_unmapped_area;
+         if (file && file->f_op && file->f_op->get_unmapped_area)
+                 get_area = file->f_op->get_unmapped_area;
+         addr = get_area(file, addr, len, pgoff, flags);
+         if (IS_ERR_VALUE(addr))
+                 return addr;
+
+For regular files in procfs, proc_reg_file_ops_no_compat is used
+first and then this behaves as wrapper.
+
+static unsigned long proc_reg_get_unmapped_area(struct file *file, unsigned long orig_addr, unsigned long len, unsigned long pgoff, unsigned long flags)
+{
+         struct proc_dir_entry *pde = PDE(file_inode(file));
+         int rv = -EIO;
+         unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+         if (use_pde(pde)) {
+                 get_unmapped_area = pde->proc_fops->get_unmapped_area;
+                 if (get_unmapped_area)
+                         rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
+                 unuse_pde(pde);
+         }
+         return rv;
+}
+
+Since this was added in proc_reg_file_ops_no_compat, proc_reg_get_unmapped_area
+is used in get_unmapped_area now and it always returns -EIO since proc_vmcore_operations
+has no get_unmapped_area method now.
+
+So, immediate fix idea is to define get_unmapped_area method in proc_vmcore_operations
+and to design it so that it just calls current->mm->get_unmapped_area.
+
+---
+  fs/proc/vmcore.c | 13 +++++++++++++
+  1 file changed, 13 insertions(+)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 9100d69..9583419 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -412,10 +412,23 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+  }
+  #endif
+
++static unsigned long
++get_unmapped_area_vmcore(struct file *filp, unsigned long addr,
++                        unsigned long len, unsigned long pgoff,
++                        unsigned long flags)
++{
++#ifdef CONFIG_MMU
++       return current->mm->get_unmapped_area(filp, addr, len, pgoff, flags);
++#else
++       return -EIO;
++#endif
++}
++
+  static const struct file_operations proc_vmcore_operations = {
+         .read           = read_vmcore,
+         .llseek         = default_llseek,
+         .mmap           = mmap_vmcore,
++       .get_unmapped_area = get_unmapped_area_vmcore,
+  };
+
+  static struct vmcore* __init get_new_element(void)
+--
+1.8.3.1
+
+However, after applying this patch, makedumpfile now somehow fails returning -ENOMEM
+frequently. It's about 50/128 on my box.
+
+Searching for where to return -ENOMEM in mmap path by printk debug, I found instance
+of get_unmapped_area returns kernel-space address:
+
+         get_area = current->mm->get_unmapped_area;
+         if (file && file->f_op && file->f_op->get_unmapped_area)
+                 get_area = file->f_op->get_unmapped_area;
+         addr = get_area(file, addr, len, pgoff, flags);
+         if (IS_ERR_VALUE(addr))
+                 return addr;
+
+         if (addr > TASK_SIZE - len)   <---- Here
+                 return -ENOMEM;
+
+The log is:
+
+kdump:/# cd /mnt/
+kdump:/mnt# for ((i=0; i<128; ++i)) ; do
+> makedumpfile -f -p -d 31 /proc/vmcore vmcore-pd31
+> done
+The kernel version is not supported.
+The created dumpfile may be incomplete.
+cyclic buffer size has been changed: 65535 => 64512
+[   49.462536] addr: 0xffffffff8ef28000
+[   49.463686] TASK_SIZE: 0x007ffffffff000
+[   49.464952] len: 0x00000000400000
+
+Note that makedumpfile tries to mmap some area in 4MiB size here,
+get_unmapped_area tries to find some area to cover such requested 4MiB size
+within user-space address space limit but it returns somehow kernel-space
+address.
+
+The actual instance of current->mm->get_unmapped_area on my environment
+is arch_get_unmapped_area_topdown.
+
+Finally, note: I tried to run makedumpfile using mmap on /proc/vmcore 128-times. Then,
+- v3.12-rc3 returns -EIO in every case (trivial),
+- v3.12-rc3 with the above patch applied returns -ENOMEM at 50/128,
+- v3.12-rc3 with commit c4fe24485729fc2cbff324c111e67a1cc2f9adea reverted
+   works well in every case, and
+- v3.11.1-201.fc19.x86_64 works well in every case.
+
+So, I suspect procfs wrapper affects arch_get_unmapped_region_topdown?
+
+Any comments are helpful.
 
 -- 
-Jaegeuk Kim
-Samsung
+Thanks.
+HATAYAMA, Daisuke
 
