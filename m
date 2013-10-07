@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab3JGQhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:37:04 -0400
-Received: from mail-gg0-f171.google.com ([209.85.161.171]:39997 "EHLO
-	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab3JGQgu (ORCPT
+	id S1756767Ab3JGQhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:37:12 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:62287 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab3JGQhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:36:50 -0400
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Oct 2013 12:36:50 EDT
+	Mon, 7 Oct 2013 12:37:07 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net
-Subject: [PATCH v2 05/29] openrisc: use unflatten_and_copy_device_tree
-Date: Mon,  7 Oct 2013 11:29:13 -0500
-Message-Id: <1381163377-21044-6-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 27/29] arm64: use common of_flat_dt_get_machine_name
+Date: Mon,  7 Oct 2013 11:29:35 -0500
+Message-Id: <1381163377-21044-28-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -25,62 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Use the common unflatten_and_copy_device_tree to copy the built-in FDT
-out of init section. This moves the copy later in the boot, but there
-do not appear to be any references to strings in the FDT before the copy.
+Convert arm64 to use the common of_flat_dt_get_machine_name function.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: linux@lists.openrisc.net
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/openrisc/kernel/prom.c  | 13 -------------
- arch/openrisc/kernel/setup.c |  2 +-
- 2 files changed, 1 insertion(+), 14 deletions(-)
+ arch/arm64/kernel/setup.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
-index bf3fd05..3b94972 100644
---- a/arch/openrisc/kernel/prom.c
-+++ b/arch/openrisc/kernel/prom.c
-@@ -55,8 +55,6 @@ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 7feb0c9..a4ed2d3 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -124,8 +124,6 @@ static void __init setup_processor(void)
  
- void __init early_init_devtree(void *params)
+ static void __init setup_machine_fdt(phys_addr_t dt_phys)
  {
--	void *alloc;
+-	unsigned long dt_root;
 -
- 	/* Setup flat device-tree pointer */
- 	initial_boot_params = params;
+ 	if (!dt_phys || !early_init_dt_scan(phys_to_virt(dt_phys))) {
+ 		early_print("\n"
+ 			"Error: invalid device tree blob at physical address 0x%p (virtual address 0x%p)\n"
+@@ -137,14 +135,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
+ 			cpu_relax();
+ 	}
  
-@@ -72,17 +70,6 @@ void __init early_init_devtree(void *params)
- 	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
- 
- 	memblock_allow_resize();
+-	dt_root = of_get_flat_dt_root();
 -
--	/* We must copy the flattend device tree from init memory to regular
--	 * memory because the device tree references the strings in it
--	 * directly.
--	 */
--
--	alloc = __va(memblock_alloc(initial_boot_params->totalsize, PAGE_SIZE));
--
--	memcpy(alloc, initial_boot_params, initial_boot_params->totalsize);
--
--	initial_boot_params = alloc;
+-	machine_name = of_get_flat_dt_prop(dt_root, "model", NULL);
+-	if (!machine_name)
+-		machine_name = of_get_flat_dt_prop(dt_root, "compatible", NULL);
+-	if (!machine_name)
+-		machine_name = "<unknown>";
+-	pr_info("Machine: %s\n", machine_name);
++	machine_name = of_flat_dt_get_machine_name();
  }
  
- #ifdef CONFIG_BLK_DEV_INITRD
-diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
-index 719c5c8..09a769b 100644
---- a/arch/openrisc/kernel/setup.c
-+++ b/arch/openrisc/kernel/setup.c
-@@ -283,7 +283,7 @@ void __init setup_arch(char **cmdline_p)
- {
- 	unsigned long max_low_pfn;
- 
--	unflatten_device_tree();
-+	unflatten_and_copy_device_tree();
- 
- 	setup_cpuinfo();
- 
+ /*
 -- 
 1.8.1.2
 
