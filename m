@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab3JGMHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:07:47 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:48630 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab3JGL6E (ORCPT
+	id S1756201Ab3JGMHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:07:54 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:37434 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab3JGL6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:58:04 -0400
+	Mon, 7 Oct 2013 07:58:03 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 18/50] tools/perf/build: Split out feature check: 'libunwind'
-Date: Mon,  7 Oct 2013 13:56:11 +0200
-Message-Id: <1381147003-2574-19-git-send-email-mingo@kernel.org>
+Subject: [PATCH 16/50] tools/perf/build: Split out feature check: 'libelf-getphdrnum'
+Date: Mon,  7 Oct 2013 13:56:09 +0200
+Message-Id: <1381147003-2574-17-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -28,99 +28,78 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-vTiatsVyva3tfgh3vhxaidxl@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-wa9qstb8erbjreLxiHepzjfw@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                        | 13 +++----------
- tools/perf/config/feature-checks/Makefile         |  4 ++++
- tools/perf/config/feature-checks/test-libunwind.c | 20 ++++++++++++++++++++
- 3 files changed, 27 insertions(+), 10 deletions(-)
+ tools/perf/config/Makefile                                | 5 +++--
+ tools/perf/config/feature-checks/Makefile                 | 4 ++++
+ tools/perf/config/feature-checks/test-libelf-getphdrnum.c | 7 +++++++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 7735271..890f264 100644
+index 1846559..2fcef1f 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -113,6 +113,7 @@ FEATURE_TESTS =				\
+@@ -112,6 +112,7 @@ FEATURE_TESTS =				\
+ 	glibc				\
  	dwarf				\
  	libelf-mmap			\
- 	libelf-getphdrnum		\
-+	libunwind			\
++	libelf-getphdrnum		\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -239,15 +240,7 @@ ifneq ($(ARCH),x86)
- endif
- 
- ifndef NO_LIBUNWIND
--  # for linking with debug library, run like:
--  # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
--  ifdef LIBUNWIND_DIR
--    LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
--    LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
--  endif
--
--  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
--  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
-+  ifeq ($(feature-libunwind), 1)
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
-     NO_LIBUNWIND := 1
+@@ -206,7 +207,7 @@ ifndef NO_LIBELF
+     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
    endif
-@@ -258,7 +251,7 @@ ifndef NO_LIBUNWIND
-   EXTLIBS += $(LIBUNWIND_LIBS)
-   CFLAGS += $(LIBUNWIND_CFLAGS)
-   LDFLAGS += $(LIBUNWIND_LDFLAGS)
--endif # NO_LIBUNWIND
-+endif
  
- ifndef NO_LIBAUDIT
-   FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+-  ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM_SUPPORT),y)
++  ifeq ($(feature-libelf-getphdrnum), 1)
+     CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
+   endif
+ 
+@@ -229,7 +230,7 @@ ifndef NO_LIBELF
+   CFLAGS += -DHAVE_LIBELF_SUPPORT
+   ifeq ($(feature-libelf-mmap), 1)
+     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+-  endif # try-cc
++  endif
+ endif # NO_LIBELF
+ 
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 83b3a02..d6d9570 100644
+index bf96e34..83b3a02 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -11,6 +11,7 @@ FILES=					\
+@@ -10,6 +10,7 @@ FILES=					\
+ 	test-glibc			\
  	test-dwarf			\
  	test-libelf-mmap		\
- 	test-libelf-getphdrnum		\
-+	test-libunwind			\
++	test-libelf-getphdrnum		\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -57,6 +58,9 @@ test-libelf-getphdrnum:
+@@ -50,6 +51,9 @@ test-dwarf:
+ test-libelf-mmap:
+ 	$(BUILD) -lelf
+ 
++test-libelf-getphdrnum:
++	$(BUILD) -lelf
++
  test-libnuma:
  	$(BUILD) -lnuma
  
-+test-libunwind:
-+	$(BUILD) -lunwind -lunwind-x86_64 -lelf
-+
- -include *.d */*.d
- 
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
+diff --git a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
 new file mode 100644
-index 0000000..5622746
+index 0000000..58eca53
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libunwind.c
-@@ -0,0 +1,20 @@
-+#include <libunwind.h>
-+#include <stdlib.h>
-+
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
-+
-+
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-+
++++ b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
+@@ -0,0 +1,7 @@
++#include <libelf.h>
++#
 +int main(void)
 +{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+	return 0;
++	size_t dst;
++	return elf_getphdrnum(0, &dst);
 +}
 -- 
 1.7.11.7
