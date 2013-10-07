@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab3JGTC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 15:02:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44575 "EHLO
+	id S1756196Ab3JGTCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 15:02:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44579 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab3JGTCm (ORCPT
+	with ESMTP id S1755316Ab3JGTCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 15:02:42 -0400
+	Mon, 7 Oct 2013 15:02:43 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/6] perf probe: Fix to find line information for probe list
-Date: Mon,  7 Oct 2013 16:02:27 -0300
-Message-Id: <1381172549-3210-5-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 5/6] perf tools: Fix installation of libexec components
+Date: Mon,  7 Oct 2013 16:02:28 -0300
+Message-Id: <1381172549-3210-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381172549-3210-1-git-send-email-acme@infradead.org>
 References: <1381172549-3210-1-git-send-email-acme@infradead.org>
@@ -27,238 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Fix to find the correct (as much as possible) line information for
-listing probes. Without this fix, perf probe --list action will show
-incorrect line information as below;
+Doing a fresh install on a user home directory needs to first make sure
+that the ~/libexec/perf-core/ directory is present so that
+'perf-archive' like scripts, 'perf test' attr config files and 'perf
+script' scripts can be installed.
 
-  probe:getname_flags  (on getname_flags@ksrc/linux-3/fs/namei.c)
-  probe:getname_flags_1 (on getname:-89@x86/include/asm/current.h)
-  probe:getname_flags_2 (on user_path_at_empty:-2054@x86/include/asm/current.h)
-
-The minus line number is obviously wrong, and current.h is not related
-to the probe point. Deeper investigation discovered that there were 2
-issues related to this bug, and minor typos too.
-
-The 1st issue is the rack of considering about nested inlined functions,
-which causes the wrong (relative) line number.
-
-The 2nd issue is that the dwarf line info is not correct at those
-points. It points 14th line of current.h.
-
-Since it seems that the line info includes somewhat unreliable
-information, this fixes perf to try to find correct line information
-from both of debuginfo and line info as below.
-
-1) Probe address is the entry of a function instance
-
-  In this case, the line is set as the function declared line.
-
-2) Probe address is the entry of an expanded inline function block
-
-  In this case, the line is set as the function call-site line.
-  This means that the line number is relative from the entry line
-  of caller function (which can be an inlined function if nested)
-
-3) Probe address is inside a function instance or an expanded
-   inline function block
-
-  In this case, perf probe queries the line number from lineinfo
-  and verify the function declared file is same as the file name
-  queried from lineinfo.
-
-  If the file name is different, it is a failure case. The probe
-  address is shown as symbol+offset.
-
-4) Probe address is not in the any function instance
-
-  This is a failure case, the probe address is shown as
-  symbol+offset.
-
-With this fix, perf probe -l shows correct probe lines as below;
-
-  probe:getname_flags  (on getname_flags@ksrc/linux-3/fs/namei.c)
-  probe:getname_flags_1 (on getname:2@ksrc/linux-3/fs/namei.c)
-  probe:getname_flags_2 (on user_path_at_empty:4@ksrc/linux-3/fs/namei.c)
-
-Changes at v2:
- - Fix typos in the function comments. (Thanks to Namhyung Kim)
- - Use die_find_top_inlinefunc instead of die_find_inlinefunc_next.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20130930092144.1693.11058.stgit@udc4-manage.rcp.hitachi.co.jp
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-z7ryi3r1b9dn9smbfnab0fdc@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dwarf-aux.c    | 25 +++++++++++++++++----
- tools/perf/util/dwarf-aux.h    |  6 +++++-
- tools/perf/util/probe-finder.c | 49 ++++++++++++++++++++++++++++--------------
- 3 files changed, 59 insertions(+), 21 deletions(-)
+ tools/perf/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index e23bde19d590..7defd77105d0 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -426,7 +426,7 @@ static int __die_search_func_cb(Dwarf_Die *fn_die, void *data)
-  * @die_mem: a buffer for result DIE
-  *
-  * Search a non-inlined function DIE which includes @addr. Stores the
-- * DIE to @die_mem and returns it if found. Returns NULl if failed.
-+ * DIE to @die_mem and returns it if found. Returns NULL if failed.
-  */
- Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
- 				    Dwarf_Die *die_mem)
-@@ -454,15 +454,32 @@ static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data)
- }
- 
- /**
-+ * die_find_top_inlinefunc - Search the top inlined function at given address
-+ * @sp_die: a subprogram DIE which including @addr
-+ * @addr: target address
-+ * @die_mem: a buffer for result DIE
-+ *
-+ * Search an inlined function DIE which includes @addr. Stores the
-+ * DIE to @die_mem and returns it if found. Returns NULL if failed.
-+ * Even if several inlined functions are expanded recursively, this
-+ * doesn't trace it down, and returns the topmost one.
-+ */
-+Dwarf_Die *die_find_top_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
-+				   Dwarf_Die *die_mem)
-+{
-+	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
-+}
-+
-+/**
-  * die_find_inlinefunc - Search an inlined function at given address
-- * @cu_die: a CU DIE which including @addr
-+ * @sp_die: a subprogram DIE which including @addr
-  * @addr: target address
-  * @die_mem: a buffer for result DIE
-  *
-  * Search an inlined function DIE which includes @addr. Stores the
-- * DIE to @die_mem and returns it if found. Returns NULl if failed.
-+ * DIE to @die_mem and returns it if found. Returns NULL if failed.
-  * If several inlined functions are expanded recursively, this trace
-- * it and returns deepest one.
-+ * it down and returns deepest one.
-  */
- Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
- 			       Dwarf_Die *die_mem)
-diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
-index 8658d41697d2..b4fe90c6cb2d 100644
---- a/tools/perf/util/dwarf-aux.h
-+++ b/tools/perf/util/dwarf-aux.h
-@@ -79,7 +79,11 @@ extern Dwarf_Die *die_find_child(Dwarf_Die *rt_die,
- extern Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
- 				    Dwarf_Die *die_mem);
- 
--/* Search an inlined function including given address */
-+/* Search the top inlined function including given address */
-+extern Dwarf_Die *die_find_top_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
-+					  Dwarf_Die *die_mem);
-+
-+/* Search the deepest inlined function including given address */
- extern Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
- 				      Dwarf_Die *die_mem);
- 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 371476cb8ddc..c09e0a9fdf4c 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1327,8 +1327,8 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
- 				struct perf_probe_point *ppt)
- {
- 	Dwarf_Die cudie, spdie, indie;
--	Dwarf_Addr _addr, baseaddr;
--	const char *fname = NULL, *func = NULL, *tmp;
-+	Dwarf_Addr _addr = 0, baseaddr = 0;
-+	const char *fname = NULL, *func = NULL, *basefunc = NULL, *tmp;
- 	int baseline = 0, lineno = 0, ret = 0;
- 
- 	/* Adjust address with bias */
-@@ -1349,27 +1349,36 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
- 	/* Find a corresponding function (name, baseline and baseaddr) */
- 	if (die_find_realfunc(&cudie, (Dwarf_Addr)addr, &spdie)) {
- 		/* Get function entry information */
--		tmp = dwarf_diename(&spdie);
--		if (!tmp ||
-+		func = basefunc = dwarf_diename(&spdie);
-+		if (!func ||
- 		    dwarf_entrypc(&spdie, &baseaddr) != 0 ||
--		    dwarf_decl_line(&spdie, &baseline) != 0)
-+		    dwarf_decl_line(&spdie, &baseline) != 0) {
-+			lineno = 0;
- 			goto post;
--		func = tmp;
-+		}
- 
--		if (addr == (unsigned long)baseaddr)
-+		if (addr == (unsigned long)baseaddr) {
- 			/* Function entry - Relative line number is 0 */
- 			lineno = baseline;
--		else if (die_find_inlinefunc(&spdie, (Dwarf_Addr)addr,
--					     &indie)) {
-+			fname = dwarf_decl_file(&spdie);
-+			goto post;
-+		}
-+
-+		/* Track down the inline functions step by step */
-+		while (die_find_top_inlinefunc(&spdie, (Dwarf_Addr)addr,
-+						&indie)) {
-+			/* There is an inline function */
- 			if (dwarf_entrypc(&indie, &_addr) == 0 &&
--			    _addr == addr)
-+			    _addr == addr) {
- 				/*
- 				 * addr is at an inline function entry.
- 				 * In this case, lineno should be the call-site
--				 * line number.
-+				 * line number. (overwrite lineinfo)
- 				 */
- 				lineno = die_get_call_lineno(&indie);
--			else {
-+				fname = die_get_call_file(&indie);
-+				break;
-+			} else {
- 				/*
- 				 * addr is in an inline function body.
- 				 * Since lineno points one of the lines
-@@ -1377,19 +1386,27 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
- 				 * be the entry line of the inline function.
- 				 */
- 				tmp = dwarf_diename(&indie);
--				if (tmp &&
--				    dwarf_decl_line(&spdie, &baseline) == 0)
--					func = tmp;
-+				if (!tmp ||
-+				    dwarf_decl_line(&indie, &baseline) != 0)
-+					break;
-+				func = tmp;
-+				spdie = indie;
- 			}
- 		}
-+		/* Verify the lineno and baseline are in a same file */
-+		tmp = dwarf_decl_file(&spdie);
-+		if (!tmp || strcmp(tmp, fname) != 0)
-+			lineno = 0;
- 	}
- 
- post:
- 	/* Make a relative line number or an offset */
- 	if (lineno)
- 		ppt->line = lineno - baseline;
--	else if (func)
-+	else if (basefunc) {
- 		ppt->offset = addr - (unsigned long)baseaddr;
-+		func = basefunc;
-+	}
- 
- 	/* Duplicate strings */
- 	if (func) {
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3a0ff7fb71b6..64c043b7a438 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -770,6 +770,7 @@ check: $(OUTPUT)common-cmds.h
+ install-bin: all
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ ifndef NO_LIBPERL
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
 -- 
 1.8.1.4
 
