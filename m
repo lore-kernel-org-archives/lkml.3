@@ -1,92 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3JGJt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:49:28 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:56686 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab3JGJt1 (ORCPT
+	id S1755229Ab3JGJ5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:57:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:33522 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3JGJ5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:49:27 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1049,1371081600"; 
-   d="scan'208";a="58282407"
-Message-ID: <525283A5.4020904@citrix.com>
-Date: Mon, 7 Oct 2013 10:49:25 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
-MIME-Version: 1.0
-To: Frediano Ziglio <frediano.ziglio@citrix.com>
-CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] xen: Fix possible user space selector corruption
-References: <1380788677.30462.1.camel@hamster.uk.xensource.com>  <524D4132.3000809@citrix.com>  <1380804692.30462.3.camel@hamster.uk.xensource.com>  <20131004132033.GA26673@phenom.dumpdata.com> <524EC3C1.4010304@citrix.com>  <5252815E.70504@citrix.com> <1381139286.31436.2.camel@hamster.uk.xensource.com>
-In-Reply-To: <1381139286.31436.2.camel@hamster.uk.xensource.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+	Mon, 7 Oct 2013 05:57:43 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-9c-525285952dde
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] thermal: offer TI thermal support only when ARCH_OMAP2PLUS
+ is defined
+Date: Mon, 07 Oct 2013 11:57:16 +0200
+Message-id: <5727785.7GtnvaVLcG@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <524F0766.8070302@ti.com>
+References: <3702969.8rn3SOscJE@amdc1032> <524F0766.8070302@ti.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jQd2prUFBBpNa9Cz+TjrGbrFm/08m
+	i7NNb9gtLu+aw2bxufcIo8WTh31sDmwev39NYvRYvOclk0ffllWMHsdvbGfy+LxJLoA1issm
+	JTUnsyy1SN8ugSvjzZIvLAVPpCp6Xq9gaWDcIdLFyMkhIWAiMXXDVGYIW0ziwr31bCC2kMB0
+	Ronf78K7GLmA7BYmiYvfGlhAEmwCVhIT21cxgtgiAnoSN148YQIpYhZYySixo+skO0hCWCBG
+	YtqBViYQm0VAVaJj0m6wZl4BTYmlB/vBbFEBT4lPk5aCbeYUUJOY8HMfO8RmZ4mGxefYIeoF
+	JX5MvgdWzywgL7Fv/1RWCFtHYn/rNLYJjAKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJ
+	ucWleel6yfm5mxjBwf1MegfjqgaLQ4wCHIxKPLw77gcGCbEmlhVX5h5ilOBgVhLhXdMcFCTE
+	m5JYWZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBcU2DBlNAE69e
+	7PHOqXnuO5qDk1zeKM8q53zzb/run5nHAtlz5Y9dW7B3s7XDjbWOYppefczRcVOs/TgDTXKz
+	7qr9ucnIILPmLYtTptNCjh0lWov/WWxKFf+hZTnV9GTlLueAHrmDUy/fe7jfLD7gU2FbrNNN
+	k/r9ay6k227cM6f7/TO+mze2K7EUZyQaajEXFScCAFgOjyZqAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/13 10:48, Frediano Ziglio wrote:
-> Due to the way kernel is initialized under Xen is possible that the
-> ring1 selector used by the kernel for the boot cpu end up to be copied
-> to userspace leading to segmentation fault in the userspace.
->
-> Xen code in the kernel initialize no-boot cpus with correct selectors (ds
-> and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
-> On task context switch (switch_to) we assume that ds, es and cs already
-> point to __USER_DS and __KERNEL_CSso these selector are not changed.
->
-> If processor is an Intel that support sysenter instruction sysenter/sysexit
-> is used so ds and es are not restored switching back from kernel to
-> userspace. In the case the selectors point to a ring1 instead of __USER_DS
-> the userspace code will crash on first memory access attempt (to be
-> precise Xen on the emulated iret used to do sysexit will detect and set ds
-> and es to zero which lead to GPF anyway).
->
-> Now if an userspace process call kernel using sysenter and get rescheduled
-> (for me it happen on a specific init calling wait4) could happen that the
-> ring1 selector is set to ds and es.
->
-> This is quite hard to detect cause after a while these selectors are fixed
-> (__USER_DS seems sticky).
->
-> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
-> to be the first one that have this issue.
->
-> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
 
-Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Hi,
 
-> ---
->  arch/x86/xen/smp.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
->
->
-> Just changed comment on source code as suggested by Andrew Cooper.
->
->
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index d99cae8..6d89fcc 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -245,6 +245,15 @@ static void __init xen_smp_prepare_boot_cpu(void)
->  	   old memory can be recycled */
->  	make_lowmem_page_readwrite(xen_initial_gdt);
->  
-> +#ifdef CONFIG_X86_32
-> +	/*
-> +	 * Xen starts us with XEN_FLAT_RING1_DS, but linux code
-> +	 * expects __USER_DS
-> +	 */
-> +	loadsegment(ds, __USER_DS);
-> +	loadsegment(es, __USER_DS);
-> +#endif
-> +
->  	xen_filter_cpu_maps();
->  	xen_setup_vcpu_info_placement();
->  }
+On Friday, October 04, 2013 02:22:30 PM Eduardo Valentin wrote:
+> On 04-10-2013 08:35, Bartlomiej Zolnierkiewicz wrote:
+> > Menu for Texas Instruments thermal support is visible on all
+> > platforms and TI_SOC_THERMAL + TI_THERMAL config options can
+> > be selected also on EXYNOS platform (on which ARCH_HAS_BANDGAP
+> > config option is selected by SoCs config options to fulfill
+> > EXYNOS_THERMAL config option dependency). Thus the code which
+> > is never used can be build. Fix it by making TI menu dependent
+> > on ARCH_OMAP2PLUS config option.
+> > 
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  drivers/thermal/Kconfig | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> > index 57e06a9..a709c63 100644
+> > --- a/drivers/thermal/Kconfig
+> > +++ b/drivers/thermal/Kconfig
+> > @@ -193,6 +193,7 @@ config X86_PKG_TEMP_THERMAL
+> >  	  notification methods.
+> >  
+> >  menu "Texas Instruments thermal drivers"
+> > +depends on ARCH_OMAP2PLUS
+> 
+> No, this driver is not for ARCH_OMAP*, but for TI bandgap, with the
+> option to offer thermal control. So, the HW supported is TI bandgap IP,
+> not ARCH_OMAP*. It happens to be so that OMAP2PLUS all have a
+> (different) version of this device.
+> 
+> However, DRA7 devices, for instance, also feature the bandgap IP
+> (different version of those present in OMAP devices), and it is not
+> ARCH_OMAP2PLUS.
+
+Then you have wrong dependencies anyway since ARCH_BANDGAP is selected
+currently only by ARCH_OMAP2PLUS and EXYNOS SoCs.
+
+arch/arm/mach-omap2/Kconfig (next-20130927):
+
+config ARCH_OMAP2PLUS
+        bool
+        select ARCH_HAS_BANDGAP
+        select ARCH_HAS_CPUFREQ
+        select ARCH_HAS_HOLES_MEMORYMODEL
+        select ARCH_OMAP
+        select ARCH_REQUIRE_GPIOLIB
+        select CLKDEV_LOOKUP
+        select CLKSRC_MMIO
+        select GENERIC_CLOCKEVENTS
+        select GENERIC_IRQ_CHIP
+        select HAVE_CLK
+        select OMAP_DM_TIMER
+        select PINCTRL
+        select PROC_DEVICETREE if PROC_FS
+        select SOC_BUS
+        select SPARSE_IRQ
+        select TI_PRIV_EDMA
+        select USE_OF
+        help
+          Systems based on OMAP2, OMAP3, OMAP4 or OMAP5
+
+drivers/thermal/ti-soc-thermal/Kconfig (next-20130927):
+
+config TI_SOC_THERMAL
+        tristate "Texas Instruments SoCs temperature sensor driver"
+        depends on THERMAL
+        depends on ARCH_HAS_BANDGAP
+        help
+          If you say yes here you get support for the Texas Instruments
+          OMAP4460+ on die bandgap temperature sensor support. The register
+          set is part of system control module.
+
+          This includes alert interrupts generation and also the TSHUT
+          support.
+
+> And because of that, the design of this driver is different. It is not
+> expected to depend on an arch, but the arch code is expected to select
+> ARCH_HAS_BANDGAP.
+
+There should be additional dependencies beside ARCH_BANDGAP, i.e. on
+EXYNOS platforms we currently also have dependency on PLAT_SAMSUNG
+(should be ARCH_EXYNOS instead, my other patch fixes it).
+
+> >  source "drivers/thermal/ti-soc-thermal/Kconfig"
+> >  endmenu
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
