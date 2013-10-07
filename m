@@ -1,69 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab3JGMDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:03:09 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:64048 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062Ab3JGMCv (ORCPT
+	id S1755482Ab3JGL6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:58:18 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:60755 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab3JGL6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 08:02:51 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of: irq: Pass trigger type in IRQ resource flags
-To: Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-In-Reply-To: <1380390771-4620-1-git-send-email-tomasz.figa@gmail.com>
-References: <1380390771-4620-1-git-send-email-tomasz.figa@gmail.com>
-Date: Fri, 04 Oct 2013 18:42:19 +0100
-Message-Id: <20131004174219.4EAA3C427FD@trevor.secretlab.ca>
+	Mon, 7 Oct 2013 07:58:12 -0400
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 26/50] tools/perf/build: Split out feature check: 'libbfd'
+Date: Mon,  7 Oct 2013 13:56:19 +0200
+Message-Id: <1381147003-2574-27-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Sep 2013 19:52:51 +0200, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Some drivers might rely on availability of trigger flags in IRQ
-> resource, for example to configure the hardware for particular interrupt
-> type. However current code creating IRQ resources from data in device
-> tree does not configure trigger flags in resulting resources.
-> 
-> This patch tries to solve the problem, based on the fact that
-> irq_of_parse_and_map() configures the trigger based on DT interrupt
-> specifier and IRQD_TRIGGER_* flags are consistent with IORESOURCE_IRQ_*,
-> and we can get correct trigger flags by calling irqd_get_trigger_type()
-> after mapping the interrupt.
-> 
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-cdxdfv7Corpfvjg9Skezhvjn@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile                      | 6 +++---
+ tools/perf/config/feature-checks/Makefile       | 7 +++++++
+ tools/perf/config/feature-checks/test-libbfd.c  | 7 +++++++
+ tools/perf/config/feature-checks/test-strlcpy.c | 8 ++++++++
+ 4 files changed, 25 insertions(+), 3 deletions(-)
 
-Applied, thanks.
-
-g.
-
-> ---
->  drivers/of/irq.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 1752988..12742d0 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -356,6 +356,16 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
->  		r->start = r->end = irq;
->  		r->flags = IORESOURCE_IRQ;
->  		r->name = name ? name : dev->full_name;
-> +
-> +		/*
-> +		 * Some drivers might rely on availability of trigger flags
-> +		 * in IRQ resource. Since irq_of_parse_and_map() configures the
-> +		 * trigger based on interrupt specifier and IRQD_TRIGGER_*
-> +		 * flags are consistent with IORESOURCE_IRQ_*, we can get
-> +		 * trigger type that was just set and pass it through resource
-> +		 * flags as well.
-> +		 */
-> +		r->flags |= irqd_get_trigger_type(irq_get_irq_data(irq));
->  	}
->  
->  	return irq;
-> -- 
-> 1.8.3.2
-> 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 77a2e6b..4f60ecc 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -121,6 +121,7 @@ FEATURE_TESTS =				\
+ 	libperl				\
+ 	libpython			\
+ 	libpython-version		\
++	libbfd				\
+ 	libnuma
+ 
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+@@ -393,8 +394,7 @@ else
+     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+   else
+     FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+-    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+-    ifeq ($(has_bfd),y)
++    ifeq ($(feature-libbfd), 1)
+       EXTLIBS += -lbfd
+     else
+       FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+@@ -423,7 +423,7 @@ else
+ endif
+ 
+ ifndef NO_STRLCPY
+-  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY_SUPPORT),y)
++  ifeq ($(feature-strlcpy), 1)
+     CFLAGS += -DHAVE_STRLCPY_SUPPORT
+   endif
+ endif
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index d15074d..2a3473e 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -19,6 +19,7 @@ FILES=					\
+ 	test-libperl			\
+ 	test-libpython			\
+ 	test-libpython-version		\
++	test-libbfd			\
+ 	test-libnuma
+ 
+ CC := $(CC) -MD
+@@ -112,6 +113,12 @@ test-libpython:
+ test-libpython-version:
+ 	$(BUILD) $(FLAGS_PYTHON_EMBED)
+ 
++test-libbfd:
++	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
++
++test-strlcpy:
++	$(BUILD)
++
+ -include *.d */*.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
+new file mode 100644
+index 0000000..d03339c
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-libbfd.c
+@@ -0,0 +1,7 @@
++#include <bfd.h>
++
++int main(void)
++{
++	bfd_demangle(0, 0, 0);
++	return 0;
++}
+diff --git a/tools/perf/config/feature-checks/test-strlcpy.c b/tools/perf/config/feature-checks/test-strlcpy.c
+new file mode 100644
+index 0000000..4a6b6ff
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-strlcpy.c
+@@ -0,0 +1,8 @@
++#include <stdlib.h>
++extern size_t strlcpy(char *dest, const char *src, size_t size);
++
++int main(void)
++{
++	strlcpy(NULL, NULL, 0);
++	return 0;
++}
+-- 
+1.7.11.7
 
