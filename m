@@ -1,34 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3JGNw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 09:52:58 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55872 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab3JGNw5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 09:52:57 -0400
-Message-ID: <5252BCB4.5030802@gmail.com>
-Date: Mon, 07 Oct 2013 07:52:52 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
-In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755441Ab3JGNyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 09:54:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64681 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752764Ab3JGNyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 09:54:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
+   d="scan'208";a="415181778"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCHv5 04/11] mm: introduce api for split page table lock for PMD level
+Date: Mon,  7 Oct 2013 16:54:06 +0300
+Message-Id: <1381154053-4848-5-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/7/13 5:55 AM, Ingo Molnar wrote:
-> This series improves various aspects of the tools/perf build system.
+Basic api, backed by mm->page_table_lock for now. Actual implementation
+will be added later.
 
-Branch in your tip tree? tip/rfc/perf does not seem to be it and you 
-have too many branches to manually search for it.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Tested-by: Alex Thorlton <athorlton@sgi.com>
+---
+ include/linux/mm.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-David
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 6cf8ddb45b..e3481c6b52 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1294,6 +1294,19 @@ static inline void pgtable_page_dtor(struct page *page)
+ 	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
+ 		NULL: pte_offset_kernel(pmd, address))
+ 
++static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
++{
++	return &mm->page_table_lock;
++}
++
++
++static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
++{
++	spinlock_t *ptl = pmd_lockptr(mm, pmd);
++	spin_lock(ptl);
++	return ptl;
++}
++
+ extern void free_area_init(unsigned long * zones_size);
+ extern void free_area_init_node(int nid, unsigned long * zones_size,
+ 		unsigned long zone_start_pfn, unsigned long *zholes_size);
+-- 
+1.8.4.rc3
+
