@@ -1,64 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab3JGPIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:08:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56658 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755472Ab3JGPIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:08:20 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <5252CD30.3070305@monstr.eu>
-References: <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com> <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com> <524EFE76.70200@monstr.eu> <524F04FD.5020804@zytor.com> <20131004233341.GA4028@kroah.com> <20131004234929.GB3652@obsidianresearch.com> <875b2a01-be5a-47d1-b89a-9385d54b9b64@email.android.com> <20131005051056.GA7698@obsidianresearch.com> <1c9db96e-7a36-4ec9-ab16-885780ce6de5@email.android.com> <524FB756.3040203@monstr.eu> <c59c68b8-2565-45c5-bfe9-574b76f3f9bc@email.android.com> <5252B2F4.7050600@monstr.eu> <ea858a91-1149-44cc-b2e1-bab1f579915e@email.android.com> <5252CD30.3070305@monstr.eu>
+	id S1755849Ab3JGPLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:11:21 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52692 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3JGPLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:11:19 -0400
+Message-ID: <5252CF13.3040200@gmail.com>
+Date: Mon, 07 Oct 2013 09:11:15 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 07 Oct 2013 08:07:00 -0700
-To: monstr@monstr.eu, Michal Simek <monstr@monstr.eu>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <708b6f80-97a7-41a7-9d5c-fa8bd2a8e0c5@email.android.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 26/50] tools/perf/build: Split out feature check: 'libbfd'
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org> <1381147003-2574-27-git-send-email-mingo@kernel.org>
+In-Reply-To: <1381147003-2574-27-git-send-email-mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Special soft IP presenting a PCI device to the host.
-
-Michal Simek <monstr@monstr.eu> wrote:
->On 10/07/2013 04:55 PM, H. Peter Anvin wrote:
->> If I recall correctly we simply poked at the FPGA directly from
->userspace. 
->Not ideal by any means and also meant we had to have a backup recovery
->mechanism as it meant
->that the FPGA had to be programmed already as the bus interface was in
->soft IP.
+On 10/7/13 5:56 AM, Ingo Molnar wrote:
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index 77a2e6b..4f60ecc 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -121,6 +121,7 @@ FEATURE_TESTS =				\
+>   	libperl				\
+>   	libpython			\
+>   	libpython-version		\
+> +	libbfd				\
+>   	libnuma
 >
->ok. How was that physical hardware connection to device you wanted to
->talk?
->Was it any special IP with MMIO? Or gpio jtag emulation or similar?
->
->Thanks,
->Michal
+>   $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+strlcpy missing from FEATURE_TESTS, but really the strlcpy changes 
+should be a separate patch.
+
+David
+
+> @@ -423,7 +423,7 @@ else
+>   endif
+>
+>   ifndef NO_STRLCPY
+> -  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY_SUPPORT),y)
+> +  ifeq ($(feature-strlcpy), 1)
+>       CFLAGS += -DHAVE_STRLCPY_SUPPORT
+>     endif
+>   endif
+> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+> index d15074d..2a3473e 100644
+> --- a/tools/perf/config/feature-checks/Makefile
+> +++ b/tools/perf/config/feature-checks/Makefile
+> @@ -19,6 +19,7 @@ FILES=					\
+>   	test-libperl			\
+>   	test-libpython			\
+>   	test-libpython-version		\
+> +	test-libbfd			\
+>   	test-libnuma
+>
+>   CC := $(CC) -MD
+> @@ -112,6 +113,12 @@ test-libpython:
+>   test-libpython-version:
+>   	$(BUILD) $(FLAGS_PYTHON_EMBED)
+>
+> +test-libbfd:
+> +	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
+> +
+> +test-strlcpy:
+> +	$(BUILD)
+> +
+>   -include *.d */*.d
+>
+>   ###############################
+> diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
+> new file mode 100644
+> index 0000000..d03339c
+> --- /dev/null
+> +++ b/tools/perf/config/feature-checks/test-libbfd.c
+> @@ -0,0 +1,7 @@
+> +#include <bfd.h>
+> +
+> +int main(void)
+> +{
+> +	bfd_demangle(0, 0, 0);
+> +	return 0;
+> +}
+> diff --git a/tools/perf/config/feature-checks/test-strlcpy.c b/tools/perf/config/feature-checks/test-strlcpy.c
+> new file mode 100644
+> index 0000000..4a6b6ff
+> --- /dev/null
+> +++ b/tools/perf/config/feature-checks/test-strlcpy.c
+> @@ -0,0 +1,8 @@
+> +#include <stdlib.h>
+> +extern size_t strlcpy(char *dest, const char *src, size_t size);
+> +
+> +int main(void)
+> +{
+> +	strlcpy(NULL, NULL, 0);
+> +	return 0;
+> +}
+>
+
