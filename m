@@ -1,129 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3JGK6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:58:15 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:62356 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3JGK6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:58:10 -0400
+	id S1753531Ab3JGLBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:01:55 -0400
+Received: from gmmr7.centrum.cz ([46.255.225.249]:36982 "EHLO gmmr7.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306Ab3JGLBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 07:01:52 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Mon, 07 Oct 2013 13:01:49 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130916152548.GF3674@dhcp22.suse.cz>, <20130916225246.A633145B@pobox.sk>, <20130917000244.GD3278@cmpxchg.org>, <20130917131535.94E0A843@pobox.sk>, <20130917141013.GA30838@dhcp22.suse.cz>, <20130918160304.6EDF2729@pobox.sk>, <20130918180455.GD856@cmpxchg.org>, <20130918181946.GE856@cmpxchg.org>, <20130918195504.GF856@cmpxchg.org>, <20130926185459.E5D2987F@pobox.sk> <20130926192743.GP856@cmpxchg.org>
+In-Reply-To: <20130926192743.GP856@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-In-Reply-To: <20131007013058.GA20549@yabbi.redhat.com>
-References: <1380751836-10829-1-git-send-email-dh.herrmann@gmail.com>
-	<20131003233223.GA21255@yabbi.bne.redhat.com>
-	<20131006074700.GA19155@core.coreip.homeip.net>
-	<20131006231955.GA26952@yabbi.redhat.com>
-	<f37ea673-a597-4dd2-88b4-bf190d8eeff5@email.android.com>
-	<20131007013058.GA20549@yabbi.redhat.com>
-Date: Mon, 7 Oct 2013 12:58:09 +0200
-Message-ID: <CANq1E4Ta+eTSBupwW1XbF7TR-F5uM6GNxgEPCK0uMMNAMXLyWA@mail.gmail.com>
-Subject: Re: [RFC] Input: introduce ABS_MAX2/CNT2 and friends
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <20131007130149.5F5482D8@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Mon, Oct 7, 2013 at 3:30 AM, Peter Hutterer <peter.hutterer@who-t.net> wrote:
-> On Sun, Oct 06, 2013 at 05:04:36PM -0700, Dmitry Torokhov wrote:
->> Peter Hutterer <peter.hutterer@who-t.net> wrote:
->> >On Sun, Oct 06, 2013 at 12:47:00AM -0700, Dmitry Torokhov wrote:
->> >> On Fri, Oct 04, 2013 at 09:32:23AM +1000, Peter Hutterer wrote:
->> >> > On Thu, Oct 03, 2013 at 12:10:36AM +0200, David Herrmann wrote:
->> >> > > As we painfully noticed during the 3.12 merge-window our
->> >> > > EVIOCGABS/EVIOCSABS API is limited to ABS_MAX<=0x3f. We tried
->> >several
->> >> > > hacks to work around it but if we ever decide to increase
->> >ABS_MAX, the
->> >> > > EVIOCSABS ioctl ABI might overflow into the next byte causing
->> >horrible
->> >> > > misinterpretations in the kernel that we cannot catch.
->> >> > >
->> >> > > Therefore, we decided to go with ABS_MAX2/CNT2 and introduce two
->> >new
->> >> > > ioctls to get/set abs-params. They no longer encode the ABS code
->> >in the
->> >> > > ioctl number and thus allow up to 4 billion ABS codes.
->> >> > >
->> >> > > Unfortunately, the uinput API also hard-coded the ABS_CNT value
->> >in its
->> >> > > ABI. To avoid any hacks in uinput, we simply introduce a new
->> >> > > uinput_user_dev2 to replace the old one. The new API allows
->> >growing
->> >> > > ABS_CNT2 values without any API changes.
->> >> > >
->> >> > > Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->> >> > > ---
->> >> > > Hi
->> >> > >
->> >> > > This is only compile-tested but I wanted to get a first revision
->> >out to let
->> >> > > people know what we're working on. Unfortunately, the ABS API has
->> >this horribly
->> >> > > low ABS_MAX limit and we couldn't figure out a way to increase it
->> >while keeping
->> >> > > ABI compatibility.
->> >> > >
->> >> > > Any feedback and review is welcome. And if anyone spots ABI
->> >breakage by this
->> >> > > patch, please let me know. If nothing comes up I will patch
->> >libevdev to use the
->> >> > > new API, write some extensive test-cases and push this forward.
->> >> > >
->> >> > > As a sidenote: I didn't modify joydev to use the new values.
->> >Fortunately, the
->> >> > > joydev API would allow switching to ABS_CNT2 without breaking
->> >API, but it would
->> >> > > limit the new ABS_CNT2 to 16k. This is quite high but nothing
->> >compared to the
->> >> > >  2^32 that we can theoretically support now. If you think 16k
->> >ought to be enough
->> >> > > (probably?) I can adjust the joydev API, too.
->> >> > > All other kernel users were converted to the new values. Nothing
->> >left behind..
->> >> >
->> >> >
->> >> > just a comment from skimming the patch:
->> >> > if you need a new uinput abi anyway, can we add the resolution
->> >here? it's
->> >> > sorely needed for some tests. see also the patch Benjamin sent a
->> >while ago
->> >> > ("input/uinput: support abs resolution", July 15 2013)
->> >>
->> >> Indeed. Also, while we are at it, would it make sense to allow
->> >> requesting a range of ABS infos at once?
+>On Thu, Sep 26, 2013 at 06:54:59PM +0200, azurIt wrote:
+>> On Wed, Sep 18, 2013 at 02:19:46PM -0400, Johannes Weiner wrote:
+>> >Here is an update.  Full replacement on top of 3.2 since we tried a
+>> >dead end and it would be more painful to revert individual changes.
 >> >
->> >yes, but what API did you have in mind?
+>> >The first bug you had was the same task entering OOM repeatedly and
+>> >leaking the memcg reference, thus creating undeletable memcgs.  My
+>> >fixup added a condition that if the task already set up an OOM context
+>> >in that fault, another charge attempt would immediately return -ENOMEM
+>> >without even trying reclaim anymore.  This dropped __getblk() into an
+>> >endless loop of waking the flushers and performing global reclaim and
+>> >memcg returning -ENOMEM regardless of free memory.
 >> >
->>
->> I was thinking about specifying the start ABS but and the count and array of absinfo structures to be filled.
+>> >The update now basically only changes this -ENOMEM to bypass, so that
+>> >the memory is not accounted and the limit ignored.  OOM killed tasks
+>> >are granted the same right, so that they can exit quickly and release
+>> >memory.  Likewise, we want a task that hit the OOM condition also to
+>> >finish the fault quickly so that it can invoke the OOM killer.
+>> >
+>> >Does the following work for you, azur?
+>> 
+>> 
+>> Johannes,
+>> 
+>> bad news everyone! :(
+>> 
+>> Unfortunaely, two different problems appears today:
+>> 
+>> 1.) This looks like my very original problem - stucked processes inside one cgroup. I took stacks from all of them over time but server was very slow so i had to kill them soon:
+>> http://watchdog.sk/lkmlmemcg-bug-9.tar.gz
+>> 
+>> 2.) This was just like my last problem where few processes were doing huge i/o. As sever was almost unoperable i barely killed them so no more info here, sorry.
 >
-> yeah, that works for me (I suspect 90% of users will use ABS_MAX anyway :)
+>From one of the tasks:
+>
+>1380213238/11210/stack:[<ffffffff810528f1>] sys_sched_yield+0x41/0x70
+>1380213238/11210/stack:[<ffffffff81148ef1>] free_more_memory+0x21/0x60
+>1380213238/11210/stack:[<ffffffff8114957d>] __getblk+0x14d/0x2c0
+>1380213238/11210/stack:[<ffffffff81198a2b>] ext3_getblk+0xeb/0x240
+>1380213238/11210/stack:[<ffffffff8119d2df>] ext3_find_entry+0x13f/0x480
+>1380213238/11210/stack:[<ffffffff8119dd6d>] ext3_lookup+0x4d/0x120
+>1380213238/11210/stack:[<ffffffff81122a55>] d_alloc_and_lookup+0x45/0x90
+>1380213238/11210/stack:[<ffffffff81122ff8>] do_lookup+0x278/0x390
+>1380213238/11210/stack:[<ffffffff81124c40>] path_lookupat+0x120/0x800
+>1380213238/11210/stack:[<ffffffff81125355>] do_path_lookup+0x35/0xd0
+>1380213238/11210/stack:[<ffffffff811254d9>] user_path_at_empty+0x59/0xb0
+>1380213238/11210/stack:[<ffffffff81125541>] user_path_at+0x11/0x20
+>1380213238/11210/stack:[<ffffffff81115b70>] sys_faccessat+0xd0/0x200
+>1380213238/11210/stack:[<ffffffff81115cb8>] sys_access+0x18/0x20
+>1380213238/11210/stack:[<ffffffff815ccc26>] system_call_fastpath+0x18/0x1d
+>
+>Should have seen this coming... it's still in that braindead
+>__getblk() loop, only from a syscall this time (no OOM path).  The
+>group's memory.stat looks like this:
+>
+>cache 0
+>rss 0
+>mapped_file 0
+>pgpgin 0
+>pgpgout 0
+>swap 0
+>pgfault 0
+>pgmajfault 0
+>inactive_anon 0
+>active_anon 0
+>inactive_file 0
+>active_file 0
+>unevictable 0
+>hierarchical_memory_limit 209715200
+>hierarchical_memsw_limit 209715200
+>total_cache 0
+>total_rss 209715200
+>total_mapped_file 0
+>total_pgpgin 1028153297
+>total_pgpgout 1028102097
+>total_swap 0
+>total_pgfault 1352903120
+>total_pgmajfault 45342
+>total_inactive_anon 0
+>total_active_anon 209715200
+>total_inactive_file 0
+>total_active_file 0
+>total_unevictable 0
+>
+>with anonymous pages to the limit and you probably don't have any swap
+>space enabled to anything in the group.
+>
+>I guess there is no way around annotating that __getblk() loop.  The
+>best solution right now is probably to use __GFP_NOFAIL.  For one, we
+>can let the allocation bypass the memcg limit if reclaim can't make
+>progress.  But also, the loop is then actually happening inside the
+>page allocator, where it should happen, and not around ad-hoc direct
+>reclaim in buffer.c.
+>
+>Can you try this on top of our ever-growing stack of patches?
 
-And how exactly should this look like? Like this:
 
-#define EVIOCGABS2(cnt)             _IOR('E', 0x92, struct
-input_absinfo2 * (cnt))
 
-Or like this:
 
-struct input_absinfo3 {
-  size_t cnt;
-  struct input_absinfo2[];
-};
+Joahnnes,
 
-#define EVIOCGABS2             _IOR('E', 0x92, struct input_absinfo3)
+looks like the problem is completely resolved :) Thank you, Michal Hocko and everyone involved for help and time.
 
-btw., resolution added and uinput changes split off into separate patch.
+One more thing:
+I see that your patches are going into 3.12. Is there a chance to get them also into 3.2? Is Ben Hutchings (current maintainer of 3.2 branch) competent to decide this? Should i contact him directly? I can't upgrade to 3.12 because stable grsecurity is for 3.2 and i don't think this will change in near future.
+ 
 
-Thanks
-David
+azur
