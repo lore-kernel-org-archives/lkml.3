@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab3JGLNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:13:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50256 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab3JGLNl (ORCPT
+	id S1752473Ab3JGLQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:16:42 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:43909 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3JGLQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:13:41 -0400
-Date: Mon, 7 Oct 2013 12:13:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: swarren@nvidia.com, linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20131007111334.GK21581@sirena.org.uk>
-References: <1380809197-7759-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 7 Oct 2013 07:16:36 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCF9ydJxlAJsfRTu"
-Content-Disposition: inline
-In-Reply-To: <1380809197-7759-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Penalty for private use.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: palmas: get regulators node from parent node
- only
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20131002130143.GF28601@twins.programming.kicks-ass.net>
+References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+	<20130930161546.GG3081@twins.programming.kicks-ass.net>
+	<CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
+	<20130930165420.GI3081@twins.programming.kicks-ass.net>
+	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
+	<20131002112316.GP3081@twins.programming.kicks-ass.net>
+	<20131002115826.GM26785@twins.programming.kicks-ass.net>
+	<20131002123953.GB27811@gmail.com>
+	<20131002124610.GD28601@twins.programming.kicks-ass.net>
+	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
+	<20131002130143.GF28601@twins.programming.kicks-ass.net>
+Date: Mon, 7 Oct 2013 13:16:35 +0200
+Message-ID: <CABPqkBQs1bjOoPVZKWc09+12Bs1DaLk9z+J4c6UK1C2mZfSGJw@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
+>> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
+>> >>  - then there are timing attacks, and someone having access to a PMU
+>> >>    context and who can trigger this SHA1 computation arbitrarily in task
+>> >>    local context can run very accurate and low noise timing attacks...
+>> >>
+>> >>    I don't think the kernel's sha_transform() is hardened against timing
+>> >>    attacks, it's performance optimized so it has variable execution time
+>> >>    highly dependent on plaintext input - which leaks information about the
+>> >>    plaintext.
+>> >
+>> > Typical user doesn't have enough priv to profile kernel space; once you
+>> > do you also have enough priv to see kernel addresses outright (ie.
+>> > kallsyms etc..).
+>> >
+>> I was going to say just that. But that's not the default, paranoid level
+>> is at 1 by default and not 2. So I supposedly can still do:
+>
+> Oh right you are.. so yes that's a very viable avenue.
 
---FCF9ydJxlAJsfRTu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Oct 03, 2013 at 07:36:37PM +0530, Laxman Dewangan wrote:
-> The device tree binding of Palmas regulator driver says as:
-
-Applied, thanks.
-
---FCF9ydJxlAJsfRTu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSUpdbAAoJELSic+t+oim9dYMP/j3KovWXGVI8UaIreIn/dojh
-yjKRftW3Q/JIbJbcf7+off6NtM7G6WuAl/FFHzZAGIC+yTX5R35nu99KFYcNA15h
-g3cNF6OGrEWdsNHsIt9wZCF/sqCtf89hY71WACMRl0nUBBlwdv/OIyCiDkzZy+rM
-NDVddzKt4Qe8spJntepSQNmIVtiJWLbgp+astMKtJE6NmjmcZYZV+GuHFOAwzB0D
-A3x+WxzvRA7C4gGWT/aOObsboJAkrfGS1qE2cdGiBzdQyHtMkMRczwa7NPPHORlj
-X3gqUBlA76PJdv9MfYpautaurM0jqX7qzqeHQONvUXBgn+21r1QF88b9ZlJi0ZTn
-oxV2oGsxVItP8hAtY021Sdh9dG7TB5AlsIthl1AUmsSx05KcLg/QtiMNMlPOrtJU
-btqTbtVvpOJEUr31bgiiulUjPDMCthwumq+9jfCRT8kqADCrcEKvOTmJw3xa/WFS
-oH5xmhq3UTJVgzvxWcBbgXmJuithzvZDbDKr7KM+lj6DQ61s/oriG5E1KHPecA54
-MUIcT3lds/vakWFMnbnFlnRATGnK1yxNAiCOnvfdsv7fxUESydqsBg+9rPVf618N
-Z3sqT/ZglHKQGzVCOu6XUQsbWSErFBft29dHCX3I219Ou3/6D3N4Pgv7oT9xEiMA
-i1KKkSmfIQdGdp5GDsR9
-=V0I8
------END PGP SIGNATURE-----
-
---FCF9ydJxlAJsfRTu--
+I am going to try this out today. I think if it works well, we could
+also simplify the
+MMAP2 record and just pass this unique id for all cases.MMAP2 is only in rcX
+release so far. Is that still possible?
