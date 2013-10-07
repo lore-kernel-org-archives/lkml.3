@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3JGG4h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 02:56:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54926 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab3JGG4f (ORCPT
+	id S1755293Ab3JGG5i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 02:57:38 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:33378 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755048Ab3JGG5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 02:56:35 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 00/11] driver core bus cleanup to use dev_groups
-Date: Sun,  6 Oct 2013 23:55:39 -0700
-Message-Id: <1381128950-28125-1-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+	Mon, 7 Oct 2013 02:57:37 -0400
+Date: Mon, 7 Oct 2013 14:56:37 +0800
+From: ZHAO Gang <gamerh2o@gmail.com>
+To: trivial@kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH TRIVIAL] net: correct typos in comments
+Message-ID: <20131007065637.GA10624@will>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a series to start cleaning up the different bus code to not use
-'dev_attr' and instead, use 'dev_groups' as dev_attr will be removed
-soon.
-
-greg k-h
-
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
 ---
- drivers/bcma/main.c                        |   23 ++++++---
- drivers/hsi/hsi.c                          |   10 ++-
- drivers/mmc/core/bus.c                     |   12 ++--
- drivers/mmc/core/sdio_bus.c                |   21 ++++----
- drivers/net/phy/mdio_bus.c                 |   10 ++-
- drivers/pci/pci-driver.c                   |    2 
- drivers/pci/pci-sysfs.c                    |   73 ++++++++++++++++++-----------
- drivers/pci/pci.h                          |    2 
- drivers/pcmcia/ds.c                        |   65 +++++++++++++++----------
- drivers/pnp/base.h                         |    2 
- drivers/pnp/driver.c                       |    2 
- drivers/pnp/interface.c                    |   43 ++++++++++-------
- drivers/rapidio/rio-driver.c               |    2 
- drivers/rapidio/rio-sysfs.c                |   38 +++++++++------
- drivers/rapidio/rio.h                      |    2 
- drivers/ssb/main.c                         |   25 +++++----
- drivers/uwb/umc-bus.c                      |   13 +++--
- drivers/xen/xenbus/xenbus_probe.c          |   24 +++++++--
- drivers/xen/xenbus/xenbus_probe.h          |    2 
- drivers/xen/xenbus/xenbus_probe_backend.c  |    2 
- drivers/xen/xenbus/xenbus_probe_frontend.c |    2 
- 21 files changed, 231 insertions(+), 144 deletions(-)
+ include/linux/netdevice.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 3de49ac..0dd6de7 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -366,7 +366,7 @@ typedef enum gro_result gro_result_t;
+  * Upon return, rx_handler is expected to tell __netif_receive_skb() what to
+  * do with the skb.
+  *
+- * If the rx_handler consumed to skb in some way, it should return
++ * If the rx_handler consumed the skb in some way, it should return
+  * RX_HANDLER_CONSUMED. This is appropriate when the rx_handler arranged for
+  * the skb to be delivered in some other ways.
+  *
+@@ -378,7 +378,7 @@ typedef enum gro_result gro_result_t;
+  * RX_HANDLER_EXACT. The skb will only be delivered to protocol handlers that
+  * are registered on exact device (ptype->dev == skb->dev).
+  *
+- * If the rx_handler didn't changed skb->dev, but want the skb to be normally
++ * If the rx_handler didn't change skb->dev, but want the skb to be normally
+  * delivered, it should return RX_HANDLER_PASS.
+  *
+  * A device without a registered rx_handler will behave as if rx_handler
+-- 
+1.8.3.1
 
