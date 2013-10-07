@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3JGL6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:58:44 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36170 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab3JGL6i (ORCPT
+	id S1755835Ab3JGL7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:59:21 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:52200 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab3JGL6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:58:38 -0400
+	Mon, 7 Oct 2013 07:58:36 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 50/50] tools/perf/build: Harmonize the style of the feature testcases
-Date: Mon,  7 Oct 2013 13:56:43 +0200
-Message-Id: <1381147003-2574-51-git-send-email-mingo@kernel.org>
+Subject: [PATCH 48/50] tools/perf/build: Fix non-canonical directory names in O=
+Date: Mon,  7 Oct 2013 13:56:41 +0200
+Message-Id: <1381147003-2574-49-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -23,167 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The various testcases used different styles, which was not really
-visible as long as they hid in feature-tests.mak. Now that they
-are out in the open make them prettier.
+This was a long-standing bug, relative pathnames like O=dir did not fully
+work in the build system:
 
-( Also delete the leftover, empty feature-tests.mak file. )
+    $ make O=localdir clean
+
+    SUBDIR Documentation
+    ../../scripts/Makefile.include:3: *** O=localdir does not exist.  Stop.
+    make[1]: *** [clean] Error 2
+    make: *** [clean] Error 2
+
+Fix this by canonizing the directory before passing it to Makefile.perf.
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-drDWk8xltndjdsespzjbhu6w@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-hchMp1hozn9tqgswWcooxcru@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/feature-checks/test-backtrace.c         | 1 -
- tools/perf/config/feature-checks/test-cplus-demangle.c    | 1 -
- tools/perf/config/feature-checks/test-dwarf.c             | 1 +
- tools/perf/config/feature-checks/test-glibc.c             | 2 +-
- tools/perf/config/feature-checks/test-libaudit.c          | 1 +
- tools/perf/config/feature-checks/test-libbfd.c            | 1 -
- tools/perf/config/feature-checks/test-libelf-getphdrnum.c | 3 ++-
- tools/perf/config/feature-checks/test-libelf-mmap.c       | 3 ++-
- tools/perf/config/feature-checks/test-libelf.c            | 1 +
- tools/perf/config/feature-checks/test-libnuma.c           | 1 +
- tools/perf/config/feature-checks/test-libpython.c         | 3 ++-
- tools/perf/config/feature-tests.mak                       | 2 --
- 12 files changed, 11 insertions(+), 9 deletions(-)
+ tools/perf/Makefile | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
-index 5b33bcf..7124aa1 100644
---- a/tools/perf/config/feature-checks/test-backtrace.c
-+++ b/tools/perf/config/feature-checks/test-backtrace.c
-@@ -11,4 +11,3 @@ int main(void)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 74f52d8..9580ebe 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -30,12 +30,19 @@ ifeq ($(JOBS),)
+   endif
+ endif
  
- 	return 0;
- }
--
-diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
-index ab29f80..610c686 100644
---- a/tools/perf/config/feature-checks/test-cplus-demangle.c
-+++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
-@@ -12,4 +12,3 @@ int main(void)
++#
++# Only pass canonical directory names as the output directory:
++#
++ifneq ($(O),)
++  FULL_O := $(shell readlink -f $(O))
++endif
++
+ define print_msg
+   @printf '    BUILD: Doing '\''make \033[33m-j'$(JOBS)'\033[m'\'' parallel build\n'
+ endef
  
- 	return 0;
- }
--
-diff --git a/tools/perf/config/feature-checks/test-dwarf.c b/tools/perf/config/feature-checks/test-dwarf.c
-index 783dfcd..3fc1801 100644
---- a/tools/perf/config/feature-checks/test-dwarf.c
-+++ b/tools/perf/config/feature-checks/test-dwarf.c
-@@ -5,5 +5,6 @@
- int main(void)
- {
- 	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
-+
- 	return (long)dbg;
- }
-diff --git a/tools/perf/config/feature-checks/test-glibc.c b/tools/perf/config/feature-checks/test-glibc.c
-index 13c66a5..b082034 100644
---- a/tools/perf/config/feature-checks/test-glibc.c
-+++ b/tools/perf/config/feature-checks/test-glibc.c
-@@ -3,6 +3,6 @@
- int main(void)
- {
- 	const char *version = gnu_get_libc_version();
-+
- 	return (long)version;
- }
--
-diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
-index f7e791e..afc019f 100644
---- a/tools/perf/config/feature-checks/test-libaudit.c
-+++ b/tools/perf/config/feature-checks/test-libaudit.c
-@@ -5,5 +5,6 @@ extern int printf(const char *format, ...);
- int main(void)
- {
- 	printf("error message: %s\n", audit_errno_to_name(0));
-+
- 	return audit_open();
- }
-diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
-index 1886c78..2405990 100644
---- a/tools/perf/config/feature-checks/test-libbfd.c
-+++ b/tools/perf/config/feature-checks/test-libbfd.c
-@@ -13,4 +13,3 @@ int main(void)
+ define make
+-  @$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) O=$(O) $@
++  @$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) O=$(FULL_O) $@
+ endef
  
- 	return 0;
- }
--
-diff --git a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
-index 58eca53..d710459 100644
---- a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
-+++ b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
-@@ -1,7 +1,8 @@
- #include <libelf.h>
--#
-+
- int main(void)
- {
- 	size_t dst;
-+
- 	return elf_getphdrnum(0, &dst);
- }
-diff --git a/tools/perf/config/feature-checks/test-libelf-mmap.c b/tools/perf/config/feature-checks/test-libelf-mmap.c
-index 1c64815..564427d 100644
---- a/tools/perf/config/feature-checks/test-libelf-mmap.c
-+++ b/tools/perf/config/feature-checks/test-libelf-mmap.c
-@@ -1,7 +1,8 @@
- #include <libelf.h>
--#
-+
- int main(void)
- {
- 	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
-+
- 	return (long)elf;
- }
-diff --git a/tools/perf/config/feature-checks/test-libelf.c b/tools/perf/config/feature-checks/test-libelf.c
-index 1a08f97..08db322 100644
---- a/tools/perf/config/feature-checks/test-libelf.c
-+++ b/tools/perf/config/feature-checks/test-libelf.c
-@@ -3,5 +3,6 @@
- int main(void)
- {
- 	Elf *elf = elf_begin(0, ELF_C_READ, 0);
-+
- 	return (long)elf;
- }
-diff --git a/tools/perf/config/feature-checks/test-libnuma.c b/tools/perf/config/feature-checks/test-libnuma.c
-index 70510a9..4763d9c 100644
---- a/tools/perf/config/feature-checks/test-libnuma.c
-+++ b/tools/perf/config/feature-checks/test-libnuma.c
-@@ -4,5 +4,6 @@
- int main(void)
- {
- 	numa_available();
-+
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-libpython.c b/tools/perf/config/feature-checks/test-libpython.c
-index 7226797..b24b28a 100644
---- a/tools/perf/config/feature-checks/test-libpython.c
-+++ b/tools/perf/config/feature-checks/test-libpython.c
-@@ -1,7 +1,8 @@
- #include <Python.h>
--#
-+
- int main(void)
- {
- 	Py_Initialize();
-+
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-deleted file mode 100644
-index 139597f..0000000
---- a/tools/perf/config/feature-tests.mak
-+++ /dev/null
-@@ -1,2 +0,0 @@
--
--
+ #
 -- 
 1.7.11.7
 
