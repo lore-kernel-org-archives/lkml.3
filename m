@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3JGPZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:25:59 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:16985 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab3JGPZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:25:56 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-c0-5252d2824c78
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Cc: Shaohua Li <shli@fusionio.com>, Minchan Kim <minchan@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] frontswap: enable call to invalidate area on swapoff
-Date: Mon, 07 Oct 2013 17:25:41 +0200
-Message-id: <1381159541-13981-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xq7pNl4KCDFZc47aYs34Nm8XrF4YW
-	yxY/ZbS4vGsOm8W9Nf9ZLZZ9fc9ucWo5hwO7x5Omn8wem1Z1snls+jSJ3ePEjN8sHh+f3mLx
-	6NuyitHj8ya5APYoLpuU1JzMstQifbsErozf1/ayFMzlrHj3oYW1gfEZexcjJ4eEgInEnsYW
-	ZghbTOLCvfVsXYxcHEICSxkljj1dwwLh9DFJnPnRxQpSxSZgLLF5+RKwKhGBiYwS978/AWtn
-	FiiVuNm3khHEFhZwlZh/eyeYzSKgKtG9GqKZV8BdYsWzTqCpHEDrFCTmTLKZwMi9gJFhFaNo
-	amlyQXFSeq6hXnFibnFpXrpecn7uJkZI2HzZwbj4mNUhRgEORiUeXoHDQUFCrIllxZW5hxgl
-	OJiVRHhvnQAK8aYkVlalFuXHF5XmpBYfYmTi4JRqYCxrjtO6NjGumLVt1qJpaVHB96f8Pf/I
-	uDdGNFnom3946ka3YyfMfpzeeXvTySrhTPuicKVCrm2vT4tsEeri95S859h0WKym/WRogYZm
-	4DyxpRPq13LzHTUsFZEw0vhWmscW2CUVm7z4tO79KayMPFsZJC+/C3wjNGfusWuPGfr2brzd
-	3DTnvhJLcUaioRZzUXEiAC5OXej5AQAA
+	id S1755878Ab3JGP1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:27:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6061 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704Ab3JGP1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:27:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
+   d="scan'208";a="415224211"
+Date: Mon, 7 Oct 2013 20:03:51 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: kgene.kim@samsung.com, Dan Williams <djbw@fb.com>,
+        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v5 2/4] dmaengine: add driver for Samsung s3c24xx SoCs
+Message-ID: <20131007143351.GK2954@intel.com>
+References: <201309182118.28391.heiko@sntech.de>
+ <201309182119.54560.heiko@sntech.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309182119.54560.heiko@sntech.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During swapoff the frontswap_map was NULL-ified before calling
-frontswap_invalidate_area(). However the frontswap_invalidate_area()
-exits early if frontswap_map is NULL. Invalidate was never called during
-swapoff.
+On Wed, Sep 18, 2013 at 09:19:54PM +0200, Heiko Stübner wrote:
+> This adds a new driver to support the s3c24xx dma using the dmaengine
+> and makes the old one in mach-s3c24xx obsolete in the long run.
+> 
+> Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
+> with numerous virtual channels being mapped to a lot less physical ones.
+> The driver therefore borrows a lot from the amba-pl08x driver in this
+> regard. Functionality-wise the driver gains a memcpy ability in addition
+> to the slave_sg one.
+> 
+> The driver supports both the method for requesting the peripheral used
+> by SoCs before the S3C2443 and the different method for S3C2443 and later.
+> 
+> On earlier SoCs the hardware channels usable for specific peripherals is
+> constrainted while on later SoCs all channels can be used for any peripheral.
+> 
+> Tested on a s3c2416-based board, memcpy using the dmatest module and
+> slave_sg partially using the spi-s3c64xx driver.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
-This patch moves frontswap_map_set() in swapoff just after calling
-frontswap_invalidate_area() so outside of locks
-(swap_lock and swap_info_struct->lock). This shouldn't be a problem as
-during swapon the frontswap_map_set() is called also outside of any
-locks.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- mm/swapfile.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 3963fc2..3a4896b 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1922,10 +1922,10 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	p->cluster_info = NULL;
- 	p->flags = 0;
- 	frontswap_map = frontswap_map_get(p);
--	frontswap_map_set(p, NULL);
- 	spin_unlock(&p->lock);
- 	spin_unlock(&swap_lock);
- 	frontswap_invalidate_area(type);
-+	frontswap_map_set(p, NULL);
- 	mutex_unlock(&swapon_mutex);
- 	free_percpu(p->percpu_cluster);
- 	p->percpu_cluster = NULL;
--- 
-1.7.9.5
-
+--
+~Vinod
