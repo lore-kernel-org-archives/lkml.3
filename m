@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3JGMAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:00:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42619 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab3JGL6b (ORCPT
+	id S1755972Ab3JGMAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:00:51 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:50826 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755586Ab3JGL63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:58:31 -0400
+	Mon, 7 Oct 2013 07:58:29 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 44/50] tools/perf/build: Collapse the test-all.c testcase
-Date: Mon,  7 Oct 2013 13:56:37 +0200
-Message-Id: <1381147003-2574-45-git-send-email-mingo@kernel.org>
+Subject: [PATCH 43/50] tools/perf/build: Clean up various testcases
+Date: Mon,  7 Oct 2013 13:56:36 +0200
+Message-Id: <1381147003-2574-44-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -23,350 +23,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify test-all.c by including it all the testcases via #include.
+Prepare to include them into test-all.c directly, by making sure
+that they build cleanly and without warnings.
+
+Also make sure they make a certain amount of sense and don't crash
+when executed.
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-pcZlwqq5ou7Ebvkekvhtzfbm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-Mn9gsdutzopoowk3xurqpsxE@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/feature-checks/test-all.c       | 290 +++++++++++++++---------------------------
- tools/perf/config/feature-checks/test-backtrace.c |   2 -
- tools/perf/config/feature-checks/test-libunwind.c |   3 +-
- 3 files changed, 102 insertions(+), 193 deletions(-)
+ tools/perf/config/feature-checks/test-backtrace.c      | 10 ++++++++--
+ tools/perf/config/feature-checks/test-cplus-demangle.c |  9 +++++++--
+ tools/perf/config/feature-checks/test-gtk2-infobar.c   |  3 ++-
+ tools/perf/config/feature-checks/test-gtk2.c           |  2 +-
+ tools/perf/config/feature-checks/test-libaudit.c       |  2 ++
+ tools/perf/config/feature-checks/test-libbfd.c         | 11 ++++++++++-
+ tools/perf/config/feature-checks/test-libunwind.c      |  8 +++++++-
+ tools/perf/config/feature-checks/test-on-exit.c        | 11 ++++++++++-
+ 8 files changed, 47 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 9f7c4b1..50d4318 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -1,196 +1,106 @@
--
--#pragma GCC diagnostic ignored "-Wstrict-prototypes"
--
--#include <Python.h>
--
--#include <EXTERN.h>
--#include <perl.h>
--
--#include <stdio.h>
--#include <libelf.h>
--#include <gnu/libc-version.h>
--#include <dwarf.h>
--#include <elfutils/libdw.h>
--#include <elfutils/version.h>
--#include <libelf.h>
--#include <libunwind.h>
--#include <stdlib.h>
--#include <libaudit.h>
--#include <slang.h>
--#include <gtk/gtk.h>
--#include <bfd.h>
--#include <stdio.h>
--#include <execinfo.h>
--#include <stdio.h>
--#include <numa.h>
--#include <numaif.h>
--
--#pragma GCC diagnostic error "-Wstrict-prototypes"
--
--int main1(void)
--{
--	return puts("hi");
--}
--
--int main2(void)
--{
--	return puts("hi");
--}
--
--int main3(void)
--{
--	return puts("hi");
--}
--
--int main4(void)
--{
--	Elf *elf = elf_begin(0, ELF_C_READ, 0);
--	return (long)elf;
--}
--#
--int main5(void)
--{
--	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
--	return (long)elf;
--}
--
--int main6(void)
--{
--	const char *version = gnu_get_libc_version();
--	return (long)version;
--}
--
--int main7(void)
--{
--	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
--	return (long)dbg;
--}
--
--int main8(void)
--{
--	size_t dst;
--	return elf_getphdrnum(0, &dst);
--}
--
--extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
--                                      unw_word_t ip,
--                                      unw_dyn_info_t *di,
--                                      unw_proc_info_t *pi,
--                                      int need_unwind_info, void *arg);
--
--
--#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
--
--int main9(void)
--{
--	unw_addr_space_t addr_space;
--	addr_space = unw_create_addr_space(NULL, 0);
--	unw_init_remote(NULL, addr_space, NULL);
--	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
--	return 0;
--}
--
--int main10(void)
--{
--	printf("error message: %s\n", audit_errno_to_name(0));
--	return audit_open();
--}
--
--int main11(void)
--{
--	return SLsmg_init_smg();
--}
--
--int main12(int argc, char *argv[])
--{
--        gtk_init(&argc, &argv);
--
--        return 0;
--}
--
--int main13(void)
--{
--	gtk_info_bar_new();
--
--	return 0;
--}
--
--int main14(void)
--{
--	perl_alloc();
--
--	return 0;
--}
--
--int main15(void)
--{
--	Py_Initialize();
--	return 0;
--}
--
--#if PY_VERSION_HEX >= 0x03000000
--	#error
--#endif
--
--int main16(void)
--{
--	return 0;
--}
--
--int main17(void)
--{
--	bfd_demangle(0, 0, 0);
--	return 0;
--}
--
--void exit_function(int x, void *y)
--{
--}
--
--int main18(void)
--{
--	return on_exit(exit_function, NULL);
--}
--
--int main19(void)
--{
--	void *backtrace_fns[1];
--	size_t entries;
--
--	entries = backtrace(backtrace_fns, 1);
--	backtrace_symbols(backtrace_fns, entries);
--
--	return 0;
--}
--
--int main20(void)
--{
--	numa_available();
--	return 0;
--}
-+/*
-+ * test-all.c: Try to build all the main testcases at once.
-+ *
-+ * A well-configured system will have all the prereqs installed, so we can speed
-+ * up auto-detection on such systems.
-+ */
+diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
+index 5b79468..6a5fd96 100644
+--- a/tools/perf/config/feature-checks/test-backtrace.c
++++ b/tools/perf/config/feature-checks/test-backtrace.c
+@@ -3,8 +3,14 @@
+ 
+ int main(void)
+ {
+-	backtrace(NULL, 0);
+-	backtrace_symbols(NULL, 0);
++	void *backtrace_fns[10];
++	size_t entries;
+ 
++	entries = backtrace(backtrace_fns, 10);
++	backtrace_symbols_fd(backtrace_fns, entries, 1);
 +
-+/*
-+ * Quirk: Python and Perl headers cannot be in arbitrary places, so keep
-+ * these 3 testcases at the top:
-+ */
-+#define main main_test_libpython
-+# include "test-libpython.c"
-+#undef main
++	printf("backtrace entries: %d\n", entries);
++ 
+ 	return 0;
+ }
 +
-+#define main main_test_libpython_version
-+# include "test-libpython-version.c"
-+#undef main
+diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
+index 5202f50..ab29f80 100644
+--- a/tools/perf/config/feature-checks/test-cplus-demangle.c
++++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
+@@ -1,9 +1,14 @@
+-
++extern int printf(const char *format, ...);
+ extern char *cplus_demangle(const char *, int);
+ 
+ int main(void)
+ {
+-	cplus_demangle(0, 0);
++	char symbol[4096] = "FieldName__9ClassNameFd";
++	char *tmp;
 +
-+#define main main_test_libperl
-+# include "test-libperl.c"
-+#undef main
++	tmp = cplus_demangle(symbol, 0);
 +
-+#define main main_test_hello
-+# include "test-hello.c"
-+#undef main
-+
-+#define main main_test_libelf
-+# include "test-libelf.c"
-+#undef main
-+
-+#define main main_test_libelf_mmap
-+# include "test-libelf-mmap.c"
-+#undef main
-+
-+#define main main_test_glibc
-+# include "test-glibc.c"
-+#undef main
-+
-+#define main main_test_dwarf
-+# include "test-dwarf.c"
-+#undef main
-+
-+#define main main_test_libelf_getphdrnum
-+# include "test-libelf-getphdrnum.c"
-+#undef main
-+
-+#define main main_test_libunwind
-+# include "test-libunwind.c"
-+#undef main
-+
-+#define main main_test_libaudit
-+# include "test-libaudit.c"
-+#undef main
-+
-+#define main main_test_libslang
-+# include "test-libslang.c"
-+#undef main
-+
-+#define main main_test_gtk2
-+# include "test-gtk2.c"
-+#undef main
-+
-+#define main main_test_gtk2_infobar
-+# include "test-gtk2-infobar.c"
-+#undef main
-+
-+#define main main_test_libbfd
-+# include "test-libbfd.c"
-+#undef main
-+
-+#define main main_test_on_exit
-+# include "test-on-exit.c"
-+#undef main
-+
-+#define main main_test_backtrace
-+# include "test-backtrace.c"
-+#undef main
-+
-+#define main main_test_libnuma
-+# include "test-libnuma.c"
-+#undef main
++	printf("demangled symbol: {%s}\n", tmp);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-gtk2-infobar.c b/tools/perf/config/feature-checks/test-gtk2-infobar.c
+index eebcfbc..397b464 100644
+--- a/tools/perf/config/feature-checks/test-gtk2-infobar.c
++++ b/tools/perf/config/feature-checks/test-gtk2-infobar.c
+@@ -2,8 +2,9 @@
+ #include <gtk/gtk.h>
+ #pragma GCC diagnostic error "-Wstrict-prototypes"
+ 
+-int main(void)
++int main(int argc, char *argv[])
+ {
++	gtk_init(&argc, &argv);
+ 	gtk_info_bar_new();
+ 
+ 	return 0;
+diff --git a/tools/perf/config/feature-checks/test-gtk2.c b/tools/perf/config/feature-checks/test-gtk2.c
+index 1ac6d8a..6bd80e5 100644
+--- a/tools/perf/config/feature-checks/test-gtk2.c
++++ b/tools/perf/config/feature-checks/test-gtk2.c
+@@ -4,7 +4,7 @@
  
  int main(int argc, char *argv[])
  {
--	main1();
--	main2();
--	main3();
--	main4();
--	main5();
--	main6();
--	main7();
--	main8();
--	main9();
--	main10();
--	main11();
--	main12(argc, argv);
--	main13();
--	main14();
--	main15();
--	main16();
--	main17();
--	main18();
--	main19();
--	main20();
-+	main_test_libpython();
-+	main_test_libpython_version();
-+	main_test_libperl();
-+	main_test_hello();
-+	main_test_libelf();
-+	main_test_libelf_mmap();
-+	main_test_glibc();
-+	main_test_dwarf();
-+	main_test_libelf_getphdrnum();
-+	main_test_libunwind();
-+	main_test_libaudit();
-+	main_test_libslang();
-+	main_test_gtk2(argc, argv);
-+	main_test_gtk2_infobar(argc, argv);
-+	main_test_libbfd();
-+	main_test_on_exit();
-+	main_test_backtrace();
-+	main_test_libnuma();
+-        gtk_init(&argc, &argv);
++	gtk_init(&argc, &argv);
  
- 	return 0;
+         return 0;
  }
-diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
-index 6a5fd96..5b33bcf 100644
---- a/tools/perf/config/feature-checks/test-backtrace.c
-+++ b/tools/perf/config/feature-checks/test-backtrace.c
-@@ -9,8 +9,6 @@ int main(void)
- 	entries = backtrace(backtrace_fns, 10);
- 	backtrace_symbols_fd(backtrace_fns, entries, 1);
+diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
+index 854a65d..f7e791e 100644
+--- a/tools/perf/config/feature-checks/test-libaudit.c
++++ b/tools/perf/config/feature-checks/test-libaudit.c
+@@ -1,5 +1,7 @@
+ #include <libaudit.h>
  
--	printf("backtrace entries: %d\n", entries);
-- 
- 	return 0;
- }
++extern int printf(const char *format, ...);
++
+ int main(void)
+ {
+ 	printf("error message: %s\n", audit_errno_to_name(0));
+diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
+index d03339c..1886c78 100644
+--- a/tools/perf/config/feature-checks/test-libbfd.c
++++ b/tools/perf/config/feature-checks/test-libbfd.c
+@@ -1,7 +1,16 @@
+ #include <bfd.h>
  
-diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
-index 088fc59..43b9369 100644
---- a/tools/perf/config/feature-checks/test-libunwind.c
-+++ b/tools/perf/config/feature-checks/test-libunwind.c
-@@ -18,9 +18,10 @@ int main(void)
- 
- 	addr_space = unw_create_addr_space(&accessors, 0);
- 	if (addr_space)
--		return;
-+		return 0;
- 
- 	unw_init_remote(NULL, addr_space, NULL);
- 	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++extern int printf(const char *format, ...);
++
+ int main(void)
+ {
+-	bfd_demangle(0, 0, 0);
++	char symbol[4096] = "FieldName__9ClassNameFd";
++	char *tmp;
++
++	tmp = bfd_demangle(0, symbol, 0);
++
++	printf("demangled symbol: {%s}\n", tmp);
 +
  	return 0;
+ }
++
+diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
+index 5622746..088fc59 100644
+--- a/tools/perf/config/feature-checks/test-libunwind.c
++++ b/tools/perf/config/feature-checks/test-libunwind.c
+@@ -10,10 +10,16 @@ extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+ 
+ #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
+ 
++static unw_accessors_t accessors;
++
+ int main(void)
+ {
+ 	unw_addr_space_t addr_space;
+-	addr_space = unw_create_addr_space(NULL, 0);
++
++	addr_space = unw_create_addr_space(&accessors, 0);
++	if (addr_space)
++		return;
++
+ 	unw_init_remote(NULL, addr_space, NULL);
+ 	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+ 	return 0;
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+index 473f1de..8f64ed3 100644
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ b/tools/perf/config/feature-checks/test-on-exit.c
+@@ -1,6 +1,15 @@
+ #include <stdio.h>
+ 
++static void exit_fn(int status, void *__data)
++{
++	printf("exit status: %d, data: %d\n", status, *(int *)__data);
++}
++
++static int data = 123;
++
+ int main(void)
+ {
+-	return on_exit(NULL, NULL);
++	on_exit(exit_fn, &data);
++
++	return 321;
  }
 -- 
 1.7.11.7
