@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3JGUQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 16:16:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11728 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab3JGUQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 16:16:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1051,1371106800"; 
-   d="scan'208";a="371045976"
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
-Date: Mon, 07 Oct 2013 13:15:59 -0700
-In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org> (Ingo
-	Molnar's message of "Mon, 7 Oct 2013 13:55:53 +0200")
-Message-ID: <87y564zvk0.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755729Ab3JGUWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 16:22:00 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:43172 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab3JGUV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 16:21:58 -0400
+From: Robert C Jennings <rcj@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave@sr71.net>,
+        Robert C Jennings <rcj@linux.vnet.ibm.com>,
+        Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Subject: [PATCH 0/2] vmpslice support for zero-copy gifting of pages
+Date: Mon,  7 Oct 2013 15:21:31 -0500
+Message-Id: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.2
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100720-5490-0000-0000-00000445A29E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@kernel.org> writes:
->
-> The series also includes a number of fixes and convenience features:
->
->    - auto-detect the number of CPUs on the system and add the -j<cpus>
->      option automatically
+This patch set would add the ability to move anonymous user pages from one
+process to another through vmsplice without copying data.  Moving pages
+rather than copying is implemented for a narrow case in this RFC to meet
+the needs of QEMU's usage (below).
 
-FWIW I would prefer if you not do that automatically, because:
+Among the restrictions the source address and destination addresses must
+be page aligned, the size argument must be a multiple of page size,
+and by the time the reader calls vmsplice, the page must no longer be
+mapped in the source.  If a move is not possible the code transparently
+falls back to copying data.
 
-- Often the optimal factor is not 1, but something like 1.5*CPUs
-(but I'm not sure it's the same on all systems, probably depends on 
-the IO capacity and memory)
-- It may use a lot of memory, so should be something controlled by the
-user.
-- Often it's useful to use a few threads less to avoid interactivity
-problems on a workstation.
-- With LTO there can be rare cases where you need to lower it to avoid
-running out of memory.
-- Kernel build users should be already trained to set that parameter
-and it's not really a big burden.
+This comes from work in QEMU[1] to migrate a VM from one QEMU instance
+to another with minimal down-time for the VM.  This would allow for an
+update of the QEMU executable under the VM.
 
-The rest looks like a great improvement.
+New flag usage
+This introduces use of the SPLICE_F_MOVE flag for vmsplice, previously
+unused.  Proposed usage is as follows:
 
--Andi
+ Writer gifts pages to pipe, can not access original contents after gift:
+    vmsplice(fd, iov, nr_segs, (SPLICE_F_GIFT | SPLICE_F_MOVE);
+ Reader asks kernel to move pages from pipe to memory described by iovec:
+    vmsplice(fd, iov, nr_segs, SPLICE_F_MOVE);
+
+Moving pages rather than copying is implemented for a narrow case in
+this RFC to meet the needs of QEMU's usage.  If a move is not possible
+the code transparently falls back to copying data.
+
+For older kernels the SPLICE_F_MOVE would be ignored and a copy would occur.
+
+[1] QEMU localhost live migration:
+      http://lists.gnu.org/archive/html/qemu-devel/2013-06/msg02540.html
+      http://lists.gnu.org/archive/html/qemu-devel/2013-06/msg02577.html
+_______________________________________________________
+
+  vmsplice: Add limited zero copy to vmsplice
+  vmsplice: unmap gifted pages for recipient
+
+ fs/splice.c            | 114 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/splice.h |   1 +
+ 2 files changed, 114 insertions(+), 1 deletion(-)
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.8.1.2
+
