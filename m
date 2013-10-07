@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3JGL4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:56:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab3JGL4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:56:00 -0400
-Date: Mon, 7 Oct 2013 07:55:53 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jan Klos <honza.klos@gmail.com>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: cifs: Fix inability to write files >2GB to SMB2/3 shares (THIS
- TIME I GOT IT RIGHT, PROMISE!)
-Message-ID: <20131007075553.65818b41@tlielax.poochiereds.net>
-In-Reply-To: <5251B524.3000101@gmail.com>
-References: <5251B524.3000101@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753856Ab3JGL5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:57:40 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51158 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751369Ab3JGL5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 07:57:38 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH v3 2/4] ACPI / video: seperate backlight control and event interface
+Date: Mon, 07 Oct 2013 14:09:16 +0200
+Message-ID: <2575044.XfDRT53jVt@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5241616D.9040305@intel.com>
+References: <1380016052-15315-1-git-send-email-aaron.lu@intel.com> <1380016052-15315-3-git-send-email-aaron.lu@intel.com> <5241616D.9040305@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 06 Oct 2013 21:08:20 +0200
-Jan Klos <honza.klos@gmail.com> wrote:
+On Tuesday, September 24, 2013 05:54:53 PM Aaron Lu wrote:
+> On 09/24/2013 05:47 PM, Aaron Lu wrote:
 
-> When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
-> 
-> The patch fixes this by checking for the correct bit according to the protocol version.
-> 
-> Sorry for the TWO reposts, Gmail messed up the first mail, Thunderbird added spaces to the patch part in the second. I am really sorry! I think I fixed a quite significant bug, so have mercy on me...
-> 
-> 
-> Signed-off-by: Jan Klos <honza.klos@gmail.com>
-> 
-> ---
-> 
-> diff -uprN a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-> --- a/fs/cifs/cifsfs.c	2013-10-05 16:18:07.000000000 +0200
-> +++ b/fs/cifs/cifsfs.c	2013-10-06 16:18:13.488378000 +0200
-> @@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
->  {
->  	struct inode *inode;
->  	struct cifs_sb_info *cifs_sb;
-> +	struct cifs_tcon *tcon;
->  	int rc = 0;
->  
->  	cifs_sb = CIFS_SB(sb);
-> +	tcon = cifs_sb_master_tcon(cifs_sb);
->  
->  	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
->  		sb->s_flags |= MS_POSIXACL;
->  
-> -	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
-> +	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
->  		sb->s_maxbytes = MAX_LFS_FILESIZE;
->  	else
->  		sb->s_maxbytes = MAX_NON_LFS;
-> @@ -147,7 +149,7 @@ cifs_read_super(struct super_block *sb)
->  		goto out_no_root;
->  	}
->  
-> -	if (cifs_sb_master_tcon(cifs_sb)->nocase)
-> +	if (tcon->nocase)
->  		sb->s_d_op = &cifs_ci_dentry_ops;
->  	else
->  		sb->s_d_op = &cifs_dentry_ops;
+[...]
 
-Nice catch.
+> > diff --git a/include/acpi/video.h b/include/acpi/video.h
+> > index 61109f2..0c665b5 100644
+> > --- a/include/acpi/video.h
+> > +++ b/include/acpi/video.h
+> > @@ -19,11 +19,13 @@ struct acpi_device;
+> >  #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+> >  extern int acpi_video_register(void);
+> >  extern void acpi_video_unregister(void);
+> > +extern int acpi_video_unregister_backlight(void);
+> 
+> Oops, forgot to remove the declration and the stub below. But it doesn't
+> affect the test of the patches, so I'll leave it for a while till next
+> revision.
 
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Any chance to send the next revision?
+
+Rafael
+
