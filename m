@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3JGH62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 03:58:28 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:50873 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937Ab3JGH6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 03:58:25 -0400
-Message-ID: <1381132624.24031.45.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v5 1/3] usb: dwc3: msm: Add device tree binding
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
-        gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Mon, 07 Oct 2013 10:57:04 +0300
-In-Reply-To: <20131004143151.GD16059@radagast>
-References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
-	 <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
-	 <20131004143151.GD16059@radagast>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753908Ab3JGIMU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 04:12:20 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:36386 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab3JGIMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 04:12:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131007051038.GA9764@localhost>
+References: <20131006082340.GA24568@localhost>
+	<CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
+	<20131007021118.GA27927@localhost>
+	<20131007051038.GA9764@localhost>
+Date: Mon, 7 Oct 2013 01:12:17 -0700
+X-Google-Sender-Auth: DYFt-MDPJPcy5Iw0IuRqEwjD_zw
+Message-ID: <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
+Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        xen-devel@lists.xenproject.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 6, 2013 at 10:10 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>
+> I retried bisect with "Oops:" and the first bad commit is
+>
+> commit c817a67ecba7c3 ("kobject: delayed kobject release: help find buggy drivers")
 
-Hi Felipe,
+Ok, that makes way more sense.
 
-On Fri, 2013-10-04 at 09:31 -0500, Felipe Balbi wrote: 
-> On Wed, Aug 21, 2013 at 04:29:44PM +0300, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-> > (SNPS) and HS, SS PHY's control and configuration registers.
-> > 
-> > It could operate in device mode (SS, HS, FS) and host
-> > mode (SS, HS, FS, LS).
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> 
-> these patches were sent *ages* and nobody from DT mailing list has
-> reviewed. Unless someone steps up now, I'll be queueing these patches
-> next week.
-> 
+> That commit has already helped expose some bugs, however I suspect there are
+> still many hidden ones. In this particular bisect, the commit produces 85 good
+> dmesgs and 2055 bad dmesgs, exposing all sorts of error messages
+>
+>    1929 Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>    1921 BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+>    1897 Kernel panic - not syncing: Fatal exception in interrupt
+..
 
-Please take v6 of the patch set, which I have just posted. 
-They contain several fixes and I have also added ACK from
-Stephen Warren for DT part.
+Ok, can you post some of the more promising oopses so that we can try
+to figure out what kobject it is that causes problems?
 
-Thanks, 
-Ivan
-
+              Linus
