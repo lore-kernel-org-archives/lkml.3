@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab3JGGPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 02:15:19 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:44884 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab3JGGPR (ORCPT
+	id S1752532Ab3JGGRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 02:17:55 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:44037 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab3JGGRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 02:15:17 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87a9io1wu1.fsf_-_@xmission.com>
-	<20131007042225.GA10284@mail.hallyn.com>
-Date: Sun, 06 Oct 2013 23:15:08 -0700
-In-Reply-To: <20131007042225.GA10284@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Mon, 7 Oct 2013 04:22:26 +0000")
-Message-ID: <87y5658v4j.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 7 Oct 2013 02:17:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19DmRo4GxUu3CVQwCMhTA+otptkFUQViGE=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0028]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH 2/3] vfs: Add a function to lazily unmount all mounts from any dentry.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Mon, 7 Oct 2013 11:47:13 +0530
+Message-ID: <CALkWK0=JXd5KJ1NAEiKJtTm3EKGqBVPLB=3hqYwfGsp6SRrLyA@mail.gmail.com>
+Subject: [BUG] Junk output from perf test
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+Hi,
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> 
->> Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
->> ---
->>  fs/mount.h     |    1 +
->>  fs/namespace.c |   24 ++++++++++++++++++++++++
->>  2 files changed, 25 insertions(+), 0 deletions(-)
->> 
->> diff --git a/fs/mount.h b/fs/mount.h
->> index e4342b8dfab1..7a6a2bb3f290 100644
->> --- a/fs/mount.h
->> +++ b/fs/mount.h
->> @@ -79,6 +79,7 @@ static inline int is_mounted(struct vfsmount *mnt)
->>  }
->>  
->>  extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
->> +extern void detach_mounts(struct dentry *dentry);
->>  
->>  static inline void get_mnt_ns(struct mnt_namespace *ns)
->>  {
->> diff --git a/fs/namespace.c b/fs/namespace.c
->> index d092964fe7f9..8eaee0c14fdb 100644
->> --- a/fs/namespace.c
->> +++ b/fs/namespace.c
->> @@ -1294,6 +1294,30 @@ static int do_umount(struct mount *mnt, int flags)
->>  	return retval;
->>  }
->>  
->> +void detach_mounts(struct dentry *dentry)
->> +{
->> +	struct mount *mnt, *next;
->> +	struct mountpoint *mp;
->> +
->> +	namespace_lock();
->> +	if (!d_mountpoint(dentry)) {
->> +		namespace_unlock();
->> +		return;
->> +	}
->> +	mp = new_mountpoint(dentry);
->> +	if (IS_ERR(mp)) {
->
-> 	namespace_unlock();
+`perf test` doesn't give me a clean run; it seems to be out-of-date. I
+spent many hours on tracing "parse events tests" with gdb, but
+preprocessor macros and other complexity make my job very difficult. I
+haven't determined where the warnings in #5 are coming from exactly,
+but it seems to be the codepath starting from test__all_tracepoints().
+Before I spend more hours debugging this, I want to make sure that I'm
+not wasting my time; can you reproduce this?
 
-Good catch.  Thank you.
+Thanks.
 
-Eric
+-- 8< --
+$ perf test
+ 1: vmlinux symtab matches kallsyms                        : FAILED!
+ 2: detect open syscall event                              : Ok
+ 3: detect open syscall event on all cpus                  : Ok
+ 4: read samples using the mmap interface                  : Ok
+ 5: parse events tests                                     :  Warning:
+bad op token {
+  Warning: bad op token {
+  Warning: bad op token {
+  Warning: bad op token {
+  Warning: function is_writable_pte not defined
+  Warning: function jiffies_to_msecs not defined
+  Warning: function jiffies_to_msecs not defined
+  Warning: function scsi_trace_parse_cdb not defined
+  Warning: function scsi_trace_parse_cdb not defined
+  Warning: function scsi_trace_parse_cdb not defined
+  Warning: function scsi_trace_parse_cdb not defined
+  Warning: unknown op '{'
+  Warning: unknown op '{'
+  Warning: function xen_hypercall_name not defined
+  Warning: function xen_hypercall_name not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+  Warning: function sizeof not defined
+ Ok
+ 6: x86 rdpmc test                                         : Ok
+ 7: Validate PERF_RECORD_* events & perf_sample fields     : Ok
+ 8: Test perf pmu format parsing                           : Ok
+ 9: Test dso data interface                                : Ok
+10: roundtrip evsel->name check                            : Ok
+11: Check parsing of sched tracepoints fields              : Ok
+12: Generate and check syscalls:sys_enter_open event fields: Ok
+13: struct perf_event_attr setup                           : Ok
+14: Test matching and linking multiple hists               : Ok
+15: Try 'use perf' in python, checking link problems       : Ok
+16: Test breakpoint overflow signal handler                : Ok
+17: Test breakpoint overflow sampling                      : Ok
+18: Test number of exit event of a simple workload         : Ok
+19: Test software clock events have valid period values    : Ok
+20: Test converting perf time to TSC                       : (not supported) Ok
+21: Test object code reading                               :[btrfs]
+with build id 97dc0c1d4aab8c3aba31c776c8c6137ccce5428a not found,
+continuing without symbols
+ FAILED!
+22: Test sample parsing                                    : Ok
+23: Test using a dummy software event to keep tracking     : (not supported) Ok
+24: Test parsing with no sample_id_all bit set             : Ok
