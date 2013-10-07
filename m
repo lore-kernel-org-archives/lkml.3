@@ -1,59 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab3JGPsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:48:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47143 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab3JGPsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:48:37 -0400
-To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
-        aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] Perf support to SDT markers
-References: <20131007063911.11693.33624.stgit@hemant-fedora>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Mon, 07 Oct 2013 11:47:09 -0400
-In-Reply-To: <20131007063911.11693.33624.stgit@hemant-fedora> (Hemant Kumar's message of "Mon, 07 Oct 2013 12:16:49 +0530")
-Message-ID: <y0m38odytfm.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S1756060Ab3JGPsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:48:52 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:58009 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab3JGPsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:48:38 -0400
+Message-ID: <5252D7CF.9010708@gmail.com>
+Date: Mon, 07 Oct 2013 09:48:31 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf tools: Fix perf_evlist__mmap_read event overflow
+References: <1380721599-24285-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1380721599-24285-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hemant Kumar <hkshaw@linux.vnet.ibm.com> writes:
+On 10/2/13 7:46 AM, Jiri Olsa wrote:
+> The perf_evlist__mmap_read used 'union perf_event'
+> as a placeholder for event crossing the mmap boundary.
+>
+> This is ok for sample shorter than ~PATH_MAX. However
+> we could grow up to the maximum sample size which is
+> 16 bits max.
+>
+> I hit this overflow issue when using 'perf top -G dwarf'
+> which produces sample with the size around 8192 bytes.
+> We could configure any valid sample size here using:
+> '-G dwarf,size'.
+>
+> Using array with sample max size instead for the event
+> placeholder. Also adding another safe check for the
+> dynamic size of the user stack.
+>
+> TODO: The 'struct perf_mmap' is quite big now, maybe we
+> could use some lazy allocation for event_copy size.
 
-> [...]
-> A simple example to show this follows.
-> - Create a file with .d extension and mention the probe names in it with
-> provider name and marker name.
-> [...]
-> - Now create the probes.h and probes.o file :
-> $ dtrace -C -h -s probes.d -o probes.h
-> $ dtrace -C -G -s probes.d -o probes.o
-> [...]
+I was going to suggest just that -- dynamically handle the use of 
+event_copy. The below adds ~60k per mmap. Otherwise...
 
-It may be worthwhile to document an even-simpler case:
-
-- no .d file
-- no invocation of the dtrace python script
-- no generated .h or .o file
-- in the C file, just add:
-
-  #include <sys/sdt.h>
-
-  void main () {
-       /* ... */
-       STAP_PROBE(provider_name,probe_name);
-       /* ... */
-  }
-
-- gcc file.c
-- stap -l 'process("./a.out").mark("*")' to list
+Acked-by: David Ahern <dsahern@gmail.com>
 
 
-- FChE
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>   tools/perf/util/event.h  | 3 +++
+>   tools/perf/util/evlist.c | 4 ++--
+>   tools/perf/util/evlist.h | 2 +-
+>   tools/perf/util/evsel.c  | 3 +++
+>   4 files changed, 9 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 9f50f88..2b8032a 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -75,6 +75,9 @@ struct throttle_event {
+>   	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD |		\
+>   	 PERF_SAMPLE_IDENTIFIER)
+>
+> +/* perf sample has 16 bits size limit */
+> +#define PERF_SAMPLE_MAX_SIZE (1 << 16)
+> +
+>   struct sample_event {
+>   	struct perf_event_header        header;
+>   	u64 array[];
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index f0d71a9..cb9523f 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -540,7 +540,7 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+>   		if ((old & md->mask) + size != ((old + size) & md->mask)) {
+>   			unsigned int offset = old;
+>   			unsigned int len = min(sizeof(*event), size), cpy;
+> -			void *dst = &md->event_copy;
+> +			void *dst = md->event_copy;
+>
+>   			do {
+>   				cpy = min(md->mask + 1 - (offset & md->mask), len);
+> @@ -550,7 +550,7 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+>   				len -= cpy;
+>   			} while (len);
+>
+> -			event = &md->event_copy;
+> +			event = (union perf_event *) md->event_copy;
+>   		}
+>
+>   		old += size;
+> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+> index 871b55a..722618f 100644
+> --- a/tools/perf/util/evlist.h
+> +++ b/tools/perf/util/evlist.h
+> @@ -21,7 +21,7 @@ struct perf_mmap {
+>   	void		 *base;
+>   	int		 mask;
+>   	unsigned int	 prev;
+> -	union perf_event event_copy;
+> +	char		 event_copy[PERF_SAMPLE_MAX_SIZE];
+>   };
+>
+>   struct perf_evlist {
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index 0ce9feb..aa20ee2 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -1453,6 +1453,9 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>   			array = (void *)array + sz;
+>   			OVERFLOW_CHECK_u64(array);
+>   			data->user_stack.size = *array++;
+> +			if (WARN_ONCE(data->user_stack.size > sz,
+> +				      "user stack dump failure\n"))
+> +				return -EFAULT;
+>   		}
+>   	}
+>
+>
+
