@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3JGKjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:39:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39845 "EHLO mx2.suse.de"
+	id S1754693Ab3JGKaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:30:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39755 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754921Ab3JGKaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:10 -0400
+	id S1753732Ab3JGKaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:01 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 30/63] sched: Do not migrate memory immediately after switching node
-Date: Mon,  7 Oct 2013 11:29:08 +0100
-Message-Id: <1381141781-10992-31-git-send-email-mgorman@suse.de>
+Subject: [PATCH 20/63] sched: Select a preferred node with the most numa hinting faults
+Date: Mon,  7 Oct 2013 11:28:58 +0100
+Message-Id: <1381141781-10992-21-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -22,108 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+This patch selects a preferred node for a task to run on based on the
+NUMA hinting faults. This information is later used to migrate tasks
+towards the node during balancing.
 
-The load balancer can move tasks between nodes and does not take NUMA
-locality into account. With automatic NUMA balancing this may result in the
-tasks working set being migrated to the new node. However, as the fault
-buffer will still store faults from the old node the schduler may decide to
-reset the preferred node and migrate the task back resulting in more
-migrations.
-
-The ideal would be that the scheduler did not migrate tasks with a heavy
-memory footprint but this may result nodes being overloaded. We could
-also discard the fault information on task migration but this would still
-cause all the tasks working set to be migrated. This patch simply avoids
-migrating the memory for a short time after a task is migrated.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/core.c |  2 +-
- kernel/sched/fair.c | 18 ++++++++++++++++--
- mm/mempolicy.c      | 12 ++++++++++++
- 3 files changed, 29 insertions(+), 3 deletions(-)
+ include/linux/sched.h |  1 +
+ kernel/sched/core.c   |  1 +
+ kernel/sched/fair.c   | 17 +++++++++++++++--
+ 3 files changed, 17 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8828e40..83bc1f5 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1334,6 +1334,7 @@ struct task_struct {
+ 	struct callback_head numa_work;
+ 
+ 	unsigned long *numa_faults;
++	int numa_preferred_nid;
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ 	struct rcu_head rcu;
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 60e640d..124bb40 100644
+index aad2e02..cecbbed 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1626,7 +1626,7 @@ static void __sched_fork(struct task_struct *p)
- 
- 	p->node_stamp = 0ULL;
+@@ -1628,6 +1628,7 @@ static void __sched_fork(struct task_struct *p)
  	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
--	p->numa_migrate_seq = 0;
-+	p->numa_migrate_seq = 1;
+ 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
- 	p->numa_preferred_nid = -1;
++	p->numa_preferred_nid = -1;
  	p->numa_work.next = &p->numa_work;
+ 	p->numa_faults = NULL;
+ #endif /* CONFIG_NUMA_BALANCING */
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f83da25..b7052ed 100644
+index df300d9..5fdab8c 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -884,7 +884,7 @@ static unsigned int task_scan_max(struct task_struct *p)
-  * the preferred node but still allow the scheduler to move the task again if
-  * the nodes CPUs are overloaded.
-  */
--unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
-+unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
+@@ -879,7 +879,8 @@ static unsigned int task_scan_max(struct task_struct *p)
  
- static inline int task_faults_idx(int nid, int priv)
+ static void task_numa_placement(struct task_struct *p)
  {
-@@ -980,7 +980,7 @@ static void task_numa_placement(struct task_struct *p)
+-	int seq;
++	int seq, nid, max_nid = -1;
++	unsigned long max_faults = 0;
  
- 		/* Update the preferred nid and migrate task if possible */
- 		p->numa_preferred_nid = max_nid;
--		p->numa_migrate_seq = 0;
-+		p->numa_migrate_seq = 1;
- 		migrate_task_to(p, preferred_cpu);
- 	}
- }
-@@ -4120,6 +4120,20 @@ static void move_task(struct task_struct *p, struct lb_env *env)
- 	set_task_cpu(p, env->dst_cpu);
- 	activate_task(env->dst_rq, p, 0);
- 	check_preempt_curr(env->dst_rq, p, 0);
-+#ifdef CONFIG_NUMA_BALANCING
-+	if (p->numa_preferred_nid != -1) {
-+		int src_nid = cpu_to_node(env->src_cpu);
-+		int dst_nid = cpu_to_node(env->dst_cpu);
-+
-+		/*
-+		 * If the load balancer has moved the task then limit
-+		 * migrations from taking place in the short term in
-+		 * case this is a short-lived migration.
-+		 */
-+		if (src_nid != dst_nid && dst_nid != p->numa_preferred_nid)
-+			p->numa_migrate_seq = 0;
+ 	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
+ 		return;
+@@ -889,7 +890,19 @@ static void task_numa_placement(struct task_struct *p)
+ 	p->numa_scan_seq = seq;
+ 	p->numa_scan_period_max = task_scan_max(p);
+ 
+-	/* FIXME: Scheduling placement policy hints go here */
++	/* Find the node with the highest number of faults */
++	for_each_online_node(nid) {
++		unsigned long faults = p->numa_faults[nid];
++		p->numa_faults[nid] >>= 1;
++		if (faults > max_faults) {
++			max_faults = faults;
++			max_nid = nid;
++		}
 +	}
-+#endif
++
++	/* Update the tasks preferred node if necessary */
++	if (max_faults && max_nid != p->numa_preferred_nid)
++		p->numa_preferred_nid = max_nid;
  }
  
  /*
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index aff1f1e..196d8da 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2378,6 +2378,18 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 		last_nidpid = page_nidpid_xchg_last(page, this_nidpid);
- 		if (!nidpid_pid_unset(last_nidpid) && nidpid_to_nid(last_nidpid) != polnid)
- 			goto out;
-+
-+#ifdef CONFIG_NUMA_BALANCING
-+		/*
-+		 * If the scheduler has just moved us away from our
-+		 * preferred node, do not bother migrating pages yet.
-+		 * This way a short and temporary process migration will
-+		 * not cause excessive memory migration.
-+		 */
-+		if (polnid != current->numa_preferred_nid &&
-+				!current->numa_migrate_seq)
-+			goto out;
-+#endif
- 	}
- 
- 	if (curnid != polnid)
 -- 
 1.8.4
 
