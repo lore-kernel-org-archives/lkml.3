@@ -1,302 +1,760 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3JGOKl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 10:10:41 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57844 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab3JGOKj (ORCPT
+	id S1755635Ab3JGOK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 10:10:57 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:37583 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3JGOKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 10:10:39 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-d9-5252c0dd756a
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] thermal: offer TI thermal support only when ARCH_OMAP2PLUS
- is defined
-Date: Mon, 07 Oct 2013 16:10:29 +0200
-Message-id: <1588308.i5Ha5A8RHe@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1985237.ukkgSmGrTt@amdc1032>
-References: <3702969.8rn3SOscJE@amdc1032> <5727785.7GtnvaVLcG@amdc1032>
- <1985237.ukkgSmGrTt@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jQd17B4KCDNo+MVn8nXSM3WLN/p9M
-	Fmeb3rBbXN41h83ic+8RRosnD/vYHNg8fv+axOixeM9LJo++LasYPY7f2M7k8XmTXABrFJdN
-	SmpOZllqkb5dAldGx4IrLAVNdhWfFkxkbWBcpt/FyMEhIWAiseqVdhcjJ5ApJnHh3nq2LkYu
-	DiGB6YwS1759YYFwWpgkDv85wg5SxSZgJTGxfRUjiC0ioCdx48UTJpAiZoGVjBI7uk6CFQkL
-	xEhMO9DKBGKzCKhKzJg6GSzOK6ApceDxJzBbVMBT4tOkpcwgNqeAlsT5VQvB6oUE0iX+L3rI
-	CFEvKPFj8j0WEJtZQF5i3/6prBC2jsT+1mlsExgFZiEpm4WkbBaSsgWMzKsYRVMLkguKk9Jz
-	DfWKE3OLS/PS9ZLzczcxgoP7mdQOxpUNFocYBTgYlXh4d9wPDBJiTSwrrsw9xCjBwawkwnt1
-	Z1CQEG9KYmVValF+fFFpTmrxIUZpDhYlcd4DrdaBQFcnlqRmp6YWpBbBZJk4OKUaGC0eSqnc
-	OLdmW/dkR9bra09KyrkH2z2LtqotSm9fMtuxKc2kIbu7UDv47QvTEOHKHk+Xt2W7V/gvyLu0
-	I/l40nvX8soVIY7Pb1YtLs7cuv5kW3LM4cWu71h43HV6kp5lG2/bJTC32WCv4Pw7h4Sn8fEu
-	tH1osuqe5btPDkFN75U7s27mtnT1K7EUZyQaajEXFScCAKOsJqdqAgAA
+	Mon, 7 Oct 2013 10:10:46 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, vinod.koul@intel.com,
+        djbw@fb.com, arnd@arndb.de, linux@arm.linux.org.uk,
+        mark.rutland@arm.com, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v10] dmaengine: Add MOXA ART DMA engine driver
+Date: Mon,  7 Oct 2013 16:10:34 +0200
+Message-Id: <1381155034-11254-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1381151633-8576-1-git-send-email-jonas.jensen@gmail.com>
+References: <1381151633-8576-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 07, 2013 12:50:54 PM Bartlomiej Zolnierkiewicz wrote:
-> On Monday, October 07, 2013 11:57:16 AM Bartlomiej Zolnierkiewicz wrote:
-> > 
-> > Hi,
-> > 
-> > On Friday, October 04, 2013 02:22:30 PM Eduardo Valentin wrote:
-> > > On 04-10-2013 08:35, Bartlomiej Zolnierkiewicz wrote:
-> > > > Menu for Texas Instruments thermal support is visible on all
-> > > > platforms and TI_SOC_THERMAL + TI_THERMAL config options can
-> > > > be selected also on EXYNOS platform (on which ARCH_HAS_BANDGAP
-> > > > config option is selected by SoCs config options to fulfill
-> > > > EXYNOS_THERMAL config option dependency). Thus the code which
-> > > > is never used can be build. Fix it by making TI menu dependent
-> > > > on ARCH_OMAP2PLUS config option.
-> > > > 
-> > > > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > > > ---
-> > > >  drivers/thermal/Kconfig | 1 +
-> > > >  1 file changed, 1 insertion(+)
-> > > > 
-> > > > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> > > > index 57e06a9..a709c63 100644
-> > > > --- a/drivers/thermal/Kconfig
-> > > > +++ b/drivers/thermal/Kconfig
-> > > > @@ -193,6 +193,7 @@ config X86_PKG_TEMP_THERMAL
-> > > >  	  notification methods.
-> > > >  
-> > > >  menu "Texas Instruments thermal drivers"
-> > > > +depends on ARCH_OMAP2PLUS
-> > > 
-> > > No, this driver is not for ARCH_OMAP*, but for TI bandgap, with the
-> > > option to offer thermal control. So, the HW supported is TI bandgap IP,
-> > > not ARCH_OMAP*. It happens to be so that OMAP2PLUS all have a
-> > > (different) version of this device.
-> > > 
-> > > However, DRA7 devices, for instance, also feature the bandgap IP
-> > > (different version of those present in OMAP devices), and it is not
-> > > ARCH_OMAP2PLUS.
-> > 
-> > Then you have wrong dependencies anyway since ARCH_BANDGAP is selected
-> 
-> s/ARCH_BANDGAP/ARCH_HAS_BANDGAP/
-> 
-> > currently only by ARCH_OMAP2PLUS and EXYNOS SoCs.
+The MOXA ART SoC has a DMA controller capable of offloading expensive
+memory operations, such as large copies. This patch adds support for
+the controller including four channels. Two of these are used to
+handle MMC copy on the UC-7112-LX hardware. The remaining two can be
+used in a future audio driver or client application.
 
-It seems that SOC_DRA7xx config option is dependent on ARCH_OMAP2PLUS one
-*anyway* (thus it doesn't need to select ARCH_HAS_BANDGAP on its own). Thus
-my patch is correct and sufficient for the current TI bandgap IP support.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-if ARCH_OMAP2PLUS
+Notes:
+    Changes since v9:
+    
+    1. reorder probe path, also move dma_async_device_register() to happen after devm_request_irq()
+    
+    Applies to next-20130927
 
-menu "TI OMAP2/3/4 Specific Features"
+ .../devicetree/bindings/dma/moxa,moxart-dma.txt    |  19 +
+ drivers/dma/Kconfig                                |   7 +
+ drivers/dma/Makefile                               |   1 +
+ drivers/dma/moxart-dma.c                           | 651 +++++++++++++++++++++
+ 4 files changed, 678 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
+ create mode 100644 drivers/dma/moxart-dma.c
 
-config ARCH_OMAP2PLUS_TYPICAL
-	bool "Typical OMAP configuration"
-	default y
-	select AEABI
-	select HIGHMEM
-	select I2C
-	select I2C_OMAP
-	select MENELAUS if ARCH_OMAP2
-	select NEON if CPU_V7
-	select PM_RUNTIME
-	select REGULATOR
-	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
-	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
-	select VFP
-	help
-	  Compile a kernel suitable for booting most boards
-
-config SOC_HAS_OMAP2_SDRC
-	bool "OMAP2 SDRAM Controller support"
-
-config SOC_HAS_REALTIME_COUNTER
-	bool "Real time free running counter"
-	depends on SOC_OMAP5 || SOC_DRA7XX
-	default y
-
-config SOC_DRA7XX
-	bool "TI DRA7XX"
-	select ARM_ARCH_TIMER
-	select CPU_V7
-	select ARM_GIC
-	select HAVE_SMP
-	select COMMON_CLK
-...
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-> > arch/arm/mach-omap2/Kconfig (next-20130927):
-> > 
-> > config ARCH_OMAP2PLUS
-> >         bool
-> >         select ARCH_HAS_BANDGAP
-> >         select ARCH_HAS_CPUFREQ
-> >         select ARCH_HAS_HOLES_MEMORYMODEL
-> >         select ARCH_OMAP
-> >         select ARCH_REQUIRE_GPIOLIB
-> >         select CLKDEV_LOOKUP
-> >         select CLKSRC_MMIO
-> >         select GENERIC_CLOCKEVENTS
-> >         select GENERIC_IRQ_CHIP
-> >         select HAVE_CLK
-> >         select OMAP_DM_TIMER
-> >         select PINCTRL
-> >         select PROC_DEVICETREE if PROC_FS
-> >         select SOC_BUS
-> >         select SPARSE_IRQ
-> >         select TI_PRIV_EDMA
-> >         select USE_OF
-> >         help
-> >           Systems based on OMAP2, OMAP3, OMAP4 or OMAP5
-> > 
-> > drivers/thermal/ti-soc-thermal/Kconfig (next-20130927):
-> > 
-> > config TI_SOC_THERMAL
-> >         tristate "Texas Instruments SoCs temperature sensor driver"
-> >         depends on THERMAL
-> >         depends on ARCH_HAS_BANDGAP
-> >         help
-> >           If you say yes here you get support for the Texas Instruments
-> >           OMAP4460+ on die bandgap temperature sensor support. The register
-> >           set is part of system control module.
-> > 
-> >           This includes alert interrupts generation and also the TSHUT
-> >           support.
-> 
-> and for EXYNOS it looks like that (next-20130927):
-> 
-> arch/arm/mach-exynos/Kconfig:
-> 
-> config CPU_EXYNOS4210
-> 	bool "SAMSUNG EXYNOS4210"
-> 	default y
-> 	depends on ARCH_EXYNOS4
-> 	select ARCH_HAS_BANDGAP
-> 	select ARM_CPU_SUSPEND if PM
-> 	select PINCTRL_EXYNOS
-> 	select PM_GENERIC_DOMAINS if PM
-> 	select S5P_PM if PM
-> 	select S5P_SLEEP if PM
-> 	select SAMSUNG_DMADEV
-> 	help
-> 	  Enable EXYNOS4210 CPU support
-> 
-> config SOC_EXYNOS4212
-> 	bool "SAMSUNG EXYNOS4212"
-> 	default y
-> 	depends on ARCH_EXYNOS4
-> 	select ARCH_HAS_BANDGAP
-> 	select PINCTRL_EXYNOS
-> 	select PM_GENERIC_DOMAINS if PM
-> 	select S5P_PM if PM
-> 	select S5P_SLEEP if PM
-> 	select SAMSUNG_DMADEV
-> 	help
-> 	  Enable EXYNOS4212 SoC support
-> 
-> config SOC_EXYNOS4412
-> 	bool "SAMSUNG EXYNOS4412"
-> 	default y
-> 	depends on ARCH_EXYNOS4
-> 	select ARCH_HAS_BANDGAP
-> 	select PINCTRL_EXYNOS
-> 	select PM_GENERIC_DOMAINS if PM
-> 	select SAMSUNG_DMADEV
-> 	help
-> 	  Enable EXYNOS4412 SoC support
-> 
-> config SOC_EXYNOS5250
-> 	bool "SAMSUNG EXYNOS5250"
-> 	default y
-> 	depends on ARCH_EXYNOS5
-> 	select ARCH_HAS_BANDGAP
-> 	select PINCTRL_EXYNOS
-> 	select PM_GENERIC_DOMAINS if PM
-> 	select S5P_PM if PM
-> 	select S5P_SLEEP if PM
-> 	select S5P_DEV_MFC
-> 	select SAMSUNG_DMADEV
-> 	help
-> 	  Enable EXYNOS5250 SoC support
-> 
-> config SOC_EXYNOS5420
-> 	bool "SAMSUNG EXYNOS5420"
-> 	default y
-> 	depends on ARCH_EXYNOS5
-> 	select PM_GENERIC_DOMAINS if PM
-> 	select S5P_PM if PM
-> 	select S5P_SLEEP if PM
-> 	help
-> 	  Enable EXYNOS5420 SoC support
-> 
-> config SOC_EXYNOS5440
-> 	bool "SAMSUNG EXYNOS5440"
-> 	default y
-> 	depends on ARCH_EXYNOS5
-> 	select ARCH_DMA_ADDR_T_64BIT if ARM_LPAE
-> 	select ARCH_HAS_BANDGAP
-> 	select ARCH_HAS_OPP
-> 	select HAVE_ARM_ARCH_TIMER
-> 	select AUTO_ZRELADDR
-> 	select MIGHT_HAVE_PCI
-> 	select PCI_DOMAINS if PCI
-> 	select PINCTRL_EXYNOS5440
-> 	select PM_OPP
-> 	help
-> 	  Enable EXYNOS5440 SoC support
-> 
-> drivers/thermal/Kconfig:
-> 
-> menu "Samsung thermal drivers"
-> depends on PLAT_SAMSUNG
-> source "drivers/thermal/samsung/Kconfig"
-> endmenu
-> 
-> drivers/thermal/samsung/Kconfig
-> 
-> config EXYNOS_THERMAL
-> 	tristate "Exynos thermal management unit driver"
-> 	depends on ARCH_HAS_BANDGAP && OF
-> 	help
-> 	  If you say yes here you get support for the TMU (Thermal Management
-> 	  Unit) driver for SAMSUNG EXYNOS series of SoCs. This driver initialises
-> 	  the TMU, reports temperature and handles cooling action if defined.
-> 	  This driver uses the Exynos core thermal APIs and TMU configuration
-> 	  data from the supported SoCs.
-> 
-> 
-> > > And because of that, the design of this driver is different. It is not
-> > > expected to depend on an arch, but the arch code is expected to select
-> > > ARCH_HAS_BANDGAP.
-> > 
-> > There should be additional dependencies beside ARCH_BANDGAP, i.e. on
-> 
-> s/ARCH_BANDGAP/ARCH_HAS_BANDGAP/
-> 
-> > EXYNOS platforms we currently also have dependency on PLAT_SAMSUNG
-> > (should be ARCH_EXYNOS instead, my other patch fixes it).
-> > 
-> > > >  source "drivers/thermal/ti-soc-thermal/Kconfig"
-> > > >  endmenu
-> > 
-> > Best regards,
-> > --
-> > Bartlomiej Zolnierkiewicz
-> > Samsung R&D Institute Poland
-> > Samsung Electronics
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
+diff --git a/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt b/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
+new file mode 100644
+index 0000000..79facce
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
+@@ -0,0 +1,19 @@
++MOXA ART DMA Controller
++
++See dma.txt first
++
++Required properties:
++
++- compatible :	Must be "moxa,moxart-dma"
++- reg :		Should contain registers location and length
++- interrupts :	Should contain the interrupt number
++- #dma-cells :	Should be 1, a single cell holding a line request number
++
++Example:
++
++	dma: dma@90500000 {
++		compatible = "moxa,moxart-dma";
++		reg = <0x90500080 0x40>;
++		interrupts = <24 0>;
++		#dma-cells = <1>;
++	};
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index f238cfd..f4ed3a9 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -318,6 +318,13 @@ config K3_DMA
+ 	  Support the DMA engine for Hisilicon K3 platform
+ 	  devices.
+ 
++config MOXART_DMA
++	tristate "MOXART DMA support"
++	depends on ARCH_MOXART
++	select DMA_ENGINE
++	help
++	  Enable support for the MOXA ART SoC DMA controller.
++
+ config DMA_ENGINE
+ 	bool
+ 
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index db89035..9ef0916 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -41,3 +41,4 @@ obj-$(CONFIG_MMP_PDMA) += mmp_pdma.o
+ obj-$(CONFIG_DMA_JZ4740) += dma-jz4740.o
+ obj-$(CONFIG_TI_CPPI41) += cppi41.o
+ obj-$(CONFIG_K3_DMA) += k3dma.o
++obj-$(CONFIG_MOXART_DMA) += moxart-dma.o
+diff --git a/drivers/dma/moxart-dma.c b/drivers/dma/moxart-dma.c
+new file mode 100644
+index 0000000..edd6de2
+--- /dev/null
++++ b/drivers/dma/moxart-dma.c
+@@ -0,0 +1,651 @@
++/*
++ * MOXA ART SoCs DMA Engine support.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/dmaengine.h>
++#include <linux/dma-mapping.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/list.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/irq.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_dma.h>
++
++#include <asm/cacheflush.h>
++
++#include "dmaengine.h"
++
++#define APB_DMA_MAX_CHANNEL			4
++
++#define REG_ADDRESS_SOURCE			0
++#define REG_ADDRESS_DEST			4
++#define REG_CYCLES				8
++#define REG_CTRL				12
++#define REG_CHAN_SIZE				16
++
++#define APB_DMA_ENABLE				0x1
++#define APB_DMA_FIN_INT_STS			0x2
++#define APB_DMA_FIN_INT_EN			0x4
++#define APB_DMA_BURST_MODE			0x8
++#define APB_DMA_ERR_INT_STS			0x10
++#define APB_DMA_ERR_INT_EN			0x20
++
++/*
++ * unset to select APB source
++ * set to select AHB source
++ */
++#define APB_DMA_SOURCE_SELECT			0x40
++
++/*
++ * unset to select APB destination
++ * set to select AHB destination
++ */
++#define APB_DMA_DEST_SELECT			0x80
++
++#define APB_DMA_SOURCE				0x100
++#define APB_DMA_SOURCE_MASK			0x700
++/*
++ * 000: no increment
++ * 001: +1 (busrt=0), +4  (burst=1)
++ * 010: +2 (burst=0), +8  (burst=1)
++ * 011: +4 (burst=0), +16 (burst=1)
++ * 101: -1 (burst=0), -4  (burst=1)
++ * 110: -2 (burst=0), -8  (burst=1)
++ * 111: -4 (burst=0), -16 (burst=1)
++ */
++#define APB_DMA_SOURCE_INC_0			0
++#define APB_DMA_SOURCE_INC_1_4			0x100
++#define APB_DMA_SOURCE_INC_2_8			0x200
++#define APB_DMA_SOURCE_INC_4_16			0x300
++#define APB_DMA_SOURCE_DEC_1_4			0x500
++#define APB_DMA_SOURCE_DEC_2_8			0x600
++#define APB_DMA_SOURCE_DEC_4_16			0x700
++
++#define APB_DMA_DEST				0x1000
++#define APB_DMA_DEST_MASK			0x7000
++/*
++ * 000: no increment
++ * 001: +1 (busrt=0), +4  (burst=1)
++ * 010: +2 (burst=0), +8  (burst=1)
++ * 011: +4 (burst=0), +16 (burst=1)
++ * 101: -1 (burst=0), -4  (burst=1)
++ * 110: -2 (burst=0), -8  (burst=1)
++ * 111: -4 (burst=0), -16 (burst=1)
++*/
++#define APB_DMA_DEST_INC_0			0
++#define APB_DMA_DEST_INC_1_4			0x1000
++#define APB_DMA_DEST_INC_2_8			0x2000
++#define APB_DMA_DEST_INC_4_16			0x3000
++#define APB_DMA_DEST_DEC_1_4			0x5000
++#define APB_DMA_DEST_DEC_2_8			0x6000
++#define APB_DMA_DEST_DEC_4_16			0x7000
++
++/*
++ * request signal select of destination
++ * address for DMA hardware handshake
++ *
++ * the request line number is a property of
++ * the DMA controller itself, e.g. MMC must
++ * always request channels where
++ * dma_slave_config->slave_id == 5
++ *
++ * 0:    no request / grant signal
++ * 1-15: request / grant signal
++ */
++#define APB_DMA_DEST_REQ_NO			0x10000
++#define APB_DMA_DEST_REQ_NO_MASK		0xf0000
++
++#define APB_DMA_DATA_WIDTH			0x100000
++#define APB_DMA_DATA_WIDTH_MASK			0x300000
++/*
++ * data width of transfer
++ * 00: word
++ * 01: half
++ * 10: byte
++ */
++#define APB_DMA_DATA_WIDTH_4			0
++#define APB_DMA_DATA_WIDTH_2			0x100000
++#define APB_DMA_DATA_WIDTH_1			0x200000
++
++/*
++ * request signal select of source
++ * address for DMA hardware handshake
++ *
++ * the request line number is a property of
++ * the DMA controller itself, e.g. MMC must
++ * always request channels where
++ * dma_slave_config->slave_id == 5
++ *
++ * 0:    no request / grant signal
++ * 1-15: request / grant signal
++ */
++#define APB_DMA_SOURCE_REQ_NO			0x1000000
++#define APB_DMA_SOURCE_REQ_NO_MASK		0xf000000
++#define APB_DMA_CYCLES_MASK			0x00ffffff
++
++struct moxart_dma_chan {
++	struct dma_chan			chan;
++	int				ch_num;
++	bool				allocated;
++	bool				error;
++	void __iomem			*base;
++	struct dma_slave_config		cfg;
++	struct dma_async_tx_descriptor	tx_desc;
++	unsigned int			line_reqno;
++};
++
++struct moxart_dma_container {
++	int				ctlr;
++	struct dma_device		dma_slave;
++	struct moxart_dma_chan		slave_chans[APB_DMA_MAX_CHANNEL];
++	spinlock_t			dma_lock;
++	struct tasklet_struct		tasklet;
++};
++
++struct moxart_dma_filter_data {
++	struct moxart_dma_container	*mdc;
++	struct of_phandle_args		*dma_spec;
++};
++
++static struct device *chan2dev(struct dma_chan *chan)
++{
++	return &chan->dev->device;
++}
++
++static inline struct moxart_dma_container
++*to_dma_container(struct dma_device *d)
++{
++	return container_of(d, struct moxart_dma_container, dma_slave);
++}
++
++static inline struct moxart_dma_chan *to_moxart_dma_chan(struct dma_chan *c)
++{
++	return container_of(c, struct moxart_dma_chan, chan);
++}
++
++static int moxart_terminate_all(struct dma_chan *chan)
++{
++	struct moxart_dma_chan *ch = to_moxart_dma_chan(chan);
++	struct moxart_dma_container *c = to_dma_container(ch->chan.device);
++	u32 ctrl;
++	unsigned long flags;
++
++	dev_dbg(chan2dev(chan), "%s: ch=%p\n", __func__, ch);
++
++	spin_lock_irqsave(&c->dma_lock, flags);
++
++	ctrl = readl(ch->base + REG_CTRL);
++	ctrl &= ~(APB_DMA_ENABLE | APB_DMA_FIN_INT_EN | APB_DMA_ERR_INT_EN);
++	writel(ctrl, ch->base + REG_CTRL);
++
++	spin_unlock_irqrestore(&c->dma_lock, flags);
++
++	return 0;
++}
++
++static int moxart_slave_config(struct dma_chan *chan,
++			       struct dma_slave_config *cfg)
++{
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
++	struct moxart_dma_container *mc = to_dma_container(mchan->chan.device);
++	u32 ctrl;
++	unsigned long flags;
++
++	spin_lock_irqsave(&mc->dma_lock, flags);
++
++	memcpy(&mchan->cfg, cfg, sizeof(mchan->cfg));
++
++	ctrl = readl(mchan->base + REG_CTRL);
++	ctrl |= APB_DMA_BURST_MODE;
++	ctrl &= ~(APB_DMA_DEST_MASK | APB_DMA_SOURCE_MASK);
++	ctrl &= ~(APB_DMA_DEST_REQ_NO_MASK | APB_DMA_SOURCE_REQ_NO_MASK);
++
++	switch (mchan->cfg.src_addr_width) {
++	case DMA_SLAVE_BUSWIDTH_1_BYTE:
++		ctrl |= APB_DMA_DATA_WIDTH_1;
++		if (mchan->cfg.direction != DMA_MEM_TO_DEV)
++			ctrl |= APB_DMA_DEST_INC_1_4;
++		else
++			ctrl |= APB_DMA_SOURCE_INC_1_4;
++		break;
++	case DMA_SLAVE_BUSWIDTH_2_BYTES:
++		ctrl |= APB_DMA_DATA_WIDTH_2;
++		if (mchan->cfg.direction != DMA_MEM_TO_DEV)
++			ctrl |= APB_DMA_DEST_INC_2_8;
++		else
++			ctrl |= APB_DMA_SOURCE_INC_2_8;
++		break;
++	default:
++		ctrl &= ~APB_DMA_DATA_WIDTH;
++		if (mchan->cfg.direction != DMA_MEM_TO_DEV)
++			ctrl |= APB_DMA_DEST_INC_4_16;
++		else
++			ctrl |= APB_DMA_SOURCE_INC_4_16;
++		break;
++	}
++
++	if (mchan->cfg.direction == DMA_MEM_TO_DEV) {
++		ctrl &= ~APB_DMA_DEST_SELECT;
++		ctrl |= APB_DMA_SOURCE_SELECT;
++		ctrl |= (mchan->line_reqno << 16 &
++			 APB_DMA_DEST_REQ_NO_MASK);
++	} else {
++		ctrl |= APB_DMA_DEST_SELECT;
++		ctrl &= ~APB_DMA_SOURCE_SELECT;
++		ctrl |= (mchan->line_reqno << 24 &
++			 APB_DMA_SOURCE_REQ_NO_MASK);
++	}
++
++	writel(ctrl, mchan->base + REG_CTRL);
++
++	spin_unlock_irqrestore(&mc->dma_lock, flags);
++
++	return 0;
++}
++
++static int moxart_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
++			  unsigned long arg)
++{
++	int ret = 0;
++	struct dma_slave_config *config;
++
++	switch (cmd) {
++	case DMA_TERMINATE_ALL:
++		moxart_terminate_all(chan);
++		break;
++	case DMA_SLAVE_CONFIG:
++		config = (struct dma_slave_config *)arg;
++		ret = moxart_slave_config(chan, config);
++		break;
++	default:
++		ret = -ENOSYS;
++	}
++
++	return ret;
++}
++
++static dma_cookie_t moxart_tx_submit(struct dma_async_tx_descriptor *tx)
++{
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(tx->chan);
++	struct moxart_dma_container *mc = to_dma_container(mchan->chan.device);
++	dma_cookie_t cookie;
++	u32 ctrl;
++	unsigned long flags;
++
++	dev_dbg(chan2dev(tx->chan), "%s: mchan=%p mchan->ch_num=%u mchan->base=%p\n",
++		__func__, mchan, mchan->ch_num, mchan->base);
++
++	spin_lock_irqsave(&mc->dma_lock, flags);
++
++	cookie = dma_cookie_assign(tx);
++
++	ctrl = readl(mchan->base + REG_CTRL);
++	ctrl |= (APB_DMA_FIN_INT_EN | APB_DMA_ERR_INT_EN);
++	writel(ctrl, mchan->base + REG_CTRL);
++
++	spin_unlock_irqrestore(&mc->dma_lock, flags);
++
++	return cookie;
++}
++
++static struct dma_async_tx_descriptor
++*moxart_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
++		      unsigned int sg_len,
++		      enum dma_transfer_direction direction,
++		      unsigned long tx_flags, void *context)
++{
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
++	struct moxart_dma_container *mc = to_dma_container(mchan->chan.device);
++	unsigned long flags;
++	unsigned int size, adr_width;
++
++	spin_lock_irqsave(&mc->dma_lock, flags);
++
++	if (direction == DMA_MEM_TO_DEV) {
++		writel(virt_to_phys((void *)sg_dma_address(&sgl[0])),
++		       mchan->base + REG_ADDRESS_SOURCE);
++		writel(mchan->cfg.dst_addr, mchan->base + REG_ADDRESS_DEST);
++
++		adr_width = mchan->cfg.src_addr_width;
++	} else {
++		writel(mchan->cfg.src_addr, mchan->base + REG_ADDRESS_SOURCE);
++		writel(virt_to_phys((void *)sg_dma_address(&sgl[0])),
++		       mchan->base + REG_ADDRESS_DEST);
++
++		adr_width = mchan->cfg.dst_addr_width;
++	}
++
++	size = sgl->length >> adr_width;
++
++	/*
++	 * size is 4 on 64 bytes copied, i.e. one cycle copies 16 bytes
++	 * ( when data_width == APB_DMAB_DATA_WIDTH_4 )
++	 */
++	writel(size, mchan->base + REG_CYCLES);
++
++	dev_dbg(chan2dev(chan), "%s: set %u DMA cycles (sgl->length=%u adr_width=%u)\n",
++		__func__, size, sgl->length, adr_width);
++
++	dma_async_tx_descriptor_init(&mchan->tx_desc, chan);
++	mchan->tx_desc.tx_submit = moxart_tx_submit;
++	mchan->error = 0;
++
++	spin_unlock_irqrestore(&mc->dma_lock, flags);
++
++	return &mchan->tx_desc;
++}
++
++bool moxart_dma_filter_fn(struct dma_chan *chan, void *param)
++{
++	struct moxart_dma_filter_data *fdata = param;
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
++
++	if (chan->device->dev != fdata->mdc->dma_slave.dev ||
++	    chan->device->dev->of_node != fdata->dma_spec->np) {
++		dev_dbg(chan2dev(chan), "device not registered to this DMA engine\n");
++		return 0;
++	}
++
++	dev_dbg(chan2dev(chan), "%s: mchan=%p line_reqno=%u mchan->ch_num=%u\n",
++		__func__, mchan, fdata->dma_spec->args[0], mchan->ch_num);
++
++	mchan->line_reqno = fdata->dma_spec->args[0];
++
++	return 1;
++}
++
++static struct dma_chan *moxart_of_xlate(struct of_phandle_args *dma_spec,
++					struct of_dma *ofdma)
++{
++	struct moxart_dma_container *mdc = ofdma->of_dma_data;
++	struct moxart_dma_filter_data fdata = {
++		.mdc = mdc,
++	};
++
++	if (dma_spec->args_count < 1)
++		return NULL;
++
++	fdata.dma_spec = dma_spec;
++
++	return dma_request_channel(mdc->dma_slave.cap_mask,
++				   moxart_dma_filter_fn, &fdata);
++}
++
++static int moxart_alloc_chan_resources(struct dma_chan *chan)
++{
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
++
++	dev_dbg(chan2dev(chan), "%s: allocating channel #%u\n",
++		__func__, mchan->ch_num);
++	mchan->allocated = 1;
++
++	return 0;
++}
++
++static void moxart_free_chan_resources(struct dma_chan *chan)
++{
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
++
++	dev_dbg(chan2dev(chan), "%s: freeing channel #%u\n",
++		__func__, mchan->ch_num);
++	mchan->allocated = 0;
++}
++
++static void moxart_issue_pending(struct dma_chan *chan)
++{
++	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
++	struct moxart_dma_container *mc = to_dma_container(mchan->chan.device);
++	u32 ctrl;
++	unsigned long flags;
++
++	dev_dbg(chan2dev(chan), "%s: mchan=%p\n", __func__, mchan);
++
++	spin_lock_irqsave(&mc->dma_lock, flags);
++
++	ctrl = readl(mchan->base + REG_CTRL);
++	ctrl |= APB_DMA_ENABLE;
++	writel(ctrl, mchan->base + REG_CTRL);
++
++	spin_unlock_irqrestore(&mc->dma_lock, flags);
++}
++
++static enum dma_status moxart_tx_status(struct dma_chan *chan,
++					dma_cookie_t cookie,
++					struct dma_tx_state *txs)
++{
++	struct moxart_dma_chan *ch = to_moxart_dma_chan(chan);
++	enum dma_status ret;
++
++	ret = (ch->error) ? DMA_ERROR : dma_cookie_status(chan, cookie, txs);
++
++	return ret;
++}
++
++static void moxart_dma_init(struct dma_device *dma, struct device *dev)
++{
++	dma->device_prep_slave_sg		= moxart_prep_slave_sg;
++	dma->device_alloc_chan_resources	= moxart_alloc_chan_resources;
++	dma->device_free_chan_resources		= moxart_free_chan_resources;
++	dma->device_issue_pending		= moxart_issue_pending;
++	dma->device_tx_status			= moxart_tx_status;
++	dma->device_control			= moxart_control;
++	dma->dev				= dev;
++
++	INIT_LIST_HEAD(&dma->channels);
++}
++
++static void moxart_dma_tasklet(unsigned long data)
++{
++	struct moxart_dma_container *mc = (void *)data;
++	struct moxart_dma_chan *ch = &mc->slave_chans[0];
++	struct dma_async_tx_descriptor *tx_desc;
++	unsigned int i;
++	enum dma_status s;
++	struct dma_tx_state txs;
++
++	pr_debug("%s\n", __func__);
++
++	for (i = 0; i < APB_DMA_MAX_CHANNEL; i++, ch++) {
++		if (ch->allocated) {
++			tx_desc = &ch->tx_desc;
++
++			s = mc->dma_slave.device_tx_status(&ch->chan,
++							   ch->chan.cookie,
++							   &txs);
++
++			switch (s) {
++			case DMA_ERROR:
++				printk_ratelimited("%s: DMA error\n",
++						   __func__);
++				break;
++			case DMA_SUCCESS:
++				break;
++			case DMA_IN_PROGRESS:
++			case DMA_PAUSED:
++				continue;
++			}
++
++			if (tx_desc->callback) {
++				pr_debug("%s: call callback for ch=%p\n",
++					 __func__, ch);
++				tx_desc->callback(tx_desc->callback_param);
++			}
++		}
++	}
++}
++
++static irqreturn_t moxart_dma_interrupt(int irq, void *devid)
++{
++	struct moxart_dma_container *mc = devid;
++	struct moxart_dma_chan *mchan = &mc->slave_chans[0];
++	unsigned int i;
++	u32 ctrl;
++
++	pr_debug("%s\n", __func__);
++
++	for (i = 0; i < APB_DMA_MAX_CHANNEL; i++, mchan++) {
++		if (mchan->allocated) {
++			ctrl = readl(mchan->base + REG_CTRL);
++			pr_debug("%s: ctrl=%x\n", __func__, ctrl);
++
++			if (ctrl & APB_DMA_FIN_INT_STS) {
++				ctrl &= ~APB_DMA_FIN_INT_STS;
++				dma_cookie_complete(&mchan->tx_desc);
++			}
++			if (ctrl & APB_DMA_ERR_INT_STS) {
++				ctrl &= ~APB_DMA_ERR_INT_STS;
++				mchan->error = 1;
++			}
++			/*
++			 * bits must be cleared here, this function
++			 * called in a loop if moved to tasklet
++			 */
++			writel(ctrl, mchan->base + REG_CTRL);
++
++			tasklet_schedule(&mc->tasklet);
++		}
++	}
++
++	return IRQ_HANDLED;
++}
++
++static int moxart_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *node = dev->of_node;
++	struct resource *res;
++	static void __iomem *dma_base_addr;
++	int ret, i;
++	unsigned int irq;
++	struct moxart_dma_chan *mchan;
++	struct moxart_dma_container *mdc;
++
++	mdc = devm_kzalloc(dev, sizeof(*mdc), GFP_KERNEL);
++	if (!mdc) {
++		dev_err(dev, "can't allocate DMA container\n");
++		return -ENOMEM;
++	}
++
++	irq = irq_of_parse_and_map(node, 0);
++	if (irq <= 0) {
++		dev_err(dev, "irq_of_parse_and_map failed\n");
++		return -EINVAL;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	dma_base_addr = devm_ioremap_resource(dev, res);
++	if (IS_ERR(dma_base_addr)) {
++		dev_err(dev, "devm_ioremap_resource failed\n");
++		return PTR_ERR(dma_base_addr);
++	}
++
++	mdc->ctlr = pdev->id;
++	spin_lock_init(&mdc->dma_lock);
++
++	dma_cap_zero(mdc->dma_slave.cap_mask);
++	dma_cap_set(DMA_SLAVE, mdc->dma_slave.cap_mask);
++
++	moxart_dma_init(&mdc->dma_slave, dev);
++
++	mchan = &mdc->slave_chans[0];
++	for (i = 0; i < APB_DMA_MAX_CHANNEL; i++, mchan++) {
++		mchan->ch_num = i;
++		mchan->base = dma_base_addr + i * REG_CHAN_SIZE;
++		mchan->allocated = 0;
++
++		dma_cookie_init(&mchan->chan);
++		mchan->chan.device = &mdc->dma_slave;
++		list_add_tail(&mchan->chan.device_node,
++			      &mdc->dma_slave.channels);
++
++		dev_dbg(dev, "%s: mchans[%d]: mchan->ch_num=%u mchan->base=%p\n",
++			__func__, i, mchan->ch_num, mchan->base);
++	}
++
++	platform_set_drvdata(pdev, mdc);
++
++	ret = devm_request_irq(dev, irq, moxart_dma_interrupt, 0,
++			       "moxart-dma-engine", mdc);
++	if (ret) {
++		dev_err(dev, "devm_request_irq failed\n");
++		return ret;
++	}
++
++	ret = dma_async_device_register(&mdc->dma_slave);
++	if (ret) {
++		dev_err(dev, "dma_async_device_register failed\n");
++		return ret;
++	}
++
++	ret = of_dma_controller_register(node, moxart_of_xlate, mdc);
++	if (ret) {
++		dev_err(dev, "of_dma_controller_register failed\n");
++		dma_async_device_unregister(&mdc->dma_slave);
++		return ret;
++	}
++
++	tasklet_init(&mdc->tasklet, moxart_dma_tasklet, (unsigned long)mdc);
++
++	dev_dbg(dev, "%s: IRQ=%u\n", __func__, irq);
++
++	return 0;
++}
++
++static int moxart_remove(struct platform_device *pdev)
++{
++	struct moxart_dma_container *m = platform_get_drvdata(pdev);
++
++	tasklet_kill(&m->tasklet);
++
++	dma_async_device_unregister(&m->dma_slave);
++
++	if (pdev->dev.of_node)
++		of_dma_controller_free(pdev->dev.of_node);
++
++	return 0;
++}
++
++static const struct of_device_id moxart_dma_match[] = {
++	{ .compatible = "moxa,moxart-dma" },
++	{ }
++};
++
++static struct platform_driver moxart_driver = {
++	.probe	= moxart_probe,
++	.remove	= moxart_remove,
++	.driver = {
++		.name		= "moxart-dma-engine",
++		.owner		= THIS_MODULE,
++		.of_match_table	= moxart_dma_match,
++	},
++};
++
++static int moxart_init(void)
++{
++	return platform_driver_register(&moxart_driver);
++}
++subsys_initcall(moxart_init);
++
++static void __exit moxart_exit(void)
++{
++	platform_driver_unregister(&moxart_driver);
++}
++module_exit(moxart_exit);
++
++MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
++MODULE_DESCRIPTION("MOXART DMA engine driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.2.1
 
