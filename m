@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab3JGKcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:32:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40158 "EHLO mx2.suse.de"
+	id S1755714Ab3JGKcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:32:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40131 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab3JGKaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:39 -0400
+	id S1752516Ab3JGKah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:37 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 62/63] sched: numa: use unsigned longs for numa group fault stats
-Date: Mon,  7 Oct 2013 11:29:40 +0100
-Message-Id: <1381141781-10992-63-git-send-email-mgorman@suse.de>
+Subject: [PATCH 59/63] sched: numa: Remove the numa_balancing_scan_period_reset sysctl
+Date: Mon,  7 Oct 2013 11:29:37 +0100
+Message-Id: <1381141781-10992-60-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -22,131 +22,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Peter says "If you're going to hold locks you can also do away with all
-that atomic_long_*() nonsense". Lock aquisition moved slightly to protect
-the updates.
+With scan rate adaptions based on whether the workload has properly
+converged or not there should be no need for the scan period reset
+hammer. Get rid of it.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 49 ++++++++++++++++++++-----------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
+ Documentation/sysctl/kernel.txt | 11 +++--------
+ include/linux/mm_types.h        |  3 ---
+ include/linux/sched/sysctl.h    |  1 -
+ kernel/sched/core.c             |  1 -
+ kernel/sched/fair.c             | 18 +-----------------
+ kernel/sysctl.c                 |  7 -------
+ 6 files changed, 4 insertions(+), 37 deletions(-)
 
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index d48bca4..84f1780 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -374,15 +374,13 @@ guarantee. If the target workload is already bound to NUMA nodes then this
+ feature should be disabled. Otherwise, if the system overhead from the
+ feature is too high then the rate the kernel samples for NUMA hinting
+ faults may be controlled by the numa_balancing_scan_period_min_ms,
+-numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
+-numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb and
+-numa_balancing_settle_count sysctls.
++numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
++numa_balancing_scan_size_mb and numa_balancing_settle_count sysctls.
+ 
+ ==============================================================
+ 
+ numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
+-numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
+-numa_balancing_scan_size_mb
++numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb
+ 
+ Automatic NUMA balancing scans tasks address space and unmaps pages to
+ detect if pages are properly placed or if the data should be migrated to a
+@@ -418,9 +416,6 @@ rate for each task.
+ numa_balancing_scan_size_mb is how many megabytes worth of pages are
+ scanned for a given scan.
+ 
+-numa_balancing_scan_period_reset is a blunt instrument that controls how
+-often a tasks scan delay is reset to detect sudden changes in task behaviour.
+-
+ numa_balancing_settle_count is how many scan periods must complete before
+ the schedule balancer stops pushing the task towards a preferred node. This
+ gives the scheduler a chance to place the task on an alternative node if the
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index a30f9ca..a3198e5 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -420,9 +420,6 @@ struct mm_struct {
+ 	 */
+ 	unsigned long numa_next_scan;
+ 
+-	/* numa_next_reset is when the PTE scanner period will be reset */
+-	unsigned long numa_next_reset;
+-
+ 	/* Restart point for scanning and setting pte_numa */
+ 	unsigned long numa_scan_offset;
+ 
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index bf8086b..10d16c4f 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -47,7 +47,6 @@ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+ extern unsigned int sysctl_numa_balancing_scan_delay;
+ extern unsigned int sysctl_numa_balancing_scan_period_min;
+ extern unsigned int sysctl_numa_balancing_scan_period_max;
+-extern unsigned int sysctl_numa_balancing_scan_period_reset;
+ extern unsigned int sysctl_numa_balancing_scan_size;
+ extern unsigned int sysctl_numa_balancing_settle_count;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 86497b8..07d7c11 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1716,7 +1716,6 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ #ifdef CONFIG_NUMA_BALANCING
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+ 		p->mm->numa_next_scan = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+-		p->mm->numa_next_reset = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+ 		p->mm->numa_scan_seq = 0;
+ 	}
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9e2271b..f45dd4c 100644
+index d8514c8..38ec714 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -916,8 +916,8 @@ struct numa_group {
- 	struct list_head task_list;
+@@ -826,7 +826,6 @@ static unsigned long task_h_load(struct task_struct *p);
+  */
+ unsigned int sysctl_numa_balancing_scan_period_min = 1000;
+ unsigned int sysctl_numa_balancing_scan_period_max = 60000;
+-unsigned int sysctl_numa_balancing_scan_period_reset = 60000;
  
- 	struct rcu_head rcu;
--	atomic_long_t total_faults;
--	atomic_long_t faults[0];
-+	unsigned long total_faults;
-+	unsigned long faults[0];
- };
- 
- pid_t task_numa_group_id(struct task_struct *p)
-@@ -944,8 +944,7 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
- 	if (!p->numa_group)
- 		return 0;
- 
--	return atomic_long_read(&p->numa_group->faults[2*nid]) +
--	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
-+	return p->numa_group->faults[2*nid] + p->numa_group->faults[2*nid+1];
- }
- 
- /*
-@@ -971,17 +970,10 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
- 
- static inline unsigned long group_weight(struct task_struct *p, int nid)
- {
--	unsigned long total_faults;
--
--	if (!p->numa_group)
--		return 0;
--
--	total_faults = atomic_long_read(&p->numa_group->total_faults);
--
--	if (!total_faults)
-+	if (!p->numa_group || !p->numa_group->total_faults)
- 		return 0;
- 
--	return 1000 * group_faults(p, nid) / total_faults;
-+	return 1000 * group_faults(p, nid) / p->numa_group->total_faults;
- }
- 
- static unsigned long weighted_cpuload(const int cpu);
-@@ -1397,9 +1389,9 @@ static void task_numa_placement(struct task_struct *p)
- 			p->total_numa_faults += diff;
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
--				atomic_long_add(diff, &p->numa_group->faults[i]);
--				atomic_long_add(diff, &p->numa_group->total_faults);
--				group_faults += atomic_long_read(&p->numa_group->faults[i]);
-+				p->numa_group->faults[i] += diff;
-+				p->numa_group->total_faults += diff;
-+				group_faults += p->numa_group->faults[i];
- 			}
- 		}
- 
-@@ -1475,7 +1467,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 
- 	if (unlikely(!p->numa_group)) {
- 		unsigned int size = sizeof(struct numa_group) +
--				    2*nr_node_ids*sizeof(atomic_long_t);
-+				    2*nr_node_ids*sizeof(unsigned long);
- 
- 		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
- 		if (!grp)
-@@ -1487,9 +1479,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 		grp->gid = p->pid;
- 
- 		for (i = 0; i < 2*nr_node_ids; i++)
--			atomic_long_set(&grp->faults[i], p->numa_faults[i]);
-+			grp->faults[i] = p->numa_faults[i];
- 
--		atomic_long_set(&grp->total_faults, p->total_numa_faults);
-+		grp->total_faults = p->total_numa_faults;
- 
- 		list_add(&p->numa_entry, &grp->task_list);
- 		grp->nr_tasks++;
-@@ -1543,14 +1535,14 @@ unlock:
- 	if (!join)
+ /* Portion of address space to scan in MB */
+ unsigned int sysctl_numa_balancing_scan_size = 256;
+@@ -1685,24 +1684,9 @@ void task_numa_work(struct callback_head *work)
+ 	if (p->flags & PF_EXITING)
  		return;
  
-+	double_lock(&my_grp->lock, &grp->lock);
-+
- 	for (i = 0; i < 2*nr_node_ids; i++) {
--		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
--		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
-+		my_grp->faults[i] -= p->numa_faults[i];
-+		grp->faults[i] += p->numa_faults[i];
+-	if (!mm->numa_next_reset || !mm->numa_next_scan) {
++	if (!mm->numa_next_scan) {
+ 		mm->numa_next_scan = now +
+ 			msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+-		mm->numa_next_reset = now +
+-			msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+-	}
+-
+-	/*
+-	 * Reset the scan period if enough time has gone by. Objective is that
+-	 * scanning will be reduced if pages are properly placed. As tasks
+-	 * can enter different phases this needs to be re-examined. Lacking
+-	 * proper tracking of reference behaviour, this blunt hammer is used.
+-	 */
+-	migrate = mm->numa_next_reset;
+-	if (time_after(now, migrate)) {
+-		p->numa_scan_period = task_scan_min(p);
+-		next_scan = now + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+-		xchg(&mm->numa_next_reset, next_scan);
  	}
--	atomic_long_sub(p->total_numa_faults, &my_grp->total_faults);
--	atomic_long_add(p->total_numa_faults, &grp->total_faults);
--
--	double_lock(&my_grp->lock, &grp->lock);
-+	my_grp->total_faults -= p->total_numa_faults;
-+	grp->total_faults += p->total_numa_faults;
  
- 	list_move(&p->numa_entry, &grp->task_list);
- 	my_grp->nr_tasks--;
-@@ -1571,12 +1563,11 @@ void task_numa_free(struct task_struct *p)
- 	void *numa_faults = p->numa_faults;
- 
- 	if (grp) {
-+		spin_lock(&grp->lock);
- 		for (i = 0; i < 2*nr_node_ids; i++)
--			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
--
--		atomic_long_sub(p->total_numa_faults, &grp->total_faults);
-+			grp->faults[i] -= p->numa_faults[i];
-+		grp->total_faults -= p->total_numa_faults;
- 
--		spin_lock(&grp->lock);
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
- 		spin_unlock(&grp->lock);
+ 	/*
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 42f616a..e509b90 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -371,13 +371,6 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+-		.procname	= "numa_balancing_scan_period_reset",
+-		.data		= &sysctl_numa_balancing_scan_period_reset,
+-		.maxlen		= sizeof(unsigned int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
+-	},
+-	{
+ 		.procname	= "numa_balancing_scan_period_max_ms",
+ 		.data		= &sysctl_numa_balancing_scan_period_max,
+ 		.maxlen		= sizeof(unsigned int),
 -- 
 1.8.4
 
