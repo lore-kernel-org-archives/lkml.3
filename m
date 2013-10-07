@@ -1,104 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab3JGPHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:07:08 -0400
-Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:61404 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751436Ab3JGPHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:07:06 -0400
-X-TM-IMSS-Message-ID: <5112f96500056f0f@nsa.gov>
-Message-ID: <5252CDF2.4090304@tycho.nsa.gov>
-Date: Mon, 07 Oct 2013 11:06:26 -0400
-From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1755681Ab3JGPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:07:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:10278 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab3JGPHY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:07:24 -0400
+Message-ID: <5252CE27.6060905@atmel.com>
+Date: Mon, 7 Oct 2013 17:07:19 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
-        tpmdd-devel@lists.sourceforge.net,
-        Richard Maciel Costa <richardm@br.ibm.com>,
-        "trousers-tech@lists.sourceforge.net" 
-	<trousers-tech@lists.sourceforge.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: [tpmdd-devel] [PATCH 09/13] tpm: Pull everything related to sysfs
- into tpm-sysfs.c
-References: <52408E5D.4020904@tycho.nsa.gov> <20130923193633.GA9194@obsidianresearch.com>	<5240A2A3.4040102@tycho.nsa.gov> <20130923204232.GB16345@obsidianresearch.com> <5240BA0E.3000304@tycho.nsa.gov>	<20130923222324.GA9533@obsidianresearch.com> <5241A199.1080505@tycho.nsa.gov> <20130930181005.GG28898@obsidianresearch.com> <5249E0CB.2070106@tycho.nsa.gov>	<5249F6AF.7050608@linux.vnet.ibm.com> <20131004170803.GB6955@obsidianresearch.com> <524F1450.6060406@linux.vnet.ibm.com>
-In-Reply-To: <524F1450.6060406@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 03/19] clk: at91: add PMC base support
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375938066-3889-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1375938066-3889-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 03:17 PM, Stefan Berger wrote:
-> On 10/04/2013 01:08 PM, Jason Gunthorpe wrote:
->> On Mon, Sep 30, 2013 at 05:09:51PM -0500, Joel Schopp wrote:
->>
->>>> So far, nobody I have talked to has offered any strong opinions on
->>>> what locality should be used or how it should be set. I think finding
->>>> a developer of trousers may be the most useful to talk about how the
->>>> ioctl portion of this would need to be set up - if someone is actually
->>>> needed.
->>> I am a TrouSerS developer and am ccing Richard, another TrouSerS
->>> developer, and ccing the trousers-tech list.  It would be good if you
->>> could elaborate on the question and context for those not following the
->>> entire thread, myself included.
->> Two questions:
->>
->> Is userspace interested in using the TPM Locality feature, and if so
->> is there any thoughts on what the interface should be?
+On 08/08/2013 07:01, Boris BREZILLON :
+> This patch adds at91 PMC (Power Management Controller) base support.
 >
-> In terms of interface it should probably be an ioctl so that whoever
-> holds the fd to /dev/tpm0 gets to choose the locality.
+> All at91 clocks managed by the PMC unit will use this framework.
 >
-> Locality allows the resetting of certain PCRs. See section 3.7 in
+> This framework provides the following fonctionalities:
+> - define a new struct at91_pmc to hide PMC internals (lock, PMC memory
+>    mapping, irq domain, ...)
+> - read/write helper functions (pmc_read/write) to access PMC registers
+> - lock/unlock helper functions (pmc_lock/unlock) to lock/unlock access to
+>    pmc registers
+> - a new irq domain and its associated irq chip to request PMC specific
+>    interrupts (useful for clk prepare callbacks)
 >
-> http://www.trustedcomputinggroup.org/files/static_page_files/8E45D739-1A4B-B294-D06274E7047730FD/TCG_PCClientTPMInterfaceSpecification_TIS__1-3_27_03212013.pdf
+> The PMC unit is declared as a dt clk provider (CLK_OF_DECLARE), and every
+> clk using this framework will declare a table of of_at91_clk_init_cb_t
+> and add it to the pmc_clk_ids table.
 >
-> Locality 4 can only be used by the hardware (section 2.2).
+> When the pmc dt clock setup function is called (by of_clk_init function),
+> it triggers the registration of every supported child clk (those matching
+> the definitions in pmc_clk_ids).
 >
-> Locality has an influence on the following TPM commands:
-> TSC_ResetEstablishmentBit, Seal, Sealx, CreateWrapKey, UnSeal,
-> GetPubKey, CMK_CreateKey, SHA1CompleteExtend, CertifyKey, Extend,
-> PCR_Reset, NV_ReadValue, NV_WriteValue, and others.  Some of the
-> commands allow operations to succeed if a previously selected locality
-> is also currently the chosen one. (If you have control over choosing the
-> locality, at least that part won't prevent you from succeeding..)
+> This patch copies at91_pmc_base (memory mapping) and at91sam9_idle
+> (function) from arch/arm/mach-at91/clock.c (which is not compiled if
+> COMMON_CLK_AT91 is enabled).
 >
-> http://www.trustedcomputinggroup.org/files/static_page_files/72C33D71-1A4B-B294-D02C7DF86630BE7C/TPM%20Main-Part%203%20Commands_v1.2_rev116_01032011.pdf
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>   drivers/clk/Makefile      |    1 +
+>   drivers/clk/at91/Makefile |    5 +
+>   drivers/clk/at91/pmc.c    |  298 +++++++++++++++++++++++++++++++++++++++++++++
+>   drivers/clk/at91/pmc.h    |   58 +++++++++
+>   4 files changed, 362 insertions(+)
+>   create mode 100644 drivers/clk/at91/Makefile
+>   create mode 100644 drivers/clk/at91/pmc.c
+>   create mode 100644 drivers/clk/at91/pmc.h
 >
-> The worst would probably be if an application was to reset a PCR while
-> another one is using that PCR or just for malicious purposes. Not
-> providing support for choosing locality would mean that applications
-> could still use PCRs 16 and 23 for their own purposes and can compete
-> for their exclusive usage while being able to reset only those two.
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 4038c2b..c256a20 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -32,6 +32,7 @@ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
+>   obj-$(CONFIG_ARCH_ZYNQ)		+= zynq/
+>   obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+>   obj-$(CONFIG_PLAT_SAMSUNG)	+= samsung/
+> +obj-$(CONFIG_COMMON_CLK_AT91)	+= at91/
+>
+>   obj-$(CONFIG_X86)		+= x86/
+>
+> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+> new file mode 100644
+> index 0000000..1d4fb21
+> --- /dev/null
+> +++ b/drivers/clk/at91/Makefile
+> @@ -0,0 +1,5 @@
+> +#
+> +# Makefile for at91 specific clk
+> +#
+> +
+> +obj-y += pmc.o
+> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+> new file mode 100644
+> index 0000000..f6bd03d
+> --- /dev/null
+> +++ b/drivers/clk/at91/pmc.c
+> @@ -0,0 +1,298 @@
+> +/*
+> + * drivers/clk/at91/pmc.c
+> + *
+> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/clkdev.h>
+> +#include <linux/clk/at91_pmc.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/io.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqchip/chained_irq.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/of_irq.h>
+> +
+> +#include <asm/proc-fns.h>
+> +
+> +#include "pmc.h"
+> +
+> +void __iomem *at91_pmc_base;
+> +EXPORT_SYMBOL_GPL(at91_pmc_base);
+> +
+> +void at91sam9_idle(void)
+> +{
+> +	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
+> +	cpu_do_idle();
+> +}
+> +
+> +static void pmc_irq_mask(struct irq_data *d)
+> +{
+> +	struct at91_pmc *pmc = irq_data_get_irq_chip_data(d);
+> +
+> +	pmc_write(pmc, AT91_PMC_IDR, 1 << d->hwirq);
+> +}
+> +
+> +static void pmc_irq_unmask(struct irq_data *d)
+> +{
+> +	struct at91_pmc *pmc = irq_data_get_irq_chip_data(d);
+> +
+> +	pmc_write(pmc, AT91_PMC_IER, 1 << d->hwirq);
+> +}
+> +
+> +static int pmc_irq_set_type(struct irq_data *d, unsigned type)
+> +{
+> +	if (type != IRQ_TYPE_LEVEL_HIGH) {
+> +		pr_warn("PMC: type not supported (support only IRQ_TYPE_LEVEL_HIGH type)\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct irq_chip pmc_irq = {
+> +	.name = "PMC",
+> +	.irq_disable = pmc_irq_mask,
+> +	.irq_mask = pmc_irq_mask,
+> +	.irq_unmask = pmc_irq_unmask,
+> +	.irq_set_type = pmc_irq_set_type,
+> +};
+> +
+> +static struct lock_class_key pmc_lock_class;
+> +
+> +static int pmc_irq_map(struct irq_domain *h, unsigned int virq,
+> +		       irq_hw_number_t hw)
+> +{
+> +	struct at91_pmc	*pmc = h->host_data;
+> +
+> +	irq_set_lockdep_class(virq, &pmc_lock_class);
+> +
+> +	irq_set_chip_and_handler(virq, &pmc_irq,
+> +				 handle_level_irq);
+> +	set_irq_flags(virq, IRQF_VALID);
+> +	irq_set_chip_data(virq, pmc);
+> +
+> +	return 0;
+> +}
+> +
+> +static int pmc_irq_domain_xlate(struct irq_domain *d,
+> +				struct device_node *ctrlr,
+> +				const u32 *intspec, unsigned int intsize,
+> +				irq_hw_number_t *out_hwirq,
+> +				unsigned int *out_type)
+> +{
+> +	struct at91_pmc *pmc = d->host_data;
+> +	const struct at91_pmc_caps *caps = pmc->caps;
+> +
+> +	if (WARN_ON(intsize < 2))
+> +		return -EINVAL;
+> +	*out_hwirq = intspec[0];
+> +	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+> +
+> +	if (!(caps->available_irqs & (1 << *out_hwirq)))
+> +		return -EINVAL;
+> +
+> +	if (*out_type != IRQ_TYPE_LEVEL_HIGH)
+> +		return -EINVAL;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct irq_domain_ops pmc_irq_ops = {
+> +	.map	= pmc_irq_map,
+> +	.xlate	= pmc_irq_domain_xlate,
+> +};
+> +
+> +static irqreturn_t pmc_irq_handler(int irq, void *data)
+> +{
+> +	struct at91_pmc *pmc = (struct at91_pmc *)data;
+> +	unsigned long sr;
+> +	int n;
+> +
+> +	sr = pmc_read(pmc, AT91_PMC_SR) & pmc_read(pmc, AT91_PMC_IMR);
+> +	if (!sr)
+> +		return IRQ_NONE;
+> +
+> +	for_each_set_bit(n, &sr, BITS_PER_LONG)
+> +		generic_handle_irq(irq_find_mapping(pmc->irqdomain, n));
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static const struct at91_pmc_caps at91rm9200_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_LOCKB |
+> +			  AT91_PMC_MCKRDY | AT91_PMC_PCK0RDY |
+> +			  AT91_PMC_PCK1RDY | AT91_PMC_PCK2RDY |
+> +			  AT91_PMC_PCK3RDY,
+> +};
+> +
+> +static const struct at91_pmc_caps at91sam9260_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_LOCKB |
+> +			  AT91_PMC_MCKRDY | AT91_PMC_PCK0RDY |
+> +			  AT91_PMC_PCK1RDY,
+> +};
+> +
+> +static const struct at91_pmc_caps at91sam9g45_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
+> +			  AT91_PMC_LOCKU | AT91_PMC_PCK0RDY |
+> +			  AT91_PMC_PCK1RDY,
+> +};
+> +
+> +static const struct at91_pmc_caps at91sam9n12_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_LOCKB |
+> +			  AT91_PMC_MCKRDY | AT91_PMC_PCK0RDY |
+> +			  AT91_PMC_PCK1RDY | AT91_PMC_MOSCSELS |
+> +			  AT91_PMC_MOSCRCS | AT91_PMC_CFDEV,
+> +};
+> +
+> +static const struct at91_pmc_caps at91sam9x5_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
+> +			  AT91_PMC_LOCKU | AT91_PMC_PCK0RDY |
+> +			  AT91_PMC_PCK1RDY | AT91_PMC_MOSCSELS |
+> +			  AT91_PMC_MOSCRCS | AT91_PMC_CFDEV,
+> +};
+> +
+> +static const struct at91_pmc_caps at91sam9g35_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
+> +			  AT91_PMC_PCK0RDY | AT91_PMC_PCK1RDY |
+> +			  AT91_PMC_MOSCSELS | AT91_PMC_MOSCRCS |
+> +			  AT91_PMC_CFDEV,
 
-Any important measurements that would be impacted by a userspace-generated
-reset should be directed to the non-resettable PCR 0-15 or 17-19 (allowing
-DRTM to reset them). Ideally the /dev/tpm0 device would be opened only by
-tcsd (which could be measured by IMA and enforced by an LSM), which could
-implement its own restrictions on what clients can extend or reset PCRs.
+9g35 is part of 9x5 series. It is not different from its other fellow SoCs.
+(but it is true that the datasheet has changed recently in relation with 
+this missing LOCKU bit ;-) ).
 
-> Are there use case for resetting PCRs from user space? If not I'd not
-> support choice for locality from user space.
+So I suspect that we can remove all definitions of at91sam9g35 and merge 
+them with 9x5 ones (including compatibility string).
+
+> +};
+> +
+> +static const struct at91_pmc_caps sama5d3_caps = {
+> +	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
+> +			  AT91_PMC_LOCKU | AT91_PMC_PCK0RDY |
+> +			  AT91_PMC_PCK1RDY | AT91_PMC_PCK2RDY |
+> +			  AT91_PMC_MOSCSELS | AT91_PMC_MOSCRCS |
+> +			  AT91_PMC_CFDEV,
+> +};
+> +
+> +static struct at91_pmc *__init at91_pmc_init(struct device_node *np,
+> +					     void __iomem *regbase, int virq,
+> +					     const struct at91_pmc_caps *caps)
+> +{
+> +	struct at91_pmc *pmc;
+> +
+> +	if (!regbase || !virq ||  !caps)
+> +		return NULL;
+> +
+> +	at91_pmc_base = regbase;
+> +
+> +	pmc = kzalloc(sizeof(*pmc), GFP_KERNEL);
+> +	if (!pmc)
+> +		return NULL;
+> +
+> +	spin_lock_init(&pmc->lock);
+> +	pmc->regbase = regbase;
+> +	pmc->virq = virq;
+> +	pmc->caps = caps;
+> +
+> +	pmc->irqdomain = irq_domain_add_linear(np, 32, &pmc_irq_ops, pmc);
+> +
+> +	if (!pmc->irqdomain)
+> +		goto out_free_pmc;
+> +
+> +	pmc_write(pmc, AT91_PMC_IDR, 0xffffffff);
+> +	if (request_irq(pmc->virq, pmc_irq_handler, IRQF_SHARED, "pmc", pmc))
+> +		goto out_remove_irqdomain;
+> +
+> +	return pmc;
+> +
+> +out_remove_irqdomain:
+> +	irq_domain_remove(pmc->irqdomain);
+> +out_free_pmc:
+> +	kfree(pmc);
+> +
+> +	return NULL;
+> +}
+> +
+> +static const struct of_device_id pmc_clk_ids[] __initdata = {
+> +	{ /*sentinel*/ }
+> +};
+> +
+> +static void __init of_at91_pmc_setup(struct device_node *np,
+> +				     const struct at91_pmc_caps *caps)
+> +{
+> +	struct at91_pmc *pmc;
+> +	struct device_node *childnp;
+> +	void (*clk_setup)(struct device_node *, struct at91_pmc *);
+> +	const struct of_device_id *clk_id;
+> +	void __iomem *regbase = of_iomap(np, 0);
+> +	int virq;
+> +
+> +	if (!regbase)
+> +		return;
+> +
+> +	virq = irq_of_parse_and_map(np, 0);
+> +	if (!virq)
+> +		return;
+> +
+> +	pmc = at91_pmc_init(np, regbase, virq, caps);
+> +	if (!pmc)
+> +		return;
+> +	for_each_child_of_node(np, childnp) {
+> +		clk_id = of_match_node(pmc_clk_ids, childnp);
+> +		if (!clk_id)
+> +			continue;
+> +		clk_setup = clk_id->data;
+> +		clk_setup(childnp, pmc);
+> +	}
+> +}
+> +
+> +static void __init of_at91rm9200_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &at91rm9200_caps);
+> +}
+> +CLK_OF_DECLARE(at91rm9200_clk_main, "atmel,at91rm9200-pmc",
+> +	       of_at91rm9200_pmc_setup);
+> +
+> +static void __init of_at91sam9260_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &at91sam9260_caps);
+> +}
+> +CLK_OF_DECLARE(at91sam9260_clk_main, "atmel,at91sam9260-pmc",
+> +	       of_at91sam9260_pmc_setup);
+> +
+> +static void __init of_at91sam9g45_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &at91sam9g45_caps);
+> +}
+> +CLK_OF_DECLARE(at91sam9g45_clk_main, "atmel,at91sam9g45-pmc",
+> +	       of_at91sam9g45_pmc_setup);
+> +
+> +static void __init of_at91sam9n12_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &at91sam9n12_caps);
+> +}
+> +CLK_OF_DECLARE(at91sam9n12_clk_main, "atmel,at91sam9n12-pmc",
+> +	       of_at91sam9n12_pmc_setup);
+> +
+> +static void __init of_at91sam9x5_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &at91sam9x5_caps);
+> +}
+> +CLK_OF_DECLARE(at91sam9x5_clk_main, "atmel,at91sam9x5-pmc",
+> +	       of_at91sam9x5_pmc_setup);
+> +
+> +static void __init of_at91sam9g35_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &at91sam9g35_caps);
+> +}
+> +CLK_OF_DECLARE(at91sam9g35_clk_main, "atmel,at91sam9g35-pmc",
+> +	       of_at91sam9g35_pmc_setup);
+
+Ditto.
+
+> +
+> +static void __init of_sama5d3_pmc_setup(struct device_node *np)
+> +{
+> +	of_at91_pmc_setup(np, &sama5d3_caps);
+> +}
+> +CLK_OF_DECLARE(sama5d3_clk_main, "atmel,sama5d3-pmc",
+> +	       of_sama5d3_pmc_setup);
+> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+> new file mode 100644
+> index 0000000..b7e8397
+> --- /dev/null
+> +++ b/drivers/clk/at91/pmc.h
+> @@ -0,0 +1,58 @@
+> +/*
+> + * drivers/clk/at91/pmc.h
+> + *
+> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __PMC_H_
+> +#define __PMC_H_
+> +
+> +#include <linux/io.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/spinlock.h>
+> +
+> +struct clk_range {
+> +	unsigned long min;
+> +	unsigned long max;
+> +};
+> +
+> +#define CLK_RANGE(MIN, MAX) {.min = MIN, .max = MAX,}
+> +
+> +struct at91_pmc_caps {
+> +	u32 available_irqs;
+> +};
+> +
+> +struct at91_pmc {
+> +	void __iomem *regbase;
+> +	int virq;
+> +	spinlock_t lock;
+> +	const struct at91_pmc_caps *caps;
+> +	struct irq_domain *irqdomain;
+> +};
+> +
+> +static inline void pmc_lock(struct at91_pmc *pmc)
+> +{
+> +	spin_lock(&pmc->lock);
+> +}
+> +
+> +static inline void pmc_unlock(struct at91_pmc *pmc)
+> +{
+> +	spin_unlock(&pmc->lock);
+> +}
+> +
+> +static inline u32 pmc_read(struct at91_pmc *pmc, int offset)
+> +{
+> +	return readl_relaxed(pmc->regbase + offset);
+> +}
+> +
+> +static inline void pmc_write(struct at91_pmc *pmc, int offset, u32 value)
+> +{
+> +	return writel_relaxed(value, pmc->regbase + offset);
+> +}
+> +
+> +#endif /* __PMC_H_ */
 >
->       Stefan
 
-It's not just resetting - extends to PCR 17-22 are also restricted based on
-locality, so without this interface they have been read-only.
-
-There are use cases that are significantly simplified by using multiple
-resettable PCRs. One (slightly contrived) example: tcsd manages one PCR so
-that it holds the hash of the executable making a local IPC request, another
-holds the arguments or pathname, another the IMA signature key used to sign
-the application. This allows the application (say, a keyring) to seal data
-that only it can unseal; without multiple PCRs, a more complex interface
-would be required to support a choice between sealing to the more flexible
-IMA signature in order to support software upgrades and sealing to the more
-secure exact binary image.
 
 -- 
-Daniel De Graaf
-National Security Agency
+Nicolas Ferre
