@@ -1,199 +1,569 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab3JGRfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 13:35:55 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13810 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756007Ab3JGRfu (ORCPT
+	id S1756305Ab3JGRfw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 13:35:52 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38428 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab3JGRft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 13:35:50 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+7A7nW6YFfo3KFWTkD0O2e
-Date: Mon, 7 Oct 2013 10:35:31 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-omap@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 3/6] pinctrl: single: Prepare for supporting SoC
- specific features
-Message-ID: <20131007173531.GX8949@atomide.com>
-References: <20131003054104.8941.88857.stgit@localhost>
- <20131003054218.8941.19273.stgit@localhost>
+	Mon, 7 Oct 2013 13:35:49 -0400
+Date: Mon, 7 Oct 2013 10:35:43 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131007173543.GA17833@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131003194226.GO28601@twins.programming.kicks-ass.net>
+ <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
+ <20131004165044.GV28601@twins.programming.kicks-ass.net>
+ <20131004170954.GK5790@linux.vnet.ibm.com>
+ <20131004185239.GS15690@laptop.programming.kicks-ass.net>
+ <20131004212506.GM5790@linux.vnet.ibm.com>
+ <20131005160511.GV3081@twins.programming.kicks-ass.net>
+ <20131005162802.GP5790@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131003054218.8941.19273.stgit@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131005162802.GP5790@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100717-6688-0000-0000-0000024CBC0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus W,
+On Sat, Oct 05, 2013 at 09:28:02AM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 05, 2013 at 06:05:11PM +0200, Peter Zijlstra wrote:
+> > On Fri, Oct 04, 2013 at 02:25:06PM -0700, Paul E. McKenney wrote:
+> > > >                                                                     Why
+> > > > do we still have a per-cpu kthread in nocb mode? The idea is that we do
+> > > > not disturb the cpu, right? So I suppose these kthreads get to run on
+> > > > another cpu.
+> > > 
+> > > Yep, the idea is that usermode figures out where to run them.  Even if
+> > > usermode doesn't do that, this has the effect of getting them to be
+> > > more out of the way of real-time tasks.
+> > > 
+> > > > Since its running on another cpu; we get into atomic and memory barriers
+> > > > anyway; so why not keep the logic the same as no-nocb but have another
+> > > > cpu check our nocb cpu's state.
+> > > 
+> > > You can do that today by setting rcu_nocb_poll, but that results in
+> > > frequent polling wakeups even when the system is completely idle, which
+> > > is out of the question for the battery-powered embedded guys.
+> > 
+> > So its this polling I don't get.. why is the different behaviour
+> > required? And why would you continue polling if the cpus were actually
+> > idle.
+> 
+> The idea is to offload the overhead of doing the wakeup from (say)
+> a real-time thread/CPU onto some housekeeping CPU.
+> 
+> > Is there some confusion between the nr_running==1 extended quiescent
+> > state and the nr_running==0 extended quiescent state?
+> 
+> This is independent of the nr_running=1 extended quiescent state.  The
+> wakeups only happen when runnning in the kernel.  That said, a real-time
+> thread might want both rcu_nocb_poll=y and CONFIG_NO_HZ_FULL=y.
+> 
+> > Now, none of this solves the issue at hand because event the 'regular'
+> > no-nocb rcu mode has this issue of needing to wake kthreads, but I'd
+> > like to get a better understanding of why nocb mode is as it is.
+> > 
+> > 
+> > I've seen you've since send a few more emails; I might find some of the
+> > answers in there. Let me go read the :-)
+> 
+> I -think- I have solved it, but much testing and review will of course
+> be required.  And fixing last night's test failures...
 
-Any comments on the pinctrl patches 3 - 5 in this series?
+For which the patch turned out to be an innocent bystander.  Apparently,
+some of the more creative possible settings of CONFIG_RCU_FANOUT and
+CONFIG_RCU_FANOUT_LEAF cause RCU some heartburn.  Looking into it.
+(Yes, I am finally refactoring my RCU tests.)
 
-These are badly needed to not break omap3 PM support when
-we're moving to device tree based booting.
+Here is the patch which fixes the bug that Peter found.
 
-* Tony Lindgren <tony@atomide.com> [131002 22:50]:
-> Let's replace is_pinconf with flags and add struct pcs_soc_data
-> so we can support SoC specific features like pin wake-up events.
-> 
-> Done in collaboration with Roger Quadros <rogerq@ti.com>.
-> 
-> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-> Cc: Prakash Manjunathappa <prakash.pm@ti.com>
-> Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> ---
->  drivers/pinctrl/pinctrl-single.c |   38 +++++++++++++++++++++++++++++---------
->  1 file changed, 29 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-> index a82ace4..f88d3d1 100644
-> --- a/drivers/pinctrl/pinctrl-single.c
-> +++ b/drivers/pinctrl/pinctrl-single.c
-> @@ -150,19 +150,27 @@ struct pcs_name {
->  };
->  
->  /**
-> + * struct pcs_soc_data - SoC specific settings
-> + * @flags:	initial SoC specific PCS_FEAT_xxx values
-> + */
-> +struct pcs_soc_data {
-> +	unsigned flags;
-> +};
-> +
-> +/**
->   * struct pcs_device - pinctrl device instance
->   * @res:	resources
->   * @base:	virtual address of the controller
->   * @size:	size of the ioremapped area
->   * @dev:	device entry
->   * @pctl:	pin controller device
-> + * @flags:	mask of PCS_FEAT_xxx values
->   * @mutex:	mutex protecting the lists
->   * @width:	bits per mux register
->   * @fmask:	function register mask
->   * @fshift:	function register shift
->   * @foff:	value to turn mux off
->   * @fmax:	max number of functions in fmask
-> - * @is_pinconf:	whether supports pinconf
->   * @bits_per_pin:number of bits per pin
->   * @names:	array of register names for pins
->   * @pins:	physical pins on the SoC
-> @@ -183,6 +191,8 @@ struct pcs_device {
->  	unsigned size;
->  	struct device *dev;
->  	struct pinctrl_dev *pctl;
-> +	unsigned flags;
-> +#define PCS_FEAT_PINCONF	(1 << 0)
->  	struct mutex mutex;
->  	unsigned width;
->  	unsigned fmask;
-> @@ -190,7 +200,6 @@ struct pcs_device {
->  	unsigned foff;
->  	unsigned fmax;
->  	bool bits_per_mux;
-> -	bool is_pinconf;
->  	unsigned bits_per_pin;
->  	struct pcs_name *names;
->  	struct pcs_data pins;
-> @@ -206,6 +215,8 @@ struct pcs_device {
->  	void (*write)(unsigned val, void __iomem *reg);
->  };
->  
-> +#define PCS_HAS_PINCONF		(pcs->flags & PCS_FEAT_PINCONF)
-> +
->  static int pcs_pinconf_get(struct pinctrl_dev *pctldev, unsigned pin,
->  			   unsigned long *config);
->  static int pcs_pinconf_set(struct pinctrl_dev *pctldev, unsigned pin,
-> @@ -1060,7 +1071,7 @@ static int pcs_parse_pinconf(struct pcs_device *pcs, struct device_node *np,
->  	};
->  
->  	/* If pinconf isn't supported, don't parse properties in below. */
-> -	if (!pcs->is_pinconf)
-> +	if (!PCS_HAS_PINCONF)
->  		return 0;
->  
->  	/* cacluate how much properties are supported in current node */
-> @@ -1184,7 +1195,7 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
->  	(*map)->data.mux.group = np->name;
->  	(*map)->data.mux.function = np->name;
->  
-> -	if (pcs->is_pinconf) {
-> +	if (PCS_HAS_PINCONF) {
->  		res = pcs_parse_pinconf(pcs, np, function, map);
->  		if (res)
->  			goto free_pingroups;
-> @@ -1305,7 +1316,7 @@ static int pcs_parse_bits_in_pinctrl_entry(struct pcs_device *pcs,
->  	(*map)->data.mux.group = np->name;
->  	(*map)->data.mux.function = np->name;
->  
-> -	if (pcs->is_pinconf) {
-> +	if (PCS_HAS_PINCONF) {
->  		dev_err(pcs->dev, "pinconf not supported\n");
->  		goto free_pingroups;
->  	}
-> @@ -1525,6 +1536,7 @@ static int pcs_probe(struct platform_device *pdev)
->  	const struct of_device_id *match;
->  	struct resource *res;
->  	struct pcs_device *pcs;
-> +	const struct pcs_soc_data *soc;
->  	int ret;
->  
->  	match = of_match_device(pcs_of_match, &pdev->dev);
-> @@ -1541,7 +1553,8 @@ static int pcs_probe(struct platform_device *pdev)
->  	INIT_LIST_HEAD(&pcs->pingroups);
->  	INIT_LIST_HEAD(&pcs->functions);
->  	INIT_LIST_HEAD(&pcs->gpiofuncs);
-> -	pcs->is_pinconf = match->data;
-> +	soc = match->data;
-> +	pcs->flags = soc->flags;
->  
->  	PCS_GET_PROP_U32("pinctrl-single,register-width", &pcs->width,
->  			 "register width not specified\n");
-> @@ -1610,7 +1623,7 @@ static int pcs_probe(struct platform_device *pdev)
->  	pcs->desc.name = DRIVER_NAME;
->  	pcs->desc.pctlops = &pcs_pinctrl_ops;
->  	pcs->desc.pmxops = &pcs_pinmux_ops;
-> -	if (pcs->is_pinconf)
-> +	if (PCS_HAS_PINCONF)
->  		pcs->desc.confops = &pcs_pinconf_ops;
->  	pcs->desc.owner = THIS_MODULE;
->  
-> @@ -1652,9 +1665,16 @@ static int pcs_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +static const struct pcs_soc_data pinctrl_single = {
-> +};
-> +
-> +static const struct pcs_soc_data pinconf_single = {
-> +	.flags = PCS_FEAT_PINCONF,
-> +};
-> +
->  static struct of_device_id pcs_of_match[] = {
-> -	{ .compatible = "pinctrl-single", .data = (void *)false },
-> -	{ .compatible = "pinconf-single", .data = (void *)true },
-> +	{ .compatible = "pinctrl-single", .data = &pinctrl_single },
-> +	{ .compatible = "pinconf-single", .data = &pinconf_single },
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(of, pcs_of_match);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Break call_rcu() deadlock involving scheduler and perf
+
+Dave Jones got the following lockdep splat:
+
+>  ======================================================
+>  [ INFO: possible circular locking dependency detected ]
+>  3.12.0-rc3+ #92 Not tainted
+>  -------------------------------------------------------
+>  trinity-child2/15191 is trying to acquire lock:
+>   (&rdp->nocb_wq){......}, at: [<ffffffff8108ff43>] __wake_up+0x23/0x50
+>
+> but task is already holding lock:
+>   (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
+>
+> which lock already depends on the new lock.
+>
+>
+> the existing dependency chain (in reverse order) is:
+>
+> -> #3 (&ctx->lock){-.-...}:
+>         [<ffffffff810cc243>] lock_acquire+0x93/0x200
+>         [<ffffffff81733f90>] _raw_spin_lock+0x40/0x80
+>         [<ffffffff811500ff>] __perf_event_task_sched_out+0x2df/0x5e0
+>         [<ffffffff81091b83>] perf_event_task_sched_out+0x93/0xa0
+>         [<ffffffff81732052>] __schedule+0x1d2/0xa20
+>         [<ffffffff81732f30>] preempt_schedule_irq+0x50/0xb0
+>         [<ffffffff817352b6>] retint_kernel+0x26/0x30
+>         [<ffffffff813eed04>] tty_flip_buffer_push+0x34/0x50
+>         [<ffffffff813f0504>] pty_write+0x54/0x60
+>         [<ffffffff813e900d>] n_tty_write+0x32d/0x4e0
+>         [<ffffffff813e5838>] tty_write+0x158/0x2d0
+>         [<ffffffff811c4850>] vfs_write+0xc0/0x1f0
+>         [<ffffffff811c52cc>] SyS_write+0x4c/0xa0
+>         [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
+>
+> -> #2 (&rq->lock){-.-.-.}:
+>         [<ffffffff810cc243>] lock_acquire+0x93/0x200
+>         [<ffffffff81733f90>] _raw_spin_lock+0x40/0x80
+>         [<ffffffff810980b2>] wake_up_new_task+0xc2/0x2e0
+>         [<ffffffff81054336>] do_fork+0x126/0x460
+>         [<ffffffff81054696>] kernel_thread+0x26/0x30
+>         [<ffffffff8171ff93>] rest_init+0x23/0x140
+>         [<ffffffff81ee1e4b>] start_kernel+0x3f6/0x403
+>         [<ffffffff81ee1571>] x86_64_start_reservations+0x2a/0x2c
+>         [<ffffffff81ee1664>] x86_64_start_kernel+0xf1/0xf4
+>
+> -> #1 (&p->pi_lock){-.-.-.}:
+>         [<ffffffff810cc243>] lock_acquire+0x93/0x200
+>         [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
+>         [<ffffffff810979d1>] try_to_wake_up+0x31/0x350
+>         [<ffffffff81097d62>] default_wake_function+0x12/0x20
+>         [<ffffffff81084af8>] autoremove_wake_function+0x18/0x40
+>         [<ffffffff8108ea38>] __wake_up_common+0x58/0x90
+>         [<ffffffff8108ff59>] __wake_up+0x39/0x50
+>         [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
+>         [<ffffffff81111450>] __call_rcu+0x140/0x820
+>         [<ffffffff81111b8d>] call_rcu+0x1d/0x20
+>         [<ffffffff81093697>] cpu_attach_domain+0x287/0x360
+>         [<ffffffff81099d7e>] build_sched_domains+0xe5e/0x10a0
+>         [<ffffffff81efa7fc>] sched_init_smp+0x3b7/0x47a
+>         [<ffffffff81ee1f4e>] kernel_init_freeable+0xf6/0x202
+>         [<ffffffff817200be>] kernel_init+0xe/0x190
+>         [<ffffffff8173d22c>] ret_from_fork+0x7c/0xb0
+>
+> -> #0 (&rdp->nocb_wq){......}:
+>         [<ffffffff810cb7ca>] __lock_acquire+0x191a/0x1be0
+>         [<ffffffff810cc243>] lock_acquire+0x93/0x200
+>         [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
+>         [<ffffffff8108ff43>] __wake_up+0x23/0x50
+>         [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
+>         [<ffffffff81111450>] __call_rcu+0x140/0x820
+>         [<ffffffff81111bb0>] kfree_call_rcu+0x20/0x30
+>         [<ffffffff81149abf>] put_ctx+0x4f/0x70
+>         [<ffffffff81154c3e>] perf_event_exit_task+0x12e/0x230
+>         [<ffffffff81056b8d>] do_exit+0x30d/0xcc0
+>         [<ffffffff8105893c>] do_group_exit+0x4c/0xc0
+>         [<ffffffff810589c4>] SyS_exit_group+0x14/0x20
+>         [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
+>
+> other info that might help us debug this:
+>
+> Chain exists of:
+>   &rdp->nocb_wq --> &rq->lock --> &ctx->lock
+>
+>   Possible unsafe locking scenario:
+>
+>         CPU0                    CPU1
+>         ----                    ----
+>    lock(&ctx->lock);
+>                                 lock(&rq->lock);
+>                                 lock(&ctx->lock);
+>    lock(&rdp->nocb_wq);
+>
+>  *** DEADLOCK ***
+>
+> 1 lock held by trinity-child2/15191:
+>  #0:  (&ctx->lock){-.-...}, at: [<ffffffff81154c19>] perf_event_exit_task+0x109/0x230
+>
+> stack backtrace:
+> CPU: 2 PID: 15191 Comm: trinity-child2 Not tainted 3.12.0-rc3+ #92
+>  ffffffff82565b70 ffff880070c2dbf8 ffffffff8172a363 ffffffff824edf40
+>  ffff880070c2dc38 ffffffff81726741 ffff880070c2dc90 ffff88022383b1c0
+>  ffff88022383aac0 0000000000000000 ffff88022383b188 ffff88022383b1c0
+> Call Trace:
+>  [<ffffffff8172a363>] dump_stack+0x4e/0x82
+>  [<ffffffff81726741>] print_circular_bug+0x200/0x20f
+>  [<ffffffff810cb7ca>] __lock_acquire+0x191a/0x1be0
+>  [<ffffffff810c6439>] ? get_lock_stats+0x19/0x60
+>  [<ffffffff8100b2f4>] ? native_sched_clock+0x24/0x80
+>  [<ffffffff810cc243>] lock_acquire+0x93/0x200
+>  [<ffffffff8108ff43>] ? __wake_up+0x23/0x50
+>  [<ffffffff8173419b>] _raw_spin_lock_irqsave+0x4b/0x90
+>  [<ffffffff8108ff43>] ? __wake_up+0x23/0x50
+>  [<ffffffff8108ff43>] __wake_up+0x23/0x50
+>  [<ffffffff8110d4f8>] __call_rcu_nocb_enqueue+0xa8/0xc0
+>  [<ffffffff81111450>] __call_rcu+0x140/0x820
+>  [<ffffffff8109bc8f>] ? local_clock+0x3f/0x50
+>  [<ffffffff81111bb0>] kfree_call_rcu+0x20/0x30
+>  [<ffffffff81149abf>] put_ctx+0x4f/0x70
+>  [<ffffffff81154c3e>] perf_event_exit_task+0x12e/0x230
+>  [<ffffffff81056b8d>] do_exit+0x30d/0xcc0
+>  [<ffffffff810c9af5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+>  [<ffffffff810c9bcd>] ? trace_hardirqs_on+0xd/0x10
+>  [<ffffffff8105893c>] do_group_exit+0x4c/0xc0
+>  [<ffffffff810589c4>] SyS_exit_group+0x14/0x20
+>  [<ffffffff8173d4e4>] tracesys+0xdd/0xe2
+
+The underlying problem is that perf is invoking call_rcu() with the
+scheduler locks held, but in NOCB mode, call_rcu() will with high
+probability invoke the scheduler -- which just might want to use its
+locks.  The reason that call_rcu() needs to invoke the scheduler is
+to wake up the corresponding rcuo callback-offload kthread, which
+does the job of starting up a grace period and invoking the callbacks
+afterwards.
+
+One solution (championed on a related problem by Lai Jiangshan) is to
+simply defer the wakeup to some point where scheduler locks are no longer
+held.  Since we don't want to unnecessarily incur the cost of such
+deferral, the task before us is threefold:
+
+1.	Determine when it is likely that a relevant scheduler lock is held.
+
+2.	Defer the wakeup in such cases.
+    
+3.	Ensure that all deferred wakeups eventually happen, preferably
+    	sooner rather than later.
+    
+We use irqs_disabled_flags() as a proxy for relevant scheduler locks
+being held.  This works because the relevant locks are always acquired
+with interrupts disabled.  We may defer more often than needed, but that
+is at least safe.
+
+The wakeup deferral is tracked via a new field in the per-CPU and
+per-RCU-flavor rcu_data structure, namely ->nocb_defer_wakeup.
+
+This flag is checked by the RCU core processing.  The __rcu_pending()
+function now checks this flag, which causes rcu_check_callbacks()
+to initiate RCU core processing at each scheduling-clock interrupt
+where this flag is set.  Of course this is not sufficient because
+scheduling-clock interrupts are often turned off (the things we used to
+be able to count on!).  So the flags are also checked on entry to any
+state that RCU considers to be idle, which includes both NO_HZ_IDLE idle
+state and NO_HZ_FULL user-mode-execution state.
+
+This approach should allow call_rcu() to be invoked regardless of what
+locks you might be holding, the key word being "should".
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index f3778f8952da..b8c3c813ea57 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -396,14 +396,14 @@ o	Each element of the form "3/3 ..>. 0:7 ^0" represents one rcu_node
+ 
+ The output of "cat rcu/rcu_sched/rcu_pending" looks as follows:
+ 
+-  0!np=26111 qsp=29 rpq=5386 cbr=1 cng=570 gpc=3674 gps=577 nn=15903
+-  1!np=28913 qsp=35 rpq=6097 cbr=1 cng=448 gpc=3700 gps=554 nn=18113
+-  2!np=32740 qsp=37 rpq=6202 cbr=0 cng=476 gpc=4627 gps=546 nn=20889
+-  3 np=23679 qsp=22 rpq=5044 cbr=1 cng=415 gpc=3403 gps=347 nn=14469
+-  4!np=30714 qsp=4 rpq=5574 cbr=0 cng=528 gpc=3931 gps=639 nn=20042
+-  5 np=28910 qsp=2 rpq=5246 cbr=0 cng=428 gpc=4105 gps=709 nn=18422
+-  6!np=38648 qsp=5 rpq=7076 cbr=0 cng=840 gpc=4072 gps=961 nn=25699
+-  7 np=37275 qsp=2 rpq=6873 cbr=0 cng=868 gpc=3416 gps=971 nn=25147
++  0!np=26111 qsp=29 rpq=5386 cbr=1 cng=570 gpc=3674 gps=577 nn=15903 ndw=0
++  1!np=28913 qsp=35 rpq=6097 cbr=1 cng=448 gpc=3700 gps=554 nn=18113 ndw=0
++  2!np=32740 qsp=37 rpq=6202 cbr=0 cng=476 gpc=4627 gps=546 nn=20889 ndw=0
++  3 np=23679 qsp=22 rpq=5044 cbr=1 cng=415 gpc=3403 gps=347 nn=14469 ndw=0
++  4!np=30714 qsp=4 rpq=5574 cbr=0 cng=528 gpc=3931 gps=639 nn=20042 ndw=0
++  5 np=28910 qsp=2 rpq=5246 cbr=0 cng=428 gpc=4105 gps=709 nn=18422 ndw=0
++  6!np=38648 qsp=5 rpq=7076 cbr=0 cng=840 gpc=4072 gps=961 nn=25699 ndw=0
++  7 np=37275 qsp=2 rpq=6873 cbr=0 cng=868 gpc=3416 gps=971 nn=25147 ndw=0
+ 
+ The fields are as follows:
+ 
+@@ -432,6 +432,10 @@ o	"gpc" is the number of times that an old grace period had
+ o	"gps" is the number of times that a new grace period had started,
+ 	but this CPU was not yet aware of it.
+ 
++o	"ndw" is the number of times that a wakeup of an rcuo
++	callback-offload kthread had to be deferred in order to avoid
++	deadlock.
++
+ o	"nn" is the number of times that this CPU needed nothing.
+ 
+ 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a33a24d10611..106f7f5cdd1d 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -362,6 +362,9 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
+ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+ 				bool user)
+ {
++	struct rcu_state *rsp;
++	struct rcu_data *rdp;
++
+ 	trace_rcu_dyntick(TPS("Start"), oldval, rdtp->dynticks_nesting);
+ 	if (!user && !is_idle_task(current)) {
+ 		struct task_struct *idle __maybe_unused =
+@@ -373,6 +376,10 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+ 			  current->pid, current->comm,
+ 			  idle->pid, idle->comm); /* must be idle task! */
+ 	}
++	for_each_rcu_flavor(rsp) {
++		rdp = this_cpu_ptr(rsp->rda);
++		do_nocb_deferred_wakeup(rdp);
++	}
+ 	rcu_prepare_for_idle(smp_processor_id());
+ 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
+ 	smp_mb__before_atomic_inc();  /* See above. */
+@@ -1908,13 +1915,13 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
+  * Adopt the RCU callbacks from the specified rcu_state structure's
+  * orphanage.  The caller must hold the ->orphan_lock.
+  */
+-static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
++static void rcu_adopt_orphan_cbs(struct rcu_state *rsp, unsigned long flags)
+ {
+ 	int i;
+ 	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
+ 
+ 	/* No-CBs CPUs are handled specially. */
+-	if (rcu_nocb_adopt_orphan_cbs(rsp, rdp))
++	if (rcu_nocb_adopt_orphan_cbs(rsp, rdp, flags))
+ 		return;
+ 
+ 	/* Do the accounting first. */
+@@ -1993,7 +2000,7 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ 
+ 	/* Orphan the dead CPU's callbacks, and adopt them if appropriate. */
+ 	rcu_send_cbs_to_orphanage(cpu, rsp, rnp, rdp);
+-	rcu_adopt_orphan_cbs(rsp);
++	rcu_adopt_orphan_cbs(rsp, flags);
+ 
+ 	/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+ 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
+@@ -2310,6 +2317,9 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+ 	/* If there are callbacks ready, invoke them. */
+ 	if (cpu_has_callbacks_ready_to_invoke(rdp))
+ 		invoke_rcu_callbacks(rsp, rdp);
++
++	/* Do any needed deferred wakeups of rcuo kthreads. */
++	do_nocb_deferred_wakeup(rdp);
+ }
+ 
+ /*
+@@ -2444,7 +2454,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 
+ 		if (cpu != -1)
+ 			rdp = per_cpu_ptr(rsp->rda, cpu);
+-		offline = !__call_rcu_nocb(rdp, head, lazy);
++		offline = !__call_rcu_nocb(rdp, head, lazy, flags);
+ 		WARN_ON_ONCE(offline);
+ 		/* _call_rcu() is illegal on offline CPU; leak the callback. */
+ 		local_irq_restore(flags);
+@@ -2797,6 +2807,12 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		return 1;
+ 	}
+ 
++	/* Does this CPU need a deferred NOCB wakeup? */
++	if (rcu_nocb_need_deferred_wakeup(rdp)) {
++		rdp->n_rp_nocb_defer_wakeup++;
++		return 1;
++	}
++
+ 	/* nothing to do */
+ 	rdp->n_rp_need_nothing++;
+ 	return 0;
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 8e34d8674a4e..a87adfc2916b 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -317,6 +317,7 @@ struct rcu_data {
+ 	unsigned long n_rp_cpu_needs_gp;
+ 	unsigned long n_rp_gp_completed;
+ 	unsigned long n_rp_gp_started;
++	unsigned long n_rp_nocb_defer_wakeup;
+ 	unsigned long n_rp_need_nothing;
+ 
+ 	/* 6) _rcu_barrier() and OOM callbacks. */
+@@ -335,6 +336,7 @@ struct rcu_data {
+ 	int nocb_p_count_lazy;		/*  (approximate). */
+ 	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
+ 	struct task_struct *nocb_kthread;
++	bool nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 
+ 	/* 8) RCU CPU stall data. */
+@@ -550,9 +552,12 @@ static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
+ static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
+ static void rcu_init_one_nocb(struct rcu_node *rnp);
+ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+-			    bool lazy);
++			    bool lazy, unsigned long flags);
+ static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+-				      struct rcu_data *rdp);
++				      struct rcu_data *rdp,
++				      unsigned long flags);
++static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
++static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
+ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+ static void rcu_kick_nohz_cpu(int cpu);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 747df70a4d64..fe4caadae1b6 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2104,7 +2104,8 @@ bool rcu_is_nocb_cpu(int cpu)
+ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 				    struct rcu_head *rhp,
+ 				    struct rcu_head **rhtp,
+-				    int rhcount, int rhcount_lazy)
++				    int rhcount, int rhcount_lazy,
++				    unsigned long flags)
+ {
+ 	int len;
+ 	struct rcu_head **old_rhpp;
+@@ -2125,9 +2126,16 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 	}
+ 	len = atomic_long_read(&rdp->nocb_q_count);
+ 	if (old_rhpp == &rdp->nocb_head) {
+-		wake_up(&rdp->nocb_wq); /* ... only if queue was empty ... */
++		if (!irqs_disabled_flags(flags)) {
++			wake_up(&rdp->nocb_wq); /* ... if queue was empty ... */
++			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
++					    TPS("WakeEmpty"));
++		} else {
++			rdp->nocb_defer_wakeup = true;
++			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
++					    TPS("WakeEmptyIsDeferred"));
++		}
+ 		rdp->qlen_last_fqs_check = 0;
+-		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeEmpty"));
+ 	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
+ 		wake_up_process(t); /* ... or if many callbacks queued. */
+ 		rdp->qlen_last_fqs_check = LONG_MAX / 2;
+@@ -2148,12 +2156,12 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+  * "rcuo" kthread can find it.
+  */
+ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+-			    bool lazy)
++			    bool lazy, unsigned long flags)
+ {
+ 
+ 	if (!rcu_is_nocb_cpu(rdp->cpu))
+ 		return 0;
+-	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy);
++	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy, flags);
+ 	if (__is_kfree_rcu_offset((unsigned long)rhp->func))
+ 		trace_rcu_kfree_callback(rdp->rsp->name, rhp,
+ 					 (unsigned long)rhp->func,
+@@ -2171,7 +2179,8 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+  * not a no-CBs CPU.
+  */
+ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+-						     struct rcu_data *rdp)
++						     struct rcu_data *rdp,
++						     unsigned long flags)
+ {
+ 	long ql = rsp->qlen;
+ 	long qll = rsp->qlen_lazy;
+@@ -2185,14 +2194,14 @@ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+ 	/* First, enqueue the donelist, if any.  This preserves CB ordering. */
+ 	if (rsp->orphan_donelist != NULL) {
+ 		__call_rcu_nocb_enqueue(rdp, rsp->orphan_donelist,
+-					rsp->orphan_donetail, ql, qll);
++					rsp->orphan_donetail, ql, qll, flags);
+ 		ql = qll = 0;
+ 		rsp->orphan_donelist = NULL;
+ 		rsp->orphan_donetail = &rsp->orphan_donelist;
+ 	}
+ 	if (rsp->orphan_nxtlist != NULL) {
+ 		__call_rcu_nocb_enqueue(rdp, rsp->orphan_nxtlist,
+-					rsp->orphan_nxttail, ql, qll);
++					rsp->orphan_nxttail, ql, qll, flags);
+ 		ql = qll = 0;
+ 		rsp->orphan_nxtlist = NULL;
+ 		rsp->orphan_nxttail = &rsp->orphan_nxtlist;
+@@ -2314,6 +2323,22 @@ static int rcu_nocb_kthread(void *arg)
+ 	return 0;
+ }
+ 
++/* Is a deferred wakeup of rcu_nocb_kthread() required? */
++static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
++{
++	return ACCESS_ONCE(rdp->nocb_defer_wakeup);
++}
++
++/* Do a deferred wakeup of rcu_nocb_kthread(). */
++static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
++{
++	if (!rcu_nocb_need_deferred_wakeup(rdp))
++		return;
++	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
++	wake_up(&rdp->nocb_wq);
++	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
++}
++
+ /* Initialize per-rcu_data variables for no-CBs CPUs. */
+ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+ {
+@@ -2369,13 +2394,14 @@ static void rcu_init_one_nocb(struct rcu_node *rnp)
+ }
+ 
+ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+-			    bool lazy)
++			    bool lazy, unsigned long flags)
+ {
+ 	return 0;
+ }
+ 
+ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+-						     struct rcu_data *rdp)
++						     struct rcu_data *rdp,
++						     unsigned long flags)
+ {
+ 	return 0;
+ }
+@@ -2384,6 +2410,15 @@ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+ {
+ }
+ 
++static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
++{
++	return false;
++}
++
++static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
++{
++}
++
+ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ {
+ }
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index cf6c17412932..77a6831b9c51 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -364,9 +364,10 @@ static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
+ 		   rdp->n_rp_report_qs,
+ 		   rdp->n_rp_cb_ready,
+ 		   rdp->n_rp_cpu_needs_gp);
+-	seq_printf(m, "gpc=%ld gps=%ld nn=%ld\n",
++	seq_printf(m, "gpc=%ld gps=%ld nn=%ld ndw%ld\n",
+ 		   rdp->n_rp_gp_completed,
+ 		   rdp->n_rp_gp_started,
++		   rdp->n_rp_nocb_defer_wakeup,
+ 		   rdp->n_rp_need_nothing);
+ }
+ 
+
