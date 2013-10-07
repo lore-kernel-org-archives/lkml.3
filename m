@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab3JGRiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 13:38:55 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33242 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3JGRix (ORCPT
+	id S1756217Ab3JGRkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 13:40:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42505 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab3JGRkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 13:38:53 -0400
-Date: Mon, 07 Oct 2013 13:38:49 -0400 (EDT)
-Message-Id: <20131007.133849.1821189531065820610.davem@davemloft.net>
-To: ou.ghorbel@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CABfLueGqa8wJv+hfcNQRmWM2tj6zMC5Ajts=-no7GJA1t09dnQ@mail.gmail.com>
-References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com>
-	<20131007.125326.895480090584703586.davem@davemloft.net>
-	<CABfLueGqa8wJv+hfcNQRmWM2tj6zMC5Ajts=-no7GJA1t09dnQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 07 Oct 2013 10:38:53 -0700 (PDT)
+	Mon, 7 Oct 2013 13:40:51 -0400
+Date: Mon, 7 Oct 2013 19:40:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86: Clean up cap_user_time* setting
+Message-ID: <20131007174037.GI3081@twins.programming.kicks-ass.net>
+References: <tip-nmgn0j0muo1r4c94vlfh23xy@git.kernel.org>
+ <524F097A.9010506@intel.com>
+ <20131004185539.GT15690@laptop.programming.kicks-ass.net>
+ <20131006091054.GA4342@gmail.com>
+ <5252EDBE.7030805@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5252EDBE.7030805@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oussama Ghorbel <ou.ghorbel@gmail.com>
-Date: Mon, 7 Oct 2013 18:34:53 +0100
+On Mon, Oct 07, 2013 at 10:22:06AM -0700, H. Peter Anvin wrote:
+> CONFIG_X86_TSC is a baseline control option; we shouldn't key
+> functionality off of it.  It's fine to say notsc -> no tracing, but
+> making it a compile-time key makes me a bit uphappy.  We cut off 386,
+> but cutting of 486 at this point makes me nervous.
 
-> OK, I've resubmitted the patch with the proper Subject line.
-> The new mail subject is: [PATCH] ipv6: Fix the upper MTU limit in GRE tunnel
+The thing that annoys me about notsc is that it disables usage even if
+its present.
 
-You forgot to propagate the "Acked-by: " tag that was given by
-reviewers of your patch.
+I've no problem with 486 which simply doesn't have TSC and thus
+cpu_has_tsc will be false and other stuff will happen -- and I don't
+think my proposition would actually change anything there.
+
+What is completely insane is people using notsc on say a haswell chip
+and expecting something sane to happen.
+
+So I'm not proposing we remove !cap_has_tsc support; all I'm proposing
+is we remove the notsc knob that avoids using the TSC on perfectly good
+hardware.
