@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3JGOZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 10:25:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26318 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755458Ab3JGOZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 10:25:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
-   d="scan'208";a="370881679"
-Subject: [PATCH] md: Fix skipping recovery for read-only arrays.
-To: neilb@suse.de
-From: Lukasz Dorau <lukasz.dorau@intel.com>
-Cc: linux-raid@vger.kernel.org, pawel.baldysiak@intel.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 07 Oct 2013 16:25:51 +0200
-Message-ID: <20131007142551.14867.36809.stgit@gklab-154-244.igk.intel.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755495Ab3JGOiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 10:38:54 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:33898 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab3JGOix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 10:38:53 -0400
+From: Stefan Beller <stefanbeller@googlemail.com>
+To: tytso@mit.edu, linux-kernel@vger.kernel.org
+Cc: Stefan Beller <stefanbeller@googlemail.com>
+Subject: [PATCH] random.c: fix a typo in comments
+Date: Mon,  7 Oct 2013 16:38:49 +0200
+Message-Id: <1381156729-1814-1-git-send-email-stefanbeller@googlemail.com>
+X-Mailer: git-send-email 1.8.4.1.469.gb38b9db
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since:
-        commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
-        md: Allow devices to be re-added to a read-only array.
+Also removes (trailing) tabs from an empty line.
 
-spares are activated on a read-only array. In case of raid1 and raid10
-personalities it causes that not-in-sync devices are marked in-sync
-without checking if recovery has been finished.
-
-If a read-only array is degraded and one of its devices is not in-sync
-(because the array has been only partially recovered) recovery will be skipped.
-
-This patch adds checking if recovery has been finished before marking a device
-in-sync for raid1 and raid10 personalities. In case of raid5 personality
-such condition is already present (at raid5.c:6029).
-
-Bug was introduced in 3.10 and causes data corruption.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
 ---
- drivers/md/raid1.c  |    1 +
- drivers/md/raid10.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/char/random.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index d60412c..aacf6bf 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1479,6 +1479,7 @@ static int raid1_spare_active(struct mddev *mddev)
- 			}
- 		}
- 		if (rdev
-+		    && rdev->recovery_offset == MaxSector
- 		    && !test_bit(Faulty, &rdev->flags)
- 		    && !test_and_set_bit(In_sync, &rdev->flags)) {
- 			count++;
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index df7b0a0..73dc8a3 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1782,6 +1782,7 @@ static int raid10_spare_active(struct mddev *mddev)
- 			}
- 			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
- 		} else if (tmp->rdev
-+			   && tmp->rdev->recovery_offset == MaxSector
- 			   && !test_bit(Faulty, &tmp->rdev->flags)
- 			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
- 			count++;
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 7737b5b..a8457f2 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -382,7 +382,7 @@ static struct poolinfo {
+  * modulo the generator polymnomial.  Now, for random primitive polynomials,
+  * this is a universal class of hash functions, meaning that the chance
+  * of a collision is limited by the attacker's knowledge of the generator
+- * polynomail, so if it is chosen at random, an attacker can never force
++ * polynomial, so if it is chosen at random, an attacker can never force
+  * a collision.  Here, we use a fixed polynomial, but we *can* assume that
+  * ###--> it is unknown to the processes generating the input entropy. <-###
+  * Because of this important property, this is a good, collision-resistant
+@@ -1078,7 +1078,7 @@ void get_random_bytes_arch(void *buf, int nbytes)
+ 
+ 		if (!arch_get_random_long(&v))
+ 			break;
+-		
++
+ 		memcpy(p, &v, chunk);
+ 		p += chunk;
+ 		nbytes -= chunk;
+-- 
+1.8.4.1.469.gb38b9db
 
