@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3JGEj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 00:39:26 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:42175
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751683Ab3JGEjY (ORCPT
+	id S1752067Ab3JGEml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 00:42:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61249 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3JGEmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 00:39:24 -0400
-Date: Mon, 7 Oct 2013 04:39:19 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but
- the current mount namespace
-Message-ID: <20131007043919.GB10284@mail.hallyn.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <87a9kkax0j.fsf@xmission.com>
- <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
- <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com>
- <87a9ioo37a.fsf_-_@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9ioo37a.fsf_-_@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 Oct 2013 00:42:39 -0400
+Message-ID: <1381120901.9926.11.camel@marge.simpson.net>
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+From: Mike Galbraith <bitbucket@online.de>
+To: Ethan Zhao <ethan.kernel@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
+        daniel.lezcano@linaro.org, linux-pm@vger.kernel.org, lenb@kernel.org
+Date: Mon, 07 Oct 2013 06:41:41 +0200
+In-Reply-To: <CABawtvMo+NtTv3a3jj=YTg-Om=MzHhVDARdtTA-DtTMzNeNAJA@mail.gmail.com>
+References: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+	 <1378362989.18435.2.camel@marge.simpson.net>
+	 <20130905111428.GB23362@gmail.com>
+	 <1378386697.6567.9.camel@marge.simpson.net>
+	 <20130905133750.GA26637@gmail.com>
+	 <1378445942.5434.31.camel@marge.simpson.net>
+	 <20130909122325.GX31370@twins.programming.kicks-ass.net>
+	 <1378730538.5586.30.camel@marge.simpson.net>
+	 <20130909133044.GB31370@twins.programming.kicks-ass.net>
+	 <20130909134635.GB26785@twins.programming.kicks-ass.net>
+	 <20130911085643.GS26785@twins.programming.kicks-ass.net>
+	 <1378895123.5476.83.camel@marge.simpson.net>
+	 <CABawtvMo+NtTv3a3jj=YTg-Om=MzHhVDARdtTA-DtTMzNeNAJA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:3kdhb7LlWyGkCpEPsZ7E/1wlU7VZ1qDQAPYWBwc+1O9
+ E4YFiYdWx6az+xSTi++CDjR1a/TomJPcVzicQcRwGEMf+ZkT/Y
+ 4K6CN55A05fRLNL+JCJ6uMPcxPTdZWuy4n6dXT44J2tdzJPxi4
+ XysQVDkR6Mzg4tczbV44dReOjEyCiASCo8fODRp2E2mua8/XVp
+ 4UollhlQYiAHkgG+zw5Mcb6jWipPSP2QwZmEGxA8FezCPFlhd1
+ bvJkGjOH4/Tsib5VmRNyBtU72L06G+8ZsSUgVh5k5s4ubTE8NA
+ uBd/55zCHpUVn+eSjFTh4Xdc4jaAWTgdGA5W2RHS0IKQdVol+P
+ 3716YZjeZaaGC4pS1acHL1t3/JwDwiXV3+t7toFa5GVnZxHF+Q
+ vMQD8lcaUmKlg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> 
-> Programs have been known to test for empty directories by attempting
-> to remove them.  To keep from violating the principle of least
-> surprise don't let directories the caller can see with someting
-> mounted on them be deleted.
+On Fri, 2013-10-04 at 20:06 +0800, Ethan Zhao wrote: 
+> Mike, Peter,
+>    Seems lots of work has been done these days, studious guys. those
+> patches merged in last stable/dev branch (fix performance regression
+> caused by extra rtimer programming and rescheduling IPI,confusing
+> idle... etc) ? So I could just do a lazy pull for test with my
+> environment.  I need catch up with other mail loops with my vacation
+> again.
 
-Do you think we should do the same thing for over-mounted file at
-vfs_unlink()?
+Massive timer overhead seems to have crawled off and died while I wasn't
+looking.  Peter's fix for IPI woes..
 
-> With a little luck this may prevent commands stupid commands
-> like rm -rf from eating your system.
-> 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/namei.c |   21 +++++++++++++++++++++
->  1 files changed, 21 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index b18b017c946b..b9cae480ac27 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -3547,6 +3547,20 @@ void dentry_unhash(struct dentry *dentry)
->  	spin_unlock(&dentry->d_lock);
->  }
->  
-> +static bool covered(struct vfsmount *mnt, struct dentry *dentry)
-> +{
-> +	/* test to see if a dentry is covered with a mount in
-> +	 * the current mount namespace.
-> +	 */
-> +	bool is_covered;
-> +
-> +	rcu_read_lock();
-> +	is_covered = d_mountpoint(dentry) && __lookup_mnt(mnt, dentry, 1);
-> +	rcu_read_unlock();
-> +
-> +	return is_covered;
-> +}
-> +
->  int vfs_rmdir(struct inode *dir, struct dentry *dentry)
->  {
->  	int error = may_delete(dir, dentry, 1);
-> @@ -3619,6 +3633,9 @@ retry:
->  		error = -ENOENT;
->  		goto exit3;
->  	}
-> +	error = -EBUSY;
-> +	if (covered(nd.path.mnt, dentry))
-> +		goto exit3;
->  	error = security_path_rmdir(&nd.path, dentry);
->  	if (error)
->  		goto exit3;
-> @@ -4155,6 +4172,10 @@ retry:
->  	error = -ENOTEMPTY;
->  	if (new_dentry == trap)
->  		goto exit5;
-> +	error = -EBUSY;
-> +	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode) &&
-> +	    covered(newnd.path.mnt, new_dentry))
-> +		goto exit5;
->  
->  	error = security_path_rename(&oldnd.path, old_dentry,
->  				     &newnd.path, new_dentry);
-> -- 
-> 1.7.5.4
+tip commit ea811747 sched, idle: Fix the idle polling state logic
+
+..hasn't yet swum upstream.
+
+-Mike
+
