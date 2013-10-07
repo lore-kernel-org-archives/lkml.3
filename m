@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3JGQ2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:28:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37042 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3JGQ2j (ORCPT
+	id S1756140Ab3JGQ3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:29:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40083 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab3JGQ3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:28:39 -0400
-Message-ID: <5252E113.3080301@ti.com>
-Date: Mon, 7 Oct 2013 11:28:03 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 7 Oct 2013 12:29:45 -0400
+Date: Mon, 7 Oct 2013 18:29:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        acme@redhat.com, jolsa@redhat.com, zheng.z.yan@intel.com
+Subject: Re: [PATCH v1 0/2] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131007162906.GX28601@twins.programming.kicks-ass.net>
+References: <1381162158-24329-1-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        =?ISO-8859-1?Q?Andr=E9_Hent?= =?ISO-8859-1?Q?schel?= 
-	<nerv@dawncrow.de>
-Subject: Re: [RFC] ARM: kernel: irq: Simplify allocation of stack frame
-References: <1381098649-21417-1-git-send-email-joelf@ti.com> <20131006224150.GA25647@n2100.arm.linux.org.uk>
-In-Reply-To: <20131006224150.GA25647@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381162158-24329-1-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2013 05:41 PM, Russell King - ARM Linux wrote:
-> On Sun, Oct 06, 2013 at 05:30:47PM -0500, Joel Fernandes wrote:
->> On receiving IRQ exception in SVC mode, all the SVC mode registers are saved
->> onto the stack very early on.
->>
->> The stack frame allocation code for IRQ entry during SVC mode (svc_entry) is
->> hard to read as 4-less is allocated initially only to be allocated later
->> implicity using the mov r3, [sp, #-4]! instruction. We make code easier to read
->> by allocating the 4 bytes on the stack frame in the beginning itself and remove
->> all instances where 4 bytes is adjusted.
+On Mon, Oct 07, 2013 at 06:09:15PM +0200, Stephane Eranian wrote:
+> The counters all count in the same unit. The perf_events API
+> exposes all RAPL counters as 64-bit integers counting in unit
+> of 1/2^32 Joules (or 0.23 nJ). User level tools must convert
+> the counts by multiplying them by 0.23 and divide 10^9 to
+> obtain Joules.  The reason for this is that the kernel avoids
+> doing floating point math whenever possible because it is
+> expensive (user floating-point state must be saved). The method
+> used avoids kernel floating-point and minimizes the loss of
+> precision (bits). Thanks to PeterZ for suggesting this approach.
 > 
-> You omit to say that this results in saving one additional register
-> unnecessarily in the stmia.  We could use a stmib there instead which
-> would avoid that issue while keeping the rest of the change.
-> 
+> To convert the raw count in Watt: W = C * 0.23 / (1e9 * time)
 
-Hi Russel,
+Right, so the output is in 32.32 fixed point. So if you want to convert
+to double you'd do something like: 
 
-BTW I used ETM to check the number of cycles used to store the extra register
-with and without this patch and with both cases it takes 7 cycles.
+  double watt = ldexp(counter, -32);
 
-My platform uses Cortex-A8 (AM335x SoC).
 
-Thanks,
-
--Joel
