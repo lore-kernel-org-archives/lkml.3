@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab3JGKsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:48:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:46751 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab3JGKsR (ORCPT
+	id S1755889Ab3JGKt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:49:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60827 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315Ab3JGKtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:48:17 -0400
-X-Spam-Score: -100.8
-Message-ID: <52529133.4040200@asianux.com>
-Date: Mon, 07 Oct 2013 18:47:15 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Joe Perches <joe@perches.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Mon, 7 Oct 2013 06:49:23 -0400
+Date: Mon, 7 Oct 2013 12:49:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] kernel/irq/proc.c: set MAX_NAMELEN 11 instead of 10 and
- use "%u" instead of "%d" for printing 'irq'
-References: <52502E14.5040507@asianux.com> <1380987671.2081.122.camel@joe-AO722> <52503441.2030009@asianux.com> <CAFLxGvy0+9tu5PF2kKrUyVRobixtLaSs_u_b9zwFj64YvQrxgw@mail.gmail.com> <52504373.8070606@asianux.com> <52504718.30303@asianux.com> <52505048.8000604@nod.at> <5250B0E3.3070500@asianux.com> <52518850.6050303@asianux.com>
-In-Reply-To: <52518850.6050303@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] rcusync: introduce rcu_sync_struct->exclusive mode
+Message-ID: <20131007104900.GC3081@twins.programming.kicks-ass.net>
+References: <20131004184614.GA17536@redhat.com>
+ <20131004184640.GA17567@redhat.com>
+ <20131004192944.GU15690@laptop.programming.kicks-ass.net>
+ <20131004195623.GA19436@redhat.com>
+ <20131004204159.GT3081@twins.programming.kicks-ass.net>
+ <20131006132240.GA21357@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131006132240.GA21357@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theoretically, the maximize size of "%u" is 11 (10 + '\0'), so need set
-MAX_NAMELEN 11 instead of 10, and also 'irq' is unsigned int, so need
-use "%u" instead of "%d".
+On Sun, Oct 06, 2013 at 03:22:40PM +0200, Oleg Nesterov wrote:
+> On 10/04, Peter Zijlstra wrote:
+> > That would yield something like so I suppose:
+> >
+> > void rcu_sync_enter(struct rcu_sync_struct *rss)
+> > {
+> > 	bool need_wait, need_sync;
+> >
+> > 	spin_lock_irq(&rss->rss_lock);
+> > 	if (rss->exclusive && rss->gp_count) {
+> > 		__wait_event_locked(rss->gp_wait, rss->gp_count);
+>                                                   ^^^^^^^^^^^^^
+> I guess you meant !rss->gp_count.
 
-In real world, it may not cause issue, but still recommend to fix the
-'theoretical' bugs (especially original definition already considered
-about 'theoretical' using).
+Uh yes, obviously :-)
 
+> I am obviously biased, but imho the code looks worse this way.
+> I like the current simple "need_wait" and "gp_count != 0" logic.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/irq/proc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Yeah, I know.. but it doesn't add the extra variable and doesn't play
+games with the completion implementation.
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 36f6ee1..efda701 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -305,7 +305,7 @@ void register_handler_proc(unsigned int irq, struct irqaction *action)
- 
- #undef MAX_NAMELEN
- 
--#define MAX_NAMELEN 10
-+#define MAX_NAMELEN 11
- 
- void register_irq_proc(unsigned int irq, struct irq_desc *desc)
- {
-@@ -315,7 +315,7 @@ void register_irq_proc(unsigned int irq, struct irq_desc *desc)
- 		return;
- 
- 	memset(name, 0, MAX_NAMELEN);
--	sprintf(name, "%d", irq);
-+	sprintf(name, "%u", irq);
- 
- 	/* create /proc/irq/1234 */
- 	desc->dir = proc_mkdir(name, root_irq_dir);
--- 
-1.7.7.6
+> And afaics this is racy,
+> 
+> Yes, but if rcu_sync_exit() does __wake_up_locked(), then
+> autoremove_wake_function() makes waitqueue_active() == F. If the pending
+> rcu_sync_func() takes ->rss_lock first we have a problem.
+
+Ah indeed, it seems I got confused between DECLARE_WAITQUEUE and
+DEFINE_WAIT; there's too damn many variants there :/
+
+> Easy to fix, but needs more complications.
+> 
+> Or we can simply ignore the fact that rcu_sync_func() can race with
+> wakeup. This can lead to unnecessary sched_sync() but this case is
+> unlikely. IOW,
+> 
+> 	spin_lock_irq(&rss->rss_lock);
+> 	if (rss->exclusive)
+> 		wait_event_locked(rss->gp_wait, !rss->gp_count);
+> 	need_wait = rss->gp_count++;
+> 	need_sync = rss->gp_state == GP_IDLE;
+> 	if (need_sync)
+> 		rss->gp_state = GP_PENDING;
+> 	spin_unlock_irq(&rss->lock);
+> 
+> But still I don't like the (imho) unnecessary complications. And the
+> fact we can race with rcu_sync_func() even if this is very unlikely,
+> this just doesn't look good.
+
+OK.. I'll give up trying to wreck this stuff ;-)
