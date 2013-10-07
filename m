@@ -1,81 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab3JGVdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:33:42 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:44784 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab3JGVdi (ORCPT
+	id S1751799Ab3JGVkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:40:46 -0400
+Received: from mail-bn1hn0122.outbound.protection.outlook.com ([157.56.110.122]:7671
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751075Ab3JGVkn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:33:38 -0400
+	Mon, 7 Oct 2013 17:40:43 -0400
+From: Jose Lima <jlima@t4f.com.br>
+Subject: 
+Thread-Index: AQHOw6XR6Fwl6AmH606VJg/C3z8EqQ==
+Date: Mon, 7 Oct 2013 21:40:39 +0000
+Message-ID: <aa7fd2fae0b6477586ddda573f88d605@BN1PR05MB092.namprd05.prod.outlook.com>
+Accept-Language: pt-BR, en-US
+Content-Language: pt-BR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [41.138.184.119]
+x-forefront-prvs: 09928BEC91
+x-forefront-antispam-report: SFV:SPM;SFS:(199002)(189002)(65816001)(80022001)(69226001)(66066001)(558084003)(74366001)(74502001)(74706001)(74482001)(47446002)(74662001)(31966008)(80976001)(74876001)(19580395003)(83322001)(19580405001)(5406001)(83072001)(56816003)(77096001)(881003)(33646001)(63696002)(25636003)(4396001)(85306002)(79102001)(53806001)(76176001)(54356001)(76786001)(47736001)(50986001)(47976001)(76796001)(81816001)(76576001)(325944007)(49866001)(81686001)(56776001)(81342001)(54316002)(1671002)(74316001)(51856001)(81542001)(46102001)(59766001)(77982001)(76482001)(416774004);DIR:OUT;SFP:1501;SCL:5;SRVR:BN1PR05MB091;H:BN1PR05MB092.namprd05.prod.outlook.com;CLIP:41.138.184.119;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="koi8-r"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1378809966.26153.23.camel@cliu38-desktop-build>
-References: <1378809966.26153.23.camel@cliu38-desktop-build>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 7 Oct 2013 15:33:17 -0600
-Message-ID: <CAErSpo7K9xfwnJW_=L=Oq9Dwe5sQc0879sEQuN2KeCMigPx5hw@mail.gmail.com>
-Subject: Re: [PATCH] PCI/PM: Removing the function pci_pm_complete()
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        fei.li@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: t4f.com.br
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 4:46 AM, Chuansheng Liu
-<chuansheng.liu@intel.com> wrote:
->
-> Commit(88d2613) removed the pm_runtime_put_sync() from pci_pm_complete()
-> to PM core code device_complete().
->
-> Here the pci_pm_complete() is doing the same work which can be done in
-> device_complete(), so we can remove it directly.
->
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 
-Applied to pci/misc with Rafaels' ack, for v3.13.  Thanks!
 
-Bjorn
 
-> ---
->  drivers/pci/pci-driver.c |    9 ---------
->  1 files changed, 0 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 98f7b9b..736ef3f 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -599,18 +599,10 @@ static int pci_pm_prepare(struct device *dev)
->         return error;
->  }
->
-> -static void pci_pm_complete(struct device *dev)
-> -{
-> -       struct device_driver *drv = dev->driver;
-> -
-> -       if (drv && drv->pm && drv->pm->complete)
-> -               drv->pm->complete(dev);
-> -}
->
->  #else /* !CONFIG_PM_SLEEP */
->
->  #define pci_pm_prepare NULL
-> -#define pci_pm_complete        NULL
->
->  #endif /* !CONFIG_PM_SLEEP */
->
-> @@ -1123,7 +1115,6 @@ static int pci_pm_runtime_idle(struct device *dev)
->
->  const struct dev_pm_ops pci_dev_pm_ops = {
->         .prepare = pci_pm_prepare,
-> -       .complete = pci_pm_complete,
->         .suspend = pci_pm_suspend,
->         .resume = pci_pm_resume,
->         .freeze = pci_pm_freeze,
-> --
-> 1.7.0.4
->
->
->
+DO YOU NEED LOAN CONTACT THIS EMAIL FOR MORE INFORMATION  DAVELOANSERVICES@HOTMAIL.COM
+
+вам нужно кредита daveloanservices@hotmail.com контакт для получения дополнительной информации  email  daveloanservices@hotmail.com
