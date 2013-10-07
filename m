@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3JGNyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 09:54:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64681 "EHLO mga02.intel.com"
+	id S1755547Ab3JGNyr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 09:54:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20800 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab3JGNyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 09:54:32 -0400
+	id S1755468Ab3JGNyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 09:54:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
-   d="scan'208";a="415181778"
+   d="scan'208";a="415181811"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -30,9 +30,9 @@ Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv5 04/11] mm: introduce api for split page table lock for PMD level
-Date: Mon,  7 Oct 2013 16:54:06 +0300
-Message-Id: <1381154053-4848-5-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv5 07/11] mm, thp: do not access mm->pmd_huge_pte directly
+Date: Mon,  7 Oct 2013 16:54:09 +0300
+Message-Id: <1381154053-4848-8-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -40,40 +40,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basic api, backed by mm->page_table_lock for now. Actual implementation
-will be added later.
+Currently mm->pmd_huge_pte protected by page table lock. It will not
+work with split lock. We have to have per-pmd pmd_huge_pte for proper
+access serialization.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+For now, let's just introduce wrapper to access mm->pmd_huge_pte.
+
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Tested-by: Alex Thorlton <athorlton@sgi.com>
 ---
- include/linux/mm.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/s390/mm/pgtable.c | 12 ++++++------
+ arch/sparc/mm/tlb.c    | 12 ++++++------
+ include/linux/mm.h     |  1 +
+ mm/pgtable-generic.c   | 12 ++++++------
+ 4 files changed, 19 insertions(+), 18 deletions(-)
 
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index de8cbc30dc..c463e5cd3b 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -1225,11 +1225,11 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	if (!mm->pmd_huge_pte)
++	if (!pmd_huge_pte(mm, pmdp))
+ 		INIT_LIST_HEAD(lh);
+ 	else
+-		list_add(lh, (struct list_head *) mm->pmd_huge_pte);
+-	mm->pmd_huge_pte = pgtable;
++		list_add(lh, (struct list_head *) pmd_huge_pte(mm, pmdp));
++	pmd_huge_pte(mm, pmdp) = pgtable;
+ }
+ 
+ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+@@ -1241,12 +1241,12 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	pgtable = mm->pmd_huge_pte;
++	pgtable = pmd_huge_pte(mm, pmdp);
+ 	lh = (struct list_head *) pgtable;
+ 	if (list_empty(lh))
+-		mm->pmd_huge_pte = NULL;
++		pmd_huge_pte(mm, pmdp) = NULL;
+ 	else {
+-		mm->pmd_huge_pte = (pgtable_t) lh->next;
++		pmd_huge_pte(mm, pmdp) = (pgtable_t) lh->next;
+ 		list_del(lh);
+ 	}
+ 	ptep = (pte_t *) pgtable;
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index 7a91f288c7..656cc46a81 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -196,11 +196,11 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	if (!mm->pmd_huge_pte)
++	if (!pmd_huge_pte(mm, pmdp))
+ 		INIT_LIST_HEAD(lh);
+ 	else
+-		list_add(lh, (struct list_head *) mm->pmd_huge_pte);
+-	mm->pmd_huge_pte = pgtable;
++		list_add(lh, (struct list_head *) pmd_huge_pte(mm, pmdp));
++	pmd_huge_pte(mm, pmdp) = pgtable;
+ }
+ 
+ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+@@ -211,12 +211,12 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	pgtable = mm->pmd_huge_pte;
++	pgtable = pmd_huge_pte(mm, pmdp);
+ 	lh = (struct list_head *) pgtable;
+ 	if (list_empty(lh))
+-		mm->pmd_huge_pte = NULL;
++		pmd_huge_pte(mm, pmdp) = NULL;
+ 	else {
+-		mm->pmd_huge_pte = (pgtable_t) lh->next;
++		pmd_huge_pte(mm, pmdp) = (pgtable_t) lh->next;
+ 		list_del(lh);
+ 	}
+ 	pte_val(pgtable[0]) = 0;
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 6cf8ddb45b..e3481c6b52 100644
+index e3481c6b52..b96aac9622 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -1294,6 +1294,19 @@ static inline void pgtable_page_dtor(struct page *page)
- 	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
- 		NULL: pte_offset_kernel(pmd, address))
+@@ -1299,6 +1299,7 @@ static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
+ 	return &mm->page_table_lock;
+ }
  
-+static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	return &mm->page_table_lock;
-+}
-+
-+
-+static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	spinlock_t *ptl = pmd_lockptr(mm, pmd);
-+	spin_lock(ptl);
-+	return ptl;
-+}
-+
- extern void free_area_init(unsigned long * zones_size);
- extern void free_area_init_node(int nid, unsigned long * zones_size,
- 		unsigned long zone_start_pfn, unsigned long *zholes_size);
++#define pmd_huge_pte(mm, pmd) ((mm)->pmd_huge_pte)
+ 
+ static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
+ {
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index 3929a40bd6..41fee3e5d5 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -154,11 +154,11 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	if (!mm->pmd_huge_pte)
++	if (!pmd_huge_pte(mm, pmdp))
+ 		INIT_LIST_HEAD(&pgtable->lru);
+ 	else
+-		list_add(&pgtable->lru, &mm->pmd_huge_pte->lru);
+-	mm->pmd_huge_pte = pgtable;
++		list_add(&pgtable->lru, &pmd_huge_pte(mm, pmdp)->lru);
++	pmd_huge_pte(mm, pmdp) = pgtable;
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
+@@ -173,11 +173,11 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	pgtable = mm->pmd_huge_pte;
++	pgtable = pmd_huge_pte(mm, pmdp);
+ 	if (list_empty(&pgtable->lru))
+-		mm->pmd_huge_pte = NULL;
++		pmd_huge_pte(mm, pmdp) = NULL;
+ 	else {
+-		mm->pmd_huge_pte = list_entry(pgtable->lru.next,
++		pmd_huge_pte(mm, pmdp) = list_entry(pgtable->lru.next,
+ 					      struct page, lru);
+ 		list_del(&pgtable->lru);
+ 	}
 -- 
 1.8.4.rc3
 
