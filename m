@@ -1,103 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab3JGKFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:05:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44711 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab3JGKFO (ORCPT
+	id S1755234Ab3JGKJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:09:09 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:36421 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3JGKJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:05:14 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-6d-52528758e705
+	Mon, 7 Oct 2013 06:09:07 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-22-525288419c1d
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] thermal: offer TI thermal support only when ARCH_OMAP2PLUS
- is defined
-Date: Mon, 07 Oct 2013 12:05:05 +0200
-Message-id: <24683815.qjRRgfGo3Z@amdc1032>
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] thermal: TI: always register sensor driver with core
+ thermal framework
+Date: Mon, 07 Oct 2013 12:08:55 +0200
+Message-id: <5589711.ayvx0g0Djy@amdc1032>
 User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <524F086E.4020608@ti.com>
-References: <3702969.8rn3SOscJE@amdc1032> <524F0766.8070302@ti.com>
- <524F086E.4020608@ti.com>
+In-reply-to: <524F0802.3070004@ti.com>
+References: <1466554.jrelSVKzU4@amdc1032> <524F0802.3070004@ti.com>
 MIME-version: 1.0
 Content-transfer-encoding: 7Bit
 Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jQd2I9qAggx3bjCz+TjrGbrFm/08m
-	i7NNb9gtLu+aw2bxufcIo8WTh31sDmwev39NYvRYvOclk0ffllWMHsdvbGfy+LxJLoA1issm
-	JTUnsyy1SN8ugSvjz7UGxoL7whXPn8Y2MP7g72Lk5JAQMJFY0v+dGcIWk7hwbz1bFyMXh5DA
-	dEaJR6uaWSGcFiaJmQ+2MYFUsQlYSUxsX8UIYosI6EncePGECaSIWWAlo8SOrpPsIAlhgRiJ
-	aQdawRpYBFQlJtyYxgJi8wpoSZyduxesWVTAU+LTpKVgqzkF1CR+LGgA6xUSiJdYs+gEI0S9
-	oMSPyffAepkF5CX27Z/KCmHrSOxvncY2gVFgFpKyWUjKZiEpW8DIvIpRNLUguaA4KT3XUK84
-	Mbe4NC9dLzk/dxMjOLifSe1gXNlgcYhRgINRiYd3x/3AICHWxLLiytxDjBIczEoivD2tQUFC
-	vCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGM2Wzp/++mNI
-	gMsd4aMPf73WdhT4Y+YxS8r4zQLjx0+fSK69++6MUlF5n1H2x9+a5zasfLpk1ZuTJQ+nCBbW
-	ywWvX/pm6jOPuXeOvD61NEbqcPCDKStvTf78RU+q7/id5vdpt3s3M1587ywhEJRTeCeHITii
-	5rNF4U8TI8v+7e7skXs/CG67a7lSiaU4I9FQi7moOBEAa8KLNmoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jQV2njqAgg74/zBZr9v9ksjjb9Ibd
+	4vKuOWwWn3uPMFo8edjH5sDqsXjPSyaPvi2rGD2O39jO5PF5k1wASxSXTUpqTmZZapG+XQJX
+	xp+bz5gL5qtWTOnYxtTAuF2ui5GTQ0LAROLGzF9MELaYxIV769m6GLk4hASmM0qsmboOymlh
+	kvj9bQ07SBWbgJXExPZVjCC2iICexI0XT5hAipgFOhgl7q3fxAqSEBZIlGiaehTMZhFQldj0
+	cjMbiM0roCkxafszsLiogKfEp0lLmUFsTgE1icnbX4CdISTgLDFlSwMLRL2gxI/J98BsZgF5
+	iX37p7JC2DoS+1unsU1gFJiFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/d
+	xAgO5WfSOxhXNVgcYhTgYFTi4d1xPzBIiDWxrLgy9xCjBAezkghvT2tQkBBvSmJlVWpRfnxR
+	aU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQbGLb+X61U8nJZl6GUho+qs9Vbw
+	9DHb4sdZ0U932R91ijuz3Edqv2jKO/kj8o7+S4QN86O0jaeevdMssEhvdoTB3i33X1YmLOT2
+	XtfpmLil+yQjo9P3ba9/sL+cqCgtXT+Ra8Yph4KySF3WX13z/6g8S64P2/SHa9+1PyqS9V5O
+	a/nnup7m/8KsxFKckWioxVxUnAgAAk9LrmECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 04, 2013 02:26:54 PM Eduardo Valentin wrote:
-> On 04-10-2013 14:22, Eduardo Valentin wrote:
-> > On 04-10-2013 08:35, Bartlomiej Zolnierkiewicz wrote:
-> >> Menu for Texas Instruments thermal support is visible on all
-> >> platforms and TI_SOC_THERMAL + TI_THERMAL config options can
-> >> be selected also on EXYNOS platform (on which ARCH_HAS_BANDGAP
-> >> config option is selected by SoCs config options to fulfill
-> >> EXYNOS_THERMAL config option dependency). Thus the code which
-> >> is never used can be build. Fix it by making TI menu dependent
-> >> on ARCH_OMAP2PLUS config option.
-> >>
+On Friday, October 04, 2013 02:25:06 PM Eduardo Valentin wrote:
+> On 04-10-2013 08:40, Bartlomiej Zolnierkiewicz wrote:
+> > There is little sense in having separate config option for
+> > registering the sensor driver with the core thermal framework.
+> > Fix it by integrating TI_THERMAL config option with TI_SOC_THERMAL
+> > one.
 > 
-> 
-> Besides, you can always disable the driver if you are not interested in
-> compiling it.
+> I am a bit confused of what is exactly wrong or needs fixing. The code
+> organization is so that the file ti-bandgap.c adds the support for TI
+> Bandgap IP. It is not aware of thermal framework. And the
+> ti-thermal-common.c file is expected to talk to thermal framework. Can
+> you please elaborate a bit more why this split is hurting you?
 
-You should not have TI-specific drivers visible without any TI dependencies.
-ARCH_BANDGAP dependency is not enough, ARCH_BANDGAP is also used by EXYNOS
-to indicate thermal support. Currently you can select TI thermal drivers on
-EXYNOS platforms without any other dependencies on TI. This is just wrong,
-it can result in unused code being build currently but can result in more
-severe problems in the future (build break).
+The split seems artificial since both options have dependency on THERMAL.
 
-> >> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> ---
-> >>  drivers/thermal/Kconfig | 1 +
-> >>  1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> >> index 57e06a9..a709c63 100644
-> >> --- a/drivers/thermal/Kconfig
-> >> +++ b/drivers/thermal/Kconfig
-> >> @@ -193,6 +193,7 @@ config X86_PKG_TEMP_THERMAL
-> >>  	  notification methods.
-> >>  
-> >>  menu "Texas Instruments thermal drivers"
-> >> +depends on ARCH_OMAP2PLUS
-> > 
-> > No, this driver is not for ARCH_OMAP*, but for TI bandgap, with the
-> > option to offer thermal control. So, the HW supported is TI bandgap IP,
-> > not ARCH_OMAP*. It happens to be so that OMAP2PLUS all have a
-> > (different) version of this device.
-> > 
-> > However, DRA7 devices, for instance, also feature the bandgap IP
-> > (different version of those present in OMAP devices), and it is not
-> > ARCH_OMAP2PLUS.
-> > 
-> > And because of that, the design of this driver is different. It is not
-> > expected to depend on an arch, but the arch code is expected to select
-> > ARCH_HAS_BANDGAP.
-> > 
-> >>  source "drivers/thermal/ti-soc-thermal/Kconfig"
-> >>  endmenu
+Could you please tell me what is an advantage of having separate core
+TI bandgap IP support without registration to thermal framework?
 
 Best regards,
 --
 Bartlomiej Zolnierkiewicz
 Samsung R&D Institute Poland
 Samsung Electronics
+
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  drivers/thermal/ti-soc-thermal/Kconfig      | 15 +++-----------
+> >  drivers/thermal/ti-soc-thermal/Makefile     |  2 +-
+> >  drivers/thermal/ti-soc-thermal/ti-thermal.h | 31 -----------------------------
+> >  3 files changed, 4 insertions(+), 44 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/ti-soc-thermal/Kconfig b/drivers/thermal/ti-soc-thermal/Kconfig
+> > index bf5d6e4..c64e78b 100644
+> > --- a/drivers/thermal/ti-soc-thermal/Kconfig
+> > +++ b/drivers/thermal/ti-soc-thermal/Kconfig
+> > @@ -7,18 +7,9 @@ config TI_SOC_THERMAL
+> >  	  OMAP4460+ on die bandgap temperature sensor support. The register
+> >  	  set is part of system control module.
+> >  
+> > -	  This includes alert interrupts generation and also the TSHUT
+> > -	  support.
+> > -
+> > -config TI_THERMAL
+> > -	bool "Texas Instruments SoCs thermal framework support"
+> > -	depends on TI_SOC_THERMAL
+> > -	help
+> > -	  If you say yes here you want to get support for generic thermal
+> > -	  framework for the Texas Instruments on die bandgap temperature sensor.
+> > -
+> > -	  This includes trip points definitions, extrapolation rules and
+> > -	  CPU cooling device bindings.
+> > +	  This includes alert interrupts generation, the TSHUT support,
+> > +	  trip points definitions, extrapolation rules and CPU cooling
+> > +	  device bindings.
+> >  
+> >  config OMAP4_THERMAL
+> >  	bool "Texas Instruments OMAP4 thermal support"
+> > diff --git a/drivers/thermal/ti-soc-thermal/Makefile b/drivers/thermal/ti-soc-thermal/Makefile
+> > index 1226b24..c75cc91 100644
+> > --- a/drivers/thermal/ti-soc-thermal/Makefile
+> > +++ b/drivers/thermal/ti-soc-thermal/Makefile
+> > @@ -1,6 +1,6 @@
+> >  obj-$(CONFIG_TI_SOC_THERMAL)		+= ti-soc-thermal.o
+> >  ti-soc-thermal-y			:= ti-bandgap.o
+> > -ti-soc-thermal-$(CONFIG_TI_THERMAL)	+= ti-thermal-common.o
+> > +ti-soc-thermal-y			+= ti-thermal-common.o
+> >  ti-soc-thermal-$(CONFIG_DRA752_THERMAL)	+= dra752-thermal-data.o
+> >  ti-soc-thermal-$(CONFIG_OMAP4_THERMAL)	+= omap4-thermal-data.o
+> >  ti-soc-thermal-$(CONFIG_OMAP5_THERMAL)	+= omap5-thermal-data.o
+> > diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal.h b/drivers/thermal/ti-soc-thermal/ti-thermal.h
+> > index f8b7ffe..5fb427c 100644
+> > --- a/drivers/thermal/ti-soc-thermal/ti-thermal.h
+> > +++ b/drivers/thermal/ti-soc-thermal/ti-thermal.h
+> > @@ -83,41 +83,10 @@
+> >  #define ti_thermal_is_valid_trip(trip)				\
+> >  	((trip) >= 0 && (trip) < OMAP_TRIP_NUMBER)
+> >  
+> > -#ifdef CONFIG_TI_THERMAL
+> >  int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id, char *domain);
+> >  int ti_thermal_remove_sensor(struct ti_bandgap *bgp, int id);
+> >  int ti_thermal_report_sensor_temperature(struct ti_bandgap *bgp, int id);
+> >  int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id);
+> >  int ti_thermal_unregister_cpu_cooling(struct ti_bandgap *bgp, int id);
+> > -#else
+> > -static inline
+> > -int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id, char *domain)
+> > -{
+> > -	return 0;
+> > -}
+> >  
+> > -static inline
+> > -int ti_thermal_remove_sensor(struct ti_bandgap *bgp, int id)
+> > -{
+> > -	return 0;
+> > -}
+> > -
+> > -static inline
+> > -int ti_thermal_report_sensor_temperature(struct ti_bandgap *bgp, int id)
+> > -{
+> > -	return 0;
+> > -}
+> > -
+> > -static inline
+> > -int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
+> > -{
+> > -	return 0;
+> > -}
+> > -
+> > -static inline
+> > -int ti_thermal_unregister_cpu_cooling(struct ti_bandgap *bgp, int id)
+> > -{
+> > -	return 0;
+> > -}
+> > -#endif
+> >  #endif
 
