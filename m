@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab3JGAuW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 20:50:22 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:60596 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab3JGAuU (ORCPT
+	id S1755145Ab3JGAwq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 20:52:46 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63127 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966Ab3JGAwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 20:50:20 -0400
+	Sun, 6 Oct 2013 20:52:45 -0400
+X-AuditID: 9c930197-b7bd9ae000006889-c6-525205db642b
+Date: Mon, 7 Oct 2013 09:53:57 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: linux-kernel@vger.kernel.org, ch0.han@lge.com, gunho.lee@lge.com
+Subject: Re: [RFC,3/5] squashfs: remove cache for normal data page
+Message-ID: <20131007005357.GA12810@bbox>
+References: <524E5C8B.7090807@lougher.demon.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20131007003247.GA21999@srcf.ucam.org>
-References: <20131006203353.GA19795@srcf.ucam.org>
-	<CAMP44s0N5xqD2W7-r-j1k3efo1k0qY2gCeqn+tbHsvOsrqOJgg@mail.gmail.com>
-	<20131006204518.GA20077@srcf.ucam.org>
-	<CAMP44s0GkVyw+PRYKqq7=MXFFtgUO9xCq6jTsoQV-rSRmC23yg@mail.gmail.com>
-	<20131006205928.GA20296@srcf.ucam.org>
-	<CAMP44s33CByGsRz7vsNAoOLnbEMY+fz73NzHJq07BzSuCEGJUg@mail.gmail.com>
-	<20131006233106.GA21562@srcf.ucam.org>
-	<CAMP44s1-vCgOkE_h1ZEmCA2WiQyLTOvnis2MOjdu8kdDB39kFg@mail.gmail.com>
-	<20131006235702.GA21738@srcf.ucam.org>
-	<CAMP44s3+GdeN6ZFxi6dKZ_1kyTgmgjTf4ET=pJnkSwoirZQMjw@mail.gmail.com>
-	<20131007003247.GA21999@srcf.ucam.org>
-Date: Sun, 6 Oct 2013 19:50:18 -0500
-Message-ID: <CAMP44s1knbxW5C_tRSqopRLd+b2fXfuH=E3_L4EdOAUG4RMVhg@mail.gmail.com>
-Subject: Re: [PATCH] acpi: update win8 OSI blacklist
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <524E5C8B.7090807@lougher.demon.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 6, 2013 at 7:32 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Sun, Oct 06, 2013 at 07:27:48PM -0500, Felipe Contreras wrote:
->
->> If _you_ want to add comments for each entry in the list you can do so
->> after this patch is applied.
->
-> If you want to participate in a collaborative development effort you
-> should pay attention to other people's concerns.
+On Fri, Oct 04, 2013 at 07:13:31AM +0100, Phillip Lougher wrote:
+> Minchan Kim <minchan@kernel.org> wrote:
+> >Sqsuashfs have used cache for normal data pages but it's pointless
+> >because MM already has cache layer and squashfs adds extra pages
+> >into MM's page cache when it reads a page from compressed block.
+> >
+> >This patch removes cache usage for normal data pages so it could
+> >remove unnecessary one copy
+> 
+> 1. As I mentioned last week, the use of the "unnecessary" cache is there
+> to prevent two or more processes simultaneously trying to read the same
+> pages.  Without this, such racing processes will decompress the same
+> blocks repeatedly.
+> 
+> It is easy to dismiss this as an rare event, but, when it happens it
+> has a major impact on performance, because the racing processes
+> can get stuck in a lock-step arrangement, repeatedly trying to access
+> the same blocks until the eof.  If the file is many megabytes or
+> gigabytes in size (such as when Squashfs is used as a container fs for
+> cetain liveCDs, or virtual machine disk images) this will lead to
+> a significant reduction in performance.
+> 
+> So I consider this a major regression.
+> 
+> 2. You patch also adds another regression, which is to reintroduce
+> kmap() rather than kmap_atomic().
+> 
+> I was asked to remove this at my first submission attempt
+> in 2005
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/0503.2/0809.html
+> 
+> So I'm not particularly willing to reintroduce it now.
+> 
+> 3. Your patch potentially reintroduces this bug
+> 
+> http://www.spinics.net/lists/linux-fsdevel/msg02555.html
+> http://zaitcev.livejournal.com/86954.html
+> 
+> 4. You patch is unconditional.  With such code changes as this
+> it is always essential to make this a "buy in option", with the
+> original behaviour retained as default.  Otherwise, lots of users
+> potentially find their embedded/enterprise/mission critical
+> system unexpectedly breaks when upgrading the kernel, and I get
+> a lot of angry email.
+> 
+> Phillip
 
-I did that when I listened to your comment, and I argued against it.
+I will handle all your points in next patchset.
 
-Disagreeing is not the same as not paying attention.
-
-> I don't get the final
-> say in whether or not this patch gets merged, but there's a decent
-> chance that I'm going to be the one who has to remove the entries again
-> once the backlight mess is fixed up. My life would be significantly
-> easier if the entries are unambiguously identified in such a way that I
-> can remove them without having to dig through git history to figure out
-> where each came from.
-
-And a *single* comment on top of this group entries achieves that just
-fine. You haven't provided a single argument as to why that wouldn't
-be the case.
-
-In fact, you are the one that is not paying attention.
-
-> Is that really an unreasonable request?
-
-That wasn't a request, that was an explanation of what would make your
-life easier.
-
-And if uncommented entries is a problem for you, you already have that
-problem, because the entries to remove are already there, uncommented.
-The original patch I sent had a comment, so that's not my fault.
-
-This patch would not make your life any harder, so that is a red
-herring. The problem is already there.
+Thanks for the review!
 
 -- 
-Felipe Contreras
+Kind regards,
+Minchan Kim
