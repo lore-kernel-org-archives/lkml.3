@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab3JGTUX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 15:20:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44152 "EHLO mx1.redhat.com"
+	id S1756655Ab3JGTXB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 15:23:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59405 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756274Ab3JGTUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 15:20:20 -0400
-Message-ID: <52530013.2000300@redhat.com>
-Date: Mon, 07 Oct 2013 14:40:19 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755482Ab3JGTW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 15:22:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1051,1371106800"; 
+   d="scan'208";a="406793287"
+Date: Mon, 7 Oct 2013 12:22:58 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
+        zheng.z.yan@intel.com
+Subject: Re: [PATCH v1 1/2] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131007192258.GC3363@tassilo.jf.intel.com>
+References: <1381162158-24329-1-git-send-email-eranian@google.com>
+ <1381162158-24329-2-git-send-email-eranian@google.com>
+ <20131007175542.GB3363@tassilo.jf.intel.com>
+ <20131007180810.GJ3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 23/63] sched: Resist moving tasks towards nodes with fewer
- hinting faults
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-24-git-send-email-mgorman@suse.de>
-In-Reply-To: <1381141781-10992-24-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131007180810.GJ3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 06:29 AM, Mel Gorman wrote:
-> Just as "sched: Favour moving tasks towards the preferred node" favours
-> moving tasks towards nodes with a higher number of recorded NUMA hinting
-> faults, this patch resists moving tasks towards nodes with lower faults.
+On Mon, Oct 07, 2013 at 08:08:10PM +0200, Peter Zijlstra wrote:
+> On Mon, Oct 07, 2013 at 10:55:42AM -0700, Andi Kleen wrote:
+> > This would in principle allow making it a module later (if perf ever
+> > supports that)
 > 
-> [mgorman@suse.de: changelog]
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> IIRC its a few EXPORTs away from being able to do that.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Great. With ~700k text that would be a good thing.
+After all most users don't develop.
+
+Hopefully we can get there soon.
+
+Is anyone actively working on it?
+
+-Andi
 
 -- 
-All rights reversed
+ak@linux.intel.com -- Speaking for myself only
