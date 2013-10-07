@@ -1,135 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab3JGNLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 09:11:14 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:54739 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab3JGNLN (ORCPT
+	id S1755130Ab3JGNLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 09:11:32 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:65495 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3JGNLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 09:11:13 -0400
-Date: Mon, 7 Oct 2013 06:11:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, peter@hurleysoftware.com
-Subject: Re: tty^Wrcu/perf lockdep trace.
-Message-ID: <20131007131102.GY5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131004160352.GF5790@linux.vnet.ibm.com>
- <20131004165044.GV28601@twins.programming.kicks-ass.net>
- <20131004170954.GK5790@linux.vnet.ibm.com>
- <20131004185239.GS15690@laptop.programming.kicks-ass.net>
- <20131004212506.GM5790@linux.vnet.ibm.com>
- <20131005160511.GV3081@twins.programming.kicks-ass.net>
- <20131005162802.GP5790@linux.vnet.ibm.com>
- <20131005195949.GW3081@twins.programming.kicks-ass.net>
- <20131005220310.GR5790@linux.vnet.ibm.com>
- <20131007084239.GX3081@twins.programming.kicks-ass.net>
+	Mon, 7 Oct 2013 09:11:19 -0400
+Message-ID: <5252B2F4.7050600@monstr.eu>
+Date: Mon, 07 Oct 2013 15:11:16 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007084239.GX3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100713-8236-0000-0000-00000277C34E
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+References: <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com> <d700a91e-1319-4c35-895d-55e323c40703@email.android.com> <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com> <524EFE76.70200@monstr.eu> <524F04FD.5020804@zytor.com> <20131004233341.GA4028@kroah.com> <20131004234929.GB3652@obsidianresearch.com> <875b2a01-be5a-47d1-b89a-9385d54b9b64@email.android.com> <20131005051056.GA7698@obsidianresearch.com> <1c9db96e-7a36-4ec9-ab16-885780ce6de5@email.android.com> <524FB756.3040203@monstr.eu> <c59c68b8-2565-45c5-bfe9-574b76f3f9bc@email.android.com>
+In-Reply-To: <c59c68b8-2565-45c5-bfe9-574b76f3f9bc@email.android.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="pP21Dx9MhQ0hedmMgqn6Qo8IIbpeGvrRi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 10:42:39AM +0200, Peter Zijlstra wrote:
-> On Sat, Oct 05, 2013 at 03:03:11PM -0700, Paul E. McKenney wrote:
-> > In theory, we could do that.  But in practice, what would wake us up
-> > when the CPUs go non-idle?
-> > 
-> > 1.	We could do a wakeup on the idle-to-non-idle transition.  That
-> > 	would increase idle-to-non-idle latency, defeating the purpose
-> > 	of rcu_nocb_poll=y.  Plus there are workloads that enter and
-> > 	exit idle extremely quickly, which would not be good for either
-> > 	perforrmance, scalability, or energy efficiency.
-> > 
-> > 2.	We could have some other thread poll all the CPUs for activity,
-> > 	for example, the RCU grace-period kthreads.  This might actually
-> > 	work, but there are some really ugly races involving CPUs becoming
-> > 	active just long enough to post a callback, going to sleep,
-> > 	with no other RCU activity in the system.  This could easily
-> > 	result in a system hang.
-> > 
-> > 3.	We could post a timeout to check for the corresponding CPU
-> > 	being idle, but that just transfers the wakeups from idle from
-> > 	the rcuo kthreads to the other CPUs.
-> > 
-> > 4.	I remove rcu_nocb_poll and see if anyone complains.  That doesn't
-> > 	solve the deadlock problem, but it does simplify RCU a bit.  ;-)
-> > 
-> > Other thoughts?
-> 
-> So we already move all the nocb rcuo threads over to the timekeeping
-> cpu, right? Giving you n threads to wake and/or poll and that's
-> expensive.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--pP21Dx9MhQ0hedmMgqn6Qo8IIbpeGvrRi
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I don't pin the rcuo threads anywhere, though I would expect people
-to move them to some set of housekeeping CPUs, the timekeeping CPU
-being a good candidate.
+On 10/05/2013 08:56 AM, H. Peter Anvin wrote:
+> I would, but in my case it was employer-owned and closed.
 
-> So why doesn't the time-keeping cpu, which is awake when at least one of
-> the nocb cpus is awake, not poll the nocb cpus their call list?
+ok. But I believe general concept for this can be shared.
+If you used char device, sysfs, etc.
 
-If !NO_HZ_FULL, there won't be a timekeeping CPU as such, if I remember
-correctly.
+Thanks,
+Michal
 
-> Arguably you don't want to do that from the old scheduler tick interrupt
-> or softirq context thingy, but by using a kthread but you've already got
-> all that around.
 
-The polling happens in the grace-period kthread, but it is not guaranteed
-to be happening unless NO_HZ_FULL_SYSIDLE, in which case the system
-will generate artificial grace periods as needed to make the required
-polling happen.  On the other hand, if !NO_HZ_FULL_SYSIDLE, there will
-not be any polling if there is no RCU update activity.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-> At that point; you've got a single kthread periodically being woken by
-> the scheduler timer interrupt -- which still goes away when the entire
-> machine goes idle -- which would do something like:
-> 
-> 
->   for_each_cpu(cpu, nocb_cpus_mask) {
->   	if (!list_empty_careful(&per_cpu(rcu_state, cpu)->callbacks))
-> 		advance_cpu_callbacks(cpu);
->   }
-> 
-> 
-> That fully preserves the !NOCB state of affairs while also dealing with
-> the NOCB stuff. And the single remote read only gets really expensive
-> once you go _very_ large or once the cpu in question actually touched
-> the cacheline and moved it into exclusive mode due to writing to it; at
-> which point you've saved yourself a wakeup and we're still faster.
-> 
-> It automatically deals with the full idle case, it basically gives you
-> 'poll' behaviour for nr_running==1 and to me appears as the simplest and
-> most straight fwd extension of the RCU model.
-> 
-> More importantly it does away with that wakeup that so often happens on
-> nocb cpus. Although, rereading your email, I get the impression we do
-> this wakeup even on !nocb cpus when CONFIG_NOCB=y, which seems another
-> undesired feature.
 
-The __call_rcu_nocb_enqueue() wakeup happens only when CONFIG_NOCB=y,
-and even then only on CPUs that have actually been offloaded.
-Now my patch does the checking even on non-offloaded CPUs, but this
-still only happen on CONFIG_NOCB=y and is only a check of a
-per-CPU variable.
 
-The other wakeups in __call_rcu_core() only happen in special cases,
-which I believe avoid this deadlock condition.
+--pP21Dx9MhQ0hedmMgqn6Qo8IIbpeGvrRi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> Maybe you've already thought of this and there's a very good reason
-> things aren't like this; but like said, I've been away for a little
-> while and need to catch up a bit.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
->From what I can see, what you suggest would work quite well in special
-cases, but I still have to solve the general case.  If I solve the
-general case, I don't believe I need to work on the special cases.
+iEYEARECAAYFAlJSsvQACgkQykllyylKDCHJMACghZ7nx5Q1OoYW0nv4NBuvKQnv
+9JUAn25Dff0qyvHJD7H+sr2XL6No+n3T
+=9RX4
+-----END PGP SIGNATURE-----
 
-							Thanx, Paul
-
+--pP21Dx9MhQ0hedmMgqn6Qo8IIbpeGvrRi--
