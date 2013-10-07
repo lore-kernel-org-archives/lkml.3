@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3JGKg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:36:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39913 "EHLO mx2.suse.de"
+	id S1755532Ab3JGKhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:37:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39898 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321Ab3JGKaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:17 -0400
+	id S1755294Ab3JGKaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:15 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 38/63] sched: Introduce migrate_swap()
-Date: Mon,  7 Oct 2013 11:29:16 +0100
-Message-Id: <1381141781-10992-39-git-send-email-mgorman@suse.de>
+Subject: [PATCH 36/63] mm: numa: Only trap pmd hinting faults if we would otherwise trap PTE faults
+Date: Mon,  7 Oct 2013 11:29:14 +0100
+Message-Id: <1381141781-10992-37-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -22,282 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+Base page PMD faulting is meant to batch handle NUMA hinting faults from
+PTEs. However, even is no PTE faults would ever be handled within a
+range the kernel still traps PMD hinting faults. This patch avoids the
+overhead.
 
-Use the new stop_two_cpus() to implement migrate_swap(), a function that
-flips two tasks between their respective cpus.
-
-I'm fairly sure there's a less crude way than employing the stop_two_cpus()
-method, but everything I tried either got horribly fragile and/or complex. So
-keep it simple for now.
-
-The notable detail is how we 'migrate' tasks that aren't runnable
-anymore. We'll make it appear like we migrated them before they went to
-sleep. The sole difference is the previous cpu in the wakeup path, so we
-override this.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/sched.h    |   2 +
- kernel/sched/core.c      | 106 ++++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched/fair.c      |   3 +-
- kernel/sched/idle_task.c |   2 +-
- kernel/sched/rt.c        |   5 +--
- kernel/sched/sched.h     |   4 +-
- kernel/sched/stop_task.c |   2 +-
- 7 files changed, 110 insertions(+), 14 deletions(-)
+ mm/mprotect.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4dd0c94..703b256 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1033,6 +1033,8 @@ struct task_struct {
- 	struct task_struct *last_wakee;
- 	unsigned long wakee_flips;
- 	unsigned long wakee_flip_decay_ts;
-+
-+	int wake_cpu;
- #endif
- 	int on_rq;
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index f0b087d..5aae390 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -146,6 +146,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
  
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 124bb40..0862196 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1017,6 +1017,102 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 	__set_task_cpu(p, new_cpu);
- }
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
++		unsigned long this_pages;
++
+ 		next = pmd_addr_end(addr, end);
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+@@ -165,8 +167,9 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 		}
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+-		pages += change_pte_range(vma, pmd, addr, next, newprot,
++		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
+ 				 dirty_accountable, prot_numa, &all_same_nidpid);
++		pages += this_pages;
  
-+static void __migrate_swap_task(struct task_struct *p, int cpu)
-+{
-+	if (p->on_rq) {
-+		struct rq *src_rq, *dst_rq;
-+
-+		src_rq = task_rq(p);
-+		dst_rq = cpu_rq(cpu);
-+
-+		deactivate_task(src_rq, p, 0);
-+		set_task_cpu(p, cpu);
-+		activate_task(dst_rq, p, 0);
-+		check_preempt_curr(dst_rq, p, 0);
-+	} else {
-+		/*
-+		 * Task isn't running anymore; make it appear like we migrated
-+		 * it before it went to sleep. This means on wakeup we make the
-+		 * previous cpu our targer instead of where it really is.
-+		 */
-+		p->wake_cpu = cpu;
-+	}
-+}
-+
-+struct migration_swap_arg {
-+	struct task_struct *src_task, *dst_task;
-+	int src_cpu, dst_cpu;
-+};
-+
-+static int migrate_swap_stop(void *data)
-+{
-+	struct migration_swap_arg *arg = data;
-+	struct rq *src_rq, *dst_rq;
-+	int ret = -EAGAIN;
-+
-+	src_rq = cpu_rq(arg->src_cpu);
-+	dst_rq = cpu_rq(arg->dst_cpu);
-+
-+	double_rq_lock(src_rq, dst_rq);
-+	if (task_cpu(arg->dst_task) != arg->dst_cpu)
-+		goto unlock;
-+
-+	if (task_cpu(arg->src_task) != arg->src_cpu)
-+		goto unlock;
-+
-+	if (!cpumask_test_cpu(arg->dst_cpu, tsk_cpus_allowed(arg->src_task)))
-+		goto unlock;
-+
-+	if (!cpumask_test_cpu(arg->src_cpu, tsk_cpus_allowed(arg->dst_task)))
-+		goto unlock;
-+
-+	__migrate_swap_task(arg->src_task, arg->dst_cpu);
-+	__migrate_swap_task(arg->dst_task, arg->src_cpu);
-+
-+	ret = 0;
-+
-+unlock:
-+	double_rq_unlock(src_rq, dst_rq);
-+
-+	return ret;
-+}
-+
-+/*
-+ * Cross migrate two tasks
-+ */
-+int migrate_swap(struct task_struct *cur, struct task_struct *p)
-+{
-+	struct migration_swap_arg arg;
-+	int ret = -EINVAL;
-+
-+	get_online_cpus();
-+
-+	arg = (struct migration_swap_arg){
-+		.src_task = cur,
-+		.src_cpu = task_cpu(cur),
-+		.dst_task = p,
-+		.dst_cpu = task_cpu(p),
-+	};
-+
-+	if (arg.src_cpu == arg.dst_cpu)
-+		goto out;
-+
-+	if (!cpu_active(arg.src_cpu) || !cpu_active(arg.dst_cpu))
-+		goto out;
-+
-+	if (!cpumask_test_cpu(arg.dst_cpu, tsk_cpus_allowed(arg.src_task)))
-+		goto out;
-+
-+	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
-+		goto out;
-+
-+	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
-+
-+out:
-+	put_online_cpus();
-+	return ret;
-+}
-+
- struct migration_arg {
- 	struct task_struct *task;
- 	int dest_cpu;
-@@ -1236,9 +1332,9 @@ out:
-  * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
-  */
- static inline
--int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-+int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
- {
--	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
-+	cpu = p->sched_class->select_task_rq(p, cpu, sd_flags, wake_flags);
+ 		/*
+ 		 * If we are changing protections for NUMA hinting faults then
+@@ -174,7 +177,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 		 * node. This allows a regular PMD to be handled as one fault
+ 		 * and effectively batches the taking of the PTL
+ 		 */
+-		if (prot_numa && all_same_nidpid)
++		if (prot_numa && this_pages && all_same_nidpid)
+ 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
+ 	} while (pmd++, addr = next, addr != end);
  
- 	/*
- 	 * In order not to call set_task_cpu() on a blocking task we need
-@@ -1513,7 +1609,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	if (p->sched_class->task_waking)
- 		p->sched_class->task_waking(p);
- 
--	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
-+	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
- 	if (task_cpu(p) != cpu) {
- 		wake_flags |= WF_MIGRATED;
- 		set_task_cpu(p, cpu);
-@@ -1752,7 +1848,7 @@ void wake_up_new_task(struct task_struct *p)
- 	 *  - cpus_allowed can change in the fork path
- 	 *  - any previously selected cpu might disappear through hotplug
- 	 */
--	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
-+	set_task_cpu(p, select_task_rq(p, task_cpu(p), SD_BALANCE_FORK, 0));
- #endif
- 
- 	/* Initialize new task's runnable average */
-@@ -2080,7 +2176,7 @@ void sched_exec(void)
- 	int dest_cpu;
- 
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
--	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
-+	dest_cpu = p->sched_class->select_task_rq(p, task_cpu(p), SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == smp_processor_id())
- 		goto unlock;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8760231..b19c044 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3706,11 +3706,10 @@ done:
-  * preempt must be disabled.
-  */
- static int
--select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-+select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags)
- {
- 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
- 	int cpu = smp_processor_id();
--	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
- 	int want_affine = 0;
- 	int sync = wake_flags & WF_SYNC;
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index d8da010..516c3d9 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -9,7 +9,7 @@
- 
- #ifdef CONFIG_SMP
- static int
--select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_idle(struct task_struct *p, int cpu, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* IDLE tasks as never migrated */
- }
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..d81866d 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1169,13 +1169,10 @@ static void yield_task_rt(struct rq *rq)
- static int find_lowest_rq(struct task_struct *task);
- 
- static int
--select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- {
- 	struct task_struct *curr;
- 	struct rq *rq;
--	int cpu;
--
--	cpu = task_cpu(p);
- 
- 	if (p->nr_cpus_allowed == 1)
- 		goto out;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index dca80b8..e9ab96c 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -555,6 +555,7 @@ static inline u64 rq_clock_task(struct rq *rq)
- 
- #ifdef CONFIG_NUMA_BALANCING
- extern int migrate_task_to(struct task_struct *p, int cpu);
-+extern int migrate_swap(struct task_struct *, struct task_struct *);
- static inline void task_numa_free(struct task_struct *p)
- {
- 	kfree(p->numa_faults);
-@@ -732,6 +733,7 @@ static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
- 	 */
- 	smp_wmb();
- 	task_thread_info(p)->cpu = cpu;
-+	p->wake_cpu = cpu;
- #endif
- }
- 
-@@ -987,7 +989,7 @@ struct sched_class {
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
- 
- #ifdef CONFIG_SMP
--	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
-+	int  (*select_task_rq)(struct task_struct *p, int task_cpu, int sd_flag, int flags);
- 	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
- 
- 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index e08fbee..47197de 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -11,7 +11,7 @@
- 
- #ifdef CONFIG_SMP
- static int
--select_task_rq_stop(struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_stop(struct task_struct *p, int cpu, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* stop tasks as never migrate */
- }
 -- 
 1.8.4
 
