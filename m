@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3JGLxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:53:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35071 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab3JGLxT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:53:19 -0400
-Date: Mon, 7 Oct 2013 13:53:17 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: jic23@cam.ac.uk, dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Felipe Balbi <balbi@ti.com>
-Subject: Testing ti_am335x_adc continuous mode (WAS: Re: [PATCH 2/2]
-Message-ID: <20131007115317.GA6135@linutronix.de>
-References: <1379503383-17086-1-git-send-email-zubair.lutfullah@gmail.com>
- <1379503383-17086-3-git-send-email-zubair.lutfullah@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1379503383-17086-3-git-send-email-zubair.lutfullah@gmail.com>
-iio: ti_am335x_adc: Add continuous sampling support)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753581Ab3JGL4C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:56:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38633 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753144Ab3JGL4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 07:56:00 -0400
+Date: Mon, 7 Oct 2013 07:55:53 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jan Klos <honza.klos@gmail.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: cifs: Fix inability to write files >2GB to SMB2/3 shares (THIS
+ TIME I GOT IT RIGHT, PROMISE!)
+Message-ID: <20131007075553.65818b41@tlielax.poochiereds.net>
+In-Reply-To: <5251B524.3000101@gmail.com>
+References: <5251B524.3000101@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zubair,
+On Sun, 06 Oct 2013 21:08:20 +0200
+Jan Klos <honza.klos@gmail.com> wrote:
 
-I have here am335x-evm board. The output of voltage4 (via `cat
-/sys/bus/iio/devices/iio\:device0/in_voltage4_raw´) returns values in
-the range 570…580. I tested the continuous sampling mdoe by executing
-the following commands:
+> When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
+> 
+> The patch fixes this by checking for the correct bit according to the protocol version.
+> 
+> Sorry for the TWO reposts, Gmail messed up the first mail, Thunderbird added spaces to the patch part in the second. I am really sorry! I think I fixed a quite significant bug, so have mercy on me...
+> 
+> 
+> Signed-off-by: Jan Klos <honza.klos@gmail.com>
+> 
+> ---
+> 
+> diff -uprN a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+> --- a/fs/cifs/cifsfs.c	2013-10-05 16:18:07.000000000 +0200
+> +++ b/fs/cifs/cifsfs.c	2013-10-06 16:18:13.488378000 +0200
+> @@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
+>  {
+>  	struct inode *inode;
+>  	struct cifs_sb_info *cifs_sb;
+> +	struct cifs_tcon *tcon;
+>  	int rc = 0;
+>  
+>  	cifs_sb = CIFS_SB(sb);
+> +	tcon = cifs_sb_master_tcon(cifs_sb);
+>  
+>  	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
+>  		sb->s_flags |= MS_POSIXACL;
+>  
+> -	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
+> +	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
+>  		sb->s_maxbytes = MAX_LFS_FILESIZE;
+>  	else
+>  		sb->s_maxbytes = MAX_NON_LFS;
+> @@ -147,7 +149,7 @@ cifs_read_super(struct super_block *sb)
+>  		goto out_no_root;
+>  	}
+>  
+> -	if (cifs_sb_master_tcon(cifs_sb)->nocase)
+> +	if (tcon->nocase)
+>  		sb->s_d_op = &cifs_ci_dentry_ops;
+>  	else
+>  		sb->s_d_op = &cifs_dentry_ops;
 
-|echo 1 > /sys/bus/iio/devices/iio\:device0/scan_elements/in_voltage4_en
-|echo 25 > /sys/bus/iio/devices/iio\:device0/buffer/length
-|echo 1 > /sys/bus/iio/devices/iio\:device0/buffer/enable
-|sleep 1
-|echo 0 > /sys/bus/iio/devices/iio\:device0/buffer/enable
-|cat /dev/iio\:device0 > iio
-|hexdump -C iio
+Nice catch.
 
-and the output is:
-|00000000  37 02 92 02 1f 07 0a 06  20 06 31 06 2f 07 2a 07
-|00000010  2b 07 2d 07 2c 07 28 07  2c 07 2b 07 2b 07 0c 06
-|00000020  21 06 32 06 2e 07 2c 07  2a 07 2a 07 2c 07 2b 07
-|00000030  29 07 27 07 28 07 29 07  2a 07 0d 06 21 06 35 06
-
-The first entry is in the range that I would expect. The second is
-slitghly higher. The third and following entries are out of range. Have
-you observed something like that? Is my testing close to what you have
-done or did I make an mistake here?
-
-Sebastian
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
