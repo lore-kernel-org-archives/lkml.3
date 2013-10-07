@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3JGRAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 13:00:12 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:57037 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab3JGRAK (ORCPT
+	id S1756047Ab3JGRHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 13:07:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48193 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab3JGRHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 13:00:10 -0400
-Date: Mon, 7 Oct 2013 13:00:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com
-Subject: Re: [PATCHSET v2] sysfs: use seq_file and unify regular and bin file
- handling
-Message-ID: <20131007170005.GB2481@htj.dyndns.org>
-References: <1380663729-18243-1-git-send-email-tj@kernel.org>
- <20131006004032.GA3601@kroah.com>
+	Mon, 7 Oct 2013 13:07:14 -0400
+Message-ID: <5252EA3F.9090101@wwwdotorg.org>
+Date: Mon, 07 Oct 2013 11:07:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131006004032.GA3601@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux-serial@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: tegra: remove deprecated IRQF_DISABLED
+References: <1381041017-12806-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1381041017-12806-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Sat, Oct 05, 2013 at 05:40:32PM -0700, Greg KH wrote:
-> > * 0001-0008 are the same as before.
+On 10/06/2013 12:30 AM, Michael Opdenacker wrote:
+> This patch proposes to remove the use of the IRQF_DISABLED flag
 > 
-> Nice, I've applied all of these now.
+> It's a NOOP since 2.6.35 and it will be removed one day.
 
-Great!
+Laxman, care to comment? I'm not sure why the code explicitly specifies
+IRQF_DISABLED if it's already a no-op. Perhaps the code expects
+IRQF_DISABLED to do something, and hence there's some bug that needs to
+be fixed because of it doesn't?
 
-> How are you going to use sysfs from another kernel subsystem?  Is this
-> for another filesystem, or do you want to use kobjects for some other
-> subsystem that doesn't export them using sysfs?
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  drivers/tty/serial/serial-tegra.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
+> index 0489a2b..dfe79cc 100644
+> --- a/drivers/tty/serial/serial-tegra.c
+> +++ b/drivers/tty/serial/serial-tegra.c
+> @@ -1018,7 +1018,7 @@ static int tegra_uart_startup(struct uart_port *u)
+>  		goto fail_hw_init;
+>  	}
+>  
+> -	ret = request_irq(u->irq, tegra_uart_isr, IRQF_DISABLED,
+> +	ret = request_irq(u->irq, tegra_uart_isr, 0,
+>  				dev_name(u->dev), tup);
+>  	if (ret < 0) {
+>  		dev_err(u->dev, "Failed to register ISR for IRQ %d\n", u->irq);
+> 
 
-I was at first trying to convert sysfs interface to not use kobject
-but that caused too much disruption and I'm now trying to separate out
-the core functionality into a separate filesystem - currently named
-kernfs, so sysfs will be a consumer of kernfs translating between
-kobject and kernfs interface, and cgroup will be the second user which
-replaces its own pseudo filesystem implementation with kernfs.
-
-Thanks a lot.
-
--- 
-tejun
