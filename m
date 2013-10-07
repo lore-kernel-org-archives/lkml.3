@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3JGVl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:41:56 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:48182 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab3JGVly (ORCPT
+	id S1753288Ab3JGVmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:42:06 -0400
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:49007 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752564Ab3JGVmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:41:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131005132337.GA4095@dztty>
-References: <20131004085911.GA2157@dztty> <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
- <20131004182353.GA2600@dztty> <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
- <20131004191113.GA3916@dztty> <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
- <20131004192712.GA4334@dztty> <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
- <20131004194142.GA4524@dztty> <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
- <20131005132337.GA4095@dztty>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 7 Oct 2013 14:41:33 -0700
-Message-ID: <CALCETrV2YZUQsFiahmcQECF37=sX6EMiEEjwXX_mcuPf-X3-yw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
- opener may access task
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Oct 2013 17:42:00 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3291:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4823:5007:6120:7652:10004:10400:10848:11026:11232:11658:11914:12517:12519:12679:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: size41_111fe70b08b1f
+X-Filterd-Recvd-Size: 2025
+Message-ID: <1381182115.2081.218.camel@joe-AO722>
+Subject: Re: [RFC PATCH] checkpatch: Make the 80-character limit a --strict
+ check only
+From: Joe Perches <joe@perches.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
+        gregkh@linux-foundation.org, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 07 Oct 2013 14:41:55 -0700
+In-Reply-To: <1381181602.2081.214.camel@joe-AO722>
+References: <20131007191835.GA28737@jtriplet-mobl1>
+	 <1381174106.2081.207.camel@joe-AO722>
+	 <20131007193433.GF13643@jtriplet-mobl1>
+	 <20131007212302.GB13318@ZenIV.linux.org.uk>
+	 <1381181602.2081.214.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 5, 2013 at 6:23 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> On Fri, Oct 04, 2013 at 03:17:08PM -0700, Andy Lutomirski wrote:
->>
->> Exactly.  Hence the NAK.
-> But Having two LSM Hooks there is really not practical!
+On Mon, 2013-10-07 at 14:33 -0700, Joe Perches wrote:
+> On Mon, 2013-10-07 at 22:23 +0100, Al Viro wrote:
+> > On Mon, Oct 07, 2013 at 12:34:33PM -0700, Josh Triplett wrote:
+> > 
+> > > I've seen far more examples of the 80-column limit making code less
+> > > readable rather than more.  It's only really helpful when it forces code
+> > > restructuring, *not* when it just forces an arbitrary line break.
+> > 
+> > So teach that piece of crap to complain about fucked-in-head line breaks like
+> > 							ret_val =
+> > 							    leaf_shift_left(tb,
+> > 									    tb->
+> > 									    lnum
+> > 									    [0],
+> > 									    tb->
+> > 									    lbytes
+> > 									    -
+> > 									    1);
+> > in addition to obscenely long lines (and yes, it is a real-world example).
 
-It'd doable *if* it turns out that it's the right solution.
+btw: checkpatch does suggest refactoring when there are
+6+ indent tabs with an if/while/for/do/switch statement.
+so it already does bleat around there.
 
-But revoke seems much more likely to be simple, comprehensible, and
-obviously correct to me.
-
---Andy
-
->
-> Note to mention some of these redundancy checks...
->
->> >
->> > Is there some mechanism to check what you describe?
->> >
->>
->> No.  You could try to add one, but getting it to be compatible with
->> YAMA might be really messy.
-> LSM is limitted in this situation, and it can't work with YAMA, or
-> perhaps YAMA will just return -EPERM
->
-> So this LSM protections are currently vulnerable too!
->
->
->> Or you could see if destroying and recreating all the inodes on exec
->> or some other revoke-like approach would work.
->>
->> --Andy
->
-> --
-> Djalal Harouni
-> http://opendz.org
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
