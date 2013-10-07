@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3JGKdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:33:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40092 "EHLO mx2.suse.de"
+	id S1755465Ab3JGKab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:30:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40023 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478Ab3JGKaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:35 -0400
+	id S1755437Ab3JGKa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:27 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 57/63] sched: numa: Take false sharing into account when adapting scan rate
-Date: Mon,  7 Oct 2013 11:29:35 +0100
-Message-Id: <1381141781-10992-58-git-send-email-mgorman@suse.de>
+Subject: [PATCH 48/63] sched: numa: stay on the same node if CLONE_VM
+Date: Mon,  7 Oct 2013 11:29:26 +0100
+Message-Id: <1381141781-10992-49-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -22,48 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scan rate is altered based on whether shared/private faults dominated.
-task_numa_group() may detect false sharing but that information is not
-taken into account when adapting the scan rate. Take it into account.
+From: Rik van Riel <riel@redhat.com>
 
+A newly spawned thread inside a process should stay on the same
+NUMA node as its parent. This prevents processes from being "torn"
+across multiple NUMA nodes every time they spawn a new thread.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ include/linux/sched.h |  2 +-
+ kernel/fork.c         |  2 +-
+ kernel/sched/core.c   | 14 +++++++++-----
+ 3 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index baa2276..03698f5 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1381,7 +1381,8 @@ static void double_lock(spinlock_t *l1, spinlock_t *l2)
- 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 56c31c7..d61b531 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2011,7 +2011,7 @@ extern void wake_up_new_task(struct task_struct *tsk);
+ #else
+  static inline void kick_process(struct task_struct *tsk) { }
+ #endif
+-extern void sched_fork(struct task_struct *p);
++extern void sched_fork(unsigned long clone_flags, struct task_struct *p);
+ extern void sched_dead(struct task_struct *p);
  
--static void task_numa_group(struct task_struct *p, int cpupid, int flags)
-+static void task_numa_group(struct task_struct *p, int cpupid, int flags,
-+			int *priv)
+ extern void proc_caches_init(void);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 7192d91..c93be06 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1310,7 +1310,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ #endif
+ 
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+-	sched_fork(p);
++	sched_fork(clone_flags, p);
+ 
+ 	retval = perf_event_init_task(p);
+ 	if (retval)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0a6899b..3ce73aa 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1691,7 +1691,7 @@ int wake_up_state(struct task_struct *p, unsigned int state)
+  *
+  * __sched_fork() is basic setup used by init_idle() too:
+  */
+-static void __sched_fork(struct task_struct *p)
++static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
  {
- 	struct numa_group *grp, *my_grp;
- 	struct task_struct *tsk;
-@@ -1447,6 +1448,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags)
- 	if (flags & TNF_SHARED)
- 		join = true;
+ 	p->on_rq			= 0;
  
-+	/* Update priv based on whether false sharing was detected */
-+	*priv = !join;
-+
- 	if (join && !get_numa_group(grp))
- 		join = false;
- 
-@@ -1545,7 +1549,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	} else {
- 		priv = cpupid_match_pid(p, last_cpupid);
- 		if (!priv && !(flags & TNF_NO_GROUP))
--			task_numa_group(p, last_cpupid, flags);
-+			task_numa_group(p, last_cpupid, flags, &priv);
+@@ -1720,11 +1720,15 @@ static void __sched_fork(struct task_struct *p)
+ 		p->mm->numa_scan_seq = 0;
  	}
  
++	if (clone_flags & CLONE_VM)
++		p->numa_preferred_nid = current->numa_preferred_nid;
++	else
++		p->numa_preferred_nid = -1;
++
+ 	p->node_stamp = 0ULL;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_migrate_seq = 1;
+ 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+-	p->numa_preferred_nid = -1;
+ 	p->numa_work.next = &p->numa_work;
+ 	p->numa_faults = NULL;
+ 	p->numa_faults_buffer = NULL;
+@@ -1758,12 +1762,12 @@ void set_numabalancing_state(bool enabled)
+ /*
+  * fork()/clone()-time setup:
+  */
+-void sched_fork(struct task_struct *p)
++void sched_fork(unsigned long clone_flags, struct task_struct *p)
+ {
+ 	unsigned long flags;
+ 	int cpu = get_cpu();
+ 
+-	__sched_fork(p);
++	__sched_fork(clone_flags, p);
  	/*
+ 	 * We mark the process as running here. This guarantees that
+ 	 * nobody will actually run it, and a signal or other external
+@@ -4292,7 +4296,7 @@ void init_idle(struct task_struct *idle, int cpu)
+ 
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+ 
+-	__sched_fork(idle);
++	__sched_fork(0, idle);
+ 	idle->state = TASK_RUNNING;
+ 	idle->se.exec_start = sched_clock();
+ 
 -- 
 1.8.4
 
