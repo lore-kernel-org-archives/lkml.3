@@ -1,106 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab3JGAEz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 20:04:55 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:46317 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3JGAEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 20:04:54 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131006231955.GA26952@yabbi.redhat.com>
-References: <1380751836-10829-1-git-send-email-dh.herrmann@gmail.com> <20131003233223.GA21255@yabbi.bne.redhat.com> <20131006074700.GA19155@core.coreip.homeip.net> <20131006231955.GA26952@yabbi.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC] Input: introduce ABS_MAX2/CNT2 and friends
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Sun, 06 Oct 2013 17:04:36 -0700
-To: Peter Hutterer <peter.hutterer@who-t.net>
-CC: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Message-ID: <f37ea673-a597-4dd2-88b4-bf190d8eeff5@email.android.com>
+	id S1755141Ab3JGAFx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 20:05:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51763 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754992Ab3JGAFw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Oct 2013 20:05:52 -0400
+Message-ID: <1381104346.2788.49.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH 2/2] sysrq: Allow magic SysRq key functions to be disabled
+ through Kconfig
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Dave Jones <davej@redhat.com>, Bastian Blank <waldi@debian.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 07 Oct 2013 01:05:46 +0100
+In-Reply-To: <1381103326.2788.45.camel@deadeye.wl.decadent.org.uk>
+References: <1381103326.2788.45.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hutterer <peter.hutterer@who-t.net> wrote:
->On Sun, Oct 06, 2013 at 12:47:00AM -0700, Dmitry Torokhov wrote:
->> On Fri, Oct 04, 2013 at 09:32:23AM +1000, Peter Hutterer wrote:
->> > On Thu, Oct 03, 2013 at 12:10:36AM +0200, David Herrmann wrote:
->> > > As we painfully noticed during the 3.12 merge-window our
->> > > EVIOCGABS/EVIOCSABS API is limited to ABS_MAX<=0x3f. We tried
->several
->> > > hacks to work around it but if we ever decide to increase
->ABS_MAX, the
->> > > EVIOCSABS ioctl ABI might overflow into the next byte causing
->horrible
->> > > misinterpretations in the kernel that we cannot catch.
->> > > 
->> > > Therefore, we decided to go with ABS_MAX2/CNT2 and introduce two
->new
->> > > ioctls to get/set abs-params. They no longer encode the ABS code
->in the
->> > > ioctl number and thus allow up to 4 billion ABS codes.
->> > > 
->> > > Unfortunately, the uinput API also hard-coded the ABS_CNT value
->in its
->> > > ABI. To avoid any hacks in uinput, we simply introduce a new
->> > > uinput_user_dev2 to replace the old one. The new API allows
->growing
->> > > ABS_CNT2 values without any API changes.
->> > > 
->> > > Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->> > > ---
->> > > Hi
->> > > 
->> > > This is only compile-tested but I wanted to get a first revision
->out to let
->> > > people know what we're working on. Unfortunately, the ABS API has
->this horribly
->> > > low ABS_MAX limit and we couldn't figure out a way to increase it
->while keeping
->> > > ABI compatibility.
->> > > 
->> > > Any feedback and review is welcome. And if anyone spots ABI
->breakage by this
->> > > patch, please let me know. If nothing comes up I will patch
->libevdev to use the
->> > > new API, write some extensive test-cases and push this forward.
->> > > 
->> > > As a sidenote: I didn't modify joydev to use the new values.
->Fortunately, the
->> > > joydev API would allow switching to ABS_CNT2 without breaking
->API, but it would
->> > > limit the new ABS_CNT2 to 16k. This is quite high but nothing
->compared to the
->> > >  2^32 that we can theoretically support now. If you think 16k
->ought to be enough
->> > > (probably?) I can adjust the joydev API, too.
->> > > All other kernel users were converted to the new values. Nothing
->left behind..
->> > 
->> > 
->> > just a comment from skimming the patch:
->> > if you need a new uinput abi anyway, can we add the resolution
->here? it's
->> > sorely needed for some tests. see also the patch Benjamin sent a
->while ago
->> > ("input/uinput: support abs resolution", July 15 2013)
->> 
->> Indeed. Also, while we are at it, would it make sense to allow
->> requesting a range of ABS infos at once?
->
->yes, but what API did you have in mind?
->
+Turn the initial value of sysctl kernel.sysrq (SYSRQ_DEFAULT_ENABLE)
+into a Kconfig variable.
 
-I was thinking about specifying the start ABS but and the count and array of absinfo structures to be filled.
+Original version by Bastian Blank <waldi@debian.org>.
 
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+v2:
+- Added cross-references between sysrq.txt and Kconfig help
+  (and added the hex values with a preparatory patch)
+- Removed the redunant SYSRQ_DEFAULT_ENABLE macro
+- Renamed the Kconfig symbol because it's not necessarily a mask
 
-Thanks.
+ Documentation/sysrq.txt | 13 ++++++-------
+ drivers/tty/sysrq.c     |  2 +-
+ include/linux/sysrq.h   |  3 ---
+ kernel/sysctl.c         |  2 +-
+ lib/Kconfig.debug       |  9 +++++++++
+ 5 files changed, 17 insertions(+), 12 deletions(-)
+
+diff --git a/Documentation/sysrq.txt b/Documentation/sysrq.txt
+index 1c0471d..0e307c9 100644
+--- a/Documentation/sysrq.txt
++++ b/Documentation/sysrq.txt
+@@ -11,11 +11,9 @@ regardless of whatever else it is doing, unless it is completely locked up.
+ You need to say "yes" to 'Magic SysRq key (CONFIG_MAGIC_SYSRQ)' when
+ configuring the kernel. When running a kernel with SysRq compiled in,
+ /proc/sys/kernel/sysrq controls the functions allowed to be invoked via
+-the SysRq key. By default the file contains 1 which means that every
+-possible SysRq request is allowed (in older versions SysRq was disabled
+-by default, and you were required to specifically enable it at run-time
+-but this is not the case any more). Here is the list of possible values
+-in /proc/sys/kernel/sysrq:
++the SysRq key. The default value in this file is set by the
++CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE config symbol, which itself defaults
++to 1. Here is the list of possible values in /proc/sys/kernel/sysrq:
+    0 - disable sysrq completely
+    1 - enable all functions of sysrq
+   >1 - bitmask of allowed sysrq functions (see below for detailed function
+@@ -32,8 +30,9 @@ in /proc/sys/kernel/sysrq:
+ You can set the value in the file by the following command:
+     echo "number" >/proc/sys/kernel/sysrq
+ 
+-The number may be written either as decimal or as hexadecimal with the
+-0x prefix.
++The number may be written here either as decimal or as hexadecimal
++with the 0x prefix. CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE must always be
++written in hexadecimal.
+ 
+ Note that the value of /proc/sys/kernel/sysrq influences only the invocation
+ via a keyboard. Invocation of any operation via /proc/sysrq-trigger is always
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 40a9fe9..ce396ec 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -51,7 +51,7 @@
+ #include <asm/irq_regs.h>
+ 
+ /* Whether we react on sysrq keys or just ignore them */
+-static int __read_mostly sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
++static int __read_mostly sysrq_enabled = CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE;
+ static bool __read_mostly sysrq_always_enabled;
+ 
+ unsigned short platform_sysrq_reset_seq[] __weak = { KEY_RESERVED };
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index 7faf933..387fa7d 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -17,9 +17,6 @@
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ 
+-/* Enable/disable SYSRQ support by default (0==no, 1==yes). */
+-#define SYSRQ_DEFAULT_ENABLE	1
+-
+ /* Possible values of bitmask for enabling sysrq functions */
+ /* 0x0001 is reserved for enable everything */
+ #define SYSRQ_ENABLE_LOG	0x0002
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b2f06f3..8b80f1b 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -190,7 +190,7 @@ static int proc_dostring_coredump(struct ctl_table *table, int write,
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+ /* Note: sysrq code uses it's own private copy */
+-static int __sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
++static int __sysrq_enabled = CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE;
+ 
+ static int sysrq_sysctl_handler(ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp,
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 06344d9..2932937 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -312,6 +312,15 @@ config MAGIC_SYSRQ
+ 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
+ 	  unless you really know what this hack does.
+ 
++config MAGIC_SYSRQ_DEFAULT_ENABLE
++	hex "Enable magic SysRq key functions by default"
++	depends on MAGIC_SYSRQ
++	default 0x1
++	help
++	  Specifies which SysRq key functions are enabled by default.
++	  This may be set to 1 or 0 to enable or disable them all, or
++	  to a bitmask as described in Documentation/sysrq.txt.
++
+ config DEBUG_KERNEL
+ 	bool "Kernel debugging"
+ 	help
 
 -- 
-Dmitry
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
