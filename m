@@ -1,55 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab3JGN4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 09:56:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46453 "EHLO mx1.redhat.com"
+	id S1755861Ab3JGN4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 09:56:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38887 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755303Ab3JGN4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 09:56:07 -0400
-Message-ID: <5252BD63.6060606@redhat.com>
-Date: Mon, 07 Oct 2013 09:55:47 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S1755458Ab3JGNyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 09:54:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
+   d="scan'208";a="415181805"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/63] mm: Wait for THP migrations to complete during
- NUMA hinting faults
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-6-git-send-email-mgorman@suse.de>
-In-Reply-To: <1381141781-10992-6-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCHv5 05/11] mm, thp: change pmd_trans_huge_lock() to return taken lock
+Date: Mon,  7 Oct 2013 16:54:07 +0300
+Message-Id: <1381154053-4848-6-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 06:28 AM, Mel Gorman wrote:
-> The locking for migrating THP is unusual. While normal page migration
-> prevents parallel accesses using a migration PTE, THP migration relies on
-> a combination of the page_table_lock, the page lock and the existance of
-> the NUMA hinting PTE to guarantee safety but there is a bug in the scheme.
-> 
-> If a THP page is currently being migrated and another thread traps a
-> fault on the same page it checks if the page is misplaced. If it is not,
-> then pmd_numa is cleared. The problem is that it checks if the page is
-> misplaced without holding the page lock meaning that the racing thread
-> can be migrating the THP when the second thread clears the NUMA bit
-> and faults a stale page.
-> 
-> This patch checks if the page is potentially being migrated and stalls
-> using the lock_page if it is potentially being migrated before checking
-> if the page is misplaced or not.
-> 
-> Cc: stable <stable@vger.kernel.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+With split ptlock it's important to know which lock pmd_trans_huge_lock()
+took. This patch adds one more parameter to the function to return the
+lock.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+In most places migration to new api is trivial.
+Exception is move_huge_pmd(): we need to take two locks if pmd tables
+are different.
 
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Tested-by: Alex Thorlton <athorlton@sgi.com>
+---
+ fs/proc/task_mmu.c      | 13 +++++++------
+ include/linux/huge_mm.h | 14 +++++++-------
+ mm/huge_memory.c        | 40 +++++++++++++++++++++++++++-------------
+ mm/memcontrol.c         | 10 +++++-----
+ 4 files changed, 46 insertions(+), 31 deletions(-)
 
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index fda6c4f2bb..78b8d6cc4d 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -506,9 +506,9 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+-	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
+-		spin_unlock(&walk->mm->page_table_lock);
++		spin_unlock(ptl);
+ 		mss->anonymous_thp += HPAGE_PMD_SIZE;
+ 		return 0;
+ 	}
+@@ -994,13 +994,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ {
+ 	struct vm_area_struct *vma;
+ 	struct pagemapread *pm = walk->private;
++	spinlock_t *ptl;
+ 	pte_t *pte;
+ 	int err = 0;
+ 	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+-	if (vma && pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (vma && pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		int pmd_flags2;
+ 
+ 		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
+@@ -1018,7 +1019,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 			if (err)
+ 				break;
+ 		}
+-		spin_unlock(&walk->mm->page_table_lock);
++		spin_unlock(ptl);
+ 		return err;
+ 	}
+ 
+@@ -1320,7 +1321,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 
+ 	md = walk->private;
+ 
+-	if (pmd_trans_huge_lock(pmd, md->vma) == 1) {
++	if (pmd_trans_huge_lock(pmd, md->vma, &ptl) == 1) {
+ 		pte_t huge_pte = *(pte_t *)pmd;
+ 		struct page *page;
+ 
+@@ -1328,7 +1329,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 		if (page)
+ 			gather_stats(page, md, pte_dirty(huge_pte),
+ 				     HPAGE_PMD_SIZE/PAGE_SIZE);
+-		spin_unlock(&walk->mm->page_table_lock);
++		spin_unlock(ptl);
+ 		return 0;
+ 	}
+ 
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 3935428c57..4aca0d8da1 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -129,15 +129,15 @@ extern void __vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 				    unsigned long start,
+ 				    unsigned long end,
+ 				    long adjust_next);
+-extern int __pmd_trans_huge_lock(pmd_t *pmd,
+-				 struct vm_area_struct *vma);
++extern int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma,
++		spinlock_t **ptl);
+ /* mmap_sem must be held on entry */
+-static inline int pmd_trans_huge_lock(pmd_t *pmd,
+-				      struct vm_area_struct *vma)
++static inline int pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma,
++		spinlock_t **ptl)
+ {
+ 	VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
+ 	if (pmd_trans_huge(*pmd))
+-		return __pmd_trans_huge_lock(pmd, vma);
++		return __pmd_trans_huge_lock(pmd, vma, ptl);
+ 	else
+ 		return 0;
+ }
+@@ -215,8 +215,8 @@ static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 					 long adjust_next)
+ {
+ }
+-static inline int pmd_trans_huge_lock(pmd_t *pmd,
+-				      struct vm_area_struct *vma)
++static inline int pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma,
++		spinlock_t **ptl)
+ {
+ 	return 0;
+ }
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e31600f465..fc8137cb9a 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1342,9 +1342,10 @@ out_unlock:
+ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 		 pmd_t *pmd, unsigned long addr)
+ {
++	spinlock_t *ptl;
+ 	int ret = 0;
+ 
+-	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		struct page *page;
+ 		pgtable_t pgtable;
+ 		pmd_t orig_pmd;
+@@ -1359,7 +1360,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 		pgtable = pgtable_trans_huge_withdraw(tlb->mm, pmd);
+ 		if (is_huge_zero_pmd(orig_pmd)) {
+ 			atomic_long_dec(&tlb->mm->nr_ptes);
+-			spin_unlock(&tlb->mm->page_table_lock);
++			spin_unlock(ptl);
+ 			put_huge_zero_page();
+ 		} else {
+ 			page = pmd_page(orig_pmd);
+@@ -1368,7 +1369,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+ 			VM_BUG_ON(!PageHead(page));
+ 			atomic_long_dec(&tlb->mm->nr_ptes);
+-			spin_unlock(&tlb->mm->page_table_lock);
++			spin_unlock(ptl);
+ 			tlb_remove_page(tlb, page);
+ 		}
+ 		pte_free(tlb->mm, pgtable);
+@@ -1381,14 +1382,15 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end,
+ 		unsigned char *vec)
+ {
++	spinlock_t *ptl;
+ 	int ret = 0;
+ 
+-	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		/*
+ 		 * All logical pages in the range are present
+ 		 * if backed by a huge page.
+ 		 */
+-		spin_unlock(&vma->vm_mm->page_table_lock);
++		spin_unlock(ptl);
+ 		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+ 		ret = 1;
+ 	}
+@@ -1401,6 +1403,7 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		  unsigned long new_addr, unsigned long old_end,
+ 		  pmd_t *old_pmd, pmd_t *new_pmd)
+ {
++	spinlock_t *old_ptl, *new_ptl;
+ 	int ret = 0;
+ 	pmd_t pmd;
+ 
+@@ -1421,12 +1424,21 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		goto out;
+ 	}
+ 
+-	ret = __pmd_trans_huge_lock(old_pmd, vma);
++	/*
++	 * We don't have to worry about the ordering of src and dst
++	 * ptlocks because exclusive mmap_sem prevents deadlock.
++	 */
++	ret = __pmd_trans_huge_lock(old_pmd, vma, &old_ptl);
+ 	if (ret == 1) {
++		new_ptl = pmd_lockptr(mm, new_pmd);
++		if (new_ptl != old_ptl)
++			spin_lock_nested(new_ptl, SINGLE_DEPTH_NESTING);
+ 		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
+ 		VM_BUG_ON(!pmd_none(*new_pmd));
+ 		set_pmd_at(mm, new_addr, new_pmd, pmd_mksoft_dirty(pmd));
+-		spin_unlock(&mm->page_table_lock);
++		if (new_ptl != old_ptl)
++			spin_unlock(new_ptl);
++		spin_unlock(old_ptl);
+ 	}
+ out:
+ 	return ret;
+@@ -1436,9 +1448,10 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, pgprot_t newprot, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
++	spinlock_t *ptl;
+ 	int ret = 0;
+ 
+-	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pmd_t entry;
+ 		entry = pmdp_get_and_clear(mm, addr, pmd);
+ 		if (!prot_numa) {
+@@ -1454,7 +1467,7 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 			}
+ 		}
+ 		set_pmd_at(mm, addr, pmd, entry);
+-		spin_unlock(&vma->vm_mm->page_table_lock);
++		spin_unlock(ptl);
+ 		ret = 1;
+ 	}
+ 
+@@ -1468,12 +1481,13 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+  * Note that if it returns 1, this routine returns without unlocking page
+  * table locks. So callers must unlock them.
+  */
+-int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
++int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma,
++		spinlock_t **ptl)
+ {
+-	spin_lock(&vma->vm_mm->page_table_lock);
++	*ptl = pmd_lock(vma->vm_mm, pmd);
+ 	if (likely(pmd_trans_huge(*pmd))) {
+ 		if (unlikely(pmd_trans_splitting(*pmd))) {
+-			spin_unlock(&vma->vm_mm->page_table_lock);
++			spin_unlock(*ptl);
+ 			wait_split_huge_page(vma->anon_vma, pmd);
+ 			return -1;
+ 		} else {
+@@ -1482,7 +1496,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
+ 			return 1;
+ 		}
+ 	}
+-	spin_unlock(&vma->vm_mm->page_table_lock);
++	spin_unlock(*ptl);
+ 	return 0;
+ }
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d5ff3ce130..5f35b2a116 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6376,10 +6376,10 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+-	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+ 			mc.precharge += HPAGE_PMD_NR;
+-		spin_unlock(&vma->vm_mm->page_table_lock);
++		spin_unlock(ptl);
+ 		return 0;
+ 	}
+ 
+@@ -6568,9 +6568,9 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 	 *    to be unlocked in __split_huge_page_splitting(), where the main
+ 	 *    part of thp split is not executed yet.
+ 	 */
+-	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		if (mc.precharge < HPAGE_PMD_NR) {
+-			spin_unlock(&vma->vm_mm->page_table_lock);
++			spin_unlock(ptl);
+ 			return 0;
+ 		}
+ 		target_type = get_mctgt_type_thp(vma, addr, *pmd, &target);
+@@ -6587,7 +6587,7 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 			}
+ 			put_page(page);
+ 		}
+-		spin_unlock(&vma->vm_mm->page_table_lock);
++		spin_unlock(ptl);
+ 		return 0;
+ 	}
+ 
 -- 
-All rights reversed
+1.8.4.rc3
+
