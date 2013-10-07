@@ -1,639 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab3JGDl1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 23:41:27 -0400
-Received: from mdfmta010.mxout.tch.inty.net ([91.221.169.51]:48438 "EHLO
-	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755393Ab3JGDlZ (ORCPT
+	id S1755420Ab3JGDxp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 23:53:45 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37574 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399Ab3JGDxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 23:41:25 -0400
-Message-ID: <52522D60.1030206@lougher.demon.co.uk>
-Date: Mon, 07 Oct 2013 04:41:20 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Sun, 6 Oct 2013 23:53:44 -0400
+Message-ID: <52523044.1020404@hitachi.com>
+Date: Mon, 07 Oct 2013 12:53:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-kernel@vger.kernel.org, ch0.han@lge.com, gunho.lee@lge.com
-Subject: re: [RFC,4/5] squashfs: support multiple decompress stream buffer
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -tip V2] [BUGFIX] perf probe: Fix to find line information
+ for probe list
+References: <20130930092144.1693.11058.stgit@udc4-manage.rcp.hitachi.co.jp>
+In-Reply-To: <20130930092144.1693.11058.stgit@udc4-manage.rcp.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-MDF-HostID: 19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Ping? :)
 
-This a partial review, based on the stuff I've managed to review
-so far!
-
-1. This is a substantial performance improvement, which is great
-    stuff!
-
-    But like the "squashfs: remove cache for normal data page" patch
-    it needs to be optional, with the previous behaviour retained as
-    default.  Again, without wanting to sound like a broken (vinyl)
-    record, this is because as maintainer I get to worry about breaking
-    things for existing users of Squashfs when they upgrade their kernel.
-
-    I know from consulting experience, many users of Squashfs are "on the
-    edge" of memory and CPU performance, and are using Squashfs to squeeze
-    a bit more performance out of a maxed out system.
-
-    In these cases, changing Squashfs so it uses more memory and more
-    CPU than previously (and in this patch a lot more memory and CPU as
-    it will try and kick off multiple decompressors per core) is a bit
-    like robbing Peter to pay Paul, Squashfs may take CPU and memory
-    that are needed elsewhere, and used to be available.
-
-    So, basically, users need to be able to explicitly select this.
-
-2. The patch breaks the decompressor interface.  Compressor option
-    parsing is implemented in the decompressor init() function, which
-    means everytime a new decompressor is dynamically instantiated, we
-    need to read and parse the compression options again and again.  This
-    is an unnecessary performance degradation.
-
-    Compressor option parsing and reading should be split out of init()
-    and into a separate function.
-
-    Compression option parsing and reading is quite obscure, it is a
-    late addition to the filesystem format, and had to be squeezed into
-    the existing format.  This means it can be difficult to get it right
-    as the specification exists only in my head.
-
-    I'll help you here.
-
-Specific comments follow in the patch.
-
-Phillip
-
-
-
->Now squashfs have used for only one stream buffer for decompression
->so it hurts concurrent read performance due to locking lock of getting
->stream buffer.
->
->When file system mount, the number of stream buffer is started from
->num_online_cpus() and grows up to num_online_cpus() * 2M / block_size * 2.
->The rationale is MM does readahead chunk into 2M unit to prevent too much
->memory pin and while one request is waitting, we should request another
->chunk. That's why I multiply by 2.
->
->If it reveals too much memory problem, we can add shrinker routine.
->
->I did test following as
->
->Two 1G file dd read
->
->dd if=test/test1.dat of=/dev/null &
->dd if=test/test2.dat of=/dev/null &
->
->old : 60sec -> new : 30 sec
->
->Signed-off-by: Minchan Kim <minchan@kernel.org>
->
->---
->fs/squashfs/block.c          |    9 ++--
-> fs/squashfs/decompressor.c   |  105 ++++++++++++++++++++++++++++++++++++++----
-> fs/squashfs/decompressor.h   |   27 +++++------
-> fs/squashfs/lzo_wrapper.c    |   12 ++---
-> fs/squashfs/squashfs.h       |    3 +-
-> fs/squashfs/squashfs_fs_sb.h |    7 ++-
-> fs/squashfs/super.c          |   40 ++++++++++++----
-> fs/squashfs/xz_wrapper.c     |   20 ++++----
-> fs/squashfs/zlib_wrapper.c   |   12 ++---
-> 9 files changed, 168 insertions(+), 67 deletions(-)
->
->diff --git a/fs/squashfs/block.c b/fs/squashfs/block.c
->index f33c6ef..d41bac8 100644
->--- a/fs/squashfs/block.c
->+++ b/fs/squashfs/block.c
->@@ -78,14 +78,14 @@ static struct buffer_head *get_block_length(struct super_block *sb,
->
->
->
->-int squashfs_decompress_block(struct squashfs_sb_info *msblk, int compressed,
->+int squashfs_decompress_block(struct super_block *sb, int compressed,
-> 		void **buffer, struct buffer_head **bh, int nr_bh,
-> 		int offset, int length, int srclength, int pages)
-> {
-> 	int k = 0;
->
-> 	if (compressed) {
->-		length = squashfs_decompress(msblk, buffer, bh, nr_bh,
->+		length = squashfs_decompress(sb, buffer, bh, nr_bh,
-> 				offset, length, srclength, pages);
-> 		if (length < 0)
-> 			goto out;
->@@ -93,6 +93,7 @@ int squashfs_decompress_block(struct squashfs_sb_info *msblk, int compressed,
-> 		/*
-> 		 * Block is uncompressed.
-> 		 */
->+		struct squashfs_sb_info *msblk = sb->s_fs_info;
-> 		int bytes, in, avail, pg_offset = 0, page = 0;
->
-> 		for (bytes = length; k < nr_bh; k++) {
->@@ -262,8 +263,8 @@ int squashfs_read_metablock(struct super_block *sb, void **buffer, u64 index,
-> 	}
-> 	ll_rw_block(READ, b - 1, bh + 1);
->
->-	length = squashfs_decompress_block(msblk, compressed, buffer, bh, b,
->-				offset, length, srclength, pages);
->+	length = squashfs_decompress_block(sb, compressed, buffer, bh,
->+				b, offset, length, srclength, pages);
-> 	if (length < 0)
-> 		goto read_failure;
->
->diff --git a/fs/squashfs/decompressor.c b/fs/squashfs/decompressor.c
->index e47453e..ed35b32 100644
->--- a/fs/squashfs/decompressor.c
->+++ b/fs/squashfs/decompressor.c
->@@ -25,6 +25,8 @@
-> #include <linux/mutex.h>
-> #include <linux/slab.h>
-> #include <linux/buffer_head.h>
->+#include <linux/sched.h>
->+#include <linux/wait.h>
->
-> #include "squashfs_fs.h"
-> #include "squashfs_fs_sb.h"
->@@ -70,6 +72,80 @@ static const struct squashfs_decompressor *decompressor[] = {
-> 	&squashfs_unknown_comp_ops
-> };
->
->+void squashfs_decompressor_free(struct squashfs_sb_info *msblk,
->+	struct squashfs_decomp_strm *stream)
->+{
->+	if (msblk->decompressor)
->+		msblk->decompressor->free(stream->strm);
->+	kfree(stream);
->+}
->+
->+static void *squashfs_get_decomp_strm(struct squashfs_sb_info *msblk)
->+{
->+	struct squashfs_decomp_strm *strm = NULL;
->+	mutex_lock(&msblk->comp_strm_mutex);
->+	if (!list_empty(&msblk->strm_list)) {
->+		strm = list_entry(msblk->strm_list.next,
->+				struct squashfs_decomp_strm, list);
->+		list_del(&strm->list);
->+		msblk->nr_avail_decomp--;
->+		WARN_ON(msblk->nr_avail_decomp < 0);
->+	}
->+	mutex_unlock(&msblk->comp_strm_mutex);
->+	return strm;
->+}
->+
->+static bool full_decomp_strm(struct squashfs_sb_info *msblk)
->+{
->+	/* MM do readahread 2M unit */
->+	int blocks = 2 * 1024 * 1024 / msblk->block_size;
->+	return msblk->nr_avail_decomp > (num_online_cpus() * blocks * 2);
->+}
->+
->+static void squashfs_put_decomp_strm(struct squashfs_sb_info *msblk,
->+					struct squashfs_decomp_strm *strm)
->+{
->+	mutex_lock(&msblk->comp_strm_mutex);
->+	if (full_decomp_strm(msblk)) {
->+		mutex_unlock(&msblk->comp_strm_mutex);
->+		squashfs_decompressor_free(msblk, strm);
->+		return;
->+	}
->+
->+	list_add(&strm->list, &msblk->strm_list);
->+	msblk->nr_avail_decomp++;
->+	mutex_unlock(&msblk->comp_strm_mutex);
->+	wake_up(&msblk->decomp_wait_queue);
->+}
->+
->+int squashfs_decompress(struct super_block *sb, void **buffer,
->+			struct buffer_head **bh, int b, int offset, int length,
->+			int srclength, int pages)
->+{
->+	int ret;
->+	struct squashfs_decomp_strm *strm;
->+	struct squashfs_sb_info *msblk = sb->s_fs_info;
->+	while (1) {
->+		strm = squashfs_get_decomp_strm(msblk);
->+		if (strm)
->+			break;
->+
->+		if (!full_decomp_strm(msblk)) {
->+			strm = squashfs_decompressor_init(sb);
-
-here you call squashfs_decompressor_dynamically to instantiate a new
-decompressor,  this needs to read and parse the compression options again.
-
->+			if (strm)
->+				break;
->+		}
->+
->+		wait_event(msblk->decomp_wait_queue, msblk->nr_avail_decomp);
->+		continue;
->+	}
->+
->+	ret = msblk->decompressor->decompress(msblk, strm->strm, buffer, bh,
->+		b, offset, length, srclength, pages);
->+
->+	squashfs_put_decomp_strm(msblk, strm);
->+	return ret;
->+}
->
-> const struct squashfs_decompressor *squashfs_lookup_decompressor(int id)
-> {
->@@ -82,35 +158,48 @@ const struct squashfs_decompressor *squashfs_lookup_decompressor(int id)
-> 	return decompressor[i];
-> }
->
->-
->-void *squashfs_decompressor_init(struct super_block *sb, unsigned short flags)
->+struct squashfs_decomp_strm *squashfs_decompressor_init(struct super_block *sb)
-> {
-> 	struct squashfs_sb_info *msblk = sb->s_fs_info;
->+	struct squashfs_decomp_strm *decomp_strm = NULL;
-> 	void *strm, *buffer = NULL;
-> 	int length = 0;
->
->+	decomp_strm = kmalloc(sizeof(struct squashfs_decomp_strm), GFP_KERNEL);
->+	if (!decomp_strm)
->+		return ERR_PTR(-ENOMEM);
-> 	/*
-> 	 * Read decompressor specific options from file system if present
-> 	 */
->-	if (SQUASHFS_COMP_OPTS(flags)) {
->+	if (SQUASHFS_COMP_OPTS(msblk->flags)) {
-> 		buffer = kmalloc(PAGE_CACHE_SIZE, GFP_KERNEL);
->-		if (buffer == NULL)
->-			return ERR_PTR(-ENOMEM);
->+		if (buffer == NULL) {
->+			decomp_strm = ERR_PTR(-ENOMEM);
->+			goto finished;
->+		}
->
-> 		length = squashfs_read_metablock(sb, &buffer,
-> 			sizeof(struct squashfs_super_block), 0, NULL,
-> 			PAGE_CACHE_SIZE, 1);
->
-
-This reads the compressor options each decompressor init().  This should
-only be done once at mount time.
-
-> 		if (length < 0) {
->-			strm = ERR_PTR(length);
->+			decomp_strm = ERR_PTR(length);
-> 			goto finished;
-> 		}
-> 	}
->
+(2013/09/30 18:21), Masami Hiramatsu wrote:
+> Fix to find the correct (as much as possible) line information
+> for listing probes. Without this fix, perf probe --list action
+> will show incorrect line information as below;
+> 
+> # perf probe getname_flags
+> # perf probe -l
+>   probe:getname_flags  (on getname_flags@ksrc/linux-3/fs/namei.c)
+>   probe:getname_flags_1 (on getname:-89@x86/include/asm/current.h)
+>   probe:getname_flags_2 (on user_path_at_empty:-2054@x86/include/asm/current.h)
+> 
+> The minus line number is obviously wrong, and current.h is not
+> related to the probe point. Deeper investigation discovered
+> that there were 2 issues related to this bug, and minor typos too.
+> 
+> 1st issue is the rack of considering about nested inlined
+> functions, which causes the wrong (relative) line number.
+> 2nd issue is that the dwarf line info is not correct at
+> those points. It points 14th line of current.h.
+> 
+> Since it seems that the line info includes somewhat unreliable
+> information, this fixes perf to try to find correct line information
+> from both of debuginfo and line info as below.
+> 
+> 1) Probe address is the entry of a function instance
+>   In this case, the line is set as the function declared line.
+> 
+> 2) Probe address is the entry of an expanded inline function block
+>   In this case, the line is set as the function call-site line.
+>   This means that the line number is relative from the entry line
+>   of caller function (which can be an inlined function if nested)
+> 
+> 3) Probe address is inside a function instance or an expanded
+>    inline function block
+>   In this case, perf probe queries the line number from lineinfo
+>   and verify the function declared file is same as the file name
+>   queried from lineinfo.
+>   If the file name is different, it is a failure case. The probe
+>   address is shown as symbol+offset.
+> 
+> 4) Probe address is not in the any function instance
+>   This is a failure case, the probe address is shown as
+>   symbol+offset.
+> 
+> With this fix, perf probe -l shows correct probe lines as below;
+> 
+> # perf probe -l
+>   probe:getname_flags  (on getname_flags@ksrc/linux-3/fs/namei.c)
+>   probe:getname_flags_1 (on getname:2@ksrc/linux-3/fs/namei.c)
+>   probe:getname_flags_2 (on user_path_at_empty:4@ksrc/linux-3/fs/namei.c)
+> 
+> Changes at v2:
+>  - Fix typos in the function comments. (Thanks to Namhyung Kim)
+>  - Use die_find_top_inlinefunc instead of die_find_inlinefunc_next.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/dwarf-aux.c    |   25 +++++++++++++++++---
+>  tools/perf/util/dwarf-aux.h    |    6 ++++-
+>  tools/perf/util/probe-finder.c |   49 +++++++++++++++++++++++++++-------------
+>  3 files changed, 59 insertions(+), 21 deletions(-)
+> 
+> diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+> index e23bde1..7defd77 100644
+> --- a/tools/perf/util/dwarf-aux.c
+> +++ b/tools/perf/util/dwarf-aux.c
+> @@ -426,7 +426,7 @@ static int __die_search_func_cb(Dwarf_Die *fn_die, void *data)
+>   * @die_mem: a buffer for result DIE
+>   *
+>   * Search a non-inlined function DIE which includes @addr. Stores the
+> - * DIE to @die_mem and returns it if found. Returns NULl if failed.
+> + * DIE to @die_mem and returns it if found. Returns NULL if failed.
+>   */
+>  Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
+>  				    Dwarf_Die *die_mem)
+> @@ -454,15 +454,32 @@ static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data)
+>  }
+>  
+>  /**
+> + * die_find_top_inlinefunc - Search the top inlined function at given address
+> + * @sp_die: a subprogram DIE which including @addr
+> + * @addr: target address
+> + * @die_mem: a buffer for result DIE
+> + *
+> + * Search an inlined function DIE which includes @addr. Stores the
+> + * DIE to @die_mem and returns it if found. Returns NULL if failed.
+> + * Even if several inlined functions are expanded recursively, this
+> + * doesn't trace it down, and returns the topmost one.
+> + */
+> +Dwarf_Die *die_find_top_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+> +				   Dwarf_Die *die_mem)
+> +{
+> +	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
+> +}
+> +
+> +/**
+>   * die_find_inlinefunc - Search an inlined function at given address
+> - * @cu_die: a CU DIE which including @addr
+> + * @sp_die: a subprogram DIE which including @addr
+>   * @addr: target address
+>   * @die_mem: a buffer for result DIE
+>   *
+>   * Search an inlined function DIE which includes @addr. Stores the
+> - * DIE to @die_mem and returns it if found. Returns NULl if failed.
+> + * DIE to @die_mem and returns it if found. Returns NULL if failed.
+>   * If several inlined functions are expanded recursively, this trace
+> - * it and returns deepest one.
+> + * it down and returns deepest one.
+>   */
+>  Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+>  			       Dwarf_Die *die_mem)
+> diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
+> index 8658d41..b4fe90c 100644
+> --- a/tools/perf/util/dwarf-aux.h
+> +++ b/tools/perf/util/dwarf-aux.h
+> @@ -79,7 +79,11 @@ extern Dwarf_Die *die_find_child(Dwarf_Die *rt_die,
+>  extern Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
+>  				    Dwarf_Die *die_mem);
+>  
+> -/* Search an inlined function including given address */
+> +/* Search the top inlined function including given address */
+> +extern Dwarf_Die *die_find_top_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+> +					  Dwarf_Die *die_mem);
+> +
+> +/* Search the deepest inlined function including given address */
+>  extern Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+>  				      Dwarf_Die *die_mem);
+>  
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 371476c..c09e0a9 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -1327,8 +1327,8 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+>  				struct perf_probe_point *ppt)
+>  {
+>  	Dwarf_Die cudie, spdie, indie;
+> -	Dwarf_Addr _addr, baseaddr;
+> -	const char *fname = NULL, *func = NULL, *tmp;
+> +	Dwarf_Addr _addr = 0, baseaddr = 0;
+> +	const char *fname = NULL, *func = NULL, *basefunc = NULL, *tmp;
+>  	int baseline = 0, lineno = 0, ret = 0;
+>  
+>  	/* Adjust address with bias */
+> @@ -1349,27 +1349,36 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+>  	/* Find a corresponding function (name, baseline and baseaddr) */
+>  	if (die_find_realfunc(&cudie, (Dwarf_Addr)addr, &spdie)) {
+>  		/* Get function entry information */
+> -		tmp = dwarf_diename(&spdie);
+> -		if (!tmp ||
+> +		func = basefunc = dwarf_diename(&spdie);
+> +		if (!func ||
+>  		    dwarf_entrypc(&spdie, &baseaddr) != 0 ||
+> -		    dwarf_decl_line(&spdie, &baseline) != 0)
+> +		    dwarf_decl_line(&spdie, &baseline) != 0) {
+> +			lineno = 0;
+>  			goto post;
+> -		func = tmp;
+> +		}
+>  
+> -		if (addr == (unsigned long)baseaddr)
+> +		if (addr == (unsigned long)baseaddr) {
+>  			/* Function entry - Relative line number is 0 */
+>  			lineno = baseline;
+> -		else if (die_find_inlinefunc(&spdie, (Dwarf_Addr)addr,
+> -					     &indie)) {
+> +			fname = dwarf_decl_file(&spdie);
+> +			goto post;
+> +		}
+> +
+> +		/* Track down the inline functions step by step */
+> +		while (die_find_top_inlinefunc(&spdie, (Dwarf_Addr)addr,
+> +						&indie)) {
+> +			/* There is an inline function */
+>  			if (dwarf_entrypc(&indie, &_addr) == 0 &&
+> -			    _addr == addr)
+> +			    _addr == addr) {
+>  				/*
+>  				 * addr is at an inline function entry.
+>  				 * In this case, lineno should be the call-site
+> -				 * line number.
+> +				 * line number. (overwrite lineinfo)
+>  				 */
+>  				lineno = die_get_call_lineno(&indie);
+> -			else {
+> +				fname = die_get_call_file(&indie);
+> +				break;
+> +			} else {
+>  				/*
+>  				 * addr is in an inline function body.
+>  				 * Since lineno points one of the lines
+> @@ -1377,19 +1386,27 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+>  				 * be the entry line of the inline function.
+>  				 */
+>  				tmp = dwarf_diename(&indie);
+> -				if (tmp &&
+> -				    dwarf_decl_line(&spdie, &baseline) == 0)
+> -					func = tmp;
+> +				if (!tmp ||
+> +				    dwarf_decl_line(&indie, &baseline) != 0)
+> +					break;
+> +				func = tmp;
+> +				spdie = indie;
+>  			}
+>  		}
+> +		/* Verify the lineno and baseline are in a same file */
+> +		tmp = dwarf_decl_file(&spdie);
+> +		if (!tmp || strcmp(tmp, fname) != 0)
+> +			lineno = 0;
+>  	}
+>  
+>  post:
+>  	/* Make a relative line number or an offset */
+>  	if (lineno)
+>  		ppt->line = lineno - baseline;
+> -	else if (func)
+> +	else if (basefunc) {
+>  		ppt->offset = addr - (unsigned long)baseaddr;
+> +		func = basefunc;
+> +	}
+>  
+>  	/* Duplicate strings */
+>  	if (func) {
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
-> 	strm = msblk->decompressor->init(msblk, buffer, length);
->+	if (IS_ERR(strm)) {
->+		decomp_strm = strm;
->+		goto finished;
->+	}
->
->-finished:
->+	decomp_strm->strm = strm;
-> 	kfree(buffer);
->+	return decomp_strm;
->
->-	return strm;
->+finished:
->+	kfree(decomp_strm);
->+	kfree(buffer);
->+	return decomp_strm;
-> }
->diff --git a/fs/squashfs/decompressor.h b/fs/squashfs/decompressor.h
->index 330073e..207c810 100644
->--- a/fs/squashfs/decompressor.h
->+++ b/fs/squashfs/decompressor.h
->@@ -26,27 +26,24 @@
-> struct squashfs_decompressor {
-> 	void	*(*init)(struct squashfs_sb_info *, void *, int);
-> 	void	(*free)(void *);
->-	int	(*decompress)(struct squashfs_sb_info *, void **,
->+	int	(*decompress)(struct squashfs_sb_info *, void*, void **,
-> 		struct buffer_head **, int, int, int, int, int);
-> 	int	id;
-> 	char	*name;
-> 	int	supported;
-> };
->
->-static inline void squashfs_decompressor_free(struct squashfs_sb_info *msblk,
->-	void *s)
->-{
->-	if (msblk->decompressor)
->-		msblk->decompressor->free(s);
->-}
->-
->-static inline int squashfs_decompress(struct squashfs_sb_info *msblk,
->-	void **buffer, struct buffer_head **bh, int b, int offset, int length,
->-	int srclength, int pages)
->-{
->-	return msblk->decompressor->decompress(msblk, buffer, bh, b, offset,
->-		length, srclength, pages);
->-}
->+struct squashfs_decomp_strm {
->+	void *strm;
->+	struct list_head list;
->+};
->+
->+int squashfs_decompress(struct super_block *sb, void **buffer,
->+			struct buffer_head **bh, int b, int offset, int length,
->+			int srclength, int pages);
->+
->+void squashfs_decompressor_free(struct squashfs_sb_info *msblk,
->+	struct squashfs_decomp_strm *stream);
->
-> #ifdef CONFIG_SQUASHFS_XZ
-> extern const struct squashfs_decompressor squashfs_xz_comp_ops;
->diff --git a/fs/squashfs/lzo_wrapper.c b/fs/squashfs/lzo_wrapper.c
->index 00f4dfc..e1bf135 100644
->--- a/fs/squashfs/lzo_wrapper.c
->+++ b/fs/squashfs/lzo_wrapper.c
->@@ -74,17 +74,15 @@ static void lzo_free(void *strm)
-> }
->
->
->-static int lzo_uncompress(struct squashfs_sb_info *msblk, void **buffer,
->-	struct buffer_head **bh, int b, int offset, int length, int srclength,
->-	int pages)
->+static int lzo_uncompress(struct squashfs_sb_info *msblk, void *strm,
->+		void **buffer, struct buffer_head **bh, int b, int offset,
->+		int length, int srclength, int pages)
-> {
->-	struct squashfs_lzo *stream = msblk->stream;
->+	struct squashfs_lzo *stream = strm;
-> 	void *buff = stream->input;
-> 	int avail, i, bytes = length, res;
-> 	size_t out_len = srclength;
->
->-	mutex_lock(&msblk->read_data_mutex);
->-
-> 	for (i = 0; i < b; i++) {
-> 		wait_on_buffer(bh[i]);
-> 		if (!buffer_uptodate(bh[i]))
->@@ -111,7 +109,6 @@ static int lzo_uncompress(struct squashfs_sb_info *msblk, void **buffer,
-> 		bytes -= avail;
-> 	}
->
->-	mutex_unlock(&msblk->read_data_mutex);
-> 	return res;
->
-> block_release:
->@@ -119,7 +116,6 @@ block_release:
-> 		put_bh(bh[i]);
->
-> failed:
->-	mutex_unlock(&msblk->read_data_mutex);
->
-> 	ERROR("lzo decompression failed, data probably corrupt\n");
-> 	return -EIO;
->diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
->index 405baed..4bb1f90 100644
->--- a/fs/squashfs/squashfs.h
->+++ b/fs/squashfs/squashfs.h
->@@ -52,7 +52,8 @@ extern void *squashfs_read_table(struct super_block *, u64, int);
->
-> /* decompressor.c */
-> extern const struct squashfs_decompressor *squashfs_lookup_decompressor(int);
->-extern void *squashfs_decompressor_init(struct super_block *, unsigned short);
->+extern struct squashfs_decomp_strm *squashfs_decompressor_init(
->+				struct super_block *);
->
-> /* export.c */
-> extern __le64 *squashfs_read_inode_lookup_table(struct super_block *, u64, u64,
->diff --git a/fs/squashfs/squashfs_fs_sb.h b/fs/squashfs/squashfs_fs_sb.h
->index 52934a2..0a209e6 100644
->--- a/fs/squashfs/squashfs_fs_sb.h
->+++ b/fs/squashfs/squashfs_fs_sb.h
->@@ -63,10 +63,10 @@ struct squashfs_sb_info {
-> 	__le64					*id_table;
-> 	__le64					*fragment_index;
-> 	__le64					*xattr_id_table;
->-	struct mutex				read_data_mutex;
->+	struct mutex                            comp_strm_mutex;
-> 	struct mutex				meta_index_mutex;
-> 	struct meta_index			*meta_index;
->-	void					*stream;
->+	struct list_head			strm_list;
-> 	__le64					*inode_lookup_table;
-> 	u64					inode_table;
-> 	u64					directory_table;
->@@ -76,5 +76,8 @@ struct squashfs_sb_info {
-> 	long long				bytes_used;
-> 	unsigned int				inodes;
-> 	int					xattr_ids;
->+	wait_queue_head_t			decomp_wait_queue;
->+	int					nr_avail_decomp;
->+	unsigned short				flags;
-> };
-> #endif
->diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
->index 60553a9..70aa9c4 100644
->--- a/fs/squashfs/super.c
->+++ b/fs/squashfs/super.c
->@@ -84,7 +84,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
-> 	unsigned short flags;
-> 	unsigned int fragments;
-> 	u64 lookup_table_start, xattr_id_table_start, next_table;
->-	int err;
->+	int err, i;
->
-> 	TRACE("Entered squashfs_fill_superblock\n");
->
->@@ -98,7 +98,9 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
-> 	msblk->devblksize = sb_min_blocksize(sb, SQUASHFS_DEVBLK_SIZE);
-> 	msblk->devblksize_log2 = ffz(~msblk->devblksize);
->
->-	mutex_init(&msblk->read_data_mutex);
->+	INIT_LIST_HEAD(&msblk->strm_list);
->+	mutex_init(&msblk->comp_strm_mutex);
->+	init_waitqueue_head(&msblk->decomp_wait_queue);
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-This should be done via a helper in decompressor.c, i.e. the implementation
-shouldn't be visible here.
 
-When I added the decompressor framework, I should have done this.
-
-> 	mutex_init(&msblk->meta_index_mutex);
->
-> 	/*
->@@ -176,6 +178,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
-> 	msblk->directory_table = le64_to_cpu(sblk->directory_table_start);
-> 	msblk->inodes = le32_to_cpu(sblk->inodes);
-> 	flags = le16_to_cpu(sblk->flags);
->+	msblk->flags = flags;
->
-
-ha, the superblock flags should only be needed at mount time.  After
-mount time there shouldn't be anything in flags we need to look at.
-
-You need to do this because flags is needed for the decompressor init
-function (COMP_OPTS(flags)) which is now called after mount time.
-
-Once the compressor options parsing is moved back to being only
-at mount time, you won't need to store the flags anymore.
-
-> 	TRACE("Found valid superblock on %s\n", bdevname(sb->s_bdev, b));
-> 	TRACE("Inodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(flags)
->@@ -212,11 +215,16 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
-> 		goto failed_mount;
-> 	}
->
->-	msblk->stream = squashfs_decompressor_init(sb, flags);
->-	if (IS_ERR(msblk->stream)) {
->-		err = PTR_ERR(msblk->stream);
->-		msblk->stream = NULL;
->-		goto failed_mount;
->+	/* Allocate mutliple decompressor */
->+	for (i = 0; i < num_online_cpus(); i++) {
->+		struct squashfs_decomp_strm *decomp_strm;
->+		decomp_strm = squashfs_decompressor_init(sb);
->+		if (IS_ERR(decomp_strm)) {
->+			err = PTR_ERR(decomp_strm);
->+			goto failed_mount;
->+		}
->+		list_add(&decomp_strm->list, &msblk->strm_list);
->+		msblk->nr_avail_decomp++;
-
-Again, this is decompressor implementation specific stuff, and should be
-done via a helper in decompressor.c.
-
-> 	}
->
-> 	/* Handle xattrs */
->@@ -336,7 +344,14 @@ failed_mount:
-> 	squashfs_cache_delete(msblk->block_cache);
-> 	squashfs_cache_delete(msblk->fragment_cache);
-> 	squashfs_cache_delete(msblk->read_page);
->-	squashfs_decompressor_free(msblk, msblk->stream);
->+	while (!list_empty(&msblk->strm_list)) {
->+		struct squashfs_decomp_strm *decomp_strm =
->+			list_entry(msblk->strm_list.prev,
->+					struct squashfs_decomp_strm, list);
->+		list_del(&decomp_strm->list);
->+		squashfs_decompressor_free(msblk, decomp_strm);
->+	}
->+	msblk->nr_avail_decomp = 0;
-
-helper in decompressor.c
-
-> 	kfree(msblk->inode_lookup_table);
-> 	kfree(msblk->fragment_index);
-> 	kfree(msblk->id_table);
->@@ -383,7 +398,14 @@ static void squashfs_put_super(struct super_block *sb)
-> 		squashfs_cache_delete(sbi->block_cache);
-> 		squashfs_cache_delete(sbi->fragment_cache);
-> 		squashfs_cache_delete(sbi->read_page);
->-		squashfs_decompressor_free(sbi, sbi->stream);
->+		while (!list_empty(&sbi->strm_list)) {
->+			struct squashfs_decomp_strm *decomp_strm =
->+				list_entry(sbi->strm_list.prev,
->+					struct squashfs_decomp_strm, list);
->+			list_del(&decomp_strm->list);
->+			squashfs_decompressor_free(sbi, decomp_strm);
->+		}
->+		sbi->nr_avail_decomp = 0;
-
-helper in decompressor.c
-
-> 		kfree(sbi->id_table);
-> 		kfree(sbi->fragment_index);
-> 		kfree(sbi->meta_index);
->diff --git a/fs/squashfs/xz_wrapper.c b/fs/squashfs/xz_wrapper.c
->index 1760b7d1..98b8bb5 100644
->--- a/fs/squashfs/xz_wrapper.c
->+++ b/fs/squashfs/xz_wrapper.c
->@@ -103,15 +103,13 @@ static void squashfs_xz_free(void *strm)
-> }
->
->
->-static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
->-	struct buffer_head **bh, int b, int offset, int length, int srclength,
->-	int pages)
->+static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void *strm,
->+		void **buffer, struct buffer_head **bh, int b, int offset,
->+		int length, int srclength, int pages)
-> {
-> 	enum xz_ret xz_err;
-> 	int avail, total = 0, k = 0, page = 0;
->-	struct squashfs_xz *stream = msblk->stream;
->-
->-	mutex_lock(&msblk->read_data_mutex);
->+	struct squashfs_xz *stream = strm;
->
-> 	xz_dec_reset(stream->state);
-> 	stream->buf.in_pos = 0;
->@@ -126,7 +124,7 @@ static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
-> 			length -= avail;
-> 			wait_on_buffer(bh[k]);
-> 			if (!buffer_uptodate(bh[k]))
->-				goto release_mutex;
->+				goto out;
->
-> 			stream->buf.in = bh[k]->b_data + offset;
-> 			stream->buf.in_size = avail;
->@@ -149,20 +147,18 @@ static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
->
-> 	if (xz_err != XZ_STREAM_END) {
-> 		ERROR("xz_dec_run error, data probably corrupt\n");
->-		goto release_mutex;
->+		goto out;
-> 	}
->
-> 	if (k < b) {
-> 		ERROR("xz_uncompress error, input remaining\n");
->-		goto release_mutex;
->+		goto out;
-> 	}
->
-> 	total += stream->buf.out_pos;
->-	mutex_unlock(&msblk->read_data_mutex);
-> 	return total;
->
->-release_mutex:
->-	mutex_unlock(&msblk->read_data_mutex);
->+out:
->
-> 	for (; k < b; k++)
-> 		put_bh(bh[k]);
->diff --git a/fs/squashfs/zlib_wrapper.c b/fs/squashfs/zlib_wrapper.c
->index 55d918f..82c1a70 100644
->--- a/fs/squashfs/zlib_wrapper.c
->+++ b/fs/squashfs/zlib_wrapper.c
->@@ -61,15 +61,13 @@ static void zlib_free(void *strm)
-> }
->
->
->-static int zlib_uncompress(struct squashfs_sb_info *msblk, void **buffer,
->-	struct buffer_head **bh, int b, int offset, int length, int srclength,
->-	int pages)
->+static int zlib_uncompress(struct squashfs_sb_info *msblk, void *strm,
->+		void **buffer, struct buffer_head **bh, int b, int offset,
->+		int length, int srclength, int pages)
-> {
-> 	int zlib_err, zlib_init = 0;
-> 	int k = 0, page = 0;
->-	z_stream *stream = msblk->stream;
->-
->-	mutex_lock(&msblk->read_data_mutex);
->+	z_stream *stream = strm;
->
-> 	stream->avail_out = 0;
-> 	stream->avail_in = 0;
->@@ -126,11 +124,9 @@ static int zlib_uncompress(struct squashfs_sb_info *msblk, void **buffer,
-> 	}
->
-> 	length = stream->total_out;
->-	mutex_unlock(&msblk->read_data_mutex);
-> 	return length;
->
-> release_mutex:
->-	mutex_unlock(&msblk->read_data_mutex);
->
-> 	for (; k < b; k++)
-> 		put_bh(bh[k]);
