@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab3JGOLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 10:11:07 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:50039 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755654Ab3JGOLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 10:11:04 -0400
-Date: Mon, 7 Oct 2013 16:11:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
-Message-ID: <20131007141100.GA21873@gmail.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <5252BCB4.5030802@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755415Ab3JGOPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 10:15:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754720Ab3JGOPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 10:15:53 -0400
+Date: Mon, 07 Oct 2013 10:15:04 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
+Message-ID: <1381155304-2ro6e10t-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <5252B56C.8030903@parallels.com>
+References: <1380913335-17466-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <5252B56C.8030903@parallels.com>
+Subject: [PATCH 1/2 v2] smaps: show VM_SOFTDIRTY flag in VmFlags line
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <5252BCB4.5030802@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Ahern <dsahern@gmail.com> wrote:
-
-> On 10/7/13 5:55 AM, Ingo Molnar wrote:
->
-> > This series improves various aspects of the tools/perf build system.
+On Mon, Oct 07, 2013 at 05:21:48PM +0400, Pavel Emelyanov wrote:
+> On 10/04/2013 11:02 PM, Naoya Horiguchi wrote:
+> > This flag shows that soft dirty bit is not enabled yet.
+> > You can enable it by "echo 4 > /proc/pid/clear_refs."
 > 
-> Branch in your tip tree? tip/rfc/perf does not seem to be it and you 
-> have too many branches to manually search for it.
+> The comment is not correct. Per-VMA soft-dirty flag means, that
+> VMA is "newly created" one and thus represents a new (dirty) are
+> in task's VM.
 
-These changes are not yet committed into any stable Git tree - I've pushed 
-them out into:
+Thanks for the correction. I changed the description.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.perf
+Naoya
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Fri, 4 Oct 2013 13:42:13 -0400
+Subject: [PATCH] smaps: show VM_SOFTDIRTY flag in VmFlags line
 
-(it might take a few minutes for kernel.org to sync up.)
+This flag shows that the VMA is "newly created" and thus represents
+"dirty" in the task's VM.
+You can clear it by "echo 4 > /proc/pid/clear_refs."
 
-Thanks,
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-	Ingo
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 7366e9d..c591928 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -561,6 +561,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+ 		[ilog2(VM_NONLINEAR)]	= "nl",
+ 		[ilog2(VM_ARCH_1)]	= "ar",
+ 		[ilog2(VM_DONTDUMP)]	= "dd",
++#ifdef CONFIG_MEM_SOFT_DIRTY
++		[ilog2(VM_SOFTDIRTY)]	= "sd",
++#endif
+ 		[ilog2(VM_MIXEDMAP)]	= "mm",
+ 		[ilog2(VM_HUGEPAGE)]	= "hg",
+ 		[ilog2(VM_NOHUGEPAGE)]	= "nh",
+-- 
+1.8.3.1
+
