@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab3JGQgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:36:48 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:51657 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192Ab3JGQgm (ORCPT
+	id S1756206Ab3JGQgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:36:51 -0400
+Received: from mail-ye0-f171.google.com ([209.85.213.171]:39881 "EHLO
+	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756197Ab3JGQgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:36:42 -0400
+	Mon, 7 Oct 2013 12:36:44 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH v2 16/29] mips: use early_init_dt_scan
-Date: Mon,  7 Oct 2013 11:29:24 -0500
-Message-Id: <1381163377-21044-17-git-send-email-robherring2@gmail.com>
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v2 28/29] metag: use common of_flat_dt_match_machine
+Date: Mon,  7 Oct 2013 11:29:36 -0500
+Message-Id: <1381163377-21044-29-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -24,100 +24,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Convert mips to use new early_init_dt_scan function.
-
-Remove early_init_dt_scan_memory_arch
+Convert metag to use the common of_flat_dt_get_machine_name function.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Acked-by: John Crispin <blogic@openwrt.org>
+[james.hogan: fix missing arch_get_next_mach and const mismatch]
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/mips/include/asm/prom.h |  3 ---
- arch/mips/kernel/prom.c      | 39 +++------------------------------------
- 2 files changed, 3 insertions(+), 39 deletions(-)
+ arch/metag/include/asm/mach/arch.h |  2 +-
+ arch/metag/include/asm/prom.h      |  2 +-
+ arch/metag/kernel/devtree.c        | 60 ++++++++++++--------------------------
+ arch/metag/kernel/setup.c          |  2 +-
+ 4 files changed, 22 insertions(+), 44 deletions(-)
 
-diff --git a/arch/mips/include/asm/prom.h b/arch/mips/include/asm/prom.h
-index 1e7e096..e3dbd0e 100644
---- a/arch/mips/include/asm/prom.h
-+++ b/arch/mips/include/asm/prom.h
-@@ -17,9 +17,6 @@
- #include <linux/types.h>
- #include <asm/bootinfo.h>
+diff --git a/arch/metag/include/asm/mach/arch.h b/arch/metag/include/asm/mach/arch.h
+index 12c5664..433f946 100644
+--- a/arch/metag/include/asm/mach/arch.h
++++ b/arch/metag/include/asm/mach/arch.h
+@@ -53,7 +53,7 @@ struct machine_desc {
+ /*
+  * Current machine - only accessible during boot.
+  */
+-extern struct machine_desc *machine_desc;
++extern const struct machine_desc *machine_desc;
  
--extern int early_init_dt_scan_memory_arch(unsigned long node,
--	const char *uname, int depth, void *data);
--
- extern void device_tree_init(void);
+ /*
+  * Machine type table - also only accessible during boot
+diff --git a/arch/metag/include/asm/prom.h b/arch/metag/include/asm/prom.h
+index d2aa35d..9f67cbf 100644
+--- a/arch/metag/include/asm/prom.h
++++ b/arch/metag/include/asm/prom.h
+@@ -17,7 +17,7 @@
+ #include <asm/setup.h>
+ #define HAVE_ARCH_DEVTREE_FIXUPS
  
- static inline unsigned long pci_address_to_pio(phys_addr_t address)
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index 0fa0b69..67a4c53 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -17,8 +17,6 @@
- #include <linux/debugfs.h>
- #include <linux/of.h>
- #include <linux/of_fdt.h>
--#include <linux/of_irq.h>
--#include <linux/of_platform.h>
+-extern struct machine_desc *setup_machine_fdt(void *dt);
++extern const struct machine_desc *setup_machine_fdt(void *dt);
+ extern void copy_fdt(void);
  
- #include <asm/page.h>
- #include <asm/prom.h>
-@@ -40,13 +38,6 @@ char *mips_get_machine_name(void)
+ #endif /* __ASM_METAG_PROM_H */
+diff --git a/arch/metag/kernel/devtree.c b/arch/metag/kernel/devtree.c
+index 68c2fee..18dd7ae 100644
+--- a/arch/metag/kernel/devtree.c
++++ b/arch/metag/kernel/devtree.c
+@@ -34,6 +34,19 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ 	return alloc_bootmem_align(size, align);
  }
  
- #ifdef CONFIG_OF
--int __init early_init_dt_scan_memory_arch(unsigned long node,
--					  const char *uname, int depth,
--					  void *data)
--{
--	return early_init_dt_scan_memory(node, uname, depth, data);
--}
--
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
++static const void * __init arch_get_next_mach(const char *const **match)
++{
++	static const struct machine_desc *mdesc = __arch_info_begin;
++	const struct machine_desc *m = mdesc;
++
++	if (m >= __arch_info_end)
++		return NULL;
++
++	mdesc++;
++	*match = m->dt_compat;
++	return m;
++}
++
+ /**
+  * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
+  * @dt:		virtual address pointer to dt blob
+@@ -41,53 +54,18 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+  * If a dtb was passed to the kernel, then use it to choose the correct
+  * machine_desc and to setup the system.
+  */
+-struct machine_desc * __init setup_machine_fdt(void *dt)
++const struct machine_desc * __init setup_machine_fdt(void *dt)
  {
- 	return add_memory_region(base, size, BOOT_MEM_RAM);
-@@ -78,36 +69,12 @@ int __init early_init_dt_scan_model(unsigned long node,	const char *uname,
- 	return 0;
- }
+-	struct machine_desc *mdesc, *mdesc_best = NULL;
+-	unsigned int score, mdesc_score = ~1;
+-	unsigned long dt_root;
+-	const char *model;
++	const struct machine_desc *mdesc;
  
--void __init early_init_devtree(void *params)
--{
--	/* Setup flat device-tree pointer */
--	initial_boot_params = params;
+ 	/* check device tree validity */
+ 	if (!early_init_dt_scan(dt))
+ 		return NULL;
+ 
+-	/* Search the mdescs for the 'best' compatible value match */
+-	dt_root = of_get_flat_dt_root();
 -
--	/* Retrieve various informations from the /chosen node of the
--	 * device-tree, including the platform type, initrd location and
--	 * size, and more ...
--	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, arcs_cmdline);
+-	for_each_machine_desc(mdesc) {
+-		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
+-		if (score > 0 && score < mdesc_score) {
+-			mdesc_best = mdesc;
+-			mdesc_score = score;
+-		}
+-	}
+-	if (!mdesc_best) {
+-		const char *prop;
+-		long size;
 -
+-		pr_err("\nError: unrecognized/unsupported device tree compatible list:\n[ ");
 -
--	/* Scan memory nodes */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--	of_scan_flat_dt(early_init_dt_scan_memory_arch, NULL);
+-		prop = of_get_flat_dt_prop(dt_root, "compatible", &size);
+-		if (prop) {
+-			while (size > 0) {
+-				printk("'%s' ", prop);
+-				size -= strlen(prop) + 1;
+-				prop += strlen(prop) + 1;
+-			}
+-		}
+-		printk("]\n\n");
 -
--	/* try to load the mips machine name */
--	of_scan_flat_dt(early_init_dt_scan_model, NULL);
--}
--
- void __init __dt_setup_arch(struct boot_param_header *bph)
- {
--	if (be32_to_cpu(bph->magic) != OF_DT_HEADER) {
--		pr_err("DTB has bad magic, ignoring builtin OF DTB\n");
--
-+	if (!early_init_dt_scan(bph))
- 		return;
++	mdesc = of_flat_dt_match_machine(NULL, arch_get_next_mach);
++	if (!mdesc)
+ 		dump_machine_table(); /* does not return */
 -	}
 -
--	initial_boot_params = bph;
+-	model = of_get_flat_dt_prop(dt_root, "model", NULL);
+-	if (!model)
+-		model = of_get_flat_dt_prop(dt_root, "compatible", NULL);
+-	if (!model)
+-		model = "<unknown>";
+-	pr_info("Machine: %s, model: %s\n", mdesc_best->name, model);
+-
+-	return mdesc_best;
++	pr_info("Machine name: %s\n", mdesc->name);
  
--	early_init_devtree(initial_boot_params);
-+	/* try to load the mips machine name */
-+	of_scan_flat_dt(early_init_dt_scan_model, NULL);
++	return mdesc;
  }
+diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
+index 2c697d3..92cc119 100644
+--- a/arch/metag/kernel/setup.c
++++ b/arch/metag/kernel/setup.c
+@@ -115,7 +115,7 @@ extern u32 __dtb_start[];
+ extern struct console dash_console;
  #endif
+ 
+-struct machine_desc *machine_desc __initdata;
++const struct machine_desc *machine_desc __initdata;
+ 
+ /*
+  * Map a Linux CPU number to a hardware thread ID
 -- 
 1.8.1.2
 
