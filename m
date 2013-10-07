@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab3JGTCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 15:02:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44573 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab3JGTCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 15:02:42 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/6] perf stat: Set child_pid after perf_evlist__prepare_workload()
-Date: Mon,  7 Oct 2013 16:02:25 -0300
-Message-Id: <1381172549-3210-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381172549-3210-1-git-send-email-acme@infradead.org>
-References: <1381172549-3210-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1756693Ab3JGTFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 15:05:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50141 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756217Ab3JGTFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 15:05:13 -0400
+Message-ID: <525305D6.2020205@redhat.com>
+Date: Mon, 07 Oct 2013 15:04:54 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 35/63] sched: numa: Do not trap hinting faults for shared
+ libraries
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-36-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-36-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 10/07/2013 06:29 AM, Mel Gorman wrote:
+> NUMA hinting faults will not migrate a shared executable page mapped by
+> multiple processes on the grounds that the data is probably in the CPU
+> cache already and the page may just bounce between tasks running on multipl
+> nodes. Even if the migration is avoided, there is still the overhead of
+> trapping the fault, updating the statistics, making scheduler placement
+> decisions based on the information etc. If we are never going to migrate
+> the page, it is overhead for no gain and worse a process may be placed on
+> a sub-optimal node for shared executable pages. This patch avoids trapping
+> faults for shared libraries entirely.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-The commit acf2892270dc ("perf stat: Use perf_evlist__prepare/
-start_workload()") converted to use the function but forgot to update
-child_pid.  Fix it.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1380531671-28076-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index f686d5ff594e..5098f144b92d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -457,6 +457,7 @@ static int __run_perf_stat(int argc, const char **argv)
- 			perror("failed to prepare workload");
- 			return -1;
- 		}
-+		child_pid = evsel_list->workload.pid;
- 	}
- 
- 	if (group)
+Reviewed-by: Rik van Riel <riel@redhat.com>
 -- 
-1.8.1.4
-
+All rights reversed
