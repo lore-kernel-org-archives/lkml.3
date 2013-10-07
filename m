@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab3JGWwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 18:52:44 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:35673 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab3JGWwj (ORCPT
+	id S1753977Ab3JGWxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 18:53:09 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:42812 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab3JGWwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 18:52:39 -0400
+	Mon, 7 Oct 2013 18:52:37 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+Cc: John Stultz <john.stultz@linaro.org>, Li Zefan <lizefan@huawei.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH 4/4] [RFC] ipv6: Fix for possible ipv6 seqlock deadlock
-Date: Mon,  7 Oct 2013 15:52:01 -0700
-Message-Id: <1381186321-4906-5-git-send-email-john.stultz@linaro.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3/4] [RFC] cpuset: Fix potential deadlock w/ set_mems_allowed
+Date: Mon,  7 Oct 2013 15:52:00 -0700
+Message-Id: <1381186321-4906-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381186321-4906-1-git-send-email-john.stultz@linaro.org>
 References: <1381186321-4906-1-git-send-email-john.stultz@linaro.org>
@@ -30,123 +24,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While enabling lockdep on seqlocks, I ran across the warning below
-caused by the ipv6 stats being updated in both irq and non-irq context.
+After adding lockdep support to seqlock/seqcount structures,
+I started seeing the following warning:
 
-This patch changes from IP6_INC_STATS_BH to IP6_INC_STATS (suggested
-by Eric Dumazet) to resolve this problem.
+[    1.070907] ======================================================
+[    1.072015] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    1.073181] 3.11.0+ #67 Not tainted
+[    1.073801] ------------------------------------------------------
+[    1.074882] kworker/u4:2/708 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    1.076088]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff81187d7f>] new_slab+0x5f/0x280
+[    1.077572]
+[    1.077572] and this task is already holding:
+[    1.078593]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff81339f03>] blk_execute_rq_nowait+0x53/0xf0
+[    1.080042] which would create a new lock dependency:
+[    1.080042]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    1.080042]
+[    1.080042] but this new dependency connects a SOFTIRQ-irq-safe lock:
+[    1.080042]  (&(&q->__queue_lock)->rlock){..-...}
+[    1.080042] ... which became SOFTIRQ-irq-safe at:
+[    1.080042]   [<ffffffff810ec179>] __lock_acquire+0x5b9/0x1db0
+[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
+[    1.080042]   [<ffffffff818968a1>] _raw_spin_lock+0x41/0x80
+[    1.080042]   [<ffffffff81560c9e>] scsi_device_unbusy+0x7e/0xd0
+[    1.080042]   [<ffffffff8155a612>] scsi_finish_command+0x32/0xf0
+[    1.080042]   [<ffffffff81560e91>] scsi_softirq_done+0xa1/0x130
+[    1.080042]   [<ffffffff8133b0f3>] blk_done_softirq+0x73/0x90
+[    1.080042]   [<ffffffff81095dc0>] __do_softirq+0x110/0x2f0
+[    1.080042]   [<ffffffff81095fcd>] run_ksoftirqd+0x2d/0x60
+[    1.080042]   [<ffffffff810bc506>] smpboot_thread_fn+0x156/0x1e0
+[    1.080042]   [<ffffffff810b3916>] kthread+0xd6/0xe0
+[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
+[    1.080042]
+[    1.080042] to a SOFTIRQ-irq-unsafe lock:
+[    1.080042]  (&p->mems_allowed_seq){+.+...}
+[    1.080042] ... which became SOFTIRQ-irq-unsafe at:
+[    1.080042] ...  [<ffffffff810ec1d3>] __lock_acquire+0x613/0x1db0
+[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
+[    1.080042]   [<ffffffff810b3df2>] kthreadd+0x82/0x180
+[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
+[    1.080042]
+[    1.080042] other info that might help us debug this:
+[    1.080042]
+[    1.080042]  Possible interrupt unsafe locking scenario:
+[    1.080042]
+[    1.080042]        CPU0                    CPU1
+[    1.080042]        ----                    ----
+[    1.080042]   lock(&p->mems_allowed_seq);
+[    1.080042]                                local_irq_disable();
+[    1.080042]                                lock(&(&q->__queue_lock)->rlock);
+[    1.080042]                                lock(&p->mems_allowed_seq);
+[    1.080042]   <Interrupt>
+[    1.080042]     lock(&(&q->__queue_lock)->rlock);
+[    1.080042]
+[    1.080042]  *** DEADLOCK ***
 
-[   11.120383] =================================
-[   11.121024] [ INFO: inconsistent lock state ]
-[   11.121663] 3.12.0-rc1+ #68 Not tainted
-[   11.122229] ---------------------------------
-[   11.122867] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[   11.123741] init/4483 [HC0[0]:SC1[3]:HE1:SE0] takes:
-[   11.124505]  (&stats->syncp.seq#6){+.?...}, at: [<c1ab80c2>] ndisc_send_ns+0xe2/0x130
-[   11.125736] {SOFTIRQ-ON-W} state was registered at:
-[   11.126447]   [<c10e0eb7>] __lock_acquire+0x5c7/0x1af0
-[   11.127222]   [<c10e2996>] lock_acquire+0x96/0xd0
-[   11.127925]   [<c1a9a2c3>] write_seqcount_begin+0x33/0x40
-[   11.128766]   [<c1a9aa03>] ip6_dst_lookup_tail+0x3a3/0x460
-[   11.129582]   [<c1a9e0ce>] ip6_dst_lookup_flow+0x2e/0x80
-[   11.130014]   [<c1ad18e0>] ip6_datagram_connect+0x150/0x4e0
-[   11.130014]   [<c1a4d0b5>] inet_dgram_connect+0x25/0x70
-[   11.130014]   [<c198dd61>] SYSC_connect+0xa1/0xc0
-[   11.130014]   [<c198f571>] SyS_connect+0x11/0x20
-[   11.130014]   [<c198fe6b>] SyS_socketcall+0x12b/0x300
-[   11.130014]   [<c1bbf880>] syscall_call+0x7/0xb
-[   11.130014] irq event stamp: 1184
-[   11.130014] hardirqs last  enabled at (1184): [<c1086901>] local_bh_enable+0x71/0x110
-[   11.130014] hardirqs last disabled at (1183): [<c10868cd>] local_bh_enable+0x3d/0x110
-[   11.130014] softirqs last  enabled at (0): [<c108014d>] copy_process.part.42+0x45d/0x11a0
-[   11.130014] softirqs last disabled at (1147): [<c1086e05>] irq_exit+0xa5/0xb0
-[   11.130014]
-[   11.130014] other info that might help us debug this:
-[   11.130014]  Possible unsafe locking scenario:
-[   11.130014]
-[   11.130014]        CPU0
-[   11.130014]        ----
-[   11.130014]   lock(&stats->syncp.seq#6);
-[   11.130014]   <Interrupt>
-[   11.130014]     lock(&stats->syncp.seq#6);
-[   11.130014]
-[   11.130014]  *** DEADLOCK ***
-[   11.130014]
-[   11.130014] 3 locks held by init/4483:
-[   11.130014]  #0:  (rcu_read_lock){.+.+..}, at: [<c109363c>] SyS_setpriority+0x4c/0x620
-[   11.130014]  #1:  (((&ifa->dad_timer))){+.-...}, at: [<c108c1c0>] call_timer_fn+0x0/0xf0
-[   11.130014]  #2:  (rcu_read_lock){.+.+..}, at: [<c1ab6494>] ndisc_send_skb+0x54/0x5d0
-[   11.130014]
-[   11.130014] stack backtrace:
-[   11.130014] CPU: 0 PID: 4483 Comm: init Not tainted 3.12.0-rc1+ #68
-[   11.130014] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   11.130014]  00000000 00000000 c55e5c10 c1bb0e71 c57128b0 c55e5c4c c1badf79 c1ec1123
-[   11.130014]  c1ec1484 00001183 00000000 00000000 00000001 00000003 00000001 00000000
-[   11.130014]  c1ec1484 00000004 c5712dcc 00000000 c55e5c84 c10de492 00000004 c10755f2
-[   11.130014] Call Trace:
-[   11.130014]  [<c1bb0e71>] dump_stack+0x4b/0x66
-[   11.130014]  [<c1badf79>] print_usage_bug+0x1d3/0x1dd
-[   11.130014]  [<c10de492>] mark_lock+0x282/0x2f0
-[   11.130014]  [<c10755f2>] ? kvm_clock_read+0x22/0x30
-[   11.130014]  [<c10dd8b0>] ? check_usage_backwards+0x150/0x150
-[   11.130014]  [<c10e0e74>] __lock_acquire+0x584/0x1af0
-[   11.130014]  [<c10b1baf>] ? sched_clock_cpu+0xef/0x190
-[   11.130014]  [<c10de58c>] ? mark_held_locks+0x8c/0xf0
-[   11.130014]  [<c10e2996>] lock_acquire+0x96/0xd0
-[   11.130014]  [<c1ab80c2>] ? ndisc_send_ns+0xe2/0x130
-[   11.130014]  [<c1ab66d3>] ndisc_send_skb+0x293/0x5d0
-[   11.130014]  [<c1ab80c2>] ? ndisc_send_ns+0xe2/0x130
-[   11.130014]  [<c1ab80c2>] ndisc_send_ns+0xe2/0x130
-[   11.130014]  [<c108cc32>] ? mod_timer+0xf2/0x160
-[   11.130014]  [<c1aa706e>] ? addrconf_dad_timer+0xce/0x150
-[   11.130014]  [<c1aa70aa>] addrconf_dad_timer+0x10a/0x150
-[   11.130014]  [<c1aa6fa0>] ? addrconf_dad_completed+0x1c0/0x1c0
-[   11.130014]  [<c108c233>] call_timer_fn+0x73/0xf0
-[   11.130014]  [<c108c1c0>] ? __internal_add_timer+0xb0/0xb0
-[   11.130014]  [<c1aa6fa0>] ? addrconf_dad_completed+0x1c0/0x1c0
-[   11.130014]  [<c108c5b1>] run_timer_softirq+0x141/0x1e0
-[   11.130014]  [<c1086b20>] ? __do_softirq+0x70/0x1b0
-[   11.130014]  [<c1086b70>] __do_softirq+0xc0/0x1b0
-[   11.130014]  [<c1086e05>] irq_exit+0xa5/0xb0
-[   11.130014]  [<c106cfd5>] smp_apic_timer_interrupt+0x35/0x50
-[   11.130014]  [<c1bbfbca>] apic_timer_interrupt+0x32/0x38
-[   11.130014]  [<c10936ed>] ? SyS_setpriority+0xfd/0x620
-[   11.130014]  [<c10e26c9>] ? lock_release+0x9/0x240
-[   11.130014]  [<c10936d7>] ? SyS_setpriority+0xe7/0x620
-[   11.130014]  [<c1bbee6d>] ? _raw_read_unlock+0x1d/0x30
-[   11.130014]  [<c1093701>] SyS_setpriority+0x111/0x620
-[   11.130014]  [<c109363c>] ? SyS_setpriority+0x4c/0x620
-[   11.130014]  [<c1bbf880>] syscall_call+0x7/0xb
+The issue stems from the kthreadd() function calling set_mems_allowed
+with irqs enabled. While its possibly unlikely for the actual deadlock
+to trigger, a fix is fairly simple: disable irqs before taking the
+mems_allowed_seq lock.
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Li Zefan <lizefan@huawei.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
+Acked-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- net/ipv6/ip6_output.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/cpuset.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 3a692d5..7e63c1e 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -909,7 +909,7 @@ static int ip6_dst_lookup_tail(struct sock *sk,
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index cc1b01c..3fe661f 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -110,10 +110,14 @@ static inline bool put_mems_allowed(unsigned int seq)
  
- out_err_release:
- 	if (err == -ENETUNREACH)
--		IP6_INC_STATS_BH(net, NULL, IPSTATS_MIB_OUTNOROUTES);
-+		IP6_INC_STATS(net, NULL, IPSTATS_MIB_OUTNOROUTES);
- 	dst_release(*dst);
- 	*dst = NULL;
- 	return err;
+ static inline void set_mems_allowed(nodemask_t nodemask)
+ {
++	unsigned long flags;
++
+ 	task_lock(current);
++	local_irq_save(flags);
+ 	write_seqcount_begin(&current->mems_allowed_seq);
+ 	current->mems_allowed = nodemask;
+ 	write_seqcount_end(&current->mems_allowed_seq);
++	local_irq_restore(flags);
+ 	task_unlock(current);
+ }
+ 
 -- 
 1.8.1.2
 
