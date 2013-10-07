@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3JGKqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:46:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39590 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab3JGK3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:29:45 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/63] mm: numa: Document automatic NUMA balancing sysctls
-Date: Mon,  7 Oct 2013 11:28:40 +0100
-Message-Id: <1381141781-10992-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+	id S1755601Ab3JGKrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:47:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44750 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab3JGKra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:47:30 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <bcousson@baylibre.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <bigeasy@linutronix.de>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] ARM: dts: omap3-beagle: Adapt USB OTG to generic PHY framework
+Date: Mon, 7 Oct 2013 13:46:50 +0300
+Message-ID: <1381142810-14541-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+The generic PHY framewrok expects different properties than the
+old USB PHY framework. Supply those properties.
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 9d4c1d1..1428c66 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -355,6 +355,72 @@ utilize.
- 
- ==============================================================
- 
-+numa_balancing
-+
-+Enables/disables automatic page fault based NUMA memory
-+balancing. Memory is moved automatically to nodes
-+that access it often.
-+
-+Enables/disables automatic NUMA memory balancing. On NUMA machines, there
-+is a performance penalty if remote memory is accessed by a CPU. When this
-+feature is enabled the kernel samples what task thread is accessing memory
-+by periodically unmapping pages and later trapping a page fault. At the
-+time of the page fault, it is determined if the data being accessed should
-+be migrated to a local memory node.
-+
-+The unmapping of pages and trapping faults incur additional overhead that
-+ideally is offset by improved memory locality but there is no universal
-+guarantee. If the target workload is already bound to NUMA nodes then this
-+feature should be disabled. Otherwise, if the system overhead from the
-+feature is too high then the rate the kernel samples for NUMA hinting
-+faults may be controlled by the numa_balancing_scan_period_min_ms,
-+numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
-+
-+==============================================================
-+
-+numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
-+numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_size_mb
-+
-+Automatic NUMA balancing scans tasks address space and unmaps pages to
-+detect if pages are properly placed or if the data should be migrated to a
-+memory node local to where the task is running.  Every "scan delay" the task
-+scans the next "scan size" number of pages in its address space. When the
-+end of the address space is reached the scanner restarts from the beginning.
-+
-+In combination, the "scan delay" and "scan size" determine the scan rate.
-+When "scan delay" decreases, the scan rate increases.  The scan delay and
-+hence the scan rate of every task is adaptive and depends on historical
-+behaviour. If pages are properly placed then the scan delay increases,
-+otherwise the scan delay decreases.  The "scan size" is not adaptive but
-+the higher the "scan size", the higher the scan rate.
-+
-+Higher scan rates incur higher system overhead as page faults must be
-+trapped and potentially data must be migrated. However, the higher the scan
-+rate, the more quickly a tasks memory is migrated to a local node if the
-+workload pattern changes and minimises performance impact due to remote
-+memory accesses. These sysctls control the thresholds for scan delays and
-+the number of pages scanned.
-+
-+numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
-+between scans. It effectively controls the maximum scanning rate for
-+each task.
-+
-+numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
-+when it initially forks.
-+
-+numa_balancing_scan_period_max_ms is the maximum delay between scans. It
-+effectively controls the minimum scanning rate for each task.
-+
-+numa_balancing_scan_size_mb is how many megabytes worth of pages are
-+scanned for a given scan.
-+
-+numa_balancing_scan_period_reset is a blunt instrument that controls how
-+often a tasks scan delay is reset to detect sudden changes in task behaviour.
-+
-+==============================================================
-+
- osrelease, ostype & version:
- 
- # cat osrelease
+Fixes USB OTG port on beagle after the Generic PHY framework was
+merged in greg/usb-next. [1]
+
+[1] - https://lkml.org/lkml/2013/9/27/581
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/boot/dts/omap3-beagle.dts |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index 7669c16..fa532aa 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -173,6 +173,8 @@
+ &usb_otg_hs {
+ 	interface-type = <0>;
+ 	usb-phy = <&usb2_phy>;
++	phys = <&usb2_phy>;
++	phy-names = "usb2-phy";
+ 	mode = <3>;
+ 	power = <50>;
+ };
 -- 
-1.8.4
+1.7.4.1
 
