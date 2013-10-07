@@ -1,189 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab3JGUZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 16:25:41 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:54042 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3JGUZj (ORCPT
+	id S1755602Ab3JGUbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 16:31:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52462 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab3JGUbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 16:25:39 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] ARM: kirkwood: retain MAC address for DT ethernet
-Date: Mon,  7 Oct 2013 22:25:11 +0200
-Message-Id: <1381177511-1100-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1380881842-24605-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1380881842-24605-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 7 Oct 2013 16:31:09 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Felipe <balbi@ti.com>,
+        Olof Johansson <olof@lixom.net>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH V2] ARM: OMAP3: Fix hardware detection for omap3630 when booted with device tree
+Date: Mon, 7 Oct 2013 15:30:42 -0500
+Message-ID: <1381177842-2678-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20131007192009.GA8949@atomide.com>
+References: <20131007192009.GA8949@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ethernet IP on Kirkwood SoCs loose their MAC address register content
-if clock gated. To allow modular ethernet driver setups and gated clocks
-also on non-DT capable bootloaders, we fixup port device nodes with no
-valid MAC address property. This patch copies MAC address register
-contents set up by bootloaders early, notably before ethernet clocks
-are gated. While at it, also reorder call sequence in _dt_init.
+SoC family definitions at the moment are reactive to board needs
+as a result, beagle-xm would matchup with ti,omap3 which invokes
+omap3430_init_early instead of omap3630_init_early. Obviously, this is
+the wrong behavior.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Reviewed-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Tested-by: Andrew Lunn <andrew@lunn.ch>
+With clock node dts conversion, we get the following warnings as a
+result and 3630 based platforms fails to boot (uart4 clocks are only
+present in OMAP3630 and not present in OMAP3430):
+
+...
+omap_hwmod: uart4: cannot clk_get main_clk uart4_fck
+omap_hwmod: uart4: cannot _init_clocks
+
+WARNING: CPU: 0 PID: 1 at arch/arm/mach-omap2/omap_hwmod.c:2434
+_init+0x6c/0x80()
+omap_hwmod: uart4: couldn't init clocks
+...
+
+WARNING: CPU: 0 PID: 1 at arch/arm/mach-omap2/omap_hwmod.c:2126
+_enable+0x254/0x280()
+omap_hwmod: timer12: enabled state can only be entered from
+initialized, idle, or disabled state
+...
+
+WARNING: CPU: 0 PID: 46 at arch/arm/mach-omap2/omap_hwmod.c:2224
+_idle+0xd4/0xf8()
+omap_hwmod: timer12: idle state can only be entered from enabled state
+
+WARNING: CPU: 0 PID: 1 at arch/arm/mach-omap2/omap_hwmod.c:2126
+_enable+0x254/0x280()
+omap_hwmod: uart4: enabled state can only be entered from
+initialized, idle, or disabled state
+
+So, add specific compatiblity for 3630 to allow match for Beagle-XM
+platform.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
-Just to make sure they don't get lost this time:
-Added Jason's and Ezequiel's Reviewed-by to honor their constant reviews,
-and Andrew's last Tested-by because I know he will be testing again.
 
-Changelog:
-v3->v4:
-- drop clk_is_enabled (and dependency) due to possible abuse of the
-  new function; enable/disable clk instead, remove gated clock warning
-  (Suggested by Andrew Lunn, Uwe Kleine-Koenig, Mike Turquette)
-- reduce FW_BUG to FW_INFO (Suggested by Andrew Lunn)
-- proper cleanup of iomap, clk, nodes
-v2->v3:
-- make use of new public clk_is_enabled (adds dependency)
-- add warning about gated clock && missing MAC property
-  (Suggested by Jason Gunthorpe)
-v1->v2:
-- check for gated clock before accessing eth registers
-  (Suggested by Andrew Lunn)
+Changes in V2 (since v1):
+	- based on v3.12-rc4 tag
+	- Update based on Tony's review comments.
 
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-kirkwood/board-dt.c |   86 +++++++++++++++++++++++++++++++++++--
- 1 file changed, 83 insertions(+), 3 deletions(-)
+V1: http://marc.info/?l=linux-omap&m=138117342909375&w=2
 
-diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
-index 82d3ad8..3ddd194 100644
---- a/arch/arm/mach-kirkwood/board-dt.c
-+++ b/arch/arm/mach-kirkwood/board-dt.c
-@@ -13,6 +13,8 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_net.h>
- #include <linux/of_platform.h>
- #include <linux/clk-provider.h>
- #include <linux/clocksource.h>
-@@ -66,6 +68,85 @@ static void __init kirkwood_legacy_clk_init(void)
- 	clk_prepare_enable(clk);
- }
+RFC: https://patchwork.kernel.org/patch/2919661/
+
+ arch/arm/boot/dts/omap3-beagle-xm.dts |    2 +-
+ arch/arm/mach-omap2/board-generic.c   |   19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index 0c514dc..02dd4a9 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -11,7 +11,7 @@
  
-+#define MV643XX_ETH_MAC_ADDR_LOW	0x0414
-+#define MV643XX_ETH_MAC_ADDR_HIGH	0x0418
-+
-+static void __init kirkwood_dt_eth_fixup(void)
-+{
-+	struct device_node *np;
-+
-+	/*
-+	 * The ethernet interfaces forget the MAC address assigned by u-boot
-+	 * if the clocks are turned off. Usually, u-boot on kirkwood boards
-+	 * has no DT support to properly set local-mac-address property.
-+	 * As a workaround, we get the MAC address from mv643xx_eth registers
-+	 * and update the port device node if no valid MAC address is set.
-+	 */
-+	for_each_compatible_node(np, NULL, "marvell,kirkwood-eth-port") {
-+		struct device_node *pnp = of_get_parent(np);
-+		struct clk *clk;
-+		struct property *pmac;
-+		void __iomem *io;
-+		u8 *macaddr;
-+		u32 reg;
-+
-+		if (!pnp)
-+			continue;
-+
-+		/* skip disabled nodes or nodes with valid MAC address*/
-+		if (!of_device_is_available(pnp) || of_get_mac_address(np))
-+			goto eth_fixup_skip;
-+
-+		clk = of_clk_get(pnp, 0);
-+		if (IS_ERR(clk))
-+			goto eth_fixup_skip;
-+
-+		io = of_iomap(pnp, 0);
-+		if (!io)
-+			goto eth_fixup_no_map;
-+
-+		/* ensure port clock is not gated to not hang CPU */
-+		clk_prepare_enable(clk);
-+
-+		/* store MAC address register contents in local-mac-address */
-+		pr_err(FW_INFO "%s: local-mac-address is not set\n",
-+		       np->full_name);
-+
-+		pmac = kzalloc(sizeof(*pmac) + 6, GFP_KERNEL);
-+		if (!pmac)
-+			goto eth_fixup_no_mem;
-+
-+		pmac->value = pmac + 1;
-+		pmac->length = 6;
-+		pmac->name = kstrdup("local-mac-address", GFP_KERNEL);
-+		if (!pmac->name) {
-+			kfree(pmac);
-+			goto eth_fixup_no_mem;
-+		}
-+
-+		macaddr = pmac->value;
-+		reg = readl(io + MV643XX_ETH_MAC_ADDR_HIGH);
-+		macaddr[0] = (reg >> 24) & 0xff;
-+		macaddr[1] = (reg >> 16) & 0xff;
-+		macaddr[2] = (reg >> 8) & 0xff;
-+		macaddr[3] = reg & 0xff;
-+
-+		reg = readl(io + MV643XX_ETH_MAC_ADDR_LOW);
-+		macaddr[4] = (reg >> 8) & 0xff;
-+		macaddr[5] = reg & 0xff;
-+
-+		of_update_property(np, pmac);
-+
-+eth_fixup_no_mem:
-+		iounmap(io);
-+		clk_disable_unprepare(clk);
-+eth_fixup_no_map:
-+		clk_put(clk);
-+eth_fixup_skip:
-+		of_node_put(pnp);
-+	}
-+}
-+
- static void __init kirkwood_dt_time_init(void)
- {
- 	of_clk_init(NULL);
-@@ -97,11 +178,10 @@ static void __init kirkwood_dt_init(void)
- 	kirkwood_l2_init();
+ / {
+ 	model = "TI OMAP3 BeagleBoard xM";
+-	compatible = "ti,omap3-beagle-xm", "ti,omap3-beagle", "ti,omap3";
++	compatible = "ti,omap3-beagle-xm", "ti,omap363x", "ti,omap3";
  
- 	kirkwood_cpufreq_init();
--
-+	kirkwood_cpuidle_init();
- 	/* Setup clocks for legacy devices */
- 	kirkwood_legacy_clk_init();
--
--	kirkwood_cpuidle_init();
-+	kirkwood_dt_eth_fixup();
+ 	cpus {
+ 		cpu@0 {
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 39c7838..4fe5b9c 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -113,6 +113,7 @@ MACHINE_END
+ #ifdef CONFIG_ARCH_OMAP3
+ static const char *omap3_boards_compat[] __initdata = {
+ 	"ti,omap3",
++	"ti,omap343x",
+ 	NULL,
+ };
  
- #ifdef CONFIG_KEXEC
- 	kexec_reinit = kirkwood_enable_pcie;
+@@ -129,6 +130,24 @@ DT_MACHINE_START(OMAP3_DT, "Generic OMAP3 (Flattened Device Tree)")
+ 	.restart	= omap3xxx_restart,
+ MACHINE_END
+ 
++static const char *omap36xx_boards_compat[] __initdata = {
++	"ti,omap36xx",
++	NULL,
++};
++
++DT_MACHINE_START(OMAP36XX_DT, "Generic OMAP363x (Flattened Device Tree)")
++	.reserve	= omap_reserve,
++	.map_io		= omap3_map_io,
++	.init_early	= omap3630_init_early,
++	.init_irq	= omap_intc_of_init,
++	.handle_irq	= omap3_intc_handle_irq,
++	.init_machine	= omap_generic_init,
++	.init_late	= omap3_init_late,
++	.init_time	= omap3_sync32k_timer_init,
++	.dt_compat	= omap36xx_boards_compat,
++	.restart	= omap3xxx_restart,
++MACHINE_END
++
+ static const char *omap3_gp_boards_compat[] __initdata = {
+ 	"ti,omap3-beagle",
+ 	"timll,omap3-devkit8000",
 -- 
-1.7.10.4
+1.7.9.5
 
