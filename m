@@ -1,112 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3JGJR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:17:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15378 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab3JGJR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:17:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1048,1371106800"; 
-   d="scan'208";a="406461192"
-Date: Mon, 7 Oct 2013 17:17:20 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 08000060
-Message-ID: <20131007091720.GA28025@localhost>
-References: <20131005234430.GA22485@localhost>
- <20131005234728.GA22657@localhost>
- <20131007084957.GY3081@twins.programming.kicks-ass.net>
+	id S1755082Ab3JGJUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:20:10 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:49778
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751796Ab3JGJUH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 05:20:07 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2dI98dI9371Ic89bh542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h186068h18602eh8275bhz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h906i307k1155h192ch)
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Michal Simek <michals@xilinx.com>
+CC: Wolfram Sang <wsa@the-dreams.de>, Michal Simek <michals@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        =?iso-8859-1?Q?Richard_R=F6jfors?= <richard.rojfors@pelagicore.com>,
+        "Steven A. Falco" <sfalco@harris.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "monstr@monstr.eu" <monstr@monstr.eu>
+Subject: RE: [PATCH v2 2/3] i2c: xilinx: Set tx direction in write operation
+Thread-Topic: [PATCH v2 2/3] i2c: xilinx: Set tx direction in write operation
+Thread-Index: AQHOveeHuN8/1Zg/vEWxtjnyhoQOhpnjiEKAgABFEoCAACHwgIAABKsAgAAP+QCAAAg5AP///9eAgATB1dA=
+Date: Mon, 7 Oct 2013 09:19:57 +0000
+References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1380550490.git.michal.simek@xilinx.com>
+ <57a4f5352ce6f03bde7aafe8b880f91b52994379.1380550490.git.michal.simek@xilinx.com>
+ <20131004054636.GC3194@katana> <524E902D.8030809@monstr.eu>
+ <20131004115517.GA2994@katana> <524EB090.2070708@metafoo.de>
+ <524EBDF6.1070605@monstr.eu> <524EC4DC.1020708@metafoo.de>
+ <524EC4B9.7000202@monstr.eu>
+In-Reply-To: <524EC4B9.7000202@monstr.eu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.18.255]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007084957.GY3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <b5a351c5-82cc-4c55-ae53-0e2a9793eab3@CH1EHSMHS026.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 10:49:57AM +0200, Peter Zijlstra wrote:
-> On Sun, Oct 06, 2013 at 07:47:28AM +0800, Fengguang Wu wrote:
-> > 
-> > Hi Peter,
-> > 
-> > Here is another bisect on a different kconfig.
-> > 
-> > [    6.612196] Write protecting the kernel text: 9752k
-> > [    6.613078] Write protecting the kernel read-only data: 3444k
-> > [    6.647222] BUG: unable to handle kernel paging request at 08000060
-> > [    6.648030] IP: [<41046ab0>] task_work_run+0x60/0xa0
-> > [    6.648030] *pde = 0686f067 *pte = 00000000 
-> > [    6.648030] Oops: 0000 [#1] PREEMPT DEBUG_PAGEALLOC
-> > [    6.648030] CPU: 0 PID: 131 Comm: rc.local Not tainted 3.12.0-rc2-02842-g45c4ea0 #2
-> > [    6.648030] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > [    6.648030] task: 46865000 ti: 46874000 task.ti: 46874000
-> > [    6.648030] EIP: 0060:[<41046ab0>] EFLAGS: 00010206 CPU: 0
-> > [    6.648030] EIP is at task_work_run+0x60/0xa0
-> > [    6.648030] EAX: 08000060 EBX: 46862f40 ECX: 00000000 EDX: 08000060
-> > [    6.648030] ESI: 468652ac EDI: 46865000 EBP: 46875f9c ESP: 46875f90
-> > [    6.648030]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
-> > [    6.648030] CR0: 8005003b CR2: 08000060 CR3: 0686e000 CR4: 00000690
-> > [    6.648030] Stack:
-> > [    6.648030]  396f7903 396e0ee8 37642ff4 46875fac 41002310 41984ebc 4fff01bc 46874000
-> > [    6.648030]  419848e6 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > [    6.648030]  0000007b 0000007b 00000000 00000000 0000000b 377a01d0 00000073 00000200
-> > [    6.648030] Call Trace:
-> > [    6.648030]  [<41002310>] do_notify_resume+0x50/0x60
-> > [    6.648030]  [<41984ebc>] ? sysenter_do_call+0x1e/0x37
-> > [    6.648030]  [<419848e6>] work_notifysig+0x26/0x30
-> > [    6.648030] Code: eb 0b 89 f6 8d bc 27 00 00 00 00 31 c9 89 d0 0f b1 0e 39 c2 75 d5 85 d2 74 46 90 f3 90 8b 87 e4 02 00 00 85 c0 74 f4 31 db 66 90 <8b> 02 89 1a 85 c0 74 08 89 d3 89 c2 eb f2 66 90 89 d0 ff 52 04
-> > [    6.648030] EIP: [<41046ab0>] task_work_run+0x60/0xa0 SS:ESP 0068:46875f90
-> > [    6.648030] CR2: 0000000008000060
-> > [    6.678032] CRED: Invalid credentials
-> > 
-> > git bisect start 45c4ea0c4c1b8abffb575b865243fd1c69bbecd9 v3.11 --
-> > git bisect good 39eda2aba6be642b71f2e0ad623dcb09fd9d79cf  # 00:42    150+  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
-> > git bisect good bff157b3ad4b9f6be0af6987fcd62deaf0f2b799  # 03:47    150+  Merge branch 'slab/next' of git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux
-> > git bisect good f659a4f17bbecdbad57dd5c63a1783e5ec5fd792  # 09:17    150+  Merge remote-tracking branch 'drm-intel/for-linux-next'
-> > git bisect  bad 6405cd58ac5c0a6ed5f4f1308892147870b9d5cf  # 09:22      1-  Merge remote-tracking branch 'regmap/for-next'
-> > git bisect good 5094001bc464c12d3e04eb73a5e0d5e8436f09f7  # 12:28    150+  Merge remote-tracking branch 'omap_dss2/for-next'
-> > git bisect good 8f31410ee9917e8648c7cf7f45e22320c166998a  # 17:48    150+  Merge remote-tracking branch 'spi/for-next'
-> > git bisect  bad 6f014a7ea91f80f765ba700dcd1728680ba5c58e  # 17:52      0-  Merge remote-tracking branch 'tip/auto-latest'
-> > git bisect  bad bce56fbc0f165658f7e0715fedc8d39840bae31c  # 17:57      0-  Merge branch 'sched/core'
-> > git bisect  bad c2daa3bed53a81171cf8c1a36db798e82b91afe8  # 18:01      2-  sched, x86: Provide a per-cpu preempt_count implementation
-> > git bisect good 4314895165623879937f46d767673654662b570c  # 18:18    150+  sched: Micro-optimize by dropping unnecessary task_rq() calls
-> > git bisect  bad 4a2b4b222743bb07fedf985b884550f2ca067ea9  # 18:22      2-  sched: Introduce preempt_count accessor functions
-> > git bisect  bad b021fe3e25094fbec22d0eff846d2adeee1b9736  # 18:26      0-  sched, rcu: Make RCU use resched_cpu()
-> > git bisect  bad 0c44c2d0f459cd7e275242b72f500137c4fa834d  # 18:27      0-  x86: Use asm goto to implement better modify_and_test() functions
-> > git bisect good 4314895165623879937f46d767673654662b570c  # 21:38    450+  sched: Micro-optimize by dropping unnecessary task_rq() calls
-> > git bisect  bad a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 21:38      0-  Add linux-next specific files for 20130927
-> > git bisect good c31eeaced22ce8bd61268a3c595d542bb38c0a4f  # 21:59    450+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-> > git bisect  bad a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 21:59      0-  Add linux-next specific files for 20130927
-> > 
-> 
-> Does this point to the same commit or what?
+Hi Michal,
 
-Yes it's bisected to the same commit.
+> -----Original Message-----
+> From: Michal Simek [mailto:monstr@monstr.eu]
+> Sent: Friday, October 04, 2013 7:08 PM
+> To: Lars-Peter Clausen
+> Cc: Wolfram Sang; Michal Simek; linux-kernel@vger.kernel.org; Appana
+> Durga Kedareswara Rao; Appana Durga Kedareswara Rao; Jean Delvare;
+> Peter Korsgaard; linux-i2c@vger.kernel.org; Richard Röjfors; Steven A. Falco
+> Subject: Re: [PATCH v2 2/3] i2c: xilinx: Set tx direction in write operation
+>
+> On 10/04/2013 03:38 PM, Lars-Peter Clausen wrote:
+> > On 10/04/2013 03:09 PM, Michal Simek wrote:
+> >>
+> >>
+> >> On 10/04/2013 02:12 PM, Lars-Peter Clausen wrote:
+> >>> On 10/04/2013 01:55 PM, Wolfram Sang wrote:
+> >>>> On Fri, Oct 04, 2013 at 11:53:49AM +0200, Michal Simek wrote:
+> >>>>> On 10/04/2013 07:46 AM, Wolfram Sang wrote:
+> >>>>>>
+> >>>>>>> +     cr = xiic_getreg32(i2c, XIIC_CR_REG_OFFSET);
+> >>>>>>> +     cr |= XIIC_CR_DIR_IS_TX_MASK;
+> >>>>>>> +     xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, cr);
+> >>>>>>> +
+> >>>>>>
+> >>>>>> Is there no need to clear the bit again when receiving?
+> >>>>>
+> >>>>> This bit is cleared in xiic_xfer() -> xiic_start_xfer()
+> >>>>> ->xiic_reinit()
+> >>>>>
+> >>>>> xiic_setreg8(i2c, XIIC_CR_REG_OFFSET,
+> XIIC_CR_TX_FIFO_RESET_MASK);
+> >>>>
+> >>>> A bit implicit, but OK.
+> >>>>
+> >>>>>> And did
+> >>>>>> transferring ever work if this bit was never set before?
+> >>>>>
+> >>>>> I really don't know. We have switched from old driver to this new
+> >>>>> mainline one and based on our eeprom testing we have found that
+> this bit hasn't been setup properly.
+> >>>>>
+> >>>>> It is described here.
+> >>>>>
+> http://www.xilinx.com/support/documentation/ip_documentation/axi_i
+> >>>>> ic/v1_02_a/axi_iic_ds756.pdf
+> >>>>> page 28 - step 3.
+> >>>>>
+> >>>>> IIC Master Transmitter with a Repeated Start 1. Write the IIC
+> >>>>> device address to the TX_FIFO.
+> >>>>> 2. Write data to TX_FIFO.
+> >>>>> 3. Write to Control Register (CR) to set MSMS = 1 and TX = 1.
+> >>>>> 4. Continue writing data to TX_FIFO.
+> >>>>> 5. Wait for transmit FIFO empty interrupt. This implies the IIC has
+> throttled the bus.
+> >>>>> 6. Write to CR to set RSTA = 1.
+> >>>>
+> >>>> Repeated start is not happening in the driver as well, or am I
+> >>>> overlooking something?
+> >>>>
+> >>>>> 7. Write IIC device address to TX_FIFO.
+> >>>>> 8. Write all data except last byte to TX_FIFO.
+> >>>>> 9. Wait for transmit FIFO empty interrupt. This implies the IIC has
+> throttled the bus.
+> >>>>> 10. Write to CR to set MSMS = 0. The IIC generates a stop condition at
+> the end of the last byte.
+> >>>>> 11. Write last byte of data to TX_FIFO.
+> >>>>
+> >>>> CCing more people who worked on the driver in the past and might
+> >>>> have experiences
+> >>>
+> >>> The current version works fine here. The driver uses whats described
+> >>> in the datasheet as "dynamic controller logic flow" and not the
+> >>> "standard controller logic flow". The sequence Michal mentioned
+> >>> above is from the "standard controller logic flow" section.
+> >>
+> >> Does this change break "dynamic controller logic flow"?
+> >
+> > Not sure, but I would assume that the bit is ignored in this mode. But
+> > I don't think the patch should be applied since this step is not in
+> > the sequence of steps that should be done.
+>
+> Kedar: Can you please look at both these modes and provide feedback?
 
-> How does one read these things?
+The driver is following the Dynamic controller logic flow as per the dynamic
+Controller logic flow. These bits need not to be set.
 
-In each report, I'll show a digest of the first call trace and attach
-the full dmesg, kconfig and bisect log files.
+It was my mistake. Please ignore this patch.
+There was an incorrect h/w design on which I tested this that's why I thought it is a
+Solution for this.
 
-The numbers in the below two lines mean
+Now I tested with the proper h/w design it is working fine for me without setting this bit.
+Thanks lars for the feedback.
 
-> > git bisect good c31eeaced22ce8bd61268a3c595d542bb38c0a4f  # 21:59    450+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-> > git bisect  bad a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 21:59      0-  Add linux-next specific files for 20130927
+Regards,
+Kedar.
+>
+> Thanks,
+> Michal
+>
+> --
+> Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+> w: www.monstr.eu p: +42-0-721842854
+> Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+> Maintainer of Linux kernel - Xilinx Zynq ARM architecture Microblaze U-
+> BOOT custodian and responsible for u-boot arm zynq platform
+>
 
-21:59 => wall time
 
-450+  => this bisect test finishes after 450 good boots; suffix "+" means bisect test result is GOOD
-         (collected large enough samples to claim it a GOOD kernel/commit)
 
-0-    => this bisect test finishes after   0 good boots; suffix "-" means bisect test result is BAD
-         (it sees the message "BUG: unable to handle kernel ..." on the first boot)
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
-Since all the BAD commits see only 0, 1, or 2 good boots (the lines
-with "0-", "1-", "2-") before see the bug message, it means the
-problem is pretty reproducible.
 
-Thanks,
-Fengguang
