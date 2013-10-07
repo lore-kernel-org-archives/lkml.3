@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3JGMJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:09:04 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:42332 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab3JGL55 (ORCPT
+	id S1756217Ab3JGMIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:08:52 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:38397 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3JGL6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:57:57 -0400
+	Mon, 7 Oct 2013 07:58:00 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/50] tools/perf/build: Split out feature check: 'libelf'
-Date: Mon,  7 Oct 2013 13:56:04 +0200
-Message-Id: <1381147003-2574-12-git-send-email-mingo@kernel.org>
+Subject: [PATCH 14/50] tools/perf/build: Clean up the mmap logic in config/Makefile
+Date: Mon,  7 Oct 2013 13:56:07 +0200
+Message-Id: <1381147003-2574-15-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -23,76 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nest the rules properly. No change in functionality.
+
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-qznhihaasbysfqO7ffvRsf9q@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-wwktuHl4Ra5lyrrretkxmxqf@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                     | 4 ++--
- tools/perf/config/feature-checks/Makefile      | 4 ++++
- tools/perf/config/feature-checks/test-libelf.c | 7 +++++++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile | 51 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 26 insertions(+), 25 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 3e9fe16..98a7157 100644
+index 3695135..3129c2d 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -108,6 +108,7 @@ FEATURE_TESTS =				\
- 	volatile-register-var		\
- 	fortify-source			\
- 	bionic				\
-+	libelf				\
- 	libnuma
+@@ -198,37 +198,38 @@ else
+ endif # NO_LIBELF
  
- $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -163,8 +164,7 @@ ifdef NO_LIBELF
-   NO_DEMANGLE := 1
-   NO_LIBUNWIND := 1
- else
--  FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
--  ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
-+  ifeq ($(feature-libelf), 0)
-     FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
-     ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
-       LIBC_SUPPORT := 1
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 191df97..789a38d 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -6,6 +6,7 @@ FILES=					\
- 	test-volatile-register-var	\
- 	test-fortify-source		\
- 	test-bionic			\
-+	test-libelf			\
- 	test-libnuma
+ ifndef NO_LIBELF
+-CFLAGS += -DHAVE_LIBELF_SUPPORT
+-FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
+-  CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+-endif
+-ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM_SUPPORT),y)
+-  CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
+-endif
++  CFLAGS += -DHAVE_LIBELF_SUPPORT
++  FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
  
- CC := $(CC) -MD
-@@ -34,6 +35,9 @@ test-fortify-source:
- test-bionic:
- 	$(BUILD)
+-# include ARCH specific config
+--include $(src-perf)/arch/$(ARCH)/Makefile
++  ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
++    CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
++  endif
  
-+test-libelf:
-+	$(BUILD) -lelf
+-ifndef NO_DWARF
+-ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+-  msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+-  NO_DWARF := 1
+-else
+-  CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
+-  LDFLAGS += $(LIBDW_LDFLAGS)
+-  EXTLIBS += -lelf -ldw
+-endif # PERF_HAVE_DWARF_REGS
+-endif # NO_DWARF
++  ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM_SUPPORT),y)
++    CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
++  endif
 +
- test-libnuma:
- 	$(BUILD) -lnuma
++  # include ARCH specific config
++  -include $(src-perf)/arch/$(ARCH)/Makefile
  
-diff --git a/tools/perf/config/feature-checks/test-libelf.c b/tools/perf/config/feature-checks/test-libelf.c
-new file mode 100644
-index 0000000..1a08f97
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libelf.c
-@@ -0,0 +1,7 @@
-+#include <libelf.h>
-+
-+int main(void)
-+{
-+	Elf *elf = elf_begin(0, ELF_C_READ, 0);
-+	return (long)elf;
-+}
++  ifndef NO_DWARF
++    ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
++      msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
++      NO_DWARF := 1
++    else
++      CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
++      LDFLAGS += $(LIBDW_LDFLAGS)
++      EXTLIBS += -lelf -ldw
++    endif # PERF_HAVE_DWARF_REGS
++  endif # NO_DWARF
+ endif # NO_LIBELF
+ 
+ ifndef NO_LIBELF
+-CFLAGS += -DHAVE_LIBELF_SUPPORT
+-FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
+-  CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+-endif # try-cc
++  CFLAGS += -DHAVE_LIBELF_SUPPORT
++  FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
++  ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
++    CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
++  endif # try-cc
+ endif # NO_LIBELF
+ 
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
 -- 
 1.7.11.7
 
