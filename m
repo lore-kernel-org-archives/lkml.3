@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3JGPvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:51:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51772 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508Ab3JGPvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:51:11 -0400
-Date: Mon, 7 Oct 2013 17:51:05 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1310071749200.29701@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	id S1756130Ab3JGPwD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:52:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:26914 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754735Ab3JGPv5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:51:57 -0400
+Date: Mon, 7 Oct 2013 11:51:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Dumazet <edumazet@google.com>,
+        "andi @ firstfloor. org David S. Miller" <davem@davemloft.net>,
+        x86@kernel.org
+Subject: Re: [PATCH] static_key: WARN on usage before jump_label_init was
+ called
+Message-ID: <20131007115152.0964afde@gandalf.local.home>
+In-Reply-To: <20131006182919.GD9295@order.stressinduktion.org>
+References: <1381015258-7667-1-git-send-email-hannes@stressinduktion.org>
+	<1381015258-7667-4-git-send-email-hannes@stressinduktion.org>
+	<20131005200558.3be2f841@gandalf.local.home>
+	<20131006001247.GB25076@order.stressinduktion.org>
+	<20131006182919.GD9295@order.stressinduktion.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sun, 6 Oct 2013 20:29:19 +0200
+Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
 
-please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+> diff --git a/lib/jump_label_initialized.c b/lib/jump_label_initialized.c
+> new file mode 100644
+> index 0000000..a668a40
+> --- /dev/null
+> +++ b/lib/jump_label_initialized.c
+> @@ -0,0 +1,6 @@
+> +#include <linux/types.h>
+> +#include <linux/cache.h>
+> +
+> +bool static_key_initialized __read_mostly = false;
+> +EXPORT_SYMBOL_GPL(static_key_initialized);
+> +
 
-to receive
+So far, the only thing I don't like about this patch is the creation of
+this file for the sole purpose of adding this variable.
 
-=====
+Perhaps it can just be added to init/main.c?
 
-- fix for hidraw reference counting regression, by Manoj Chourasia
-- fix for minor number allocation for uhid, by David Herrmann
-- other small unsorted fixes / device ID additions
-
-=====
-
-Anders F. U. Kiær (1):
-      HID: add Holtek USB ID 04d9:a081 SHARKOON DarkGlider
-
-David Herrmann (2):
-      HID: uhid: allocate static minor
-      HID: wiimote: fix FF deadlock
-
-Manoj Chourasia (1):
-      HID: hidraw: close underlying device at removal of last reader
-
-Stefan Achatz (1):
-      HID: roccat: Fix "cannot create duplicate filename" problems
-
- drivers/hid/Kconfig               |    1 +
- drivers/hid/hid-core.c            |    1 +
- drivers/hid/hid-holtek-mouse.c    |    4 +++
- drivers/hid/hid-ids.h             |    1 +
- drivers/hid/hid-roccat-kone.c     |    2 +-
- drivers/hid/hid-roccat-koneplus.c |    4 +-
- drivers/hid/hid-roccat-kovaplus.c |    4 +-
- drivers/hid/hid-roccat-pyra.c     |    4 +-
- drivers/hid/hid-wiimote-modules.c |   40 ++++++++++++++++++++++++++----------
- drivers/hid/hid-wiimote.h         |    4 ++-
- drivers/hid/hidraw.c              |   21 +++++++++++++------
- drivers/hid/uhid.c                |    3 +-
- include/linux/miscdevice.h        |    1 +
- 13 files changed, 63 insertions(+), 27 deletions(-)
-
--- 
-Jiri Kosina
-SUSE Labs
+-- Steve
