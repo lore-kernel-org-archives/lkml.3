@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab3JGPSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:18:03 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:11265 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab3JGPSA (ORCPT
+	id S1755760Ab3JGPUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:20:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2271 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100Ab3JGPUa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:18:00 -0400
-Message-ID: <5252D0A5.60304@atmel.com>
-Date: Mon, 7 Oct 2013 17:17:57 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 7 Oct 2013 11:20:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
+   d="scan'208";a="412792254"
+From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+To: Jan Kara <jack@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: RE: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Thread-Topic: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+ get_user_pages_unlocked()
+Thread-Index: AQHOv3vIHe5gOhmSsEGBHPLZHDmcI5nkkbDAgADFEYCABAvHUA==
+Date: Mon, 7 Oct 2013 15:20:28 +0000
+Message-ID: <32E1700B9017364D9B60AED9960492BC211B079B@FMSMSX107.amr.corp.intel.com>
+References: <1380724087-13927-1-git-send-email-jack@suse.cz>
+ <1380724087-13927-24-git-send-email-jack@suse.cz>
+ <32E1700B9017364D9B60AED9960492BC211B0176@FMSMSX107.amr.corp.intel.com>
+ <20131004183315.GA19557@quack.suse.cz>
+In-Reply-To: <20131004183315.GA19557@quack.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 04/19] clk: at91: add PMC macro file for dt definitions
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375938270-3965-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375938270-3965-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 07:04, Boris BREZILLON :
-> This patch adds a new macro file for PMC macros.
->
-> This macro file includes the definitions of SR (status register) bit
-> offsets and will be use to reference PMC irqs.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->   include/dt-bindings/clk/at91/common/pmc.h |   20 ++++++++++++++++++++
->   1 file changed, 20 insertions(+)
->   create mode 100644 include/dt-bindings/clk/at91/common/pmc.h
->
-> diff --git a/include/dt-bindings/clk/at91/common/pmc.h b/include/dt-bindings/clk/at91/common/pmc.h
-> new file mode 100644
-> index 0000000..edc51d6
-> --- /dev/null
-> +++ b/include/dt-bindings/clk/at91/common/pmc.h
-> @@ -0,0 +1,20 @@
-> +/*
-> + * This header provides constants for AT91 pmc status.
-> + *
-> + * The constants defined in this header are being used in dts.
-
-It is better to add one line about license: for example:
-
-  * Licensed under GPLv2 or later.
 
 
-> + */
-> +
-> +#ifndef _DT_BINDINGS_CLK_AT91_PMC_H
-> +#define _DT_BINDINGS_CLK_AT91_PMC_H
-> +
-> +#define AT91_PMC_MOSCS		0		/* MOSCS Flag */
-> +#define AT91_PMC_LOCKA		1		/* PLLA Lock */
-> +#define AT91_PMC_LOCKB		2		/* PLLB Lock */
-> +#define AT91_PMC_MCKRDY		3		/* Master Clock */
-> +#define AT91_PMC_LOCKU		6		/* UPLL Lock */
-> +#define AT91_PMC_PCKRDY(id)	(8 + id)	/* Programmable Clock */
-
-I prefer with parenthesis around "id" (8 + (id))
-
-> +#define AT91_PMC_MOSCSELS	16		/* Main Oscillator Selection */
-> +#define AT91_PMC_MOSCRCS	17		/* Main On-Chip RC */
-> +#define AT91_PMC_CFDEV		18		/* Clock Failure Detector Event */
-> +
-> +#endif
->
-
-
--- 
-Nicolas Ferre
+> -----Original Message-----
+> From: Jan Kara [mailto:jack@suse.cz]
+> Sent: Friday, October 04, 2013 2:33 PM
+> To: Marciniszyn, Mike
+> Cc: Jan Kara; LKML; linux-mm@kvack.org; infinipath; Roland Dreier; linux-
+> rdma@vger.kernel.org
+> Subject: Re: [PATCH 23/26] ib: Convert qib_get_user_pages() to
+> get_user_pages_unlocked()
+> 
+> On Fri 04-10-13 13:52:49, Marciniszyn, Mike wrote:
+> > > Convert qib_get_user_pages() to use get_user_pages_unlocked().  This
+> > > shortens the section where we hold mmap_sem for writing and also
+> > > removes the knowledge about get_user_pages() locking from ipath
+> > > driver. We also fix a bug in testing pinned number of pages when
+> changing the code.
+> > >
+> >
+> > This patch and the sibling ipath patch will nominally take the mmap_sem
+> > twice where the old routine only took it once.   This is a performance
+> > issue.
+>   It will take mmap_sem only once during normal operation. Only if
+> get_user_pages_unlocked() fail, we have to take mmap_sem again to undo
+> the change of mm->pinned_vm.
+> 
+> > Is the intent here to deprecate get_user_pages()?
+>   Well, as much as I'd like to, there are really places in mm code which need
+> to call get_user_pages() while holding mmap_sem to be able to inspect
+> corresponding vmas etc. So I want to reduce get_user_pages() use as much
+> as possible but I'm not really hoping in completely removing it.
+> 
+> > I agree, the old code's lock limit test is broke and needs to be fixed.
+> > I like the elimination of the silly wrapper routine!
+> >
+> > Could the lock limit test be pushed into another version of the
+> > wrapper so that there is only one set of mmap_sem transactions?
+>   I'm sorry, I don't understand what you mean here...
+> 
+> 								Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
