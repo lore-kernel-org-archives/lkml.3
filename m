@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3JGKmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:42:40 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:39946 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab3JGKmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:42:07 -0400
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-To: linux-omap@vger.kernel.org
-Cc: patches@linaro.org, steve.mcintyre@linaro.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Richard woodruff <r-woodruff2@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: omap: Clear ARDY bit twice
-Date: Mon,  7 Oct 2013 13:41:59 +0300
-Message-Id: <1381142519-29382-1-git-send-email-taras.kondratiuk@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756127Ab3JGKnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:43:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39684 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753378Ab3JGK3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:29:55 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 13/63] sched: numa: Mitigate chance that same task always updates PTEs
+Date: Mon,  7 Oct 2013 11:28:51 +0100
+Message-Id: <1381141781-10992-14-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initially commit cb527ede1bf6ff2008a025606f25344b8ed7b4ac
-"i2c-omap: Double clear of ARDY status in IRQ handler"
-added a workaround for undocumented errata ProDB0017052.
-But then commit 1d7afc95946487945cc7f5019b41255b72224b70
-"i2c: omap: ack IRQ in parts" refactored code and missed
-one of ARDY clearings. So current code violates errata.
-It causes often i2c bus timeouts on my Pandaboard.
+From: Peter Zijlstra <peterz@infradead.org>
 
-This patch adds a second clearing in place.
+With a trace_printk("working\n"); right after the cmpxchg in
+task_numa_work() we can see that of a 4 thread process, its always the
+same task winning the race and doing the protection change.
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+This is a problem since the task doing the protection change has a
+penalty for taking faults -- it is busy when marking the PTEs. If its
+always the same task the ->numa_faults[] get severely skewed.
+
+Avoid this by delaying the task doing the protection change such that
+it is unlikely to win the privilege again.
+
+Before:
+
+root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
+      thread 0/0-3232  [022] ....   212.787402: task_numa_work: working
+      thread 0/0-3232  [022] ....   212.888473: task_numa_work: working
+      thread 0/0-3232  [022] ....   212.989538: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.090602: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.191667: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.292734: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.393804: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.494869: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.596937: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.699000: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.801067: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.903155: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.005201: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.107266: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.209342: task_numa_work: working
+
+After:
+
+root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
+      thread 0/0-3253  [005] ....   136.865051: task_numa_work: working
+      thread 0/2-3255  [026] ....   136.965134: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.065217: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.165302: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.265382: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.366465: task_numa_work: working
+      thread 0/2-3255  [026] ....   137.466549: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.566629: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.666711: task_numa_work: working
+      thread 0/1-3254  [028] ....   137.766799: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.866876: task_numa_work: working
+      thread 0/2-3255  [026] ....   137.966960: task_numa_work: working
+      thread 0/1-3254  [028] ....   138.067041: task_numa_work: working
+      thread 0/2-3255  [026] ....   138.167123: task_numa_work: working
+      thread 0/3-3256  [024] ....   138.267207: task_numa_work: working
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Richard woodruff <r-woodruff2@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-omap@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/i2c/busses/i2c-omap.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/fair.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index f5d6de0..d69826e 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -939,6 +939,9 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
- 		/*
- 		 * ProDB0017052: Clear ARDY bit twice
- 		 */
-+		if (stat & OMAP_I2C_STAT_ARDY)
-+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b22f52a..8b9ff79 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -946,6 +946,12 @@ void task_numa_work(struct callback_head *work)
+ 		return;
+ 
+ 	/*
++	 * Delay this task enough that another task of this mm will likely win
++	 * the next time around.
++	 */
++	p->node_stamp += 2 * TICK_NSEC;
 +
- 		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
- 					OMAP_I2C_STAT_AL)) {
- 			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
++	/*
+ 	 * Do not set pte_numa if the current running node is rate-limited.
+ 	 * This loses statistics on the fault but if we are unwilling to
+ 	 * migrate to this node, it is less likely we can do useful work
+@@ -1026,7 +1032,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 	if (now - curr->node_stamp > period) {
+ 		if (!curr->node_stamp)
+ 			curr->numa_scan_period = sysctl_numa_balancing_scan_period_min;
+-		curr->node_stamp = now;
++		curr->node_stamp += period;
+ 
+ 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+ 			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
 -- 
-1.7.9.5
+1.8.4
 
