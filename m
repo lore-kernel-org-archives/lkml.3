@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab3JGJq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:46:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50546 "EHLO mga02.intel.com"
+	id S1755249Ab3JGJsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:48:15 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:18153 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab3JGJq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:46:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1049,1371106800"; 
-   d="scan'208";a="406480394"
-Date: Mon, 7 Oct 2013 17:46:53 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 08000060
-Message-ID: <20131007094653.GA29497@localhost>
-References: <20131005234430.GA22485@localhost>
- <20131005234728.GA22657@localhost>
- <20131007084957.GY3081@twins.programming.kicks-ass.net>
- <20131007091720.GA28025@localhost>
- <20131007093617.GB3081@twins.programming.kicks-ass.net>
+	id S1751796Ab3JGJsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 05:48:13 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1049,1371081600"; 
+   d="scan'208";a="60916279"
+Message-ID: <1381139286.31436.2.camel@hamster.uk.xensource.com>
+Subject: [PATCH v2] xen: Fix possible user space selector corruption
+From: Frediano Ziglio <frediano.ziglio@citrix.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: Andrew Cooper <andrew.cooper3@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Date: Mon, 7 Oct 2013 10:48:06 +0100
+In-Reply-To: <5252815E.70504@citrix.com>
+References: <1380788677.30462.1.camel@hamster.uk.xensource.com>
+	 <524D4132.3000809@citrix.com>
+	 <1380804692.30462.3.camel@hamster.uk.xensource.com>
+	 <20131004132033.GA26673@phenom.dumpdata.com> <524EC3C1.4010304@citrix.com>
+	 <5252815E.70504@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007093617.GB3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 11:36:17AM +0200, Peter Zijlstra wrote:
-> On Mon, Oct 07, 2013 at 05:17:20PM +0800, Fengguang Wu wrote:
-> > On Mon, Oct 07, 2013 at 10:49:57AM +0200, Peter Zijlstra wrote:
-> > The numbers in the below two lines mean
-> > 
-> > > > git bisect good c31eeaced22ce8bd61268a3c595d542bb38c0a4f  # 21:59    450+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-> > > > git bisect  bad a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 21:59      0-  Add linux-next specific files for 20130927
-> > 
-> > 21:59 => wall time
-> > 
-> > 450+  => this bisect test finishes after 450 good boots; suffix "+" means bisect test result is GOOD
-> >          (collected large enough samples to claim it a GOOD kernel/commit)
-> > 
-> > 0-    => this bisect test finishes after   0 good boots; suffix "-" means bisect test result is BAD
-> >          (it sees the message "BUG: unable to handle kernel ..." on the first boot)
-> > 
-> > Since all the BAD commits see only 0, 1, or 2 good boots (the lines
-> > with "0-", "1-", "2-") before see the bug message, it means the
-> > problem is pretty reproducible.
-> 
-> But the reported bad commit was: 0c44c2d0f459cd7e275242b72f500137c4fa834d
-> which is not the same number as your last BAD line.
+Due to the way kernel is initialized under Xen is possible that the
+ring1 selector used by the kernel for the boot cpu end up to be copied
+to userspace leading to segmentation fault in the userspace.
 
-Ah yes, this is because the bisect script will in the end
-double check whether the same bug exists in
+Xen code in the kernel initialize no-boot cpus with correct selectors (ds
+and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
+On task context switch (switch_to) we assume that ds, es and cs already
+point to __USER_DS and __KERNEL_CSso these selector are not changed.
 
-- first bad commit's parent(s) (with increased boot count)
-- first bad commit reverted (if could be reverted)
-- branch HEAD (if the tree/branch could be figured out)
-- upstream
-- linux-next
+If processor is an Intel that support sysenter instruction sysenter/sysexit
+is used so ds and es are not restored switching back from kernel to
+userspace. In the case the selectors point to a ring1 instead of __USER_DS
+the userspace code will crash on first memory access attempt (to be
+precise Xen on the emulated iret used to do sysexit will detect and set ds
+and es to zero which lead to GPF anyway).
 
-Thanks,
-Fengguang
+Now if an userspace process call kernel using sysenter and get rescheduled
+(for me it happen on a specific init calling wait4) could happen that the
+ring1 selector is set to ds and es.
+
+This is quite hard to detect cause after a while these selectors are fixed
+(__USER_DS seems sticky).
+
+Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
+to be the first one that have this issue.
+
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+---
+ arch/x86/xen/smp.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+
+Just changed comment on source code as suggested by Andrew Cooper.
+
+
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index d99cae8..6d89fcc 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -245,6 +245,15 @@ static void __init xen_smp_prepare_boot_cpu(void)
+ 	   old memory can be recycled */
+ 	make_lowmem_page_readwrite(xen_initial_gdt);
+ 
++#ifdef CONFIG_X86_32
++	/*
++	 * Xen starts us with XEN_FLAT_RING1_DS, but linux code
++	 * expects __USER_DS
++	 */
++	loadsegment(ds, __USER_DS);
++	loadsegment(es, __USER_DS);
++#endif
++
+ 	xen_filter_cpu_maps();
+ 	xen_setup_vcpu_info_placement();
+ }
+-- 
+1.7.10.4
+
+
