@@ -1,56 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab3JGRe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 13:34:59 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:36157 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab3JGRez (ORCPT
+	id S1756364Ab3JGRfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 13:35:55 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13810 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756007Ab3JGRfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 13:34:55 -0400
+	Mon, 7 Oct 2013 13:35:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+7A7nW6YFfo3KFWTkD0O2e
+Date: Mon, 7 Oct 2013 10:35:31 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Prakash Manjunathappa <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-omap@vger.kernel.org,
+        Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 3/6] pinctrl: single: Prepare for supporting SoC
+ specific features
+Message-ID: <20131007173531.GX8949@atomide.com>
+References: <20131003054104.8941.88857.stgit@localhost>
+ <20131003054218.8941.19273.stgit@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20131007.125326.895480090584703586.davem@davemloft.net>
-References: <1380880333-3546-1-git-send-email-ou.ghorbel@gmail.com>
-	<20131007.125326.895480090584703586.davem@davemloft.net>
-Date: Mon, 7 Oct 2013 18:34:53 +0100
-Message-ID: <CABfLueGqa8wJv+hfcNQRmWM2tj6zMC5Ajts=-no7GJA1t09dnQ@mail.gmail.com>
-Subject: Re: [PATCH] Fix the upper MTU limit in ipv6 GRE tunnel
-From: Oussama Ghorbel <ou.ghorbel@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003054218.8941.19273.stgit@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I've resubmitted the patch with the proper Subject line.
-The new mail subject is: [PATCH] ipv6: Fix the upper MTU limit in GRE tunnel
+Hi Linus W,
 
+Any comments on the pinctrl patches 3 - 5 in this series?
 
-Thanks,
-Oussama
+These are badly needed to not break omap3 PM support when
+we're moving to device tree based booting.
 
-On Mon, Oct 7, 2013 at 5:53 PM, David Miller <davem@davemloft.net> wrote:
-> From: Oussama Ghorbel <ou.ghorbel@gmail.com>
-> Date: Fri,  4 Oct 2013 10:52:13 +0100
->
->> Unlike ipv4, the struct member hlen holds the length of the GRE and ipv6
->> headers. This length is also counted in dev->hard_header_len.
->> Perhaps, it's more clean to modify the hlen to count only the GRE header
->> without ipv6 header as the variable name suggest, but the simple way to fix
->> this without regression risk is simply modify the calculation of the limit
->> in ip6gre_tunnel_change_mtu function.
->> Verified in kernel version v3.11.
->>
->> Signed-off-by: Oussama Ghorbel <ou.ghorbel@gmail.com>
->
-> Please resubmit this with a proper Subject line.
->
-> It should be "[PATCH] " then a legitimate subsystem prefix.
-> In this case "ipv6: " would be appropriate.  And then
-> the "ipv6" in your existing Subject text is redundant so
-> can be removed.
->
-> Thanks.
+* Tony Lindgren <tony@atomide.com> [131002 22:50]:
+> Let's replace is_pinconf with flags and add struct pcs_soc_data
+> so we can support SoC specific features like pin wake-up events.
+> 
+> Done in collaboration with Roger Quadros <rogerq@ti.com>.
+> 
+> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+> Cc: Prakash Manjunathappa <prakash.pm@ti.com>
+> Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
+> ---
+>  drivers/pinctrl/pinctrl-single.c |   38 +++++++++++++++++++++++++++++---------
+>  1 file changed, 29 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+> index a82ace4..f88d3d1 100644
+> --- a/drivers/pinctrl/pinctrl-single.c
+> +++ b/drivers/pinctrl/pinctrl-single.c
+> @@ -150,19 +150,27 @@ struct pcs_name {
+>  };
+>  
+>  /**
+> + * struct pcs_soc_data - SoC specific settings
+> + * @flags:	initial SoC specific PCS_FEAT_xxx values
+> + */
+> +struct pcs_soc_data {
+> +	unsigned flags;
+> +};
+> +
+> +/**
+>   * struct pcs_device - pinctrl device instance
+>   * @res:	resources
+>   * @base:	virtual address of the controller
+>   * @size:	size of the ioremapped area
+>   * @dev:	device entry
+>   * @pctl:	pin controller device
+> + * @flags:	mask of PCS_FEAT_xxx values
+>   * @mutex:	mutex protecting the lists
+>   * @width:	bits per mux register
+>   * @fmask:	function register mask
+>   * @fshift:	function register shift
+>   * @foff:	value to turn mux off
+>   * @fmax:	max number of functions in fmask
+> - * @is_pinconf:	whether supports pinconf
+>   * @bits_per_pin:number of bits per pin
+>   * @names:	array of register names for pins
+>   * @pins:	physical pins on the SoC
+> @@ -183,6 +191,8 @@ struct pcs_device {
+>  	unsigned size;
+>  	struct device *dev;
+>  	struct pinctrl_dev *pctl;
+> +	unsigned flags;
+> +#define PCS_FEAT_PINCONF	(1 << 0)
+>  	struct mutex mutex;
+>  	unsigned width;
+>  	unsigned fmask;
+> @@ -190,7 +200,6 @@ struct pcs_device {
+>  	unsigned foff;
+>  	unsigned fmax;
+>  	bool bits_per_mux;
+> -	bool is_pinconf;
+>  	unsigned bits_per_pin;
+>  	struct pcs_name *names;
+>  	struct pcs_data pins;
+> @@ -206,6 +215,8 @@ struct pcs_device {
+>  	void (*write)(unsigned val, void __iomem *reg);
+>  };
+>  
+> +#define PCS_HAS_PINCONF		(pcs->flags & PCS_FEAT_PINCONF)
+> +
+>  static int pcs_pinconf_get(struct pinctrl_dev *pctldev, unsigned pin,
+>  			   unsigned long *config);
+>  static int pcs_pinconf_set(struct pinctrl_dev *pctldev, unsigned pin,
+> @@ -1060,7 +1071,7 @@ static int pcs_parse_pinconf(struct pcs_device *pcs, struct device_node *np,
+>  	};
+>  
+>  	/* If pinconf isn't supported, don't parse properties in below. */
+> -	if (!pcs->is_pinconf)
+> +	if (!PCS_HAS_PINCONF)
+>  		return 0;
+>  
+>  	/* cacluate how much properties are supported in current node */
+> @@ -1184,7 +1195,7 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
+>  	(*map)->data.mux.group = np->name;
+>  	(*map)->data.mux.function = np->name;
+>  
+> -	if (pcs->is_pinconf) {
+> +	if (PCS_HAS_PINCONF) {
+>  		res = pcs_parse_pinconf(pcs, np, function, map);
+>  		if (res)
+>  			goto free_pingroups;
+> @@ -1305,7 +1316,7 @@ static int pcs_parse_bits_in_pinctrl_entry(struct pcs_device *pcs,
+>  	(*map)->data.mux.group = np->name;
+>  	(*map)->data.mux.function = np->name;
+>  
+> -	if (pcs->is_pinconf) {
+> +	if (PCS_HAS_PINCONF) {
+>  		dev_err(pcs->dev, "pinconf not supported\n");
+>  		goto free_pingroups;
+>  	}
+> @@ -1525,6 +1536,7 @@ static int pcs_probe(struct platform_device *pdev)
+>  	const struct of_device_id *match;
+>  	struct resource *res;
+>  	struct pcs_device *pcs;
+> +	const struct pcs_soc_data *soc;
+>  	int ret;
+>  
+>  	match = of_match_device(pcs_of_match, &pdev->dev);
+> @@ -1541,7 +1553,8 @@ static int pcs_probe(struct platform_device *pdev)
+>  	INIT_LIST_HEAD(&pcs->pingroups);
+>  	INIT_LIST_HEAD(&pcs->functions);
+>  	INIT_LIST_HEAD(&pcs->gpiofuncs);
+> -	pcs->is_pinconf = match->data;
+> +	soc = match->data;
+> +	pcs->flags = soc->flags;
+>  
+>  	PCS_GET_PROP_U32("pinctrl-single,register-width", &pcs->width,
+>  			 "register width not specified\n");
+> @@ -1610,7 +1623,7 @@ static int pcs_probe(struct platform_device *pdev)
+>  	pcs->desc.name = DRIVER_NAME;
+>  	pcs->desc.pctlops = &pcs_pinctrl_ops;
+>  	pcs->desc.pmxops = &pcs_pinmux_ops;
+> -	if (pcs->is_pinconf)
+> +	if (PCS_HAS_PINCONF)
+>  		pcs->desc.confops = &pcs_pinconf_ops;
+>  	pcs->desc.owner = THIS_MODULE;
+>  
+> @@ -1652,9 +1665,16 @@ static int pcs_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +static const struct pcs_soc_data pinctrl_single = {
+> +};
+> +
+> +static const struct pcs_soc_data pinconf_single = {
+> +	.flags = PCS_FEAT_PINCONF,
+> +};
+> +
+>  static struct of_device_id pcs_of_match[] = {
+> -	{ .compatible = "pinctrl-single", .data = (void *)false },
+> -	{ .compatible = "pinconf-single", .data = (void *)true },
+> +	{ .compatible = "pinctrl-single", .data = &pinctrl_single },
+> +	{ .compatible = "pinconf-single", .data = &pinconf_single },
+>  	{ },
+>  };
+>  MODULE_DEVICE_TABLE(of, pcs_of_match);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
