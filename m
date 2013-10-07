@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3JGHq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 03:46:58 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:49562 "EHLO extserv.mm-sol.com"
+	id S1754273Ab3JGHq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 03:46:56 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:49564 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106Ab3JGHqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752834Ab3JGHqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Oct 2013 03:46:52 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: balbi@ti.com
@@ -16,71 +16,142 @@ Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v6 0/3] DWC3 USB support for Qualcomm platform
-Date: Mon,  7 Oct 2013 10:44:54 +0300
-Message-Id: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH v6 1/3] usb: dwc3: msm: Add device tree binding information
+Date: Mon,  7 Oct 2013 10:44:55 +0300
+Message-Id: <1381131897-13910-2-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
+References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Hi,
+MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+(SNPS) and HS, SS PHY's control and configuration registers.
 
-This is sixth version of MSM USB3 drivers patches.
+It could operate in device mode (SS, HS, FS) and host
+mode (SS, HS, FS, LS).
 
-Changes since v5:
-* devicetree bindings descriptions fixes 
-* Fixed NULL pointer dereferences in dev_prink's
-* Removed extra space in "sleep " clock name
-
-Changes since v4:
-* Substitute references to "wc3" with just "dw" in USB PHY drivers and
-  file names. This is to indicate that the PHY's are DesignWare, but
-  not necessarily related to DWC3 IP core. 
-
-Changes since v3:
-* Remove "_clk" suffix from clock names
-* Clarify required child node for qcom,dwc3
-* Fix comments in functions headers
-* Use dbg instead err in drivers probe functions.
-
-Changes since v2:
-* Several improvements in devicetree bindings description
-* Disable regulators in glue layer if there is error during 
-  ioremap.
-
-Changes since first version:
-* Split devicetree bindings description file to separate patch
-* Address comments for device bindings description
-* Fix typo in 'gdsc' requlator name.
-
-These patches add basic support for USB3.0 controllers found
-on MSM platforms. USB3.0 core is based on Synopsys DesignWare 
-SuperSpeed IP. 
-
-Generated on top of Felipe 'testing' branch.
-
-Ivan T. Ivanov (3):
-  usb: dwc3: msm: Add device tree binding information
-  usb: phy: Add Qualcomm SS-USB and HS-USB drivers for DW PHY's
-  usb: dwc3: Add Qualcomm DWC3 glue layer driver
-
- .../devicetree/bindings/usb/msm-ssusb.txt          |  105 ++++++
- drivers/usb/dwc3/Kconfig                           |    8 +
- drivers/usb/dwc3/Makefile                          |    1 +
- drivers/usb/dwc3/dwc3-msm.c                        |  168 +++++++++
- drivers/usb/phy/Kconfig                            |   11 +
- drivers/usb/phy/Makefile                           |    2 +
- drivers/usb/phy/phy-msm-dw-hs.c                    |  329 +++++++++++++++++
- drivers/usb/phy/phy-msm-dw-ss.c                    |  375 ++++++++++++++++++++
- 8 files changed, 999 insertions(+)
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+---
+ .../devicetree/bindings/usb/msm-ssusb.txt          |  105 ++++++++++++++++++++
+ 1 file changed, 105 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
- create mode 100644 drivers/usb/dwc3/dwc3-msm.c
- create mode 100644 drivers/usb/phy/phy-msm-dw-hs.c
- create mode 100644 drivers/usb/phy/phy-msm-dw-ss.c
 
+diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+new file mode 100644
+index 0000000..a71bf00
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+@@ -0,0 +1,105 @@
++MSM SuperSpeed DWC3 USB SoC controller
++
++
++MSM DW Highspeed USB PHY
++========================
++Required properities:
++- compatible:	should contain "qcom,dw-hsphy";
++- reg:			offset and length of the register set in the memory map
++- clocks:		A list of phandle + clock-specifier pairs for the
++				clocks listed in clock-names
++- clock-names:	Should contain the following:
++  "xo"			External reference clock
++  "sleep_a"		Sleep clock, used when USB3 core goes into low
++				power mode (U3).
++- v1p8-supply:	phandle to the regulator for the 1.8v supply to HSPHY.
++- v3p3-supply:	phandle to the regulator for the 3.3v supply to HSPHY.
++- vbus-supply:	phandle to the regulator for the vbus supply for host
++		mode.
++- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
++                digital circuit operation.
++
++MSM DW Superspeed USB PHY
++=========================
++Required properities:
++- compatible:	should contain "qcom,dw-ssphy";
++- reg:			offset and length of the register set in the memory map
++- clocks:		A list of phandle + clock-specifier pairs for the
++				clocks listed in clock-names
++- clock-names:	Should contain the following:
++  "xo"			External reference clock
++  "ref"			Reference clock - used in host mode.
++- v1p8-supply:	phandle to the regulator for the 1.8v supply to HSPHY.
++- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
++                digital circuit operation.
++
++MSM DWC3 controller wrapper
++===========================
++Required properties:
++- compatible:	should contain "qcom,dwc3"
++- reg:			offset and length of the TCSR register for routing USB
++				signals to either picoPHY0 or picoPHY1.
++- clocks:		A list of phandle + clock-specifier pairs for the
++				clocks listed in clock-names
++- clock-names:	Should contain the following:
++  "core"		Master/Core clock, have to be >= 125 MHz for SS
++				operation and >= 60MHz for HS operation
++  "iface"		System bus AXI clock
++  "sleep"		Sleep clock, used when USB3 core goes into low
++				power mode (U3).
++  "utmi"		Generated by HSPHY. Used to clock the low power
++				parts of thr HS Link layer.
++Optional regulator:
++- gdsc-supply:	phandle to the regulator from globally distributed
++				switch controller
++Required child node:
++A child node must exist to represent the core DWC3 IP block. The name of
++the node is not important. The content of the node is defined in dwc3.txt.
++
++Example device nodes:
++
++	dw_hsphy: phy@f92f8800 {
++		compatible = "qcom,dw-hsphy";
++		reg = <0xf92f8800 0x30>;
++
++		clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
++		clock-names = "xo", "sleep_a";
++
++		vbus-supply = <&supply>;
++		vddcx-supply = <&supply>;
++		v1p8-supply = <&supply>;
++		v3p3-supply = <&supply>;
++	};
++
++	dw_ssphy: phy@f92f8830 {
++		compatible = "qcom,dw-ssphy";
++		reg = <0xf92f8830 0x30>;
++
++		clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
++		clock-names = "xo", "ref";
++
++		vddcx-supply = <&supply>;
++		v1p8-supply = <&supply>;
++	};
++
++	usb@fd4ab000 {
++		compatible = "qcom,dwc3";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0xfd4ab000 0x4>;
++
++		clocks = <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
++				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
++		clock-names = "core", "iface", "sleep", "utmi";
++
++		gdsc-supply = <&supply>;
++
++		ranges;
++		dwc3@f9200000 {
++			compatible = "snps,dwc3";
++			reg = <0xf9200000 0xcd00>;
++			interrupts = <0 131>;
++			usb-phy = <&dw_hsphy>, <&dw_ssphy>;
++			tx-fifo-resize;
++		};
++	};
 -- 
 1.7.9.5
 
