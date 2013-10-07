@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab3JGQgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:36:37 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:50907 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab3JGQgc (ORCPT
+	id S932065Ab3JGQgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:36:48 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:51657 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756192Ab3JGQgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:36:32 -0400
+	Mon, 7 Oct 2013 12:36:42 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v2 09/29] of: Introduce common early_init_dt_scan
-Date: Mon,  7 Oct 2013 11:29:17 -0500
-Message-Id: <1381163377-21044-10-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH v2 16/29] mips: use early_init_dt_scan
+Date: Mon,  7 Oct 2013 11:29:24 -0500
+Message-Id: <1381163377-21044-17-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -23,68 +24,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Most architectures scan the all the same items early in the FDT and none
-are really architecture specific. Create a common early_init_dt_scan to
-unify the early scan of root, memory, and chosen nodes in the flattened
-DT.
+Convert mips to use new early_init_dt_scan function.
+
+Remove early_init_dt_scan_memory_arch
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Acked-by: John Crispin <blogic@openwrt.org>
 ---
- drivers/of/fdt.c       | 26 ++++++++++++++++++++++++++
- include/linux/of_fdt.h |  2 ++
- 2 files changed, 28 insertions(+)
+ arch/mips/include/asm/prom.h |  3 ---
+ arch/mips/kernel/prom.c      | 39 +++------------------------------------
+ 2 files changed, 3 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 5177616..bfbfda5 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -785,6 +785,32 @@ void * __init __weak early_init_dt_alloc_memory_arch(u64 size, u64 align)
+diff --git a/arch/mips/include/asm/prom.h b/arch/mips/include/asm/prom.h
+index 1e7e096..e3dbd0e 100644
+--- a/arch/mips/include/asm/prom.h
++++ b/arch/mips/include/asm/prom.h
+@@ -17,9 +17,6 @@
+ #include <linux/types.h>
+ #include <asm/bootinfo.h>
+ 
+-extern int early_init_dt_scan_memory_arch(unsigned long node,
+-	const char *uname, int depth, void *data);
+-
+ extern void device_tree_init(void);
+ 
+ static inline unsigned long pci_address_to_pio(phys_addr_t address)
+diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+index 0fa0b69..67a4c53 100644
+--- a/arch/mips/kernel/prom.c
++++ b/arch/mips/kernel/prom.c
+@@ -17,8 +17,6 @@
+ #include <linux/debugfs.h>
+ #include <linux/of.h>
+ #include <linux/of_fdt.h>
+-#include <linux/of_irq.h>
+-#include <linux/of_platform.h>
+ 
+ #include <asm/page.h>
+ #include <asm/prom.h>
+@@ -40,13 +38,6 @@ char *mips_get_machine_name(void)
+ }
+ 
+ #ifdef CONFIG_OF
+-int __init early_init_dt_scan_memory_arch(unsigned long node,
+-					  const char *uname, int depth,
+-					  void *data)
+-{
+-	return early_init_dt_scan_memory(node, uname, depth, data);
+-}
+-
+ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+ {
+ 	return add_memory_region(base, size, BOOT_MEM_RAM);
+@@ -78,36 +69,12 @@ int __init early_init_dt_scan_model(unsigned long node,	const char *uname,
+ 	return 0;
+ }
+ 
+-void __init early_init_devtree(void *params)
+-{
+-	/* Setup flat device-tree pointer */
+-	initial_boot_params = params;
+-
+-	/* Retrieve various informations from the /chosen node of the
+-	 * device-tree, including the platform type, initrd location and
+-	 * size, and more ...
+-	 */
+-	of_scan_flat_dt(early_init_dt_scan_chosen, arcs_cmdline);
+-
+-
+-	/* Scan memory nodes */
+-	of_scan_flat_dt(early_init_dt_scan_root, NULL);
+-	of_scan_flat_dt(early_init_dt_scan_memory_arch, NULL);
+-
+-	/* try to load the mips machine name */
+-	of_scan_flat_dt(early_init_dt_scan_model, NULL);
+-}
+-
+ void __init __dt_setup_arch(struct boot_param_header *bph)
+ {
+-	if (be32_to_cpu(bph->magic) != OF_DT_HEADER) {
+-		pr_err("DTB has bad magic, ignoring builtin OF DTB\n");
+-
++	if (!early_init_dt_scan(bph))
+ 		return;
+-	}
+-
+-	initial_boot_params = bph;
+ 
+-	early_init_devtree(initial_boot_params);
++	/* try to load the mips machine name */
++	of_scan_flat_dt(early_init_dt_scan_model, NULL);
  }
  #endif
- 
-+bool __init early_init_dt_scan(void *params)
-+{
-+	if (!params)
-+		return false;
-+
-+	/* Setup flat device-tree pointer */
-+	initial_boot_params = params;
-+
-+	/* check device tree validity */
-+	if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
-+		initial_boot_params = NULL;
-+		return false;
-+	}
-+
-+	/* Retrieve various information from the /chosen node */
-+	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
-+
-+	/* Initialize {size,address}-cells info */
-+	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-+
-+	/* Setup memory, calling early_init_dt_add_memory_arch */
-+	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
-+
-+	return true;
-+}
-+
- /**
-  * unflatten_device_tree - create tree of device_nodes from flat blob
-  *
-diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-index 58c28a8..73e1651 100644
---- a/include/linux/of_fdt.h
-+++ b/include/linux/of_fdt.h
-@@ -116,6 +116,8 @@ extern void early_init_dt_setup_initrd_arch(u64 start, u64 end);
- extern int early_init_dt_scan_root(unsigned long node, const char *uname,
- 				   int depth, void *data);
- 
-+extern bool early_init_dt_scan(void *params);
-+
- /* Other Prototypes */
- extern void unflatten_device_tree(void);
- extern void unflatten_and_copy_device_tree(void);
 -- 
 1.8.1.2
 
