@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3JGJcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:32:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9856 "EHLO mx1.redhat.com"
+	id S1755324Ab3JGJdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:33:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755233Ab3JGJc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:32:27 -0400
+	id S1752227Ab3JGJcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 05:32:23 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -16,17 +16,23 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 2/3] perf tools: Add perf_data_file__open interface to data object
-Date: Mon,  7 Oct 2013 11:31:40 +0200
-Message-Id: <1381138301-6332-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/3] perf tools: Add data object to handle perf data file
+Date: Mon,  7 Oct 2013 11:31:39 +0200
+Message-Id: <1381138301-6332-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1381138301-6332-1-git-send-email-jolsa@redhat.com>
 References: <1381138301-6332-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf_data_file__open interface to data object
-to open the perf.data file for both read and write.
+This patch is adding 'struct perf_data_file' object as
+a placeholder for all attributes regarding perf.data
+file handling. Changing perf_session__new to take it
+as an argument.
+
+The rest of the functionality will be added later to keep
+this change simple enough, because all the places using
+perf_session are changed now.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -40,429 +46,845 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 ---
- tools/perf/Makefile         |   1 +
- tools/perf/builtin-record.c |  34 +------------
- tools/perf/builtin-top.c    |   9 +---
- tools/perf/util/data.c      | 120 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/data.h      |   4 ++
- tools/perf/util/session.c   |  95 +++++++++++------------------------
- tools/perf/util/session.h   |   2 +-
- 7 files changed, 158 insertions(+), 107 deletions(-)
- create mode 100644 tools/perf/util/data.c
+ tools/perf/builtin-annotate.c      |  9 ++++--
+ tools/perf/builtin-buildid-cache.c |  8 +++--
+ tools/perf/builtin-buildid-list.c  |  9 ++++--
+ tools/perf/builtin-diff.c          | 19 +++++++-----
+ tools/perf/builtin-evlist.c        |  7 ++++-
+ tools/perf/builtin-inject.c        |  7 ++++-
+ tools/perf/builtin-kmem.c          |  7 ++++-
+ tools/perf/builtin-kvm.c           | 13 ++++++--
+ tools/perf/builtin-lock.c          |  7 ++++-
+ tools/perf/builtin-mem.c           |  9 ++++--
+ tools/perf/builtin-record.c        | 61 ++++++++++++++++++++------------------
+ tools/perf/builtin-report.c        | 10 +++++--
+ tools/perf/builtin-sched.c         |  6 +++-
+ tools/perf/builtin-script.c        | 15 ++++++++--
+ tools/perf/builtin-timechart.c     | 10 +++++--
+ tools/perf/builtin-top.c           |  6 +++-
+ tools/perf/builtin-trace.c         |  8 +++--
+ tools/perf/perf.h                  |  1 -
+ tools/perf/util/data.h             | 29 ++++++++++++++++++
+ tools/perf/util/session.c          | 12 ++++----
+ tools/perf/util/session.h          |  6 ++--
+ 21 files changed, 186 insertions(+), 73 deletions(-)
+ create mode 100644 tools/perf/util/data.h
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b62e12d..1a7ecbd 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -364,6 +364,7 @@ LIB_OBJS += $(OUTPUT)util/vdso.o
- LIB_OBJS += $(OUTPUT)util/stat.o
- LIB_OBJS += $(OUTPUT)util/record.o
- LIB_OBJS += $(OUTPUT)util/srcline.o
-+LIB_OBJS += $(OUTPUT)util/data.o
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index ddde407..13ccea2 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -28,6 +28,7 @@
+ #include "util/hist.h"
+ #include "util/session.h"
+ #include "util/tool.h"
++#include "util/data.h"
+ #include "arch/common.h"
  
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
+ #include <dlfcn.h>
+@@ -203,9 +204,13 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 	struct perf_session *session;
+ 	struct perf_evsel *pos;
+ 	u64 total_nr_samples;
++	struct perf_data_file file = {
++		.path  = input_name,
++		.mode  = PERF_DATA_MODE_READ,
++		.force = ann->force,
++	};
+ 
+-	session = perf_session__new(input_name, O_RDONLY,
+-				    ann->force, false, &ann->tool);
++	session = perf_session__new(&file, false, &ann->tool);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
+index c96c8fa..581c62a 100644
+--- a/tools/perf/builtin-buildid-cache.c
++++ b/tools/perf/builtin-buildid-cache.c
+@@ -82,8 +82,12 @@ static bool dso__missing_buildid_cache(struct dso *dso, int parm __maybe_unused)
+ 
+ static int build_id_cache__fprintf_missing(const char *filename, bool force, FILE *fp)
+ {
+-	struct perf_session *session = perf_session__new(filename, O_RDONLY,
+-							 force, false, NULL);
++	struct perf_data_file file = {
++		.path  = filename,
++		.mode  = PERF_DATA_MODE_READ,
++		.force = force,
++	};
++	struct perf_session *session = perf_session__new(&file, false, NULL);
+ 	if (session == NULL)
+ 		return -1;
+ 
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index e74366a..0164c1c 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -15,6 +15,7 @@
+ #include "util/parse-options.h"
+ #include "util/session.h"
+ #include "util/symbol.h"
++#include "util/data.h"
+ 
+ static int sysfs__fprintf_build_id(FILE *fp)
+ {
+@@ -52,6 +53,11 @@ static bool dso__skip_buildid(struct dso *dso, int with_hits)
+ static int perf_session__list_build_ids(bool force, bool with_hits)
+ {
+ 	struct perf_session *session;
++	struct perf_data_file file = {
++		.path  = input_name,
++		.mode  = PERF_DATA_MODE_READ,
++		.force = force,
++	};
+ 
+ 	symbol__elf_init();
+ 	/*
+@@ -60,8 +66,7 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
+ 	if (filename__fprintf_build_id(input_name, stdout))
+ 		goto out;
+ 
+-	session = perf_session__new(input_name, O_RDONLY, force, false,
+-				    &build_id__mark_dso_hit_ops);
++	session = perf_session__new(&file, false, &build_id__mark_dso_hit_ops);
+ 	if (session == NULL)
+ 		return -1;
+ 	/*
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index f28799e..3fb2d46 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -16,6 +16,7 @@
+ #include "util/sort.h"
+ #include "util/symbol.h"
+ #include "util/util.h"
++#include "util/data.h"
+ 
+ #include <stdlib.h>
+ #include <math.h>
+@@ -42,7 +43,7 @@ struct diff_hpp_fmt {
+ 
+ struct data__file {
+ 	struct perf_session	*session;
+-	const char		*file;
++	struct perf_data_file	file;
+ 	int			 idx;
+ 	struct hists		*hists;
+ 	struct diff_hpp_fmt	 fmt[PERF_HPP_DIFF__MAX_INDEX];
+@@ -599,7 +600,7 @@ static void data__fprintf(void)
+ 
+ 	data__for_each_file(i, d)
+ 		fprintf(stdout, "#  [%d] %s %s\n",
+-			d->idx, d->file,
++			d->idx, d->file.path,
+ 			!d->idx ? "(Baseline)" : "");
+ 
+ 	fprintf(stdout, "#\n");
+@@ -661,17 +662,16 @@ static int __cmd_diff(void)
+ 	int ret = -EINVAL, i;
+ 
+ 	data__for_each_file(i, d) {
+-		d->session = perf_session__new(d->file, O_RDONLY, force,
+-					       false, &tool);
++		d->session = perf_session__new(&d->file, false, &tool);
+ 		if (!d->session) {
+-			pr_err("Failed to open %s\n", d->file);
++			pr_err("Failed to open %s\n", d->file.path);
+ 			ret = -ENOMEM;
+ 			goto out_delete;
+ 		}
+ 
+ 		ret = perf_session__process_events(d->session, &tool);
+ 		if (ret) {
+-			pr_err("Failed to process %s\n", d->file);
++			pr_err("Failed to process %s\n", d->file.path);
+ 			goto out_delete;
+ 		}
+ 
+@@ -1014,7 +1014,12 @@ static int data_init(int argc, const char **argv)
+ 		return -ENOMEM;
+ 
+ 	data__for_each_file(i, d) {
+-		d->file = use_default ? defaults[i] : argv[i];
++		struct perf_data_file *file = &d->file;
++
++		file->path  = use_default ? defaults[i] : argv[i];
++		file->mode  = PERF_DATA_MODE_READ,
++		file->force = force,
++
+ 		d->idx  = i;
+ 	}
+ 
+diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
+index 05bd9df..20b0f12 100644
+--- a/tools/perf/builtin-evlist.c
++++ b/tools/perf/builtin-evlist.c
+@@ -14,13 +14,18 @@
+ #include "util/parse-events.h"
+ #include "util/parse-options.h"
+ #include "util/session.h"
++#include "util/data.h"
+ 
+ static int __cmd_evlist(const char *file_name, struct perf_attr_details *details)
+ {
+ 	struct perf_session *session;
+ 	struct perf_evsel *pos;
++	struct perf_data_file file = {
++		.path = file_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+-	session = perf_session__new(file_name, O_RDONLY, 0, false, NULL);
++	session = perf_session__new(&file, 0, NULL);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 423875c..646e220 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -15,6 +15,7 @@
+ #include "util/tool.h"
+ #include "util/debug.h"
+ #include "util/build-id.h"
++#include "util/data.h"
+ 
+ #include "util/parse-options.h"
+ 
+@@ -347,6 +348,10 @@ static int __cmd_inject(struct perf_inject *inject)
+ {
+ 	struct perf_session *session;
+ 	int ret = -EINVAL;
++	struct perf_data_file file = {
++		.path = inject->input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+ 	signal(SIGINT, sig_handler);
+ 
+@@ -357,7 +362,7 @@ static int __cmd_inject(struct perf_inject *inject)
+ 		inject->tool.tracing_data = perf_event__repipe_tracing_data;
+ 	}
+ 
+-	session = perf_session__new(inject->input_name, O_RDONLY, false, true, &inject->tool);
++	session = perf_session__new(&file, true, &inject->tool);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index 9b5f077..1126382 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -13,6 +13,7 @@
+ 
+ #include "util/parse-options.h"
+ #include "util/trace-event.h"
++#include "util/data.h"
+ 
+ #include "util/debug.h"
+ 
+@@ -486,8 +487,12 @@ static int __cmd_kmem(void)
+ 		{ "kmem:kfree",			perf_evsel__process_free_event, },
+     		{ "kmem:kmem_cache_free",	perf_evsel__process_free_event, },
+ 	};
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+-	session = perf_session__new(input_name, O_RDONLY, 0, false, &perf_kmem);
++	session = perf_session__new(&file, false, &perf_kmem);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index cfa0b79..188bb29 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -17,6 +17,7 @@
+ #include "util/tool.h"
+ #include "util/stat.h"
+ #include "util/top.h"
++#include "util/data.h"
+ 
+ #include <sys/prctl.h>
+ #include <sys/timerfd.h>
+@@ -1215,10 +1216,13 @@ static int read_events(struct perf_kvm_stat *kvm)
+ 		.comm			= perf_event__process_comm,
+ 		.ordered_samples	= true,
+ 	};
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+ 	kvm->tool = eops;
+-	kvm->session = perf_session__new(kvm->file_name, O_RDONLY, 0, false,
+-					 &kvm->tool);
++	kvm->session = perf_session__new(&file, false, &kvm->tool);
+ 	if (!kvm->session) {
+ 		pr_err("Initializing perf session failed\n");
+ 		return -EINVAL;
+@@ -1450,6 +1454,9 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 		"perf kvm stat live [<options>]",
+ 		NULL
+ 	};
++	struct perf_data_file file = {
++		.mode = PERF_DATA_MODE_WRITE,
++	};
+ 
+ 
+ 	/* event handling */
+@@ -1514,7 +1521,7 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 	/*
+ 	 * perf session
+ 	 */
+-	kvm->session = perf_session__new(NULL, O_WRONLY, false, false, &kvm->tool);
++	kvm->session = perf_session__new(&file, false, &kvm->tool);
+ 	if (kvm->session == NULL) {
+ 		err = -ENOMEM;
+ 		goto out;
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 6a9076f..33c7253 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -15,6 +15,7 @@
+ #include "util/debug.h"
+ #include "util/session.h"
+ #include "util/tool.h"
++#include "util/data.h"
+ 
+ #include <sys/types.h>
+ #include <sys/prctl.h>
+@@ -853,8 +854,12 @@ static int __cmd_report(bool display_info)
+ 		.comm		 = perf_event__process_comm,
+ 		.ordered_samples = true,
+ 	};
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+-	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
++	session = perf_session__new(&file, false, &eops);
+ 	if (!session) {
+ 		pr_err("Initializing perf session failed\n");
+ 		return -ENOMEM;
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+index 253133a..31c00f1 100644
+--- a/tools/perf/builtin-mem.c
++++ b/tools/perf/builtin-mem.c
+@@ -5,6 +5,7 @@
+ #include "util/trace-event.h"
+ #include "util/tool.h"
+ #include "util/session.h"
++#include "util/data.h"
+ 
+ #define MEM_OPERATION_LOAD	"load"
+ #define MEM_OPERATION_STORE	"store"
+@@ -119,10 +120,14 @@ static int process_sample_event(struct perf_tool *tool,
+ 
+ static int report_raw_events(struct perf_mem *mem)
+ {
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 	int err = -EINVAL;
+ 	int ret;
+-	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
+-							 0, false, &mem->tool);
++	struct perf_session *session = perf_session__new(&file, false,
++							 &mem->tool);
+ 
+ 	if (session == NULL)
+ 		return -ENOMEM;
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index bf8d0f1..bfe7b93 100644
+index da13840..bf8d0f1 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -345,8 +345,6 @@ out:
+@@ -24,6 +24,7 @@
+ #include "util/symbol.h"
+ #include "util/cpumap.h"
+ #include "util/thread_map.h"
++#include "util/data.h"
  
- static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ #include <unistd.h>
+ #include <sched.h>
+@@ -65,11 +66,10 @@ struct perf_record {
+ 	struct perf_tool	tool;
+ 	struct perf_record_opts	opts;
+ 	u64			bytes_written;
+-	const char		*output_name;
++	struct perf_data_file	file;
+ 	struct perf_evlist	*evlist;
+ 	struct perf_session	*session;
+ 	const char		*progname;
+-	int			output;
+ 	int			realtime_prio;
+ 	bool			no_buildid;
+ 	bool			no_buildid_cache;
+@@ -84,8 +84,10 @@ static void advance_output(struct perf_record *rec, size_t size)
+ 
+ static int write_output(struct perf_record *rec, void *buf, size_t size)
  {
--	struct stat st;
--	int flags;
- 	int err, feat;
++	struct perf_data_file *file = &rec->file;
++
+ 	while (size) {
+-		int ret = write(rec->output, buf, size);
++		int ret = write(file->fd, buf, size);
+ 
+ 		if (ret < 0) {
+ 			pr_err("failed to write\n");
+@@ -248,13 +250,15 @@ out:
+ 
+ static int process_buildids(struct perf_record *rec)
+ {
+-	u64 size = lseek(rec->output, 0, SEEK_CUR);
++	struct perf_data_file *file  = &rec->file;
++	struct perf_session *session = rec->session;
+ 
++	u64 size = lseek(file->fd, 0, SEEK_CUR);
+ 	if (size == 0)
+ 		return 0;
+ 
+-	rec->session->fd = rec->output;
+-	return __perf_session__process_events(rec->session, rec->post_processing_offset,
++	session->fd = file->fd;
++	return __perf_session__process_events(session, rec->post_processing_offset,
+ 					      size - rec->post_processing_offset,
+ 					      size, &build_id__mark_dso_hit_ops);
+ }
+@@ -262,17 +266,18 @@ static int process_buildids(struct perf_record *rec)
+ static void perf_record__exit(int status, void *arg)
+ {
+ 	struct perf_record *rec = arg;
++	struct perf_data_file *file = &rec->file;
+ 
+ 	if (status != 0)
+ 		return;
+ 
+-	if (!rec->opts.pipe_output) {
++	if (!file->is_pipe) {
+ 		rec->session->header.data_size += rec->bytes_written;
+ 
+ 		if (!rec->no_buildid)
+ 			process_buildids(rec);
+ 		perf_session__write_header(rec->session, rec->evlist,
+-					   rec->output, true);
++					   file->fd, true);
+ 		perf_session__delete(rec->session);
+ 		perf_evlist__delete(rec->evlist);
+ 		symbol__exit();
+@@ -342,14 +347,15 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ {
+ 	struct stat st;
+ 	int flags;
+-	int err, output, feat;
++	int err, feat;
  	unsigned long waking = 0;
  	const bool forks = argc > 0;
-@@ -355,7 +353,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	struct machine *machine;
+ 	struct perf_tool *tool = &rec->tool;
  	struct perf_record_opts *opts = &rec->opts;
  	struct perf_evlist *evsel_list = rec->evlist;
- 	struct perf_data_file *file = &rec->file;
--	const char *output_name = file->path;
+-	const char *output_name = rec->output_name;
++	struct perf_data_file *file = &rec->file;
++	const char *output_name = file->path;
  	struct perf_session *session;
  	bool disabled = false;
  
-@@ -367,35 +364,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	signal(SIGUSR1, sig_handler);
- 	signal(SIGTERM, sig_handler);
+@@ -363,13 +369,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
  
--	if (!output_name) {
--		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
--			file->is_pipe = true;
--		else
--			file->path = output_name = "perf.data";
--	}
--	if (output_name) {
--		if (!strcmp(output_name, "-"))
--			file->is_pipe = true;
--		else if (!stat(output_name, &st) && st.st_size) {
--			char oldname[PATH_MAX];
--			snprintf(oldname, sizeof(oldname), "%s.old",
--				 output_name);
--			unlink(oldname);
--			rename(output_name, oldname);
--		}
--	}
+ 	if (!output_name) {
+ 		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+-			opts->pipe_output = true;
++			file->is_pipe = true;
+ 		else
+-			rec->output_name = output_name = "perf.data";
++			file->path = output_name = "perf.data";
+ 	}
+ 	if (output_name) {
+ 		if (!strcmp(output_name, "-"))
+-			opts->pipe_output = true;
++			file->is_pipe = true;
+ 		else if (!stat(output_name, &st) && st.st_size) {
+ 			char oldname[PATH_MAX];
+ 			snprintf(oldname, sizeof(oldname), "%s.old",
+@@ -381,19 +387,16 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 
+ 	flags = O_CREAT|O_RDWR|O_TRUNC;
+ 
+-	if (opts->pipe_output)
+-		output = STDOUT_FILENO;
++	if (file->is_pipe)
++		file->fd = STDOUT_FILENO;
+ 	else
+-		output = open(output_name, flags, S_IRUSR | S_IWUSR);
+-	if (output < 0) {
++		file->fd = open(output_name, flags, S_IRUSR | S_IWUSR);
++	if (file->fd < 0) {
+ 		perror("failed to create output file");
+ 		return -1;
+ 	}
+ 
+-	rec->output = output;
 -
--	flags = O_CREAT|O_RDWR|O_TRUNC;
--
--	if (file->is_pipe)
--		file->fd = STDOUT_FILENO;
--	else
--		file->fd = open(output_name, flags, S_IRUSR | S_IWUSR);
--	if (file->fd < 0) {
--		perror("failed to create output file");
--		return -1;
--	}
--
- 	session = perf_session__new(file, false, NULL);
+-	session = perf_session__new(output_name, O_WRONLY,
+-				    true, false, NULL);
++	session = perf_session__new(file, false, NULL);
  	if (session == NULL) {
  		pr_err("Not enough memory for reading perf file header\n");
-@@ -586,7 +554,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	fprintf(stderr,
- 		"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
- 		(double)rec->bytes_written / 1024.0 / 1024.0,
--		output_name,
-+		file->path,
- 		rec->bytes_written / 24);
+ 		return -1;
+@@ -415,7 +418,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
  
- 	return 0;
+ 	if (forks) {
+ 		err = perf_evlist__prepare_workload(evsel_list, &opts->target,
+-						    argv, opts->pipe_output,
++						    argv, file->is_pipe,
+ 						    true);
+ 		if (err < 0) {
+ 			pr_err("Couldn't run the workload!\n");
+@@ -436,13 +439,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	 */
+ 	on_exit(perf_record__exit, rec);
+ 
+-	if (opts->pipe_output) {
+-		err = perf_header__write_pipe(output);
++	if (file->is_pipe) {
++		err = perf_header__write_pipe(file->fd);
+ 		if (err < 0)
+ 			goto out_delete_session;
+ 	} else {
+ 		err = perf_session__write_header(session, evsel_list,
+-						 output, false);
++						 file->fd, false);
+ 		if (err < 0)
+ 			goto out_delete_session;
+ 	}
+@@ -455,11 +458,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
+ 	}
+ 
+-	rec->post_processing_offset = lseek(output, 0, SEEK_CUR);
++	rec->post_processing_offset = lseek(file->fd, 0, SEEK_CUR);
+ 
+ 	machine = &session->machines.host;
+ 
+-	if (opts->pipe_output) {
++	if (file->is_pipe) {
+ 		err = perf_event__synthesize_attrs(tool, session,
+ 						   process_synthesized_event);
+ 		if (err < 0) {
+@@ -476,7 +479,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 			 * return this more properly and also
+ 			 * propagate errors that now are calling die()
+ 			 */
+-			err = perf_event__synthesize_tracing_data(tool, output, evsel_list,
++			err = perf_event__synthesize_tracing_data(tool, file->fd, evsel_list,
+ 								  process_synthesized_event);
+ 			if (err <= 0) {
+ 				pr_err("Couldn't record tracing data.\n");
+@@ -842,7 +845,7 @@ const struct option record_options[] = {
+ 	OPT_STRING('C', "cpu", &record.opts.target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+ 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
+-	OPT_STRING('o', "output", &record.output_name, "file",
++	OPT_STRING('o', "output", &record.file.path, "file",
+ 		    "output file name"),
+ 	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
+ 		    "child tasks do not inherit counters"),
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c902229..e62f63b 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -33,6 +33,7 @@
+ #include "util/thread.h"
+ #include "util/sort.h"
+ #include "util/hist.h"
++#include "util/data.h"
+ #include "arch/common.h"
+ 
+ #include <dlfcn.h>
+@@ -858,6 +859,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_END()
+ 	};
++	struct perf_data_file file = {
++		.mode  = PERF_DATA_MODE_READ,
++	};
+ 
+ 	perf_config(perf_report_config, &report);
+ 
+@@ -887,9 +891,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		perf_hpp__init();
+ 	}
+ 
++	file.path  = input_name;
++	file.force = report.force;
++
+ repeat:
+-	session = perf_session__new(input_name, O_RDONLY,
+-				    report.force, false, &report.tool);
++	session = perf_session__new(&file, false, &report.tool);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index d8c51b2..5a46b10 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1446,8 +1446,12 @@ static int perf_sched__read_events(struct perf_sched *sched,
+ 		{ "sched:sched_migrate_task", process_sched_migrate_task_event, },
+ 	};
+ 	struct perf_session *session;
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+-	session = perf_session__new(input_name, O_RDONLY, 0, false, &sched->tool);
++	session = perf_session__new(&file, false, &sched->tool);
+ 	if (session == NULL) {
+ 		pr_debug("No Memory for session\n");
+ 		return -1;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 7f31a3d..05da75e 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -15,6 +15,7 @@
+ #include "util/evlist.h"
+ #include "util/evsel.h"
+ #include "util/sort.h"
++#include "util/data.h"
+ #include <linux/bitmap.h>
+ 
+ static char const		*script_name;
+@@ -1115,10 +1116,14 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
+ 	char scripts_path[MAXPATHLEN], lang_path[MAXPATHLEN];
+ 	DIR *scripts_dir, *lang_dir;
+ 	struct perf_session *session;
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 	char *temp;
+ 	int i = 0;
+ 
+-	session = perf_session__new(input_name, O_RDONLY, 0, false, NULL);
++	session = perf_session__new(&file, false, NULL);
+ 	if (!session)
+ 		return -1;
+ 
+@@ -1319,12 +1324,17 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf script [<options>] <top-script> [script-args]",
+ 		NULL
+ 	};
++	struct perf_data_file file = {
++		.mode = PERF_DATA_MODE_READ,
++	};
+ 
+ 	setup_scripting();
+ 
+ 	argc = parse_options(argc, argv, options, script_usage,
+ 			     PARSE_OPT_STOP_AT_NON_OPTION);
+ 
++	file.path = input_name;
++
+ 	if (argc > 1 && !strncmp(argv[0], "rec", strlen("rec"))) {
+ 		rec_script_path = get_script_path(argv[1], RECORD_SUFFIX);
+ 		if (!rec_script_path)
+@@ -1488,8 +1498,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (!script_name)
+ 		setup_pager();
+ 
+-	session = perf_session__new(input_name, O_RDONLY, 0, false,
+-				    &perf_script);
++	session = perf_session__new(&file, false, &perf_script);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index c2e0231..e11c61d 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -36,6 +36,7 @@
+ #include "util/session.h"
+ #include "util/svghelper.h"
+ #include "util/tool.h"
++#include "util/data.h"
+ 
+ #define SUPPORT_OLD_POWER_EVENTS 1
+ #define PWR_EVENT_EXIT -1
+@@ -990,8 +991,13 @@ static int __cmd_timechart(const char *output_name)
+ 		{ "power:power_frequency",	process_sample_power_frequency },
+ #endif
+ 	};
+-	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
+-							 0, false, &perf_timechart);
++	struct perf_data_file file = {
++		.path = input_name,
++		.mode = PERF_DATA_MODE_READ,
++	};
++
++	struct perf_session *session = perf_session__new(&file, false,
++							 &perf_timechart);
+ 	int ret = -EINVAL;
+ 
+ 	if (session == NULL)
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 1aefdfe..5ab4015 100644
+index cf4bba0..1aefdfe 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -930,15 +930,8 @@ static int __cmd_top(struct perf_top *top)
+@@ -930,11 +930,15 @@ static int __cmd_top(struct perf_top *top)
  	struct perf_record_opts *opts = &top->record_opts;
  	pthread_t thread;
  	int ret;
--	struct perf_data_file file = {
--		.mode = PERF_DATA_MODE_WRITE,
--	};
- 
--	/*
--	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
--	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
--	 */
--	top->session = perf_session__new(&file, false, NULL);
-+	top->session = perf_session__new(NULL, false, NULL);
++	struct perf_data_file file = {
++		.mode = PERF_DATA_MODE_WRITE,
++	};
++
+ 	/*
+ 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
+ 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
+ 	 */
+-	top->session = perf_session__new(NULL, O_WRONLY, false, false, NULL);
++	top->session = perf_session__new(&file, false, NULL);
  	if (top->session == NULL)
  		return -ENOMEM;
  
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-new file mode 100644
-index 0000000..7d09faf
---- /dev/null
-+++ b/tools/perf/util/data.c
-@@ -0,0 +1,120 @@
-+#include <linux/compiler.h>
-+#include <linux/kernel.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <string.h>
-+
-+#include "data.h"
-+#include "util.h"
-+
-+static bool check_pipe(struct perf_data_file *file)
-+{
-+	struct stat st;
-+	bool is_pipe = false;
-+	int fd = perf_data_file__is_read(file) ?
-+		 STDIN_FILENO : STDOUT_FILENO;
-+
-+	if (!file->path) {
-+		if (!fstat(fd, &st) && S_ISFIFO(st.st_mode))
-+			is_pipe = true;
-+	} else {
-+		if (!strcmp(file->path, "-"))
-+			is_pipe = true;
-+	}
-+
-+	if (is_pipe)
-+		file->fd = fd;
-+
-+	return file->is_pipe = is_pipe;
-+}
-+
-+static int check_backup(struct perf_data_file *file)
-+{
-+	struct stat st;
-+
-+	if (!stat(file->path, &st) && st.st_size) {
-+		/* TODO check errors properly */
-+		char oldname[PATH_MAX];
-+		snprintf(oldname, sizeof(oldname), "%s.old",
-+			 file->path);
-+		unlink(oldname);
-+		rename(file->path, oldname);
-+	}
-+
-+	return 0;
-+}
-+
-+static int open_file_read(struct perf_data_file *file)
-+{
-+	struct stat st;
-+	int fd;
-+
-+	fd = open(file->path, O_RDONLY);
-+	if (fd < 0) {
-+		int err = errno;
-+
-+		pr_err("failed to open %s: %s", file->path, strerror(err));
-+		if (err == ENOENT && !strcmp(file->path, "perf.data"))
-+			pr_err("  (try 'perf record' first)");
-+		pr_err("\n");
-+		return -err;
-+	}
-+
-+	if (fstat(fd, &st) < 0)
-+		goto out_close;
-+
-+	if (!file->force && st.st_uid && (st.st_uid != geteuid())) {
-+		pr_err("file %s not owned by current user or root\n",
-+		       file->path);
-+		goto out_close;
-+	}
-+
-+	if (!st.st_size) {
-+		pr_info("zero-sized file (%s), nothing to do!\n",
-+			file->path);
-+		goto out_close;
-+	}
-+
-+	file->size = st.st_size;
-+	return fd;
-+
-+ out_close:
-+	close(fd);
-+	return -1;
-+}
-+
-+static int open_file_write(struct perf_data_file *file)
-+{
-+	if (check_backup(file))
-+		return -1;
-+
-+	return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+}
-+
-+static int open_file(struct perf_data_file *file)
-+{
-+	int fd;
-+
-+	fd = perf_data_file__is_read(file) ?
-+	     open_file_read(file) : open_file_write(file);
-+
-+	file->fd = fd;
-+	return fd < 0 ? -1 : 0;
-+}
-+
-+int perf_data_file__open(struct perf_data_file *file)
-+{
-+	if (check_pipe(file))
-+		return 0;
-+
-+	if (!file->path)
-+		file->path = "perf.data";
-+
-+	return open_file(file);
-+}
-+
-+void perf_data_file__close(struct perf_data_file *file)
-+{
-+	close(file->fd);
-+}
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 1bb8f15..4e3bf72 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1636,7 +1636,10 @@ static int trace__replay(struct trace *trace)
+ 		{ "raw_syscalls:sys_enter",  trace__sys_enter, },
+ 		{ "raw_syscalls:sys_exit",   trace__sys_exit, },
+ 	};
+-
++	struct perf_data_file file = {
++		.path  = input_name,
++		.mode  = PERF_DATA_MODE_READ,
++	};
+ 	struct perf_session *session;
+ 	int err = -1;
+ 
+@@ -1659,8 +1662,7 @@ static int trace__replay(struct trace *trace)
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
+-	session = perf_session__new(input_name, O_RDONLY, 0, false,
+-				    &trace->tool);
++	session = perf_session__new(&file, false, &trace->tool);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index cf20187..0914630 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -218,7 +218,6 @@ struct perf_record_opts {
+ 	bool	     no_delay;
+ 	bool	     no_inherit;
+ 	bool	     no_samples;
+-	bool	     pipe_output;
+ 	bool	     raw_samples;
+ 	bool	     sample_address;
+ 	bool	     sample_weight;
 diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
-index ffa0186..d6c262e 100644
---- a/tools/perf/util/data.h
+new file mode 100644
+index 0000000..ffa0186
+--- /dev/null
 +++ b/tools/perf/util/data.h
-@@ -13,6 +13,7 @@ struct perf_data_file {
- 	int fd;
- 	bool is_pipe;
- 	bool force;
-+	unsigned long size;
- 	enum perf_data_mode mode;
- };
- 
-@@ -26,4 +27,7 @@ static inline bool perf_data_file__is_write(struct perf_data_file *file)
- 	return file->mode == PERF_DATA_MODE_WRITE;
- }
- 
-+int perf_data_file__open(struct perf_data_file *file);
-+void perf_data_file__close(struct perf_data_file *file);
+@@ -0,0 +1,29 @@
++#ifndef __PERF_DATA_H
++#define __PERF_DATA_H
 +
- #endif /* __PERF_DATA_H */
++#include <stdbool.h>
++
++enum perf_data_mode {
++	PERF_DATA_MODE_WRITE,
++	PERF_DATA_MODE_READ,
++};
++
++struct perf_data_file {
++	const char *path;
++	int fd;
++	bool is_pipe;
++	bool force;
++	enum perf_data_mode mode;
++};
++
++static inline bool perf_data_file__is_read(struct perf_data_file *file)
++{
++	return file->mode == PERF_DATA_MODE_READ;
++}
++
++static inline bool perf_data_file__is_write(struct perf_data_file *file)
++{
++	return file->mode == PERF_DATA_MODE_WRITE;
++}
++
++#endif /* __PERF_DATA_H */
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6e5fad1..8d6ae30 100644
+index 6c1d444..6e5fad1 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -16,73 +16,35 @@
- #include "perf_regs.h"
- #include "vdso.h"
- 
--static int perf_session__open(struct perf_session *self, bool force)
-+static int perf_session__open(struct perf_session *self)
- {
--	struct stat input_stat;
--
--	if (!strcmp(self->filename, "-")) {
--		self->fd_pipe = true;
--		self->fd = STDIN_FILENO;
--
-+	if (self->fd_pipe) {
- 		if (perf_session__read_header(self) < 0)
- 			pr_err("incompatible file format (rerun with -v to learn more)");
--
- 		return 0;
- 	}
- 
--	self->fd = open(self->filename, O_RDONLY);
--	if (self->fd < 0) {
--		int err = errno;
--
--		pr_err("failed to open %s: %s", self->filename, strerror(err));
--		if (err == ENOENT && !strcmp(self->filename, "perf.data"))
--			pr_err("  (try 'perf record' first)");
--		pr_err("\n");
--		return -errno;
--	}
--
--	if (fstat(self->fd, &input_stat) < 0)
--		goto out_close;
--
--	if (!force && input_stat.st_uid && (input_stat.st_uid != geteuid())) {
--		pr_err("file %s not owned by current user or root\n",
--		       self->filename);
--		goto out_close;
--	}
--
--	if (!input_stat.st_size) {
--		pr_info("zero-sized file (%s), nothing to do!\n",
--			self->filename);
--		goto out_close;
--	}
--
- 	if (perf_session__read_header(self) < 0) {
- 		pr_err("incompatible file format (rerun with -v to learn more)");
--		goto out_close;
-+		return -1;
- 	}
- 
- 	if (!perf_evlist__valid_sample_type(self->evlist)) {
- 		pr_err("non matching sample_type");
--		goto out_close;
-+		return -1;
- 	}
- 
- 	if (!perf_evlist__valid_sample_id_all(self->evlist)) {
- 		pr_err("non matching sample_id_all");
--		goto out_close;
-+		return -1;
- 	}
- 
- 	if (!perf_evlist__valid_read_format(self->evlist)) {
- 		pr_err("non matching read_format");
--		goto out_close;
-+		return -1;
- 	}
- 
--	self->size = input_stat.st_size;
- 	return 0;
--
--out_close:
--	close(self->fd);
--	self->fd = -1;
--	return -1;
+@@ -106,11 +106,11 @@ static void perf_session__destroy_kernel_maps(struct perf_session *self)
+ 	machines__destroy_kernel_maps(&self->machines);
  }
  
- void perf_session__set_id_hdr_size(struct perf_session *session)
-@@ -110,35 +72,35 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 				       bool repipe, struct perf_tool *tool)
+-struct perf_session *perf_session__new(const char *filename, int mode,
+-				       bool force, bool repipe,
+-				       struct perf_tool *tool)
++struct perf_session *perf_session__new(struct perf_data_file *file,
++				       bool repipe, struct perf_tool *tool)
  {
  	struct perf_session *self;
--	const char *filename = file->path;
--	struct stat st;
--	size_t len;
--
--	if (!filename || !strlen(filename)) {
--		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
--			filename = "-";
--		else
--			filename = "perf.data";
--	}
++	const char *filename = file->path;
+ 	struct stat st;
+ 	size_t len;
  
--	len = strlen(filename);
--	self = zalloc(sizeof(*self) + len);
--
--	if (self == NULL)
-+	self = zalloc(sizeof(*self));
-+	if (!self)
- 		goto out;
- 
--	memcpy(self->filename, filename, len);
- 	self->repipe = repipe;
- 	INIT_LIST_HEAD(&self->ordered_samples.samples);
- 	INIT_LIST_HEAD(&self->ordered_samples.sample_cache);
+@@ -134,11 +134,11 @@ struct perf_session *perf_session__new(const char *filename, int mode,
  	INIT_LIST_HEAD(&self->ordered_samples.to_free);
  	machines__init(&self->machines);
  
--	if (perf_data_file__is_read(file)) {
--		if (perf_session__open(self, file->force) < 0)
-+	if (file) {
-+		if (perf_data_file__open(file))
+-	if (mode == O_RDONLY) {
+-		if (perf_session__open(self, force) < 0)
++	if (perf_data_file__is_read(file)) {
++		if (perf_session__open(self, file->force) < 0)
  			goto out_delete;
--		perf_session__set_id_hdr_size(self);
--	} else if (perf_data_file__is_write(file)) {
-+
-+		self->fd       = file->fd;
-+		self->fd_pipe  = file->is_pipe;
-+		self->filename = file->path;
-+		self->size     = file->size;
-+
-+		if (perf_data_file__is_read(file)) {
-+			if (perf_session__open(self) < 0)
-+				goto out_close;
-+
-+			perf_session__set_id_hdr_size(self);
-+		}
-+	}
-+
-+	if (!file || perf_data_file__is_write(file)) {
+ 		perf_session__set_id_hdr_size(self);
+-	} else if (mode == O_WRONLY) {
++	} else if (perf_data_file__is_write(file)) {
  		/*
  		 * In O_RDONLY mode this will be performed when reading the
  		 * kernel MMAP event, in perf_event__process_mmap().
-@@ -153,10 +115,13 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 		tool->ordered_samples = false;
- 	}
- 
--out:
- 	return self;
--out_delete:
-+
-+ out_close:
-+	perf_data_file__close(file);
-+ out_delete:
- 	perf_session__delete(self);
-+ out:
- 	return NULL;
- }
- 
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 1e4d813..c6a21d9 100644
+index 3aa75fb..1e4d813 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -39,7 +39,7 @@ struct perf_session {
- 	bool			fd_pipe;
- 	bool			repipe;
- 	struct ordered_samples	ordered_samples;
--	char			filename[1];
-+	const char		*filename;
- };
+@@ -7,6 +7,7 @@
+ #include "machine.h"
+ #include "symbol.h"
+ #include "thread.h"
++#include "data.h"
+ #include <linux/rbtree.h>
+ #include <linux/perf_event.h>
  
- #define PRINT_IP_OPT_IP		(1<<0)
+@@ -49,9 +50,8 @@ struct perf_session {
+ 
+ struct perf_tool;
+ 
+-struct perf_session *perf_session__new(const char *filename, int mode,
+-				       bool force, bool repipe,
+-				       struct perf_tool *tool);
++struct perf_session *perf_session__new(struct perf_data_file *file,
++				       bool repipe, struct perf_tool *tool);
+ void perf_session__delete(struct perf_session *session);
+ 
+ void perf_event_header__bswap(struct perf_event_header *self);
 -- 
 1.7.11.7
 
