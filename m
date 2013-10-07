@@ -1,71 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3JGJjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:39:46 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:17068 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895Ab3JGJjp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:39:45 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1049,1371081600"; 
-   d="scan'208";a="58280447"
-Message-ID: <5252815E.70504@citrix.com>
-Date: Mon, 7 Oct 2013 10:39:42 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1755179Ab3JGJoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:44:05 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:33696 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab3JGJoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 05:44:03 -0400
+Message-ID: <5252825D.5000803@imgtec.com>
+Date: Mon, 7 Oct 2013 10:43:57 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Frediano Ziglio <frediano.ziglio@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector corruption
-References: <1380788677.30462.1.camel@hamster.uk.xensource.com> <524D4132.3000809@citrix.com> <1380804692.30462.3.camel@hamster.uk.xensource.com> <20131004132033.GA26673@phenom.dumpdata.com> <524EC3C1.4010304@citrix.com>
-In-Reply-To: <524EC3C1.4010304@citrix.com>
+To: Guenter Roeck <linux@roeck-us.net>, Rob Herring <rob.herring@calxeda.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-metag@vger.kernel.org>
+Subject: Re: Commit f26150004 (metag: use common of_flat_dt_match_machine)
+ causes metag build failures in linux-next
+References: <5251AB52.3000506@roeck-us.net>
+In-Reply-To: <5251AB52.3000506@roeck-us.net>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_10_07_10_43_59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/13 14:33, Andrew Cooper wrote:
-> On 04/10/13 14:20, Konrad Rzeszutek Wilk wrote:
->> On Thu, Oct 03, 2013 at 01:51:32PM +0100, Frediano Ziglio wrote:
->>> On Thu, 2013-10-03 at 11:04 +0100, Andrew Cooper wrote:
->>>> On 03/10/13 09:24, Frediano Ziglio wrote:
->>>>>
->>>>> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
->>>>> to be the first one that have this issue.
->>>>>
->>>>> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
->>>> In terms of the correctness of the fix,
->>>>
->>>> Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
->> Should this also go in stable tree?
+On 06/10/13 19:26, Guenter Roeck wrote:
+> arch/metag/kernel/devtree.c: In function 'setup_machine_fdt':
+> arch/metag/kernel/devtree.c:52: error: 'arch_get_next_mach' undeclared
+> (first use in this function)
+> arch/metag/kernel/devtree.c:52: error: (Each undeclared identifier is
+> reported only once
+> arch/metag/kernel/devtree.c:52: error: for each function it appears in.)
+> arch/metag/kernel/devtree.c:52: warning: assignment discards qualifiers
+> from pointer target type
+> make[1]: *** [arch/metag/kernel/devtree.o] Error 1
 > 
-> Very much so.  The change which exposed it for us was from 3.7 iirc, but
-> I believe it has been a latent bug for as long as the native early boot
-> code uses __USER_DS.
+> Not surprising, since arch_get_next_mach() is not defined for metag.
 > 
->>>> However, I am not sure the comment is necessary.  The prevailing style
->>>> is for no justification of loads of segment selectors on boot, and the
->>>> comment itself refers simply to an interaction issue of 32bit on Xen
->>>> when making use of sysenter.
->>>>
->>> Suggestion for the comment ??
->>>
->>> Frediano
-> 
-> My suggestion was to omit the comment entirely, or simplify it to just:
+> Guenter
 
-Suggesting comments should be omitted because other code is poorly
-commented seems odd to me.
+Thanks for reporting Guenter (and taking the time to set up auto-building
+of different arches - we have a metag buildbot but it hasn't been
+tracking the temporary linux-next URL).
 
-> /* Xen starts us with XEN_FLAT_RING1_DS, but linux code expects __USER_DS */
+Rob, sorry I didn't get around to testing your revised patchset until
+now. Please apply something like the patch below (preferably as a fixup)
+for f261500 (metag: use common of_flat_dt_match_machine).
 
-I do think this comment better summarizes the reason for loading the
-segment registers so I'd prefer this.
+This will cause a rebase conflict in "metag: move setup_machine_fdt
+declaration from prom.h" since I added const to setup_machine_fdt()'s
+return pointer, so that const needs adding to setup.h too.
 
-David
+Does that sound okay?
+
+Thanks
+James
+
+>From 821871cba80e00e8d42a38deb8ea2505481e9f1d Mon Sep 17 00:00:00 2001
+From: James Hogan <james.hogan@imgtec.com>
+Date: Mon, 7 Oct 2013 10:11:23 +0100
+Subject: [PATCH FIXUP] metag: fix build error converting to
+ of_flat_dt_match_machine
+
+Fix the following build error and warning due to commit f261500 (metag:
+use common of_flat_dt_match_machine):
+
+  arch/metag/kernel/devtree.c: In function 'setup_machine_fdt':
+  arch/metag/kernel/devtree.c:52: error: 'arch_get_next_mach' undeclared (first use in this function)
+  arch/metag/kernel/devtree.c:52: error: (Each undeclared identifier is reported only once
+  arch/metag/kernel/devtree.c:52: error: for each function it appears in.)
+  arch/metag/kernel/devtree.c:52: warning: assignment discards qualifiers from pointer target type
+  make[1]: *** [arch/metag/kernel/devtree.o] Error 1
+
+The arch_get_next_mach() function was missing, and there was a const
+mismatch which I've pushed out to the global machine_desc pointer. Also
+fix a little broken indentation (due presumably to the multiline
+comment) and added back a pr_info of the name of the machine which the
+kernel is using, as that's often useful to tell if it's using a more
+generic machine than it should be.
+
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+ arch/metag/include/asm/mach/arch.h |  2 +-
+ arch/metag/include/asm/prom.h      |  2 +-
+ arch/metag/kernel/devtree.c        | 20 +++++++++++++++++---
+ arch/metag/kernel/setup.c          |  2 +-
+ 4 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/arch/metag/include/asm/mach/arch.h b/arch/metag/include/asm/mach/arch.h
+index 12c5664..433f946 100644
+--- a/arch/metag/include/asm/mach/arch.h
++++ b/arch/metag/include/asm/mach/arch.h
+@@ -53,7 +53,7 @@ struct machine_desc {
+ /*
+  * Current machine - only accessible during boot.
+  */
+-extern struct machine_desc *machine_desc;
++extern const struct machine_desc *machine_desc;
+ 
+ /*
+  * Machine type table - also only accessible during boot
+diff --git a/arch/metag/include/asm/prom.h b/arch/metag/include/asm/prom.h
+index d2aa35d..9f67cbf 100644
+--- a/arch/metag/include/asm/prom.h
++++ b/arch/metag/include/asm/prom.h
+@@ -17,7 +17,7 @@
+ #include <asm/setup.h>
+ #define HAVE_ARCH_DEVTREE_FIXUPS
+ 
+-extern struct machine_desc *setup_machine_fdt(void *dt);
++extern const struct machine_desc *setup_machine_fdt(void *dt);
+ extern void copy_fdt(void);
+ 
+ #endif /* __ASM_METAG_PROM_H */
+diff --git a/arch/metag/kernel/devtree.c b/arch/metag/kernel/devtree.c
+index bf9df90..18dd7ae 100644
+--- a/arch/metag/kernel/devtree.c
++++ b/arch/metag/kernel/devtree.c
+@@ -34,6 +34,19 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ 	return alloc_bootmem_align(size, align);
+ }
+ 
++static const void * __init arch_get_next_mach(const char *const **match)
++{
++	static const struct machine_desc *mdesc = __arch_info_begin;
++	const struct machine_desc *m = mdesc;
++
++	if (m >= __arch_info_end)
++		return NULL;
++
++	mdesc++;
++	*match = m->dt_compat;
++	return m;
++}
++
+ /**
+  * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
+  * @dt:		virtual address pointer to dt blob
+@@ -41,9 +54,9 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+  * If a dtb was passed to the kernel, then use it to choose the correct
+  * machine_desc and to setup the system.
+  */
+- struct machine_desc * __init setup_machine_fdt(void *dt)
+- {
+-	struct machine_desc *mdesc;
++const struct machine_desc * __init setup_machine_fdt(void *dt)
++{
++	const struct machine_desc *mdesc;
+ 
+ 	/* check device tree validity */
+ 	if (!early_init_dt_scan(dt))
+@@ -52,6 +65,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ 	mdesc = of_flat_dt_match_machine(NULL, arch_get_next_mach);
+ 	if (!mdesc)
+ 		dump_machine_table(); /* does not return */
++	pr_info("Machine name: %s\n", mdesc->name);
+ 
+ 	return mdesc;
+ }
+diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
+index 2c697d3..92cc119 100644
+--- a/arch/metag/kernel/setup.c
++++ b/arch/metag/kernel/setup.c
+@@ -115,7 +115,7 @@ extern u32 __dtb_start[];
+ extern struct console dash_console;
+ #endif
+ 
+-struct machine_desc *machine_desc __initdata;
++const struct machine_desc *machine_desc __initdata;
+ 
+ /*
+  * Map a Linux CPU number to a hardware thread ID
+-- 
+1.8.1.2
+
