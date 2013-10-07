@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab3JGQa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:30:28 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:63883 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab3JGQaQ (ORCPT
+	id S1756357Ab3JGQaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:30:24 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:50233 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756309Ab3JGQaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Oct 2013 12:30:16 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
-Subject: [PATCH v2 13/29] c6x: use early_init_dt_scan
-Date: Mon,  7 Oct 2013 11:29:21 -0500
-Message-Id: <1381163377-21044-14-git-send-email-robherring2@gmail.com>
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v2 14/29] metag: use early_init_dt_scan
+Date: Mon,  7 Oct 2013 11:29:22 -0500
+Message-Id: <1381163377-21044-15-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -24,62 +24,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Convert c6x to use new early_init_dt_scan function.
+Convert metag to use new early_init_dt_scan function.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Mark Salter <msalter@redhat.com>
-Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-Cc: linux-c6x-dev@linux-c6x.org
+Cc: James Hogan <james.hogan@imgtec.com>
 ---
- arch/c6x/kernel/devicetree.c | 19 -------------------
- arch/c6x/kernel/setup.c      |  2 +-
- 2 files changed, 1 insertion(+), 20 deletions(-)
+ arch/metag/kernel/devtree.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/arch/c6x/kernel/devicetree.c b/arch/c6x/kernel/devicetree.c
-index 5e8c838..d28a92f 100644
---- a/arch/c6x/kernel/devicetree.c
-+++ b/arch/c6x/kernel/devicetree.c
-@@ -10,28 +10,9 @@
-  *
+diff --git a/arch/metag/kernel/devtree.c b/arch/metag/kernel/devtree.c
+index 049af56..68c2fee 100644
+--- a/arch/metag/kernel/devtree.c
++++ b/arch/metag/kernel/devtree.c
+@@ -43,18 +43,16 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
   */
- #include <linux/init.h>
--#include <linux/of.h>
--#include <linux/of_fdt.h>
- #include <linux/initrd.h>
- #include <linux/memblock.h>
+ struct machine_desc * __init setup_machine_fdt(void *dt)
+ {
+-	struct boot_param_header *devtree = dt;
+ 	struct machine_desc *mdesc, *mdesc_best = NULL;
+ 	unsigned int score, mdesc_score = ~1;
+ 	unsigned long dt_root;
+ 	const char *model;
  
--void __init early_init_devtree(void *params)
--{
--	/* Setup flat device-tree pointer */
--	initial_boot_params = params;
--
--	/* Retrieve various informations from the /chosen node of the
--	 * device-tree, including the platform type, initrd location and
--	 * size and more ...
--	 */
+ 	/* check device tree validity */
+-	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER)
++	if (!early_init_dt_scan(dt))
+ 		return NULL;
+ 
+ 	/* Search the mdescs for the 'best' compatible value match */
+-	initial_boot_params = devtree;
+ 	dt_root = of_get_flat_dt_root();
+ 
+ 	for_each_machine_desc(mdesc) {
+@@ -90,9 +88,6 @@ struct machine_desc * __init setup_machine_fdt(void *dt)
+ 		model = "<unknown>";
+ 	pr_info("Machine: %s, model: %s\n", mdesc_best->name, model);
+ 
+-	/* Retrieve various information from the /chosen node */
 -	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
 -
--	/* Scan memory nodes and rebuild MEMBLOCKs */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
--}
--
--
- #ifdef CONFIG_BLK_DEV_INITRD
- void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
- {
-diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
-index 0e5a812..731db4b 100644
---- a/arch/c6x/kernel/setup.c
-+++ b/arch/c6x/kernel/setup.c
-@@ -287,7 +287,7 @@ notrace void __init machine_init(unsigned long dt_ptr)
- 		fdt = dtb;
+ 	return mdesc_best;
  
- 	/* Do some early initialization based on the flat device tree */
--	early_init_devtree(fdt);
-+	early_init_dt_scan(fdt);
- 
- 	parse_early_param();
  }
 -- 
 1.8.1.2
