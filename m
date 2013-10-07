@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3JGKal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:30:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40012 "EHLO mx2.suse.de"
+	id S1755502Ab3JGKaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:30:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40036 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755339Ab3JGKa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:26 -0400
+	id S1755438Ab3JGKa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:29 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 47/63] mm: numa: Do not batch handle PMD pages
-Date: Mon,  7 Oct 2013 11:29:25 +0100
-Message-Id: <1381141781-10992-48-git-send-email-mgorman@suse.de>
+Subject: [PATCH 50/63] sched: numa: call task_numa_free from do_execve
+Date: Mon,  7 Oct 2013 11:29:28 +0100
+Message-Id: <1381141781-10992-51-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -22,248 +22,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the THP migration races closed it is still possible to occasionally
-see corruption. The problem is related to handling PMD pages in batch.
-When a page fault is handled it can be assumed that the page being
-faulted will also be flushed from the TLB. The same flushing does not
-happen when handling PMD pages in batch. Fixing is straight forward but
-there are a number of reasons not to
+From: Rik van Riel <riel@redhat.com>
 
-1. Multiple TLB flushes may have to be sent depending on what pages get
-   migrated
-2. The handling of PMDs in batch means that faults get accounted to
-   the task that is handling the fault. While care is taken to only
-   mark PMDs where the last CPU and PID match it can still have problems
-   due to PID truncation when matching PIDs.
-3. Batching on the PMD level may reduce faults but setting pmd_numa
-   requires taking a heavy lock that can contend with THP migration
-   and handling the fault requires the release/acquisition of the PTL
-   for every page migrated. It's still pretty heavy.
+It is possible for a task in a numa group to call exec, and
+have the new (unrelated) executable inherit the numa group
+association from its former self.
 
-PMD batch handling is not something that people ever have been happy
-with. This patch removes it and later patches will deal with the
-additional fault overhead using more installigent migrate rate adaption.
+This has the potential to break numa grouping, and is trivial
+to fix.
 
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/memory.c   | 101 ++--------------------------------------------------------
- mm/mprotect.c |  47 ++-------------------------
- 2 files changed, 4 insertions(+), 144 deletions(-)
+ fs/exec.c             | 1 +
+ include/linux/sched.h | 4 ++++
+ kernel/sched/fair.c   | 9 ++++++++-
+ kernel/sched/sched.h  | 5 -----
+ 4 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index eba846b..9898eeb 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3606,103 +3606,6 @@ out:
- 	return 0;
+diff --git a/fs/exec.c b/fs/exec.c
+index 8875dd1..2ea437e 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1547,6 +1547,7 @@ static int do_execve_common(const char *filename,
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+ 	acct_update_integrals(current);
++	task_numa_free(current);
+ 	free_bprm(bprm);
+ 	if (displaced)
+ 		put_files_struct(displaced);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 17eb13f..5315607 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1448,6 +1448,7 @@ struct task_struct {
+ extern void task_numa_fault(int last_node, int node, int pages, int flags);
+ extern pid_t task_numa_group_id(struct task_struct *p);
+ extern void set_numabalancing_state(bool enabled);
++extern void task_numa_free(struct task_struct *p);
+ #else
+ static inline void task_numa_fault(int last_node, int node, int pages,
+ 				   int flags)
+@@ -1460,6 +1461,9 @@ static inline pid_t task_numa_group_id(struct task_struct *p)
+ static inline void set_numabalancing_state(bool enabled)
+ {
  }
++static inline void task_numa_free(struct task_struct *p)
++{
++}
+ #endif
  
--/* NUMA hinting page fault entry point for regular pmds */
--#ifdef CONFIG_NUMA_BALANCING
--static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		     unsigned long addr, pmd_t *pmdp)
--{
--	pmd_t pmd;
--	pte_t *pte, *orig_pte;
--	unsigned long _addr = addr & PMD_MASK;
--	unsigned long offset;
--	spinlock_t *ptl;
--	bool numa = false;
--	int last_cpupid;
--
--	spin_lock(&mm->page_table_lock);
--	pmd = *pmdp;
--	if (pmd_numa(pmd)) {
--		set_pmd_at(mm, _addr, pmdp, pmd_mknonnuma(pmd));
--		numa = true;
--	}
--	spin_unlock(&mm->page_table_lock);
--
--	if (!numa)
--		return 0;
--
--	/* we're in a page fault so some vma must be in the range */
--	BUG_ON(!vma);
--	BUG_ON(vma->vm_start >= _addr + PMD_SIZE);
--	offset = max(_addr, vma->vm_start) & ~PMD_MASK;
--	VM_BUG_ON(offset >= PMD_SIZE);
--	orig_pte = pte = pte_offset_map_lock(mm, pmdp, _addr, &ptl);
--	pte += offset >> PAGE_SHIFT;
--	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
--		pte_t pteval = *pte;
--		struct page *page;
--		int page_nid = -1;
--		int target_nid;
--		bool migrated = false;
--		int flags = 0;
--
--		if (!pte_present(pteval))
--			continue;
--		if (!pte_numa(pteval))
--			continue;
--		if (addr >= vma->vm_end) {
--			vma = find_vma(mm, addr);
--			/* there's a pte present so there must be a vma */
--			BUG_ON(!vma);
--			BUG_ON(addr < vma->vm_start);
--		}
--		if (pte_numa(pteval)) {
--			pteval = pte_mknonnuma(pteval);
--			set_pte_at(mm, addr, pte, pteval);
--		}
--		page = vm_normal_page(vma, addr, pteval);
--		if (unlikely(!page))
--			continue;
--
--		/*
--		 * Avoid grouping on DSO/COW pages in specific and RO pages
--		 * in general, RO pages shouldn't hurt as much anyway since
--		 * they can be in shared cache state.
--		 */
--		if (!pte_write(pteval))
--			flags |= TNF_NO_GROUP;
--
--		last_cpupid = page_cpupid_last(page);
--		page_nid = page_to_nid(page);
--		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
--		pte_unmap_unlock(pte, ptl);
--		if (target_nid != -1) {
--			migrated = migrate_misplaced_page(page, vma, target_nid);
--			if (migrated) {
--				page_nid = target_nid;
--				flags |= TNF_MIGRATED;
--			}
--		} else {
--			put_page(page);
--		}
--
--		if (page_nid != -1)
--			task_numa_fault(last_cpupid, page_nid, 1, flags);
--
--		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
--	}
--	pte_unmap_unlock(orig_pte, ptl);
--
--	return 0;
--}
--#else
--static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		     unsigned long addr, pmd_t *pmdp)
--{
--	BUG();
--	return 0;
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- /*
-  * These routines also need to handle stuff like marking pages dirty
-  * and/or accessed for architectures that don't do it in hardware (most
-@@ -3841,8 +3744,8 @@ retry:
- 		}
+ static inline struct pid *task_pid(struct task_struct *task)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f9070f2..d5873e5 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1418,6 +1418,7 @@ void task_numa_free(struct task_struct *p)
+ {
+ 	struct numa_group *grp = p->numa_group;
+ 	int i;
++	void *numa_faults = p->numa_faults;
+ 
+ 	if (grp) {
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+@@ -1433,7 +1434,9 @@ void task_numa_free(struct task_struct *p)
+ 		put_numa_group(grp);
  	}
  
--	if (pmd_numa(*pmd))
--		return do_pmd_numa_page(mm, vma, address, pmd);
-+	/* THP should already have been handled */
-+	BUG_ON(pmd_numa(*pmd));
- 
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 9a74855..a0302ac 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -37,15 +37,12 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- 
- static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
--		int dirty_accountable, int prot_numa, bool *ret_all_same_cpupid)
-+		int dirty_accountable, int prot_numa)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte, oldpte;
- 	spinlock_t *ptl;
- 	unsigned long pages = 0;
--	bool all_same_cpupid = true;
--	int last_cpu = -1;
--	int last_pid = -1;
- 
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	arch_enter_lazy_mmu_mode();
-@@ -64,19 +61,6 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 				page = vm_normal_page(vma, addr, oldpte);
- 				if (page) {
--					int cpupid = page_cpupid_last(page);
--					int this_cpu = cpupid_to_cpu(cpupid);
--					int this_pid = cpupid_to_pid(cpupid);
--
--					if (last_cpu == -1)
--						last_cpu = this_cpu;
--					if (last_pid == -1)
--						last_pid = this_pid;
--					if (last_cpu != this_cpu ||
--					    last_pid != this_pid) {
--						all_same_cpupid = false;
--					}
--
- 					if (!pte_numa(oldpte)) {
- 						ptent = pte_mknuma(ptent);
- 						updated = true;
-@@ -115,26 +99,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	arch_leave_lazy_mmu_mode();
- 	pte_unmap_unlock(pte - 1, ptl);
- 
--	*ret_all_same_cpupid = all_same_cpupid;
- 	return pages;
+-	kfree(p->numa_faults);
++	p->numa_faults = NULL;
++	p->numa_faults_buffer = NULL;
++	kfree(numa_faults);
  }
  
--#ifdef CONFIG_NUMA_BALANCING
--static inline void change_pmd_protnuma(struct mm_struct *mm, unsigned long addr,
--				       pmd_t *pmd)
--{
--	spin_lock(&mm->page_table_lock);
--	set_pmd_at(mm, addr & PMD_MASK, pmd, pmd_mknuma(*pmd));
--	spin_unlock(&mm->page_table_lock);
--}
--#else
--static inline void change_pmd_protnuma(struct mm_struct *mm, unsigned long addr,
--				       pmd_t *pmd)
--{
--	BUG();
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		pud_t *pud, unsigned long addr, unsigned long end,
- 		pgprot_t newprot, int dirty_accountable, int prot_numa)
-@@ -142,7 +109,6 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 	pmd_t *pmd;
- 	unsigned long next;
- 	unsigned long pages = 0;
--	bool all_same_cpupid;
+ /*
+@@ -1452,6 +1455,10 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 	if (!p->mm)
+ 		return;
  
- 	pmd = pmd_offset(pud, addr);
- 	do {
-@@ -168,17 +134,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
- 		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
--				 dirty_accountable, prot_numa, &all_same_cpupid);
-+				 dirty_accountable, prot_numa);
- 		pages += this_pages;
--
--		/*
--		 * If we are changing protections for NUMA hinting faults then
--		 * set pmd_numa if the examined pages were all on the same
--		 * node. This allows a regular PMD to be handled as one fault
--		 * and effectively batches the taking of the PTL
--		 */
--		if (prot_numa && this_pages && all_same_cpupid)
--			change_pmd_protnuma(vma->vm_mm, addr, pmd);
- 	} while (pmd++, addr = next, addr != end);
++	/* Do not worry about placement if exiting */
++	if (p->state == TASK_DEAD)
++		return;
++
+ 	/* Allocate buffer to track faults on a per-node basis */
+ 	if (unlikely(!p->numa_faults)) {
+ 		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9aab230..13fe790 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -556,11 +556,6 @@ static inline u64 rq_clock_task(struct rq *rq)
+ #ifdef CONFIG_NUMA_BALANCING
+ extern int migrate_task_to(struct task_struct *p, int cpu);
+ extern int migrate_swap(struct task_struct *, struct task_struct *);
+-extern void task_numa_free(struct task_struct *p);
+-#else /* CONFIG_NUMA_BALANCING */
+-static inline void task_numa_free(struct task_struct *p)
+-{
+-}
+ #endif /* CONFIG_NUMA_BALANCING */
  
- 	return pages;
+ #ifdef CONFIG_SMP
 -- 
 1.8.4
 
