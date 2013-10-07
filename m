@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab3JGWYQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 18:24:16 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:41671 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab3JGWYO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 18:24:14 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, kernel-br@googlegroups.com,
-        "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH] dma: edma.c: remove edma_desc leakage
-Date: Mon,  7 Oct 2013 19:19:58 -0300
-Message-Id: <1381184398-11307-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	id S1753343Ab3JGWZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 18:25:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485Ab3JGWZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 18:25:14 -0400
+Date: Tue, 8 Oct 2013 00:25:05 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 44/50] tools/perf/build: Collapse the test-all.c testcase
+Message-ID: <20131007222505.GG2900@krava.redhat.com>
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
+ <1381147003-2574-45-git-send-email-mingo@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381147003-2574-45-git-send-email-mingo@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free memory allocated to edma_desc when failing to allocate slot.
+On Mon, Oct 07, 2013 at 01:56:37PM +0200, Ingo Molnar wrote:
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- drivers/dma/edma.c | 1 +
- 1 file changed, 1 insertion(+)
+SNIP
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index ff50ff4..3aab605 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -306,6 +306,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 						EDMA_SLOT_ANY);
- 			if (echan->slot[i] < 0) {
- 				dev_err(dev, "Failed to allocate slot\n");
-+				kfree(edesc);
- 				return NULL;
- 			}
- 		}
--- 
-1.8.4
+> diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
+> index 6a5fd96..5b33bcf 100644
+> --- a/tools/perf/config/feature-checks/test-backtrace.c
+> +++ b/tools/perf/config/feature-checks/test-backtrace.c
+> @@ -9,8 +9,6 @@ int main(void)
+>  	entries = backtrace(backtrace_fns, 10);
+>  	backtrace_symbols_fd(backtrace_fns, entries, 1);
+>  
+> -	printf("backtrace entries: %d\n", entries);
+> - 
+>  	return 0;
 
+belongs to previous patch?
+
+>  }
+>  
+> diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
+> index 088fc59..43b9369 100644
+> --- a/tools/perf/config/feature-checks/test-libunwind.c
+> +++ b/tools/perf/config/feature-checks/test-libunwind.c
+> @@ -18,9 +18,10 @@ int main(void)
+>  
+>  	addr_space = unw_create_addr_space(&accessors, 0);
+>  	if (addr_space)
+> -		return;
+> +		return 0;
+>  
+>  	unw_init_remote(NULL, addr_space, NULL);
+>  	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+> +
+
+ditto
+
+jirka
