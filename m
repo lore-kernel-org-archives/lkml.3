@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3JGXrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 19:47:36 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:40338 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab3JGXrc (ORCPT
+	id S1752524Ab3JGXyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 19:54:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35195 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab3JGXyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 19:47:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
-References: <20131006082340.GA24568@localhost>
-	<CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
-	<20131007021118.GA27927@localhost>
-	<20131007051038.GA9764@localhost>
-	<CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
-	<20131007083505.GA22585@localhost>
-	<CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
-Date: Mon, 7 Oct 2013 16:47:29 -0700
-X-Google-Sender-Auth: 9BZa_dtFbqn2CsZjYoqIdbIcwnA
-Message-ID: <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Oct 2013 19:54:13 -0400
+Date: Mon, 7 Oct 2013 16:54:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mm/page_alloc.c: Implement an empty
+ get_pfn_range_for_nid
+Message-Id: <20131007165411.92370f7f6119decee7fbbcba@linux-foundation.org>
+In-Reply-To: <52504CF8.6000708@gmail.com>
+References: <52504CF8.6000708@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 7, 2013 at 3:14 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Sun, 06 Oct 2013 01:31:36 +0800 Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+
+> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> 
+> Implement an empty get_pfn_range_for_nid for !CONFIG_HAVE_MEMBLOCK_NODE_MAP,
+> so that we could remove the #ifdef in free_area_init_node.
+> 
+> ...
 >
-> I *think* r14 contains the function we're going to jump to in the
-> oops, and that could be interesting to know, but it's not decoded, so
-> you'd have to match it up against a symbol map...
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4566,6 +4566,11 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+>  }
+>  
+>  #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+> +void __meminit get_pfn_range_for_nid(unsigned int nid,
+> +			unsigned long *ignored, unsigned long *ignored)
+> +{
+> +}
+> +
+>  static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+>  					unsigned long zone_type,
+>  					unsigned long node_start_pfn,
+> @@ -4871,9 +4876,7 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+>  	pgdat->node_id = nid;
+>  	pgdat->node_start_pfn = node_start_pfn;
+>  	init_zone_allows_reclaim(nid);
+> -#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+>  	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
+> -#endif
+>  	calculate_node_totalpages(pgdat, start_pfn, end_pfn,
+>  				  zones_size, zholes_size);
 
-Actually, Fenguguan, never mind. Instead, change the "pr_debug()" in
-kobject_release() to  "pr_alert()", so that it gets printed out. Or
-just boot with the "ignore_loglevel" thing so that debug messages are
-actually visible.
+Dunno, really.  This will make the kernel a tiny bit larger by
+generating an out-of-line empty function which nobody calls.  This
+could be fixed by making this static inline, but it's strange to have
+one version of get_pfn_range_for_nid() static inline and the other
+global, uninlined.
 
-At that point, we should be able to match the oops workqueue list
-address with the address of the delayed kernel object that gets
-printed out.
-
-             Linus
+Is it worth adding a few bytes to vmlinux just to make the source a little
+tidier?
