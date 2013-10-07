@@ -1,11 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab3JGHq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 03:46:56 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:49564 "EHLO extserv.mm-sol.com"
+	id S1754109Ab3JGH62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 03:58:28 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:50873 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834Ab3JGHqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 03:46:52 -0400
+	id S1752937Ab3JGH6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 03:58:25 -0400
+Message-ID: <1381132624.24031.45.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v5 1/3] usb: dwc3: msm: Add device tree binding
+ information
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: balbi@ti.com
 Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -14,144 +17,44 @@ Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
         idos@codeaurora.org, mgautam@codeaurora.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v6 1/3] usb: dwc3: msm: Add device tree binding information
-Date: Mon,  7 Oct 2013 10:44:55 +0300
-Message-Id: <1381131897-13910-2-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
-References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Mon, 07 Oct 2013 10:57:04 +0300
+In-Reply-To: <20131004143151.GD16059@radagast>
+References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
+	 <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
+	 <20131004143151.GD16059@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-(SNPS) and HS, SS PHY's control and configuration registers.
+Hi Felipe,
 
-It could operate in device mode (SS, HS, FS) and host
-mode (SS, HS, FS, LS).
+On Fri, 2013-10-04 at 09:31 -0500, Felipe Balbi wrote: 
+> On Wed, Aug 21, 2013 at 04:29:44PM +0300, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+> > (SNPS) and HS, SS PHY's control and configuration registers.
+> > 
+> > It could operate in device mode (SS, HS, FS) and host
+> > mode (SS, HS, FS, LS).
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> 
+> these patches were sent *ages* and nobody from DT mailing list has
+> reviewed. Unless someone steps up now, I'll be queueing these patches
+> next week.
+> 
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
----
- .../devicetree/bindings/usb/msm-ssusb.txt          |  105 ++++++++++++++++++++
- 1 file changed, 105 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
+Please take v6 of the patch set, which I have just posted. 
+They contain several fixes and I have also added ACK from
+Stephen Warren for DT part.
 
-diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-new file mode 100644
-index 0000000..a71bf00
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-@@ -0,0 +1,105 @@
-+MSM SuperSpeed DWC3 USB SoC controller
-+
-+
-+MSM DW Highspeed USB PHY
-+========================
-+Required properities:
-+- compatible:	should contain "qcom,dw-hsphy";
-+- reg:			offset and length of the register set in the memory map
-+- clocks:		A list of phandle + clock-specifier pairs for the
-+				clocks listed in clock-names
-+- clock-names:	Should contain the following:
-+  "xo"			External reference clock
-+  "sleep_a"		Sleep clock, used when USB3 core goes into low
-+				power mode (U3).
-+- v1p8-supply:	phandle to the regulator for the 1.8v supply to HSPHY.
-+- v3p3-supply:	phandle to the regulator for the 3.3v supply to HSPHY.
-+- vbus-supply:	phandle to the regulator for the vbus supply for host
-+		mode.
-+- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
-+                digital circuit operation.
-+
-+MSM DW Superspeed USB PHY
-+=========================
-+Required properities:
-+- compatible:	should contain "qcom,dw-ssphy";
-+- reg:			offset and length of the register set in the memory map
-+- clocks:		A list of phandle + clock-specifier pairs for the
-+				clocks listed in clock-names
-+- clock-names:	Should contain the following:
-+  "xo"			External reference clock
-+  "ref"			Reference clock - used in host mode.
-+- v1p8-supply:	phandle to the regulator for the 1.8v supply to HSPHY.
-+- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
-+                digital circuit operation.
-+
-+MSM DWC3 controller wrapper
-+===========================
-+Required properties:
-+- compatible:	should contain "qcom,dwc3"
-+- reg:			offset and length of the TCSR register for routing USB
-+				signals to either picoPHY0 or picoPHY1.
-+- clocks:		A list of phandle + clock-specifier pairs for the
-+				clocks listed in clock-names
-+- clock-names:	Should contain the following:
-+  "core"		Master/Core clock, have to be >= 125 MHz for SS
-+				operation and >= 60MHz for HS operation
-+  "iface"		System bus AXI clock
-+  "sleep"		Sleep clock, used when USB3 core goes into low
-+				power mode (U3).
-+  "utmi"		Generated by HSPHY. Used to clock the low power
-+				parts of thr HS Link layer.
-+Optional regulator:
-+- gdsc-supply:	phandle to the regulator from globally distributed
-+				switch controller
-+Required child node:
-+A child node must exist to represent the core DWC3 IP block. The name of
-+the node is not important. The content of the node is defined in dwc3.txt.
-+
-+Example device nodes:
-+
-+	dw_hsphy: phy@f92f8800 {
-+		compatible = "qcom,dw-hsphy";
-+		reg = <0xf92f8800 0x30>;
-+
-+		clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
-+		clock-names = "xo", "sleep_a";
-+
-+		vbus-supply = <&supply>;
-+		vddcx-supply = <&supply>;
-+		v1p8-supply = <&supply>;
-+		v3p3-supply = <&supply>;
-+	};
-+
-+	dw_ssphy: phy@f92f8830 {
-+		compatible = "qcom,dw-ssphy";
-+		reg = <0xf92f8830 0x30>;
-+
-+		clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
-+		clock-names = "xo", "ref";
-+
-+		vddcx-supply = <&supply>;
-+		v1p8-supply = <&supply>;
-+	};
-+
-+	usb@fd4ab000 {
-+		compatible = "qcom,dwc3";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0xfd4ab000 0x4>;
-+
-+		clocks = <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
-+				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
-+		clock-names = "core", "iface", "sleep", "utmi";
-+
-+		gdsc-supply = <&supply>;
-+
-+		ranges;
-+		dwc3@f9200000 {
-+			compatible = "snps,dwc3";
-+			reg = <0xf9200000 0xcd00>;
-+			interrupts = <0 131>;
-+			usb-phy = <&dw_hsphy>, <&dw_ssphy>;
-+			tx-fifo-resize;
-+		};
-+	};
--- 
-1.7.9.5
+Thanks, 
+Ivan
 
