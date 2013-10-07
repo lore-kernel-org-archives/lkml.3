@@ -1,218 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab3JGGpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 02:45:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51044 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695Ab3JGGnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 02:43:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1048,1371106800"; 
-   d="scan'208";a="388845997"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 1/9] perf tools: make a separate function to parse /proc/modules
-Date: Mon,  7 Oct 2013 09:50:10 +0300
-Message-Id: <1381128618-22721-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381128618-22721-1-git-send-email-adrian.hunter@intel.com>
-References: <1381128618-22721-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754699Ab3JGGrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 02:47:12 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59513 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3JGGrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 02:47:11 -0400
+Subject: [PATCH v2 0/3] Perf support to SDT markers
+To: linux-kernel@vger.kernel.org
+From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, namhyung@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com
+Date: Mon, 07 Oct 2013 12:16:49 +0530
+Message-ID: <20131007063911.11693.33624.stgit@hemant-fedora>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100706-5140-0000-0000-000003F14F0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make a separate function to parse /proc/modules
-so that it can be reused.
+This patchset helps in probing dtrace style markers(SDT) present in user space
+applications through perf. Notes/markes are placed at important places by the
+developers. They have a negligible overhead when not enabled. We can enable
+them and probe at these places and find some important information like the
+arguments' values, etc.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+How to add SDT markers into user applications:
+We need to have this header sys/sdt.h present.
+sys/sdt.h used is version 3.
+If not present, install systemtap-sdt-devel package (for fedora-18).
+
+A simple example to show this follows.
+- Create a file with .d extension and mention the probe names in it with
+provider name and marker name.
+
+$ cat probes.d
+provider user_app {
+         probe foo_start();
+	    probe fun_start();                                                   
+};                                                                            
+
+- Now create the probes.h and probes.o file :
+$ dtrace -C -h -s probes.d -o probes.h
+$ dtrace -C -G -s probes.d -o probes.o
+
+- A program using the markers:
+
+$ cat user_app.c
+
+#include <stdio.h>
+#include "probes.h"
+
+void foo(void)
+{
+	USER_APP_FOO_START();
+	printf("This is foo\n");                                              
+}
+
+void fun(void)
+{
+	USER_APP_FUN_START();
+	printf("Inside fun\n");                                                       
+}
+int main(void)
+{
+	printf("In main\n");
+	foo();
+	fun();                                                                      
+	return 0;                                                                   
+}
+
+- Compile it and also provide probes.o file to linker:
+$ gcc user_app.c probes.o -o user_app
+
+- Now use perf to list the markers in the app:
+# perf probe --markers -x ./user_app
+
+%user_app:foo_start
+%user_app:fun_start
+
+- And  then use perf probe to add a probe point :
+
+# perf probe -x ./user_app -a '%user_app:foo_start'
+
+Added new event :
+event = foo_start      (on 0x530)
+
+You can now use it on all perf tools such as :
+
+     perf record -e probe_user:foo_start -aR sleep 1
+
+# perf record -e probe_user:foo_start -aR ./user_app
+In main
+This is foo
+Inside fun
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.235 MB perf.data (~10279 samples) ]
+
+- Then use perf tools to analyze it.
+# perf report --stdio
+
+# ========
+# captured on: Tue Sep  3 16:19:55 2013
+# hostname : hemant-fedora
+# os release : 3.11.0-rc3+
+# perf version : 3.9.4-200.fc18.x86_64
+# arch : x86_64
+# nrcpus online : 2
+# nrcpus avail : 2
+# cpudesc : QEMU Virtual CPU version 1.2.2
+# cpuid : GenuineIntel,6,2,3
+# total memory : 2051912 kBIf these are not enabled, they are present in the \
+ELF as nop.
+
+# cmdline : /usr/bin/perf record -e probe_user:foo_start -aR ./user_app
+# event : name = probe_user:foo_start, type = 2, config = 0x38e, config1
+= 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0,
+excl_guest = 1, precise_ip = 0
+# HEADER_CPU_TOPOLOGY info available, use -I to display
+# HEADER_NUMA_TOPOLOGY info available, use -I to display
+# pmu mappings: software = 1, tracepoint = 2, breakpoint = 5
+# ========
+#
+# Samples: 1  of event 'probe_user:foo_start'
+# Event count (approx.): 1
+#
+# Overhead   Command  Shared Object   Symbol
+# ........  ........  .............  .......
+#
+   100.00%  user_app  user_app       [.] foo
+
+
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+
+This link shows an example of marker probing with Systemtap:
+https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+
+Also, this link provides important info regarding SDT notes:
+http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+
+- Markers in binaries :
+These SDT markers are present in the ELF in the section named
+".note.stapsdt".
+Here, the name of the marker, its provider, type, location, base
+address, semaphore address are stored.
+We can retrieve these values using the members name_off and desc_off in
+Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+
+Changes since v1:
+- Made some structural changes.
+- Changed the option required to list/probe into SDT notes.
+- Unified function names.
+- Added some necessary checks.
+- Ignored semaphore enabled SDT notes.
+- Added documentation.
+- Removed some redundancies.
+
+TODO:
+- Recognizing SDT notes' arguments and support to probe on them.
 ---
- tools/perf/util/machine.c | 67 +++++++++++++----------------------------------
- tools/perf/util/symbol.c  | 58 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h  |  3 +++
- 3 files changed, 79 insertions(+), 49 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 40083df..a36419e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -776,12 +776,22 @@ static int machine__set_modules_path(struct machine *machine)
- 	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
- }
- 
--static int machine__create_modules(struct machine *machine)
-+static int machine__create_module(void *arg, const char *name, u64 start)
- {
--	char *line = NULL;
--	size_t n;
--	FILE *file;
-+	struct machine *machine = arg;
- 	struct map *map;
-+
-+	map = machine__new_module(machine, start, name);
-+	if (map == NULL)
-+		return -1;
-+
-+	dso__kernel_module_get_build_id(map->dso, machine->root_dir);
-+
-+	return 0;
-+}
-+
-+static int machine__create_modules(struct machine *machine)
-+{
- 	const char *modules;
- 	char path[PATH_MAX];
- 
-@@ -795,56 +805,15 @@ static int machine__create_modules(struct machine *machine)
- 	if (symbol__restricted_filename(path, "/proc/modules"))
- 		return -1;
- 
--	file = fopen(modules, "r");
--	if (file == NULL)
-+	if (modules__parse(modules, machine, machine__create_module))
- 		return -1;
- 
--	while (!feof(file)) {
--		char name[PATH_MAX];
--		u64 start;
--		char *sep;
--		int line_len;
--
--		line_len = getline(&line, &n, file);
--		if (line_len < 0)
--			break;
--
--		if (!line)
--			goto out_failure;
--
--		line[--line_len] = '\0'; /* \n */
--
--		sep = strrchr(line, 'x');
--		if (sep == NULL)
--			continue;
--
--		hex2u64(sep + 1, &start);
--
--		sep = strchr(line, ' ');
--		if (sep == NULL)
--			continue;
--
--		*sep = '\0';
--
--		snprintf(name, sizeof(name), "[%s]", line);
--		map = machine__new_module(machine, start, name);
--		if (map == NULL)
--			goto out_delete_line;
--		dso__kernel_module_get_build_id(map->dso, machine->root_dir);
--	}
-+	if (!machine__set_modules_path(machine))
-+		return 0;
- 
--	free(line);
--	fclose(file);
-+	pr_debug("Problems setting modules path maps, continuing anyway...\n");
- 
--	if (machine__set_modules_path(machine) < 0) {
--		pr_debug("Problems setting modules path maps, continuing anyway...\n");
--	}
- 	return 0;
--
--out_delete_line:
--	free(line);
--out_failure:
--	return -1;
- }
- 
- int machine__create_kernel_maps(struct machine *machine)
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 48c3879..ffdf2e7 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -500,6 +500,64 @@ out_failure:
- 	return -1;
- }
- 
-+int modules__parse(const char *filename, void *arg,
-+		   int (*process_module)(void *arg, const char *name,
-+					 u64 start))
-+{
-+	char *line = NULL;
-+	size_t n;
-+	FILE *file;
-+	int err = 0;
-+
-+	file = fopen(filename, "r");
-+	if (file == NULL)
-+		return -1;
-+
-+	while (1) {
-+		char name[PATH_MAX];
-+		u64 start;
-+		char *sep;
-+		ssize_t line_len;
-+
-+		line_len = getline(&line, &n, file);
-+		if (line_len < 0) {
-+			if (feof(file))
-+				break;
-+			err = -1;
-+			goto out;
-+		}
-+
-+		if (!line) {
-+			err = -1;
-+			goto out;
-+		}
-+
-+		line[--line_len] = '\0'; /* \n */
-+
-+		sep = strrchr(line, 'x');
-+		if (sep == NULL)
-+			continue;
-+
-+		hex2u64(sep + 1, &start);
-+
-+		sep = strchr(line, ' ');
-+		if (sep == NULL)
-+			continue;
-+
-+		*sep = '\0';
-+
-+		snprintf(name, sizeof(name), "[%s]", line);
-+
-+		err = process_module(arg, name, start);
-+		if (err)
-+			break;
-+	}
-+out:
-+	free(line);
-+	fclose(file);
-+	return err;
-+}
-+
- struct process_kallsyms_args {
- 	struct map *map;
- 	struct dso *dso;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 2d4ee9a..a2543f0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -223,6 +223,9 @@ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
- int kallsyms__parse(const char *filename, void *arg,
- 		    int (*process_symbol)(void *arg, const char *name,
- 					  char type, u64 start));
-+int modules__parse(const char *filename, void *arg,
-+		   int (*process_module)(void *arg, const char *name,
-+					 u64 start));
- int filename__read_debuglink(const char *filename, char *debuglink,
- 			     size_t size);
- 
+Hemant Kumar (3):
+      SDT markers listing by perf:
+      Support for perf to probe into SDT markers:
+      Documentation regarding perf/sdt
+
+
+ tools/perf/Documentation/perf-probe.txt |   15 ++
+ tools/perf/Documentation/sdt-probes.txt |  163 ++++++++++++++++++++
+ tools/perf/builtin-probe.c              |   35 ++++
+ tools/perf/util/probe-event.c           |  128 +++++++++++++++-
+ tools/perf/util/probe-event.h           |    4 
+ tools/perf/util/symbol-elf.c            |  256 +++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h                |   21 +++
+ 7 files changed, 610 insertions(+), 12 deletions(-)
+ create mode 100644 tools/perf/Documentation/sdt-probes.txt
+
 -- 
-1.7.11.7
 
