@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab3JGPMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:12:42 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:53358 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab3JGPMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:12:41 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] MIPS: SmartMIPS: Fix build
-Date: Mon,  7 Oct 2013 17:10:42 +0200
-Message-Id: <1381158642-10598-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
+	id S1755709Ab3JGPM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:12:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755502Ab3JGPMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:12:51 -0400
+Message-ID: <5252CF5A.4000003@redhat.com>
+Date: Mon, 07 Oct 2013 11:12:26 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/63] mm: Do not flush TLB during protection change if
+ !pte_present && !migration_entry
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-11-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-11-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All CONFIG_CPU_HAS_SMARTMIPS #ifdefs have been removed from code, but
-the ACX register declaration in struct pt_regs is still protected by it,
-causing builds to fail. Remove the #ifdef protection and always declare
-the register.
+On 10/07/2013 06:28 AM, Mel Gorman wrote:
+> NUMA PTE scanning is expensive both in terms of the scanning itself and
+> the TLB flush if there are any updates. Currently non-present PTEs are
+> accounted for as an update and incurring a TLB flush where it is only
+> necessary for anonymous migration entries. This patch addresses the
+> problem and should reduce TLB flushes.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- arch/mips/include/asm/ptrace.h | 2 --
- 1 file changed, 2 deletions(-)
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-diff --git a/arch/mips/include/asm/ptrace.h b/arch/mips/include/asm/ptrace.h
-index 7bba9da..d47bdce 100644
---- a/arch/mips/include/asm/ptrace.h
-+++ b/arch/mips/include/asm/ptrace.h
-@@ -33,9 +33,7 @@ struct pt_regs {
- 	unsigned long cp0_status;
- 	unsigned long hi;
- 	unsigned long lo;
--#ifdef CONFIG_CPU_HAS_SMARTMIPS
- 	unsigned long acx;
--#endif
- 	unsigned long cp0_badvaddr;
- 	unsigned long cp0_cause;
- 	unsigned long cp0_epc;
 -- 
-1.8.4
-
+All rights reversed
