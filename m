@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3JGQia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:38:30 -0400
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:49640 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756177Ab3JGQi0 (ORCPT
+	id S1756792Ab3JGQi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:38:28 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:39802 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756147Ab3JGQiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:38:26 -0400
+	Mon, 7 Oct 2013 12:38:25 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        microblaze-uclinux@itee.uq.edu.au
-Subject: [PATCH v2 15/29] microblaze: use early_init_dt_scan
-Date: Mon,  7 Oct 2013 11:29:23 -0500
-Message-Id: <1381163377-21044-16-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2 25/29] arc: use common of_flat_dt_match_machine
+Date: Mon,  7 Oct 2013 11:29:33 -0500
+Message-Id: <1381163377-21044-26-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -24,58 +23,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Convert microblaze to use new early_init_dt_scan function.
+Convert arc to use the common of_flat_dt_match_machine function.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Tested-by: Michal Simek <monstr@monstr.eu>
-Cc: microblaze-uclinux@itee.uq.edu.au
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/microblaze/kernel/prom.c  | 17 +++--------------
- arch/microblaze/kernel/setup.c |  2 +-
- 2 files changed, 4 insertions(+), 15 deletions(-)
+ arch/arc/kernel/devtree.c | 65 +++++++++++++----------------------------------
+ 1 file changed, 18 insertions(+), 47 deletions(-)
 
-diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
-index 0c4453f..e13686e 100644
---- a/arch/microblaze/kernel/prom.c
-+++ b/arch/microblaze/kernel/prom.c
-@@ -106,21 +106,10 @@ void __init early_init_devtree(void *params)
+diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
+index 1ab6f35..12de555 100644
+--- a/arch/arc/kernel/devtree.c
++++ b/arch/arc/kernel/devtree.c
+@@ -18,6 +18,19 @@
+ #include <asm/clk.h>
+ #include <asm/mach_desc.h>
+ 
++static const void * __init arch_get_next_mach(const char *const **match)
++{
++	static const struct machine_desc *mdesc = __arch_info_begin;
++	const struct machine_desc *m = mdesc;
++
++	if (m >= __arch_info_end)
++		return NULL;
++
++	mdesc++;
++	*match = m->dt_compat;
++	return m;
++}
++
+ /**
+  * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
+  * @dt:		virtual address pointer to dt blob
+@@ -27,64 +40,22 @@
+  */
+ struct machine_desc * __init setup_machine_fdt(void *dt)
  {
- 	pr_debug(" -> early_init_devtree(%p)\n", params);
+-	struct machine_desc *mdesc = NULL, *mdesc_best = NULL;
+-	unsigned int score, mdesc_score = ~1;
++	struct machine_desc *mdesc;
+ 	unsigned long dt_root;
+-	const char *model, *compat;
+ 	void *clk;
+-	char manufacturer[16];
+ 	unsigned long len;
  
--	/* Setup flat device-tree pointer */
--	initial_boot_params = params;
-+	early_init_dt_scan(params);
-+	if (!strlen(boot_command_line))
-+		strlcpy(boot_command_line, cmd_line, COMMAND_LINE_SIZE);
+ 	if (!early_init_dt_scan(dt))
+ 		return NULL;
  
--	/* Retrieve various informations from the /chosen node of the
--	 * device-tree, including the platform type, initrd location and
--	 * size, TCE reserve, and more ...
+-	dt_root = of_get_flat_dt_root();
+-
+-	/*
+-	 * The kernel could be multi-platform enabled, thus could have many
+-	 * "baked-in" machine descriptors. Search thru all for the best
+-	 * "compatible" string match.
 -	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, cmd_line);
+-	for_each_machine_desc(mdesc) {
+-		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
+-		if (score > 0 && score < mdesc_score) {
+-			mdesc_best = mdesc;
+-			mdesc_score = score;
+-		}
+-	}
+-	if (!mdesc_best) {
+-		const char *prop;
+-		long size;
 -
--	/* Scan memory nodes and rebuild MEMBLOCKs */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
+-		pr_err("\n unrecognized device tree list:\n[ ");
 -
--	/* Save command line for /proc/cmdline and then parse parameters */
--	strlcpy(boot_command_line, cmd_line, COMMAND_LINE_SIZE);
- 	parse_early_param();
+-		prop = of_get_flat_dt_prop(dt_root, "compatible", &size);
+-		if (prop) {
+-			while (size > 0) {
+-				printk("'%s' ", prop);
+-				size -= strlen(prop) + 1;
+-				prop += strlen(prop) + 1;
+-			}
+-		}
+-		printk("]\n\n");
+-
++	mdesc = of_flat_dt_match_machine(NULL, arch_get_next_mach);
++	if (!mdesc)
+ 		machine_halt();
+-	}
+-
+-	/* compat = "<manufacturer>,<model>" */
+-	compat =  mdesc_best->dt_compat[0];
+-
+-	model = strchr(compat, ',');
+-	if (model)
+-		model++;
+-
+-	strlcpy(manufacturer, compat, model ? model - compat : strlen(compat));
+-
+-	pr_info("Board \"%s\" from %s (Manufacturer)\n", model, manufacturer);
  
- 	memblock_allow_resize();
-diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
-index 0775e03..6c4efba 100644
---- a/arch/microblaze/kernel/setup.c
-+++ b/arch/microblaze/kernel/setup.c
-@@ -50,7 +50,7 @@ char cmd_line[COMMAND_LINE_SIZE] __attribute__ ((section(".data")));
++	dt_root = of_get_flat_dt_root();
+ 	clk = of_get_flat_dt_prop(dt_root, "clock-frequency", &len);
+ 	if (clk)
+ 		arc_set_core_freq(of_read_ulong(clk, len/4));
  
- void __init setup_arch(char **cmdline_p)
- {
--	*cmdline_p = cmd_line;
-+	*cmdline_p = boot_command_line;
- 
- 	console_verbose();
- 
+-	return mdesc_best;
++	return mdesc;
+ }
 -- 
 1.8.1.2
 
