@@ -1,42 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab3JGPM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:12:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755502Ab3JGPMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:12:51 -0400
-Message-ID: <5252CF5A.4000003@redhat.com>
-Date: Mon, 07 Oct 2013 11:12:26 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755953Ab3JGPND (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:13:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47616 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755904Ab3JGPM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:12:57 -0400
+Date: Mon, 7 Oct 2013 16:12:13 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v10] dmaengine: Add MOXA ART DMA engine driver
+Message-ID: <20131007151212.GF15365@e106331-lin.cambridge.arm.com>
+References: <1381151633-8576-1-git-send-email-jonas.jensen@gmail.com>
+ <1381155034-11254-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/63] mm: Do not flush TLB during protection change if
- !pte_present && !migration_entry
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-11-git-send-email-mgorman@suse.de>
-In-Reply-To: <1381141781-10992-11-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381155034-11254-1-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 06:28 AM, Mel Gorman wrote:
-> NUMA PTE scanning is expensive both in terms of the scanning itself and
-> the TLB flush if there are any updates. Currently non-present PTEs are
-> accounted for as an update and incurring a TLB flush where it is only
-> necessary for anonymous migration entries. This patch addresses the
-> problem and should reduce TLB flushes.
+[adding devicetree]
+
+On Mon, Oct 07, 2013 at 03:10:34PM +0100, Jonas Jensen wrote:
+> The MOXA ART SoC has a DMA controller capable of offloading expensive
+> memory operations, such as large copies. This patch adds support for
+> the controller including four channels. Two of these are used to
+> handle MMC copy on the UC-7112-LX hardware. The remaining two can be
+> used in a future audio driver or client application.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
+> 
+> Notes:
+>     Changes since v9:
+> 
+>     1. reorder probe path, also move dma_async_device_register() to happen after devm_request_irq()
+> 
+>     Applies to next-20130927
+> 
+>  .../devicetree/bindings/dma/moxa,moxart-dma.txt    |  19 +
+>  drivers/dma/Kconfig                                |   7 +
+>  drivers/dma/Makefile                               |   1 +
+>  drivers/dma/moxart-dma.c                           | 651 +++++++++++++++++++++
+>  4 files changed, 678 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
+>  create mode 100644 drivers/dma/moxart-dma.c
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt b/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
+> new file mode 100644
+> index 0000000..79facce
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
+> @@ -0,0 +1,19 @@
+> +MOXA ART DMA Controller
+> +
+> +See dma.txt first
+> +
+> +Required properties:
+> +
+> +- compatible : Must be "moxa,moxart-dma"
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Sorry I didn't notice this previously, but "moxa" isn't in
+Documentation/devicetree/bindings/vendor-prefixes.txt (despite several
+bindings using it). Could you cook up a separate patch to add an entry
+for Moxa, please?
 
--- 
-All rights reversed
+Also, given the SoC is called "ART" it's a shame that we're calling this
+"moxa,moxart-dma" rather than "moxa,art-dma". We already have precedent
+for "moxart" in bindings though, so changing that's likely to lead to
+more problems.
+
+> +- reg :                Should contain registers location and length
+> +- interrupts : Should contain the interrupt number
+
+Sorry for yet more pendantry, but could we instead have:
+
+ - interrupts: Should contain an interrupt-specifier for the sole
+               interrupt generated by the device.
+
+> +- #dma-cells : Should be 1, a single cell holding a line request number
+> +
+> +Example:
+> +
+> +       dma: dma@90500000 {
+> +               compatible = "moxa,moxart-dma";
+> +               reg = <0x90500080 0x40>;
+> +               interrupts = <24 0>;
+> +               #dma-cells = <1>;
+> +       };
+
+Otherwise I think the binding looks OK.
+
+Thanks,
+Mark
