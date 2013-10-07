@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3JGPgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:36:01 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:34844 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab3JGPgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:36:00 -0400
-Message-ID: <5252D4DB.30302@gmail.com>
-Date: Mon, 07 Oct 2013 09:35:55 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755787Ab3JGPiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:38:13 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:53187 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755486Ab3JGPiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:38:12 -0400
+Date: Mon, 7 Oct 2013 10:37:56 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Shaohua Li <shli@fusionio.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH] frontswap: enable call to invalidate area on swapoff
+Message-ID: <20131007153756.GA4473@variantweb.net>
+References: <1381159541-13981-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org> <5252BCB4.5030802@gmail.com> <20131007141100.GA21873@gmail.com>
-In-Reply-To: <20131007141100.GA21873@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381159541-13981-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100715-0320-0000-0000-00000143F5B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/7/13 8:11 AM, Ingo Molnar wrote:
-> These changes are not yet committed into any stable Git tree - I've pushed
-> them out into:
->
->     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.perf
->
-> (it might take a few minutes for kernel.org to sync up.)
+On Mon, Oct 07, 2013 at 05:25:41PM +0200, Krzysztof Kozlowski wrote:
+> During swapoff the frontswap_map was NULL-ified before calling
+> frontswap_invalidate_area(). However the frontswap_invalidate_area()
+> exits early if frontswap_map is NULL. Invalidate was never called during
+> swapoff.
+> 
+> This patch moves frontswap_map_set() in swapoff just after calling
+> frontswap_invalidate_area() so outside of locks
+> (swap_lock and swap_info_struct->lock). This shouldn't be a problem as
+> during swapon the frontswap_map_set() is called also outside of any
+> locks.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Tested on Fedora 12, 14, 16 with varying degrees of feature support 
-installed. The tests that failed are all static builds with the command 
-line:
+Nice catch!
 
-make O=/tmp/junk -C tools/perf LDFLAGS=-static NO_DWARF=1
+Reviewed-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-Passing LDFLAGS to the feature tests should handle that.
+> ---
+>  mm/swapfile.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 3963fc2..3a4896b 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -1922,10 +1922,10 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+>  	p->cluster_info = NULL;
+>  	p->flags = 0;
+>  	frontswap_map = frontswap_map_get(p);
+> -	frontswap_map_set(p, NULL);
+>  	spin_unlock(&p->lock);
+>  	spin_unlock(&swap_lock);
+>  	frontswap_invalidate_area(type);
+> +	frontswap_map_set(p, NULL);
+>  	mutex_unlock(&swapon_mutex);
+>  	free_percpu(p->percpu_cluster);
+>  	p->percpu_cluster = NULL;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-I also noticed that the dwarf test is still run even with the NO_DWARF 
-option passed in:
-
-[daahern@nxos-vdc-dev1 perf]$ make O=/tmp/junk LDFLAGS=-static 
-NO_DWARF=1 -j 4
-     BUILD: Doing 'make -j16' parallel build
-
-Auto-detecting system features:
-
-...                     backtrace: [ on  ]
-...                         dwarf: [ on  ]
-...                fortify-source: [ on  ]
-
-Note the dwarf test shows 'on'.
-
-David
