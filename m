@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab3JGQgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:36:04 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:55283 "EHLO
+	id S1756734Ab3JGQgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:36:16 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:47148 "EHLO
 	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab3JGQf7 (ORCPT
+	with ESMTP id S1756470Ab3JGQgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:35:59 -0400
+	Mon, 7 Oct 2013 12:36:12 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net
-Subject: [PATCH v2 02/29] openrisc: use boot_command_line instead of private cmd_line
-Date: Mon,  7 Oct 2013 11:29:10 -0500
-Message-Id: <1381163377-21044-3-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 20/29] arm: set initrd_start/initrd_end for fdt scan
+Date: Mon,  7 Oct 2013 11:29:28 -0500
+Message-Id: <1381163377-21044-21-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -24,71 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Save some pointless copying of the kernel command line and just use
-boot_command_line instead. The DT code already handles CONFIG_CMDLINE,
-so a separate copy is not needed.
+In order to unify the initrd scanning for DT across architectures, make
+arm set initrd_start and initrd_end instead of the physical addresses.
+This is aligned with all other architectures.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: linux@lists.openrisc.net
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Acked-by: Grant Likely <grant.likely@linaro.org>
 ---
- arch/openrisc/kernel/prom.c  | 7 +------
- arch/openrisc/kernel/setup.c | 4 +---
- 2 files changed, 2 insertions(+), 9 deletions(-)
+ arch/arm/mm/init.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
-index a63e768..bf3fd05 100644
---- a/arch/openrisc/kernel/prom.c
-+++ b/arch/openrisc/kernel/prom.c
-@@ -47,8 +47,6 @@
- #include <asm/sections.h>
- #include <asm/setup.h>
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index febaee7..9eeb1cd 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -77,11 +77,11 @@ static int __init parse_tag_initrd2(const struct tag *tag)
  
--extern char cmd_line[COMMAND_LINE_SIZE];
--
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+ __tagtable(ATAG_INITRD2, parse_tag_initrd2);
+ 
+-#ifdef CONFIG_OF_FLATTREE
++#if defined(CONFIG_OF_FLATTREE) && defined(CONFIG_BLK_DEV_INITRD)
+ void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
  {
- 	size &= PAGE_MASK;
-@@ -67,15 +65,12 @@ void __init early_init_devtree(void *params)
- 	 * device-tree, including the platform type, initrd location and
- 	 * size, TCE reserve, and more ...
- 	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, cmd_line);
-+	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
- 
- 	/* Scan memory nodes and rebuild MEMBLOCKs */
- 	of_scan_flat_dt(early_init_dt_scan_root, NULL);
- 	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
- 
--	/* Save command line for /proc/cmdline and then parse parameters */
--	strlcpy(boot_command_line, cmd_line, COMMAND_LINE_SIZE);
--
- 	memblock_allow_resize();
- 
- 	/* We must copy the flattend device tree from init memory to regular
-diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
-index d7359ff..719c5c8 100644
---- a/arch/openrisc/kernel/setup.c
-+++ b/arch/openrisc/kernel/setup.c
-@@ -50,8 +50,6 @@
- 
- #include "vmlinux.h"
- 
--char __initdata cmd_line[COMMAND_LINE_SIZE] = CONFIG_CMDLINE;
--
- static unsigned long __init setup_memory(void)
- {
- 	unsigned long bootmap_size;
-@@ -316,7 +314,7 @@ void __init setup_arch(char **cmdline_p)
- 		conswitchp = &dummy_con;
- #endif
- 
--	*cmdline_p = cmd_line;
-+	*cmdline_p = boot_command_line;
- 
- 	printk(KERN_INFO "OpenRISC Linux -- http://openrisc.net\n");
+-	phys_initrd_start = start;
+-	phys_initrd_size = end - start;
++	initrd_start = (unsigned long)__va(start);
++	initrd_end = (unsigned long)__va(end);
  }
+ #endif /* CONFIG_OF_FLATTREE */
+ 
+@@ -351,6 +351,11 @@ void __init arm_memblock_init(struct meminfo *mi,
+ 	memblock_reserve(__pa(_stext), _end - _stext);
+ #endif
+ #ifdef CONFIG_BLK_DEV_INITRD
++	/* FDT scan will populate initrd_start */
++	if (initrd_start) {
++		phys_initrd_start = __virt_to_phys(initrd_start);
++		phys_initrd_size = initrd_end - initrd_start;
++	}
+ 	if (phys_initrd_size &&
+ 	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
+ 		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
 -- 
 1.8.1.2
 
