@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3JGTuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 15:50:40 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:42992 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab3JGTui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 15:50:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131007191835.GA28737@jtriplet-mobl1>
-References: <20131007191835.GA28737@jtriplet-mobl1>
-Date: Mon, 7 Oct 2013 21:50:37 +0200
-Message-ID: <CAFLxGvwt7H+N_GTVPfxejrEk28=48EapOPXsX-=z6sygJ_YsUw@mail.gmail.com>
-Subject: Re: [RFC PATCH] checkpatch: Make the 80-character limit a --strict
- check only
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        gregkh@linux-foundation.org, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755961Ab3JGUMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 16:12:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab3JGUMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 16:12:47 -0400
+Message-ID: <1381176749.17503.62.camel@deneb.redhat.com>
+Subject: Re: [PATCH v2 01/29] c6x: use boot_command_line instead of private
+ c6x_command_line
+From: Mark Salter <msalter@redhat.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
+Date: Mon, 07 Oct 2013 16:12:29 -0400
+In-Reply-To: <1381163377-21044-2-git-send-email-robherring2@gmail.com>
+References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
+	 <1381163377-21044-2-git-send-email-robherring2@gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 7, 2013 at 9:18 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> The 80-character limit is not a hard-and-fast rule, nor should it be
-> applied blindly by people running checkpatch and fixing its warnings.
-> Sometimes it's better to violate the 80-character "limit" in the name of
-> readability, and when it isn't, it's often better to refactor into a
-> function or otherwise restructure the code rather than just finding
-> increasingly awkward places to break lines.
->
-> Thus, change checkpatch's LONG_LINE warning to a --strict CHK instead.
-> Anyone wanting to use checkpatch to check for this can easily enough
-> enable --strict or turn on LONG_LINE explicitly, but it shouldn't be
-> part of the default warnings.
->
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-
-As I'm not a huge fan of the 80-character limit,
-
-Acked-by: Richard Weinberger <richard@nod.at>
-
+On Mon, 2013-10-07 at 11:29 -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Save some pointless copying of the kernel command line and just use
+> boot_command_line instead.
+> 
+> Also remove default_command_line as it is not referenced anywhere, and
+> the DT code already handles the default command line.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Mark Salter <msalter@redhat.com>
+> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+> Cc: linux-c6x-dev@linux-c6x.org
+> Reviewed-by: Grant Likely <grant.likely@linaro.org>
 > ---
->
->  scripts/checkpatch.pl | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 47016c3..ed16a68 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2017,8 +2017,8 @@ sub process {
->                     $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
->                     $length > $max_line_length)
->                 {
-> -                       WARN("LONG_LINE",
-> -                            "line over $max_line_length characters\n" . $herecurr);
-> +                       CHK("LONG_LINE",
-> +                           "line over $max_line_length characters\n" . $herecurr);
->                 }
->
->  # Check for user-visible strings broken across lines, which breaks the ability
-> --
-> 1.8.4.rc3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Tested and
+Acked-by: Mark Salter <msalter@redhat.com>
 
 
-
--- 
-Thanks,
-//richard
