@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab3JGQh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:37:26 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:52097 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522Ab3JGQhL (ORCPT
+	id S932082Ab3JGQhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:37:40 -0400
+Received: from mail-ye0-f175.google.com ([209.85.213.175]:42915 "EHLO
+	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab3JGQhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:37:11 -0400
+	Mon, 7 Oct 2013 12:37:36 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net
-Subject: [PATCH v2 23/29] openrisc: remove unnecessary prom.c includes
-Date: Mon,  7 Oct 2013 11:29:31 -0500
-Message-Id: <1381163377-21044-24-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>, Chris Zankel <chris@zankel.net>,
+        linux-xtensa@linux-xtensa.org
+Subject: [PATCH v2 18/29] xtensa: use early_init_dt_scan
+Date: Mon,  7 Oct 2013 11:29:26 -0500
+Message-Id: <1381163377-21044-19-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -24,55 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-It appears openrisc prom.c was just copied from another arch with a
-bunch of unnecessary includes. Remove all the unecessary ones.
+Convert xtensa to use new early_init_dt_scan function.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: linux@lists.openrisc.net
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Chris Zankel <chris@zankel.net>
+Cc: linux-xtensa@linux-xtensa.org
 ---
- arch/openrisc/kernel/prom.c | 22 ----------------------
- 1 file changed, 22 deletions(-)
+ arch/xtensa/kernel/setup.c | 21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
-diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
-index 2aae474..6a44340 100644
---- a/arch/openrisc/kernel/prom.c
-+++ b/arch/openrisc/kernel/prom.c
-@@ -18,34 +18,12 @@
-  *
-  */
+diff --git a/arch/xtensa/kernel/setup.c b/arch/xtensa/kernel/setup.c
+index fc31ec1..65974a8 100644
+--- a/arch/xtensa/kernel/setup.c
++++ b/arch/xtensa/kernel/setup.c
+@@ -219,9 +219,13 @@ static int __init parse_bootparam(const bp_tag_t* tag)
+ }
  
--#include <stdarg.h>
--#include <linux/kernel.h>
--#include <linux/string.h>
- #include <linux/init.h>
--#include <linux/threads.h>
--#include <linux/spinlock.h>
- #include <linux/types.h>
--#include <linux/pci.h>
--#include <linux/stringify.h>
--#include <linux/delay.h>
--#include <linux/initrd.h>
--#include <linux/bitops.h>
--#include <linux/module.h>
--#include <linux/kexec.h>
--#include <linux/debugfs.h>
--#include <linux/irq.h>
- #include <linux/memblock.h>
- #include <linux/of_fdt.h>
+ #ifdef CONFIG_OF
++bool __initdata dt_memory_scan = false;
  
--#include <asm/prom.h>
- #include <asm/page.h>
--#include <asm/processor.h>
--#include <asm/irq.h>
--#include <linux/io.h>
--#include <asm/mmu.h>
--#include <asm/pgtable.h>
--#include <asm/sections.h>
--#include <asm/setup.h>
+ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+ {
++	if (!dt_memory_scan)
++		return;
++
+ 	size &= PAGE_MASK;
+ 	add_sysmem_bank(MEMORY_TYPE_CONVENTIONAL, base, base + size);
+ }
+@@ -233,20 +237,13 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
  
  void __init early_init_devtree(void *params)
  {
+-	/* Setup flat device-tree pointer */
+-	initial_boot_params = params;
++	if (sysmem.nr_banks == 0)
++		dt_memory_scan = true;
+ 
+-	/* Retrieve various informations from the /chosen node of the
+-	 * device-tree, including the platform type, initrd location and
+-	 * size, TCE reserve, and more ...
+-	 */
+-	if (!command_line[0])
+-		of_scan_flat_dt(early_init_dt_scan_chosen, command_line);
++	early_init_dt_scan(params);
+ 
+-	/* Scan memory nodes and rebuild MEMBLOCKs */
+-	of_scan_flat_dt(early_init_dt_scan_root, NULL);
+-	if (sysmem.nr_banks == 0)
+-		of_scan_flat_dt(early_init_dt_scan_memory, NULL);
++	if (!command_line[0])
++		strlcpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
+ }
+ 
+ static int __init xtensa_device_probe(void)
 -- 
 1.8.1.2
 
