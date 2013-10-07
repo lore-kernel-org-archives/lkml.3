@@ -1,129 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab3JGXO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 19:14:28 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:45898 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3JGXO0 (ORCPT
+	id S1752564Ab3JGXWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 19:22:37 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28835 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab3JGXWe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 19:14:26 -0400
-Message-ID: <5253404D.2030503@linaro.org>
-Date: Mon, 07 Oct 2013 16:14:21 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com>
-In-Reply-To: <52533C12.9090007@zytor.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Oct 2013 19:22:34 -0400
+X-AuditID: cbfee68e-b7f756d000004512-df-52534238190d
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Vinod Koul'" <vinod.koul@intel.com>,
+        "=?ISO-8859-1?Q?'Heiko_St=FCbner'?=" <heiko@sntech.de>
+Cc: "'Dan Williams'" <djbw@fb.com>, linus.walleij@linaro.org,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Sylwester Nawrocki'" <sylvester.nawrocki@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+References: <201309182118.28391.heiko@sntech.de>
+ <201309182119.54560.heiko@sntech.de> <20131007143351.GK2954@intel.com>
+In-reply-to: <20131007143351.GK2954@intel.com>
+Subject: RE: [PATCH v5 2/4] dmaengine: add driver for Samsung s3c24xx SoCs
+Date: Tue, 08 Oct 2013 08:22:32 +0900
+Message-id: <0f4401cec3b4$19648230$4c2d8690$@org>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7DcbB82HbKwZQ2TVegZwHMGm+MjwAQk6hg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zI10Lp+Agg0sbzS029z9gs/j/6DWr
+	xZQ/y5ksLu+aw2Yx4/w+Jot5n3cyWaza9YfR4mXffhYHDo+Jze/YPXbOusvusXjPSyaPO9f2
+	sHlsvzaP2ePzJrkAtigum5TUnMyy1CJ9uwSujLtzGtkKpnFVvOiZydzA2MHRxcjJISFgInH2
+	zBw2CFtM4sK99UA2F4eQwDJGiR+LrjHCFO14eBLMFhKYzihx7L0CRNFfRokd39+zdDFycLAJ
+	KEs0NumD1AgLaEks3NLEAmKLCMRLtM9fyw5Szyxwl1HiS/8KqEGVEu/OdDOD2JwCehJLZ65g
+	h2j2kpi77TxYnEVAVWLTzIVgg3gFDCVWNz5nhrAFJX5MvgcWZxbQkdjfOo0NwtaWePLuAivI
+	PRIC6hKP/upC3GAkceXvEUaIEhGJfS/eMYLcIyHQySHRdGIdG8QuAYlvkw+xQPTKSmw6wAzx
+	u6TEwRU3WCYwSs5CsnkWks2zkGyehWTFAkaWVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxgh
+	kd63g/HmAetDjMlA6ycyS4km5wMTRV5JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZ
+	qakFqUXxRaU5qcWHGJk4OKUaGIP6XI9PfnEl0MPy1NdzzpFnXm+NOpouZb+nN3LBcpEsgV6+
+	P5+TvhTFrFn24hGjgLmIjtn92bL3/swxe+l43W7B138iT78vibxy8+u8tpCV/5x/LE0PfpPY
+	ePWs2eZc1X/q6qx1ySH8+2N/G3G12LCz+9248EhZfLa4n/aUjyaedixnftUk/1FiKc5INNRi
+	LipOBAAGlh0ECgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCKsWRmVeSWpSXmKPExsVy+t9jQV0Lp+Agg50HjSw29z9gs/j/6DWr
+	xZQ/y5ksLu+aw2Yx4/w+Jot5n3cyWaza9YfR4mXffhYHDo+Jze/YPXbOusvusXjPSyaPO9f2
+	sHlsvzaP2ePzJrkAtqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxU
+	WyUXnwBdt8wcoIuUFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBl35zSy
+	FUzjqnjRM5O5gbGDo4uRk0NCwERix8OTjBC2mMSFe+vZQGwhgemMEsfeK3QxcgHZfxkldnx/
+	z9LFyMHBJqAs0dikD1IjLKAlsXBLEwuILSIQL9E+fy07SD2zwF1GiS/9KxghBlVKvDvTzQxi
+	cwroSSyduYIdotlLYu6282BxFgFViU0zF4IN4hUwlFjd+JwZwhaU+DH5HlicWUBHYn/rNDYI
+	W1viybsLrCD3SAioSzz6qwtxg5HElb9HGCFKRCT2vXjHOIFReBaSSbOQTJqFZNIsJC0LGFlW
+	MYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgSnkWfSOxhXNVgcYhTgYFTi4RU4HBQkxJpYVlyZ
+	e4hRgoNZSYRXwCg4SIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgSkuryTe0NjEzMjSyMzC
+	yMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYC6Qvfyy+IHTg8+Y0WT7DS00NHpmT
+	X4XuvdP0gLVgkk+lSIjvp8S2WvOmH4LZRo2bPSZFGJ5+ujtfNXr3s92vXl+T3bhbcwZr7L4X
+	D3V397iL1iUrH3I+yzqzOcV4En/Wd547iXUT99+eOXt1TQVLspLZitxXgcvCV8/3Cr2U/TR5
+	6cFn++1slFiKMxINtZiLihMBiiBSuGcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 03:56 PM, H. Peter Anvin wrote:
-> On 10/02/2013 05:51 PM, John Stultz wrote:
->> From: Minchan Kim <minchan@kernel.org>
->>
->> This patch adds new system call sys_vrange.
->>
->> NAME
->> 	vrange - Mark or unmark range of memory as volatile
->>
-> vrange() is about as nondescriptive as one can get -- there is exactly
-> one letter that has any connection with that this does.
+Vinod Koul wrote:
+> 
+> On Wed, Sep 18, 2013 at 09:19:54PM +0200, Heiko Stübner wrote:
+> > This adds a new driver to support the s3c24xx dma using the dmaengine
+> > and makes the old one in mach-s3c24xx obsolete in the long run.
+> >
+> > Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
+> > with numerous virtual channels being mapped to a lot less physical ones.
+> > The driver therefore borrows a lot from the amba-pl08x driver in this
+> > regard. Functionality-wise the driver gains a memcpy ability in addition
+> > to the slave_sg one.
+> >
+> > The driver supports both the method for requesting the peripheral used
+> > by SoCs before the S3C2443 and the different method for S3C2443 and
+> later.
+> >
+> > On earlier SoCs the hardware channels usable for specific peripherals is
+> > constrainted while on later SoCs all channels can be used for any
+> peripheral.
+> >
+> > Tested on a s3c2416-based board, memcpy using the dmatest module and
+> > slave_sg partially using the spi-s3c64xx driver.
+> >
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Acked-by: Vinod Koul <vinod.koul@intel.com>
+> 
+Vinod, thanks for your ack :-)
 
-
-Hrm. Any suggestions? Would volatile_range() be better?
-
-
->
->> SYNOPSIS
->> 	int vrange(unsigned_long start, size_t length, int mode,
->> 			 int *purged);
->>
->> DESCRIPTION
->> 	Applications can use vrange(2) to advise the kernel how it should
->> 	handle paging I/O in this VM area.  The idea is to help the kernel
->> 	discard pages of vrange instead of reclaiming when memory pressure
->> 	happens. It means kernel doesn't discard any pages of vrange if
->> 	there is no memory pressure.
->>
->> 	mode:
->> 	VRANGE_VOLATILE
->> 		hint to kernel so VM can discard in vrange pages when
->> 		memory pressure happens.
->> 	VRANGE_NONVOLATILE
->> 		hint to kernel so VM doesn't discard vrange pages
->> 		any more.
->>
->> 	If user try to access purged memory without VRANGE_NOVOLATILE call,
->> 	he can encounter SIGBUS if the page was discarded by kernel.
->>
->> 	purged: Pointer to an integer which will return 1 if
->> 	mode == VRANGE_NONVOLATILE and any page in the affected range
->> 	was purged. If purged returns zero during a mode ==
->> 	VRANGE_NONVOLATILE call, it means all of the pages in the range
->> 	are intact.
-> I'm a bit confused about the "purged"
->
-> From an earlier version of the patch:
->
->> - What's different with madvise(DONTNEED)?
->>
->>   System call semantic
->>
->>   DONTNEED makes sure user always can see zero-fill pages after
->>   he calls madvise while vrange can see data or encounter SIGBUS.
-> This difference doesn't seem to be a huge one.  The other one seems to
-> be the blocking status of MADV_DONTNEED, which perhaps may be better
-> handled by adding an option (MADV_LAZY) perhaps?
->
-> That way we would have lazy vs. immediate, and zero versus SIGBUS.
-
-And some sort of lazy-cancling call as well.
-
-
->
-> I see from the change history of the patch that this was an madvise() at
-> some point, but was changed into a separate system call at some point,
-> does anyone remember why that was?  A quick look through my LKML
-> archives doesn't really make it clear.
-
-The reason we can't use madvise, is that to properly handle error cases
-and report the pruge state, we need an extra argument.
-
-In much earlier versions, we just returned an error when setting
-NONVOLATILE if the data was purged. However, since we have to possibly
-do allocations when marking a range as non-volatile, we needed a way to
-properly handle that allocation failing. We can't just return ENOMEM, as
-we may have already marked purged memory as non-volatile.
-
-Thus, that's why with vrange, we return the number of bytes modified,
-along with the purge state. That way, if an error does occur we can
-return the purge state of the bytes successfully modified, and only
-return an error if nothing was changed, much like when a write fails.
-
-thanks
--john
-
-
+Applied this whole series.
+Kukjin
 
