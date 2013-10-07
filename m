@@ -1,85 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab3JGV5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:57:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab3JGV5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:57:13 -0400
-Date: Mon, 7 Oct 2013 23:57:05 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 36/50] tools/perf/build: Speed up auto-detection
-Message-ID: <20131007215704.GD2900@krava.redhat.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <1381147003-2574-37-git-send-email-mingo@kernel.org>
+	id S1752851Ab3JGV7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:59:55 -0400
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.102]:62725
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751456Ab3JGV7y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 17:59:54 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381147003-2574-37-git-send-email-mingo@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: 
+To: Recipients <jerryloan2222227@MrJerrySmith239.onmicrosoft.com>
+From: <jerryloan2222227@MrJerrySmith239.onmicrosoft.com>
+Date: Tue, 8 Oct 2013 03:29:23 +0530
+Reply-To: <jerryfunds12@rediffmail.com>
+Message-ID: <ca68da36-35c5-4e3d-9765-03b2e87ba596@HKNPR01MB066.apcprd01.prod.exchangelabs.com>
+X-Originating-IP: [115.245.181.110]
+X-ClientProxiedBy: SINPR02CA019.apcprd02.prod.outlook.com (10.141.109.14) To
+ HKNPR01MB066.apcprd01.prod.exchangelabs.com (10.242.100.18)
+X-Forefront-PRVS: 09928BEC91
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(66066001)(50466002)(74366001)(74876001)(79102001)(47446002)(74662001)(74502001)(81816001)(83322001)(81342001)(74706001)(69226001)(80022001)(81542001)(5406001)(76482001)(77982001)(54316002)(85306002)(59766001)(65816001)(53256004)(47776003)(63696002)(19580405001)(74316001)(81686001)(56776001)(56816003)(80976001)(47736001)(49866001)(76796001)(76786001)(23756003)(25636003)(4396001)(77096001)(50986001)(558084003)(42186004)(47976001)(43066001)(31686002)(54356001)(19580395003)(76176001)(83072001)(46102001)(51856001)(33646001)(416774004);DIR:OUT;SFP:1501;SCL:5;SRVR:HKNPR01MB066;H:[115.245.181.110];CLIP:115.245.181.110;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: MrJerrySmith239.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 01:56:29PM +0200, Ingo Molnar wrote:
-
-SNIP
-
-> -FEATURE_TESTS =				\
-> -	hello				\
-> -	stackprotector-all		\
-> -	stackprotector			\
-> -	volatile-register-var		\
-> +#
-> +# Note that this is not a complete list of all feature tests, just
-> +# those that are typically built on a fully configured system.
-> +#
-> +# [ Feature tests not mentioned here have to be built explicitly in
-> +#   the rule that uses them - an example for that is the 'bionic'
-> +#   feature check. ]
-> +#
-> +CORE_FEATURE_TESTS =			\
-> +	backtrace			\
-> +	dwarf				\
->  	fortify-source			\
-> -	bionic				\
-> -	libelf				\
->  	glibc				\
-> -	dwarf				\
-> -	libelf-mmap			\
-> -	libelf-getphdrnum		\
-> -	libunwind			\
-> -	libaudit			\
-> -	libslang			\
->  	gtk2				\
->  	gtk2-infobar			\
-> +	libaudit			\
-> +	libbfd				\
-> +	libelf				\
-> +	libelf-getphdrnum		\
-> +	libelf-mmap			\
-> +	libnuma				\
->  	libperl				\
->  	libpython			\
->  	libpython-version		\
-> -	libbfd				\
-> +	libslang			\
-> +	libunwind			\
->  	on-exit				\
-> -	backtrace			\
-> -	libnuma
-> +	stackprotector-all		\
-
-missing stackprotector?
-
-I guess that various gcc version could support either
-of them or both.. so we need to check for both
-
-looks like -fstack-protector-all overloads -fstack-protector
-but no harm to have them both added probably ;-)
-
-jirka
+Do You Need A Loan? Email Us Now At jerryfunds12@rediffmail.com With Amount Needed As Loan And Phone Number.
