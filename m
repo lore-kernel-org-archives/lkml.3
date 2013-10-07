@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3JGB6k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Oct 2013 21:58:40 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14214 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3JGB6f (ORCPT
+	id S1755321Ab3JGB6u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Oct 2013 21:58:50 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13996 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab3JGB6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Oct 2013 21:58:35 -0400
-X-AuditID: cbfee68e-b7f756d000004512-c0-5252154a86c2
-Date: Mon, 07 Oct 2013 10:58:34 +0900
+	Sun, 6 Oct 2013 21:58:46 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-4c-5252155525a1
+Date: Mon, 07 Oct 2013 10:58:44 +0900
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
         Linux DeviceTree <devicetree@vger.kernel.org>,
@@ -25,40 +25,40 @@ Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
         Varun Sethi <Varun.Sethi@freescale.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v10 19/20] iommu/exynos: return 0 if iommu_attach_device()
- successes
-Message-id: <20131007105834.8373e2d380e309928bdc8e09@samsung.com>
+Subject: [PATCH v10 20/20] iommu/exynos: add devices attached to the System MMU
+ to an IOMMU group
+Message-id: <20131007105844.a260f37a9a941bed894adca3@samsung.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t8zY10v0aAggx2LlCzu3D3HajH/CJB4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t8zI91Q0aAgg3/XJSzu3D3HajH/CJB4
 	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
 	XkaLluu9TBbrZ7xmsZh5aw2Lg4DHk4PzmDxmN1xk8fh3uJ/J4861PWwem5fUe0y+sZzRo2/L
-	KkaPz5vkPK4cPcMUwBnFZZOSmpNZllqkb5fAlXH/9hHWgj7eioXH37M2ML7i6mLk5JAQMJE4
-	9mo3K4QtJnHh3nq2LkYuDiGBZYwSJ04cA0pwgBXdXCEPEV/EKLHp5XQmCGcSk8SrfbuYQbpZ
-	BFQlrl59wghiswloSayee5wRpEhEoI1J4mvjIRYQh1ngNLPEqt0rwDqEBcIkLlz6DdbBK+Ao
-	0dR3hAXiDguJC00d7BBxQYkfk++BxZmBpm7e1sQKYctLbF7zlhlkqITARA6Jx0t6oc4QkPg2
-	GWQbyN2yEpsOMEPMlJQ4uOIGywRGkVlIxs5CMnYWkrELGJlXMYqmFiQXFCelFxnpFSfmFpfm
-	pesl5+duYoREct8OxpsHrA8xJgOtnMgsJZqcD0wEeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVY
-	BwoJpCeWpGanphakFsUXleakFh9iZOLglGpgXLf2hmZn/andYRPXbl54pWjP/q8sX18di7t3
-	Rf3e83OTef9vMfLfKxQqsv/3XXO1dxN4rFru+2j3a8fJKM0SVwzN8bdbbxm/1DmHf5mMmuSq
-	E2x1P+9wec/XiSlp4tjMvrp6HnvRGT22FSEHT3/5+Gul9oLwTTderVGTvFz8h+2Z468Pvxce
-	5lJiKc5INNRiLipOBACclkaF+gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t9jAV0v0aAgg8cdMhZ37p5jtZh/BEi8
-	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
-	L6NFy/VeJov1M16zWMy8tYbFQcDjycF5TB6zGy6yePw73M/kcefaHjaPzUvqPSbfWM7o0bdl
-	FaPH501yHleOnmEK4IxqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xN
-	tVVy8QnQdcvMAXpDSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5hx//YR
-	1oI+3oqFx9+zNjC+4upi5OCQEDCRuLlCvouRE8gUk7hwbz1bFyMXh5DAIkaJTS+nM0E4k5gk
-	Xu3bxQxSxSKgKnH16hNGEJtNQEti9dzjjCBFIgJtTBJfGw+xgDjMAqeZJVbtXgHWISwQJnHh
-	0m+wDl4BR4mmviMsEPssJC40dbBDxAUlfky+BxZnBpq6eVsTK4QtL7F5zVvmCYx8s5CUzUJS
-	NgtJ2QJG5lWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwWnimdQOxpUNFocYBTgYlXh4d9wP
-	DBJiTSwrrsw9xCjBwawkwnupDijEm5JYWZValB9fVJqTWnyIMRno74nMUqLJ+cAUllcSb2hs
-	YmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjIXXZnjF1kzp1nD0cvx/
-	c3365mJd9bCWjsuzpt5wKlZtjKgQd2cs8eRKkSuQ38b9prN7bt7V28+7ltX2f/RQN5n48CZn
-	+PWP9frlcudf9MaHv2g4bDKp9vDBxQv0lYze2e+9dzjhNpPQDDuOWwWOTt4l3n7/YrcvK+LN
-	dm3LdNzW975P+8ZDJZbijERDLeai4kQAGvrQlVcDAAA=
+	KkaPz5vkPK4cPcMUwBnFZZOSmpNZllqkb5fAlfF1TxNLQRdfxd/X11gbGB9ydzFyckgImEic
+	mb2eHcIWk7hwbz0biC0ksIxRYvoUaZianr/HWboYuYDi0xkldv7fywjhTGKSaPy6ghmkikVA
+	VWL54UesIDabgJbE6rnHwYpEBNqYJL42HgJrZxY4zSyxajdEh7BAssTVt6+YQGxeAUeJiRMe
+	sELss5C40NTBDhEXlPgx+R4LiM0MNHXztiZWCFteYvOat8wQ9b0cEutn8EFcISDxbTLIMg6g
+	uKzEpgNQJZISB1fcYJnAKDILydRZSKbOQjJ1ASPzKkbR1ILkguKk9CITveLE3OLSvHS95Pzc
+	TYyQOJ6wg/HeAetDjMlAKycyS4km5wPTQF5JvKGxmZGFqYmpsZG5pRlpwkrivOot1oFCAumJ
+	JanZqakFqUXxRaU5qcWHGJk4OKUaGLUcxI7x9OQt7TM4m91x9nDQ1RcLsz5ENvCG1Vr09OyK
+	8jdddPSTSOx/PhOT7+/tp//r7uTNfiQfK1OuUti2rawz0nbHi+O3TPdu3+7xKEBboSmJV1P4
+	8x2OaqW9KY99n3S842p59LbQouTIm5sxuz2z+W+mbd9t2PN7j/aeJIcCpcXT9sSWK7EUZyQa
+	ajEXFScCADfpi435AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jQd1Q0aAgg18zhS3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaLluu9TBbrZ7xmsZh5aw2Lg4DHk4PzmDxmN1xk8fh3uJ/J4861PWwem5fUe0y+sZzRo2/L
+	KkaPz5vkPK4cPcMUwBnVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
+	aqvk4hOg65aZA/SGkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHj654m
+	loIuvoq/r6+xNjA+5O5i5OSQEDCR6Pl7nAXCFpO4cG89WxcjF4eQwHRGiZ3/9zJCOJOYJBq/
+	rmAGqWIRUJVYfvgRK4jNJqAlsXrucbAiEYE2JomvjYdYQBxmgdPMEqt2Q3QICyRLXH37ignE
+	5hVwlJg44QErxD4LiQtNHewQcUGJH5Pvgd3BDDR187YmVghbXmLzmrfMExj5ZiEpm4WkbBaS
+	sgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxghPFM+kdjKsaLA4xCnAwKvHw7rgfGCTE
+	mlhWXJl7iFGCg1lJhPdSHVCINyWxsiq1KD++qDQntfgQYzLQ3xOZpUST84FJLK8k3tDYxMzI
+	0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGNNfX40oPmk916nv/teDyWK/
+	d0kfz5n63Z5D/9+89wGh83XdjRMO9C/gYkws7BHvUJtkb/+h3zjzx4bs9DDm4/dLuy9dcZzM
+	9mXRmzsri/+0HbF6Vb/d7k6niqnSz0iPlYITrj+vnhNkJtFhqxtlbGbgNcnp6c08tccr0yOi
+	Nv88tPLrDodZUUosxRmJhlrMRcWJAIaYYdhYAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,50 +66,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-iommu_attach_device() against exynos-iommu positive integer on success
-if the caller calls iommu_attach_device() with the same iommu_domain
-multiple times without call to iommu_detach_device() to inform the
-caller how many calls to iommu_detach_device() to really detach iommu.
+Patch written by Antonios Motakis <a.motakis@virtualopensystems.com>:
 
-However the convention of the return value of success of common API is
-zero, this patch makes iommu_attach_device() call against exynos-iommu
-always return zero if the given device is successfully attached to
-the given iommu_domain even though it is already attached to the same
-iommu_domain.
+IOMMU groups are expected by certain users of the IOMMU API,
+e.g. VFIO. Since each device is behind its own System MMU, we
+can allocate a new IOMMU group for each device.
 
-Reviewed-by: Grant Grundler <grundler@chromium.org>
-Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+Reviewd-by: Cho KyongHo <pullip.cho@samsung.com>
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/iommu/exynos-iommu.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/iommu/exynos-iommu.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 26ba554..5025338 100644
+index 5025338..24505a0 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -759,15 +759,16 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
- 
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_err(dev, "%s: Failed to attach IOMMU with pgtable %#lx\n",
- 				__func__, __pa(priv->pgtable));
--	else
--		dev_dbg(dev, "%s: Attached IOMMU with pgtable 0x%lx%s\n",
--					__func__, __pa(priv->pgtable),
--					(ret == 0) ? "" : ", again");
-+		return ret;
-+	}
- 
--	return ret;
-+	dev_dbg(dev, "%s: Attached IOMMU with pgtable 0x%lx%s\n",
-+		__func__, __pa(priv->pgtable), (ret == 0) ? "" : ", again");
-+
-+	return 0;
+@@ -1028,6 +1028,32 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	return phys;
  }
  
- static void exynos_iommu_detach_device(struct iommu_domain *domain,
++static int exynos_iommu_add_device(struct device *dev)
++{
++	struct iommu_group *group;
++	int ret;
++
++	group = iommu_group_get(dev);
++
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group)) {
++			dev_err(dev, "Failed to allocate IOMMU group\n");
++			return PTR_ERR(group);
++		}
++	}
++
++	ret = iommu_group_add_device(group, dev);
++	iommu_group_put(group);
++
++	return ret;
++}
++
++static void exynos_iommu_remove_device(struct device *dev)
++{
++	iommu_group_remove_device(dev);
++}
++
+ static struct iommu_ops exynos_iommu_ops = {
+ 	.domain_init = &exynos_iommu_domain_init,
+ 	.domain_destroy = &exynos_iommu_domain_destroy,
+@@ -1036,6 +1062,8 @@ static struct iommu_ops exynos_iommu_ops = {
+ 	.map = &exynos_iommu_map,
+ 	.unmap = &exynos_iommu_unmap,
+ 	.iova_to_phys = &exynos_iommu_iova_to_phys,
++	.add_device = &exynos_iommu_add_device,
++	.remove_device = &exynos_iommu_remove_device,
+ 	.pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
+ };
+ 
 -- 
 1.7.2.5
 
