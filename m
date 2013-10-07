@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab3JGVTS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:19:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756497Ab3JGVTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:19:12 -0400
-Date: Mon, 7 Oct 2013 23:18:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 26/50] tools/perf/build: Split out feature check: 'libbfd'
-Message-ID: <20131007211858.GB2900@krava.redhat.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <1381147003-2574-27-git-send-email-mingo@kernel.org>
- <5252CF13.3040200@gmail.com>
+	id S1753708Ab3JGVVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:21:38 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:57275 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab3JGVVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 17:21:35 -0400
+Date: Tue, 8 Oct 2013 01:21:33 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] smaps: show VM_SOFTDIRTY flag in VmFlags line
+Message-ID: <20131007212133.GL6036@moon>
+References: <1380913335-17466-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <5252B56C.8030903@parallels.com>
+ <1381155304-2ro6e10t-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5252CF13.3040200@gmail.com>
+In-Reply-To: <1381155304-2ro6e10t-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 09:11:15AM -0600, David Ahern wrote:
-> On 10/7/13 5:56 AM, Ingo Molnar wrote:
-> >diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> >index 77a2e6b..4f60ecc 100644
-> >--- a/tools/perf/config/Makefile
-> >+++ b/tools/perf/config/Makefile
-> >@@ -121,6 +121,7 @@ FEATURE_TESTS =				\
-> >  	libperl				\
-> >  	libpython			\
-> >  	libpython-version		\
-> >+	libbfd				\
-> >  	libnuma
-> >
-> >  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+On Mon, Oct 07, 2013 at 10:15:04AM -0400, Naoya Horiguchi wrote:
+> > 
+> > The comment is not correct. Per-VMA soft-dirty flag means, that
+> > VMA is "newly created" one and thus represents a new (dirty) are
+> > in task's VM.
 > 
-> strlcpy missing from FEATURE_TESTS, but really the strlcpy changes
-> should be a separate patch.
+> Thanks for the correction. I changed the description.
 
-it gets removed completely in here:
-  tools/perf: Turn strlcpy() into a __weak function
+Looks good to me, thanks!
 
-still I think David's right and there should be
-separate patch for strlcpy check
-
-jirka
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
