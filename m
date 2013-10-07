@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab3JGLkY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:40:24 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:58152 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab3JGLkJ (ORCPT
+	id S1755359Ab3JGLkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:40:21 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:39882 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991Ab3JGLkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:40:09 -0400
+	Mon, 7 Oct 2013 07:40:07 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Thierry Reding <thierry.reding@gmail.com>
 Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
         Kukjin Kim <kgene.kim@samsung.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
         devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 12/12] pwm-backlight: Allow backlight to remain disabled on boot
-Date: Mon,  7 Oct 2013 13:37:46 +0200
-Message-Id: <1381145866-445-13-git-send-email-treding@nvidia.com>
+Subject: [PATCH v2 11/12] pwm-backlight: Add power supply support
+Date: Mon,  7 Oct 2013 13:37:45 +0200
+Message-Id: <1381145866-445-12-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381145866-445-1-git-send-email-treding@nvidia.com>
 References: <1381145866-445-1-git-send-email-treding@nvidia.com>
@@ -25,89 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default for backlight devices is to be enabled immediately when
-registering with the backlight core. This can be useful for setups that
-use a simple framebuffer device and where the backlight cannot otherwise
-be hooked up to the panel.
-
-However, when dealing with more complex setups, such as those of recent
-ARM SoCs, this can be problematic. Since the backlight is usually setup
-separately from the display controller, the probe order is not usually
-deterministic. That can lead to situations where the backlight will be
-powered up and the panel will show an uninitialized framebuffer.
-
-Furthermore, subsystems such as DRM have advanced functionality to set
-the power mode of a panel. In order to allow such setups to power up the
-panel at exactly the right moment, a way is needed to prevent the
-backlight core from powering the backlight up automatically when it is
-registered.
-
-This commit introduces a new boot_off field in the platform data (and
-also implements getting the same information from device tree). When set
-the initial backlight power mode will be set to "off".
+Backlights require a power supply to work properly. This commit adds a
+regulator to power up and power down the backlight.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
-Note: Perhaps it would be more useful to make this the default behaviour
-in the backlight core? Many other subsystems and frameworks assume that
-a resource is off unless explicitly enabled.
+Changes in v2:
+- make regulator mandatory and update commit message accordingly
 
- .../devicetree/bindings/video/backlight/pwm-backlight.txt         | 1 +
- drivers/video/backlight/pwm_bl.c                                  | 8 ++++++++
- include/linux/pwm_backlight.h                                     | 2 ++
- 3 files changed, 11 insertions(+)
+ .../devicetree/bindings/video/backlight/pwm-backlight.txt   |  2 ++
+ drivers/video/backlight/pwm_bl.c                            | 13 +++++++++++++
+ 2 files changed, 15 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 764db86..65e001a 100644
+index 72810cc..764db86 100644
 --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
 +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -17,6 +17,7 @@ Optional properties:
-                "pwms" property (see PWM binding[0])
-   - enable-gpios: contains a single GPIO specifier for the GPIO which enables
-                   and disables the backlight (see GPIO binding[1])
-+  - backlight-boot-off: keep the backlight disabled on boot
+@@ -10,6 +10,7 @@ Required properties:
+       last value in the array represents a 100% duty cycle (brightest).
+   - default-brightness-level: the default brightness level (index into the
+       array defined by the "brightness-levels" property)
++  - power-supply: regulator for supply voltage
  
- [0]: Documentation/devicetree/bindings/pwm/pwm.txt
- [1]: Documentation/devicetree/bindings/gpio/gpio.txt
+ Optional properties:
+   - pwm-names: a list of names for the PWM devices specified in the
+@@ -29,5 +30,6 @@ Example:
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
+ 
++		power-supply = <&vdd_bl_reg>;
+ 		enable-gpios = <&gpio 58 0>;
+ 	};
 diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index eec6c98..cd87ecb 100644
+index cdef4a3..eec6c98 100644
 --- a/drivers/video/backlight/pwm_bl.c
 +++ b/drivers/video/backlight/pwm_bl.c
-@@ -194,6 +194,8 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
- 		data->enable_gpio_flags |= PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
+@@ -21,6 +21,7 @@
+ #include <linux/err.h>
+ #include <linux/pwm.h>
+ #include <linux/pwm_backlight.h>
++#include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
  
-+	data->boot_off = of_property_read_bool(node, "backlight-boot-off");
+ struct pwm_bl_data {
+@@ -30,6 +31,7 @@ struct pwm_bl_data {
+ 	unsigned int		lth_brightness;
+ 	unsigned int		*levels;
+ 	bool			enabled;
++	struct regulator	*power_supply;
+ 	int			enable_gpio;
+ 	unsigned long		enable_gpio_flags;
+ 	int			(*notify)(struct device *,
+@@ -60,6 +62,10 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness,
+ 
+ 	pwm_config(pb->pwm, duty_cycle, pb->period);
+ 
++	err = regulator_enable(pb->power_supply);
++	if (err < 0)
++		dev_err(pb->dev, "failed to enable power supply\n");
 +
- 	return 0;
- }
- 
-@@ -325,6 +327,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	if (gpio_is_valid(pb->enable_gpio)) {
+ 		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
+ 			gpio_set_value(pb->enable_gpio, 0);
+@@ -86,6 +92,7 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
+ 			gpio_set_value(pb->enable_gpio, 0);
  	}
  
- 	bl->props.brightness = data->dft_brightness;
-+
-+	if (data->boot_off)
-+		bl->props.power = FB_BLANK_POWERDOWN;
-+	else
-+		bl->props.power = FB_BLANK_UNBLANK;
-+
- 	backlight_update_status(bl);
++	regulator_disable(pb->power_supply);
+ 	pb->enabled = false;
+ }
  
- 	platform_set_drvdata(pdev, bl);
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 2de2e27..ea4a239 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -18,6 +18,8 @@ struct platform_pwm_backlight_data {
- 	unsigned int *levels;
- 	int enable_gpio;
- 	unsigned long enable_gpio_flags;
-+	bool boot_off;
+@@ -268,6 +275,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	pb->power_supply = devm_regulator_get(&pdev->dev, "power");
++	if (IS_ERR(pb->power_supply)) {
++		ret = PTR_ERR(pb->power_supply);
++		goto err_gpio;
++	}
 +
- 	int (*init)(struct device *dev);
- 	int (*notify)(struct device *dev, int brightness);
- 	void (*notify_after)(struct device *dev, int brightness);
+ 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pb->pwm)) {
+ 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
 -- 
 1.8.4
 
