@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3JGGoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 02:44:00 -0400
+	id S1752758Ab3JGGnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 02:43:40 -0400
 Received: from mga09.intel.com ([134.134.136.24]:51044 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754186Ab3JGGnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 02:43:55 -0400
+	id S1752437Ab3JGGng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 02:43:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1048,1371106800"; 
-   d="scan'208";a="388846140"
+   d="scan'208";a="388846024"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 9/9] perf tools: add ability to find kcore in build-id cache
-Date: Mon,  7 Oct 2013 09:50:18 +0300
-Message-Id: <1381128618-22721-10-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 3/9] perf tools: workaround objdump difficulties with kcore
+Date: Mon,  7 Oct 2013 09:50:12 +0300
+Message-Id: <1381128618-22721-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381128618-22721-1-git-send-email-adrian.hunter@intel.com>
 References: <1381128618-22721-1-git-send-email-adrian.hunter@intel.com>
@@ -28,181 +28,342 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When no vmlinux is found, tools will use kallsyms and,
-if possible, kcore.  Add the ability to find kcore in
-the build-id cache.
+objdump fails to annotate module symbols when looking
+at kcore.  Workaround this by extracting object code
+from kcore and putting it in a temporary file for
+objdump to use instead.  The temporary file is created
+to look like kcore but contains only the function
+being disassembled.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/symbol.c | 147 +++++++++++++++++++++++++++++++++--------------
- 1 file changed, 103 insertions(+), 44 deletions(-)
+ tools/perf/util/annotate.c       |  21 ++++
+ tools/perf/util/symbol-elf.c     | 221 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c |   9 ++
+ tools/perf/util/symbol.h         |  14 +++
+ 4 files changed, 265 insertions(+)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 43b2c85..32fb016 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1440,6 +1440,105 @@ out:
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f7bdc01..46746b8 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -879,6 +879,8 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 	FILE *file;
+ 	int err = 0;
+ 	char symfs_filename[PATH_MAX];
++	struct kcore_extract kce;
++	bool delete_extract = false;
+ 
+ 	if (filename) {
+ 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+@@ -940,6 +942,23 @@ fallback:
+ 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+ 		 dso, dso->long_name, sym, sym->name);
+ 
++	if (dso__is_kcore(dso)) {
++		kce.kcore_filename = symfs_filename;
++		kce.addr = map__rip_2objdump(map, sym->start);
++		kce.offs = sym->start;
++		kce.len = sym->end + 1 - sym->start;
++		if (!create_kcore_extract(&kce)) {
++			delete_extract = true;
++			strlcpy(symfs_filename, kce.extract_filename,
++				sizeof(symfs_filename));
++			if (free_filename) {
++				free(filename);
++				free_filename = false;
++			}
++			filename = symfs_filename;
++		}
++	}
++
+ 	snprintf(command, sizeof(command),
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+@@ -972,6 +991,8 @@ fallback:
+ 
+ 	pclose(file);
+ out_free_filename:
++	if (delete_extract)
++		delete_kcore_extract(&kce);
+ 	if (free_filename)
+ 		free(filename);
+ 	return err;
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index a7b9ab5..79b27fc7 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -1002,6 +1002,227 @@ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
  	return err;
  }
  
-+static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
++static int copy_bytes(int from, off_t from_offs, int to, off_t to_offs, u64 len)
 +{
-+	char kallsyms_filename[PATH_MAX];
-+	struct dirent *dent;
-+	int ret = -1;
-+	DIR *d;
++	char buf[page_size];
++	ssize_t r;
++	size_t n;
 +
-+	d = opendir(dir);
-+	if (!d)
++	if (lseek(to, to_offs, SEEK_SET) != to_offs)
 +		return -1;
 +
-+	while (1) {
-+		dent = readdir(d);
-+		if (!dent)
++	if (lseek(from, from_offs, SEEK_SET) != from_offs)
++		return -1;
++
++	while (len) {
++		n = sizeof(buf);
++		if (len < n)
++			n = len;
++		/* Use read because mmap won't work on proc files */
++		r = read(from, buf, n);
++		if (r < 0)
++			return -1;
++		if (!r)
 +			break;
-+		if (dent->d_type != DT_DIR)
-+			continue;
-+		snprintf(kallsyms_filename, sizeof(kallsyms_filename),
-+			 "%s/%s/kallsyms", dir, dent->d_name);
-+		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+			strlcpy(dir, kallsyms_filename, dir_sz);
-+			ret = 0;
-+			break;
-+		}
++		n = r;
++		r = write(to, buf, n);
++		if (r < 0)
++			return -1;
++		if ((size_t)r != n)
++			return -1;
++		len -= n;
 +	}
-+
-+	closedir(d);
-+
-+	return ret;
++	return 0;
 +}
 +
-+static char *dso__find_kallsyms(struct dso *dso, struct map *map)
++struct kcore {
++	int fd;
++	int elfclass;
++	Elf *elf;
++	GElf_Ehdr ehdr;
++};
++
++static int kcore_open(const char *filename, struct kcore *kcore)
 +{
-+	u8 host_build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+	bool is_host = false;
-+	char path[PATH_MAX];
++	GElf_Ehdr *ehdr;
 +
-+	if (!dso->has_build_id) {
-+		/*
-+		 * Last resort, if we don't have a build-id and couldn't find
-+		 * any vmlinux file, try the running kernel kallsyms table.
-+		 */
-+		goto proc_kallsyms;
-+	}
++	kcore->fd = open(filename, O_RDONLY);
++	if (kcore->fd == -1)
++		return -1;
 +
-+	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
-+				 sizeof(host_build_id)) == 0)
-+		is_host = dso__build_id_equal(dso, host_build_id);
++	kcore->elf = elf_begin(kcore->fd, ELF_C_READ, NULL);
++	if (!kcore->elf)
++		goto out_close;
 +
-+	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
++	kcore->elfclass = gelf_getclass(kcore->elf);
++	if (kcore->elfclass == ELFCLASSNONE)
++		goto out_end;
 +
-+	/* Use /proc/kallsyms if possible */
-+	if (is_host) {
-+		DIR *d;
-+		int fd;
++	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
++	if (!ehdr)
++		goto out_end;
 +
-+		/* If no cached kcore go with /proc/kallsyms */
-+		snprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
-+			 buildid_dir, sbuild_id);
-+		d = opendir(path);
-+		if (!d)
-+			goto proc_kallsyms;
-+		closedir(d);
++	return 0;
 +
-+		/*
-+		 * Do not check the build-id cache, until we know we cannot use
-+		 * /proc/kcore.
-+		 */
-+		fd = open("/proc/kcore", O_RDONLY);
-+		if (fd != -1) {
-+			close(fd);
-+			/* If module maps match go with /proc/kallsyms */
-+			if (!validate_kcore_modules("/proc/kallsyms", map))
-+				goto proc_kallsyms;
-+		}
-+
-+		/* Find kallsyms in build-id cache with kcore */
-+		if (!find_matching_kcore(map, path, sizeof(path)))
-+			return strdup(path);
-+
-+		goto proc_kallsyms;
-+	}
-+
-+	snprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
-+		 buildid_dir, sbuild_id);
-+
-+	if (access(path, F_OK)) {
-+		pr_err("No kallsyms or vmlinux with build-id %s was found\n",
-+		       sbuild_id);
-+		return NULL;
-+	}
-+
-+	return strdup(path);
-+
-+proc_kallsyms:
-+	return strdup("/proc/kallsyms");
++out_end:
++	elf_end(kcore->elf);
++out_close:
++	close(kcore->fd);
++	return -1;
 +}
 +
- static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 				symbol_filter_t filter)
++static int kcore_new(char *filename, struct kcore *kcore, int elfclass,
++		     bool temp)
++{
++	GElf_Ehdr *ehdr;
++
++	kcore->elfclass = elfclass;
++
++	if (temp)
++		kcore->fd = mkstemp(filename);
++	else
++		kcore->fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0400);
++	if (kcore->fd == -1)
++		return -1;
++
++	kcore->elf = elf_begin(kcore->fd, ELF_C_WRITE, NULL);
++	if (!kcore->elf)
++		goto out_close;
++
++	if (!gelf_newehdr(kcore->elf, elfclass))
++		goto out_end;
++
++	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
++	if (!ehdr)
++		goto out_end;
++
++	return 0;
++
++out_end:
++	elf_end(kcore->elf);
++out_close:
++	close(kcore->fd);
++	unlink(filename);
++	return -1;
++}
++
++static void kcore_close(struct kcore *kcore)
++{
++	elf_end(kcore->elf);
++	close(kcore->fd);
++}
++
++static int kcore_copy_hdr(struct kcore *from, struct kcore *to, size_t count)
++{
++	GElf_Ehdr *ehdr = &to->ehdr;
++	GElf_Ehdr *kehdr = &from->ehdr;
++
++	memcpy(ehdr->e_ident, kehdr->e_ident, EI_NIDENT);
++	ehdr->e_type      = kehdr->e_type;
++	ehdr->e_machine   = kehdr->e_machine;
++	ehdr->e_version   = kehdr->e_version;
++	ehdr->e_entry     = 0;
++	ehdr->e_shoff     = 0;
++	ehdr->e_flags     = kehdr->e_flags;
++	ehdr->e_phnum     = count;
++	ehdr->e_shentsize = 0;
++	ehdr->e_shnum     = 0;
++	ehdr->e_shstrndx  = 0;
++
++	if (from->elfclass == ELFCLASS32) {
++		ehdr->e_phoff     = sizeof(Elf32_Ehdr);
++		ehdr->e_ehsize    = sizeof(Elf32_Ehdr);
++		ehdr->e_phentsize = sizeof(Elf32_Phdr);
++	} else {
++		ehdr->e_phoff     = sizeof(Elf64_Ehdr);
++		ehdr->e_ehsize    = sizeof(Elf64_Ehdr);
++		ehdr->e_phentsize = sizeof(Elf64_Phdr);
++	}
++
++	if (!gelf_update_ehdr(to->elf, ehdr))
++		return -1;
++
++	if (!gelf_newphdr(to->elf, count))
++		return -1;
++
++	return 0;
++}
++
++static int kcore_add_phdr(struct kcore *kcore, int index, off_t offset,
++			  u64 addr, u64 len)
++{
++	GElf_Phdr gphdr;
++	GElf_Phdr *phdr;
++
++	phdr = gelf_getphdr(kcore->elf, index, &gphdr);
++	if (!phdr)
++		return -1;
++
++	phdr->p_type	= PT_LOAD;
++	phdr->p_flags	= PF_R | PF_W | PF_X;
++	phdr->p_offset	= offset;
++	phdr->p_vaddr	= addr;
++	phdr->p_paddr	= 0;
++	phdr->p_filesz	= len;
++	phdr->p_memsz	= len;
++	phdr->p_align	= page_size;
++
++	if (!gelf_update_phdr(kcore->elf, index, phdr))
++		return -1;
++
++	return 0;
++}
++
++static off_t kcore_write(struct kcore *kcore)
++{
++	return elf_update(kcore->elf, ELF_C_WRITE);
++}
++
++int create_kcore_extract(struct kcore_extract *kce)
++{
++	struct kcore kcore;
++	struct kcore extract;
++	size_t count = 1;
++	int index = 0, err = -1;
++	off_t offset = page_size, sz;
++
++	if (kcore_open(kce->kcore_filename, &kcore))
++		return -1;
++
++	strcpy(kce->extract_filename, PERF_KCORE_EXTRACT);
++	if (kcore_new(kce->extract_filename, &extract, kcore.elfclass, true))
++		goto out_kcore_close;
++
++	if (kcore_copy_hdr(&kcore, &extract, count))
++		goto out_extract_close;
++
++	if (kcore_add_phdr(&extract, index, offset, kce->addr, kce->len))
++		goto out_extract_close;
++
++	sz = kcore_write(&extract);
++	if (sz < 0 || sz > offset)
++		goto out_extract_close;
++
++	if (copy_bytes(kcore.fd, kce->offs, extract.fd, offset, kce->len))
++		goto out_extract_close;
++
++	err = 0;
++
++out_extract_close:
++	kcore_close(&extract);
++	if (err)
++		unlink(kce->extract_filename);
++out_kcore_close:
++	kcore_close(&kcore);
++
++	return err;
++}
++
++void delete_kcore_extract(struct kcore_extract *kce)
++{
++	unlink(kce->extract_filename);
++}
++
+ void symbol__elf_init(void)
  {
-@@ -1488,51 +1587,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (symbol_conf.symfs[0] != 0)
- 		return -1;
+ 	elf_version(EV_CURRENT);
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 3a802c3..0330163 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -308,6 +308,15 @@ int file__read_maps(int fd __maybe_unused, bool exe __maybe_unused,
+ 	return -1;
+ }
  
--	/*
--	 * Say the kernel DSO was created when processing the build-id header table,
--	 * we have a build-id, so check if it is the same as the running kernel,
--	 * using it if it is.
--	 */
--	if (dso->has_build_id) {
--		u8 kallsyms_build_id[BUILD_ID_SIZE];
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
--					 sizeof(kallsyms_build_id)) == 0) {
--			if (dso__build_id_equal(dso, kallsyms_build_id)) {
--				kallsyms_filename = "/proc/kallsyms";
--				goto do_kallsyms;
--			}
--		}
--		/*
--		 * Now look if we have it on the build-id cache in
--		 * $HOME/.debug/[kernel.kallsyms].
--		 */
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--
--		if (asprintf(&kallsyms_allocated_filename,
--			     "%s/.debug/[kernel.kallsyms]/%s",
--			     getenv("HOME"), sbuild_id) == -1) {
--			pr_err("Not enough memory for kallsyms file lookup\n");
--			return -1;
--		}
--
--		kallsyms_filename = kallsyms_allocated_filename;
-+	kallsyms_allocated_filename = dso__find_kallsyms(dso, map);
-+	if (!kallsyms_allocated_filename)
-+		return -1;
++int create_kcore_extract(struct kcore_extract *kce __maybe_unused)
++{
++	return -1;
++}
++
++void delete_kcore_extract(struct kcore_extract *kce __maybe_unused)
++{
++}
++
+ void symbol__elf_init(void)
+ {
+ }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index a2543f0..54f3ed0 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -256,4 +256,18 @@ typedef int (*mapfn_t)(u64 start, u64 len, u64 pgoff, void *data);
+ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+ 		    bool *is_64_bit);
  
--		if (access(kallsyms_filename, F_OK)) {
--			pr_err("No kallsyms or vmlinux with build-id %s "
--			       "was found\n", sbuild_id);
--			free(kallsyms_allocated_filename);
--			return -1;
--		}
--	} else {
--		/*
--		 * Last resort, if we don't have a build-id and couldn't find
--		 * any vmlinux file, try the running kernel kallsyms table.
--		 */
--		kallsyms_filename = "/proc/kallsyms";
--	}
-+	kallsyms_filename = kallsyms_allocated_filename;
- 
- do_kallsyms:
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
++#define PERF_KCORE_EXTRACT "/tmp/perf-kcore-XXXXXX"
++
++struct kcore_extract {
++	char *kcore_filename;
++	u64 addr;
++	u64 offs;
++	u64 len;
++	char extract_filename[sizeof(PERF_KCORE_EXTRACT)];
++	int fd;
++};
++
++int create_kcore_extract(struct kcore_extract *kce);
++void delete_kcore_extract(struct kcore_extract *kce);
++
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.11.7
 
