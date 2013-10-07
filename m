@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3JGLkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:40:14 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:36188 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab3JGLj6 (ORCPT
+	id S1755324Ab3JGLkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:40:18 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:33657 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3JGLj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:39:58 -0400
+	Mon, 7 Oct 2013 07:39:59 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Thierry Reding <thierry.reding@gmail.com>
 Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
         Kukjin Kim <kgene.kim@samsung.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
         devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 06/12] ARM: pxa: Initialize PWM backlight enable_gpio field
-Date: Mon,  7 Oct 2013 13:37:40 +0200
-Message-Id: <1381145866-445-7-git-send-email-treding@nvidia.com>
+Subject: [PATCH v2 07/12] ARM: SAMSUNG: Initialize PWM backlight enable_gpio field
+Date: Mon,  7 Oct 2013 13:37:41 +0200
+Message-Id: <1381145866-445-8-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381145866-445-1-git-send-email-treding@nvidia.com>
 References: <1381145866-445-1-git-send-email-treding@nvidia.com>
@@ -28,290 +28,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The GPIO API defines 0 as being a valid GPIO number, so this field needs
 to be initialized explicitly.
 
-A special case is the Palm Tungsten|C board. Since it doesn't use any
-quirks that would require the existing .init() or .exit() hooks it can
-simply use the new enable_gpio field.
-
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- arch/arm/mach-pxa/cm-x300.c               |  1 +
- arch/arm/mach-pxa/colibri-pxa270-income.c |  1 +
- arch/arm/mach-pxa/ezx.c                   |  1 +
- arch/arm/mach-pxa/hx4700.c                |  1 +
- arch/arm/mach-pxa/lpd270.c                |  1 +
- arch/arm/mach-pxa/magician.c              |  1 +
- arch/arm/mach-pxa/mainstone.c             |  1 +
- arch/arm/mach-pxa/mioa701.c               |  1 +
- arch/arm/mach-pxa/palm27x.c               |  1 +
- arch/arm/mach-pxa/palmtc.c                | 35 +------------------------------
- arch/arm/mach-pxa/palmte2.c               |  1 +
- arch/arm/mach-pxa/pcm990-baseboard.c      |  1 +
- arch/arm/mach-pxa/raumfeld.c              |  1 +
- arch/arm/mach-pxa/tavorevb.c              |  2 ++
- arch/arm/mach-pxa/viper.c                 |  1 +
- arch/arm/mach-pxa/z2.c                    |  2 ++
- arch/arm/mach-pxa/zylonite.c              |  1 +
- 17 files changed, 19 insertions(+), 34 deletions(-)
+Changes in v2:
+- 0 is a valid GPIO, so it can be used to override a default
 
-diff --git a/arch/arm/mach-pxa/cm-x300.c b/arch/arm/mach-pxa/cm-x300.c
-index f942349..584439b 100644
---- a/arch/arm/mach-pxa/cm-x300.c
-+++ b/arch/arm/mach-pxa/cm-x300.c
-@@ -310,6 +310,7 @@ static struct platform_pwm_backlight_data cm_x300_backlight_data = {
- 	.max_brightness	= 100,
- 	.dft_brightness	= 100,
- 	.pwm_period_ns	= 10000,
-+	.enable_gpio	= -1,
- };
- 
- static struct platform_device cm_x300_backlight_device = {
-diff --git a/arch/arm/mach-pxa/colibri-pxa270-income.c b/arch/arm/mach-pxa/colibri-pxa270-income.c
-index 2d4a7b4..3aa2646 100644
---- a/arch/arm/mach-pxa/colibri-pxa270-income.c
-+++ b/arch/arm/mach-pxa/colibri-pxa270-income.c
-@@ -189,6 +189,7 @@ static struct platform_pwm_backlight_data income_backlight_data = {
- 	.max_brightness	= 0x3ff,
- 	.dft_brightness	= 0x1ff,
- 	.pwm_period_ns	= 1000000,
-+	.enable_gpio	= -1,
- };
- 
- static struct platform_device income_backlight = {
-diff --git a/arch/arm/mach-pxa/ezx.c b/arch/arm/mach-pxa/ezx.c
-index fe2eb83..ab93441 100644
---- a/arch/arm/mach-pxa/ezx.c
-+++ b/arch/arm/mach-pxa/ezx.c
-@@ -54,6 +54,7 @@ static struct platform_pwm_backlight_data ezx_backlight_data = {
- 	.max_brightness	= 1023,
- 	.dft_brightness	= 1023,
- 	.pwm_period_ns	= 78770,
-+	.enable_gpio	= -1,
- };
- 
- static struct platform_device ezx_backlight_device = {
-diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
-index 133109e..a7c30eb 100644
---- a/arch/arm/mach-pxa/hx4700.c
-+++ b/arch/arm/mach-pxa/hx4700.c
-@@ -561,6 +561,7 @@ static struct platform_pwm_backlight_data backlight_data = {
- 	.max_brightness = 200,
- 	.dft_brightness = 100,
- 	.pwm_period_ns  = 30923,
+ arch/arm/mach-s3c24xx/mach-h1940.c    | 1 +
+ arch/arm/mach-s3c24xx/mach-rx1950.c   | 1 +
+ arch/arm/mach-s3c64xx/mach-crag6410.c | 1 +
+ arch/arm/mach-s3c64xx/mach-hmt.c      | 1 +
+ arch/arm/mach-s3c64xx/mach-smartq.c   | 1 +
+ arch/arm/mach-s3c64xx/mach-smdk6410.c | 1 +
+ arch/arm/mach-s5p64x0/mach-smdk6440.c | 1 +
+ arch/arm/mach-s5p64x0/mach-smdk6450.c | 1 +
+ arch/arm/mach-s5pc100/mach-smdkc100.c | 1 +
+ arch/arm/mach-s5pv210/mach-smdkv210.c | 1 +
+ arch/arm/plat-samsung/dev-backlight.c | 5 +++++
+ 11 files changed, 15 insertions(+)
+
+diff --git a/arch/arm/mach-s3c24xx/mach-h1940.c b/arch/arm/mach-s3c24xx/mach-h1940.c
+index 74dd479..952b6a0 100644
+--- a/arch/arm/mach-s3c24xx/mach-h1940.c
++++ b/arch/arm/mach-s3c24xx/mach-h1940.c
+@@ -504,6 +504,7 @@ static struct platform_pwm_backlight_data backlight_data = {
+ 	.dft_brightness = 50,
+ 	/* tcnt = 0x31 */
+ 	.pwm_period_ns  = 36296,
 +	.enable_gpio    = -1,
- };
- 
- static struct platform_device backlight = {
-diff --git a/arch/arm/mach-pxa/lpd270.c b/arch/arm/mach-pxa/lpd270.c
-index 1255ee0..9f6ec16 100644
---- a/arch/arm/mach-pxa/lpd270.c
-+++ b/arch/arm/mach-pxa/lpd270.c
-@@ -269,6 +269,7 @@ static struct platform_pwm_backlight_data lpd270_backlight_data = {
- 	.max_brightness	= 1,
- 	.dft_brightness	= 1,
- 	.pwm_period_ns	= 78770,
+ 	.init           = h1940_backlight_init,
+ 	.notify		= h1940_backlight_notify,
+ 	.exit           = h1940_backlight_exit,
+diff --git a/arch/arm/mach-s3c24xx/mach-rx1950.c b/arch/arm/mach-s3c24xx/mach-rx1950.c
+index 206b1f7..034b7fe 100644
+--- a/arch/arm/mach-s3c24xx/mach-rx1950.c
++++ b/arch/arm/mach-s3c24xx/mach-rx1950.c
+@@ -522,6 +522,7 @@ static struct platform_pwm_backlight_data rx1950_backlight_data = {
+ 	.max_brightness = 24,
+ 	.dft_brightness = 4,
+ 	.pwm_period_ns = 48000,
++	.enable_gpio = -1,
+ 	.init = rx1950_backlight_init,
+ 	.notify = rx1950_backlight_notify,
+ 	.exit = rx1950_backlight_exit,
+diff --git a/arch/arm/mach-s3c64xx/mach-crag6410.c b/arch/arm/mach-s3c64xx/mach-crag6410.c
+index 1a911df..b319bf9 100644
+--- a/arch/arm/mach-s3c64xx/mach-crag6410.c
++++ b/arch/arm/mach-s3c64xx/mach-crag6410.c
+@@ -114,6 +114,7 @@ static struct platform_pwm_backlight_data crag6410_backlight_data = {
+ 	.max_brightness	= 1000,
+ 	.dft_brightness	= 600,
+ 	.pwm_period_ns	= 100000,	/* about 1kHz */
 +	.enable_gpio	= -1,
  };
  
- static struct platform_device lpd270_backlight_device = {
-diff --git a/arch/arm/mach-pxa/magician.c b/arch/arm/mach-pxa/magician.c
-index f44532f..fab30d6 100644
---- a/arch/arm/mach-pxa/magician.c
-+++ b/arch/arm/mach-pxa/magician.c
-@@ -378,6 +378,7 @@ static struct platform_pwm_backlight_data backlight_data = {
- 	.max_brightness = 272,
- 	.dft_brightness = 100,
- 	.pwm_period_ns  = 30923,
-+	.enable_gpio    = -1,
- 	.init           = magician_backlight_init,
- 	.notify         = magician_backlight_notify,
- 	.exit           = magician_backlight_exit,
-diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
-index dd70343..08ccc07 100644
---- a/arch/arm/mach-pxa/mainstone.c
-+++ b/arch/arm/mach-pxa/mainstone.c
-@@ -338,6 +338,7 @@ static struct platform_pwm_backlight_data mainstone_backlight_data = {
- 	.max_brightness	= 1023,
- 	.dft_brightness	= 1023,
- 	.pwm_period_ns	= 78770,
+ static struct platform_device crag6410_backlight_device = {
+diff --git a/arch/arm/mach-s3c64xx/mach-hmt.c b/arch/arm/mach-s3c64xx/mach-hmt.c
+index e806404..614a03a 100644
+--- a/arch/arm/mach-s3c64xx/mach-hmt.c
++++ b/arch/arm/mach-s3c64xx/mach-hmt.c
+@@ -114,6 +114,7 @@ static struct platform_pwm_backlight_data hmt_backlight_data = {
+ 	.max_brightness	= 100 * 256,
+ 	.dft_brightness	= 40 * 256,
+ 	.pwm_period_ns	= 1000000000 / (100 * 256 * 20),
 +	.enable_gpio	= -1,
+ 	.init		= hmt_bl_init,
+ 	.notify		= hmt_bl_notify,
+ 	.exit		= hmt_bl_exit,
+diff --git a/arch/arm/mach-s3c64xx/mach-smartq.c b/arch/arm/mach-s3c64xx/mach-smartq.c
+index 0f47237..a6b338f 100644
+--- a/arch/arm/mach-s3c64xx/mach-smartq.c
++++ b/arch/arm/mach-s3c64xx/mach-smartq.c
+@@ -151,6 +151,7 @@ static struct platform_pwm_backlight_data smartq_backlight_data = {
+ 	.max_brightness	= 1000,
+ 	.dft_brightness	= 600,
+ 	.pwm_period_ns	= 1000000000 / (1000 * 20),
++	.enable_gpio	= -1,
+ 	.init		= smartq_bl_init,
  };
  
- static struct platform_device mainstone_backlight_device = {
-diff --git a/arch/arm/mach-pxa/mioa701.c b/arch/arm/mach-pxa/mioa701.c
-index acc9d3c..f70583f 100644
---- a/arch/arm/mach-pxa/mioa701.c
-+++ b/arch/arm/mach-pxa/mioa701.c
-@@ -186,6 +186,7 @@ static struct platform_pwm_backlight_data mioa701_backlight_data = {
- 	.max_brightness	= 100,
- 	.dft_brightness	= 50,
- 	.pwm_period_ns	= 4000 * 1024,	/* Fl = 250kHz */
-+	.enable_gpio	= -1,
+diff --git a/arch/arm/mach-s3c64xx/mach-smdk6410.c b/arch/arm/mach-s3c64xx/mach-smdk6410.c
+index 2a7b32c..d5ea938 100644
+--- a/arch/arm/mach-s3c64xx/mach-smdk6410.c
++++ b/arch/arm/mach-s3c64xx/mach-smdk6410.c
+@@ -625,6 +625,7 @@ static struct samsung_bl_gpio_info smdk6410_bl_gpio_info = {
+ 
+ static struct platform_pwm_backlight_data smdk6410_bl_data = {
+ 	.pwm_id = 1,
++	.enable_gpio = -1,
  };
  
- /*
-diff --git a/arch/arm/mach-pxa/palm27x.c b/arch/arm/mach-pxa/palm27x.c
-index 17d4c53..e54a296 100644
---- a/arch/arm/mach-pxa/palm27x.c
-+++ b/arch/arm/mach-pxa/palm27x.c
-@@ -322,6 +322,7 @@ static struct platform_pwm_backlight_data palm27x_backlight_data = {
- 	.max_brightness	= 0xfe,
- 	.dft_brightness	= 0x7e,
- 	.pwm_period_ns	= 3500 * 1024,
-+	.enable_gpio	= -1,
- 	.init		= palm27x_backlight_init,
- 	.notify		= palm27x_backlight_notify,
- 	.exit		= palm27x_backlight_exit,
-diff --git a/arch/arm/mach-pxa/palmtc.c b/arch/arm/mach-pxa/palmtc.c
-index 100b176f..7691c97 100644
---- a/arch/arm/mach-pxa/palmtc.c
-+++ b/arch/arm/mach-pxa/palmtc.c
-@@ -166,45 +166,12 @@ static inline void palmtc_keys_init(void) {}
-  * Backlight
-  ******************************************************************************/
- #if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM_MODULE)
--static int palmtc_backlight_init(struct device *dev)
--{
--	int ret;
--
--	ret = gpio_request(GPIO_NR_PALMTC_BL_POWER, "BL POWER");
--	if (ret)
--		goto err;
--	ret = gpio_direction_output(GPIO_NR_PALMTC_BL_POWER, 1);
--	if (ret)
--		goto err2;
--
--	return 0;
--
--err2:
--	gpio_free(GPIO_NR_PALMTC_BL_POWER);
--err:
--	return ret;
--}
--
--static int palmtc_backlight_notify(struct device *dev, int brightness)
--{
--	/* backlight is on when GPIO16 AF0 is high */
--	gpio_set_value(GPIO_NR_PALMTC_BL_POWER, brightness);
--	return brightness;
--}
--
--static void palmtc_backlight_exit(struct device *dev)
--{
--	gpio_free(GPIO_NR_PALMTC_BL_POWER);
--}
--
- static struct platform_pwm_backlight_data palmtc_backlight_data = {
- 	.pwm_id		= 1,
- 	.max_brightness	= PALMTC_MAX_INTENSITY,
- 	.dft_brightness	= PALMTC_MAX_INTENSITY,
- 	.pwm_period_ns	= PALMTC_PERIOD_NS,
--	.init		= palmtc_backlight_init,
--	.notify		= palmtc_backlight_notify,
--	.exit		= palmtc_backlight_exit,
-+	.enable_gpio	= GPIO_NR_PALMTC_BL_POWER,
+ static struct s3c_hsotg_plat smdk6410_hsotg_pdata;
+diff --git a/arch/arm/mach-s5p64x0/mach-smdk6440.c b/arch/arm/mach-s5p64x0/mach-smdk6440.c
+index 0b00304..9efdcc0 100644
+--- a/arch/arm/mach-s5p64x0/mach-smdk6440.c
++++ b/arch/arm/mach-s5p64x0/mach-smdk6440.c
+@@ -223,6 +223,7 @@ static struct samsung_bl_gpio_info smdk6440_bl_gpio_info = {
+ 
+ static struct platform_pwm_backlight_data smdk6440_bl_data = {
+ 	.pwm_id = 1,
++	.enable_gpio = -1,
  };
  
- static struct platform_device palmtc_backlight = {
-diff --git a/arch/arm/mach-pxa/palmte2.c b/arch/arm/mach-pxa/palmte2.c
-index 0742721..956fd24 100644
---- a/arch/arm/mach-pxa/palmte2.c
-+++ b/arch/arm/mach-pxa/palmte2.c
-@@ -165,6 +165,7 @@ static struct platform_pwm_backlight_data palmte2_backlight_data = {
- 	.max_brightness	= PALMTE2_MAX_INTENSITY,
- 	.dft_brightness	= PALMTE2_MAX_INTENSITY,
- 	.pwm_period_ns	= PALMTE2_PERIOD_NS,
-+	.enable_gpio	= -1,
- 	.init		= palmte2_backlight_init,
- 	.notify		= palmte2_backlight_notify,
- 	.exit		= palmte2_backlight_exit,
-diff --git a/arch/arm/mach-pxa/pcm990-baseboard.c b/arch/arm/mach-pxa/pcm990-baseboard.c
-index 3133ba8..9a4e470 100644
---- a/arch/arm/mach-pxa/pcm990-baseboard.c
-+++ b/arch/arm/mach-pxa/pcm990-baseboard.c
-@@ -153,6 +153,7 @@ static struct platform_pwm_backlight_data pcm990_backlight_data = {
- 	.max_brightness	= 1023,
- 	.dft_brightness	= 1023,
- 	.pwm_period_ns	= 78770,
-+	.enable_gpio	= -1,
+ static void __init smdk6440_map_io(void)
+diff --git a/arch/arm/mach-s5p64x0/mach-smdk6450.c b/arch/arm/mach-s5p64x0/mach-smdk6450.c
+index 5949296..c3cacc0 100644
+--- a/arch/arm/mach-s5p64x0/mach-smdk6450.c
++++ b/arch/arm/mach-s5p64x0/mach-smdk6450.c
+@@ -242,6 +242,7 @@ static struct samsung_bl_gpio_info smdk6450_bl_gpio_info = {
+ 
+ static struct platform_pwm_backlight_data smdk6450_bl_data = {
+ 	.pwm_id = 1,
++	.enable_gpio = -1,
  };
  
- static struct platform_device pcm990_backlight_device = {
-diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
-index 969b0ba..8386dc3 100644
---- a/arch/arm/mach-pxa/raumfeld.c
-+++ b/arch/arm/mach-pxa/raumfeld.c
-@@ -539,6 +539,7 @@ static struct platform_pwm_backlight_data raumfeld_pwm_backlight_data = {
- 	.dft_brightness	= 100,
- 	/* 10000 ns = 10 ms ^= 100 kHz */
- 	.pwm_period_ns	= 10000,
-+	.enable_gpio	= -1,
+ static void __init smdk6450_map_io(void)
+diff --git a/arch/arm/mach-s5pc100/mach-smdkc100.c b/arch/arm/mach-s5pc100/mach-smdkc100.c
+index 7c57a22..9e256b9 100644
+--- a/arch/arm/mach-s5pc100/mach-smdkc100.c
++++ b/arch/arm/mach-s5pc100/mach-smdkc100.c
+@@ -216,6 +216,7 @@ static struct samsung_bl_gpio_info smdkc100_bl_gpio_info = {
+ 
+ static struct platform_pwm_backlight_data smdkc100_bl_data = {
+ 	.pwm_id = 0,
++	.enable_gpio = -1,
  };
  
- static struct platform_device raumfeld_pwm_backlight_device = {
-diff --git a/arch/arm/mach-pxa/tavorevb.c b/arch/arm/mach-pxa/tavorevb.c
-index 4680efe..a71da84 100644
---- a/arch/arm/mach-pxa/tavorevb.c
-+++ b/arch/arm/mach-pxa/tavorevb.c
-@@ -175,6 +175,7 @@ static struct platform_pwm_backlight_data tavorevb_backlight_data[] = {
- 		.max_brightness	= 100,
- 		.dft_brightness	= 100,
- 		.pwm_period_ns	= 100000,
-+		.enable_gpio	= -1,
+ static void __init smdkc100_map_io(void)
+diff --git a/arch/arm/mach-s5pv210/mach-smdkv210.c b/arch/arm/mach-s5pv210/mach-smdkv210.c
+index 6d72bb99..f52cc15 100644
+--- a/arch/arm/mach-s5pv210/mach-smdkv210.c
++++ b/arch/arm/mach-s5pv210/mach-smdkv210.c
+@@ -279,6 +279,7 @@ static struct samsung_bl_gpio_info smdkv210_bl_gpio_info = {
+ static struct platform_pwm_backlight_data smdkv210_bl_data = {
+ 	.pwm_id = 3,
+ 	.pwm_period_ns = 1000,
++	.enable_gpio = -1,
+ };
+ 
+ static void __init smdkv210_map_io(void)
+diff --git a/arch/arm/plat-samsung/dev-backlight.c b/arch/arm/plat-samsung/dev-backlight.c
+index d51f956..be4ad0b 100644
+--- a/arch/arm/plat-samsung/dev-backlight.c
++++ b/arch/arm/plat-samsung/dev-backlight.c
+@@ -70,6 +70,7 @@ static struct samsung_bl_drvdata samsung_dfl_bl_data __initdata = {
+ 		.max_brightness = 255,
+ 		.dft_brightness = 255,
+ 		.pwm_period_ns  = 78770,
++		.enable_gpio    = -1,
+ 		.init           = samsung_bl_init,
+ 		.exit           = samsung_bl_exit,
  	},
- 	[1] = {
- 		/* secondary backlight */
-@@ -182,6 +183,7 @@ static struct platform_pwm_backlight_data tavorevb_backlight_data[] = {
- 		.max_brightness	= 100,
- 		.dft_brightness	= 100,
- 		.pwm_period_ns	= 100000,
-+		.enable_gpio	= -1,
- 	},
- };
- 
-diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
-index 9c363c0..29905b1 100644
---- a/arch/arm/mach-pxa/viper.c
-+++ b/arch/arm/mach-pxa/viper.c
-@@ -401,6 +401,7 @@ static struct platform_pwm_backlight_data viper_backlight_data = {
- 	.max_brightness	= 100,
- 	.dft_brightness	= 100,
- 	.pwm_period_ns	= 1000000,
-+	.enable_gpio	= -1,
- 	.init		= viper_backlight_init,
- 	.notify		= viper_backlight_notify,
- 	.exit		= viper_backlight_exit,
-diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
-index 2513d8f..e1a121b 100644
---- a/arch/arm/mach-pxa/z2.c
-+++ b/arch/arm/mach-pxa/z2.c
-@@ -206,6 +206,7 @@ static struct platform_pwm_backlight_data z2_backlight_data[] = {
- 		.max_brightness	= 1023,
- 		.dft_brightness	= 0,
- 		.pwm_period_ns	= 1260320,
-+		.enable_gpio	= -1,
- 	},
- 	[1] = {
- 		/* LCD Backlight */
-@@ -213,6 +214,7 @@ static struct platform_pwm_backlight_data z2_backlight_data[] = {
- 		.max_brightness	= 1023,
- 		.dft_brightness	= 512,
- 		.pwm_period_ns	= 1260320,
-+		.enable_gpio	= -1,
- 	},
- };
- 
-diff --git a/arch/arm/mach-pxa/zylonite.c b/arch/arm/mach-pxa/zylonite.c
-index 36cf7cf..77daea4 100644
---- a/arch/arm/mach-pxa/zylonite.c
-+++ b/arch/arm/mach-pxa/zylonite.c
-@@ -125,6 +125,7 @@ static struct platform_pwm_backlight_data zylonite_backlight_data = {
- 	.max_brightness	= 100,
- 	.dft_brightness	= 100,
- 	.pwm_period_ns	= 10000,
-+	.enable_gpio	= -1,
- };
- 
- static struct platform_device zylonite_backlight_device = {
+@@ -121,6 +122,10 @@ void __init samsung_bl_set(struct samsung_bl_gpio_info *gpio_info,
+ 		samsung_bl_data->lth_brightness = bl_data->lth_brightness;
+ 	if (bl_data->pwm_period_ns)
+ 		samsung_bl_data->pwm_period_ns = bl_data->pwm_period_ns;
++	if (bl_data->enable_gpio >= 0)
++		samsung_bl_data->enable_gpio = bl_data->enable_gpio;
++	if (bl_data->enable_gpio_flags)
++		samsung_bl_data->enable_gpio_flags = bl_data->enable_gpio_flags;
+ 	if (bl_data->init)
+ 		samsung_bl_data->init = bl_data->init;
+ 	if (bl_data->notify)
 -- 
 1.8.4
 
