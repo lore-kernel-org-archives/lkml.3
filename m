@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3JGPaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:30:35 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:6535 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab3JGPac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:30:32 -0400
-Message-ID: <5252D397.6040302@tilera.com>
-Date: Mon, 7 Oct 2013 11:30:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754068Ab3JGPes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:34:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46685 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab3JGPen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:34:43 -0400
+Date: Mon, 7 Oct 2013 17:34:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Doug Thompson <dougthompson@xmission.com>, Borislav Petkov <bp@suse.de>,
+        Baruch Siach <baruch@tkos.co.il>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: Re: [PATCH] mpc85xx_edac: Remove unused function
+Message-ID: <20131007153441.GA12771@pd.tnic>
+References: <1381158835-10804-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] tile bug fixes for v3.12-rc5
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381158835-10804-1-git-send-email-treding@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+I'm guessing this one is for Johannes. CCed...
 
-Please pull the following changes for 3.12-rc5 from:
+On Mon, Oct 07, 2013 at 05:13:55PM +0200, Thierry Reding wrote:
+> Commit 905e75c (powerpc/fsl-pci: Unify pci/pcie initialization code)
+> removed the struct platform_driver that held the last reference to the
+> mpc85xx_pci_err_remove() function. Remove the function since it is
+> effectively dead code.
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  drivers/edac/mpc85xx_edac.c | 23 -----------------------
+>  1 file changed, 23 deletions(-)
+> 
+> diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+> index 3eb32f6..b1e7106 100644
+> --- a/drivers/edac/mpc85xx_edac.c
+> +++ b/drivers/edac/mpc85xx_edac.c
+> @@ -326,29 +326,6 @@ err:
+>  	return res;
+>  }
+>  EXPORT_SYMBOL(mpc85xx_pci_err_probe);
+> -
+> -static int mpc85xx_pci_err_remove(struct platform_device *op)
+> -{
+> -	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
+> -	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
+> -
+> -	edac_dbg(0, "\n");
+> -
+> -	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
+> -		 orig_pci_err_cap_dr);
+> -
+> -	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, orig_pci_err_en);
+> -
+> -	edac_pci_del_device(pci->dev);
+> -
+> -	if (edac_op_state == EDAC_OPSTATE_INT)
+> -		irq_dispose_mapping(pdata->irq);
+> -
+> -	edac_pci_free_ctl_info(pci);
+> -
+> -	return 0;
+> -}
+> -
+>  #endif				/* CONFIG_PCI */
+>  
+>  /**************************** L2 Err device ***************************/
+> -- 
+> 1.8.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
-
-This fixes some serious issues with PREEMPT support, and a couple of smaller
-corner-case issues fixed in the last couple of weeks.
-
-Andy Shevchenko (1):
-      arch: tile: re-use kbasename() helper
-
-Chen Gang (1):
-      tile: include: asm: use 'long long' instead of 'u64' for atomic64_t and its related functions
-
-Chris Metcalf (2):
-      tile: ensure interrupts disabled for preempt_schedule_irq()
-      tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-
-Henrik Austad (1):
-      tile: change lock initalization in hardwall
-
- arch/tile/include/asm/atomic.h    |  5 +++--
- arch/tile/include/asm/atomic_32.h | 27 +++++++++++++++------------
- arch/tile/include/asm/cmpxchg.h   | 28 +++++++++++++++++-----------
- arch/tile/include/asm/percpu.h    | 34 +++++++++++++++++++++++++++++++---
- arch/tile/kernel/hardwall.c       |  6 +++---
- arch/tile/kernel/intvec_32.S      |  3 +++
- arch/tile/kernel/intvec_64.S      |  3 +++
- arch/tile/kernel/stack.c          | 12 +++++-------
- arch/tile/lib/atomic_32.c         |  8 ++++----
- 9 files changed, 84 insertions(+), 42 deletions(-)
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
