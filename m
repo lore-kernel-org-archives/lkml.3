@@ -1,111 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3JGVSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:18:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37153 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3JGVSj (ORCPT
+	id S1756411Ab3JGVS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:18:59 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:58680 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab3JGVS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:18:39 -0400
-Date: Mon, 7 Oct 2013 16:17:56 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH RFC v2 3/5] spmi: add generic SPMI controller binding
- documentation
-Message-ID: <20131007211756.GA1036@joshc.qualcomm.com>
-References: <cover.1377202730.git.joshc@codeaurora.org>
- <e42576b69ef3d4e624fbfa2f32f6f79a931b55d6.1377202730.git.joshc@codeaurora.org>
- <5217DB0C.7000101@wwwdotorg.org>
- <20130827170120.GR4035@joshc.qualcomm.com>
- <521D2047.8030300@wwwdotorg.org>
- <CAJAp7Oi-bPytsLtsppdanOi_p0Y5vfBriGB-B5by7w5Z7SGU-Q@mail.gmail.com>
+	Mon, 7 Oct 2013 17:18:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJAp7Oi-bPytsLtsppdanOi_p0Y5vfBriGB-B5by7w5Z7SGU-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1381128950-28125-2-git-send-email-gregkh@linuxfoundation.org>
+References: <1381128950-28125-1-git-send-email-gregkh@linuxfoundation.org> <1381128950-28125-2-git-send-email-gregkh@linuxfoundation.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 7 Oct 2013 15:18:35 -0600
+Message-ID: <CAErSpo4kmKmiK_Sox01RHnn9WWR9uDYDcpQS3SypavpFoPEjPA@mail.gmail.com>
+Subject: Re: [PATCH 01/11] pci: convert bus code to use dev_groups
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Bjorn-
-
-On Sat, Oct 05, 2013 at 11:11:36PM -0700, Bjorn Andersson wrote:
-> On Tue, Aug 27, 2013 at 2:55 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > On 08/27/2013 11:01 AM, Josh Cartwright wrote:
-> > ...
-> > cell 0 - address type (0: master, 1: unique ID, 2: group ID, ...)
+On Mon, Oct 7, 2013 at 12:55 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> The dev_attrs field of struct bus_type is going away soon, dev_groups
+> should be used instead.  This converts the PCI bus code to use the
+> correct field.
 >
-> I think it would make sense to have the master id as a property of the
-> bus,
-
-Except that SPMI supports bus configurations with multiple masters.
-Unless by 'bus' you meant 'bus controller' here?
-
-> as you could consider this to indicate different buses and then
-> usid, gsid and base being part of the reg.
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: <linux-pci@vger.kernel.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
 >
-> > cell 1 - address value
+> Bjorn, I can take this through my driver-core tree if you like, just let
+> me know what would be the easiest for you.
+
+I merged this to my pci/gregkh-driver-core branch for v3.13.  Thanks!
+
+Bjorn
+
+>  drivers/pci/pci-driver.c |  2 +-
+>  drivers/pci/pci-sysfs.c  | 73 ++++++++++++++++++++++++++++++------------------
+>  drivers/pci/pci.h        |  2 +-
+>  3 files changed, 48 insertions(+), 29 deletions(-)
 >
-> I did hack up Josh patchset to read a reg touple of <usid, base>
-> instead of just usid. I stored the second value in the spmi_device
-> struct for easy access, but maybe it should be done like on
-> codeaurora; in a resource?
-> I believe this looks nice, but as I haven't read the mipi spec I
-> wonder, will there be a case where you don't have an offset/base?
-> Should it just be made optional?
-
-The SPMI spec says nothing about partitioning up the slave address to
-support multiple functions.  AFAICT, this is a Qualcomm-created
-construct (QPNP) for the 8x41 PMICs.  It's difficult to tell at this
-point whether or not other vendors might implement a similarly
-partitioned scheme.
-
-I suspect the intent is that implementations make use of logical slave
-ID for each function in a multi-function device.
-
-> Can we make the address <usid, [base]> and have the code populate a
-> resource based on a reg-names property? That way it would be possible
-> to extend it to support gsid in case we want to (would require
-> reg-names though).
-
-It is certainly possible, and, as you've seen, is how the current
-codeaurora.org tree implements SPMI.  But, I'm actually actively trying
-to avoid doing so, as it conflates Qualcomm-implementation details and
-what is actually in the spec (and not just the address space
-partitioning, but also the of_spmi.c[2] parsing must know about
-interrupts, which are _also_ completely outside the SPMI spec).
-
-Instead what I hope to do for v3 is either:
-  A) Make QPNP its own bus type (for which I have a prototyped
-     implementation).  A PMIC driver sits on the SPMI bus and registers
-     itself as a QPNP controller.  QPNP controllers have very
-     simple 8-bit register read/write operations used by QPNP devices.
-  B) Effectively the same as A, but gets rid of a special QPNP bus type
-     and uses mfd/platform devices, similar to other in-tree PMIC drivers
-     (currently working on prototyping this approach)
-
-> With the hack to Josh's patchset I quickly ported qpnp-revision and
-> qpnp-vibrator, and it seems to work quite nicely.
-
-Great! Thanks for testing.
-
-  Josh
-
-1: https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers/spmi
-2: https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers/of/of_spmi.c
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 38f3c01..9f85960 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -1319,7 +1319,7 @@ struct bus_type pci_bus_type = {
+>         .probe          = pci_device_probe,
+>         .remove         = pci_device_remove,
+>         .shutdown       = pci_device_shutdown,
+> -       .dev_attrs      = pci_dev_attrs,
+> +       .dev_groups     = pci_dev_groups,
+>         .bus_groups     = pci_bus_groups,
+>         .drv_groups     = pci_drv_groups,
+>         .pm             = PCI_PM_OPS_PTR,
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index d8eb880..618c060 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -42,7 +42,8 @@ field##_show(struct device *dev, struct device_attribute *attr, char *buf)                            \
+>                                                                         \
+>         pdev = to_pci_dev (dev);                                        \
+>         return sprintf (buf, format_string, pdev->field);               \
+> -}
+> +}                                                                      \
+> +static DEVICE_ATTR_RO(field)
+>
+>  pci_config_attr(vendor, "0x%04x\n");
+>  pci_config_attr(device, "0x%04x\n");
+> @@ -73,6 +74,7 @@ static ssize_t broken_parity_status_store(struct device *dev,
+>
+>         return count;
+>  }
+> +static DEVICE_ATTR_RW(broken_parity_status);
+>
+>  static ssize_t local_cpus_show(struct device *dev,
+>                         struct device_attribute *attr, char *buf)
+> @@ -91,7 +93,7 @@ static ssize_t local_cpus_show(struct device *dev,
+>         buf[len] = '\0';
+>         return len;
+>  }
+> -
+> +static DEVICE_ATTR_RO(local_cpus);
+>
+>  static ssize_t local_cpulist_show(struct device *dev,
+>                         struct device_attribute *attr, char *buf)
+> @@ -110,6 +112,7 @@ static ssize_t local_cpulist_show(struct device *dev,
+>         buf[len] = '\0';
+>         return len;
+>  }
+> +static DEVICE_ATTR_RO(local_cpulist);
+>
+>  /*
+>   * PCI Bus Class Devices
+> @@ -170,6 +173,7 @@ resource_show(struct device * dev, struct device_attribute *attr, char * buf)
+>         }
+>         return (str - buf);
+>  }
+> +static DEVICE_ATTR_RO(resource);
+>
+>  static ssize_t modalias_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+> @@ -181,10 +185,11 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+>                        (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
+>                        (u8)(pci_dev->class));
+>  }
+> +static DEVICE_ATTR_RO(modalias);
+>
+> -static ssize_t is_enabled_store(struct device *dev,
+> -                               struct device_attribute *attr, const char *buf,
+> -                               size_t count)
+> +static ssize_t enabled_store(struct device *dev,
+> +                            struct device_attribute *attr, const char *buf,
+> +                            size_t count)
+>  {
+>         struct pci_dev *pdev = to_pci_dev(dev);
+>         unsigned long val;
+> @@ -208,14 +213,15 @@ static ssize_t is_enabled_store(struct device *dev,
+>         return result < 0 ? result : count;
+>  }
+>
+> -static ssize_t is_enabled_show(struct device *dev,
+> -                              struct device_attribute *attr, char *buf)
+> +static ssize_t enabled_show(struct device *dev,
+> +                           struct device_attribute *attr, char *buf)
+>  {
+>         struct pci_dev *pdev;
+>
+>         pdev = to_pci_dev (dev);
+>         return sprintf (buf, "%u\n", atomic_read(&pdev->enable_cnt));
+>  }
+> +static DEVICE_ATTR_RW(enabled);
+>
+>  #ifdef CONFIG_NUMA
+>  static ssize_t
+> @@ -223,6 +229,7 @@ numa_node_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+>         return sprintf (buf, "%d\n", dev->numa_node);
+>  }
+> +static DEVICE_ATTR_RO(numa_node);
+>  #endif
+>
+>  static ssize_t
+> @@ -232,6 +239,7 @@ dma_mask_bits_show(struct device *dev, struct device_attribute *attr, char *buf)
+>
+>         return sprintf (buf, "%d\n", fls64(pdev->dma_mask));
+>  }
+> +static DEVICE_ATTR_RO(dma_mask_bits);
+>
+>  static ssize_t
+>  consistent_dma_mask_bits_show(struct device *dev, struct device_attribute *attr,
+> @@ -239,6 +247,7 @@ consistent_dma_mask_bits_show(struct device *dev, struct device_attribute *attr,
+>  {
+>         return sprintf (buf, "%d\n", fls64(dev->coherent_dma_mask));
+>  }
+> +static DEVICE_ATTR_RO(consistent_dma_mask_bits);
+>
+>  static ssize_t
+>  msi_bus_show(struct device *dev, struct device_attribute *attr, char *buf)
+> @@ -283,6 +292,7 @@ msi_bus_store(struct device *dev, struct device_attribute *attr,
+>
+>         return count;
+>  }
+> +static DEVICE_ATTR_RW(msi_bus);
+>
+>  static DEFINE_MUTEX(pci_remove_rescan_mutex);
+>  static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+> @@ -414,6 +424,7 @@ static ssize_t d3cold_allowed_show(struct device *dev,
+>         struct pci_dev *pdev = to_pci_dev(dev);
+>         return sprintf (buf, "%u\n", pdev->d3cold_allowed);
+>  }
+> +static DEVICE_ATTR_RW(d3cold_allowed);
+>  #endif
+>
+>  #ifdef CONFIG_PCI_IOV
+> @@ -499,30 +510,38 @@ static struct device_attribute sriov_numvfs_attr =
+>                        sriov_numvfs_show, sriov_numvfs_store);
+>  #endif /* CONFIG_PCI_IOV */
+>
+> -struct device_attribute pci_dev_attrs[] = {
+> -       __ATTR_RO(resource),
+> -       __ATTR_RO(vendor),
+> -       __ATTR_RO(device),
+> -       __ATTR_RO(subsystem_vendor),
+> -       __ATTR_RO(subsystem_device),
+> -       __ATTR_RO(class),
+> -       __ATTR_RO(irq),
+> -       __ATTR_RO(local_cpus),
+> -       __ATTR_RO(local_cpulist),
+> -       __ATTR_RO(modalias),
+> +struct attribute *pci_dev_attrs[] = {
+> +       &dev_attr_resource.attr,
+> +       &dev_attr_vendor.attr,
+> +       &dev_attr_device.attr,
+> +       &dev_attr_subsystem_vendor.attr,
+> +       &dev_attr_subsystem_device.attr,
+> +       &dev_attr_class.attr,
+> +       &dev_attr_irq.attr,
+> +       &dev_attr_local_cpus.attr,
+> +       &dev_attr_local_cpulist.attr,
+> +       &dev_attr_modalias.attr,
+>  #ifdef CONFIG_NUMA
+> -       __ATTR_RO(numa_node),
+> +       &dev_attr_numa_node.attr,
+>  #endif
+> -       __ATTR_RO(dma_mask_bits),
+> -       __ATTR_RO(consistent_dma_mask_bits),
+> -       __ATTR(enable, 0600, is_enabled_show, is_enabled_store),
+> -       __ATTR(broken_parity_status,(S_IRUGO|S_IWUSR),
+> -               broken_parity_status_show,broken_parity_status_store),
+> -       __ATTR(msi_bus, 0644, msi_bus_show, msi_bus_store),
+> +       &dev_attr_dma_mask_bits.attr,
+> +       &dev_attr_consistent_dma_mask_bits.attr,
+> +       &dev_attr_enabled.attr,
+> +       &dev_attr_broken_parity_status.attr,
+> +       &dev_attr_msi_bus.attr,
+>  #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
+> -       __ATTR(d3cold_allowed, 0644, d3cold_allowed_show, d3cold_allowed_store),
+> +       &dev_attr_d3cold_allowed.attr,
+>  #endif
+> -       __ATTR_NULL,
+> +       NULL,
+> +};
+> +
+> +static const struct attribute_group pci_dev_group = {
+> +       .attrs = pci_dev_attrs,
+> +};
+> +
+> +const struct attribute_group *pci_dev_groups[] = {
+> +       &pci_dev_group,
+> +       NULL,
+>  };
+>
+>  static struct attribute *pcibus_attrs[] = {
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index 607be58..9c91ecc 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -153,7 +153,7 @@ static inline int pci_no_d1d2(struct pci_dev *dev)
+>         return (dev->no_d1d2 || parent_dstates);
+>
+>  }
+> -extern struct device_attribute pci_dev_attrs[];
+> +extern const struct attribute_group *pci_dev_groups[];
+>  extern const struct attribute_group *pcibus_groups[];
+>  extern struct device_type pci_dev_type;
+>  extern const struct attribute_group *pci_bus_groups[];
+> --
+> 1.8.4.6.g82e253f.dirty
+>
