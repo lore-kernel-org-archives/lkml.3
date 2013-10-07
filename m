@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3JGXlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 19:41:17 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33083 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3JGXlL (ORCPT
+	id S1754022Ab3JGXmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 19:42:21 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53076 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab3JGXmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 19:41:11 -0400
-Message-ID: <52534692.7010400@linaro.org>
-Date: Mon, 07 Oct 2013 16:41:06 -0700
-From: John Stultz <john.stultz@linaro.org>
+	Mon, 7 Oct 2013 19:42:19 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <525346D3.30500@roeck-us.net>
+Date: Mon, 07 Oct 2013 16:42:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <52534331.2060402@zytor.com>
-In-Reply-To: <52534331.2060402@zytor.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Chris Murphy <bugzilla@colorremedies.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+References: <20130927175926.GA6267@roeck-us.net> <B6E9FB4C-665C-454E-9DEB-B95B85C1D0E0@colorremedies.com> <524615B1.6000106@roeck-us.net> <4FFB3671-DDB4-40F7-BA5D-C9AA9391BDA9@colorremedies.com> <524A4384.4040403@roeck-us.net> <20131002035156.GA566@roeck-us.net> <20131002095339.GA2716@polaris.bitmath.org> <524C1FE1.4050207@roeck-us.net> <20131002163418.GA4557@polaris.bitmath.org> <20131002164718.GA7392@roeck-us.net> <20131002172410.GA381@polaris.bitmath.org>
+In-Reply-To: <20131002172410.GA381@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 04:26 PM, H. Peter Anvin wrote:
-> On 10/07/2013 04:14 PM, John Stultz wrote:
->>> I see from the change history of the patch that this was an madvise() at
->>> some point, but was changed into a separate system call at some point,
->>> does anyone remember why that was?  A quick look through my LKML
->>> archives doesn't really make it clear.
->> The reason we can't use madvise, is that to properly handle error cases
->> and report the pruge state, we need an extra argument.
->>
->> In much earlier versions, we just returned an error when setting
->> NONVOLATILE if the data was purged. However, since we have to possibly
->> do allocations when marking a range as non-volatile, we needed a way to
->> properly handle that allocation failing. We can't just return ENOMEM, as
->> we may have already marked purged memory as non-volatile.
->>
->> Thus, that's why with vrange, we return the number of bytes modified,
->> along with the purge state. That way, if an error does occur we can
->> return the purge state of the bytes successfully modified, and only
->> return an error if nothing was changed, much like when a write fails.
->>
-> I am not clear at all what the "purge state" is in this case.
+On 10/02/2013 10:24 AM, Henrik Rydberg wrote:
 
+>>From 4451da32414080bd0563ee9e061f19bf90463cc5 Mon Sep 17 00:00:00 2001
+> From: Henrik Rydberg <rydberg@euromail.se>
+> Date: Wed, 2 Oct 2013 19:15:03 +0200
+> Subject: [PATCH] applesmc remedy take 2
+>
+> Conjectured problem: there are remnant bytes ready on the data line
+> which corrupts the read after a failure.
+>
+> Remedy: assuming bit0 is the read valid line, try to flush it before
+> starting a new command.
+>
+> Tests by Chris suggests reading the status is enough for the problem
+> to go away, which is consistent with a change in the SMC interface,
+> where the number of bytes to read is no longer specified, but found
+> out by reading until end of data.
+>
+> Tested on a MacBookAir3,1, but the original problem has not been
+> reproduced.
 
-You mark a chunk of memory as volatile, then at some point later, mark
-its as non-volatile. The purge state tells you if the memory is still
-there, or if we threw it out due to memory pressure. This lets the
-application regnerate the purged data before continuing on.
+So, what should we do with this patch ? Apply it ?
 
-thanks
--john
+Thanks,
+Guenter
+
+> ---
+>   drivers/hwmon/applesmc.c | 13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 98814d1..c0ff350 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -230,6 +230,7 @@ static int send_argument(const char *key)
+>
+>   static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+>   {
+> +	u8 status, data;
+>   	int i;
+>
+>   	if (send_command(cmd) || send_argument(key)) {
+> @@ -237,6 +238,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+>   		return -EIO;
+>   	}
+>
+> +	/* This has no effect on newer (2012) SMCs */
+>   	if (send_byte(len, APPLESMC_DATA_PORT)) {
+>   		pr_warn("%.4s: read len fail\n", key);
+>   		return -EIO;
+> @@ -250,6 +252,17 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+>   		buffer[i] = inb(APPLESMC_DATA_PORT);
+>   	}
+>
+> +	/* Read the data port until bit0 is cleared */
+> +	for (i = 0; i < 16; i++) {
+> +		udelay(APPLESMC_MIN_WAIT);
+> +		status = inb(APPLESMC_CMD_PORT);
+> +		if (!(status & 0x01))
+> +			break;
+> +		data = inb(APPLESMC_DATA_PORT);
+> +	}
+> +	if (i)
+> +		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
+> +
+>   	return 0;
+>   }
+>
+>
 
