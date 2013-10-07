@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab3JGMFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:05:53 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:44231 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab3JGL6K (ORCPT
+	id S1756140Ab3JGMGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:06:13 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:39274 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337Ab3JGL6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:58:10 -0400
+	Mon, 7 Oct 2013 07:58:08 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 25/50] tools/perf/build: Split out feature check: 'libpython-version'
-Date: Mon,  7 Oct 2013 13:56:18 +0200
-Message-Id: <1381147003-2574-26-git-send-email-mingo@kernel.org>
+Subject: [PATCH 23/50] tools/perf/build: Split out feature check: 'libperl'
+Date: Mon,  7 Oct 2013 13:56:16 +0200
+Message-Id: <1381147003-2574-24-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -28,71 +28,79 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-raHmlqlnv0zexsrPau8hhane@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ggucqbwFwpxyuxde6dm7itHq@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                                |  3 ++-
- tools/perf/config/feature-checks/Makefile                 |  4 ++++
- tools/perf/config/feature-checks/test-libpython-version.c | 10 ++++++++++
- 3 files changed, 16 insertions(+), 1 deletion(-)
+ tools/perf/config/Makefile                      |  3 ++-
+ tools/perf/config/feature-checks/Makefile       | 13 +++++++++++++
+ tools/perf/config/feature-checks/test-libperl.c |  9 +++++++++
+ 3 files changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index dfb4c84..77a2e6b 100644
+index 8439e9a..f0edfa3 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -120,6 +120,7 @@ FEATURE_TESTS =				\
+@@ -118,6 +118,7 @@ FEATURE_TESTS =				\
+ 	libslang			\
+ 	gtk2				\
  	gtk2-infobar			\
- 	libperl				\
- 	libpython			\
-+	libpython-version		\
++	libperl				\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -361,7 +362,7 @@ else
-         $(call disable-python,Python.h (for Python 2.x))
-       else
+@@ -310,7 +311,7 @@ else
+   PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+   FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
  
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
-+        ifneq ($(feature-libpython-version), 1)
-           $(warning Python 3 is not yet supported; please set)
-           $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-           $(warning If you also have Python 2 installed, then)
+-  ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
++  ifneq ($(feature-libperl), 1)
+     CFLAGS += -DNO_LIBPERL
+     NO_LIBPERL := 1
+   else
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index e7ed05a..d15074d 100644
+index 017918f..3033c25 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -18,6 +18,7 @@ FILES=					\
+@@ -16,6 +16,7 @@ FILES=					\
+ 	test-libslang			\
+ 	test-gtk2			\
  	test-gtk2-infobar		\
- 	test-libperl			\
- 	test-libpython			\
-+	test-libpython-version		\
++	test-libperl			\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -108,6 +109,9 @@ FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
- test-libpython:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
+@@ -77,6 +78,18 @@ test-gtk2:
+ test-gtk2-infobar:
+ 	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
  
-+test-libpython-version:
-+	$(BUILD) $(FLAGS_PYTHON_EMBED)
++grep-libs  = $(filter -l%,$(1))
++strip-libs = $(filter-out -l%,$(1))
++
++PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
++PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
++PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
++PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
++
++test-libperl:
++	$(BUILD) $(FLAGS_PERL_EMBED)
 +
  -include *.d */*.d
  
  ###############################
-diff --git a/tools/perf/config/feature-checks/test-libpython-version.c b/tools/perf/config/feature-checks/test-libpython-version.c
+diff --git a/tools/perf/config/feature-checks/test-libperl.c b/tools/perf/config/feature-checks/test-libperl.c
 new file mode 100644
-index 0000000..facea12
+index 0000000..8871f6a
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libpython-version.c
-@@ -0,0 +1,10 @@
-+#include <Python.h>
-+
-+#if PY_VERSION_HEX >= 0x03000000
-+	#error
-+#endif
++++ b/tools/perf/config/feature-checks/test-libperl.c
+@@ -0,0 +1,9 @@
++#include <EXTERN.h>
++#include <perl.h>
 +
 +int main(void)
 +{
++	perl_alloc();
++
 +	return 0;
 +}
 -- 
