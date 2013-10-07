@@ -1,689 +1,497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3JGQJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:09:56 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:55666 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab3JGQJs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:09:48 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com
-Subject: [PATCH v1 1/2] perf,x86: add Intel RAPL PMU support
-Date: Mon,  7 Oct 2013 18:09:16 +0200
-Message-Id: <1381162158-24329-2-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381162158-24329-1-git-send-email-eranian@google.com>
-References: <1381162158-24329-1-git-send-email-eranian@google.com>
+	id S1755582Ab3JGQMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:12:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56385 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab3JGQMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 12:12:42 -0400
+Message-ID: <5252DD6B.6020707@ti.com>
+Date: Mon, 7 Oct 2013 12:12:27 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: Wendy Ng <wendy.ng@broadcom.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Markus Mayer <mmayer@broadcom.com>
+Subject: Re: [PATCH 1/3] thermal: bcm281xx: Add thermal driver
+References: <1379958698-7554-1-git-send-email-wendy.ng@broadcom.com> <1379958698-7554-2-git-send-email-wendy.ng@broadcom.com> <52408648.7040301@ti.com> <5240C42A.3030705@broadcom.com> <5240D2CC.1070403@ti.com> <524F3E6D.1010308@broadcom.com> <5252CA97.6060601@ti.com>
+In-Reply-To: <5252CA97.6060601@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="vRNID3smh0t5QAMbnGqcTPsMiA4mA9TKw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new uncore PMU to expose the Intel
-RAPL energy consumption counters. Up to 3 counters,
-each counting a particular RAPL event are exposed.
+--vRNID3smh0t5QAMbnGqcTPsMiA4mA9TKw
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The RAPL counters are available on Intel SandyBridge,
-IvyBridge, Haswell. The server skus add a 3rd counter.
+On 07-10-2013 10:52, Eduardo Valentin wrote:
+> On 04-10-2013 18:17, Wendy Ng wrote:
+>> Hello Eduardo,
+>>
+>=20
+> Hello Wendy,
+>=20
+>> I have rebased my work on the top of yours and tried out the new way o=
+f
+>> registering the thermal zone.    The new method is certainly making
+>> things easier for me to create a new thermal zone device driver.  But =
+I
+>> have some questions and I hope to hear back from you before I upload m=
+y
+>> new patch set that is based on your changes.
+>=20
+> Great that you gave it a shot. Thanks for that.
+>=20
+>>
+>> 1. I found that the hwmon sysfs interface is no longer created when I
+>> call thermal_zone_of_sensor_register() to register my thermal sensor. =
+ I
+>> believe it is because you purposely hard-coded 'no_hwmon' to true. =20
+>> Would it be possible to let the users to control this option as part o=
+f
+>> the sensor register function?
+>=20
+> Hmmm.. I also thought of allowing the thermal to hwmon interface
+> configurable. But the interface gets created in different path from the=
 
-The following events are available nd exposed in sysfs:
-- rapl-energy-cores: power consumption of all cores on socket
-- rapl-energy-pkg: power consumption of all cores + LLc cache
-- rapl-energy-dram: power consumption of DRAM
+> sensor registration, which makes things a bit harder. The zones are
+> probed while parsing the DT file. While the sensors get linked,
+> thermal_zone_of_sensor_register(), typically when sensors are probed.
+>=20
+> Do you have a real use case for using the thermal to hwmon interface?
+> Durgadoss (original author) and Rui were considering deprecating and
+> finally removing it. If yes, it is time to rise your voice here.
+>=20
+>>
+>> 2. The of_thermal_get_temp() output parameter 'temp' is an unsigned
+>> value in order to conforms with the thermal framework 'get_temp'
+>> function prototype.  But the new sensor interface 'get_temp' callback
+>> function (defined in __thermal_zone struct) expects 'temp' to be
+>> signed.  So technically, a negative value can be returned from the
+>> underlying sensor function.  Should some checks be added to
+>> of_thermal_get_temp() to ensure that a negative value (i.e. a very lar=
+ge
+>> unsigned value) won't be passed back to the thermal framework?  Or
+>> should the 'get_temp' function prototype in __thermal_zone struct be
+>> changed with 'unsigned' temperature value and it will be the
+>> responsibility of the underlying function to do the check?
+>>
+>=20
+> I could for sure, add a warning inside of_thermal_get_temp(). But in
+> general, I believe the thermal framework has to cover for signed
+> temperature values, even if typical usage is on positive temperature
+> range. Mainly for correct temperature representation.
+>=20
+>=20
+>> 3. Your documentation (thermal.txt) seems to suggest that the
+>> 'cooling-attachments' are one of the required properties for
+>> 'thermal-zones' node in the device tree binding files.  However, I don=
+'t
+>=20
+> Hmm... That was not the intention.
+>=20
+>> have any cooling device ready in my current patch series yet and
+>> therefore I tried to leave out the 'cooling-attachments' node from the=
 
-The RAPL PMU is uncore by nature and is implemented such
-that it only works in system-wide mode. Measuring only
-one CPU per socket is sufficient. The /sys/devices/rapl/cpumask
-is exported and can be used by tools to figure out which CPU
-to monitor by default. For instance, on a 2-socket system, 2 CPUs
-(one on each socket) will be shown.
+>> 'thermal-zones' node.  It seems to be working just find and I can
+>> register the sensor and read out the temperature once the target
+>> platform has been booted up.  Is this your expectation that people can=
 
-The counters all count in the same unit. The perf_events API
-exposes all RAPL counters as 64-bit integers counting in unit
-of 1/2^32 Joules (or 0.23 nJ). User level tools must convert
-the counts by multiplying them by 0.23 and divide 10^9 to
-obtain Joules.  The reason for this is that the kernel avoids
-doing floating point math whenever possible because it is
-expensive (user floating-point state must be saved). The method
-used avoids kernel floating-point and minimizes the loss of
-precision (bits). Thanks to PeterZ for suggesting this approach.
+>> leave the 'cooling-attachments' node out?    I want to make sure I can=
 
-To convert the raw count in Watt: W = C * 0.23 / (1e9 * time)
+>> still submit a new patch set for this series with just the functionali=
+ty
+>> of reading out the temperature from the thermal sensor.
+>=20
+> So, let me try to clarify a couple of things. First thing is that the
+> cooling-attachments has been renamed to cooling-maps, just a new naming=
 
-RAPL PMU is a new standalone PMU which registers with the
-perf_event core subsystem. The PMU type (attr->type) is
-dynamically allocated and is available from /sys/device/rapl/type.
+> convention.  Also, there are thermal zones that do not have
+> cooling-maps, they just describe thermal shutdown by software, thermal
+> zones with only CRITICAL trip points, for instance. For this reason,
+> thermal zones must be probed properly without cooling-maps. I need to
+> double check the documentation in this case, I believe.
 
-Sampling is not supported by the RAPL PMU. There is no
-privilege level filtering either.
+Just to clarify a bit, this does not mean we should allow having thermal
+zones only for monitoring. If you are generating a thermal zone, it
+means you want to cover thermal limits. The example I gave was a thermal
+zone that does not have cooling-maps, but it does have a thermal
+constraint, a trip point which is CRITICAL, meaning, the silicon state
+is not reliable anymore.
 
-We artificially limit the number of simultaneous RAPL events
-to a max of 1 instance of each (so up to 3). That helps track
-events and is sufficient given that RAPL events do not support
-any filters, i.e., no gain in measuring the same event twice
-in an event group.
+>=20
+>>
+>> Thanks,
+>> -Wendy
+>>
+>> On 9/23/2013 4:46 PM, Eduardo Valentin wrote:
+>>> On 23-09-2013 18:43, Wendy Ng wrote:
+>>>> On 9/23/2013 11:19 AM, Eduardo Valentin wrote:
+>>>>> On 23-09-2013 13:51, Wendy Ng wrote:
+>>>>>> This adds the support for reading out temperature from Broadcom
+>>>>>> bcm281xx
+>>>>>> SoCs.
+>>>>>>
+>>>>>> Signed-off-by: Wendy Ng <wendy.ng@broadcom.com>
+>>>>>> Reviewed-by: Markus Mayer <mmayer@broadcom.com>
+>>>>>> Reviewed-by: Christian Daudt <csd@broadcom.com>
+>>>>>> ---
+>>>>>>    .../bindings/thermal/bcm-kona-thermal.txt          |   18 +++
+>>>>>>    drivers/thermal/Kconfig                            |   10 ++
+>>>>>>    drivers/thermal/Makefile                           |    1 +
+>>>>>>    drivers/thermal/bcm_thermal.c                      |  170
+>>>>>> ++++++++++++++++++++
+>>>>>>    4 files changed, 199 insertions(+)
+>>>>>>    create mode 100644
+>>>>>> Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
+>>>>>>    create mode 100644 drivers/thermal/bcm_thermal.c
+>>>>>>
+>>>>>> diff --git
+>>>>>> a/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
+>>>>>> b/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
+>>>>>> new file mode 100644
+>>>>>> index 0000000..acca99e
+>>>>>> --- /dev/null
+>>>>>> +++ b/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.t=
+xt
+>>>>>> @@ -0,0 +1,18 @@
+>>>>>> +* Broadcom Kona Thermal Management Unit
+>>>>>> +
+>>>>>> +This version is for the BCM281xx family of SoCs.
+>>>>>> +
+>>>>>> +Required properties:
+>>>>>> +- compatible : "brcm,bcm11351-thermal", "brcm,kona-thermal"
+>>>>>> +- reg : Address range of the thermal register
+>>>>>> +- thermal-name: this entry must be specified and it will be passe=
+d
+>>>>>> into
+>>>>>> +thermal_zone_device_register().  This name will also be reported
+>>>>>> under Hwmon
+>>>>>> +sysfs 'name' attribute.
+>>>>>> +
+>>>>>> +Example:
+>>>>>> +    thermal@34008000 {
+>>>>>> +        compatible =3D "brcm,bcm11351-thermal", "brcm,kona-therma=
+l";
+>>>>>> +        reg =3D <0x34008000 0x0024>;
+>>>>>> +        thermal-name =3D "bcm_kona_therm";
+>>>>>> +        status =3D "disabled";
+>>>>>> +    };
+>>>>>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+>>>>>> index dbfc390..7f823f0 100644
+>>>>>> --- a/drivers/thermal/Kconfig
+>>>>>> +++ b/drivers/thermal/Kconfig
+>>>>>> @@ -134,6 +134,16 @@ config KIRKWOOD_THERMAL
+>>>>>>          Support for the Kirkwood thermal sensor driver into the L=
+inux
+>>>>>> thermal
+>>>>>>          framework. Only kirkwood 88F6282 and 88F6283 have this
+>>>>>> sensor.
+>>>>>>    +config BCM_THERMAL
+>>>>>> +    tristate "Temperature sensor on Broadcom BCM281xx family of S=
+oCs"
+>>>>>> +    depends on ARCH_BCM
+>>>>>> +    default y
+>>>>>> +    help
+>>>>>> +      If you say yes here you get support for TMU (Thermal Manage=
+ment
+>>>>>> +      Unit) on Broadcom BCM281xx family of SoCs. This provides
+>>>>>> thermal
+>>>>>> +      monitoring of CPU clusters, graphics, and SoC glue, but doe=
+s
+>>>>>> not
+>>>>>> +      include monitoring of charger temperature.
+>>>>>> +
+>>>>>>    config DOVE_THERMAL
+>>>>>>        tristate "Temperature sensor on Marvell Dove SoCs"
+>>>>>>        depends on ARCH_DOVE
+>>>>>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+>>>>>> index 584b363..3ea8c1c 100644
+>>>>>> --- a/drivers/thermal/Makefile
+>>>>>> +++ b/drivers/thermal/Makefile
+>>>>>> @@ -21,6 +21,7 @@ obj-$(CONFIG_SPEAR_THERMAL)    +=3D spear_therma=
+l.o
+>>>>>>    obj-$(CONFIG_RCAR_THERMAL)    +=3D rcar_thermal.o
+>>>>>>    obj-$(CONFIG_KIRKWOOD_THERMAL)  +=3D kirkwood_thermal.o
+>>>>>>    obj-y                +=3D samsung/
+>>>>>> +obj-$(CONFIG_BCM_THERMAL)       +=3D bcm_thermal.o
+>>>>>>    obj-$(CONFIG_DOVE_THERMAL)      +=3D dove_thermal.o
+>>>>>>    obj-$(CONFIG_DB8500_THERMAL)    +=3D db8500_thermal.o
+>>>>>>    obj-$(CONFIG_ARMADA_THERMAL)    +=3D armada_thermal.o
+>>>>>> diff --git a/drivers/thermal/bcm_thermal.c
+>>>>>> b/drivers/thermal/bcm_thermal.c
+>>>>>> new file mode 100644
+>>>>>> index 0000000..131d3c4
+>>>>>> --- /dev/null
+>>>>>> +++ b/drivers/thermal/bcm_thermal.c
+>>>>>> @@ -0,0 +1,170 @@
+>>>>>> +/*
+>>>>>> + * Copyright 2013 Broadcom Corporation.
+>>>>>> + *
+>>>>>> + * This program is free software; you can redistribute it and/or
+>>>>>> modify
+>>>>>> + * it under the terms of the GNU General Public License, version =
+2,
+>>>>>> + * as published by the Free Software Foundation (the "GPL").
+>>>>>> + *
+>>>>>> + * This program is distributed in the hope that it will be useful=
+,
+>>>>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of=
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/Makefile                |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_rapl.c |  580 +++++++++++++++++++++++++++
- tools/perf/util/evsel.c                     |    1 -
- 3 files changed, 581 insertions(+), 2 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_rapl.c
+>>>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>>>>> + * GNU General Public License for more details.
+>>>>>> + *
+>>>>>> + * A copy of the GPL is available at
+>>>>>> http://www.broadcom.com/licenses/GPLv2.php,
+>>>>>> + * or by writing to the Free Software Foundation, Inc.,
+>>>>>> + * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+>>>>>> + */
+>>>>>> +
+>>>>>> +/**
+>>>>>> +*  Broadcom Thermal Management Unit - bcm_tmu
+>>>>>> +*/
+>>>>>> +#include <linux/module.h>
+>>>>>> +#include <linux/err.h>
+>>>>>> +#include <linux/kernel.h>
+>>>>>> +#include <linux/platform_device.h>
+>>>>>> +#include <linux/io.h>
+>>>>>> +#include <linux/thermal.h>
+>>>>>> +#include <linux/of.h>
+>>>>>> +
+>>>>>> +/* From TMON Register Database */
+>>>>>> +#define TMON_TEMP_VAL_OFFSET            0x0000001c
+>>>>>> +#define TMON_TEMP_VAL_TEMP_VAL_SHIFT        0
+>>>>>> +#define TMON_TEMP_VAL_TEMP_VAL_MASK        0x000003ff
+>>>>>> +
+>>>>>> +/* Broadcom Thermal Zone Device Structure */
+>>>>>> +struct bcm_thermal_zone_priv {
+>>>>>> +    char name[THERMAL_NAME_LENGTH];
+>>>>>> +    void __iomem *base;
+>>>>>> +};
+>>>>>> +
+>>>>>> +/* Temperature conversion function for TMON block */
+>>>>>> +static long raw_to_mcelsius(u32 raw)
+>>>>>> +{
+>>>>>> +    /*
+>>>>>> +     * According to Broadcom internal Analog Module Specification=
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 47b56a7..6359506 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -36,7 +36,7 @@ obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
- endif
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
- endif
- 
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-new file mode 100644
-index 0000000..f59dbd4
---- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -0,0 +1,580 @@
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/pci.h>
-+#include <linux/perf_event.h>
-+#include "perf_event.h"
-+/*
-+ * RAPL energy status counters
-+ */
-+#define RAPL_IDX_PP0_NRG_STAT	0	/* all cores */
-+#define INTEL_RAPL_PP0		0x1	/* pseudo-encoding */
-+#define RAPL_IDX_PKG_NRG_STAT	1	/* entire package */
-+#define INTEL_RAPL_PKG		0x2	/* pseudo-encoding */
-+#define RAPL_IDX_RAM_NRG_STAT	2	/* DRAM */
-+#define INTEL_RAPL_RAM		0x3	/* pseudo-encoding */
-+
-+#define RAPL_IDX_MAX		4	/* Max number of RAPL counters */
-+
-+/* Desktops have PP0, PKG */
-+#define RAPL_IDX_CLN	(1<<RAPL_IDX_PP0_NRG_STAT|\
-+			 1<<RAPL_IDX_PKG_NRG_STAT)
-+
-+/* Servers have PP0, PKG, RAM */
-+#define RAPL_IDX_SRV	(1<<RAPL_IDX_PP0_NRG_STAT|\
-+			 1<<RAPL_IDX_PKG_NRG_STAT|\
-+			 1<<RAPL_IDX_RAM_NRG_STAT)
-+
-+/*
-+ * event  code: LSB 8 bits, to pass in attr->config
-+ * any other bit is reserved
-+ */
-+#define RAPL_EVENT_MASK	0xFFULL
-+
-+#define DEFINE_RAPL_FORMAT_ATTR(_var, _name, _format)			\
-+static ssize_t __rapl_##_var##_show(struct kobject *kobj,		\
-+				struct kobj_attribute *attr,		\
-+				char *page)				\
-+{									\
-+	BUILD_BUG_ON(sizeof(_format) >= PAGE_SIZE);			\
-+	return sprintf(page, _format "\n");				\
-+}									\
-+static struct kobj_attribute format_attr_##_var =			\
-+	__ATTR(_name, 0444, __rapl_##_var##_show, NULL)
-+
-+#define RAPL_EVENT_DESC(_name, _config)			\
-+{								\
-+	.attr	= __ATTR(_name, 0444, rapl_event_show, NULL),	\
-+	.config	= _config,					\
-+}
-+
-+#define RAPL_CNTR_WIDTH 32 /* 32-bit rapl counters */
-+
-+struct rapl_pmu {
-+	atomic_t	refcnt;
-+	int		hw_unit;  /* 1/2^hw_unit Joule */
-+	int		phys_id;
-+	int		n_active; /* number of active events */
-+	unsigned long active_mask[BITS_TO_LONGS(RAPL_IDX_MAX)];
-+	struct perf_event *events[RAPL_IDX_MAX];
-+};
-+
-+static struct pmu rapl_pmu_class;
-+static cpumask_t rapl_cpu_mask;
-+static int rapl_cntr_mask;
-+
-+static DEFINE_PER_CPU(struct rapl_pmu *, rapl_pmu);
-+static DEFINE_PER_CPU(struct rapl_pmu *, rapl_pmu_kfree);
-+
-+static inline u64 rapl_read_counter(struct perf_event *event)
-+{
-+	u64 raw;
-+	rdmsrl(event->hw.event_base, raw);
-+	return raw;
-+}
-+
-+static inline u64 rapl_scale(u64 v)
-+{
-+	/*
-+	 * scale delta to smallest unit (1/2^32)
-+	 * users must then scale back: count * 1/(1e9*2^32) to get Joules
-+	 * Watts = Joules/Time delta
-+	 */
-+	return v << (32 - __get_cpu_var(rapl_pmu)->hw_unit);
-+}
-+
-+static u64 rapl_event_update(struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 prev_raw_count, new_raw_count;
-+	s64 delta, sdelta;
-+	int shift = RAPL_CNTR_WIDTH;
-+
-+again:
-+	prev_raw_count = local64_read(&hwc->prev_count);
-+	rdmsrl(event->hw.event_base, new_raw_count);
-+
-+	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
-+			    new_raw_count) != prev_raw_count)
-+		goto again;
-+
-+	/*
-+	 * Now we have the new raw value and have updated the prev
-+	 * timestamp already. We can now calculate the elapsed delta
-+	 * (event-)time and add that to the generic event.
-+	 *
-+	 * Careful, not all hw sign-extends above the physical width
-+	 * of the count.
-+	 */
-+	delta = (new_raw_count << shift) - (prev_raw_count << shift);
-+	delta >>= shift;
-+
-+	sdelta = rapl_scale(delta);
-+
-+	local64_add(sdelta, &event->count);
-+
-+	return new_raw_count;
-+}
-+
-+static void rapl_pmu_event_start(struct perf_event *event, int flags)
-+{
-+	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
-+
-+	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-+		return;
-+
-+	event->hw.state = 0;
-+
-+	local64_set(&event->hw.prev_count, rapl_read_counter(event));
-+
-+	pmu->n_active++;
-+}
-+
-+static int rapl_pmu_event_add(struct perf_event *event, int flags)
-+{
-+	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = event->hw.idx;
-+
-+	/* counter already in use */
-+	if (__test_and_set_bit(idx, pmu->active_mask))
-+		return -EAGAIN;
-+
-+	pmu->events[idx] = event;
-+
-+	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+
-+	if (flags & PERF_EF_START)
-+		rapl_pmu_event_start(event, 0);
-+
-+	return 0;
-+}
-+
-+static void rapl_pmu_event_stop(struct perf_event *event, int flags)
-+{
-+	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/* mark event as deactivated and stopped */
-+	if (__test_and_clear_bit(hwc->idx, pmu->active_mask)) {
-+		WARN_ON_ONCE(pmu->n_active <= 0);
-+		pmu->n_active--;
-+		pmu->events[hwc->idx] = NULL;
-+		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-+		hwc->state |= PERF_HES_STOPPED;
-+	}
-+
-+	/* check if update of sw counter is necessary */
-+	if ((flags & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
-+		/*
-+		 * Drain the remaining delta count out of a event
-+		 * that we are disabling:
-+		 */
-+		rapl_event_update(event);
-+		hwc->state |= PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static void rapl_pmu_event_del(struct perf_event *event, int flags)
-+{
-+	rapl_pmu_event_stop(event, PERF_EF_UPDATE);
-+}
-+
-+static int rapl_validate_group(struct perf_event *event)
-+{
-+	struct perf_event *leader = event->group_leader;
-+	unsigned long active_mask[BITS_TO_LONGS(RAPL_IDX_MAX)];
-+	struct perf_event *e;
-+
-+	/*
-+	 * group can only have RAPL PMU events
-+	 * just need to verify they don't use the same
-+	 * counter
-+	 * Although the RAPL counters are read-only and
-+	 * we could have as many RAPL events as we would
-+	 * like, we artificially limit to a maximum of
-+	 * one event of each kind. That helps us track
-+	 * events better especially when we want to avoid
-+	 * missing counter overflows. Furthermore, the
-+	 * counters have no filters, thus adding 2 instances
-+	 * of an event does not buy anything.
-+	 */
-+	bitmap_zero(active_mask, RAPL_IDX_MAX);
-+
-+	/*
-+	 * event is not yet connected with siblings
-+	 */
-+	__set_bit(event->hw.idx, active_mask);
-+
-+	/*
-+	 * add leader too
-+	 */
-+	if (__test_and_set_bit(leader->hw.idx, active_mask))
-+			return -EINVAL;
-+
-+	/*
-+	 * now check existing siblings
-+	 */
-+	list_for_each_entry(e, &leader->sibling_list, group_entry) {
-+		if (__test_and_set_bit(e->hw.idx, active_mask))
-+			return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static int rapl_pmu_event_init(struct perf_event *event)
-+{
-+	u64 cfg = event->attr.config & RAPL_EVENT_MASK;
-+	int bit, msr, ret = 0;
-+
-+	/* only look at RAPL events */
-+	if (event->attr.type != rapl_pmu_class.type)
-+		return -ENOENT;
-+
-+	/* check only supported bits are set */
-+	if (event->attr.config & ~RAPL_EVENT_MASK)
-+		return -EINVAL;
-+
-+	/*
-+	 * check event is known (determines counter)
-+	 */
-+	switch (cfg) {
-+	case INTEL_RAPL_PP0:
-+		bit = RAPL_IDX_PP0_NRG_STAT;
-+		msr = MSR_PP0_ENERGY_STATUS;
-+		break;
-+	case INTEL_RAPL_PKG:
-+		bit = RAPL_IDX_PKG_NRG_STAT;
-+		msr = MSR_PKG_ENERGY_STATUS;
-+		break;
-+	case INTEL_RAPL_RAM:
-+		bit = RAPL_IDX_RAM_NRG_STAT;
-+		msr = MSR_DRAM_ENERGY_STATUS;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	/* check event supported */
-+	if (!(rapl_cntr_mask & (1 << bit)))
-+		return -EINVAL;
-+
-+	/* unsupported modes and filters */
-+	if (event->attr.exclude_user   ||
-+	    event->attr.exclude_kernel ||
-+	    event->attr.exclude_hv     ||
-+	    event->attr.exclude_idle   ||
-+	    event->attr.exclude_host   ||
-+	    event->attr.exclude_guest  ||
-+	    event->attr.sample_period) /* no sampling */
-+		return -EINVAL;
-+
-+	/* must be done before validate_group */
-+	event->hw.event_base = msr;
-+	event->hw.idx = bit;
-+
-+	if (event->group_leader != event)
-+		ret = rapl_validate_group(event);
-+
-+	return ret;
-+}
-+
-+static void rapl_pmu_event_read(struct perf_event *event)
-+{
-+	rapl_event_update(event);
-+}
-+
-+static ssize_t rapl_get_attr_cpumask(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &rapl_cpu_mask);
-+
-+	buf[n++] = '\n';
-+	buf[n] = '\0';
-+	return n;
-+}
-+
-+static DEVICE_ATTR(cpumask, S_IRUGO, rapl_get_attr_cpumask, NULL);
-+
-+static struct attribute *rapl_pmu_attrs[] = {
-+	&dev_attr_cpumask.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group rapl_pmu_attr_group = {
-+	.attrs = rapl_pmu_attrs,
-+};
-+
-+EVENT_ATTR_STR(rapl-energy-cores, rapl_pp0, "event=0x01");
-+EVENT_ATTR_STR(rapl-energy-pkg  , rapl_pkg, "event=0x02");
-+EVENT_ATTR_STR(rapl-energy-ram  , rapl_ram, "event=0x03");
-+
-+static struct attribute *rapl_events_srv_attr[] = {
-+	EVENT_PTR(rapl_pp0),
-+	EVENT_PTR(rapl_pkg),
-+	EVENT_PTR(rapl_ram),
-+	NULL,
-+};
-+
-+static struct attribute *rapl_events_cln_attr[] = {
-+	EVENT_PTR(rapl_pp0),
-+	EVENT_PTR(rapl_pkg),
-+	NULL,
-+};
-+
-+static struct attribute_group rapl_pmu_events_group = {
-+	.name = "events",
-+	.attrs = NULL, /* patched at runtime */
-+};
-+
-+DEFINE_RAPL_FORMAT_ATTR(event, event, "config:0-7");
-+static struct attribute *rapl_formats_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group rapl_pmu_format_group = {
-+	.name = "format",
-+	.attrs = rapl_formats_attr,
-+};
-+
-+const struct attribute_group *rapl_attr_groups[] = {
-+	&rapl_pmu_attr_group,
-+	&rapl_pmu_format_group,
-+	&rapl_pmu_events_group,
-+	NULL,
-+};
-+
-+static struct pmu rapl_pmu_class = {
-+	.attr_groups	= rapl_attr_groups,
-+	.task_ctx_nr	= perf_invalid_context, /* system-wide only */
-+	.event_init	= rapl_pmu_event_init,
-+	.add		= rapl_pmu_event_add, /* must have */
-+	.del		= rapl_pmu_event_del, /* must have */
-+	.start		= rapl_pmu_event_start,
-+	.stop		= rapl_pmu_event_stop,
-+	.read		= rapl_pmu_event_read,
-+};
-+
-+static void rapl_exit_cpu(int cpu)
-+{
-+	int i, phys_id = topology_physical_package_id(cpu);
-+
-+	/* if CPU not in RAPL mask, nothing to do */
-+	if (!cpumask_test_and_clear_cpu(cpu, &rapl_cpu_mask))
-+		return;
-+
-+	/* find a new cpu on same package */
-+	for_each_online_cpu(i) {
-+		if (i == cpu || i == 0)
-+			continue;
-+		if (phys_id == topology_physical_package_id(i)) {
-+			cpumask_set_cpu(i, &rapl_cpu_mask);
-+			break;
-+		}
-+	}
-+
-+	WARN_ON(cpumask_empty(&rapl_cpu_mask));
-+}
-+
-+static void rapl_init_cpu(int cpu)
-+{
-+	int i, phys_id = topology_physical_package_id(cpu);
-+
-+	/* check if phys_is is already covered */
-+	for_each_cpu(i, &rapl_cpu_mask) {
-+		if (i == 0)
-+			continue;
-+		if (phys_id == topology_physical_package_id(i))
-+			return;
-+	}
-+	/* was not found, so add it */
-+	cpumask_set_cpu(cpu, &rapl_cpu_mask);
-+}
-+
-+static int rapl_cpu_prepare(int cpu)
-+{
-+	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
-+	int phys_id = topology_physical_package_id(cpu);
-+
-+	if (pmu)
-+		return 0;
-+
-+	if (phys_id < 0)
-+		return -1;
-+
-+	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
-+	if (!pmu)
-+		return -1;
-+
-+	atomic_set(&pmu->refcnt, 1);
-+	pmu->phys_id = phys_id;
-+	/*
-+	 * grab power unit as: 1/2^unit Joules
-+	 *
-+	 * we cache in local PMU instance
-+	 */
-+	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
-+	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
-+
-+	/* set RAPL pmu for this cpu for now */
-+	per_cpu(rapl_pmu_kfree, cpu) = NULL;
-+	per_cpu(rapl_pmu, cpu) = pmu;
-+
-+	return 0;
-+}
-+
-+static int rapl_cpu_starting(int cpu)
-+{
-+	struct rapl_pmu *pmu2;
-+	struct rapl_pmu *pmu1 = per_cpu(rapl_pmu, cpu);
-+	int i, phys_id = topology_physical_package_id(cpu);
-+
-+	if (pmu1)
-+		return 0;
-+
-+	for_each_online_cpu(i) {
-+		pmu2 = per_cpu(rapl_pmu, i);
-+
-+		if (!pmu2 || i == cpu)
-+			continue;
-+
-+		if (pmu2->phys_id == phys_id) {
-+			per_cpu(rapl_pmu, cpu) = pmu2;
-+			per_cpu(rapl_pmu_kfree, cpu) = pmu1;
-+			atomic_inc(&pmu2->refcnt);
-+			break;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int rapl_cpu_dying(int cpu)
-+{
-+	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
-+	int i;
-+
-+	if (!pmu)
-+		return 0;
-+	/*
-+	 * stop all syswide RAPL events on that  CPU
-+	 * as a consequence also stops the hrtimer
-+	 */
-+	for (i = 0; i < RAPL_IDX_MAX; i++) {
-+		if (pmu->events[i])
-+			rapl_pmu_event_stop(pmu->events[i], PERF_EF_UPDATE);
-+	}
-+	per_cpu(rapl_pmu, cpu) = NULL;
-+
-+	if (atomic_dec_and_test(&pmu->refcnt))
-+		kfree(pmu);
-+
-+	return 0;
-+}
-+
-+static int rapl_cpu_notifier(struct notifier_block *self,
-+			     unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (long)hcpu;
-+
-+	/* allocate/free data structure for uncore box */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+		rapl_cpu_prepare(cpu);
-+		break;
-+	case CPU_STARTING:
-+		rapl_cpu_starting(cpu);
-+		break;
-+	case CPU_UP_CANCELED:
-+	case CPU_DYING:
-+		rapl_cpu_dying(cpu);
-+		break;
-+	case CPU_ONLINE:
-+		kfree(per_cpu(rapl_pmu_kfree, cpu));
-+		per_cpu(rapl_pmu_kfree, cpu) = NULL;
-+		break;
-+	case CPU_DEAD:
-+		per_cpu(rapl_pmu, cpu) = NULL;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	/* select the cpu that collects uncore events */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DOWN_FAILED:
-+	case CPU_STARTING:
-+		rapl_init_cpu(cpu);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		rapl_exit_cpu(cpu);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int __init rapl_pmu_init(void)
-+{
-+	struct rapl_pmu *pmu;
-+	int i, cpu, ret;
-+
-+	/* check supported CPU */
-+	switch (boot_cpu_data.x86_model) {
-+	case 42: /* Sandy Bridge */
-+	case 58: /* Ivy Bridge */
-+	case 60: /* Haswell */
-+		rapl_cntr_mask = RAPL_IDX_CLN;
-+		rapl_pmu_events_group.attrs = rapl_events_cln_attr;
-+		break;
-+	case 45: /* Sandy Bridge-EP */
-+	case 62: /* IvyTown */
-+		rapl_cntr_mask = RAPL_IDX_SRV;
-+		rapl_pmu_events_group.attrs = rapl_events_srv_attr;
-+		break;
-+
-+	default:
-+		/* unsupported */
-+		return 0;
-+	}
-+	get_online_cpus();
-+
-+	for_each_online_cpu(cpu) {
-+		int phys_id = topology_physical_package_id(cpu);
-+
-+		/* save on prepare by only calling prepare for new phys_id */
-+		for_each_cpu(i, &rapl_cpu_mask) {
-+			if (phys_id == topology_physical_package_id(i)) {
-+				phys_id = -1;
-+				break;
-+			}
-+		}
-+		if (phys_id < 0) {
-+			pmu = per_cpu(rapl_pmu, i);
-+			if (pmu) {
-+				per_cpu(rapl_pmu, cpu) = pmu;
-+				atomic_inc(&pmu->refcnt);
-+			}
-+			continue;
-+		}
-+		rapl_cpu_prepare(cpu);
-+		cpumask_set_cpu(cpu, &rapl_cpu_mask);
-+	}
-+
-+	perf_cpu_notifier(rapl_cpu_notifier);
-+
-+	ret = perf_pmu_register(&rapl_pmu_class, "rapl", -1);
-+	WARN_ON(ret);
-+
-+	pmu = __get_cpu_var(rapl_pmu);
-+	pr_info("RAPL PMU detected, hw unit 2^-%d Joules, "
-+		" API unit is 2^-32 Joules,"
-+		" %d fixed counters\n",
-+		pmu->hw_unit,
-+		hweight32(rapl_cntr_mask));
-+
-+	put_online_cpus();
-+
-+	return 0;
-+}
-+device_initcall(rapl_pmu_init);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index abe69af..12bfd7d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -895,7 +895,6 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 			if (readn(FD(evsel, cpu, thread),
- 				  &count, nv * sizeof(u64)) < 0)
- 				return -errno;
--
- 			aggr->val += count.val;
- 			if (scale) {
- 				aggr->ena += count.ena;
--- 
-1.7.9.5
+>>>>>> +     * the formula for converting TMON block output to temperatur=
+e in
+>>>>>> +     * degree Celsius is:
+>>>>>> +     *    T =3D 428 - (0.561 * raw)
+>>>>>> +     * Note: the valid operating range for the TMON block is -40C=
+ to
+>>>>>> 125C
+>>>>>> +     */
+>>>>>> +    return 428000 - (561 * (long)raw);
+>>>>>> +}
+>>>>>> +
+>>>>>> +/* Get temperature callback function for thermal zone */
+>>>>>> +static int bcm_get_temp(struct thermal_zone_device *thermal,
+>>>>>> +            unsigned long *temp)
+>>>>>> +{
+>>>>>> +    u32 raw;
+>>>>>> +    long mcelsius;
+>>>>>> +    struct bcm_thermal_zone_priv *priv =3D thermal->devdata;
+>>>>>> +
+>>>>>> +    if (!priv) {
+>>>>>> +        pr_err("%s: thermal zone number %d devdata not
+>>>>>> initialized.\n",
+>>>>>> +            __func__, thermal->id);
+>>>>>> +        return -EINVAL;
+>>>>>> +    }
+>>>>>> +
+>>>>>> +    raw =3D (readl(priv->base + TMON_TEMP_VAL_OFFSET)
+>>>>>> +        & TMON_TEMP_VAL_TEMP_VAL_MASK) >>
+>>>>>> TMON_TEMP_VAL_TEMP_VAL_SHIFT;
+>>>>>> +
+>>>>>> +    pr_debug("%s: thermal zone number %d raw temp 0x%x\n", __func=
+__,
+>>>>>> +        thermal->id, raw);
+>>>>>> +
+>>>>>> +    mcelsius =3D raw_to_mcelsius(raw);
+>>>>>> +
+>>>>>> +    /*
+>>>>>> +     * Since 'mcelsius' might be negative, we need to limit it to=
 
+>>>>>> smallest
+>>>>>> +     * unsigned value before returning it to thermal framework.
+>>>>>> +     */
+>>>>>> +    if (mcelsius < 0)
+>>>>>> +        *temp =3D 0;
+>>>>>> +    else
+>>>>>> +        *temp =3D mcelsius;
+>>>>>> +
+>>>>>> +    pr_debug("%s: thermal zone number %d final temp %d\n", __func=
+__,
+>>>>>> +        thermal->id, (int) *temp);
+>>>>>> +
+>>>>>> +    return 0;
+>>>>>> +}
+>>>>>> +
+>>>>>> +/* Operation callback functions for thermal zone */
+>>>>>> +static struct thermal_zone_device_ops bcm_dev_ops =3D {
+>>>>>> +    .get_temp =3D bcm_get_temp,
+>>>>>> +};
+>>>>>> +
+>>>>>> +static const struct of_device_id bcm_tmu_match_table[] =3D {
+>>>>>> +    { .compatible =3D "brcm,kona-thermal" },
+>>>>>> +    {},
+>>>>>> +};
+>>>>>> +MODULE_DEVICE_TABLE(of, bcm_tmu_match_table);
+>>>>>> +
+>>>>>> +static int bcm_tmu_probe(struct platform_device *pdev)
+>>>>>> +{
+>>>>>> +    struct thermal_zone_device *thermal =3D NULL;
+>>>>>> +    struct bcm_thermal_zone_priv *priv;
+>>>>>> +    struct resource *res;
+>>>>>> +    const char *str;
+>>>>>> +
+>>>>>> +    priv =3D devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);=
+
+>>>>>> +    if (!priv) {
+>>>>>> +        dev_err(&pdev->dev, "Failed to malloc priv.\n");
+>>>>>> +        return -ENOMEM;
+>>>>>> +    }
+>>>>>> +
+>>>>>> +    /* Obtain the tmu name from device tree file */
+>>>>>> +    if (of_property_read_string(pdev->dev.of_node, "thermal-name"=
+,
+>>>>> Hello Wendy,
+>>>>>
+>>>>> I would prefer we wait until the work for thermal data [1] gets
+>>>>> accepted
+>>>>> before accepting this driver, specially because you are adding devi=
+ce
+>>>>> specific DT entry to help in your registration with the thermal
+>>>>> framework. With the mentioned work you wont need it at all.
+>>>>>
+>>>>> All best,
+>>>>>
+>>>>> [1] - http://lkml.org/lkml/2013/9/15/122
+>>>> Hello Eduardo,
+>>>>
+>>>> Since your changes are quite extensive, would you recommend me to ge=
+t
+>>>> your 16 patches into my local workspace and try to integrate the cod=
+e
+>>>> from my patches on the top of your patches at this time?  Or should =
+I
+>>>> wait until your patches get accepted.
+>>> Hello again Wendy,
+>>>
+>>> The only part I am concerned is the device tree entry you are creatin=
+g
+>>> for your device/driver. That could be obsolete in near future with th=
+e
+>>> work I am doing currently.
+>>>
+>>> The work is, as you mentioned, quite extensive, but should make thing=
+s
+>>> easier for device driver writer. If you want, of course, it would be
+>>> great if you could rebase your work on top of mine and try it out on
+>>> your side and let me know the outcome.
+>>>
+>>> Comments on the proposed binding and documentation is also welcome. L=
+et
+>>> me know if there is something that it is not clear.
+>>>
+>>>> Thanks,
+>>>> -Wendy
+>>>>>> +            &str) =3D=3D 0) {
+>>>>>> +        strlcpy(priv->name, str, sizeof(priv->name));
+>>>>>> +    } else {
+>>>>>> +        dev_err(&pdev->dev, "Failed to get thermal-name from DT.\=
+n");
+>>>>>> +        return -EINVAL;
+>>>>>> +    }
+>>>>>> +
+>>>>>> +    res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>>>> +    priv->base =3D devm_ioremap_resource(&pdev->dev, res);
+>>>>>> +    if (IS_ERR(priv->base))
+>>>>>> +        return PTR_ERR(priv->base);
+>>>>>> +
+>>>>>> +    thermal =3D thermal_zone_device_register(priv->name, 0, 0, pr=
+iv,
+>>>>>> +                        &bcm_dev_ops, NULL, 0, 0);
+>>>>>> +    if (IS_ERR(thermal)) {
+>>>>>> +        dev_err(&pdev->dev,
+>>>>>> +            "Failed to register Broadcom thermal zone device.\n")=
+;
+>>>>>> +        return PTR_ERR(thermal);
+>>>>>> +    }
+>>>>>> +
+>>>>>> +    platform_set_drvdata(pdev, thermal);
+>>>>>> +
+>>>>>> +    dev_info(&pdev->dev, "Broadcom Thermal Monitor Initialized.\n=
+");
+>>>>>> +
+>>>>>> +    return 0;
+>>>>>> +}
+>>>>>> +
+>>>>>> +static int bcm_tmu_remove(struct platform_device *pdev)
+>>>>>> +{
+>>>>>> +    struct thermal_zone_device *broadcom_thermal =3D
+>>>>>> +        platform_get_drvdata(pdev);
+>>>>>> +
+>>>>>> +    thermal_zone_device_unregister(broadcom_thermal);
+>>>>>> +
+>>>>>> +    dev_info(&pdev->dev, "Broadcom Thermal Monitor
+>>>>>> Uninitialized.\n");
+>>>>>> +
+>>>>>> +    return 0;
+>>>>>> +}
+>>>>>> +
+>>>>>> +static struct platform_driver bcm_tmu_driver =3D {
+>>>>>> +    .driver =3D {
+>>>>>> +        .name =3D "bcm-thermal",
+>>>>>> +        .owner =3D THIS_MODULE,
+>>>>>> +        .of_match_table =3D bcm_tmu_match_table,
+>>>>>> +    },
+>>>>>> +    .probe =3D bcm_tmu_probe,
+>>>>>> +    .remove =3D bcm_tmu_remove,
+>>>>>> +};
+>>>>>> +
+>>>>>> +module_platform_driver(bcm_tmu_driver);
+>>>>>> +
+>>>>>> +MODULE_DESCRIPTION("Broadcom Thermal Driver");
+>>>>>> +MODULE_AUTHOR("Broadcom");
+>>>>>> +MODULE_LICENSE("GPL v2");
+>>>>>> +MODULE_ALIAS("platform:bcm-thermal");
+>>>>>>
+>>>
+>>
+>=20
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--vRNID3smh0t5QAMbnGqcTPsMiA4mA9TKw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJS3WsACgkQCXcVR3XQvP3NFwD7BL8mB1G3257ghZyIPqzVHgXf
+Evda+nV2mWYLYA4FqmYA/2lPuzUQrzs7lrlE4I2pWmtjx9JUwx35edIYwWIVGn9/
+=OLmy
+-----END PGP SIGNATURE-----
+
+--vRNID3smh0t5QAMbnGqcTPsMiA4mA9TKw--
