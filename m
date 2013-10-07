@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3JGTPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 15:15:37 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:3782 "EHLO mms2.broadcom.com"
+	id S1756879Ab3JGTPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 15:15:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65132 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756681Ab3JGTPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 15:15:21 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Tim Kryger" <tim.kryger@linaro.org>
-To: "Christian Daudt" <bcm@fixthebug.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Rob Landley" <rob@landley.net>, "Wolfram Sang" <wsa@the-dreams.de>,
-        "Grant Likely" <grant.likely@linaro.org>
-cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 0/4] Add-Broadcom-Kona-I2C-Support
-Date: Mon, 7 Oct 2013 12:14:57 -0700
-Message-ID: <1381173301-23830-1-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
+	id S1756861Ab3JGTPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 15:15:37 -0400
+Message-ID: <52530843.4050209@redhat.com>
+Date: Mon, 07 Oct 2013 15:15:15 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-WSS-ID: 7E4DD7B71R098266559-01-01
-Content-Type: text/plain
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 62/63] sched: numa: use unsigned longs for numa group
+ fault stats
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-63-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-63-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for the Kona I2C bus found on Broadcom mobile
-SoCs like the bcm11351 (aka bcm281xx) and enables it on the bcm28155-ap
-board.
+On 10/07/2013 06:29 AM, Mel Gorman wrote:
+> As Peter says "If you're going to hold locks you can also do away with all
+> that atomic_long_*() nonsense". Lock aquisition moved slightly to protect
+> the updates.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-It depends upon the following commits:
-  https://lkml.org/lkml/2013/10/7/481
-  http://www.spinics.net/lists/arm-kernel/msg274964.html
-
-Tim Kryger (4):
-  i2c: i2c-bcm-kona: Introduce Broadcom I2C Driver
-  i2c: i2c-bcm-kona: Add support for high-speed mode
-  ARM: dts: bcm281xx: Add i2c busses
-  ARM: dts: bcm28155-ap: Enable all the i2c busses
-
- .../devicetree/bindings/i2c/i2c-bcm-kona.txt       |  30 +
- arch/arm/boot/dts/bcm11351.dtsi                    |  40 +
- arch/arm/boot/dts/bcm28155-ap.dts                  |  20 +
- drivers/i2c/busses/Kconfig                         |  10 +
- drivers/i2c/busses/Makefile                        |   1 +
- drivers/i2c/busses/i2c-bcm-kona.c                  | 936 +++++++++++++++++++++
- 6 files changed, 1037 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-bcm-kona.txt
- create mode 100644 drivers/i2c/busses/i2c-bcm-kona.c
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
 -- 
-1.8.0.1
-
-
+All rights reversed
