@@ -1,106 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3JGVEs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:04:48 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:54490 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853Ab3JGVEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:04:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131003090347.GB3081@twins.programming.kicks-ass.net>
-References: <20131002133759.GH28601@twins.programming.kicks-ass.net>
-	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
-	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
-	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
-	<CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
-	<CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
-	<20131002190001.GX3081@twins.programming.kicks-ass.net>
-	<CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
-	<20131002203107.GY3081@twins.programming.kicks-ass.net>
-	<CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
-	<20131003090347.GB3081@twins.programming.kicks-ass.net>
-Date: Mon, 7 Oct 2013 23:04:38 +0200
-Message-ID: <CABPqkBSmYBdBx1vXj3ZJycM311eQPeK6kFxvtm3jtovp-qgm+w@mail.gmail.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755897Ab3JGVGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:06:38 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:56116 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755425Ab3JGVGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 17:06:34 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] [media] cx231xx: fix double free and leaks on failure path in cx231xx_usb_probe()
+Date: Tue,  8 Oct 2013 01:06:04 +0400
+Message-Id: <1381179964-16451-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+There are numerous issues in error handling code of cx231xx initialization.
+Double free (when cx231xx_init_dev() calls kfree(dev) via cx231xx_release_resources()
+and then cx231xx_usb_probe() does the same) and memory leaks
+(e.g. usb_get_dev() before (ifnum != 1) check in cx231xx_usb_probe())
+are just a few of them.
 
+The patch fixes the issues in cx231xx_usb_probe() and cx231xx_init_dev()
+by moving usb_get_dev(interface_to_usbdev(interface)) below in code and
+implementing proper error handling.
 
-On Thu, Oct 3, 2013 at 11:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Oct 03, 2013 at 10:55:28AM +0200, Stephane Eranian wrote:
->> I don't know the MM code but I assume that that vm_mm struct is
->> allocated dynamically
->> and maybe you already grabbing a lock while doing this. Could we
->> leverage that lock
->> to increment a global generation number?
->
-> Sure; something like so.. I just don't like global state nor adding to
-> mm_struct for just this.
->
-> ---
->  include/linux/mm_types.h | 1 +
->  kernel/fork.c            | 6 ++++++
->  2 files changed, 7 insertions(+)
->
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index d9851eeb6e1d..3877b1e72a5b 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -436,6 +436,7 @@ struct mm_struct {
->         int first_nid;
->  #endif
->         struct uprobes_state uprobes_state;
-> +       u64 mm_id;
->  };
->
->  /* first nid will either be a valid NID or one of these values */
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 086fe73ad6bd..b315f6227629 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -523,6 +523,8 @@ static void mm_init_aio(struct mm_struct *mm)
->  #endif
->  }
->
-> +static u64 global_mm_id;
-> +
->  static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
->  {
->         atomic_set(&mm->mm_users, 1);
-> @@ -537,6 +539,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
->         spin_lock_init(&mm->page_table_lock);
->         mm_init_aio(mm);
->         mm_init_owner(mm, p);
-> +       mm->mm_id = 0;
->
->         if (likely(!mm_alloc_pgd(mm))) {
->                 mm->def_flags = 0;
-> @@ -1422,6 +1425,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->          */
->         write_lock_irq(&tasklist_lock);
->
-> +       if (p->mm && !p->mm->mm_id)
-> +               p->mm->mm_id = ++global_mm_id;
-> +
->         /* CLONE_PARENT re-uses the old parent */
->         if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
->                 p->real_parent = current->real_parent;
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Ok, so I tried this. It does not cover shmat() cases unfortunately.
-We need that same ++global_mm_id somewhere on that code path.
-Haven't looked at it in details just yet.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/media/usb/cx231xx/cx231xx-cards.c | 110 ++++++++++++++++--------------
+ 1 file changed, 57 insertions(+), 53 deletions(-)
+
+diff --git a/drivers/media/usb/cx231xx/cx231xx-cards.c b/drivers/media/usb/cx231xx/cx231xx-cards.c
+index a384f80..e9d017b 100644
+--- a/drivers/media/usb/cx231xx/cx231xx-cards.c
++++ b/drivers/media/usb/cx231xx/cx231xx-cards.c
+@@ -978,7 +978,6 @@ static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+ 			    int minor)
+ {
+ 	int retval = -ENOMEM;
+-	int errCode;
+ 	unsigned int maxh, maxw;
+ 
+ 	dev->udev = udev;
+@@ -1014,8 +1013,8 @@ static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+ 	/* Cx231xx pre card setup */
+ 	cx231xx_pre_card_setup(dev);
+ 
+-	errCode = cx231xx_config(dev);
+-	if (errCode) {
++	retval = cx231xx_config(dev);
++	if (retval) {
+ 		cx231xx_errdev("error configuring device\n");
+ 		return -ENOMEM;
+ 	}
+@@ -1024,12 +1023,11 @@ static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+ 	dev->norm = dev->board.norm;
+ 
+ 	/* register i2c bus */
+-	errCode = cx231xx_dev_init(dev);
+-	if (errCode < 0) {
+-		cx231xx_dev_uninit(dev);
++	retval = cx231xx_dev_init(dev);
++	if (retval) {
+ 		cx231xx_errdev("%s: cx231xx_i2c_register - errCode [%d]!\n",
+-			       __func__, errCode);
+-		return errCode;
++			       __func__, retval);
++		goto err_dev_init;
+ 	}
+ 
+ 	/* Do board specific init */
+@@ -1047,11 +1045,11 @@ static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+ 	dev->interlaced = 0;
+ 	dev->video_input = 0;
+ 
+-	errCode = cx231xx_config(dev);
+-	if (errCode < 0) {
++	retval = cx231xx_config(dev);
++	if (retval) {
+ 		cx231xx_errdev("%s: cx231xx_config - errCode [%d]!\n",
+-			       __func__, errCode);
+-		return errCode;
++			       __func__, retval);
++		goto err_dev_init;
+ 	}
+ 
+ 	/* init video dma queues */
+@@ -1075,9 +1073,9 @@ static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+ 	}
+ 
+ 	retval = cx231xx_register_analog_devices(dev);
+-	if (retval < 0) {
+-		cx231xx_release_resources(dev);
+-		return retval;
++	if (retval) {
++		cx231xx_release_analog_resources(dev);
++		goto err_analog;
+ 	}
+ 
+ 	cx231xx_ir_init(dev);
+@@ -1085,6 +1083,11 @@ static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+ 	cx231xx_init_extension(dev);
+ 
+ 	return 0;
++err_analog:
++	cx231xx_remove_from_devlist(dev);
++err_dev_init:
++	cx231xx_dev_uninit(dev);
++	return retval;
+ }
+ 
+ #if defined(CONFIG_MODULES) && defined(MODULE)
+@@ -1132,7 +1135,6 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 	char *speed;
+ 	struct usb_interface_assoc_descriptor *assoc_desc;
+ 
+-	udev = usb_get_dev(interface_to_usbdev(interface));
+ 	ifnum = interface->altsetting[0].desc.bInterfaceNumber;
+ 
+ 	/*
+@@ -1161,6 +1163,8 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 		return -ENOMEM;
+ 	}
+ 
++	udev = usb_get_dev(interface_to_usbdev(interface));
++
+ 	snprintf(dev->name, 29, "cx231xx #%d", nr);
+ 	dev->devno = nr;
+ 	dev->model = id->driver_info;
+@@ -1223,10 +1227,8 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 	if (assoc_desc->bFirstInterface != ifnum) {
+ 		cx231xx_err(DRIVER_NAME ": Not found "
+ 			    "matching IAD interface\n");
+-		clear_bit(dev->devno, &cx231xx_devused);
+-		kfree(dev);
+-		dev = NULL;
+-		return -ENODEV;
++		retval = -ENODEV;
++		goto err_if;
+ 	}
+ 
+ 	cx231xx_info("registering interface %d\n", ifnum);
+@@ -1242,22 +1244,13 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 	retval = v4l2_device_register(&interface->dev, &dev->v4l2_dev);
+ 	if (retval) {
+ 		cx231xx_errdev("v4l2_device_register failed\n");
+-		clear_bit(dev->devno, &cx231xx_devused);
+-		kfree(dev);
+-		dev = NULL;
+-		return -EIO;
++		retval = -EIO;
++		goto err_v4l2;
+ 	}
+ 	/* allocate device struct */
+ 	retval = cx231xx_init_dev(dev, udev, nr);
+-	if (retval) {
+-		clear_bit(dev->devno, &cx231xx_devused);
+-		v4l2_device_unregister(&dev->v4l2_dev);
+-		kfree(dev);
+-		dev = NULL;
+-		usb_set_intfdata(interface, NULL);
+-
+-		return retval;
+-	}
++	if (retval)
++		goto err_init;
+ 
+ 	/* compute alternate max packet sizes for video */
+ 	uif = udev->actconfig->interface[dev->current_pcb_config.
+@@ -1275,11 +1268,8 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 
+ 	if (dev->video_mode.alt_max_pkt_size == NULL) {
+ 		cx231xx_errdev("out of memory!\n");
+-		clear_bit(dev->devno, &cx231xx_devused);
+-		v4l2_device_unregister(&dev->v4l2_dev);
+-		kfree(dev);
+-		dev = NULL;
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_video_alt;
+ 	}
+ 
+ 	for (i = 0; i < dev->video_mode.num_alt; i++) {
+@@ -1309,11 +1299,8 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 
+ 	if (dev->vbi_mode.alt_max_pkt_size == NULL) {
+ 		cx231xx_errdev("out of memory!\n");
+-		clear_bit(dev->devno, &cx231xx_devused);
+-		v4l2_device_unregister(&dev->v4l2_dev);
+-		kfree(dev);
+-		dev = NULL;
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_vbi_alt;
+ 	}
+ 
+ 	for (i = 0; i < dev->vbi_mode.num_alt; i++) {
+@@ -1344,11 +1331,8 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 
+ 	if (dev->sliced_cc_mode.alt_max_pkt_size == NULL) {
+ 		cx231xx_errdev("out of memory!\n");
+-		clear_bit(dev->devno, &cx231xx_devused);
+-		v4l2_device_unregister(&dev->v4l2_dev);
+-		kfree(dev);
+-		dev = NULL;
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_sliced_cc_alt;
+ 	}
+ 
+ 	for (i = 0; i < dev->sliced_cc_mode.num_alt; i++) {
+@@ -1380,11 +1364,8 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 
+ 		if (dev->ts1_mode.alt_max_pkt_size == NULL) {
+ 			cx231xx_errdev("out of memory!\n");
+-			clear_bit(dev->devno, &cx231xx_devused);
+-			v4l2_device_unregister(&dev->v4l2_dev);
+-			kfree(dev);
+-			dev = NULL;
+-			return -ENOMEM;
++			retval = -ENOMEM;
++			goto err_ts1_alt;
+ 		}
+ 
+ 		for (i = 0; i < dev->ts1_mode.num_alt; i++) {
+@@ -1411,6 +1392,29 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
+ 	request_modules(dev);
+ 
+ 	return 0;
++err_ts1_alt:
++	kfree(dev->sliced_cc_mode.alt_max_pkt_size);
++err_sliced_cc_alt:
++	kfree(dev->vbi_mode.alt_max_pkt_size);
++err_vbi_alt:
++	kfree(dev->video_mode.alt_max_pkt_size);
++err_video_alt:
++	/* cx231xx_uninit_dev: */
++	cx231xx_close_extension(dev);
++	cx231xx_ir_exit(dev);
++	cx231xx_release_analog_resources(dev);
++	cx231xx_417_unregister(dev);
++	cx231xx_remove_from_devlist(dev);
++	cx231xx_dev_uninit(dev);
++err_init:
++	v4l2_device_unregister(&dev->v4l2_dev);
++err_v4l2:
++	usb_set_intfdata(interface, NULL);
++err_if:
++	usb_put_dev(udev);
++	kfree(dev);
++	clear_bit(dev->devno, &cx231xx_devused);
++	return retval;
+ }
+ 
+ /*
+-- 
+1.8.1.2
+
