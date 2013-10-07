@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3JGXjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 19:39:08 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:60634 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3JGXjF convert rfc822-to-8bit (ORCPT
+	id S1753828Ab3JGXlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 19:41:10 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:33848 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab3JGXlG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 19:39:05 -0400
+	Mon, 7 Oct 2013 19:41:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+5g0SKCdnCCzHBXFN5JYyG5Sno14Tud78rN_MvygXkEg0dr_A@mail.gmail.com>
-References: <1381184066-10684-1-git-send-email-geyslan@gmail.com>
-	<184520834.2485938.1381185329449.JavaMail.root@redhat.com>
-	<CA+5g0SKCdnCCzHBXFN5JYyG5Sno14Tud78rN_MvygXkEg0dr_A@mail.gmail.com>
-Date: Mon, 7 Oct 2013 20:39:02 -0300
-Message-ID: <CAGG-pUQGKmCQ_N2z5puPZYufW31keP-7sRBJRN=VGCkjZ+US9Q@mail.gmail.com>
-Subject: Re: [PATCH] drm: nouveau: fix nvbe leakage
+In-Reply-To: <52533965.3080906@zytor.com>
+References: <1381184219-10985-1-git-send-email-geyslan@gmail.com>
+	<52533965.3080906@zytor.com>
+Date: Mon, 7 Oct 2013 20:41:05 -0300
+Message-ID: <CAGG-pUT2FJtnih23rZbA8XQMHq7s9GTZCUSEW7yPg3+kOM4VLQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: mkpiggy.c: fix resource leakage
 From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Felipe Pena <felipensp@gmail.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        kernel-br <kernel-br@googlegroups.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kernel-br <kernel-br@googlegroups.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe, thank you too.
+Peter,
 
-I realized this after a code review.
-
-Ben, what do you think?
+Yes, Really doesn't have leakage, I explained it. The changes are just
+to cleanup the code following a secure pattern.
 
 Geyslan Gregório Bem
 hackingbits.com
 
 
-2013/10/7 Felipe Pena <felipensp@gmail.com>:
-> Hi,
+2013/10/7 H. Peter Anvin <hpa@zytor.com>:
+> On 10/07/2013 03:16 PM, Geyslan G. Bem wrote:
+>> Even though the resource is released when the application is closed or
+>> when returned from main function, modified to make it in accordance.
+>> Now FILE pointer is always verified.
 >
-> On Mon, Oct 7, 2013 at 7:35 PM, Ben Skeggs <bskeggs@redhat.com> wrote:
->> ----- Original Message -----
->>> From: "Geyslan G. Bem" <geyslan@gmail.com>
->>> To: airlied@linux.ie, bskeggs@redhat.com, dri-devel@lists.freedesktop.org
->>> Cc: linux-kernel@vger.kernel.org, kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
->>> Sent: Tuesday, 8 October, 2013 8:14:26 AM
->>> Subject: [PATCH] drm: nouveau: fix nvbe leakage
->>>
->>> Free memory allocated to nvbe when returning NULL.
->>>
->>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> NACK.  ttm_dma_tt_init() calls the destructor if it fails, which frees the memory.
->>
->> Ben.
->>
+> By the way, the subject is misleading - there is no resource leakage
+> since the program is terminated anyway.
 >
-> But ttm_tt_destroy() just handles the ttm_tt part from nvbe, the nvbe
-> pointer itself is not being free'd.
->
->>> ---
->>>  drivers/gpu/drm/nouveau/nouveau_sgdma.c | 3 +++
->>>  1 file changed, 3 insertions(+)
->>>
->>> diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->>> b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->>> index 0843ebc..af8b66d 100644
->>> --- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->>> +++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->>> @@ -105,6 +105,9 @@ nouveau_sgdma_create_ttm(struct ttm_bo_device *bdev,
->>>               nvbe->ttm.ttm.func = &nv50_sgdma_backend;
->>>
->>>       if (ttm_dma_tt_init(&nvbe->ttm, bdev, size, page_flags, dummy_read_page))
->>> +     {
->>> +             kfree(nvbe);
->>>               return NULL;
->>> +     }
->>>       return &nvbe->ttm.ttm;
->>>  }
->>> --
->>> 1.8.4
->>>
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>         -hpa
 >
 >
->
-> --
-> Regards,
-> Felipe Pena
