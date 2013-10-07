@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3JGPes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:34:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46685 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab3JGPen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:34:43 -0400
-Date: Mon, 7 Oct 2013 17:34:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Doug Thompson <dougthompson@xmission.com>, Borislav Petkov <bp@suse.de>,
-        Baruch Siach <baruch@tkos.co.il>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: Re: [PATCH] mpc85xx_edac: Remove unused function
-Message-ID: <20131007153441.GA12771@pd.tnic>
-References: <1381158835-10804-1-git-send-email-treding@nvidia.com>
+	id S1755284Ab3JGPgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:36:01 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34844 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab3JGPgA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 11:36:00 -0400
+Message-ID: <5252D4DB.30302@gmail.com>
+Date: Mon, 07 Oct 2013 09:35:55 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381158835-10804-1-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org> <5252BCB4.5030802@gmail.com> <20131007141100.GA21873@gmail.com>
+In-Reply-To: <20131007141100.GA21873@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm guessing this one is for Johannes. CCed...
+On 10/7/13 8:11 AM, Ingo Molnar wrote:
+> These changes are not yet committed into any stable Git tree - I've pushed
+> them out into:
+>
+>     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.perf
+>
+> (it might take a few minutes for kernel.org to sync up.)
 
-On Mon, Oct 07, 2013 at 05:13:55PM +0200, Thierry Reding wrote:
-> Commit 905e75c (powerpc/fsl-pci: Unify pci/pcie initialization code)
-> removed the struct platform_driver that held the last reference to the
-> mpc85xx_pci_err_remove() function. Remove the function since it is
-> effectively dead code.
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/edac/mpc85xx_edac.c | 23 -----------------------
->  1 file changed, 23 deletions(-)
-> 
-> diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-> index 3eb32f6..b1e7106 100644
-> --- a/drivers/edac/mpc85xx_edac.c
-> +++ b/drivers/edac/mpc85xx_edac.c
-> @@ -326,29 +326,6 @@ err:
->  	return res;
->  }
->  EXPORT_SYMBOL(mpc85xx_pci_err_probe);
-> -
-> -static int mpc85xx_pci_err_remove(struct platform_device *op)
-> -{
-> -	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
-> -	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
-> -
-> -	edac_dbg(0, "\n");
-> -
-> -	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
-> -		 orig_pci_err_cap_dr);
-> -
-> -	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, orig_pci_err_en);
-> -
-> -	edac_pci_del_device(pci->dev);
-> -
-> -	if (edac_op_state == EDAC_OPSTATE_INT)
-> -		irq_dispose_mapping(pdata->irq);
-> -
-> -	edac_pci_free_ctl_info(pci);
-> -
-> -	return 0;
-> -}
-> -
->  #endif				/* CONFIG_PCI */
->  
->  /**************************** L2 Err device ***************************/
-> -- 
-> 1.8.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Tested on Fedora 12, 14, 16 with varying degrees of feature support 
+installed. The tests that failed are all static builds with the command 
+line:
 
--- 
-Regards/Gruss,
-    Boris.
+make O=/tmp/junk -C tools/perf LDFLAGS=-static NO_DWARF=1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Passing LDFLAGS to the feature tests should handle that.
+
+I also noticed that the dwarf test is still run even with the NO_DWARF 
+option passed in:
+
+[daahern@nxos-vdc-dev1 perf]$ make O=/tmp/junk LDFLAGS=-static 
+NO_DWARF=1 -j 4
+     BUILD: Doing 'make -j16' parallel build
+
+Auto-detecting system features:
+
+...                     backtrace: [ on  ]
+...                         dwarf: [ on  ]
+...                fortify-source: [ on  ]
+
+Note the dwarf test shows 'on'.
+
+David
