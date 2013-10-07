@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3JGKaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:30:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40062 "EHLO mx2.suse.de"
+	id S1755595Ab3JGKa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:30:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40152 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755456Ab3JGKab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:31 -0400
+	id S1755497Ab3JGKaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:39 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 53/63] sched: numa: Decide whether to favour task or group weights based on swap candidate relationships
-Date: Mon,  7 Oct 2013 11:29:31 +0100
-Message-Id: <1381141781-10992-54-git-send-email-mgorman@suse.de>
+Subject: [PATCH 61/63] sched: numa: skip some page migrations after a shared fault
+Date: Mon,  7 Oct 2013 11:29:39 +0100
+Message-Id: <1381141781-10992-62-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -24,159 +24,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-This patch separately considers task and group affinities when searching
-for swap candidates during task NUMA placement. If tasks are not part of
-a group or the same group then the task weights are considered.
-Otherwise the group weights are compared.
+Shared faults can lead to lots of unnecessary page migrations,
+slowing down the system, and causing private faults to hit the
+per-pgdat migration ratelimit.
+
+This patch adds sysctl numa_balancing_migrate_deferred, which specifies
+how many shared page migrations to skip unconditionally, after each page
+migration that is skipped because it is a shared fault.
+
+This reduces the number of page migrations back and forth in
+shared fault situations. It also gives a strong preference to
+the tasks that are already running where most of the memory is,
+and to moving the other tasks to near the memory.
+
+Testing this with a much higher scan rate than the default
+still seems to result in fewer page migrations than before.
+
+Memory seems to be somewhat better consolidated than previously,
+with multi-instance specjbb runs on a 4 node system.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 59 ++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 36 insertions(+), 23 deletions(-)
+ Documentation/sysctl/kernel.txt | 10 ++++++++-
+ include/linux/sched.h           |  5 ++++-
+ kernel/sched/fair.c             |  8 +++++++
+ kernel/sysctl.c                 |  7 ++++++
+ mm/mempolicy.c                  | 48 ++++++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 75 insertions(+), 3 deletions(-)
 
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 84f1780..4273b2d 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -375,7 +375,8 @@ feature should be disabled. Otherwise, if the system overhead from the
+ feature is too high then the rate the kernel samples for NUMA hinting
+ faults may be controlled by the numa_balancing_scan_period_min_ms,
+ numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
+-numa_balancing_scan_size_mb and numa_balancing_settle_count sysctls.
++numa_balancing_scan_size_mb, numa_balancing_settle_count sysctls and
++numa_balancing_migrate_deferred.
+ 
+ ==============================================================
+ 
+@@ -421,6 +422,13 @@ the schedule balancer stops pushing the task towards a preferred node. This
+ gives the scheduler a chance to place the task on an alternative node if the
+ preferred node is overloaded.
+ 
++numa_balancing_migrate_deferred is how many page migrations get skipped
++unconditionally, after a page migration is skipped because a page is shared
++with other tasks. This reduces page migration overhead, and determines
++how much stronger the "move task near its memory" policy scheduler becomes,
++versus the "move memory near its task" memory management policy, for workloads
++with shared memory.
++
+ ==============================================================
+ 
+ osrelease, ostype & version:
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0f6b1b3..b737b72 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1332,6 +1332,8 @@ struct task_struct {
+ 	int numa_scan_seq;
+ 	unsigned int numa_scan_period;
+ 	unsigned int numa_scan_period_max;
++	int numa_preferred_nid;
++	int numa_migrate_deferred;
+ 	unsigned long numa_migrate_retry;
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
+@@ -1362,7 +1364,6 @@ struct task_struct {
+ 	 */
+ 	unsigned long numa_faults_locality[2];
+ 
+-	int numa_preferred_nid;
+ 	unsigned long numa_pages_migrated;
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+@@ -1459,6 +1460,8 @@ extern void task_numa_fault(int last_node, int node, int pages, int flags);
+ extern pid_t task_numa_group_id(struct task_struct *p);
+ extern void set_numabalancing_state(bool enabled);
+ extern void task_numa_free(struct task_struct *p);
++
++extern unsigned int sysctl_numa_balancing_migrate_deferred;
+ #else
+ static inline void task_numa_fault(int last_node, int node, int pages,
+ 				   int flags)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 58d1070..e7da6f2 100644
+index ceffce9..9e2271b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1039,13 +1039,15 @@ static void task_numa_assign(struct task_numa_env *env,
-  * into account that it might be best if task running on the dst_cpu should
-  * be exchanged with the source task
-  */
--static void task_numa_compare(struct task_numa_env *env, long imp)
-+static void task_numa_compare(struct task_numa_env *env,
-+			      long taskimp, long groupimp)
+@@ -833,6 +833,14 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
+ /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
+ unsigned int sysctl_numa_balancing_scan_delay = 1000;
+ 
++/*
++ * After skipping a page migration on a shared page, skip N more numa page
++ * migrations unconditionally. This reduces the number of NUMA migrations
++ * in shared memory workloads, and has the effect of pulling tasks towards
++ * where their memory lives, over pulling the memory towards the task.
++ */
++unsigned int sysctl_numa_balancing_migrate_deferred = 16;
++
+ static unsigned int task_nr_scan_windows(struct task_struct *p)
  {
- 	struct rq *src_rq = cpu_rq(env->src_cpu);
- 	struct rq *dst_rq = cpu_rq(env->dst_cpu);
- 	struct task_struct *cur;
- 	long dst_load, src_load;
- 	long load;
-+	long imp = (groupimp > 0) ? groupimp : taskimp;
+ 	unsigned long rss = 0;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index e509b90..a159e1f 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -391,6 +391,13 @@ static struct ctl_table kern_table[] = {
+ 		.mode           = 0644,
+ 		.proc_handler   = proc_dointvec,
+ 	},
++	{
++		.procname       = "numa_balancing_migrate_deferred",
++		.data           = &sysctl_numa_balancing_migrate_deferred,
++		.maxlen         = sizeof(unsigned int),
++		.mode           = 0644,
++		.proc_handler   = proc_dointvec,
++	},
+ #endif /* CONFIG_NUMA_BALANCING */
+ #endif /* CONFIG_SCHED_DEBUG */
+ 	{
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 2929c24..71cb253 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2301,6 +2301,35 @@ static void sp_free(struct sp_node *n)
+ 	kmem_cache_free(sn_cache, n);
+ }
  
- 	rcu_read_lock();
- 	cur = ACCESS_ONCE(dst_rq->curr);
-@@ -1064,10 +1066,19 @@ static void task_numa_compare(struct task_numa_env *env, long imp)
- 		if (!cpumask_test_cpu(env->src_cpu, tsk_cpus_allowed(cur)))
- 			goto unlock;
- 
--		imp += task_weight(cur, env->src_nid) +
--		       group_weight(cur, env->src_nid) -
--		       task_weight(cur, env->dst_nid) -
--		       group_weight(cur, env->dst_nid);
-+		/*
-+		 * If dst and source tasks are in the same NUMA group, or not
-+		 * in any group then look only at task weights otherwise give
-+		 * priority to the group weights.
-+		 */
-+		if (!cur->numa_group || !env->p->numa_group ||
-+		    cur->numa_group == env->p->numa_group) {
-+			imp = taskimp + task_weight(cur, env->src_nid) -
-+			      task_weight(cur, env->dst_nid);
-+		} else {
-+			imp = groupimp + group_weight(cur, env->src_nid) -
-+			       group_weight(cur, env->dst_nid);
++#ifdef CONFIG_NUMA_BALANCING
++static bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
++{
++	/* Never defer a private fault */
++	if (cpupid_match_pid(p, last_cpupid))
++		return false;
++
++	if (p->numa_migrate_deferred) {
++		p->numa_migrate_deferred--;
++		return true;
++	}
++	return false;
++}
++
++static inline void defer_numa_migrate(struct task_struct *p)
++{
++	p->numa_migrate_deferred = sysctl_numa_balancing_migrate_deferred;
++}
++#else
++static inline bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
++{
++	return false;
++}
++
++static inline void defer_numa_migrate(struct task_struct *p)
++{
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ /**
+  * mpol_misplaced - check whether current page node is valid in policy
+  *
+@@ -2402,7 +2431,24 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 		 * relation.
+ 		 */
+ 		last_cpupid = page_cpupid_xchg_last(page, this_cpupid);
+-		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid)
++		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid) {
++
++			/* See sysctl_numa_balancing_migrate_deferred comment */
++			if (!cpupid_match_pid(current, last_cpupid))
++				defer_numa_migrate(current);
++
++			goto out;
 +		}
++
++		/*
++		 * The quadratic filter above reduces extraneous migration
++		 * of shared pages somewhat. This code reduces it even more,
++		 * reducing the overhead of page migrations of shared pages.
++		 * This makes workloads with shared pages rely more on
++		 * "move task near its memory", and less on "move memory
++		 * towards its task", which is exactly what we want.
++		 */
++		if (numa_migrate_deferred(current, last_cpupid))
+ 			goto out;
  	}
  
- 	if (imp < env->best_imp)
-@@ -1117,7 +1128,8 @@ unlock:
- 	rcu_read_unlock();
- }
- 
--static void task_numa_find_cpu(struct task_numa_env *env, long imp)
-+static void task_numa_find_cpu(struct task_numa_env *env,
-+				long taskimp, long groupimp)
- {
- 	int cpu;
- 
-@@ -1127,7 +1139,7 @@ static void task_numa_find_cpu(struct task_numa_env *env, long imp)
- 			continue;
- 
- 		env->dst_cpu = cpu;
--		task_numa_compare(env, imp);
-+		task_numa_compare(env, taskimp, groupimp);
- 	}
- }
- 
-@@ -1146,9 +1158,9 @@ static int task_numa_migrate(struct task_struct *p)
- 		.best_cpu = -1
- 	};
- 	struct sched_domain *sd;
--	unsigned long weight;
-+	unsigned long taskweight, groupweight;
- 	int nid, ret;
--	long imp;
-+	long taskimp, groupimp;
- 
- 	/*
- 	 * Pick the lowest SD_NUMA domain, as that would have the smallest
-@@ -1163,15 +1175,17 @@ static int task_numa_migrate(struct task_struct *p)
- 	env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
- 	rcu_read_unlock();
- 
--	weight = task_weight(p, env.src_nid) + group_weight(p, env.src_nid);
-+	taskweight = task_weight(p, env.src_nid);
-+	groupweight = group_weight(p, env.src_nid);
- 	update_numa_stats(&env.src_stats, env.src_nid);
- 	env.dst_nid = p->numa_preferred_nid;
--	imp = task_weight(p, env.dst_nid) + group_weight(p, env.dst_nid) - weight;
-+	taskimp = task_weight(p, env.dst_nid) - taskweight;
-+	groupimp = group_weight(p, env.dst_nid) - groupweight;
- 	update_numa_stats(&env.dst_stats, env.dst_nid);
- 
- 	/* If the preferred nid has capacity, try to use it. */
- 	if (env.dst_stats.has_capacity)
--		task_numa_find_cpu(&env, imp);
-+		task_numa_find_cpu(&env, taskimp, groupimp);
- 
- 	/* No space available on the preferred nid. Look elsewhere. */
- 	if (env.best_cpu == -1) {
-@@ -1180,13 +1194,14 @@ static int task_numa_migrate(struct task_struct *p)
- 				continue;
- 
- 			/* Only consider nodes where both task and groups benefit */
--			imp = task_weight(p, nid) + group_weight(p, nid) - weight;
--			if (imp < 0)
-+			taskimp = task_weight(p, nid) - taskweight;
-+			groupimp = group_weight(p, nid) - groupweight;
-+			if (taskimp < 0 && groupimp < 0)
- 				continue;
- 
- 			env.dst_nid = nid;
- 			update_numa_stats(&env.dst_stats, env.dst_nid);
--			task_numa_find_cpu(&env, imp);
-+			task_numa_find_cpu(&env, taskimp, groupimp);
- 		}
- 	}
- 
-@@ -4678,10 +4693,9 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 	if (dst_nid == p->numa_preferred_nid)
- 		return true;
- 
--	/* After the task has settled, check if the new node is better. */
--	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count &&
--			task_weight(p, dst_nid) + group_weight(p, dst_nid) >
--			task_weight(p, src_nid) + group_weight(p, src_nid))
-+	/* If both task and group weight improve, this move is a winner. */
-+	if (task_weight(p, dst_nid) > task_weight(p, src_nid) &&
-+	    group_weight(p, dst_nid) > group_weight(p, src_nid))
- 		return true;
- 
- 	return false;
-@@ -4708,10 +4722,9 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
- 	if (src_nid == p->numa_preferred_nid)
- 		return true;
- 
--	/* After the task has settled, check if the new node is worse. */
--	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count &&
--			task_weight(p, dst_nid) + group_weight(p, dst_nid) <
--			task_weight(p, src_nid) + group_weight(p, src_nid))
-+	/* If either task or group weight get worse, don't do it. */
-+	if (task_weight(p, dst_nid) < task_weight(p, src_nid) ||
-+	    group_weight(p, dst_nid) < group_weight(p, src_nid))
- 		return true;
- 
- 	return false;
 -- 
 1.8.4
 
