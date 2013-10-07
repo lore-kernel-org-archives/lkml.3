@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3JGLQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:16:42 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:43909 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab3JGLQg (ORCPT
+	id S1752960Ab3JGLRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:17:12 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:41978 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436Ab3JGLRI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:16:36 -0400
+	Mon, 7 Oct 2013 07:17:08 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: [PATCH v2] Input: add driver for Neonode zForce based touchscreens
+Date: Mon, 7 Oct 2013 13:17:14 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+References: <201309070133.11671.heiko@sntech.de> <201309231550.27313.heiko@sntech.de>
+In-Reply-To: <201309231550.27313.heiko@sntech.de>
 MIME-Version: 1.0
-In-Reply-To: <20131002130143.GF28601@twins.programming.kicks-ass.net>
-References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
-	<20130930161546.GG3081@twins.programming.kicks-ass.net>
-	<CABPqkBSRV651SynNHpAo7-B+8aX2hsMXKJNeTkimBoWo91TvFQ@mail.gmail.com>
-	<20130930165420.GI3081@twins.programming.kicks-ass.net>
-	<CABPqkBS_zDkgX4NioducZ+H9VEt1jb7gQDbZ_zB6ui5Tf=UR5A@mail.gmail.com>
-	<20131002112316.GP3081@twins.programming.kicks-ass.net>
-	<20131002115826.GM26785@twins.programming.kicks-ass.net>
-	<20131002123953.GB27811@gmail.com>
-	<20131002124610.GD28601@twins.programming.kicks-ass.net>
-	<CABPqkBQyCfz5d+SQxDwPD5m52ofE6y5HKur+s-F0s=hN00cxkw@mail.gmail.com>
-	<20131002130143.GF28601@twins.programming.kicks-ass.net>
-Date: Mon, 7 Oct 2013 13:16:35 +0200
-Message-ID: <CABPqkBQs1bjOoPVZKWc09+12Bs1DaLk9z+J4c6UK1C2mZfSGJw@mail.gmail.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201310071317.15544.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 2, 2013 at 3:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Oct 02, 2013 at 02:59:32PM +0200, Stephane Eranian wrote:
->> On Wed, Oct 2, 2013 at 2:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Wed, Oct 02, 2013 at 02:39:53PM +0200, Ingo Molnar wrote:
->> >>  - then there are timing attacks, and someone having access to a PMU
->> >>    context and who can trigger this SHA1 computation arbitrarily in task
->> >>    local context can run very accurate and low noise timing attacks...
->> >>
->> >>    I don't think the kernel's sha_transform() is hardened against timing
->> >>    attacks, it's performance optimized so it has variable execution time
->> >>    highly dependent on plaintext input - which leaks information about the
->> >>    plaintext.
->> >
->> > Typical user doesn't have enough priv to profile kernel space; once you
->> > do you also have enough priv to see kernel addresses outright (ie.
->> > kallsyms etc..).
->> >
->> I was going to say just that. But that's not the default, paranoid level
->> is at 1 by default and not 2. So I supposedly can still do:
->
-> Oh right you are.. so yes that's a very viable avenue.
+Hi,
 
-I am going to try this out today. I think if it works well, we could
-also simplify the
-MMAP2 record and just pass this unique id for all cases.MMAP2 is only in rcX
-release so far. Is that still possible?
+Am Montag, 23. September 2013, 15:50:26 schrieb Heiko Stübner:
+> Am Samstag, 7. September 2013, 01:33:11 schrieb Heiko Stübner:
+> > This adds a driver for touchscreens using the zforce infrared
+> > technology from Neonode connected via i2c to the host system.
+> > 
+> > It supports multitouch with up to two fingers and tracking of the
+> > contacts in hardware.
+> > 
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > ---
+> > changes since v1:
+> > - address comments from Dmitry Torokhov
+> > 
+> >   but I kept the access_mutex due to the possible race I described in the
+> > 
+> > mail:
+> >   - touch -> interrupt
+> >   - isr reads first packet
+> >   - user closes device -> stop command sent
+> >   - isr reads payload
+> > 
+> > - address comments from Henrik Rydberg, letting the input system collect
+> > 
+> >   singletouch from the multitouch data using the appropriate functions
+> 
+> ping?
+> 
+
+is the driver ok in this form or is more work needed?
+
+
+Thanks
+Heiko
