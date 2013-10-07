@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab3JGMI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:08:58 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:38490 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab3JGL56 (ORCPT
+	id S1756304Ab3JGMJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:09:14 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:45496 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab3JGL5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:57:58 -0400
+	Mon, 7 Oct 2013 07:57:55 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 12/50] tools/perf/build: Split out feature check: 'glibc'
-Date: Mon,  7 Oct 2013 13:56:05 +0200
-Message-Id: <1381147003-2574-13-git-send-email-mingo@kernel.org>
+Subject: [PATCH 08/50] tools/perf/build: Split out feature check: 'fortify-source'
+Date: Mon,  7 Oct 2013 13:56:01 +0200
+Message-Id: <1381147003-2574-9-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -28,72 +28,69 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-nqnnsptw7ivOzhzbNjiun7ds@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-wicrcLCy2wkalka7iwsuzgpb@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                    | 4 ++--
- tools/perf/config/feature-checks/Makefile     | 4 ++++
- tools/perf/config/feature-checks/test-glibc.c | 8 ++++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile                             | 3 ++-
+ tools/perf/config/feature-checks/Makefile              | 4 ++++
+ tools/perf/config/feature-checks/test-fortify-source.c | 6 ++++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 98a7157..0834517 100644
+index 63e70c5..fc871ae 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -109,6 +109,7 @@ FEATURE_TESTS =				\
- 	fortify-source			\
- 	bionic				\
- 	libelf				\
-+	glibc				\
+@@ -106,6 +106,7 @@ FEATURE_TESTS =				\
+ 	stackprotector-all		\
+ 	stackprotector			\
+ 	volatile-register-var		\
++	fortify-source			\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -165,8 +166,7 @@ ifdef NO_LIBELF
-   NO_LIBUNWIND := 1
- else
-   ifeq ($(feature-libelf), 0)
--    FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
--    ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
-+    ifeq ($(feature-glibc), 1)
-       LIBC_SUPPORT := 1
-     endif
-     ifeq ($(BIONIC),1)
+@@ -123,7 +124,7 @@ ifeq ($(feature-volatile-register-var), 1)
+ endif
+ 
+ ifndef PERF_DEBUG
+-  ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++  ifeq ($(feature-fortify-source), 1)
+     CFLAGS += -D_FORTIFY_SOURCE=2
+   endif
+ endif
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 789a38d..c0569c7 100644
+index 5693299..529317e 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -7,6 +7,7 @@ FILES=					\
- 	test-fortify-source		\
- 	test-bionic			\
- 	test-libelf			\
-+	test-glibc			\
+@@ -4,6 +4,7 @@ FILES=					\
+ 	test-stackprotector-all		\
+ 	test-stackprotector		\
+ 	test-volatile-register-var	\
++	test-fortify-source		\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -38,6 +39,9 @@ test-bionic:
- test-libelf:
- 	$(BUILD) -lelf
+@@ -26,6 +27,9 @@ test-stackprotector:
+ test-volatile-register-var:
+ 	$(BUILD) -Werror -Wvolatile-register-var
  
-+test-glibc:
-+	$(BUILD)
++test-fortify-source:
++	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
 +
  test-libnuma:
  	$(BUILD) -lnuma
  
-diff --git a/tools/perf/config/feature-checks/test-glibc.c b/tools/perf/config/feature-checks/test-glibc.c
+diff --git a/tools/perf/config/feature-checks/test-fortify-source.c b/tools/perf/config/feature-checks/test-fortify-source.c
 new file mode 100644
-index 0000000..13c66a5
+index 0000000..c9f398d
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-glibc.c
-@@ -0,0 +1,8 @@
-+#include <gnu/libc-version.h>
++++ b/tools/perf/config/feature-checks/test-fortify-source.c
+@@ -0,0 +1,6 @@
++#include <stdio.h>
 +
 +int main(void)
 +{
-+	const char *version = gnu_get_libc_version();
-+	return (long)version;
++	return puts("hi");
 +}
-+
 -- 
 1.7.11.7
 
