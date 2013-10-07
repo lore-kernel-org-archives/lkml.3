@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab3JGLna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:43:30 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:64618 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab3JGLjs (ORCPT
+	id S1753252Ab3JGLxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:53:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35071 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3JGLxT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:39:48 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Marek Vasut <marek.vasut@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/12] pwm-backlight: Improve readability
-Date: Mon,  7 Oct 2013 13:37:35 +0200
-Message-Id: <1381145866-445-2-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381145866-445-1-git-send-email-treding@nvidia.com>
-References: <1381145866-445-1-git-send-email-treding@nvidia.com>
+	Mon, 7 Oct 2013 07:53:19 -0400
+Date: Mon, 7 Oct 2013 13:53:17 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: jic23@cam.ac.uk, dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Felipe Balbi <balbi@ti.com>
+Subject: Testing ti_am335x_adc continuous mode (WAS: Re: [PATCH 2/2]
+Message-ID: <20131007115317.GA6135@linutronix.de>
+References: <1379503383-17086-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1379503383-17086-3-git-send-email-zubair.lutfullah@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1379503383-17086-3-git-send-email-zubair.lutfullah@gmail.com>
+iio: ti_am335x_adc: Add continuous sampling support)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add more blank lines to increase readability. While at it, remove a
-trailing blank line at the end of the file.
+Hi Zubair,
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/video/backlight/pwm_bl.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+I have here am335x-evm board. The output of voltage4 (via `cat
+/sys/bus/iio/devices/iio\:device0/in_voltage4_raw´) returns values in
+the range 570…580. I tested the continuous sampling mdoe by executing
+the following commands:
 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 1fea627..774bce3 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -269,8 +269,10 @@ static int pwm_backlight_remove(struct platform_device *pdev)
- 	backlight_device_unregister(bl);
- 	pwm_config(pb->pwm, 0, pb->period);
- 	pwm_disable(pb->pwm);
-+
- 	if (pb->exit)
- 		pb->exit(&pdev->dev);
-+
- 	return 0;
- }
- 
-@@ -282,10 +284,13 @@ static int pwm_backlight_suspend(struct device *dev)
- 
- 	if (pb->notify)
- 		pb->notify(pb->dev, 0);
-+
- 	pwm_config(pb->pwm, 0, pb->period);
- 	pwm_disable(pb->pwm);
-+
- 	if (pb->notify_after)
- 		pb->notify_after(pb->dev, 0);
-+
- 	return 0;
- }
- 
-@@ -294,6 +299,7 @@ static int pwm_backlight_resume(struct device *dev)
- 	struct backlight_device *bl = dev_get_drvdata(dev);
- 
- 	backlight_update_status(bl);
-+
- 	return 0;
- }
- #endif
-@@ -317,4 +323,3 @@ module_platform_driver(pwm_backlight_driver);
- MODULE_DESCRIPTION("PWM based Backlight Driver");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:pwm-backlight");
--
--- 
-1.8.4
+|echo 1 > /sys/bus/iio/devices/iio\:device0/scan_elements/in_voltage4_en
+|echo 25 > /sys/bus/iio/devices/iio\:device0/buffer/length
+|echo 1 > /sys/bus/iio/devices/iio\:device0/buffer/enable
+|sleep 1
+|echo 0 > /sys/bus/iio/devices/iio\:device0/buffer/enable
+|cat /dev/iio\:device0 > iio
+|hexdump -C iio
 
+and the output is:
+|00000000  37 02 92 02 1f 07 0a 06  20 06 31 06 2f 07 2a 07
+|00000010  2b 07 2d 07 2c 07 28 07  2c 07 2b 07 2b 07 0c 06
+|00000020  21 06 32 06 2e 07 2c 07  2a 07 2a 07 2c 07 2b 07
+|00000030  29 07 27 07 28 07 29 07  2a 07 0d 06 21 06 35 06
+
+The first entry is in the range that I would expect. The second is
+slitghly higher. The third and following entries are out of range. Have
+you observed something like that? Is my testing close to what you have
+done or did I make an mistake here?
+
+Sebastian
