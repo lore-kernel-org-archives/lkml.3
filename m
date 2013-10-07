@@ -1,204 +1,799 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3JGHkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 03:40:39 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63818 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab3JGHki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 03:40:38 -0400
-Date: Mon, 7 Oct 2013 09:40:09 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] DMA: extend documentation to provide more API details
-In-Reply-To: <20131005233137.GA12758@n2100.arm.linux.org.uk>
-Message-ID: <Pine.LNX.4.64.1310070900550.20796@axis700.grange>
-References: <Pine.LNX.4.64.1310051925170.8097@axis700.grange>
- <20131005190200.GZ12758@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1310052203060.8097@axis700.grange>
- <20131005233137.GA12758@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:6MjJH3nu/cy6IuXhYCyKU63XEHW3cYKhuwJCocYQ2Qg
- db+DqrKpYpAzwRdA+htapv/B8fSv+irpPwga5eBZ/DUX8H3oud
- XfC2J3dMhZg73Pdoj0LjkUShSZFrsMj101XFUDLPIaGIx/yQtf
- 2z+XUJtSk0tyq+SxJhEhQLEUaVIxEzwTDOuZjxKv+vxxsGVRFu
- d8QgS56cKUin8RAnk85UDo8IVWivBr3T0OTDheYUjNexJNe7oH
- U/U0TS8xoitJcqoVoQg3+PDzdc8URaLQJkZs+KSiSk3TwBesfZ
- 3kGBcTHHqz/JEz74TLH5c+DlVCk8wi8JYj9d+55tq5jW/tWieo
- 3EhfOND7BU+ef1CQqvxF60FBLrgZ/Bbxv4Dwa2oLi1jhTcH5XO
- FZDDMp4461IIA==
+	id S1754871Ab3JGHrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 03:47:00 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:49563 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752851Ab3JGHqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 03:46:52 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH v6 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers for DW PHY's
+Date: Mon,  7 Oct 2013 10:44:56 +0300
+Message-Id: <1381131897-13910-3-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
+References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-On Sun, 6 Oct 2013, Russell King - ARM Linux wrote:
+These drivers handles control and configuration of the HS
+and SS USB PHY transceivers. They are part of the driver
+which manage Synopsys DesignWare USB3 controller stack
+inside Qualcomm SoC's.
 
-> On Sat, Oct 05, 2013 at 11:00:45PM +0200, Guennadi Liakhovetski wrote:
-> > On Sat, 5 Oct 2013, Russell King - ARM Linux wrote:
-> > 
-> > > On Sat, Oct 05, 2013 at 07:36:20PM +0200, Guennadi Liakhovetski wrote:
-> > > > +	A DMA transaction descriptor, returned to the user by one of "prep"
-> > > > +	methods is considered as belogning to the user until it is submitted
-> > > > +	to the dmaengine driver for transfer. However, it is recommended, that
-> > > > +	the dmaengine driver keeps references to prepared descriptors too,
-> > > > +	because if dmaengine_terminate_all() is called at that time, the driver
-> > > > +	will have to recycle all allocated descriptors for the respective
-> > > > +	channel.
-> > > 
-> > > No.  That's quite dangerous.  think about what can happen.
-> > > 
-> > > Thread 1		Thread 2
-> > > Driver calls prepare
-> > > 			dmaengine_terminate_all()
-> > > 				dmaengine driver frees prepared descriptor
-> > > driver submits descriptor
-> > > 
-> > > You now have a descriptor which has been freed submitted to the DMA engine
-> > > queue.  This will cause chaos.
-> > 
-> > Yes, I understand this. So, it is intentional, that after a *_prep_* a 
-> > descriptor belongs to the user and - if the user fails - it will simply be 
-> > leaked. A terminate-all shouldn't recycle them and dmaengine driver 
-> > unbinding is impossible at that time, as long as the user hasn't released 
-> > the channel. Ok, I can rework the above just to explain this.
-> 
-> "the user fails" should be very difficult.  One of the requirements here
-> is that any "user" submits the prepared descriptor as soon as possible
-> after preparation.  Some DMA engine implementations hold a spinlock
-> between preparation and submission so this is absolutely necessary.
-
-Ouch...
-
-> As Dan Williams explained to me, the reason for the separate submission
-> step is there to allow the callback information to be set.  So literally
-> any "user" of this should do this:
-> 
-> 	desc = prepare();
-> 	if (!desc)
-> 		goto failed_to_prepare;
-> 
-> 	desc->callback = function;
-> 	desc->callback_param = param;
-> 	dmaengine_submit(desc);
-> 
-> There should be very little possiblity of the user failing between those
-> two calls.
-
-I see.
-
-> > > > -   On completion of each DMA operation, the next in queue is started and
-> > > > -   a tasklet triggered. The tasklet will then call the client driver
->           ^^^^^^^^^^^^^^^^^^^^
-> > > > -   completion callback routine for notification, if set.
-> > > > +   On completion of each DMA operation, the next active transaction in queue is
-> > > > +   started and the ISR bottom half, e.g. a tasklet or a kernel thread is
-> > > > +   triggered.
-> > > 
-> > > Or a kernel thread?  I don't think that's right.  It's always been
-> > > specified that the callback will happen from tasklet context.
-> > 
-> > Do you see any problems using, say, a threaded interrupt handler, apart 
-> > from possible performance issues? That seems to be pretty convenient. 
-> > Otherwise we should really mandate somewhere, that bottom half processing 
-> > should take place in a tasklet?
-> 
-> The documentation has always stated that callbacks will be made from
-> tasklet context.  The problem with allowing different contexts from
-> different drivers is taht spinlocking becomes problematical.  Remember
-> that we have _bh() variants which lock against tasklets but allow IRQs.
-
-Spinlocks are local to dmaengine drivers, and I currently see quite a few 
-of them doing spin_lock_irq(save)() instead of _bh(). Some also take that 
-lock in their ISR, like the pl330 does.
-
-The disadvantage of using a threaded IRQ, that I see so far, is that you 
-then can only wake up the thread from the ISR, not from other contexts, 
-but even then it should be possible, at least for some designs.
-
-> > > > +   The dmaengine driver also has to check the DMA_CTRL_ACK flag by calling
-> > > > +   async_tx_test_ack() on the transaction. If the function returns true, i.e.
-> > > > +   if the transaction either has been flagged from the very beginning, or
-> > > > +   the user has flagged it later, then the transaction descriptor can be
-> > > > +   recycled immediately by the dmaengine driver.
-> > > 
-> > > "has to check" I think is wrong.  This is optional for slave only drivers,
-> > > because most slave stuff doesn't use the ACK stuff - that's more for the
-> > > async_tx APIs.
-> > 
-> > "most," but some do? E.g. the mx3_camera driver. Ok, that one is very 
-> > tightly bound to the respective dmaengine driver. But if there are other 
-> > slave drivers, using that, that can run on different platforms and use 
-> > various dmaengine drivers?
-> 
-> I'm not aware of any which actually make use of the ack stuff.  Only those
-> which implement the async_tx must implement this because it gets used for
-> chaining and dependency stuff.  However, there was a plan to remove this
-> and replace it with proper refcounting.
-
-Ok.
-
-> > > > If the function returns
-> > > > +   false, the descriptor cannot be recycled yet and the dmaengine driver has
-> > > > +   to keep polling the descriptor until it is acknowledged by the user.
-> > > >  
-> > > >     Interface:
-> > > >  	void dma_async_issue_pending(struct dma_chan *chan);
-> > > > @@ -171,6 +192,14 @@ Further APIs:
-> > > >     discard data in the DMA FIFO which hasn't been fully transferred.
-> > > >     No callback functions will be called for any incomplete transfers.
-> > > >  
-> > > > +   Note:
-> > > > +	Transactions, aborted by this call are considered as failed. However,
-> > > > +	if the user requests their status, using dma_async_is_complete() /
-> > > > +	dma_async_is_complete(), as described below, one of DMA_IN_PROGRESS and
-> > > > +	DMA_SUCCESS will be returned. So, drivers are advised not to use those
-> > > > +	calls on transactions, submitted before a call to
-> > > > +	dmaengine_terminate_all().
-> > > 
-> > > The last sentence doesn't make sense.
-> > 
-> > Right, sorry, there is a typo in the second line (to remind: this note is 
-> > for the dmaengine_terminate_all() function):
-> > 
-> > +   Note:
-> > +	Transactions, aborted by this call are considered as failed. However,
-> > +	if the user requests their status, using dma_async_is_tx_complete() /
-> > +	dma_async_is_complete(), as described below, one of DMA_IN_PROGRESS and
-> > +	DMA_SUCCESS will be returned. So, drivers are advised not to use those
-> > +	calls on transactions, submitted before a call to
-> > +	dmaengine_terminate_all().
-> > 
-> > What I was trying to say, is that if you submit transactions, then 
-> > terminate them, then try to retrieve their status using 
-> > dma_async_is_tx_complete() / dma_async_is_complete(), this won't produce 
-> > the expected DMA_ERROR result, instead, one of DMA_IN_PROGRESS and 
-> > DMA_SUCCESS will be returned, unless the driver implements some 
-> > sophisticated .device_tx_status() method.
-> 
-> Remember that dmaengine_terminate_all() is targetted to a specific
-> channel - it terminates all submitted transactions on that channel
-> and stops any in-process transaction.  It doesn't affect any other
-> channel on the controller.
-> 
-> In the case of slave DMA users, you have to "own" the channel.  This
-> means it's up to the user to sort out what happens should _they_ call
-> dmaengine_terminate_all() on it.
-> 
-> For non-slave DMA users, I don't believe that terminating transactions
-> is permitted - they're expected to complete.
-
-Ok, but the DMA error case remains, right? I.e. in case the dmaengine 
-driver had to drop transactions due to a hardware problem, the client 
-driver has no way to retrieve their status?
-
-Thanks
-Guennadi
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ drivers/usb/phy/Kconfig         |   11 ++
+ drivers/usb/phy/Makefile        |    2 +
+ drivers/usb/phy/phy-msm-dw-hs.c |  329 ++++++++++++++++++++++++++++++++++
+ drivers/usb/phy/phy-msm-dw-ss.c |  375 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 717 insertions(+)
+ create mode 100644 drivers/usb/phy/phy-msm-dw-hs.c
+ create mode 100644 drivers/usb/phy/phy-msm-dw-ss.c
+
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index d5589f9..bbb2d0e 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -214,6 +214,17 @@ config USB_RCAR_PHY
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called phy-rcar-usb.
+ 
++config USB_MSM_DW_PHYS
++	tristate "Qualcomm USB controller DW PHY's wrappers support"
++	depends on (USB || USB_GADGET) && ARCH_MSM
++	select USB_PHY
++	help
++	  Enable this to support the DW USB PHY transceivers on MSM chips
++	  with DWC3 USB core. It handles PHY initialization, clock
++	  management required after resetting the hardware and power
++	  management. This driver is required even for peripheral only or
++	  host only mode configurations.
++
+ config USB_ULPI
+ 	bool "Generic ULPI Transceiver Driver"
+ 	depends on ARM
+diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+index 2135e85..4813eb5 100644
+--- a/drivers/usb/phy/Makefile
++++ b/drivers/usb/phy/Makefile
+@@ -26,6 +26,8 @@ obj-$(CONFIG_USB_EHCI_TEGRA)		+= phy-tegra-usb.o
+ obj-$(CONFIG_USB_GPIO_VBUS)		+= phy-gpio-vbus-usb.o
+ obj-$(CONFIG_USB_ISP1301)		+= phy-isp1301.o
+ obj-$(CONFIG_USB_MSM_OTG)		+= phy-msm-usb.o
++obj-$(CONFIG_USB_MSM_DW_PHYS)		+= phy-msm-dw-hs.o
++obj-$(CONFIG_USB_MSM_DW_PHYS)		+= phy-msm-dw-ss.o
+ obj-$(CONFIG_USB_MV_OTG)		+= phy-mv-usb.o
+ obj-$(CONFIG_USB_MXS_PHY)		+= phy-mxs-usb.o
+ obj-$(CONFIG_USB_RCAR_PHY)		+= phy-rcar-usb.o
+diff --git a/drivers/usb/phy/phy-msm-dw-hs.c b/drivers/usb/phy/phy-msm-dw-hs.c
+new file mode 100644
+index 0000000..d29c1f1
+--- /dev/null
++++ b/drivers/usb/phy/phy-msm-dw-hs.c
+@@ -0,0 +1,329 @@
++/* Copyright (c) 2013, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/usb/phy.h>
++
++/**
++ *  USB QSCRATCH Hardware registers
++ */
++#define QSCRATCH_CTRL_REG		(0x04)
++#define QSCRATCH_GENERAL_CFG		(0x08)
++#define PHY_CTRL_REG			(0x10)
++#define PARAMETER_OVERRIDE_X_REG	(0x14)
++#define CHARGING_DET_CTRL_REG		(0x18)
++#define CHARGING_DET_OUTPUT_REG		(0x1c)
++#define ALT_INTERRUPT_EN_REG		(0x20)
++#define PHY_IRQ_STAT_REG		(0x24)
++#define CGCTL_REG			(0x28)
++
++#define PHY_3P3_VOL_MIN			3050000 /* uV */
++#define PHY_3P3_VOL_MAX			3300000 /* uV */
++#define PHY_3P3_HPM_LOAD		16000	/* uA */
++
++#define PHY_1P8_VOL_MIN			1800000 /* uV */
++#define PHY_1P8_VOL_MAX			1800000 /* uV */
++#define PHY_1P8_HPM_LOAD		19000	/* uA */
++
++/* TODO: these are suspicious */
++#define USB_VDDCX_NO			1	/* index */
++#define USB_VDDCX_MIN			5	/* index */
++#define USB_VDDCX_MAX			7	/* index */
++
++struct msm_dw_hs_phy {
++	struct usb_phy		phy;
++	void __iomem		*base;
++	struct device		*dev;
++
++	struct clk		*xo_clk;
++	struct clk		*sleep_a_clk;
++
++	struct regulator	*v3p3;
++	struct regulator	*v1p8;
++	struct regulator	*vddcx;
++	struct regulator	*vbus;
++};
++
++#define	phy_to_dw_phy(x)	container_of((x), struct msm_dw_hs_phy, phy)
++
++
++/**
++ * Write register.
++ *
++ * @base - MSM DWC3 PHY base virtual address.
++ * @offset - register offset.
++ * @val - value to write.
++ */
++static inline void msm_dw_hs_write(void __iomem *base, u32 offset, u32 val)
++{
++	iowrite32(val, base + offset);
++}
++
++/**
++ * Write register and read back masked value to confirm it is written
++ *
++ * @base - MSM DWC3 PHY base virtual address.
++ * @offset - register offset.
++ * @mask - register bitmask specifying what should be updated
++ * @val - value to write.
++ */
++static inline void msm_dw_hs_write_readback(void __iomem *base, u32 offset,
++					    const u32 mask, u32 val)
++{
++	u32 write_val, tmp = ioread32(base + offset);
++
++	tmp &= ~mask;		/* retain other bits */
++	write_val = tmp | val;
++
++	iowrite32(write_val, base + offset);
++
++	/* Read back to see if val was written */
++	tmp = ioread32(base + offset);
++	tmp &= mask;		/* clear other bits */
++
++	if (tmp != val)
++		pr_err("write: %x to QSCRATCH: %x FAILED\n", val, offset);
++}
++
++static void msm_dw_hs_phy_shutdown(struct usb_phy *x)
++{
++	struct msm_dw_hs_phy *phy = phy_to_dw_phy(x);
++	int ret;
++
++	ret = regulator_set_voltage(phy->v3p3, 0, PHY_3P3_VOL_MAX);
++	if (ret)
++		dev_err(phy->dev, "cannot set voltage for v3p3\n");
++
++	ret = regulator_set_voltage(phy->v1p8, 0, PHY_1P8_VOL_MAX);
++	if (ret)
++		dev_err(phy->dev, "cannot set voltage for v1p8\n");
++
++	ret = regulator_disable(phy->v1p8);
++	if (ret)
++		dev_err(phy->dev, "cannot disable v1p8\n");
++
++	ret = regulator_disable(phy->v3p3);
++	if (ret)
++		dev_err(phy->dev, "cannot disable v3p3\n");
++
++	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_NO, USB_VDDCX_MAX);
++	if (ret)
++		dev_err(phy->dev, "cannot set voltage for vddcx\n");
++
++	ret = regulator_disable(phy->vddcx);
++	if (ret)
++		dev_err(phy->dev, "cannot enable vddcx\n");
++
++	clk_disable_unprepare(phy->sleep_a_clk);
++}
++
++static int msm_dw_hs_phy_init(struct usb_phy *x)
++{
++	struct msm_dw_hs_phy	*phy = phy_to_dw_phy(x);
++	int ret;
++
++	clk_prepare_enable(phy->sleep_a_clk);
++
++	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_MIN, USB_VDDCX_MAX);
++	if (ret) {
++		dev_err(phy->dev, "cannot set voltage for vddcx\n");
++		return ret;
++	}
++
++	ret = regulator_enable(phy->vddcx);
++	if (ret) {
++		dev_err(phy->dev, "cannot enable vddcx\n");
++		return ret;
++	}
++
++	ret = regulator_set_voltage(phy->v3p3, PHY_3P3_VOL_MIN,
++				    PHY_3P3_VOL_MAX);
++	if (ret) {
++		dev_err(phy->dev, "cannot set voltage for v3p3\n");
++		return ret;
++	}
++
++	ret = regulator_set_voltage(phy->v1p8, PHY_1P8_VOL_MIN,
++				    PHY_1P8_VOL_MAX);
++	if (ret) {
++		dev_err(phy->dev, "cannot set voltage for v1p8\n");
++		return ret;
++	}
++
++	ret = regulator_set_optimum_mode(phy->v1p8, PHY_1P8_HPM_LOAD);
++	if (ret < 0) {
++		dev_err(phy->dev, "cannot set HPM of regulator v1p8\n");
++		return ret;
++	}
++
++	ret = regulator_enable(phy->v1p8);
++	if (ret) {
++		dev_err(phy->dev, "cannot enable v1p8\n");
++		return ret;
++	}
++
++	ret = regulator_set_optimum_mode(phy->v3p3, PHY_3P3_HPM_LOAD);
++	if (ret < 0) {
++		dev_err(phy->dev, "cannot set HPM of regulator v3p3\n");
++		return ret;
++	}
++
++	ret = regulator_enable(phy->v3p3);
++	if (ret) {
++		dev_err(phy->dev, "cannot enable v3p3\n");
++		return ret;
++	}
++
++	/*
++	 * HSPHY Initialization: Enable UTMI clock and clamp enable HVINTs,
++	 * and disable RETENTION (power-on default is ENABLED)
++	 */
++	msm_dw_hs_write(phy->base, PHY_CTRL_REG, 0x5220bb2);
++	usleep_range(2000, 2200);
++
++	/*
++	 * write HSPHY init value to QSCRATCH reg to set HSPHY parameters like
++	 * VBUS valid threshold, disconnect valid threshold, DC voltage level,
++	 * preempasis and rise/fall time.
++	 */
++	msm_dw_hs_write_readback(phy->base, PARAMETER_OVERRIDE_X_REG,
++				0x03ffffff, 0x00d191a4);
++
++	/* Disable (bypass) VBUS and ID filters */
++	msm_dw_hs_write(phy->base, QSCRATCH_GENERAL_CFG, 0x78);
++
++	return 0;
++}
++
++static int msm_dw_hs_phy_set_vbus(struct usb_phy *x, int on)
++{
++	struct msm_dw_hs_phy	*phy = phy_to_dw_phy(x);
++	int ret;
++
++	if (IS_ERR(phy->vbus))
++		return on ? PTR_ERR(phy->vbus) : 0;
++
++	if (on)
++		ret = regulator_enable(phy->vbus);
++	else
++		ret = regulator_disable(phy->vbus);
++
++	if (ret)
++		dev_err(x->dev, "Cannot %s Vbus\n", on ? "set" : "off");
++	return ret;
++}
++
++static int msm_dw_hs_probe(struct platform_device *pdev)
++{
++	struct msm_dw_hs_phy	*phy;
++	struct resource		*res;
++	void __iomem		*base;
++
++	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
++	if (!phy)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, phy);
++
++	phy->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	base = devm_ioremap_resource(phy->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	phy->vddcx = devm_regulator_get(phy->dev, "vddcx");
++	if (IS_ERR(phy->vddcx)) {
++		dev_dbg(phy->dev, "cannot get vddcx\n");
++		return  PTR_ERR(phy->vddcx);
++	}
++
++	phy->v3p3 = devm_regulator_get(phy->dev, "v3p3");
++	if (IS_ERR(phy->v3p3)) {
++		dev_dbg(phy->dev, "cannot get v3p3\n");
++		return PTR_ERR(phy->v3p3);
++	}
++
++	phy->v1p8 = devm_regulator_get(phy->dev, "v1p8");
++	if (IS_ERR(phy->v1p8)) {
++		dev_dbg(phy->dev, "cannot get v1p8\n");
++		return PTR_ERR(phy->v1p8);
++	}
++
++	phy->vbus = devm_regulator_get(phy->dev, "vbus");
++	if (IS_ERR(phy->vbus))
++		dev_dbg(phy->dev, "Failed to get vbus\n");
++
++	phy->xo_clk = devm_clk_get(phy->dev, "xo");
++	if (IS_ERR(phy->xo_clk)) {
++		dev_dbg(phy->dev, "cannot get TCXO buffer handle\n");
++		return PTR_ERR(phy->xo_clk);
++	}
++
++	phy->sleep_a_clk = devm_clk_get(phy->dev, "sleep_a");
++	if (IS_ERR(phy->sleep_a_clk)) {
++		dev_dbg(phy->dev, "failed to get sleep_a clock\n");
++		return PTR_ERR(phy->sleep_a_clk);
++	}
++
++	clk_prepare_enable(phy->xo_clk);
++
++	phy->base		= base;
++	phy->phy.dev		= phy->dev;
++	phy->phy.label		= "msm-dw-hsphy";
++	phy->phy.init		= msm_dw_hs_phy_init;
++	phy->phy.shutdown	= msm_dw_hs_phy_shutdown;
++	phy->phy.set_vbus	= msm_dw_hs_phy_set_vbus;
++	phy->phy.type		= USB_PHY_TYPE_USB2;
++	phy->phy.state          = OTG_STATE_UNDEFINED;
++
++	usb_add_phy_dev(&phy->phy);
++
++	return 0;
++}
++
++static int msm_dw_hs_remove(struct platform_device *pdev)
++{
++	struct msm_dw_hs_phy *phy = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(phy->xo_clk);
++	usb_remove_phy(&phy->phy);
++	return 0;
++}
++
++static const struct of_device_id msm_dw_hs_id_table[] = {
++	{ .compatible = "qcom,dw-hsphy" },
++	{ /* Sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, msm_dw_hs_id_table);
++
++static struct platform_driver msm_dw_hs_driver = {
++	.probe		= msm_dw_hs_probe,
++	.remove		= msm_dw_hs_remove,
++	.driver		= {
++		.name	= "msm-dw-hsphy",
++		.owner	= THIS_MODULE,
++		.of_match_table = msm_dw_hs_id_table,
++	},
++};
++
++module_platform_driver(msm_dw_hs_driver);
++
++MODULE_ALIAS("platform:msm-dw-hsphy");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("DesignWare USB3 MSM HSPHY driver");
+diff --git a/drivers/usb/phy/phy-msm-dw-ss.c b/drivers/usb/phy/phy-msm-dw-ss.c
+new file mode 100644
+index 0000000..6734fa1
+--- /dev/null
++++ b/drivers/usb/phy/phy-msm-dw-ss.c
+@@ -0,0 +1,375 @@
++/* Copyright (c) 2013, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/usb/phy.h>
++
++/**
++ *  USB QSCRATCH Hardware registers
++ */
++#define PHY_CTRL_REG			(0x00)
++#define PHY_PARAM_CTRL_1		(0x04)
++#define PHY_PARAM_CTRL_2		(0x08)
++#define CR_PROTOCOL_DATA_IN_REG		(0x0c)
++#define CR_PROTOCOL_DATA_OUT_REG	(0x10)
++#define CR_PROTOCOL_CAP_ADDR_REG	(0x14)
++#define CR_PROTOCOL_CAP_DATA_REG	(0x18)
++#define CR_PROTOCOL_READ_REG		(0x1c)
++#define CR_PROTOCOL_WRITE_REG		(0x20)
++
++#define PHY_1P8_VOL_MIN			1800000 /* uV */
++#define PHY_1P8_VOL_MAX			1800000 /* uV */
++#define PHY_1P8_HPM_LOAD		23000	/* uA */
++
++/* TODO: these are suspicious */
++#define USB_VDDCX_NO			1	/* index */
++#define USB_VDDCX_MIN			5	/* index */
++#define USB_VDDCX_MAX			7	/* index */
++
++struct msm_dw_ss_phy {
++	struct usb_phy		phy;
++	void __iomem		*base;
++	struct device		*dev;
++
++	struct regulator	*v1p8;
++	struct regulator	*vddcx;
++
++	struct clk		*xo_clk;
++	struct clk		*ref_clk;
++};
++
++#define	phy_to_dw_phy(x)	container_of((x), struct msm_dw_ss_phy, phy)
++
++
++/**
++ * Write register
++ *
++ * @base - MSM DWC3 PHY base virtual address.
++ * @offset - register offset.
++ * @val - value to write.
++ */
++static inline void msm_dw_ss_write(void __iomem *base, u32 offset, u32 val)
++{
++	iowrite32(val, base + offset);
++}
++
++/**
++ * Write register and read back masked value to confirm it is written
++ *
++ * @base - MSM DWC3 PHY base virtual address.
++ * @offset - register offset.
++ * @mask - register bitmask specifying what should be updated
++ * @val - value to write.
++ */
++static inline void msm_dw_ss_write_readback(void __iomem *base, u32 offset,
++					    const u32 mask, u32 val)
++{
++	u32 write_val, tmp = ioread32(base + offset);
++
++	tmp &= ~mask;		/* retain other bits */
++	write_val = tmp | val;
++
++	iowrite32(write_val, base + offset);
++
++	/* Read back to see if val was written */
++	tmp = ioread32(base + offset);
++	tmp &= mask;		/* clear other bits */
++
++	if (tmp != val)
++		pr_err("write: %x to QSCRATCH: %x FAILED\n", val, offset);
++}
++
++/**
++ * Write SSPHY register
++ *
++ * @base - MSM DWC3 PHY base virtual address.
++ * @addr - SSPHY address to write.
++ * @val - value to write.
++ */
++static void msm_dw_ss_write_phycreg(void __iomem *base, u32 addr, u32 val)
++{
++	iowrite32(addr, base + CR_PROTOCOL_DATA_IN_REG);
++	iowrite32(0x1, base + CR_PROTOCOL_CAP_ADDR_REG);
++	while (ioread32(base + CR_PROTOCOL_CAP_ADDR_REG))
++		cpu_relax();
++
++	iowrite32(val, base + CR_PROTOCOL_DATA_IN_REG);
++	iowrite32(0x1, base + CR_PROTOCOL_CAP_DATA_REG);
++	while (ioread32(base + CR_PROTOCOL_CAP_DATA_REG))
++		cpu_relax();
++
++	iowrite32(0x1, base + CR_PROTOCOL_WRITE_REG);
++	while (ioread32(base + CR_PROTOCOL_WRITE_REG))
++		cpu_relax();
++}
++
++/**
++ * Read SSPHY register.
++ *
++ * @base - MSM DWC3 PHY base virtual address.
++ * @addr - SSPHY address to read.
++ */
++static u32 msm_dw_ss_read_phycreg(void __iomem *base, u32 addr)
++{
++	bool first_read = true;
++
++	iowrite32(addr, base + CR_PROTOCOL_DATA_IN_REG);
++	iowrite32(0x1, base + CR_PROTOCOL_CAP_ADDR_REG);
++	while (ioread32(base + CR_PROTOCOL_CAP_ADDR_REG))
++		cpu_relax();
++
++	/*
++	 * Due to hardware bug, first read of SSPHY register might be
++	 * incorrect. Hence as workaround, SW should perform SSPHY register
++	 * read twice, but use only second read and ignore first read.
++	 */
++retry:
++	iowrite32(0x1, base + CR_PROTOCOL_READ_REG);
++	while (ioread32(base + CR_PROTOCOL_READ_REG))
++		cpu_relax();
++
++	if (first_read) {
++		ioread32(base + CR_PROTOCOL_DATA_OUT_REG);
++		first_read = false;
++		goto retry;
++	}
++
++	return ioread32(base + CR_PROTOCOL_DATA_OUT_REG);
++}
++
++static void msm_dw_ss_phy_shutdown(struct usb_phy *x)
++{
++	struct msm_dw_ss_phy *phy = phy_to_dw_phy(x);
++	int ret;
++
++	/* Sequence to put SSPHY in low power state:
++	 * 1. Clear REF_PHY_EN in PHY_CTRL_REG
++	 * 2. Clear REF_USE_PAD in PHY_CTRL_REG
++	 * 3. Set TEST_POWERED_DOWN in PHY_CTRL_REG to enable PHY retention
++	 * 4. Disable SSPHY ref clk
++	 */
++	msm_dw_ss_write_readback(phy->base, PHY_CTRL_REG, (1 << 8), 0x0);
++	msm_dw_ss_write_readback(phy->base, PHY_CTRL_REG, (1 << 28), 0x0);
++	msm_dw_ss_write_readback(phy->base, PHY_CTRL_REG,
++				    (1 << 26), (1 << 26));
++
++	usleep_range(1000, 1200);
++	clk_disable_unprepare(phy->ref_clk);
++
++	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_NO, USB_VDDCX_MAX);
++	if (ret)
++		dev_err(phy->dev, "cannot set voltage for vddcx\n");
++
++	regulator_disable(phy->vddcx);
++
++	ret = regulator_set_voltage(phy->v1p8, 0, PHY_1P8_VOL_MAX);
++	if (ret)
++		dev_err(phy->dev, "cannot set v1p8\n");
++
++	regulator_disable(phy->v1p8);
++}
++
++static int msm_dw_ss_phy_init(struct usb_phy *x)
++{
++	struct msm_dw_ss_phy *phy = phy_to_dw_phy(x);
++	u32 data = 0;
++	int ret;
++
++	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_MIN, USB_VDDCX_MAX);
++	if (ret) {
++		dev_err(phy->dev, "cannot set voltage for vddcx\n");
++		return ret;
++	}
++
++	ret = regulator_enable(phy->vddcx);
++	if (ret) {
++		dev_err(phy->dev, "cannot enable vddcx\n");
++		return ret;
++	}
++
++	ret = regulator_set_voltage(phy->v1p8, PHY_1P8_VOL_MIN,
++				    PHY_1P8_VOL_MAX);
++	if (ret) {
++		regulator_disable(phy->vddcx);
++		dev_err(phy->dev, "cannot set v1p8\n");
++		return ret;
++	}
++
++	ret = regulator_enable(phy->v1p8);
++	if (ret) {
++		regulator_disable(phy->vddcx);
++		dev_err(phy->dev, "cannot enable v1p8\n");
++		return ret;
++	}
++
++	clk_prepare_enable(phy->ref_clk);
++	usleep_range(1000, 1200);
++
++	/* SSPHY: Use ref_clk from pads and set its parameters */
++	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210002);
++	msleep(30);
++	/* Assert SSPHY reset */
++	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210082);
++	usleep_range(2000, 2200);
++	/* De-assert SSPHY reset - power and ref_clock must be ON */
++	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210002);
++	usleep_range(2000, 2200);
++	/* Ref clock must be stable now, enable ref clock for HS mode */
++	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210102);
++	usleep_range(2000, 2200);
++
++	/*
++	 * WORKAROUND: There is SSPHY suspend bug due to which USB enumerates
++	 * in HS mode instead of SS mode. Workaround it by asserting
++	 * LANE0.TX_ALT_BLOCK.EN_ALT_BUS to enable TX to use alt bus mode
++	 */
++	data = msm_dw_ss_read_phycreg(phy->base, 0x102d);
++	data |= (1 << 7);
++	msm_dw_ss_write_phycreg(phy->base, 0x102D, data);
++
++	data = msm_dw_ss_read_phycreg(phy->base, 0x1010);
++	data &= ~0xff0;
++	data |= 0x20;
++	msm_dw_ss_write_phycreg(phy->base, 0x1010, data);
++
++	/*
++	 * Fix RX Equalization setting as follows
++	 * LANE0.RX_OVRD_IN_HI. RX_EQ_EN set to 0
++	 * LANE0.RX_OVRD_IN_HI.RX_EQ_EN_OVRD set to 1
++	 * LANE0.RX_OVRD_IN_HI.RX_EQ set to 3
++	 * LANE0.RX_OVRD_IN_HI.RX_EQ_OVRD set to 1
++	 */
++	data = msm_dw_ss_read_phycreg(phy->base, 0x1006);
++	data &= ~(1 << 6);
++	data |= (1 << 7);
++	data &= ~(0x7 << 8);
++	data |= (0x3 << 8);
++	data |= (0x1 << 11);
++	msm_dw_ss_write_phycreg(phy->base, 0x1006, data);
++
++	/*
++	 * Set EQ and TX launch amplitudes as follows
++	 * LANE0.TX_OVRD_DRV_LO.PREEMPH set to 22
++	 * LANE0.TX_OVRD_DRV_LO.AMPLITUDE set to 127
++	 * LANE0.TX_OVRD_DRV_LO.EN set to 1.
++	 */
++	data = msm_dw_ss_read_phycreg(phy->base, 0x1002);
++	data &= ~0x3f80;
++	data |= (0x16 << 7);
++	data &= ~0x7f;
++	data |= (0x7f | (1 << 14));
++	msm_dw_ss_write_phycreg(phy->base, 0x1002, data);
++
++	/*
++	 * Set the QSCRATCH PHY_PARAM_CTRL1 parameters as follows
++	 * TX_FULL_SWING [26:20] amplitude to 127
++	 * TX_DEEMPH_3_5DB [13:8] to 22
++	 * LOS_BIAS [2:0] to 0x5
++	 */
++	msm_dw_ss_write_readback(phy->base, PHY_PARAM_CTRL_1,
++				   0x07f03f07, 0x07f01605);
++	return 0;
++}
++
++static int msm_dw_ss_probe(struct platform_device *pdev)
++{
++	struct msm_dw_ss_phy	*phy;
++	struct resource		*res;
++	void __iomem		*base;
++
++	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
++	if (!phy)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, phy);
++
++	phy->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	base = devm_ioremap_resource(phy->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	phy->vddcx = devm_regulator_get(phy->dev, "vddcx");
++	if (IS_ERR(phy->vddcx)) {
++		dev_dbg(phy->dev, "cannot get vddcx\n");
++		return  PTR_ERR(phy->vddcx);
++	}
++
++	phy->v1p8 = devm_regulator_get(phy->dev, "v1p8");
++	if (IS_ERR(phy->v1p8)) {
++		dev_dbg(phy->dev, "cannot get v1p8\n");
++		return  PTR_ERR(phy->v1p8);
++	}
++
++	phy->xo_clk = devm_clk_get(phy->dev, "xo");
++	if (IS_ERR(phy->xo_clk)) {
++		dev_dbg(phy->dev, "cannot get TCXO buffer handle\n");
++		return PTR_ERR(phy->xo_clk);
++	}
++
++	phy->ref_clk = devm_clk_get(phy->dev, "ref");
++	if (IS_ERR(phy->ref_clk)) {
++		dev_dbg(phy->dev, "cannot get ref clock handle\n");
++		return PTR_ERR(phy->ref_clk);
++	}
++
++	clk_prepare_enable(phy->xo_clk);
++
++	phy->base		= base;
++	phy->phy.dev		= phy->dev;
++	phy->phy.label		= "msm-dw-ssphy";
++	phy->phy.init		= msm_dw_ss_phy_init;
++	phy->phy.shutdown       = msm_dw_ss_phy_shutdown;
++	phy->phy.type		= USB_PHY_TYPE_USB3;
++
++	usb_add_phy_dev(&phy->phy);
++
++	return 0;
++}
++
++static int msm_dw_ss_remove(struct platform_device *pdev)
++{
++	struct msm_dw_ss_phy *phy = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(phy->xo_clk);
++	usb_remove_phy(&phy->phy);
++	return 0;
++}
++
++static const struct of_device_id msm_dw_ss_id_table[] = {
++	{ .compatible = "qcom,dw-ssphy" },
++	{ /* Sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, msm_dw_ss_id_table);
++
++static struct platform_driver msm_dw_ss_driver = {
++	.probe		= msm_dw_ss_probe,
++	.remove		= msm_dw_ss_remove,
++	.driver		= {
++		.name	= "msm-dw-ssphy",
++		.owner	= THIS_MODULE,
++		.of_match_table = msm_dw_ss_id_table,
++	},
++};
++
++module_platform_driver(msm_dw_ss_driver);
++
++MODULE_ALIAS("platform:msm-dw-ssphy");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("DesignWare USB3 MSM SSPHY driver");
+-- 
+1.7.9.5
+
