@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab3JGRHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 13:07:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48193 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab3JGRHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 13:07:14 -0400
-Message-ID: <5252EA3F.9090101@wwwdotorg.org>
-Date: Mon, 07 Oct 2013 11:07:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756198Ab3JGRKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 13:10:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42392 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753218Ab3JGRKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 13:10:43 -0400
+Message-ID: <5252EAFF.8040700@redhat.com>
+Date: Mon, 07 Oct 2013 13:10:23 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        gregkh@linuxfoundation.org, jslaby@suse.cz,
-        Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux-serial@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: tegra: remove deprecated IRQF_DISABLED
-References: <1381041017-12806-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1381041017-12806-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/63] mm: numa: Do not migrate or account for hinting
+ faults on the zero page
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de> <1381141781-10992-13-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-13-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2013 12:30 AM, Michael Opdenacker wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
+On 10/07/2013 06:28 AM, Mel Gorman wrote:
+> The zero page is not replicated between nodes and is often shared between
+> processes. The data is read-only and likely to be cached in local CPUs
+> if heavily accessed meaning that the remote memory access cost is less
+> of a concern. This patch prevents trapping faults on the zero pages. For
+> tasks using the zero page this will reduce the number of PTE updates,
+> TLB flushes and hinting faults.
 > 
-> It's a NOOP since 2.6.35 and it will be removed one day.
+> [peterz@infradead.org: Correct use of is_huge_zero_page]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Laxman, care to comment? I'm not sure why the code explicitly specifies
-IRQF_DISABLED if it's already a no-op. Perhaps the code expects
-IRQF_DISABLED to do something, and hence there's some bug that needs to
-be fixed because of it doesn't?
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  drivers/tty/serial/serial-tegra.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
-> index 0489a2b..dfe79cc 100644
-> --- a/drivers/tty/serial/serial-tegra.c
-> +++ b/drivers/tty/serial/serial-tegra.c
-> @@ -1018,7 +1018,7 @@ static int tegra_uart_startup(struct uart_port *u)
->  		goto fail_hw_init;
->  	}
->  
-> -	ret = request_irq(u->irq, tegra_uart_isr, IRQF_DISABLED,
-> +	ret = request_irq(u->irq, tegra_uart_isr, 0,
->  				dev_name(u->dev), tup);
->  	if (ret < 0) {
->  		dev_err(u->dev, "Failed to register ISR for IRQ %d\n", u->irq);
-> 
 
+-- 
+All rights reversed
