@@ -1,175 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3JGLm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:42:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:52779 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754109Ab3JGLmW (ORCPT
+	id S1755573Ab3JGLmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:42:42 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:48222 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab3JGLmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:42:22 -0400
-Date: Mon, 7 Oct 2013 12:42:18 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        tony.luck@intel.com, matt.fleming@intel.com,
-        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
-Subject: Re: [RFC][PATCH v2] efivars,efi-pstore: Hold off deletion of sysfs
- entry until the scan is completed
-Message-ID: <20131007114218.GA14773@console-pimps.org>
-References: <5245E958.5040602@hds.com>
+	Mon, 7 Oct 2013 07:42:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5245E958.5040602@hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52519E7A.40804@ti.com>
+References: <1380911156-14112-1-git-send-email-dmurphy@ti.com>
+	<CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>
+	<52519E7A.40804@ti.com>
+Date: Mon, 7 Oct 2013 19:42:38 +0800
+Message-ID: <CACVXFVNAB3VnmdoP_LGJsBjQ17j1aoqKMsBE7LRt65OqROeRUQ@mail.gmail.com>
+Subject: Re: [PATCH] usbnet: smsc95xx: Add device tree input for MAC address
+From: Ming Lei <tom.leiming@gmail.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: Steve Glendinning <steve.glendinning@shawell.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, mugunthanvnm@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep, at 04:23:52PM, Seiji Aguchi wrote:
-> Change form v1
->  - Rebase to 3.12-rc2
-> 
-> Currently, when mounting pstore file system, a read callback of efi_pstore
-> driver runs mutiple times as below.
-> 
-> - In the first read callback, scan efivar_sysfs_list from head and pass
->   a kmsg buffer of a entry to an upper pstore layer.
-> - In the second read callback, rescan efivar_sysfs_list from the entry and pass
->   another kmsg buffer to it.
-> - Repeat the scan and pass until the end of efivar_sysfs_list.
-> 
-> In this process, an entry is read across the multiple read function calls.
-> To avoid race between the read and erasion, the whole process above is
-> protected by a spinlock, holding in open() and releasing in close().
-> 
-> At the same time, kmemdup() is called to pass the buffer to pstore filesystem
-> during it.
-> And then, it causes a following lockdep warning.
-> 
-> To make the read callback runnable without taking spinlok,
-> holding off a deletion of sysfs entry if it happens while scanning it
-> via efi_pstore, and deleting it after the scan is completed.
-> 
-> To implement it, this patch introduces two flags, scanning and deleting,
-> to efivar_entry.
-> Also, __efivar_entry_get() is removed because it was used in efi_pstore only.
+On Mon, Oct 7, 2013 at 1:31 AM, Dan Murphy <dmurphy@ti.com> wrote:
+> On 10/06/2013 10:05 AM, Ming Lei wrote:
+>> On Sat, Oct 5, 2013 at 2:25 AM, Dan Murphy <dmurphy@ti.com> wrote:
+>>> If the smsc95xx does not have a valid MAC address stored within
+>>> the eeprom then a random number is generated.  The MAC can also
+>>> be set by uBoot but the smsc95xx does not have a way to read this.
+>>>
+>>> Create the binding for the smsc95xx so that uBoot can set the MAC
+>>> and the code can retrieve the MAC from the modified DTB file.
+>> Suppose there are two smsc95xx usbnet devices connected to usb bus, and
+>> one is built-in, another is hotplug device, can your patch handle the situation
+>> correctly?
+>
+> Look at this line in the patch below
+>
+> sprintf(of_name, "%s%i", SMSC95XX_OF_NAME, dev->udev->dev.id);
+>
+> I am appending the dev ID of the device to the of_name here.  As long as init_mac_address is called, the dev.id and the uBoot
+> entry match then yes.
 
-[...]
+Currently, non-root-hub usb device is created and added into usb bus without
+any platform(device tree) knowledge, so you can't expect the match here.
 
-> @@ -88,8 +103,9 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
->  		return 0;
->  
->  	entry->var.DataSize = 1024;
-> -	__efivar_entry_get(entry, &entry->var.Attributes,
-> -			   &entry->var.DataSize, entry->var.Data);
-> +	efivar_entry_get(entry, &entry->var.Attributes,
-> +			 &entry->var.DataSize, entry->var.Data);
-> +
->  	size = entry->var.DataSize;
->  
->  	*cb_data->buf = kmemdup(entry->var.Data, size, GFP_KERNEL);
+Also not mention the two smsc95xx devices may attach to two different
+usb host controllers(buses).
 
-This isn't safe to do without holding the __efivars->lock, because
-there's the potential for someone else to update entry->var.Data and
-entry->var.DataSize while you're in the middle of copying the data in
-kmemdup(). This could leak to an information leak, though I think you're
-safe from an out-of-bounds access because DataSize is never > 1024.
-
-> +/**
-> + * __efi_pstore_scan_sysfs_exit
-> + * @entry: deleting entry
-> + * @turn_off_scanning: Check if a scanning flag should be turned off
-> + */
-> +static inline void __efi_pstore_scan_sysfs_exit(struct efivar_entry *entry,
-> +						bool turn_off_scanning)
-> +{
-> +	if (entry->deleting) {
-> +		list_del(&entry->list);
-> +		efivar_entry_iter_end();
-> +		efivar_unregister(entry);
-> +		efivar_entry_iter_begin();
-> +	} else if (turn_off_scanning)
-> +		entry->scanning = false;
-> +}
-
-[...]
-
-> @@ -184,9 +305,17 @@ static int efi_pstore_erase_func(struct efivar_entry *entry, void *data)
->  			return 0;
->  	}
->  
-> +	if (entry->scanning) {
-> +		/*
-> +		 * Skip deletion because this entry will be deleted
-> +		 * after scanning is completed.
-> +		 */
-> +		entry->deleting = true;
-> +	} else
-> +		list_del(&entry->list);
-> +
->  	/* found */
->  	__efivar_entry_delete(entry);
-> -	list_del(&entry->list);
->  
->  	return 1;
->  }
-> @@ -216,7 +345,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
->  	found = __efivar_entry_iter(efi_pstore_erase_func, &efivar_sysfs_list, &edata, &entry);
->  	efivar_entry_iter_end();
->  
-> -	if (found)
-> +	if (found && !entry->scanning)
->  		efivar_unregister(entry);
->  
->  	return 0;
-> diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
-> index 8a7432a..831bc5c 100644
-> --- a/drivers/firmware/efi/efivars.c
-> +++ b/drivers/firmware/efi/efivars.c
-> @@ -388,7 +388,8 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
->  	if (err)
->  		return err;
->  
-> -	efivar_unregister(entry);
-> +	if (!entry->scanning)
-> +		efivar_unregister(entry);
->  
->  	/* It's dead Jim.... */
->  	return count;
-> diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
-> index 391c67b..573ed92 100644
-> --- a/drivers/firmware/efi/vars.c
-> +++ b/drivers/firmware/efi/vars.c
-> @@ -683,8 +683,16 @@ struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
->  	if (!found)
->  		return NULL;
->  
-> -	if (remove)
-> -		list_del(&entry->list);
-> +	if (remove) {
-> +		if (entry->scanning) {
-> +			/*
-> +			 * The entry will be deleted
-> +			 * after scanning is completed.
-> +			 */
-> +			entry->deleting = true;
-> +		} else
-> +			list_del(&entry->list);
-> +	}
->  
->  	return entry;
->  }
-
-This doesn't look correct to me. You can't access 'entry' outside of the
-*_iter_begin() and *_iter_end() blocks. You can't do,
-
-	efivar_entry_iter_end():
-
-	if (!entry->scanning)
-		efivar_unregister(entry);
-
-because 'entry' may have already been freed by another CPU.
-
+Thanks,
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Ming Lei
