@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab3JGMGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:06:11 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:60191 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3JGL6K (ORCPT
+	id S1755961Ab3JGMHD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:07:03 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:45689 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab3JGL6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:58:10 -0400
+	Mon, 7 Oct 2013 07:58:05 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 24/50] tools/perf/build: Split out feature check: 'libpython'
-Date: Mon,  7 Oct 2013 13:56:17 +0200
-Message-Id: <1381147003-2574-25-git-send-email-mingo@kernel.org>
+Subject: [PATCH 19/50] tools/perf/build: Split out feature check: 'libaudit'
+Date: Mon,  7 Oct 2013 13:56:12 +0200
+Message-Id: <1381147003-2574-20-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -28,83 +28,79 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-9wfutfb8ufFHrddrwlejqrai@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-orhejqtjao3vf4wxwBUdzhaz@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                        |  3 ++-
- tools/perf/config/feature-checks/Makefile         | 18 ++++++++++++++++++
- tools/perf/config/feature-checks/test-libpython.c |  7 +++++++
- 3 files changed, 27 insertions(+), 1 deletion(-)
+ tools/perf/config/Makefile                       | 6 +++---
+ tools/perf/config/feature-checks/Makefile        | 4 ++++
+ tools/perf/config/feature-checks/test-libaudit.c | 7 +++++++
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f0edfa3..dfb4c84 100644
+index 890f264..e82e0b8 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -119,6 +119,7 @@ FEATURE_TESTS =				\
- 	gtk2				\
- 	gtk2-infobar			\
- 	libperl				\
-+	libpython			\
+@@ -114,6 +114,7 @@ FEATURE_TESTS =				\
+ 	libelf-mmap			\
+ 	libelf-getphdrnum		\
+ 	libunwind			\
++	libaudit			\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -356,7 +357,7 @@ else
-       PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-       FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+@@ -240,7 +241,7 @@ ifneq ($(ARCH),x86)
+ endif
  
--      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
-+      ifneq ($(feature-libpython), 1)
-         $(call disable-python,Python.h (for Python 2.x))
-       else
+ ifndef NO_LIBUNWIND
+-  ifeq ($(feature-libunwind), 1)
++  ifneq ($(feature-libunwind), 1)
+     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+     NO_LIBUNWIND := 1
+   endif
+@@ -254,8 +255,7 @@ ifndef NO_LIBUNWIND
+ endif
  
+ ifndef NO_LIBAUDIT
+-  FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+-  ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
++  ifneq ($(feature-libaudit), 1)
+     msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+     NO_LIBAUDIT := 1
+   else
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 3033c25..e7ed05a 100644
+index d6d9570..8e49fa0 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -17,6 +17,7 @@ FILES=					\
- 	test-gtk2			\
- 	test-gtk2-infobar		\
- 	test-libperl			\
-+	test-libpython			\
+@@ -12,6 +12,7 @@ FILES=					\
+ 	test-libelf-mmap		\
+ 	test-libelf-getphdrnum		\
+ 	test-libunwind			\
++	test-libaudit			\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -90,6 +91,23 @@ FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
- test-libperl:
- 	$(BUILD) $(FLAGS_PERL_EMBED)
+@@ -61,6 +62,9 @@ test-libnuma:
+ test-libunwind:
+ 	$(BUILD) -lunwind -lunwind-x86_64 -lelf
  
-+override PYTHON := python
-+override PYTHON_CONFIG := python-config
-+
-+escape-for-shell-sq =  $(subst ','\'',$(1))
-+shell-sq = '$(escape-for-shell-sq)'
-+
-+PYTHON_CONFIG_SQ = $(call shell-sq,$(PYTHON_CONFIG))
-+
-+PYTHON_EMBED_LDOPTS = $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
-+PYTHON_EMBED_LDFLAGS = $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
-+PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
-+PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-+FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-+
-+test-libpython:
-+	$(BUILD) $(FLAGS_PYTHON_EMBED)
++test-libaudit:
++	$(BUILD) -laudit
 +
  -include *.d */*.d
  
  ###############################
-diff --git a/tools/perf/config/feature-checks/test-libpython.c b/tools/perf/config/feature-checks/test-libpython.c
+diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
 new file mode 100644
-index 0000000..7226797
+index 0000000..854a65d
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libpython.c
++++ b/tools/perf/config/feature-checks/test-libaudit.c
 @@ -0,0 +1,7 @@
-+#include <Python.h>
-+#
++#include <libaudit.h>
++
 +int main(void)
 +{
-+	Py_Initialize();
-+	return 0;
++	printf("error message: %s\n", audit_errno_to_name(0));
++	return audit_open();
 +}
 -- 
 1.7.11.7
