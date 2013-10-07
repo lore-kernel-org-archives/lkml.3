@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab3JGP7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:59:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38995 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab3JGP7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:59:52 -0400
-Date: Mon, 7 Oct 2013 17:59:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf/x86: Clean up cap_user_time* setting
-Message-ID: <20131007155937.GT26785@twins.programming.kicks-ass.net>
-References: <tip-nmgn0j0muo1r4c94vlfh23xy@git.kernel.org>
- <524F097A.9010506@intel.com>
- <20131004185539.GT15690@laptop.programming.kicks-ass.net>
- <20131006091054.GA4342@gmail.com>
- <20131007093322.GA3081@twins.programming.kicks-ass.net>
+	id S1755968Ab3JGQFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:05:55 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:6454
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750954Ab3JGQFw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 12:05:52 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh1454I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h1de097h8275bhz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
+Date: Mon, 7 Oct 2013 09:05:40 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Felipe Pena <felipensp@gmail.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] clk/zynq: Fix possible memory leak
+References: <1381107317-18120-1-git-send-email-felipensp@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20131007093322.GA3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1381107317-18120-1-git-send-email-felipensp@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <38108046-8400-4f4d-b61c-d3e0cdecb431@DB8EHSMHS013.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 11:33:22AM +0200, Peter Zijlstra wrote:
-> On Sun, Oct 06, 2013 at 11:10:54AM +0200, Ingo Molnar wrote:
-> > I'm fully with you, please zap the 'notsc' boot option - it's an ancient 
-> > relic, if any box is still broken with the TSC on we want to hear about it 
-> > and fix it!
+On Sun, Oct 06, 2013 at 09:55:17PM -0300, Felipe Pena wrote:
+> The zynq_clk_register_fclk function can leak memory (fclk_lock) when unable 
+> to alloc memory for fclk_gate_lock
 > 
-> something like so?
-> 
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
 > ---
-> Subject: x86: Remove 'notsc' option for X86_TSC=y kernels
+>  drivers/clk/zynq/clkc.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> The 'notsc' thing is an ancient relic, if there's still any hardware
-> that needs this we need to hear about it.
-> 
-> This only removes the option for X86_TSC=y kernels; X86_TSC=n kernels
-> can still use it to force remove the TSC capability flag.
-> 
-> Since this removes the tsc_disabled=1 assignment, also remove all
-> tsc_disabled>0 tests as those will never be true.
-> 
-> Suggested-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
+> index cc40fe6..7ea4b5c 100644
+> --- a/drivers/clk/zynq/clkc.c
+> +++ b/drivers/clk/zynq/clkc.c
+> @@ -117,6 +117,7 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
+>  		goto err;
+>  	fclk_gate_lock = kmalloc(sizeof(*fclk_gate_lock), GFP_KERNEL);
+>  	if (!fclk_gate_lock)
+> +		kfree(fclk_lock);
+>  		goto err;
 
-OK, so I forgot to compile this this morning; but I now found
-apicpmtimer somehow calls notsc_setup(). I've no idea why, but can
-someone who knows this crap take a look?
+Looking at that function, the following calls to various clk_register_*
+functions miss correct error handling as well. Therefore it might make
+sense to consolidate this free in an error path at the bottom of the
+function. That would make things easier when somebody wants to add more
+error handling.
+
+Other than that you're right and feel free to add my Acked-by, once you
+have fixed the missing braces, Baruch pointed out.
+
+	Sören
+
+
