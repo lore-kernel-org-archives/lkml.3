@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3JGQi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:38:28 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:39802 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147Ab3JGQiZ (ORCPT
+	id S1756225Ab3JGQmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:42:06 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:48607 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab3JGQmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:38:25 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v2 25/29] arc: use common of_flat_dt_match_machine
-Date: Mon,  7 Oct 2013 11:29:33 -0500
-Message-Id: <1381163377-21044-26-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
-References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
+	Mon, 7 Oct 2013 12:42:01 -0400
+Date: Mon, 7 Oct 2013 18:41:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
+Message-ID: <20131007164156.GA12790@gmail.com>
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
+ <5252BCB4.5030802@gmail.com>
+ <20131007141100.GA21873@gmail.com>
+ <5252D4DB.30302@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5252D4DB.30302@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
 
-Convert arc to use the common of_flat_dt_match_machine function.
+* David Ahern <dsahern@gmail.com> wrote:
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/kernel/devtree.c | 65 +++++++++++++----------------------------------
- 1 file changed, 18 insertions(+), 47 deletions(-)
+> I also noticed that the dwarf test is still run even with the NO_DWARF 
+> option passed in:
+> 
+> [daahern@nxos-vdc-dev1 perf]$ make O=/tmp/junk LDFLAGS=-static
+> NO_DWARF=1 -j 4
+>     BUILD: Doing 'make -j16' parallel build
+> 
+> Auto-detecting system features:
+> 
+> ...                     backtrace: [ on  ]
+> ...                         dwarf: [ on  ]
+> ...                fortify-source: [ on  ]
+> 
+> Note the dwarf test shows 'on'.
 
-diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-index 1ab6f35..12de555 100644
---- a/arch/arc/kernel/devtree.c
-+++ b/arch/arc/kernel/devtree.c
-@@ -18,6 +18,19 @@
- #include <asm/clk.h>
- #include <asm/mach_desc.h>
- 
-+static const void * __init arch_get_next_mach(const char *const **match)
-+{
-+	static const struct machine_desc *mdesc = __arch_info_begin;
-+	const struct machine_desc *m = mdesc;
-+
-+	if (m >= __arch_info_end)
-+		return NULL;
-+
-+	mdesc++;
-+	*match = m->dt_compat;
-+	return m;
-+}
-+
- /**
-  * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
-  * @dt:		virtual address pointer to dt blob
-@@ -27,64 +40,22 @@
-  */
- struct machine_desc * __init setup_machine_fdt(void *dt)
- {
--	struct machine_desc *mdesc = NULL, *mdesc_best = NULL;
--	unsigned int score, mdesc_score = ~1;
-+	struct machine_desc *mdesc;
- 	unsigned long dt_root;
--	const char *model, *compat;
- 	void *clk;
--	char manufacturer[16];
- 	unsigned long len;
- 
- 	if (!early_init_dt_scan(dt))
- 		return NULL;
- 
--	dt_root = of_get_flat_dt_root();
--
--	/*
--	 * The kernel could be multi-platform enabled, thus could have many
--	 * "baked-in" machine descriptors. Search thru all for the best
--	 * "compatible" string match.
--	 */
--	for_each_machine_desc(mdesc) {
--		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
--		if (score > 0 && score < mdesc_score) {
--			mdesc_best = mdesc;
--			mdesc_score = score;
--		}
--	}
--	if (!mdesc_best) {
--		const char *prop;
--		long size;
--
--		pr_err("\n unrecognized device tree list:\n[ ");
--
--		prop = of_get_flat_dt_prop(dt_root, "compatible", &size);
--		if (prop) {
--			while (size > 0) {
--				printk("'%s' ", prop);
--				size -= strlen(prop) + 1;
--				prop += strlen(prop) + 1;
--			}
--		}
--		printk("]\n\n");
--
-+	mdesc = of_flat_dt_match_machine(NULL, arch_get_next_mach);
-+	if (!mdesc)
- 		machine_halt();
--	}
--
--	/* compat = "<manufacturer>,<model>" */
--	compat =  mdesc_best->dt_compat[0];
--
--	model = strchr(compat, ',');
--	if (model)
--		model++;
--
--	strlcpy(manufacturer, compat, model ? model - compat : strlen(compat));
--
--	pr_info("Board \"%s\" from %s (Manufacturer)\n", model, manufacturer);
- 
-+	dt_root = of_get_flat_dt_root();
- 	clk = of_get_flat_dt_prop(dt_root, "clock-frequency", &len);
- 	if (clk)
- 		arc_set_core_freq(of_read_ulong(clk, len/4));
- 
--	return mdesc_best;
-+	return mdesc;
- }
--- 
-1.8.1.2
+Hm, yes.
 
+This is just the print-out though - the actual feature logic should still 
+follow the NO_DWARF=1 setting (modulo bugs).
+
+So I'm wondering, should we solve this by adding extra logic linking the 
+feature flags with their legacy names. It would get unwieldy rather 
+quickly I think.
+
+Another solution would be to introduce a new method to disable features, 
+via something like:
+
+	make FEATURE_dwarf=0
+
+Where the pattern would follow the auto-detected naming. This would 
+simplify the printout logic and would simplify the feature support / flags 
+decision tree as well.
+
+Furthermore, it would unify the various flags we have today, which is 
+rather mixed: for example there's NO_DWARF which is a name that shows 
+negated logic, but there's also HAVE_CPLUS_DEMANGLE_SUPPORT is is a name 
+with positive logic. We'd have one uniform naming scheme permeating the 
+whole build system.
+
+And that brings in your [K]config patches: which would make sense in that 
+context as well, as they'd allow the permanent configuration of features 
+with 3 states for each feature flag:
+
+	off
+	auto-detect
+	on
+
+Your scheme I think makes a lot of sense on top of my bits. Packagers 
+would likely want to use a .config to build perf, most users would likely 
+be fine with a default of everything on auto-detect. Specialized users 
+would want to use their own .config's.
+
+Thanks,
+
+	Ingo
