@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3JGJg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:36:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58527 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab3JGJgZ (ORCPT
+	id S1755159Ab3JGJjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:39:46 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:17068 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895Ab3JGJjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:36:25 -0400
-Date: Mon, 7 Oct 2013 11:36:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 08000060
-Message-ID: <20131007093617.GB3081@twins.programming.kicks-ass.net>
-References: <20131005234430.GA22485@localhost>
- <20131005234728.GA22657@localhost>
- <20131007084957.GY3081@twins.programming.kicks-ass.net>
- <20131007091720.GA28025@localhost>
+	Mon, 7 Oct 2013 05:39:45 -0400
+X-IronPort-AV: E=Sophos;i="4.90,1049,1371081600"; 
+   d="scan'208";a="58280447"
+Message-ID: <5252815E.70504@citrix.com>
+Date: Mon, 7 Oct 2013 10:39:42 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007091720.GA28025@localhost>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Andrew Cooper <andrew.cooper3@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: Fix possible user space selector corruption
+References: <1380788677.30462.1.camel@hamster.uk.xensource.com> <524D4132.3000809@citrix.com> <1380804692.30462.3.camel@hamster.uk.xensource.com> <20131004132033.GA26673@phenom.dumpdata.com> <524EC3C1.4010304@citrix.com>
+In-Reply-To: <524EC3C1.4010304@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 05:17:20PM +0800, Fengguang Wu wrote:
-> On Mon, Oct 07, 2013 at 10:49:57AM +0200, Peter Zijlstra wrote:
-> The numbers in the below two lines mean
+On 04/10/13 14:33, Andrew Cooper wrote:
+> On 04/10/13 14:20, Konrad Rzeszutek Wilk wrote:
+>> On Thu, Oct 03, 2013 at 01:51:32PM +0100, Frediano Ziglio wrote:
+>>> On Thu, 2013-10-03 at 11:04 +0100, Andrew Cooper wrote:
+>>>> On 03/10/13 09:24, Frediano Ziglio wrote:
+>>>>>
+>>>>> Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
+>>>>> to be the first one that have this issue.
+>>>>>
+>>>>> Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+>>>> In terms of the correctness of the fix,
+>>>>
+>>>> Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
+>> Should this also go in stable tree?
 > 
-> > > git bisect good c31eeaced22ce8bd61268a3c595d542bb38c0a4f  # 21:59    450+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-> > > git bisect  bad a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 21:59      0-  Add linux-next specific files for 20130927
+> Very much so.  The change which exposed it for us was from 3.7 iirc, but
+> I believe it has been a latent bug for as long as the native early boot
+> code uses __USER_DS.
 > 
-> 21:59 => wall time
+>>>> However, I am not sure the comment is necessary.  The prevailing style
+>>>> is for no justification of loads of segment selectors on boot, and the
+>>>> comment itself refers simply to an interaction issue of 32bit on Xen
+>>>> when making use of sysenter.
+>>>>
+>>> Suggestion for the comment ??
+>>>
+>>> Frediano
 > 
-> 450+  => this bisect test finishes after 450 good boots; suffix "+" means bisect test result is GOOD
->          (collected large enough samples to claim it a GOOD kernel/commit)
-> 
-> 0-    => this bisect test finishes after   0 good boots; suffix "-" means bisect test result is BAD
->          (it sees the message "BUG: unable to handle kernel ..." on the first boot)
-> 
-> Since all the BAD commits see only 0, 1, or 2 good boots (the lines
-> with "0-", "1-", "2-") before see the bug message, it means the
-> problem is pretty reproducible.
+> My suggestion was to omit the comment entirely, or simplify it to just:
 
-But the reported bad commit was: 0c44c2d0f459cd7e275242b72f500137c4fa834d
-which is not the same number as your last BAD line.
+Suggesting comments should be omitted because other code is poorly
+commented seems odd to me.
 
+> /* Xen starts us with XEN_FLAT_RING1_DS, but linux code expects __USER_DS */
 
+I do think this comment better summarizes the reason for loading the
+segment registers so I'd prefer this.
 
+David
