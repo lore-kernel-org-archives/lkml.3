@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3JGPwD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 11:52:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:26914 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754735Ab3JGPv5 (ORCPT
+	id S1756133Ab3JGPw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 11:52:28 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:41937 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab3JGPw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 11:51:57 -0400
-Date: Mon, 7 Oct 2013 11:51:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Dumazet <edumazet@google.com>,
-        "andi @ firstfloor. org David S. Miller" <davem@davemloft.net>,
-        x86@kernel.org
-Subject: Re: [PATCH] static_key: WARN on usage before jump_label_init was
- called
-Message-ID: <20131007115152.0964afde@gandalf.local.home>
-In-Reply-To: <20131006182919.GD9295@order.stressinduktion.org>
-References: <1381015258-7667-1-git-send-email-hannes@stressinduktion.org>
-	<1381015258-7667-4-git-send-email-hannes@stressinduktion.org>
-	<20131005200558.3be2f841@gandalf.local.home>
-	<20131006001247.GB25076@order.stressinduktion.org>
-	<20131006182919.GD9295@order.stressinduktion.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 7 Oct 2013 11:52:26 -0400
+Date: Mon, 7 Oct 2013 17:51:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] tools/perf/build: Pass through LDFLAGS to feature tests
+Message-ID: <20131007155129.GA1066@gmail.com>
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
+ <5252BCB4.5030802@gmail.com>
+ <20131007141100.GA21873@gmail.com>
+ <5252D4DB.30302@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5252D4DB.30302@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Oct 2013 20:29:19 +0200
-Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
 
+* David Ahern <dsahern@gmail.com> wrote:
 
-> diff --git a/lib/jump_label_initialized.c b/lib/jump_label_initialized.c
-> new file mode 100644
-> index 0000000..a668a40
-> --- /dev/null
-> +++ b/lib/jump_label_initialized.c
-> @@ -0,0 +1,6 @@
-> +#include <linux/types.h>
-> +#include <linux/cache.h>
-> +
-> +bool static_key_initialized __read_mostly = false;
-> +EXPORT_SYMBOL_GPL(static_key_initialized);
-> +
+> On 10/7/13 8:11 AM, Ingo Molnar wrote:
+> >These changes are not yet committed into any stable Git tree - I've pushed
+> >them out into:
+> >
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.perf
+> >
+> >(it might take a few minutes for kernel.org to sync up.)
+> 
+> Tested on Fedora 12, 14, 16 with varying degrees of feature support
+> installed. The tests that failed are all static builds with the
+> command line:
+> 
+> make O=/tmp/junk -C tools/perf LDFLAGS=-static NO_DWARF=1
+> 
+> Passing LDFLAGS to the feature tests should handle that.
 
-So far, the only thing I don't like about this patch is the creation of
-this file for the sole purpose of adding this variable.
+Indeed. Does the patch below fix it for you?
 
-Perhaps it can just be added to init/main.c?
+Thanks,
 
--- Steve
+	Ingo
+
+-------------------->
+Subject: tools/perf/build: Pass through LDFLAGS to feature tests
+From: Ingo Molnar <mingo@kernel.org>
+Date: Mon Oct 7 17:48:56 CEST 2013
+
+David Ahern reported that when passing in LDFLAGS=-static then the
+feature checks still succeed - causing build failures down the
+line because the static libraries are missing.
+
+Solve this by passing through LDFLAGS to the feature-check Makefile.
+
+Reported-by: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile                |    4 ++--
+ tools/perf/config/feature-checks/Makefile |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+Index: tip/tools/perf/config/Makefile
+===================================================================
+--- tip.orig/tools/perf/config/Makefile
++++ tip/tools/perf/config/Makefile
+@@ -95,7 +95,7 @@ endif
+ 
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
+ 
+ feature_set = $(eval $(feature_set_code))
+@@ -172,7 +172,7 @@ ifeq ($(feature-all), 1)
+   #
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+ else
+-  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
++  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
+ 
+Index: tip/tools/perf/config/feature-checks/Makefile
+===================================================================
+--- tip.orig/tools/perf/config/feature-checks/Makefile
++++ tip/tools/perf/config/feature-checks/Makefile
+@@ -32,7 +32,7 @@ CC := $(CC) -MD
+ 
+ all: $(FILES)
+ 
+-BUILD = $(CC) -o $(OUTPUT)$@ $@.c
++BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+ 
+ ###############################
+ 
+
