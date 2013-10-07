@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab3JGXrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 19:47:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33228 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab3JGXrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 19:47:09 -0400
-Message-ID: <525347BE.7040606@zytor.com>
-Date: Mon, 07 Oct 2013 16:46:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753703Ab3JGXrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 19:47:36 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:40338 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab3JGXrc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 19:47:32 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <52534331.2060402@zytor.com> <52534692.7010400@linaro.org>
-In-Reply-To: <52534692.7010400@linaro.org>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
+References: <20131006082340.GA24568@localhost>
+	<CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
+	<20131007021118.GA27927@localhost>
+	<20131007051038.GA9764@localhost>
+	<CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
+	<20131007083505.GA22585@localhost>
+	<CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
+Date: Mon, 7 Oct 2013 16:47:29 -0700
+X-Google-Sender-Auth: 9BZa_dtFbqn2CsZjYoqIdbIcwnA
+Message-ID: <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
+Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        xen-devel@lists.xenproject.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 04:41 PM, John Stultz wrote:
-> 
-> You mark a chunk of memory as volatile, then at some point later, mark
-> its as non-volatile. The purge state tells you if the memory is still
-> there, or if we threw it out due to memory pressure. This lets the
-> application regnerate the purged data before continuing on.
-> 
+On Mon, Oct 7, 2013 at 3:14 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I *think* r14 contains the function we're going to jump to in the
+> oops, and that could be interesting to know, but it's not decoded, so
+> you'd have to match it up against a symbol map...
 
-And wouldn't this apply to MADV_DONTNEED just as well?  Perhaps what we
-should do is an enhanced madvise() call?
+Actually, Fenguguan, never mind. Instead, change the "pr_debug()" in
+kobject_release() to  "pr_alert()", so that it gets printed out. Or
+just boot with the "ignore_loglevel" thing so that debug messages are
+actually visible.
 
-	-hpa
+At that point, we should be able to match the oops workqueue list
+address with the address of the delayed kernel object that gets
+printed out.
 
-
+             Linus
