@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab3JGN4g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 09:56:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4670 "EHLO mga01.intel.com"
+	id S1755806Ab3JGN4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 09:56:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1182 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755469Ab3JGNym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 09:54:42 -0400
+	id S1752764Ab3JGNyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 09:54:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1050,1371106800"; 
-   d="scan'208";a="412749594"
+   d="scan'208";a="370868822"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -30,9 +30,9 @@ Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv5 11/11] x86, mm: enable split page table lock for PMD level
-Date: Mon,  7 Oct 2013 16:54:13 +0300
-Message-Id: <1381154053-4848-12-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv5 01/11] mm: avoid increase sizeof(struct page) due to split page table lock
+Date: Mon,  7 Oct 2013 16:54:03 +0300
+Message-Id: <1381154053-4848-2-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -40,57 +40,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable PMD split page table lock for X86_64 and PAE.
+CONFIG_GENERIC_LOCKBREAK increases sizeof(spinlock_t) to 8 bytes.
+It leads to increase sizeof(struct page) by 4 bytes on 32-bit system if
+split page table lock is in use, since page->ptl shares space in union
+with longs and pointers.
+
+Let's disable split page table lock on 32-bit systems with
+GENERIC_LOCKBREAK enabled.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Tested-by: Alex Thorlton <athorlton@sgi.com>
 ---
- arch/x86/Kconfig               |  4 ++++
- arch/x86/include/asm/pgalloc.h | 11 ++++++++++-
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ mm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ee2fb9d377..015d1362b7 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1880,6 +1880,10 @@ config USE_PERCPU_NUMA_NODE_ID
- 	def_bool y
- 	depends on NUMA
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 026771a9b0..6f5be0dac9 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -212,6 +212,7 @@ config SPLIT_PTLOCK_CPUS
+ 	default "999999" if ARM && !CPU_CACHE_VIPT
+ 	default "999999" if PARISC && !PA20
+ 	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
++	default "999999" if !64BIT && GENERIC_LOCKBREAK
+ 	default "4"
  
-+config ARCH_ENABLE_SPLIT_PMD_PTLOCK
-+	def_bool y
-+	depends on X86_64 || X86_PAE
-+
- menu "Power management and ACPI options"
- 
- config ARCH_HIBERNATION_HEADER
-diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
-index b4389a468f..e2fb2b6934 100644
---- a/arch/x86/include/asm/pgalloc.h
-+++ b/arch/x86/include/asm/pgalloc.h
-@@ -80,12 +80,21 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
- #if PAGETABLE_LEVELS > 2
- static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
- {
--	return (pmd_t *)get_zeroed_page(GFP_KERNEL|__GFP_REPEAT);
-+	struct page *page;
-+	page = alloc_pages(GFP_KERNEL | __GFP_REPEAT| __GFP_ZERO, 0);
-+	if (!page)
-+		return NULL;
-+	if (!pgtable_pmd_page_ctor(page)) {
-+		__free_pages(page, 0);
-+		return NULL;
-+	}
-+	return (pmd_t *)page_address(page);
- }
- 
- static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
- {
- 	BUG_ON((unsigned long)pmd & (PAGE_SIZE-1));
-+	pgtable_pmd_page_dtor(virt_to_page(pmd));
- 	free_page((unsigned long)pmd);
- }
- 
+ #
 -- 
 1.8.4.rc3
 
