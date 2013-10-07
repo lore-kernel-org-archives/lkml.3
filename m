@@ -1,114 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab3JGUzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 16:55:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33894 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785Ab3JGUzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 16:55:11 -0400
-Date: Mon, 7 Oct 2013 22:55:08 +0200
-From: Jan Kara <jack@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 18/26] mm: Convert process_vm_rw_pages() to use
- get_user_pages_unlocked()
-Message-ID: <20131007205508.GE30441@quack.suse.cz>
-References: <1380724087-13927-1-git-send-email-jack@suse.cz>
- <1380724087-13927-19-git-send-email-jack@suse.cz>
- <524C4AA1.7000409@gmail.com>
- <20131002193631.GB16998@quack.suse.cz>
- <524DF246.9050309@gmail.com>
+	id S1756054Ab3JGU6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 16:58:47 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:64500 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab3JGU6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 16:58:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524DF246.9050309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131007175542.GB3363@tassilo.jf.intel.com>
+References: <1381162158-24329-1-git-send-email-eranian@google.com>
+	<1381162158-24329-2-git-send-email-eranian@google.com>
+	<20131007175542.GB3363@tassilo.jf.intel.com>
+Date: Mon, 7 Oct 2013 22:58:44 +0200
+Message-ID: <CABPqkBRYCGumFo1JO6VKXUiVpoDdUW61X7cHJeyw3WDu-wxM8Q@mail.gmail.com>
+Subject: Re: [PATCH v1 1/2] perf,x86: add Intel RAPL PMU support
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 03-10-13 18:40:06, KOSAKI Motohiro wrote:
-> (10/2/13 3:36 PM), Jan Kara wrote:
-> >On Wed 02-10-13 12:32:33, KOSAKI Motohiro wrote:
-> >>(10/2/13 10:27 AM), Jan Kara wrote:
-> >>>Signed-off-by: Jan Kara <jack@suse.cz>
-> >>>---
-> >>>   mm/process_vm_access.c | 8 ++------
-> >>>   1 file changed, 2 insertions(+), 6 deletions(-)
-> >>>
-> >>>diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
-> >>>index fd26d0433509..c1bc47d8ed90 100644
-> >>>--- a/mm/process_vm_access.c
-> >>>+++ b/mm/process_vm_access.c
-> >>>@@ -64,12 +64,8 @@ static int process_vm_rw_pages(struct task_struct *task,
-> >>>   	*bytes_copied = 0;
-> >>>
-> >>>   	/* Get the pages we're interested in */
-> >>>-	down_read(&mm->mmap_sem);
-> >>>-	pages_pinned = get_user_pages(task, mm, pa,
-> >>>-				      nr_pages_to_copy,
-> >>>-				      vm_write, 0, process_pages, NULL);
-> >>>-	up_read(&mm->mmap_sem);
-> >>>-
-> >>>+	pages_pinned = get_user_pages_unlocked(task, mm, pa, nr_pages_to_copy,
-> >>>+					       vm_write, 0, process_pages);
-> >>>   	if (pages_pinned != nr_pages_to_copy) {
-> >>>   		rc = -EFAULT;
-> >>>   		goto end;
-> >>
-> >>This is wrong because original code is wrong. In this function, page may
-> >>be pointed to anon pages. Then, you should keep to take mmap_sem until
-> >>finish to copying. Otherwise concurrent fork() makes nasty COW issue.
-> >   Hum, can you be more specific? I suppose you are speaking about situation
-> >when the remote task we are copying data from/to does fork while
-> >process_vm_rw_pages() runs. If we are copying data from remote task, I
-> >don't see how COW could cause any problem. If we are copying to remote task
-> >and fork happens after get_user_pages() but before copy_to_user() then I
-> >can see we might be having some trouble. copy_to_user() would then copy
-> >data into both original remote process and its child thus essentially
-> >bypassing COW. If the child process manages to COW some of the pages before
-> >copy_to_user() happens, it can even see only some of the pages. Is that what
-> >you mean?
-> 
-> scenario 1: vm_write==0
-> 
-> Process P1 call get_user_pages(pa, process_pages) in process_vm_rw_pages
-> P1 unlock mmap_sem.
-> Process P2 call fork(). and make P3.
-> P2 write memory pa. now the "process_pages" is owned by P3 (the child process)
-> P3 write memory pa. and then the content of "process_pages" is changed.
-> P1 read process_pages as P2's page. but actually, it is P3's data. Then,
->   P1 observe garbage, at least unintended, data was read.
-  Yeah, this really looks buggy because P1 can see data in (supposedly)
-P2's address space which P2 never wrote there.
+On Mon, Oct 7, 2013 at 7:55 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> Quick review. Thanks for working on this. It should work
+> nicely with ucevent -- people already asked for reporting
+> power numbers there.
+>
+Yes, got some requests myself too. So I implemented this.
 
-> scenario 2: vm_write==1
-> 
-> Process P1 call get_user_pages(pa, process_pages) in process_vm_rw_pages.
-> It makes COW break and any anon page sharing broke.
-> P1 unlock mmap_sem.
-> P2 call fork(). and make P3. And, now COW page sharing is restored.
-> P2 write memory pa. now the "process_pages" is owned by P3.
-> P3 write memory pa. it mean P3 changes "process_pages".
-> P1 write process_pages as P2's page. but actually, it is P3's. It
-> override above P3's write and then P3 observe data corruption.
-  Yep, this is a similar problem as above. Thanks for pointing this out.
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+>> new file mode 100644
+>> index 0000000..f59dbd4
+>> --- /dev/null
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+>> @@ -0,0 +1,580 @@
+>
+> Having a comment at the beginning of each file with two sentences
+> what the file roughly does and what "RAPL" actually is would be useful.
+>
+> Also a pointer to the SDM chapters is also useful.
+>
+Forgot to add that. Will do in V2.
 
-> The solution is to keep holding mmap_sem until finishing process_pages
-> access because mmap_sem prevent fork. and then race never be happen. I
-> mean you cann't use get_user_pages_unlock() if target address point to
-> anon pages.
-  Yeah, if you are accessing third party mm, you've convinced me you
-currently need mmap_sem to avoid problems with COW on anon pages. I'm just
-thinking that this "hold mmap_sem to prevent fork" is somewhat subtle
-(definitely would deserve a comment) and if it would be needed in more
-places we might be better off if we have a more explicit mechanism for that
-(like a special lock, fork sequence count, or something like that). Anyway
-I'll have this in mind and if I see other places that need this, I'll try
-to come up with some solution. Thanks again for explanation.
+>> +static u64 rapl_event_update(struct perf_event *event)
+>> +{
+>> +     struct hw_perf_event *hwc = &event->hw;
+>> +     u64 prev_raw_count, new_raw_count;
+>> +     s64 delta, sdelta;
+>> +     int shift = RAPL_CNTR_WIDTH;
+>> +
+>> +again:
+>> +     prev_raw_count = local64_read(&hwc->prev_count);
+>> +     rdmsrl(event->hw.event_base, new_raw_count);
+>> +
+>> +     if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
+>> +                         new_raw_count) != prev_raw_count)
+>
+> Add a cpu_relax()
+>
+But then it should be in perf_event_*.c as well.
+It's a verbatim copy of the existing code. Now given that RAPL does not
+interrupt, the only risk here would be preemption. I did not verify whether
+this function was always called with interrupts disabled. So I left the retry
+loop.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+>> +             goto again;
+>> +
+>> +     struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
+>> +
+>> +     if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
+>> +             return;
+>> +
+>> +     event->hw.state = 0;
+>> +
+>> +     local64_set(&event->hw.prev_count, rapl_read_counter(event));
+>> +
+>> +     pmu->n_active++;
+>
+> What lock protects this add?
+>
+None. I will add one. Bu then I am wondering about if it is really
+necessary given
+that RAPL event are system-wide and this pinned to a CPU. If the call came
+from another CPU, then it IPI there, and that means that CPU is executing that
+code. Any other CPU will need IPI too, and that interrupt will be kept pending.
+Am I missing a test case here? Are IPI reentrant?
+
+>> +}
+>> +
+>> +static ssize_t rapl_get_attr_cpumask(struct device *dev,
+>> +                             struct device_attribute *attr, char *buf)
+>> +{
+>> +     int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &rapl_cpu_mask);
+>
+> Check n here in case it overflowed
+>
+But isn't that what the -2 and the below \n\0 are for?
+
+>> +
+>> +     buf[n++] = '\n';
+>> +     buf[n] = '\0';
+>> +     return n;
+>
+>
+>
+>> +     for_each_online_cpu(i) {
+>> +             pmu2 = per_cpu(rapl_pmu, i);
+>> +
+>> +             if (!pmu2 || i == cpu)
+>> +                     continue;
+>> +
+>> +             if (pmu2->phys_id == phys_id) {
+>> +                     per_cpu(rapl_pmu, cpu) = pmu2;
+>> +                     per_cpu(rapl_pmu_kfree, cpu) = pmu1;
+>> +                     atomic_inc(&pmu2->refcnt);
+>> +                     break;
+>> +             }
+>> +     }
+>
+> Doesn't this need a lock of some form? AFAIK we can do parallel
+> CPU startup now.
+>
+Did not know about this change? But then that means all the other
+perf_event *_starting() and maybe even _*prepare() routines must also
+use locks. I can add that to RAPL.
+
+> Similar to the other code walking the CPUs.
+>
+>> +static int __init rapl_pmu_init(void)
+>> +{
+>> +     struct rapl_pmu *pmu;
+>> +     int i, cpu, ret;
+>
+> You need to check for Intel CPU here, as this is called unconditionally.
+>
+> A more modern way to do this is to use x86_cpu_id.
+> This would in principle allow making it a module later (if perf ever
+> supports that)
+>
+Forgot that, will fix it.
+
+>> +
+>> +     /* check supported CPU */
+>> +     switch (boot_cpu_data.x86_model) {
+>> +     case 42: /* Sandy Bridge */
+>> +     case 58: /* Ivy Bridge */
+>> +     case 60: /* Haswell */
+>
+> Need more model numbers for Haswell (see the main perf driver)
+>
+Don't have all the models to test...
+
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index abe69af..12bfd7d 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -895,7 +895,6 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+>>                       if (readn(FD(evsel, cpu, thread),
+>>                                 &count, nv * sizeof(u64)) < 0)
+>>                               return -errno;
+>> -
+>>                       aggr->val += count.val;
+>>                       if (scale) {
+>>                               aggr->ena += count.ena;
+>
+> Bogus hunk
+>
+Arg, yes. It should not be here.
+
+
+Thanks for the review.
