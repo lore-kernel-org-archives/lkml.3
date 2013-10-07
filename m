@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3JGLmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:42:42 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:48222 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab3JGLmj (ORCPT
+	id S1755598Ab3JGLnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:43:06 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:34751 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab3JGLjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:42:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <52519E7A.40804@ti.com>
-References: <1380911156-14112-1-git-send-email-dmurphy@ti.com>
-	<CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>
-	<52519E7A.40804@ti.com>
-Date: Mon, 7 Oct 2013 19:42:38 +0800
-Message-ID: <CACVXFVNAB3VnmdoP_LGJsBjQ17j1aoqKMsBE7LRt65OqROeRUQ@mail.gmail.com>
-Subject: Re: [PATCH] usbnet: smsc95xx: Add device tree input for MAC address
-From: Ming Lei <tom.leiming@gmail.com>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: Steve Glendinning <steve.glendinning@shawell.net>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, mugunthanvnm@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Oct 2013 07:39:51 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Marek Vasut <marek.vasut@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 03/12] pwm-backlight: Track enable state
+Date: Mon,  7 Oct 2013 13:37:37 +0200
+Message-Id: <1381145866-445-4-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381145866-445-1-git-send-email-treding@nvidia.com>
+References: <1381145866-445-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 7, 2013 at 1:31 AM, Dan Murphy <dmurphy@ti.com> wrote:
-> On 10/06/2013 10:05 AM, Ming Lei wrote:
->> On Sat, Oct 5, 2013 at 2:25 AM, Dan Murphy <dmurphy@ti.com> wrote:
->>> If the smsc95xx does not have a valid MAC address stored within
->>> the eeprom then a random number is generated.  The MAC can also
->>> be set by uBoot but the smsc95xx does not have a way to read this.
->>>
->>> Create the binding for the smsc95xx so that uBoot can set the MAC
->>> and the code can retrieve the MAC from the modified DTB file.
->> Suppose there are two smsc95xx usbnet devices connected to usb bus, and
->> one is built-in, another is hotplug device, can your patch handle the situation
->> correctly?
->
-> Look at this line in the patch below
->
-> sprintf(of_name, "%s%i", SMSC95XX_OF_NAME, dev->udev->dev.id);
->
-> I am appending the dev ID of the device to the of_name here.  As long as init_mac_address is called, the dev.id and the uBoot
-> entry match then yes.
+Follow up patches will add support for more complex means of powering
+the backlight on and off such as using a regulator. To prevent calls to
+the regulator API from becoming unbalanced, keep track of the enabled
+state internally.
 
-Currently, non-root-hub usb device is created and added into usb bus without
-any platform(device tree) knowledge, so you can't expect the match here.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/video/backlight/pwm_bl.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Also not mention the two smsc95xx devices may attach to two different
-usb host controllers(buses).
-
-Thanks,
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index ab9d5e6..4053efb 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -27,6 +27,7 @@ struct pwm_bl_data {
+ 	unsigned int		period;
+ 	unsigned int		lth_brightness;
+ 	unsigned int		*levels;
++	bool			enabled;
+ 	int			(*notify)(struct device *,
+ 					  int brightness);
+ 	void			(*notify_after)(struct device *,
+@@ -40,6 +41,9 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness,
+ {
+ 	int duty_cycle, err;
+ 
++	if (pb->enabled)
++		return;
++
+ 	if (pb->levels) {
+ 		duty_cycle = pb->levels[brightness];
+ 		max = pb->levels[max];
+@@ -52,12 +56,18 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness,
+ 
+ 	pwm_config(pb->pwm, duty_cycle, pb->period);
+ 	pwm_enable(pb->pwm);
++	pb->enabled = true;
+ }
+ 
+ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
+ {
++	if (!pb->enabled)
++		return;
++
+ 	pwm_config(pb->pwm, 0, pb->period);
+ 	pwm_disable(pb->pwm);
++
++	pb->enabled = false;
+ }
+ 
+ static int pwm_backlight_update_status(struct backlight_device *bl)
+@@ -216,6 +226,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	pb->check_fb = data->check_fb;
+ 	pb->exit = data->exit;
+ 	pb->dev = &pdev->dev;
++	pb->enabled = false;
+ 
+ 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pb->pwm)) {
 -- 
-Ming Lei
+1.8.4
+
