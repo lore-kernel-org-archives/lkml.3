@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3JGKaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:30:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40036 "EHLO mx2.suse.de"
+	id S1755666Ab3JGKcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:32:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40158 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab3JGKa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:30:29 -0400
+	id S1755438Ab3JGKaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 06:30:39 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 50/63] sched: numa: call task_numa_free from do_execve
-Date: Mon,  7 Oct 2013 11:29:28 +0100
-Message-Id: <1381141781-10992-51-git-send-email-mgorman@suse.de>
+Subject: [PATCH 62/63] sched: numa: use unsigned longs for numa group fault stats
+Date: Mon,  7 Oct 2013 11:29:40 +0100
+Message-Id: <1381141781-10992-63-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
@@ -22,108 +22,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+As Peter says "If you're going to hold locks you can also do away with all
+that atomic_long_*() nonsense". Lock aquisition moved slightly to protect
+the updates.
 
-It is possible for a task in a numa group to call exec, and
-have the new (unrelated) executable inherit the numa group
-association from its former self.
-
-This has the potential to break numa grouping, and is trivial
-to fix.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/exec.c             | 1 +
- include/linux/sched.h | 4 ++++
- kernel/sched/fair.c   | 9 ++++++++-
- kernel/sched/sched.h  | 5 -----
- 4 files changed, 13 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c | 49 ++++++++++++++++++++-----------------------------
+ 1 file changed, 20 insertions(+), 29 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 8875dd1..2ea437e 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1547,6 +1547,7 @@ static int do_execve_common(const char *filename,
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
- 	acct_update_integrals(current);
-+	task_numa_free(current);
- 	free_bprm(bprm);
- 	if (displaced)
- 		put_files_struct(displaced);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 17eb13f..5315607 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1448,6 +1448,7 @@ struct task_struct {
- extern void task_numa_fault(int last_node, int node, int pages, int flags);
- extern pid_t task_numa_group_id(struct task_struct *p);
- extern void set_numabalancing_state(bool enabled);
-+extern void task_numa_free(struct task_struct *p);
- #else
- static inline void task_numa_fault(int last_node, int node, int pages,
- 				   int flags)
-@@ -1460,6 +1461,9 @@ static inline pid_t task_numa_group_id(struct task_struct *p)
- static inline void set_numabalancing_state(bool enabled)
- {
- }
-+static inline void task_numa_free(struct task_struct *p)
-+{
-+}
- #endif
- 
- static inline struct pid *task_pid(struct task_struct *task)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f9070f2..d5873e5 100644
+index 9e2271b..f45dd4c 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1418,6 +1418,7 @@ void task_numa_free(struct task_struct *p)
- {
- 	struct numa_group *grp = p->numa_group;
- 	int i;
-+	void *numa_faults = p->numa_faults;
+@@ -916,8 +916,8 @@ struct numa_group {
+ 	struct list_head task_list;
  
- 	if (grp) {
- 		for (i = 0; i < 2*nr_node_ids; i++)
-@@ -1433,7 +1434,9 @@ void task_numa_free(struct task_struct *p)
- 		put_numa_group(grp);
- 	}
+ 	struct rcu_head rcu;
+-	atomic_long_t total_faults;
+-	atomic_long_t faults[0];
++	unsigned long total_faults;
++	unsigned long faults[0];
+ };
  
--	kfree(p->numa_faults);
-+	p->numa_faults = NULL;
-+	p->numa_faults_buffer = NULL;
-+	kfree(numa_faults);
+ pid_t task_numa_group_id(struct task_struct *p)
+@@ -944,8 +944,7 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
+ 	if (!p->numa_group)
+ 		return 0;
+ 
+-	return atomic_long_read(&p->numa_group->faults[2*nid]) +
+-	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
++	return p->numa_group->faults[2*nid] + p->numa_group->faults[2*nid+1];
  }
  
  /*
-@@ -1452,6 +1455,10 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	if (!p->mm)
+@@ -971,17 +970,10 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
+ 
+ static inline unsigned long group_weight(struct task_struct *p, int nid)
+ {
+-	unsigned long total_faults;
+-
+-	if (!p->numa_group)
+-		return 0;
+-
+-	total_faults = atomic_long_read(&p->numa_group->total_faults);
+-
+-	if (!total_faults)
++	if (!p->numa_group || !p->numa_group->total_faults)
+ 		return 0;
+ 
+-	return 1000 * group_faults(p, nid) / total_faults;
++	return 1000 * group_faults(p, nid) / p->numa_group->total_faults;
+ }
+ 
+ static unsigned long weighted_cpuload(const int cpu);
+@@ -1397,9 +1389,9 @@ static void task_numa_placement(struct task_struct *p)
+ 			p->total_numa_faults += diff;
+ 			if (p->numa_group) {
+ 				/* safe because we can only change our own group */
+-				atomic_long_add(diff, &p->numa_group->faults[i]);
+-				atomic_long_add(diff, &p->numa_group->total_faults);
+-				group_faults += atomic_long_read(&p->numa_group->faults[i]);
++				p->numa_group->faults[i] += diff;
++				p->numa_group->total_faults += diff;
++				group_faults += p->numa_group->faults[i];
+ 			}
+ 		}
+ 
+@@ -1475,7 +1467,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 
+ 	if (unlikely(!p->numa_group)) {
+ 		unsigned int size = sizeof(struct numa_group) +
+-				    2*nr_node_ids*sizeof(atomic_long_t);
++				    2*nr_node_ids*sizeof(unsigned long);
+ 
+ 		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
+ 		if (!grp)
+@@ -1487,9 +1479,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 		grp->gid = p->pid;
+ 
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+-			atomic_long_set(&grp->faults[i], p->numa_faults[i]);
++			grp->faults[i] = p->numa_faults[i];
+ 
+-		atomic_long_set(&grp->total_faults, p->total_numa_faults);
++		grp->total_faults = p->total_numa_faults;
+ 
+ 		list_add(&p->numa_entry, &grp->task_list);
+ 		grp->nr_tasks++;
+@@ -1543,14 +1535,14 @@ unlock:
+ 	if (!join)
  		return;
  
-+	/* Do not worry about placement if exiting */
-+	if (p->state == TASK_DEAD)
-+		return;
++	double_lock(&my_grp->lock, &grp->lock);
 +
- 	/* Allocate buffer to track faults on a per-node basis */
- 	if (unlikely(!p->numa_faults)) {
- 		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 9aab230..13fe790 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -556,11 +556,6 @@ static inline u64 rq_clock_task(struct rq *rq)
- #ifdef CONFIG_NUMA_BALANCING
- extern int migrate_task_to(struct task_struct *p, int cpu);
- extern int migrate_swap(struct task_struct *, struct task_struct *);
--extern void task_numa_free(struct task_struct *p);
--#else /* CONFIG_NUMA_BALANCING */
--static inline void task_numa_free(struct task_struct *p)
--{
--}
- #endif /* CONFIG_NUMA_BALANCING */
+ 	for (i = 0; i < 2*nr_node_ids; i++) {
+-		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
+-		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
++		my_grp->faults[i] -= p->numa_faults[i];
++		grp->faults[i] += p->numa_faults[i];
+ 	}
+-	atomic_long_sub(p->total_numa_faults, &my_grp->total_faults);
+-	atomic_long_add(p->total_numa_faults, &grp->total_faults);
+-
+-	double_lock(&my_grp->lock, &grp->lock);
++	my_grp->total_faults -= p->total_numa_faults;
++	grp->total_faults += p->total_numa_faults;
  
- #ifdef CONFIG_SMP
+ 	list_move(&p->numa_entry, &grp->task_list);
+ 	my_grp->nr_tasks--;
+@@ -1571,12 +1563,11 @@ void task_numa_free(struct task_struct *p)
+ 	void *numa_faults = p->numa_faults;
+ 
+ 	if (grp) {
++		spin_lock(&grp->lock);
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+-			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
+-
+-		atomic_long_sub(p->total_numa_faults, &grp->total_faults);
++			grp->faults[i] -= p->numa_faults[i];
++		grp->total_faults -= p->total_numa_faults;
+ 
+-		spin_lock(&grp->lock);
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+ 		spin_unlock(&grp->lock);
 -- 
 1.8.4
 
