@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3JGXyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 19:54:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35195 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3JGXyN (ORCPT
+	id S1751815Ab3JGXyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 19:54:14 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:59154 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab3JGXyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Oct 2013 19:54:13 -0400
-Date: Mon, 7 Oct 2013 16:54:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm/page_alloc.c: Implement an empty
- get_pfn_range_for_nid
-Message-Id: <20131007165411.92370f7f6119decee7fbbcba@linux-foundation.org>
-In-Reply-To: <52504CF8.6000708@gmail.com>
-References: <52504CF8.6000708@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Message-ID: <1381190047.12191.32.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: [PATCH 4/4] [RFC] ipv6: Fix for possible ipv6 seqlock deadlock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Date: Mon, 07 Oct 2013 16:54:07 -0700
+In-Reply-To: <1381186321-4906-5-git-send-email-john.stultz@linaro.org>
+References: <1381186321-4906-1-git-send-email-john.stultz@linaro.org>
+	 <1381186321-4906-5-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 06 Oct 2013 01:31:36 +0800 Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+On Mon, 2013-10-07 at 15:52 -0700, John Stultz wrote:
+> While enabling lockdep on seqlocks, I ran across the warning below
+> caused by the ipv6 stats being updated in both irq and non-irq context.
 
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+You mean a lockdep warning on a seqcount in this context, right ?
+
 > 
-> Implement an empty get_pfn_range_for_nid for !CONFIG_HAVE_MEMBLOCK_NODE_MAP,
-> so that we could remove the #ifdef in free_area_init_node.
+> This patch changes from IP6_INC_STATS_BH to IP6_INC_STATS (suggested
+> by Eric Dumazet) to resolve this problem.
+...
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  net/ipv6/ip6_output.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> ...
->
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4566,6 +4566,11 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
->  }
+> diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+> index 3a692d5..7e63c1e 100644
+> --- a/net/ipv6/ip6_output.c
+> +++ b/net/ipv6/ip6_output.c
+> @@ -909,7 +909,7 @@ static int ip6_dst_lookup_tail(struct sock *sk,
 >  
->  #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-> +void __meminit get_pfn_range_for_nid(unsigned int nid,
-> +			unsigned long *ignored, unsigned long *ignored)
-> +{
-> +}
-> +
->  static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
->  					unsigned long zone_type,
->  					unsigned long node_start_pfn,
-> @@ -4871,9 +4876,7 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->  	pgdat->node_id = nid;
->  	pgdat->node_start_pfn = node_start_pfn;
->  	init_zone_allows_reclaim(nid);
-> -#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
->  	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
-> -#endif
->  	calculate_node_totalpages(pgdat, start_pfn, end_pfn,
->  				  zones_size, zholes_size);
+>  out_err_release:
+>  	if (err == -ENETUNREACH)
+> -		IP6_INC_STATS_BH(net, NULL, IPSTATS_MIB_OUTNOROUTES);
+> +		IP6_INC_STATS(net, NULL, IPSTATS_MIB_OUTNOROUTES);
+>  	dst_release(*dst);
+>  	*dst = NULL;
+>  	return err;
 
-Dunno, really.  This will make the kernel a tiny bit larger by
-generating an out-of-line empty function which nobody calls.  This
-could be fixed by making this static inline, but it's strange to have
-one version of get_pfn_range_for_nid() static inline and the other
-global, uninlined.
+This one is certainly a bug fix, David please consider adding it to your
+net tree
 
-Is it worth adding a few bytes to vmlinux just to make the source a little
-tidier?
+Bug added in commit ca46f9c834913f ("[IPv6] SNMP: Increment OutNoRoutes
+when connecting to unreachable network")
+
+Acked-by: Eric Dumazet <edumazet@google.com>
+
+
+
