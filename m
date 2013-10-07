@@ -1,89 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab3JGTCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 15:02:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44578 "EHLO
+	id S1756514Ab3JGTC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 15:02:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44575 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab3JGTCn (ORCPT
+	with ESMTP id S1755295Ab3JGTCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 15:02:43 -0400
+	Mon, 7 Oct 2013 15:02:42 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/6] perf tools: Fix libaudit test
-Date: Mon,  7 Oct 2013 16:02:26 -0300
-Message-Id: <1381172549-3210-4-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 4/6] perf probe: Fix to find line information for probe list
+Date: Mon,  7 Oct 2013 16:02:27 -0300
+Message-Id: <1381172549-3210-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381172549-3210-1-git-send-email-acme@infradead.org>
 References: <1381172549-3210-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-In ubuntu systems the libaudit test was always failing due to the
-newline in the printf call not being escaped, which somehow didn't
-prevented the test from working as expected on other systems, such
-as fedora18.
+Fix to find the correct (as much as possible) line information for
+listing probes. Without this fix, perf probe --list action will show
+incorrect line information as below;
 
-Fix it by removing the newline, as this is just a test, that program is
-just a compile test.
+  probe:getname_flags  (on getname_flags@ksrc/linux-3/fs/namei.c)
+  probe:getname_flags_1 (on getname:-89@x86/include/asm/current.h)
+  probe:getname_flags_2 (on user_path_at_empty:-2054@x86/include/asm/current.h)
 
-The error messages, obtained using 'make V=1':
+The minus line number is obviously wrong, and current.h is not related
+to the probe point. Deeper investigation discovered that there were 2
+issues related to this bug, and minor typos too.
 
-    CHK libaudit
-<stdin>: In function ‘main’:
-<stdin>:5:9: error: missing terminating " character [-Werror]
-<stdin>:5:2: error: missing terminating " character
-<stdin>:6:1: error: missing terminating " character [-Werror]
-<stdin>:6:1: error: missing terminating " character
-<stdin>:7:2: error: expected expression before ‘return’
-<stdin>:8:1: error: expected ‘;’ before ‘}’ token
-cc1: all warnings being treated as errors
-config/Makefile:241: No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev
+The 1st issue is the rack of considering about nested inlined functions,
+which causes the wrong (relative) line number.
 
-After this change the test works as expected in all systems tested and the
-'trace' tool is built when the needed devel packages are installed.
+The 2nd issue is that the dwarf line info is not correct at those
+points. It points 14th line of current.h.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Since it seems that the line info includes somewhat unreliable
+information, this fixes perf to try to find correct line information
+from both of debuginfo and line info as below.
+
+1) Probe address is the entry of a function instance
+
+  In this case, the line is set as the function declared line.
+
+2) Probe address is the entry of an expanded inline function block
+
+  In this case, the line is set as the function call-site line.
+  This means that the line number is relative from the entry line
+  of caller function (which can be an inlined function if nested)
+
+3) Probe address is inside a function instance or an expanded
+   inline function block
+
+  In this case, perf probe queries the line number from lineinfo
+  and verify the function declared file is same as the file name
+  queried from lineinfo.
+
+  If the file name is different, it is a failure case. The probe
+  address is shown as symbol+offset.
+
+4) Probe address is not in the any function instance
+
+  This is a failure case, the probe address is shown as
+  symbol+offset.
+
+With this fix, perf probe -l shows correct probe lines as below;
+
+  probe:getname_flags  (on getname_flags@ksrc/linux-3/fs/namei.c)
+  probe:getname_flags_1 (on getname:2@ksrc/linux-3/fs/namei.c)
+  probe:getname_flags_2 (on user_path_at_empty:4@ksrc/linux-3/fs/namei.c)
+
+Changes at v2:
+ - Fix typos in the function comments. (Thanks to Namhyung Kim)
+ - Use die_find_top_inlinefunc instead of die_find_inlinefunc_next.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-0trw8qs9hafeopc0vj1sicay@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20130930092144.1693.11058.stgit@udc4-manage.rcp.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/feature-tests.mak | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/dwarf-aux.c    | 25 +++++++++++++++++----
+ tools/perf/util/dwarf-aux.h    |  6 +++++-
+ tools/perf/util/probe-finder.c | 49 ++++++++++++++++++++++++++++--------------
+ 3 files changed, 59 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index d5a8dd44945f..f79305739ecc 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -219,7 +219,7 @@ define SOURCE_LIBAUDIT
- 
- int main(void)
- {
--	printf(\"error message: %s\n\", audit_errno_to_name(0));
-+	printf(\"error message: %s\", audit_errno_to_name(0));
- 	return audit_open();
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index e23bde19d590..7defd77105d0 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -426,7 +426,7 @@ static int __die_search_func_cb(Dwarf_Die *fn_die, void *data)
+  * @die_mem: a buffer for result DIE
+  *
+  * Search a non-inlined function DIE which includes @addr. Stores the
+- * DIE to @die_mem and returns it if found. Returns NULl if failed.
++ * DIE to @die_mem and returns it if found. Returns NULL if failed.
+  */
+ Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
+ 				    Dwarf_Die *die_mem)
+@@ -454,15 +454,32 @@ static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data)
  }
- endef
+ 
+ /**
++ * die_find_top_inlinefunc - Search the top inlined function at given address
++ * @sp_die: a subprogram DIE which including @addr
++ * @addr: target address
++ * @die_mem: a buffer for result DIE
++ *
++ * Search an inlined function DIE which includes @addr. Stores the
++ * DIE to @die_mem and returns it if found. Returns NULL if failed.
++ * Even if several inlined functions are expanded recursively, this
++ * doesn't trace it down, and returns the topmost one.
++ */
++Dwarf_Die *die_find_top_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
++				   Dwarf_Die *die_mem)
++{
++	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
++}
++
++/**
+  * die_find_inlinefunc - Search an inlined function at given address
+- * @cu_die: a CU DIE which including @addr
++ * @sp_die: a subprogram DIE which including @addr
+  * @addr: target address
+  * @die_mem: a buffer for result DIE
+  *
+  * Search an inlined function DIE which includes @addr. Stores the
+- * DIE to @die_mem and returns it if found. Returns NULl if failed.
++ * DIE to @die_mem and returns it if found. Returns NULL if failed.
+  * If several inlined functions are expanded recursively, this trace
+- * it and returns deepest one.
++ * it down and returns deepest one.
+  */
+ Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 			       Dwarf_Die *die_mem)
+diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
+index 8658d41697d2..b4fe90c6cb2d 100644
+--- a/tools/perf/util/dwarf-aux.h
++++ b/tools/perf/util/dwarf-aux.h
+@@ -79,7 +79,11 @@ extern Dwarf_Die *die_find_child(Dwarf_Die *rt_die,
+ extern Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
+ 				    Dwarf_Die *die_mem);
+ 
+-/* Search an inlined function including given address */
++/* Search the top inlined function including given address */
++extern Dwarf_Die *die_find_top_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
++					  Dwarf_Die *die_mem);
++
++/* Search the deepest inlined function including given address */
+ extern Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 				      Dwarf_Die *die_mem);
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 371476cb8ddc..c09e0a9fdf4c 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1327,8 +1327,8 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+ 				struct perf_probe_point *ppt)
+ {
+ 	Dwarf_Die cudie, spdie, indie;
+-	Dwarf_Addr _addr, baseaddr;
+-	const char *fname = NULL, *func = NULL, *tmp;
++	Dwarf_Addr _addr = 0, baseaddr = 0;
++	const char *fname = NULL, *func = NULL, *basefunc = NULL, *tmp;
+ 	int baseline = 0, lineno = 0, ret = 0;
+ 
+ 	/* Adjust address with bias */
+@@ -1349,27 +1349,36 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+ 	/* Find a corresponding function (name, baseline and baseaddr) */
+ 	if (die_find_realfunc(&cudie, (Dwarf_Addr)addr, &spdie)) {
+ 		/* Get function entry information */
+-		tmp = dwarf_diename(&spdie);
+-		if (!tmp ||
++		func = basefunc = dwarf_diename(&spdie);
++		if (!func ||
+ 		    dwarf_entrypc(&spdie, &baseaddr) != 0 ||
+-		    dwarf_decl_line(&spdie, &baseline) != 0)
++		    dwarf_decl_line(&spdie, &baseline) != 0) {
++			lineno = 0;
+ 			goto post;
+-		func = tmp;
++		}
+ 
+-		if (addr == (unsigned long)baseaddr)
++		if (addr == (unsigned long)baseaddr) {
+ 			/* Function entry - Relative line number is 0 */
+ 			lineno = baseline;
+-		else if (die_find_inlinefunc(&spdie, (Dwarf_Addr)addr,
+-					     &indie)) {
++			fname = dwarf_decl_file(&spdie);
++			goto post;
++		}
++
++		/* Track down the inline functions step by step */
++		while (die_find_top_inlinefunc(&spdie, (Dwarf_Addr)addr,
++						&indie)) {
++			/* There is an inline function */
+ 			if (dwarf_entrypc(&indie, &_addr) == 0 &&
+-			    _addr == addr)
++			    _addr == addr) {
+ 				/*
+ 				 * addr is at an inline function entry.
+ 				 * In this case, lineno should be the call-site
+-				 * line number.
++				 * line number. (overwrite lineinfo)
+ 				 */
+ 				lineno = die_get_call_lineno(&indie);
+-			else {
++				fname = die_get_call_file(&indie);
++				break;
++			} else {
+ 				/*
+ 				 * addr is in an inline function body.
+ 				 * Since lineno points one of the lines
+@@ -1377,19 +1386,27 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+ 				 * be the entry line of the inline function.
+ 				 */
+ 				tmp = dwarf_diename(&indie);
+-				if (tmp &&
+-				    dwarf_decl_line(&spdie, &baseline) == 0)
+-					func = tmp;
++				if (!tmp ||
++				    dwarf_decl_line(&indie, &baseline) != 0)
++					break;
++				func = tmp;
++				spdie = indie;
+ 			}
+ 		}
++		/* Verify the lineno and baseline are in a same file */
++		tmp = dwarf_decl_file(&spdie);
++		if (!tmp || strcmp(tmp, fname) != 0)
++			lineno = 0;
+ 	}
+ 
+ post:
+ 	/* Make a relative line number or an offset */
+ 	if (lineno)
+ 		ppt->line = lineno - baseline;
+-	else if (func)
++	else if (basefunc) {
+ 		ppt->offset = addr - (unsigned long)baseaddr;
++		func = basefunc;
++	}
+ 
+ 	/* Duplicate strings */
+ 	if (func) {
 -- 
 1.8.1.4
 
