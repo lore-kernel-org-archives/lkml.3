@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab3JGKiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:38:07 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:6440 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab3JGKaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755583Ab3JGKiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:38:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39887 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163Ab3JGKaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Oct 2013 06:30:14 -0400
-X-Spam-Score: -100.8
-Message-ID: <52528CF7.8050405@asianux.com>
-Date: Mon, 07 Oct 2013 18:29:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/pid.c: check pid whether be NULL in __change_pid()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 35/63] sched: numa: Do not trap hinting faults for shared libraries
+Date: Mon,  7 Oct 2013 11:29:13 +0100
+Message-Id: <1381141781-10992-36-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Within __change_pid(), 'new' may be NULL if it comes from detach_pid(),
-and 'link->pid' also may be NULL ("link->pid = new"), so theoretically,\
-the original 'link->pid' may be NULL, too.
+NUMA hinting faults will not migrate a shared executable page mapped by
+multiple processes on the grounds that the data is probably in the CPU
+cache already and the page may just bounce between tasks running on multipl
+nodes. Even if the migration is avoided, there is still the overhead of
+trapping the fault, updating the statistics, making scheduler placement
+decisions based on the information etc. If we are never going to migrate
+the page, it is overhead for no gain and worse a process may be placed on
+a sub-optimal node for shared executable pages. This patch avoids trapping
+faults for shared libraries entirely.
 
-In real world, at least now, all callers which will call detach_pid()
-or change_pid() will not cause issue, but still recommend to check it
-in __change_pid() to let itself consistency.
-
-After the modification, it passed a simpe test: "build -> boot up ->
-[s/g]et_[p/s/g]id() test by LTP tools".
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/pid.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 9b9a266..15b1b3d 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -399,6 +399,9 @@ static void __change_pid(struct task_struct *task, enum pid_type type,
- 	hlist_del_rcu(&link->node);
- 	link->pid = new;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9a2e68e..8760231 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1231,6 +1231,16 @@ void task_numa_work(struct callback_head *work)
+ 		if (!vma_migratable(vma) || !vma_policy_mof(p, vma))
+ 			continue;
  
-+	if (!pid)
-+		return;
++		/*
++		 * Shared library pages mapped by multiple processes are not
++		 * migrated as it is expected they are cache replicated. Avoid
++		 * hinting faults in read-only file-backed mappings or the vdso
++		 * as migrating the pages will be of marginal benefit.
++		 */
++		if (!vma->vm_mm ||
++		    (vma->vm_file && (vma->vm_flags & (VM_READ|VM_WRITE)) == (VM_READ)))
++			continue;
 +
- 	for (tmp = PIDTYPE_MAX; --tmp >= 0; )
- 		if (!hlist_empty(&pid->tasks[tmp]))
- 			return;
+ 		do {
+ 			start = max(start, vma->vm_start);
+ 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
 -- 
-1.7.7.6
+1.8.4
+
