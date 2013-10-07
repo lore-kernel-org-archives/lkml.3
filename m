@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3JGL7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:59:53 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:35653 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab3JGL6d (ORCPT
+	id S1755921Ab3JGL77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:59:59 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60421 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617Ab3JGL6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Oct 2013 07:58:33 -0400
 From: Ingo Molnar <mingo@kernel.org>
@@ -13,9 +13,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 46/50] tools/perf/build: Make sure autodep feature binaries honor the O= setting
-Date: Mon,  7 Oct 2013 13:56:39 +0200
-Message-Id: <1381147003-2574-47-git-send-email-mingo@kernel.org>
+Subject: [PATCH 45/50] tools/perf/build: Pass through all targets to Makefile.perf
+Date: Mon,  7 Oct 2013 13:56:38 +0200
+Message-Id: <1381147003-2574-46-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
@@ -23,60 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo noticed that the feature-check binaries are generated in the
-config/check-features/ directory even if O= is specified.
+Jiri reported that 'make .o' stopped working:
 
-Implement $(OUTPUT) logic for config/check-features/Makefile.
+  > [jolsa@krava perf]$ make -f Makefile perf.o
+  > cc    -c -o perf.o perf.c
+  > In file included from builtin.h:4:0,
+  >                  from perf.c:9:
+  > util/util.h:74:24: fatal error: lk/debugfs.h: No such file or directory
+  > compilation terminated.
+  > make: *** [perf.o] Error 1
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This is due to GNU make having built-in rules for popular targets such
+as *.o. Clear them out so that all targets as passed through to Makefile.perf.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-NLwlnv5prsubuey0vfocebym@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-5wkuvmlaaxtfgepKcvRij8sh@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ tools/perf/Makefile | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 6ae1dc4..72404e2 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -88,9 +88,14 @@ CFLAGS += -std=gnu99
- 
- EXTLIBS = -lelf -lpthread -lrt -lm -ldl
- 
-+ifneq ($(OUTPUT),)
-+  OUTPUT_FEATURES = $(OUTPUT)config/feature-checks/
-+  $(shell mkdir -p $(OUTPUT_FEATURES))
-+endif
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3b925ad..6f6f13a 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -1,3 +1,10 @@
 +
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
-@@ -137,7 +142,7 @@ CORE_FEATURE_TESTS =			\
- # to skip the print-out of the long features list if the file
- # existed before and after it was built:
++#
++# Clear out the built-in rules GNU make defines by default (such as .o targets),
++# so that we pass through all targets to Makefile.perf:
++#
++.SUFFIXES:
++
  #
--ifeq ($(wildcard config/feature-checks/test-all),)
-+ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
-   test-all-failed := 1
- else
-   test-all-failed := 0
-@@ -167,7 +172,7 @@ ifeq ($(feature-all), 1)
-   #
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
- else
--  $(shell $(MAKE) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-+  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
- endif
- 
+ # Do a parallel build with multiple jobs, based on the number of CPUs online
+ # in this system: 'make -j8' on a 8-CPU system, etc.
 -- 
 1.7.11.7
 
