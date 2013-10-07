@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3JGVEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:04:34 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:56093 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754368Ab3JGVEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:04:33 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH v2] [media] dvb_demux: fix deadlock in dmx_section_feed_release_filter()
-Date: Tue,  8 Oct 2013 01:04:21 +0400
-Message-Id: <1381179861-16408-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20130926140808.729bad49@samsung.com>
-References: <20130926140808.729bad49@samsung.com>
+	id S1756794Ab3JGVEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:04:48 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:54490 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754853Ab3JGVEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 17:04:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131003090347.GB3081@twins.programming.kicks-ass.net>
+References: <20131002133759.GH28601@twins.programming.kicks-ass.net>
+	<CAGXu5jLd3yw+RasWgMg_JJPhsfiM+hVhMru4gfkXmAcn7asEdw@mail.gmail.com>
+	<CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
+	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
+	<CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
+	<CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
+	<20131002190001.GX3081@twins.programming.kicks-ass.net>
+	<CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
+	<20131002203107.GY3081@twins.programming.kicks-ass.net>
+	<CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
+	<20131003090347.GB3081@twins.programming.kicks-ass.net>
+Date: Mon, 7 Oct 2013 23:04:38 +0200
+Message-ID: <CABPqkBSmYBdBx1vXj3ZJycM311eQPeK6kFxvtm3jtovp-qgm+w@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmx_section_feed_release_filter() locks dvbdmx->mutex and
-if the feed is still filtering, it calls feed->stop_filtering(feed).
-stop_filtering() is implemented by dmx_section_feed_stop_filtering()
-that first of all try to lock the same mutex: dvbdmx->mutex.
-That leads to a deadlock.
+Peter,
 
-It does not happen often in practice because all callers of
-release_filter() stop filtering by themselves.
-So the problem can happen in case of race condition only.
 
-The patch releases dvbdmx->mutex before call to feed->stop_filtering(feed)
-and reacquires the mutex after that.
+On Thu, Oct 3, 2013 at 11:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Oct 03, 2013 at 10:55:28AM +0200, Stephane Eranian wrote:
+>> I don't know the MM code but I assume that that vm_mm struct is
+>> allocated dynamically
+>> and maybe you already grabbing a lock while doing this. Could we
+>> leverage that lock
+>> to increment a global generation number?
+>
+> Sure; something like so.. I just don't like global state nor adding to
+> mm_struct for just this.
+>
+> ---
+>  include/linux/mm_types.h | 1 +
+>  kernel/fork.c            | 6 ++++++
+>  2 files changed, 7 insertions(+)
+>
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index d9851eeb6e1d..3877b1e72a5b 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -436,6 +436,7 @@ struct mm_struct {
+>         int first_nid;
+>  #endif
+>         struct uprobes_state uprobes_state;
+> +       u64 mm_id;
+>  };
+>
+>  /* first nid will either be a valid NID or one of these values */
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 086fe73ad6bd..b315f6227629 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -523,6 +523,8 @@ static void mm_init_aio(struct mm_struct *mm)
+>  #endif
+>  }
+>
+> +static u64 global_mm_id;
+> +
+>  static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>  {
+>         atomic_set(&mm->mm_users, 1);
+> @@ -537,6 +539,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>         spin_lock_init(&mm->page_table_lock);
+>         mm_init_aio(mm);
+>         mm_init_owner(mm, p);
+> +       mm->mm_id = 0;
+>
+>         if (likely(!mm_alloc_pgd(mm))) {
+>                 mm->def_flags = 0;
+> @@ -1422,6 +1425,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>          */
+>         write_lock_irq(&tasklist_lock);
+>
+> +       if (p->mm && !p->mm->mm_id)
+> +               p->mm->mm_id = ++global_mm_id;
+> +
+>         /* CLONE_PARENT re-uses the old parent */
+>         if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
+>                 p->real_parent = current->real_parent;
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/dvb-core/dvb_demux.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/media/dvb-core/dvb_demux.c b/drivers/media/dvb-core/dvb_demux.c
-index 3485655..6de3bd0 100644
---- a/drivers/media/dvb-core/dvb_demux.c
-+++ b/drivers/media/dvb-core/dvb_demux.c
-@@ -1027,8 +1027,13 @@ static int dmx_section_feed_release_filter(struct dmx_section_feed *feed,
- 		return -EINVAL;
- 	}
- 
--	if (feed->is_filtering)
-+	if (feed->is_filtering) {
-+		/* release dvbdmx->mutex as far as 
-+		   it is acquired by stop_filtering() itself */
-+		mutex_unlock(&dvbdmx->mutex);
- 		feed->stop_filtering(feed);
-+		mutex_lock(&dvbdmx->mutex);
-+	}
- 
- 	spin_lock_irq(&dvbdmx->lock);
- 	f = dvbdmxfeed->filter;
--- 
-1.8.1.2
-
+Ok, so I tried this. It does not cover shmat() cases unfortunately.
+We need that same ++global_mm_id somewhere on that code path.
+Haven't looked at it in details just yet.
