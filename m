@@ -1,106 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab3JGL6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 07:58:47 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:41654 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab3JGL6h (ORCPT
+	id S1755731Ab3JGL6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 07:58:44 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36170 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755562Ab3JGL6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 07:58:37 -0400
+	Mon, 7 Oct 2013 07:58:38 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 49/50] tools/perf/build: Fix O=/some/dir perf.o type of targets
-Date: Mon,  7 Oct 2013 13:56:42 +0200
-Message-Id: <1381147003-2574-50-git-send-email-mingo@kernel.org>
+Subject: [PATCH 50/50] tools/perf/build: Harmonize the style of the feature testcases
+Date: Mon,  7 Oct 2013 13:56:43 +0200
+Message-Id: <1381147003-2574-51-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381147003-2574-1-git-send-email-mingo@kernel.org>
 References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If someone specifies a single target, mixed with O=, the following way:
+The various testcases used different styles, which was not really
+visible as long as they hid in feature-tests.mak. Now that they
+are out in the open make them prettier.
 
-    hubble:~/tip/tools/perf> make O=/tmp/perf util/stat.o
-    BUILD: Doing 'make -j8' parallel build
-    gcc  -Wbad-function-cast -Wdeclaration-after-statement -Wformat-security [...]
-
-The build might even fail, if a target depends on other targets:
-
-    hubble:~/tip/tools/perf> make O=/tmp/perf perf.o
-    ...
-    perf.c: In function ‘handle_options’:
-    perf.c:155:21: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
-
-The correct way to invoke such targets is:
-
-    hubble:~/tip/tools/perf> make O=/tmp/perf /tmp/perf/perf.o
-    BUILD: Doing 'make -j8' parallel build
-    GEN /tmp/perf/common-cmds.h
-    CC /tmp/perf/perf.o
-
-But that's unnecessary typing and it's also easy to mistakenly build into the
-source directory.
-
-To fix this remove the generic suffix rules and add redirection to $(OUTPUT)
-for the most popular .o targets.
+( Also delete the leftover, empty feature-tests.mak file. )
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-mk0oiukmhgSbrll6chrPkkqr@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-drDWk8xltndjdsespzjbhu6w@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/Documentation/Makefile |  2 ++
- tools/perf/Makefile.perf          | 16 +++++++++++++++-
- 2 files changed, 17 insertions(+), 1 deletion(-)
+ tools/perf/config/feature-checks/test-backtrace.c         | 1 -
+ tools/perf/config/feature-checks/test-cplus-demangle.c    | 1 -
+ tools/perf/config/feature-checks/test-dwarf.c             | 1 +
+ tools/perf/config/feature-checks/test-glibc.c             | 2 +-
+ tools/perf/config/feature-checks/test-libaudit.c          | 1 +
+ tools/perf/config/feature-checks/test-libbfd.c            | 1 -
+ tools/perf/config/feature-checks/test-libelf-getphdrnum.c | 3 ++-
+ tools/perf/config/feature-checks/test-libelf-mmap.c       | 3 ++-
+ tools/perf/config/feature-checks/test-libelf.c            | 1 +
+ tools/perf/config/feature-checks/test-libnuma.c           | 1 +
+ tools/perf/config/feature-checks/test-libpython.c         | 3 ++-
+ tools/perf/config/feature-tests.mak                       | 2 --
+ 12 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-index eaa477f..86a4ba8 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -1,3 +1,5 @@
-+$(info Documentation/Makefile)
+diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
+index 5b33bcf..7124aa1 100644
+--- a/tools/perf/config/feature-checks/test-backtrace.c
++++ b/tools/perf/config/feature-checks/test-backtrace.c
+@@ -11,4 +11,3 @@ int main(void)
+ 
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
+index ab29f80..610c686 100644
+--- a/tools/perf/config/feature-checks/test-cplus-demangle.c
++++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
+@@ -12,4 +12,3 @@ int main(void)
+ 
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-dwarf.c b/tools/perf/config/feature-checks/test-dwarf.c
+index 783dfcd..3fc1801 100644
+--- a/tools/perf/config/feature-checks/test-dwarf.c
++++ b/tools/perf/config/feature-checks/test-dwarf.c
+@@ -5,5 +5,6 @@
+ int main(void)
+ {
+ 	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
 +
- include ../../scripts/Makefile.include
- include ../config/utilities.mak
- 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index cdf668a..534bff0 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -576,7 +576,21 @@ $(OUTPUT)perf.o perf.spec \
- 	: $(OUTPUT)PERF-VERSION-FILE
- 
- .SUFFIXES:
--.SUFFIXES: .o .c .S .s
+ 	return (long)dbg;
+ }
+diff --git a/tools/perf/config/feature-checks/test-glibc.c b/tools/perf/config/feature-checks/test-glibc.c
+index 13c66a5..b082034 100644
+--- a/tools/perf/config/feature-checks/test-glibc.c
++++ b/tools/perf/config/feature-checks/test-glibc.c
+@@ -3,6 +3,6 @@
+ int main(void)
+ {
+ 	const char *version = gnu_get_libc_version();
 +
-+#
-+# If a target does not match any of the later rules then prefix it by $(OUTPUT)
-+# This makes targets like 'make O=/tmp/perf perf.o' work in a natural way.
-+#
-+ifneq ($(OUTPUT),)
-+%.o: $(OUTPUT)%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)$@"
-+util/%.o: $(OUTPUT)util/%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)util/$@"
-+bench/%.o: $(OUTPUT)bench/%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)bench/$@"
-+tests/%.o: $(OUTPUT)tests/%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)tests/$@"
-+endif
+ 	return (long)version;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
+index f7e791e..afc019f 100644
+--- a/tools/perf/config/feature-checks/test-libaudit.c
++++ b/tools/perf/config/feature-checks/test-libaudit.c
+@@ -5,5 +5,6 @@ extern int printf(const char *format, ...);
+ int main(void)
+ {
+ 	printf("error message: %s\n", audit_errno_to_name(0));
++
+ 	return audit_open();
+ }
+diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
+index 1886c78..2405990 100644
+--- a/tools/perf/config/feature-checks/test-libbfd.c
++++ b/tools/perf/config/feature-checks/test-libbfd.c
+@@ -13,4 +13,3 @@ int main(void)
  
- # These two need to be here so that when O= is not used they take precedence
- # over the general rule for .o
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
+index 58eca53..d710459 100644
+--- a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
++++ b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
+@@ -1,7 +1,8 @@
+ #include <libelf.h>
+-#
++
+ int main(void)
+ {
+ 	size_t dst;
++
+ 	return elf_getphdrnum(0, &dst);
+ }
+diff --git a/tools/perf/config/feature-checks/test-libelf-mmap.c b/tools/perf/config/feature-checks/test-libelf-mmap.c
+index 1c64815..564427d 100644
+--- a/tools/perf/config/feature-checks/test-libelf-mmap.c
++++ b/tools/perf/config/feature-checks/test-libelf-mmap.c
+@@ -1,7 +1,8 @@
+ #include <libelf.h>
+-#
++
+ int main(void)
+ {
+ 	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
++
+ 	return (long)elf;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libelf.c b/tools/perf/config/feature-checks/test-libelf.c
+index 1a08f97..08db322 100644
+--- a/tools/perf/config/feature-checks/test-libelf.c
++++ b/tools/perf/config/feature-checks/test-libelf.c
+@@ -3,5 +3,6 @@
+ int main(void)
+ {
+ 	Elf *elf = elf_begin(0, ELF_C_READ, 0);
++
+ 	return (long)elf;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libnuma.c b/tools/perf/config/feature-checks/test-libnuma.c
+index 70510a9..4763d9c 100644
+--- a/tools/perf/config/feature-checks/test-libnuma.c
++++ b/tools/perf/config/feature-checks/test-libnuma.c
+@@ -4,5 +4,6 @@
+ int main(void)
+ {
+ 	numa_available();
++
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libpython.c b/tools/perf/config/feature-checks/test-libpython.c
+index 7226797..b24b28a 100644
+--- a/tools/perf/config/feature-checks/test-libpython.c
++++ b/tools/perf/config/feature-checks/test-libpython.c
+@@ -1,7 +1,8 @@
+ #include <Python.h>
+-#
++
+ int main(void)
+ {
+ 	Py_Initialize();
++
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+deleted file mode 100644
+index 139597f..0000000
+--- a/tools/perf/config/feature-tests.mak
++++ /dev/null
+@@ -1,2 +0,0 @@
+-
+-
 -- 
 1.7.11.7
 
