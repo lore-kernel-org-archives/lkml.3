@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3JGKM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 06:12:56 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54449 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab3JGKMr (ORCPT
+	id S1755412Ab3JGKNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 06:13:20 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:53042 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349Ab3JGKMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 06:12:47 -0400
+	Mon, 7 Oct 2013 06:12:48 -0400
 From: Matt Porter <matt.porter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,9 +21,9 @@ Cc: Paul Zimmerman <paulz@synopsys.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH 4/5] usb: phy: add Broadcom Kona USB PHY driver
-Date: Mon,  7 Oct 2013 06:12:31 -0400
-Message-Id: <1381140752-312-5-git-send-email-matt.porter@linaro.org>
+Subject: [PATCH 5/5] ARM: dts: add usb udc support to bcm281xx
+Date: Mon,  7 Oct 2013 06:12:32 -0400
+Message-Id: <1381140752-312-6-git-send-email-matt.porter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381140752-312-1-git-send-email-matt.porter@linaro.org>
 References: <1381140752-312-1-git-send-email-matt.porter@linaro.org>
@@ -31,172 +31,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a USB PHY driver for BCM281xx devices. This driver makes use of the
-Broadcom Kona USB control driver to control init/shutdown of the PHY.
+Adds USB OTG/Control/PHY and clock support to BCM281xx and enables
+UDC support on the bcm11351-brt and bcm28155-ap boards.
 
 Signed-off-by: Matt Porter <matt.porter@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- .../devicetree/bindings/usb/bcm-kona-usb-phy.txt   | 10 +++
- drivers/usb/phy/Kconfig                            |  7 ++
- drivers/usb/phy/Makefile                           |  1 +
- drivers/usb/phy/phy-bcm-kona-usb2.c                | 99 ++++++++++++++++++++++
- 4 files changed, 117 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/bcm-kona-usb-phy.txt
- create mode 100644 drivers/usb/phy/phy-bcm-kona-usb2.c
+ arch/arm/boot/dts/bcm11351-brt.dts | 10 ++++++++++
+ arch/arm/boot/dts/bcm11351.dtsi    | 21 +++++++++++++++++++++
+ arch/arm/boot/dts/bcm28155-ap.dts  | 12 ++++++++++++
+ 3 files changed, 43 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/bcm-kona-usb-phy.txt b/Documentation/devicetree/bindings/usb/bcm-kona-usb-phy.txt
-new file mode 100644
-index 0000000..a935fe2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/bcm-kona-usb-phy.txt
-@@ -0,0 +1,10 @@
-+BROADCOM KONA USB PHY
+diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+index 9d36eb4..5a269c7 100644
+--- a/arch/arm/boot/dts/bcm11351-brt.dts
++++ b/arch/arm/boot/dts/bcm11351-brt.dts
+@@ -43,5 +43,15 @@
+ 		status = "okay";
+ 	};
+ 
++	usbotg@3f120000 {
++		status = "okay";
++	};
+ 
++	usbctl@3f130000 {
++		status = "okay";
++	};
 +
-+Required properties:
-+ - compatible: brcm,kona-usb2
++	usbphy {
++		status = "okay";
++	};
+ };
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index 22aef21..1c647f2 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -227,4 +227,25 @@
+ 			#clock-cells = <0>;
+ 		};
+ 	};
 +
-+Example:
++	usbotg: usbotg@3f120000 {
++		compatible = "snps,dwc2";
++		reg = <0x3f120000 0x10000>;
++		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&usb_otg_ahb_clk>;
++		clock-names = "otg";
++		snps,phy-utmi-width = <8>;
++		status = "disabled";
++	};
++
++	usbctl: usbctl@3f130000 {
++		compatible = "brcm,kona-ctrl-usb";
++		reg = <0x3f130000 0x28>;
++		status = "disabled";
++	};
 +
 +	usbphy: usbphy {
 +		compatible = "brcm,kona-usb2";
++		status = "disabled";
 +	};
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 2b7b4f1..d063204 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -105,6 +105,13 @@ config BCM_KONA_CTRL_USB
- 	help
- 	  Enable this to support the Broadcom Kona USB control block
- 
-+config BCM_KONA_PHY_USB2
-+	tristate "Broadcom Kona USB2 PHY Driver"
-+	select USB_PHY
-+	select BCM_KONA_CTRL_USB
-+	help
-+	  Enable this to support the Broadcom Kona USB 2.0 PHY.
+ };
+diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
+index 96ae67a..7b1b741 100644
+--- a/arch/arm/boot/dts/bcm28155-ap.dts
++++ b/arch/arm/boot/dts/bcm28155-ap.dts
+@@ -42,4 +42,16 @@
+ 		max-frequency = <48000000>;
+ 		status = "okay";
+ 	};
 +
- config SAMSUNG_USBPHY
- 	tristate
- 	help
-diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 98c545e..227fba5 100644
---- a/drivers/usb/phy/Makefile
-+++ b/drivers/usb/phy/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_OMAP_CONTROL_USB)		+= phy-omap-control.o
- obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
- obj-$(CONFIG_AM335X_PHY_USB)		+= phy-am335x.o
- obj-$(CONFIG_BCM_KONA_CTRL_USB)		+= phy-bcm-kona-ctrl.o
-+obj-$(CONFIG_BCM_KONA_PHY_USB2)		+= phy-bcm-kona-usb2.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_OMAP_USB3)			+= phy-omap-usb3.o
- obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
-diff --git a/drivers/usb/phy/phy-bcm-kona-usb2.c b/drivers/usb/phy/phy-bcm-kona-usb2.c
-new file mode 100644
-index 0000000..21aee4a
---- /dev/null
-+++ b/drivers/usb/phy/phy-bcm-kona-usb2.c
-@@ -0,0 +1,99 @@
-+/*
-+ * phy-bcm-kona-control.c - Broadcom Kona USB2 Phy Driver
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Matt Porter <matt.porter@linaro.org>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++	usbotg@3f120000 {
++		status = "okay";
++	};
 +
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
++	usbctl@3f130000 {
++		status = "okay";
++	};
 +
-+#include "bcm-kona-usb.h"
-+
-+static int bcm_kona_phy_init(struct usb_phy *uphy)
-+{
-+	struct bcm_kona_usb *phy = dev_get_drvdata(uphy->dev);
-+
-+	bcm_kona_ctrl_usb_phy_power(phy->ctrl_dev, 1);
-+
-+	return 0;
-+}
-+
-+static void bcm_kona_phy_shutdown(struct usb_phy *uphy)
-+{
-+	struct bcm_kona_usb *phy = dev_get_drvdata(uphy->dev);
-+
-+	bcm_kona_ctrl_usb_phy_power(phy->ctrl_dev, 0);
-+}
-+
-+static int bcm_kona_usb2_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct bcm_kona_usb *phy;
-+
-+	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
-+	if (!phy)
-+		return -ENOMEM;
-+
-+	phy->ctrl_dev = bcm_kona_get_ctrl_dev();
-+	if (IS_ERR(phy->ctrl_dev)) {
-+		dev_dbg(&pdev->dev, "Failed to get control device\n");
-+		return -ENODEV;
-+	}
-+
-+	phy->dev		= dev;
-+	phy->phy.dev		= phy->dev;
-+	phy->phy.label		= "bcm-kona-usb2";
-+	phy->phy.init		= bcm_kona_phy_init;
-+	phy->phy.shutdown	= bcm_kona_phy_shutdown;
-+	phy->phy.type		= USB_PHY_TYPE_USB2;
-+
-+	platform_set_drvdata(pdev, phy);
-+
-+	usb_add_phy_dev(&phy->phy);
-+
-+	return 0;
-+}
-+
-+static int bcm_kona_usb2_remove(struct platform_device *pdev)
-+{
-+	struct bcm_kona_usb *phy = platform_get_drvdata(pdev);
-+
-+	usb_remove_phy(&phy->phy);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id bcm_kona_usb2_dt_ids[] = {
-+	{ .compatible = "brcm,kona-usb2" },
-+	{ /* sentinel */ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, bcm_kona_usb2_dt_ids);
-+
-+static struct platform_driver bcm_kona_usb2_driver = {
-+	.probe		= bcm_kona_usb2_probe,
-+	.remove		= bcm_kona_usb2_remove,
-+	.driver		= {
-+		.name	= "bcm-kona-usb2",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = bcm_kona_usb2_dt_ids,
-+	},
-+};
-+
-+module_platform_driver(bcm_kona_usb2_driver);
-+
-+MODULE_ALIAS("platform:bcm-kona-usb2");
-+MODULE_AUTHOR("Matt Porter");
-+MODULE_DESCRIPTION("BCM Kona USB 2.0 PHY driver");
-+MODULE_LICENSE("GPL v2");
++	usbphy {
++		status = "okay";
++	};
+ };
 -- 
 1.8.4
 
