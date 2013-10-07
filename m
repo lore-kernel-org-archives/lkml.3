@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab3JGEWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 00:22:30 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:42124
+	id S1751825Ab3JGEj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 00:39:26 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:42175
 	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751629Ab3JGEW2 (ORCPT
+	with ESMTP id S1751683Ab3JGEjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 00:22:28 -0400
-Date: Mon, 7 Oct 2013 04:22:26 +0000
+	Mon, 7 Oct 2013 00:39:24 -0400
+Date: Mon, 7 Oct 2013 04:39:19 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
@@ -16,20 +16,20 @@ Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
         Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH 2/3] vfs: Add a function to lazily unmount all
- mounts from any dentry.
-Message-ID: <20131007042225.GA10284@mail.hallyn.com>
+Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but
+ the current mount namespace
+Message-ID: <20131007043919.GB10284@mail.hallyn.com>
 References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
  <87a9kkax0j.fsf@xmission.com>
  <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
  <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
  <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
  <87li281wx6.fsf_-_@xmission.com>
- <87a9io1wu1.fsf_-_@xmission.com>
+ <87a9ioo37a.fsf_-_@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a9io1wu1.fsf_-_@xmission.com>
+In-Reply-To: <87a9ioo37a.fsf_-_@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,61 +37,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Quoting Eric W. Biederman (ebiederm@xmission.com):
 > 
-> Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
-> ---
->  fs/mount.h     |    1 +
->  fs/namespace.c |   24 ++++++++++++++++++++++++
->  2 files changed, 25 insertions(+), 0 deletions(-)
+> Programs have been known to test for empty directories by attempting
+> to remove them.  To keep from violating the principle of least
+> surprise don't let directories the caller can see with someting
+> mounted on them be deleted.
+
+Do you think we should do the same thing for over-mounted file at
+vfs_unlink()?
+
+> With a little luck this may prevent commands stupid commands
+> like rm -rf from eating your system.
 > 
-> diff --git a/fs/mount.h b/fs/mount.h
-> index e4342b8dfab1..7a6a2bb3f290 100644
-> --- a/fs/mount.h
-> +++ b/fs/mount.h
-> @@ -79,6 +79,7 @@ static inline int is_mounted(struct vfsmount *mnt)
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  fs/namei.c |   21 +++++++++++++++++++++
+>  1 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index b18b017c946b..b9cae480ac27 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -3547,6 +3547,20 @@ void dentry_unhash(struct dentry *dentry)
+>  	spin_unlock(&dentry->d_lock);
 >  }
 >  
->  extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
-> +extern void detach_mounts(struct dentry *dentry);
->  
->  static inline void get_mnt_ns(struct mnt_namespace *ns)
->  {
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index d092964fe7f9..8eaee0c14fdb 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1294,6 +1294,30 @@ static int do_umount(struct mount *mnt, int flags)
->  	return retval;
->  }
->  
-> +void detach_mounts(struct dentry *dentry)
+> +static bool covered(struct vfsmount *mnt, struct dentry *dentry)
 > +{
-> +	struct mount *mnt, *next;
-> +	struct mountpoint *mp;
+> +	/* test to see if a dentry is covered with a mount in
+> +	 * the current mount namespace.
+> +	 */
+> +	bool is_covered;
 > +
-> +	namespace_lock();
-> +	if (!d_mountpoint(dentry)) {
-> +		namespace_unlock();
-> +		return;
-> +	}
-> +	mp = new_mountpoint(dentry);
-> +	if (IS_ERR(mp)) {
-
-	namespace_unlock();
-
-> +		return;
-> +	}
-> +	br_write_lock(&vfsmount_lock);
-> +	list_for_each_entry_safe(mnt, next, &mp->m_list, mnt_mp_list) {
-> +		if (!list_empty(&mnt->mnt_list))
-> +			umount_tree(mnt, 1);
-> +	}
-> +	br_write_unlock(&vfsmount_lock);
-> +	put_mountpoint(mp);
-> +	namespace_unlock();
+> +	rcu_read_lock();
+> +	is_covered = d_mountpoint(dentry) && __lookup_mnt(mnt, dentry, 1);
+> +	rcu_read_unlock();
+> +
+> +	return is_covered;
 > +}
 > +
->  /* 
->   * Is the caller allowed to modify his namespace?
->   */
+>  int vfs_rmdir(struct inode *dir, struct dentry *dentry)
+>  {
+>  	int error = may_delete(dir, dentry, 1);
+> @@ -3619,6 +3633,9 @@ retry:
+>  		error = -ENOENT;
+>  		goto exit3;
+>  	}
+> +	error = -EBUSY;
+> +	if (covered(nd.path.mnt, dentry))
+> +		goto exit3;
+>  	error = security_path_rmdir(&nd.path, dentry);
+>  	if (error)
+>  		goto exit3;
+> @@ -4155,6 +4172,10 @@ retry:
+>  	error = -ENOTEMPTY;
+>  	if (new_dentry == trap)
+>  		goto exit5;
+> +	error = -EBUSY;
+> +	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode) &&
+> +	    covered(newnd.path.mnt, new_dentry))
+> +		goto exit5;
+>  
+>  	error = security_path_rename(&oldnd.path, old_dentry,
+>  				     &newnd.path, new_dentry);
 > -- 
 > 1.7.5.4
