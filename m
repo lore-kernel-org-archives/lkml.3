@@ -1,145 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab3JGQZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab3JGQZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:25:25 -0400
-Date: Mon, 7 Oct 2013 18:18:24 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] sched/wait: Introduce prepare_to_wait_event()
-Message-ID: <20131007161824.GA29757@redhat.com>
-References: <20131007161758.GA29749@redhat.com>
+	id S1756204Ab3JGQ0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:26:49 -0400
+Received: from 6.mo4.mail-out.ovh.net ([188.165.36.253]:50463 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755348Ab3JGQ0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 12:26:46 -0400
+Message-ID: <5252DC09.6010207@overkiz.com>
+Date: Mon, 07 Oct 2013 18:06:33 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007161758.GA29749@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH v3 04/19] clk: at91: add PMC macro file for dt definitions
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375938270-3965-1-git-send-email-b.brezillon@overkiz.com> <5252D0A5.60304@atmel.com>
+In-Reply-To: <5252D0A5.60304@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 15860551989070100588
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new helper, prepare_to_wait_event() which should only be used
-by ___wait_event().
+On 07/10/2013 17:17, Nicolas Ferre wrote:
+> On 08/08/2013 07:04, Boris BREZILLON :
+>> This patch adds a new macro file for PMC macros.
+>>
+>> This macro file includes the definitions of SR (status register) bit
+>> offsets and will be use to reference PMC irqs.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>   include/dt-bindings/clk/at91/common/pmc.h |   20 ++++++++++++++++++++
+>>   1 file changed, 20 insertions(+)
+>>   create mode 100644 include/dt-bindings/clk/at91/common/pmc.h
+>>
+>> diff --git a/include/dt-bindings/clk/at91/common/pmc.h 
+>> b/include/dt-bindings/clk/at91/common/pmc.h
+>> new file mode 100644
+>> index 0000000..edc51d6
+>> --- /dev/null
+>> +++ b/include/dt-bindings/clk/at91/common/pmc.h
+>> @@ -0,0 +1,20 @@
+>> +/*
+>> + * This header provides constants for AT91 pmc status.
+>> + *
+>> + * The constants defined in this header are being used in dts.
+>
+> It is better to add one line about license: for example:
+>
+>  * Licensed under GPLv2 or later.
+>
+>
+>> + */
+>> +
+>> +#ifndef _DT_BINDINGS_CLK_AT91_PMC_H
+>> +#define _DT_BINDINGS_CLK_AT91_PMC_H
+>> +
+>> +#define AT91_PMC_MOSCS        0        /* MOSCS Flag */
+>> +#define AT91_PMC_LOCKA        1        /* PLLA Lock */
+>> +#define AT91_PMC_LOCKB        2        /* PLLB Lock */
+>> +#define AT91_PMC_MCKRDY        3        /* Master Clock */
+>> +#define AT91_PMC_LOCKU        6        /* UPLL Lock */
+>> +#define AT91_PMC_PCKRDY(id)    (8 + id)    /* Programmable Clock */
+>
+> I prefer with parenthesis around "id" (8 + (id))
 
-prepare_to_wait_event() returns -ERESTARTSYS if signal_pending_state()
-is true, otherwise it does prepare_to_wait/exclusive.  This allows to
-uninline the signal-pending checks in wait_event*() macros.
-
-Also, it can initialize wait->private/func. We do not care if they were
-already initialized, the values are the same. This also shaves a couple
-of insns from the inlined code.
-
-This obviously makes prepare_*() path a little bit slower,  but we are
-likely going to sleep anyway, so I think it makes sense to shrink .text,
-
-	- 5126092	2959248	10117120	18202460	115bf5c	vmlinux
-	+ 5124618	2955152	10117120	18196890	115a99a	vmlinux
-
-on my build.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/wait.h |   24 ++++++++++++++----------
- kernel/wait.c        |   24 ++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index a2726c7..ff9e20f 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -187,27 +187,30 @@ wait_queue_head_t *bit_waitqueue(void *, int);
- 	__cond || !__ret;						\
- })
- 
--#define ___wait_signal_pending(state)					\
--	((state == TASK_INTERRUPTIBLE && signal_pending(current)) ||	\
--	 (state == TASK_KILLABLE && fatal_signal_pending(current)))
-+#define ___wait_is_interruptible(state)					\
-+	(!__builtin_constant_p(state) ||				\
-+		state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)	\
- 
- #define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
- ({									\
- 	__label__ __out;						\
--	DEFINE_WAIT(__wait);						\
-+	wait_queue_t __wait;						\
- 	long __ret = ret;						\
- 									\
-+	INIT_LIST_HEAD(&__wait.task_list);				\
-+	if (exclusive)							\
-+		__wait.flags = WQ_FLAG_EXCLUSIVE;			\
-+	else								\
-+		__wait.flags = 0;					\
-+									\
- 	for (;;) {							\
--		if (exclusive)						\
--			prepare_to_wait_exclusive(&wq, &__wait, state); \
--		else							\
--			prepare_to_wait(&wq, &__wait, state);		\
-+		long __int = prepare_to_wait_event(&wq, &__wait, state);\
- 									\
- 		if (condition)						\
- 			break;						\
- 									\
--		if (___wait_signal_pending(state)) {			\
--			__ret = -ERESTARTSYS;				\
-+		if (___wait_is_interruptible(state) && __int) {		\
-+			__ret = __int;					\
- 			if (exclusive) {				\
- 				abort_exclusive_wait(&wq, &__wait,	\
- 						     state, NULL);	\
-@@ -791,6 +794,7 @@ extern long interruptible_sleep_on_timeout(wait_queue_head_t *q, signed long tim
-  */
- void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state);
-+long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
- void abort_exclusive_wait(wait_queue_head_t *q, wait_queue_t *wait, unsigned int mode, void *key);
- int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
-diff --git a/kernel/wait.c b/kernel/wait.c
-index d550920..de21c63 100644
---- a/kernel/wait.c
-+++ b/kernel/wait.c
-@@ -92,6 +92,30 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
- }
- EXPORT_SYMBOL(prepare_to_wait_exclusive);
- 
-+long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
-+{
-+	unsigned long flags;
-+
-+	if (signal_pending_state(state, current))
-+		return -ERESTARTSYS;
-+
-+	wait->private = current;
-+	wait->func = autoremove_wake_function;
-+
-+	spin_lock_irqsave(&q->lock, flags);
-+	if (list_empty(&wait->task_list)) {
-+		if (wait->flags & WQ_FLAG_EXCLUSIVE)
-+			__add_wait_queue_tail(q, wait);
-+		else
-+			__add_wait_queue(q, wait);
-+	}
-+	set_current_state(state);
-+	spin_unlock_irqrestore(&q->lock, flags);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(prepare_to_wait_event);
-+
- /**
-  * finish_wait - clean up after waiting in a queue
-  * @q: waitqueue waited on
--- 
-1.5.5.1
-
+Absolutely, I'll fix it.
+>
+>> +#define AT91_PMC_MOSCSELS    16        /* Main Oscillator Selection */
+>> +#define AT91_PMC_MOSCRCS    17        /* Main On-Chip RC */
+>> +#define AT91_PMC_CFDEV        18        /* Clock Failure Detector 
+>> Event */
+>> +
+>> +#endif
+>>
+>
+>
 
