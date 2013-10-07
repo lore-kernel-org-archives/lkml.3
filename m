@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab3JGVlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 17:41:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56118 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995Ab3JGVkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 17:40:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1051,1371106800"; 
-   d="scan'208";a="304411379"
-From: Andi Kleen <andi@firstfloor.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: torvalds@linux-foundation.org, gregkh@linux-foundation.org,
-        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] checkpatch: Make the 80-character limit a --strict check only
-References: <20131007191835.GA28737@jtriplet-mobl1>
-Date: Mon, 07 Oct 2013 14:40:53 -0700
-In-Reply-To: <20131007191835.GA28737@jtriplet-mobl1> (Josh Triplett's message
-	of "Mon, 7 Oct 2013 12:18:43 -0700")
-Message-ID: <87txgszrmi.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752846Ab3JGVl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 17:41:56 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:48182 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab3JGVly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 17:41:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131005132337.GA4095@dztty>
+References: <20131004085911.GA2157@dztty> <CALCETrU5vBcqCbKAh=1wWPjt6js7A4R2xtnwc3Z1Z0FRMLP1SQ@mail.gmail.com>
+ <20131004182353.GA2600@dztty> <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty> <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty> <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+ <20131004194142.GA4524@dztty> <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+ <20131005132337.GA4095@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 7 Oct 2013 14:41:33 -0700
+Message-ID: <CALCETrV2YZUQsFiahmcQECF37=sX6EMiEEjwXX_mcuPf-X3-yw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
+ opener may access task
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Triplett <josh@joshtriplett.org> writes:
+On Sat, Oct 5, 2013 at 6:23 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Fri, Oct 04, 2013 at 03:17:08PM -0700, Andy Lutomirski wrote:
+>>
+>> Exactly.  Hence the NAK.
+> But Having two LSM Hooks there is really not practical!
 
-> The 80-character limit is not a hard-and-fast rule, nor should it be
-> applied blindly by people running checkpatch and fixing its warnings.
-> Sometimes it's better to violate the 80-character "limit" in the name of
-> readability, and when it isn't, it's often better to refactor into a
-> function or otherwise restructure the code rather than just finding
-> increasingly awkward places to break lines.
+It'd doable *if* it turns out that it's the right solution.
 
-Yes please!
+But revoke seems much more likely to be simple, comprehensible, and
+obviously correct to me.
 
--Andi
+--Andy
+
+>
+> Note to mention some of these redundancy checks...
+>
+>> >
+>> > Is there some mechanism to check what you describe?
+>> >
+>>
+>> No.  You could try to add one, but getting it to be compatible with
+>> YAMA might be really messy.
+> LSM is limitted in this situation, and it can't work with YAMA, or
+> perhaps YAMA will just return -EPERM
+>
+> So this LSM protections are currently vulnerable too!
+>
+>
+>> Or you could see if destroying and recreating all the inodes on exec
+>> or some other revoke-like approach would work.
+>>
+>> --Andy
+>
+> --
+> Djalal Harouni
+> http://opendz.org
+
+
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Andy Lutomirski
+AMA Capital Management, LLC
