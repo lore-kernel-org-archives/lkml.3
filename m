@@ -1,91 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3JGJ1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 05:27:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57544 "EHLO mga01.intel.com"
+	id S1755172Ab3JGJ3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 05:29:16 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:60330 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab3JGJ1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 05:27:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1048,1371106800"; 
-   d="scan'208";a="406465467"
-Date: Mon, 7 Oct 2013 17:27:44 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-Message-ID: <20131007092744.GA28686@localhost>
-References: <20131005234430.GA22485@localhost>
- <20131007085533.GZ3081@twins.programming.kicks-ass.net>
+	id S1753953Ab3JGJ3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 05:29:13 -0400
+Message-ID: <52527EA1.8060600@mm-sol.com>
+Date: Mon, 07 Oct 2013 12:28:01 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007085533.GZ3081@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v6 3/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
+References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com> <1381131897-13910-4-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1381131897-13910-4-git-send-email-iivanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 10:55:33AM +0200, Peter Zijlstra wrote:
-> On Sun, Oct 06, 2013 at 07:44:30AM +0800, Fengguang Wu wrote:
-> > Greetings,
-> > 
-> > I got the below dmesg and the first bad commit is
-> > 
-> > commit 0c44c2d0f459cd7e275242b72f500137c4fa834d
-> > Author: Peter Zijlstra <peterz@infradead.org>
-> > Date:   Wed Sep 11 15:19:24 2013 +0200
-> > 
-> >     x86: Use asm goto to implement better modify_and_test() functions
-> >     
-> >     Linus suggested using asm goto to get rid of the typical SETcc + TEST
-> >     instruction pair -- which also clobbers an extra register -- for our
-> >     typical modify_and_test() functions.
-> >     
-> >     Because asm goto doesn't allow output fields it has to include an
-> >     unconditinal memory clobber when it changes a memory variable to force
-> >     a reload.
-> >     
-> >     Luckily all atomic ops already imply a compiler barrier to go along
-> >     with their memory barrier semantics.
-> >     
-> >     Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> >     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> >     Link: http://lkml.kernel.org/n/tip-0mtn9siwbeo1d33bap1422se@git.kernel.org
-> >     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Hi Ivan,
+
+Minor comments below.
+
+On 10/07/2013 10:44 AM, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 > 
+> DWC3 glue layer is hardware layer around Synopsys DesignWare
+> USB3 core. Its purpose is to supply Synopsys IP with required
+> clocks, voltages and interface it with the rest of the SoC.
 > 
-> Well that blows,.. Anybody got any clue as to where to start looking?
-> I've not actually seen anything like this on my own machines.
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  drivers/usb/dwc3/Kconfig    |    8 +++
+>  drivers/usb/dwc3/Makefile   |    1 +
+>  drivers/usb/dwc3/dwc3-msm.c |  168 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 177 insertions(+)
+>  create mode 100644 drivers/usb/dwc3/dwc3-msm.c
+> 
+> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+> index 70fc430..4c7b5a4 100644
+> --- a/drivers/usb/dwc3/Kconfig
+> +++ b/drivers/usb/dwc3/Kconfig
+> @@ -59,6 +59,14 @@ config USB_DWC3_EXYNOS
+>  	  Recent Exynos5 SoCs ship with one DesignWare Core USB3 IP inside,
+>  	  say 'Y' or 'M' if you have one such device.
+>  
+> +config USB_DWC3_MSM
+> +       tristate "Qualcomm MSM/APQ Platforms"
+> +       default USB_DWC3
+> +       select USB_MSM_DWC3_PHYS
+> +       help
+> +         Recent Qualcomm SoCs ship with one DesignWare Core USB3 IP inside,
+> +         say 'Y' or 'M' if you have one such device.
+> +
+>  config USB_DWC3_PCI
+>  	tristate "PCIe-based Platforms"
+>  	depends on PCI
+> diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+> index dd17601..a90de66 100644
+> --- a/drivers/usb/dwc3/Makefile
+> +++ b/drivers/usb/dwc3/Makefile
+> @@ -31,4 +31,5 @@ endif
+>  
+>  obj-$(CONFIG_USB_DWC3_OMAP)		+= dwc3-omap.o
+>  obj-$(CONFIG_USB_DWC3_EXYNOS)		+= dwc3-exynos.o
+> +obj-$(CONFIG_USB_DWC3_MSM)		+= dwc3-msm.o
+>  obj-$(CONFIG_USB_DWC3_PCI)		+= dwc3-pci.o
+> diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-msm.c
+> new file mode 100644
+> index 0000000..1d73f92
+> --- /dev/null
+> +++ b/drivers/usb/dwc3/dwc3-msm.c
+> @@ -0,0 +1,168 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/usb/phy.h>
+> +
+> +struct dwc3_msm {
+> +	struct device		*dev;
+> +
+> +	struct clk		*core_clk;
+> +	struct clk		*iface_clk;
+> +	struct clk		*sleep_clk;
+> +	struct clk		*utmi_clk;
+> +
+> +	struct regulator	*gdsc;
+> +};
+> +
+> +static int dwc3_msm_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *node = pdev->dev.of_node;
+> +	struct dwc3_msm *mdwc;
+> +	struct resource *res;
+> +	void __iomem *tcsr;
+> +	int ret = 0;
+> +
+> +	mdwc = devm_kzalloc(&pdev->dev, sizeof(*mdwc), GFP_KERNEL);
+> +	if (!mdwc)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, mdwc);
+> +
+> +	mdwc->dev = &pdev->dev;
+> +
+> +	mdwc->gdsc = devm_regulator_get(mdwc->dev, "gdsc");
+> +
+> +	mdwc->core_clk = devm_clk_get(mdwc->dev, "core");
+> +	if (IS_ERR(mdwc->core_clk)) {
+> +		dev_dbg(mdwc->dev, "failed to get core clock\n");
+> +		return PTR_ERR(mdwc->core_clk);
+> +	}
+> +
+> +	mdwc->iface_clk = devm_clk_get(mdwc->dev, "iface");
+> +	if (IS_ERR(mdwc->iface_clk)) {
+> +		dev_dbg(mdwc->dev, "failed to get iface clock\n");
+> +		return PTR_ERR(mdwc->iface_clk);
+> +	}
+> +
+> +	mdwc->sleep_clk = devm_clk_get(mdwc->dev, "sleep");
+> +	if (IS_ERR(mdwc->sleep_clk)) {
+> +		dev_dbg(mdwc->dev, "failed to get sleep clock\n");
+> +		return  PTR_ERR(mdwc->sleep_clk);
+> +	}
+> +
+> +	mdwc->utmi_clk = devm_clk_get(mdwc->dev, "utmi");
+> +	if (IS_ERR(mdwc->utmi_clk)) {
+> +		dev_dbg(mdwc->dev, "failed to get utmi clock\n");
+> +		return  PTR_ERR(mdwc->utmi_clk);
+> +	}
 
-Perhaps it's related to one of
+I'm not sure that those dev_dbg() are useful at all.
 
-- the randconfig
-- kvm
-- gcc
+> +
+> +	if (!IS_ERR(mdwc->gdsc)) {
+> +		ret = regulator_enable(mdwc->gdsc);
+> +		if (ret)
+> +			dev_err(mdwc->dev, "cannot enable gdsc\n");
+> +	}
+> +
+> +	/*
+> +	 * DWC3 Core requires its CORE CLK (aka master / bus clk) to
+> +	 * run at 125Mhz in SSUSB mode and >60MHZ for HSUSB mode.
+> +	 */
+> +	clk_set_rate(mdwc->core_clk, 125000000);
+> +	clk_prepare_enable(mdwc->core_clk);
+> +	clk_prepare_enable(mdwc->iface_clk);
+> +	clk_prepare_enable(mdwc->sleep_clk);
+> +	clk_prepare_enable(mdwc->utmi_clk);
 
-In the end of dmesg file, there is the qemu command line to run the kernel:
+All function calls above could return errors. Aren't those clocks fatal?
 
-qemu-system-x86_64 -cpu kvm64 -enable-kvm -kernel
-/kernel/i386-randconfig-j1-10052106/a0cf1abc25ac197dd97b857c0f6341066a8cb1cf/vmlinuz-3.12.0-rc2-next-20130927-03100-ga0cf1ab -append 'hung_task_panic=1
-rcutree.rcu_cpu_stall_timeout=100 log_buf_len=8M ignore_loglevel debug sched_debug apic=debug dynamic_printk sysrq_always_enabled panic=10
-prompt_ramdisk=0 console=ttyS0,115200 console=tty0 vga=normal  root=/dev/ram0 rw
-link=/kernel-tests/run-queue/kvm/i386-randconfig-j1-10052106/next:master/.vmlinuz-a0cf1abc25ac197dd97b857c0f6341066a8cb1cf-20131005211923-7-athens
-branch=next/master
-BOOT_IMAGE=/kernel/i386-randconfig-j1-10052106/a0cf1abc25ac197dd97b857c0f6341066a8cb1cf/vmlinuz-3.12.0-rc2-next-20130927-03100-ga0cf1ab'  -initrd
-/kernel-tests/initrd/quantal-core-i386.cgz -m 256M -smp 2 -net nic,vlan=0,macaddr=00:00:00:00:00:00,model=virtio -net user,vlan=0,hostfwd=tcp::10661-:22
--net nic,vlan=1,model=e1000 -net user,vlan=1 -boot order=nc -no-reboot -watchdog i6300esb -drive
-file=/fs/LABEL=KVM/disk0-quantal-athens-6,media=disk,if=virtio -drive file=/fs/LABEL=KVM/disk1-quantal-athens-6,media=disk,if=virtio -drive
-file=/fs/LABEL=KVM/disk2-quantal-athens-6,media=disk,if=virtio -drive file=/fs/LABEL=KVM/disk3-quantal-athens-6,media=disk,if=virtio -drive
-file=/fs/LABEL=KVM/disk4-quantal-athens-6,media=disk,if=virtio -drive file=/fs/LABEL=KVM/disk5-quantal-athens-6,media=disk,if=virtio -pidfile
-/dev/shm/kboot/pid-quantal-athens-6 -serial file:/dev/shm/kboot/serial-quantal-athens-6 -daemonize -display none -monitor null    
+regadrs,
+Stan
 
-> Wu, do you use the same compiler version for all the builds that crash
-> like this (I'm assuming the other email was this same commit)? Does a
-> different compiler make things work again?
-
-Good point. I'll try a different compiler.
-
-Thanks,
-Fengguang
