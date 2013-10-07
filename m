@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3JGQaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:30:06 -0400
-Received: from mail-ye0-f176.google.com ([209.85.213.176]:40439 "EHLO
-	mail-ye0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab3JGQ37 (ORCPT
+	id S1756675Ab3JGQew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:34:52 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:33920 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227Ab3JGQaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:29:59 -0400
+	Mon, 7 Oct 2013 12:30:01 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v2 06/29] x86: use unflatten_and_copy_device_tree
-Date: Mon,  7 Oct 2013 11:29:14 -0500
-Message-Id: <1381163377-21044-7-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>, Chris Zankel <chris@zankel.net>,
+        linux-xtensa@linux-xtensa.org
+Subject: [PATCH v2 07/29] xtensa: use unflatten_and_copy_device_tree
+Date: Mon,  7 Oct 2013 11:29:15 -0500
+Message-Id: <1381163377-21044-8-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
@@ -29,59 +28,60 @@ Use the common unflatten_and_copy_device_tree to copy the built-in FDT
 out of init section.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
+Cc: Chris Zankel <chris@zankel.net>
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org
+Acked-by: Grant Likely <grant.likely@linaro.org>
 ---
- arch/x86/kernel/devicetree.c | 23 ++++++++---------------
- 1 file changed, 8 insertions(+), 15 deletions(-)
+ arch/xtensa/kernel/setup.c | 19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
 
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index 376dc78..0db805c 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -230,7 +230,7 @@ static void __init dtb_apic_setup(void)
- static void __init x86_flattree_get_config(void)
- {
- 	u32 size, map_len;
--	void *new_dtb;
-+	struct boot_param_header *dt;
- 
- 	if (!initial_dtb)
- 		return;
-@@ -238,24 +238,17 @@ static void __init x86_flattree_get_config(void)
- 	map_len = max(PAGE_SIZE - (initial_dtb & ~PAGE_MASK),
- 			(u64)sizeof(struct boot_param_header));
- 
--	initial_boot_params = early_memremap(initial_dtb, map_len);
--	size = be32_to_cpu(initial_boot_params->totalsize);
-+	dt = early_memremap(initial_dtb, map_len);
-+	size = be32_to_cpu(dt->totalsize);
- 	if (map_len < size) {
--		early_iounmap(initial_boot_params, map_len);
--		initial_boot_params = early_memremap(initial_dtb, size);
-+		early_iounmap(dt, map_len);
-+		dt = early_memremap(initial_dtb, size);
- 		map_len = size;
- 	}
- 
--	new_dtb = alloc_bootmem(size);
--	memcpy(new_dtb, initial_boot_params, size);
--	early_iounmap(initial_boot_params, map_len);
+diff --git a/arch/xtensa/kernel/setup.c b/arch/xtensa/kernel/setup.c
+index 946fb8d..fc31ec1 100644
+--- a/arch/xtensa/kernel/setup.c
++++ b/arch/xtensa/kernel/setup.c
+@@ -21,11 +21,8 @@
+ #include <linux/screen_info.h>
+ #include <linux/bootmem.h>
+ #include <linux/kernel.h>
 -
--	initial_boot_params = new_dtb;
--
--	/* root level address cells */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--
--	unflatten_device_tree();
-+	initial_boot_params = dt;
-+	unflatten_and_copy_device_tree();
-+	early_iounmap(dt, map_len);
+-#ifdef CONFIG_OF
+ #include <linux/of_fdt.h>
+ #include <linux/of_platform.h>
+-#endif
+ 
+ #if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
+ # include <linux/console.h>
+@@ -252,17 +249,6 @@ void __init early_init_devtree(void *params)
+ 		of_scan_flat_dt(early_init_dt_scan_memory, NULL);
  }
- #else
- static inline void x86_flattree_get_config(void) { }
+ 
+-static void __init copy_devtree(void)
+-{
+-	void *alloc = early_init_dt_alloc_memory_arch(
+-			be32_to_cpu(initial_boot_params->totalsize), 8);
+-	if (alloc) {
+-		memcpy(alloc, initial_boot_params,
+-				be32_to_cpu(initial_boot_params->totalsize));
+-		initial_boot_params = alloc;
+-	}
+-}
+-
+ static int __init xtensa_device_probe(void)
+ {
+ 	of_platform_populate(NULL, NULL, NULL, NULL);
+@@ -525,10 +511,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	bootmem_init();
+ 
+-#ifdef CONFIG_OF
+-	copy_devtree();
+-	unflatten_device_tree();
+-#endif
++	unflatten_and_copy_device_tree();
+ 
+ 	platform_setup(cmdline_p);
+ 
 -- 
 1.8.1.2
 
