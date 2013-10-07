@@ -1,72 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3JGMul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 08:50:41 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:40094 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab3JGMui (ORCPT
+	id S1754335Ab3JGM7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 08:59:36 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54162 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab3JGM7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 08:50:38 -0400
-Date: Mon, 7 Oct 2013 17:50:27 +0500
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Felipe Balbi <balbi@ti.com>
-Subject: Re: Testing ti_am335x_adc continuous mode (WAS: Re: [PATCH 2/2]
-Message-ID: <20131007125025.GA4655@gmail.com>
-References: <1379503383-17086-1-git-send-email-zubair.lutfullah@gmail.com>
- <1379503383-17086-3-git-send-email-zubair.lutfullah@gmail.com>
- <20131007115317.GA6135@linutronix.de>
+	Mon, 7 Oct 2013 08:59:34 -0400
+Date: Mon, 7 Oct 2013 05:59:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, peter@hurleysoftware.com
+Subject: Re: tty^Wrcu/perf lockdep trace.
+Message-ID: <20131007125927.GX5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131003195832.GU5790@linux.vnet.ibm.com>
+ <20131004065835.GP28601@twins.programming.kicks-ass.net>
+ <20131004160352.GF5790@linux.vnet.ibm.com>
+ <20131004165044.GV28601@twins.programming.kicks-ass.net>
+ <20131004170954.GK5790@linux.vnet.ibm.com>
+ <20131004185239.GS15690@laptop.programming.kicks-ass.net>
+ <20131004212506.GM5790@linux.vnet.ibm.com>
+ <20131004220232.GA8293@linux.vnet.ibm.com>
+ <20131005002348.GA11762@linux.vnet.ibm.com>
+ <20131007112421.GD3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131007115317.GA6135@linutronix.de>
+In-Reply-To: <20131007112421.GD3081@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100712-9332-0000-0000-000001ABDA5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 01:53:17PM +0200, Sebastian Andrzej Siewior wrote:
-> Hi Zubair,
+On Mon, Oct 07, 2013 at 01:24:21PM +0200, Peter Zijlstra wrote:
+> On Fri, Oct 04, 2013 at 05:23:48PM -0700, Paul E. McKenney wrote:
+> > The underlying problem is that perf is invoking call_rcu() with the
+> > scheduler locks held, but in NOCB mode, call_rcu() will with high
+> > probability invoke the scheduler -- which just might want to use its
+> > locks.  The reason that call_rcu() needs to invoke the scheduler is
+> > to wake up the corresponding rcuo callback-offload kthread, which
+> > does the job of starting up a grace period and invoking the callbacks
+> > afterwards.
+> > 
+> > One solution (championed on a related problem by Lai Jiangshan) is to
 > 
-> I have here am335x-evm board. The output of voltage4 (via `cat
-> /sys/bus/iio/devices/iio\:device0/in_voltage4_raw´) returns values in
-> the range 570…580. I tested the continuous sampling mdoe by executing
-> the following commands:
+> That's rcu_read_unlock_special(), right? 
+
+Yep, different location, same general approach.
+
+> > simply defer the wakeup to some point where scheduler locks are no longer
+> > held.  Since we don't want to unnecessarily incur the cost of such
+> > deferral, the task before us is threefold:
+> > 
+> > 1.	Determine when it is likely that a relevant scheduler lock is held.
+> > 
+> > 2.	Defer the wakeup in such cases.
+> > 
+> > 3.	Ensure that all deferred wakeups eventually happen, preferably
+> >     	sooner rather than later.
+> > 
+> > We use irqs_disabled_flags() as a proxy for relevant scheduler locks
+> > being held.  This works because the relevant locks are always acquired
+> > with interrupts disabled.  We may defer more often than needed, but that
+> > is at least safe.
 > 
-> |echo 1 > /sys/bus/iio/devices/iio\:device0/scan_elements/in_voltage4_en
-> |echo 25 > /sys/bus/iio/devices/iio\:device0/buffer/length
-> |echo 1 > /sys/bus/iio/devices/iio\:device0/buffer/enable
-> |sleep 1
-> |echo 0 > /sys/bus/iio/devices/iio\:device0/buffer/enable
-> |cat /dev/iio\:device0 > iio
-> |hexdump -C iio
+> Fair enough; do you feel the need for something more specific?
+
+Maybe...
+
+One advantage of the current approach is that it deals with any possible
+deadlock.  If we were to focus on specific locks, my fear is that we
+would be repeatedly chasing this sort of issue as new locks were added.
+
+> > The wakeup deferral is tracked via a new field in the per-CPU and
+> > per-RCU-flavor rcu_data structure, namely ->nocb_defer_wakeup.
+> > 
+> > This flag is checked by the RCU core processing.  The __rcu_pending()
+> > function now checks this flag, which causes rcu_check_callbacks()
+> > to initiate RCU core processing at each scheduling-clock interrupt
+> > where this flag is set.  Of course this is not sufficient because
+> > scheduling-clock interrupts are often turned off (the things we used to
+> > be able to count on!).  So the flags are also checked on entry to any
+> > state that RCU considers to be idle, which includes both NO_HZ_IDLE idle
+> > state and NO_HZ_FULL user-mode-execution state.
 > 
-> and the output is:
-> |00000000  37 02 92 02 1f 07 0a 06  20 06 31 06 2f 07 2a 07
-> |00000010  2b 07 2d 07 2c 07 28 07  2c 07 2b 07 2b 07 0c 06
-> |00000020  21 06 32 06 2e 07 2c 07  2a 07 2a 07 2c 07 2b 07
-> |00000030  29 07 27 07 28 07 29 07  2a 07 0d 06 21 06 35 06
+> So RCU doesn't current differentiate between EQS for nr_running==1 and
+> nr_running==0?
+
+Between usermode nr_running==1 and idle, you mean?
+
+It has separate APIs for these two cases, but they both call the same
+functions.  So yes, I can put a check in one place and catch both of
+these two cases.
+
+> > This approach should allow call_rcu() to be invoked regardless of what
+> > locks you might be holding, the key word being "should".
 > 
-> The first entry is in the range that I would expect. The second is
-> slitghly higher. The third and following entries are out of range. Have
-> you observed something like that? Is my testing close to what you have
-> done or did I make an mistake here?
+> Agreed. Except it looks like you've inverted the deferred wakeup
+> condition :-)
 
-I can't read the hex dump easily..
+Good point -- will send out updated patch.
 
-Keep in mind that the driver now uses 16 bit storage. 
+/me wonders what else he messed up...
 
-Also, I used generic_buffer.c after removing the trigger checks.
+							Thanx, Paul
 
-The driver would report stable values for 1.8V on one channel and gnd
-on another channel.
-
-Hope this helps
-ZubairLK
-
+> > @@ -2314,6 +2323,22 @@ static int rcu_nocb_kthread(void *arg)
+> >  	return 0;
+> >  }
+> >  
+> > +/* Is a deferred wakeup of rcu_nocb_kthread() required? */
+> > +static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp)
+> > +{
+> > +	return ACCESS_ONCE(rdp->nocb_defer_wakeup);
+> > +}
+> > +
+> > +/* Do a deferred wakeup of rcu_nocb_kthread(). */
+> > +static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
+> > +{
+> > +	if (rcu_nocb_need_deferred_wakeup(rdp))
 > 
-> Sebastian
+> 	!rcu_nocb_need_deferred_wakeup() ?
+> 
+> > +		return;
+> > +	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
+> > +	wake_up(&rdp->nocb_wq);
+> > +	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
+> > +}
+> > +
+> >  /* Initialize per-rcu_data variables for no-CBs CPUs. */
+> >  static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+> >  {
+> 
+
