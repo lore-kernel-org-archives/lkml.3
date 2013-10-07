@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3JGQxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:53:42 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:54391 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3JGQxe (ORCPT
+	id S1756032Ab3JGQ53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:57:29 -0400
+Received: from mail-gg0-f182.google.com ([209.85.161.182]:42578 "EHLO
+	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab3JGQ51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:53:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <87vc191sf2.fsf@xmission.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <87a9kkax0j.fsf@xmission.com> <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com> <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com> <87a9ioo37a.fsf_-_@xmission.com>
- <20131007043919.GB10284@mail.hallyn.com> <87vc191sf2.fsf@xmission.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 7 Oct 2013 17:53:13 +0100
-Message-ID: <CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but the
- current mount namespace
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Oct 2013 12:57:27 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2 04/29] arc: use unflatten_and_copy_device_tree
+Date: Mon,  7 Oct 2013 11:29:12 -0500
+Message-Id: <1381163377-21044-5-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
+References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 7, 2013 at 7:55 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
->
->> Quoting Eric W. Biederman (ebiederm@xmission.com):
->>>
->>> Programs have been known to test for empty directories by attempting
->>> to remove them.  To keep from violating the principle of least
->>> surprise don't let directories the caller can see with someting
->>> mounted on them be deleted.
->>
->> Do you think we should do the same thing for over-mounted file at
->> vfs_unlink()?
->
-> We easily could.
->
-> The point of the patch is to just preserve the directory is empty don't
-> allow rmdir to succeed semantics, and as typically we can see something
-> in the directory because of the mount it doesn't make sense for rmdir to
-> succeed.
->
-> unlink doesn't have any occassions when the permissions are sufficient
-> to remove a directory where it will fail.  So I don't see the point of
-> doing this for anything except directories.
->
-> Except for possibly the oddball rmdir semantics mentioned I don't think
-> this patch should be part of anyone's correctness analysis.
->
->
->
-> It is easiest to see that this series of changes is semantically safe if
-> we are safe to run unprivileged code in a mount namespace where root has
-> locally unmounted every mount point.
->
-> We do have the restriction that in a user namespace we can't unmount
-> anything root was mounted outside the user namespace.  Which combined
-> with the above patch would be roughly equivalent to todays mount
-> restrictions for the common case.  Unfortunately being only roughly
-> equivalent the analysis gets very complicated, and complicated reasoning
-> usually means invalid reasoning.
->
->
-> So if we can feel safe just depending on the parent directory
-> permissions (which are not hidden by a mount) protecting our mount
-> points, I feel much better about this patchset.
->
+From: Rob Herring <rob.herring@calxeda.com>
 
-I feel safe about this (in the safe-against-attack sense, not
-necessary the safe-against-confused-users sense) because the whole
-point of preventing unmount of things that were mounted by root is to
-prevent untrusted users from seeing what's under the mount.  But rmdir
-and unlink don't let you see what was under the mount because they
-remove it.
+Use the common unflatten_and_copy_device_tree to copy the built-in FDT
+out of init section.
 
-(Hmm.  I wonder if rename on a mountpoint could work.  I've wanted
-this on occasion.)
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+---
+ arch/arc/include/asm/mach_desc.h |  1 -
+ arch/arc/kernel/devtree.c        | 15 ---------------
+ arch/arc/kernel/setup.c          |  3 +--
+ 3 files changed, 1 insertion(+), 18 deletions(-)
 
---Andy
+diff --git a/arch/arc/include/asm/mach_desc.h b/arch/arc/include/asm/mach_desc.h
+index 9998dc8..d3e9c0a 100644
+--- a/arch/arc/include/asm/mach_desc.h
++++ b/arch/arc/include/asm/mach_desc.h
+@@ -82,6 +82,5 @@ __attribute__((__section__(".arch.info.init"))) = {	\
+ };
+ 
+ extern struct machine_desc *setup_machine_fdt(void *dt);
+-extern void __init copy_devtree(void);
+ 
+ #endif
+diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
+index 2340af0..eeb613a 100644
+--- a/arch/arc/kernel/devtree.c
++++ b/arch/arc/kernel/devtree.c
+@@ -100,18 +100,3 @@ struct machine_desc * __init setup_machine_fdt(void *dt)
+ 
+ 	return mdesc_best;
+ }
+-
+-/*
+- * Copy the flattened DT out of .init since unflattening doesn't copy strings
+- * and the normal DT APIs refs them from orig flat DT
+- */
+-void __init copy_devtree(void)
+-{
+-	void *alloc = early_init_dt_alloc_memory_arch(
+-			be32_to_cpu(initial_boot_params->totalsize), 64);
+-	if (alloc) {
+-		memcpy(alloc, initial_boot_params,
+-				be32_to_cpu(initial_boot_params->totalsize));
+-		initial_boot_params = alloc;
+-	}
+-}
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+index 2c68bc7e..710bf89 100644
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -346,8 +346,7 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_arch_memory();
+ 
+ 	/* copy flat DT out of .init and then unflatten it */
+-	copy_devtree();
+-	unflatten_device_tree();
++	unflatten_and_copy_device_tree();
+ 
+ 	/* Can be issue if someone passes cmd line arg "ro"
+ 	 * But that is unlikely so keeping it as it is
+-- 
+1.8.1.2
+
