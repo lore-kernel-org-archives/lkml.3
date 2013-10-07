@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab3JGQHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 12:07:36 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:58346 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab3JGQHc (ORCPT
+	id S1756077Ab3JGQJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 12:09:08 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46327 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab3JGQJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 12:07:32 -0400
-Message-ID: <5252DC3D.1060805@gmail.com>
-Date: Mon, 07 Oct 2013 10:07:25 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 7 Oct 2013 12:09:04 -0400
+Message-ID: <5252DC9C.8090803@lwfinger.net>
+Date: Mon, 07 Oct 2013 11:09:00 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] tools/perf/build: Pass through LDFLAGS to feature tests
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org> <5252BCB4.5030802@gmail.com> <20131007141100.GA21873@gmail.com> <5252D4DB.30302@gmail.com> <20131007155129.GA1066@gmail.com>
-In-Reply-To: <20131007155129.GA1066@gmail.com>
+To: Joe Perches <joe@perches.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arend van Spriel <arend@broadcom.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the wireless-next tree
+References: <1381159127-11067-1-git-send-email-treding@nvidia.com>	 <1381159127-11067-5-git-send-email-treding@nvidia.com>	 <5252D7E4.2050509@lwfinger.net> <1381161393.2081.177.camel@joe-AO722>
+In-Reply-To: <1381161393.2081.177.camel@joe-AO722>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/7/13 9:51 AM, Ingo Molnar wrote:
->
-> * David Ahern <dsahern@gmail.com> wrote:
->
->> On 10/7/13 8:11 AM, Ingo Molnar wrote:
->>> These changes are not yet committed into any stable Git tree - I've pushed
->>> them out into:
+On 10/07/2013 10:56 AM, Joe Perches wrote:
+> On Mon, 2013-10-07 at 10:48 -0500, Larry Finger wrote:
+>> On 10/07/2013 10:18 AM, Thierry Reding wrote:
+>>> Today's linux-next merge of the wireless-next tree got conflicts in:
 >>>
->>>     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.perf
->>>
->>> (it might take a few minutes for kernel.org to sync up.)
->>
->> Tested on Fedora 12, 14, 16 with varying degrees of feature support
->> installed. The tests that failed are all static builds with the
->> command line:
->>
->> make O=/tmp/junk -C tools/perf LDFLAGS=-static NO_DWARF=1
->>
->> Passing LDFLAGS to the feature tests should handle that.
+>>> 	drivers/net/wireless/brcm80211/brcmfmac/dhd_bus.h
+>>> 	drivers/net/wireless/rtlwifi/rtl8188ee/phy.h
+>>> 	drivers/net/wireless/rtlwifi/rtl8192ce/phy.h
+>>> 	drivers/net/wireless/rtlwifi/rtl8192de/phy.h
+>>> 	drivers/net/wireless/rtlwifi/rtl8723ae/phy.h
+> []
+>> Yes, the patches for rtlwifi problems are correct. All of these problems would
+>> have been avoided if changes to wireless drivers were sent to the wireless tree
+>> rather than direct submission to net-next!!!!
 >
-> Indeed. Does the patch below fix it for you?
+> They were and you acked it.
+> https://lkml.org/lkml/2013/9/25/589
+>
+> Who picks it up first and applies it is
+> not in my domain.
 
-It does.
+Fair enough. I should have asked DaveM to let John apply those changes.
 
-Tested-by: David Ahern <dsahern@gmail.com>
+Larry
+
+
