@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3JHMR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:17:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21084 "EHLO mga09.intel.com"
+	id S1755270Ab3JHMVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:21:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754966Ab3JHMRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:17:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
-   d="scan'208";a="407283049"
-Date: Tue, 8 Oct 2013 20:17:42 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Message-ID: <20131008121742.GA29280@localhost>
-References: <20131007021118.GA27927@localhost>
- <20131007051038.GA9764@localhost>
- <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
- <20131007083505.GA22585@localhost>
- <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
- <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
- <20131008020918.GA1220@localhost>
- <20131008021452.GA6456@localhost>
- <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com>
- <20131008031152.GA8218@localhost>
+	id S1752488Ab3JHMVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 08:21:13 -0400
+Date: Tue, 8 Oct 2013 14:22:16 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
+ pattern
+Message-ID: <20131008122215.GA14389@dhcp-26-207.brq.redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
+ <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
+ <1380922156.3214.49.camel@bwh-desktop.uk.level5networks.com>
+ <20131005142054.GA11270@dhcp-26-207.brq.redhat.com>
+ <1381009586.645.141.camel@pasglop>
+ <20131006060243.GB28142@dhcp-26-207.brq.redhat.com>
+ <1381040386.645.143.camel@pasglop>
+ <20131006071027.GA29143@dhcp-26-207.brq.redhat.com>
+ <20131007180111.GC2481@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131008031152.GA8218@localhost>
+In-Reply-To: <20131007180111.GC2481@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-> I'm now trying to disable all drivers shows up in the kobject_release messages:
+On Mon, Oct 07, 2013 at 02:01:11PM -0400, Tejun Heo wrote:
+> > What about introducing pci_lock_msi() and pci_unlock_msi() and let device
+> > drivers care about their ranges and specifics in race-safe manner?
+> > I do not call to introduce it right now (since it appears pSeries has not
+> > been hitting the race for years) just as a possible alternative to Ben's
+> > proposal.
 > 
-> [    2.756392] kobject: 'ipmi_si' (ffff880007764a00): kobject_release, parent ffff8800001b7648 (delayed)
-> [    2.758091] kobject: 'ipmi_si' (ffff880007764800): kobject_release, parent ffff880000221248 (delayed)
-> [    2.759858] kobject: 'ipmi_si' (ffff880007764c00): kobject_release, parent ffff880000189248 (delayed)
-> [    2.929669] kobject: 'drm' (ffff880006db2848): kobject_release, parent ffff880000189648 (delayed)
-> [    2.932143] kobject: 'drm' (ffff880006daf000): kobject_release, parent           (null) (delayed)
-> [    2.941844] kobject: 'controlD64' (ffff880006db2020): kobject_release, parent           (null) (delayed)
-> [    2.958432] kobject: 'parport_pc.956' (ffff880006db2020): kobject_release, parent           (null) (delayed)
-> [    2.965698] kobject: 'parport_pc.888' (ffff880006dc5820): kobject_release, parent           (null) (delayed)
-> [    2.972583] kobject: 'parport_pc.632' (ffff880006dc5020): kobject_release, parent           (null) (delayed)
-> [    3.031704] kobject: 'physmap-flash' (ffff880006ddc800): kobject_release, parent ffff880000189248 (delayed)
-> [    3.055119] kobject: 'docg3' (ffff880006de3c00): kobject_release, parent ffff880000189248 (delayed)
-> [    3.496256] kobject: 'gpio-vbus' (ffff880006817400): kobject_release, parent ffff880000189248 (delayed)
-> [    3.619023] kobject: '(null)' (ffff88000777baf0): kobject_release, parent           (null) (delayed)
-> [    3.657587] kobject: 'proc-osm' (ffff88000684be00): kobject_release, parent ffff880006849848 (delayed)
-> [    3.662546] kobject: 'mc13xxx-rtc' (ffff880006851e00): kobject_release, parent ffff880000189248 (delayed)
-> [    3.669144] kobject: 'rtc-msm6242' (ffff880006851c00): kobject_release, parent ffff880000189248 (delayed)
-> [    3.677494] kobject: 'pcap-rtc' (ffff880006851a00): kobject_release, parent ffff880000189248 (delayed)
-> [    3.680280] kobject: 'rtc-rp5c01' (ffff880006855a00): kobject_release, parent ffff880000189248 (delayed)
-> [    3.750200] kobject: 'mc13783-adc' (ffff880007707000): kobject_release, parent ffff880000189248 (delayed)
- 
-I find the above debug messages very helpful in locating the buggy
-driver. How about enabling it whenever CONFIG_DEBUG_KOBJECT_RELEASE is
-enabled? Something like
+> I don't think the same race condition would happen with the loop.
 
- #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
--       pr_debug("kobject: '%s' (%p): %s, parent %p (delayed)\n",
-+       printk(KERN_INFO "kobject: '%s' (%p): %s, parent %p (delayed)\n",
-                 kobject_name(kobj), kobj, __func__, kobj->parent);
+We need to distinguish the contexts we're discussing.
 
-pr_debug() won't be displayed by default, and it depends on
-CONFIG_DYNAMIC_DEBUG.
+If we talk about pSeries quota, then the current pSeries pci_enable_msix()
+implementation is racy internally and could fail if the quota went down
+*while* pci_enable_msix() is executing. In this case the loop will have to
+exit rather than retry with a lower number (what number?).
 
-> with some manual bisects, I find a good config (attached) that can
-> reliably boot the kernel up.
-> 
-> Based on that config, I tried adding parport_pc and see that it still
-> boots fine.
-> 
-> Adding drm, however will bring back the oops. Will try a kernel based
-> on the original kconfig with drm disabled only.
+In this regard the new scheme does not bring anything new and relies on
+the fact this race does not hit and therefore does not worry.
 
-Thanks,
-Fengguang
+If we talk about quota as it has to be, then yes - the loop scheme seems
+more preferable.
+
+Overall, looks like we just need to fix the pSeries implementation,
+if the guys want it, he-he :)
+
+> The problem case is where multiple msi(x) allocation fails completely
+> because the global limit went down before inquiry and allocation.  In
+> the loop based interface, it'd retry with the lower number.
+
+I am probably missing something here. If the global limit went down before
+inquiry then the inquiry will get what is available and try to allocate with
+than number.
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
