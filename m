@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab3JHQ2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:28:32 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:63903 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3JHQ22 (ORCPT
+	id S1756585Ab3JHQ3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:29:15 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:38047 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab3JHQ3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:28:28 -0400
-Message-ID: <525432A7.9030104@atmel.com>
-Date: Tue, 8 Oct 2013 18:28:23 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 8 Oct 2013 12:29:12 -0400
+Date: Tue, 8 Oct 2013 09:29:05 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Chris Murphy <bugzilla@colorremedies.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, khali@linux-fr.org,
+        lm-sensors@lm-sensors.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: applesmc oops in 3.10/3.11
+Message-ID: <20131008162905.GA20665@roeck-us.net>
+References: <20131002035156.GA566@roeck-us.net>
+ <20131002095339.GA2716@polaris.bitmath.org>
+ <524C1FE1.4050207@roeck-us.net>
+ <20131002163418.GA4557@polaris.bitmath.org>
+ <20131002164718.GA7392@roeck-us.net>
+ <20131002172410.GA381@polaris.bitmath.org>
+ <525346D3.30500@roeck-us.net>
+ <6918F624-B267-4DB5-95A2-7E09448CA3E4@colorremedies.com>
+ <20131008154809.GB18402@roeck-us.net>
+ <20131008162917.GA7773@polaris.bitmath.org>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 18/19] ARM: at91: move pit timer to common clk framework
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375949844-10545-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375949844-10545-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008162917.GA7773@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 10:17, Boris BREZILLON :
-> Use device tree to get the source clock of the PIT (Periodic Interval Timer).
-> If the clock is not found in device tree (or dt is not enabled) we'll try to
-> get it using clk_lookup definitions.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+On Tue, Oct 08, 2013 at 06:29:17PM +0200, Henrik Rydberg wrote:
+> Hi Guenter,
+> 
+> > > > So, what should we do with this patch ? Apply it ?
+> > > 
+> > > So far I'm getting nothing on the original machine. As of today it's applied as the last patch on 3.12.0-0.rc4.git0.1.fc20.x86_64. Unfortunately at the moment I'm a bit too dense to figure out how to get a new kernel applied to an existing live package so I can try this on a USB stick. While maybe unrelated, the oops was occurring at least 4x as often booted from USB stick media than HDD.
+> > > 
+> > 
+> > Seems to me we should apply it.
+> > 
+> > Henrik,
+> > 
+> > what do you think ? Did you have time for additional testing ?
+> > If you think we should apply it, please send me a signed patch.
+> 
+> I want to make one more test tomorrow, then I'll send a proper patch. Thanks!
+> 
+Ok, great.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
->   arch/arm/mach-at91/at91sam926x_time.c |   14 +++++++++++++-
->   1 file changed, 13 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
-> index 3a4bc2e..8ac976a 100644
-> --- a/arch/arm/mach-at91/at91sam926x_time.c
-> +++ b/arch/arm/mach-at91/at91sam926x_time.c
-> @@ -39,6 +39,7 @@
->   static u32 pit_cycle;		/* write-once */
->   static u32 pit_cnt;		/* access only w/system irq blocked */
->   static void __iomem *pit_base_addr __read_mostly;
-> +static struct clk *mck;
->
->   static inline unsigned int pit_read(unsigned int reg_offset)
->   {
-> @@ -195,10 +196,14 @@ static int __init of_at91sam926x_pit_init(void)
->   	if (!pit_base_addr)
->   		goto node_err;
->
-> +	mck = of_clk_get(np, 0);
-> +
->   	/* Get the interrupts property */
->   	ret = irq_of_parse_and_map(np, 0);
->   	if (!ret) {
->   		pr_crit("AT91: PIT: Unable to get IRQ from DT\n");
-> +		if (!IS_ERR(mck))
-> +			clk_put(mck);
->   		goto ioremap_err;
->   	}
->   	at91sam926x_pit_irq.irq = ret;
-> @@ -230,6 +235,8 @@ void __init at91sam926x_pit_init(void)
->   	unsigned	bits;
->   	int		ret;
->
-> +	mck = ERR_PTR(-ENOENT);
-> +
->   	/* For device tree enabled device: initialize here */
->   	of_at91sam926x_pit_init();
->
-> @@ -237,7 +244,12 @@ void __init at91sam926x_pit_init(void)
->   	 * Use our actual MCK to figure out how many MCK/16 ticks per
->   	 * 1/HZ period (instead of a compile-time constant LATCH).
->   	 */
-> -	pit_rate = clk_get_rate(clk_get(NULL, "mck")) / 16;
-> +	if (IS_ERR(mck))
-> +		mck = clk_get(NULL, "mck");
-> +
-> +	if (IS_ERR(mck))
-> +		panic("AT91: PIT: Unable to get mck clk\n");
-> +	pit_rate = clk_get_rate(mck) / 16;
->   	pit_cycle = (pit_rate + HZ/2) / HZ;
->   	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
->
->
-
-
--- 
-Nicolas Ferre
+Thanks,
+Guenter
