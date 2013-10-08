@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab3JHRk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 13:40:56 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:28606 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab3JHRkw (ORCPT
+	id S1756623Ab3JHRl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 13:41:56 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27937 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755554Ab3JHRlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 13:40:52 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-66-525443a385b8
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] thermal: offer TI thermal support only when ARCH_OMAP2PLUS
- is defined
-Date: Tue, 08 Oct 2013 19:40:48 +0200
-Message-id: <4296924.z1ntgL0xa6@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1830886.95xXFHTq6V@amdc1032>
-References: <3702969.8rn3SOscJE@amdc1032> <52542E42.5090805@ti.com>
- <1830886.95xXFHTq6V@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9jAd3FziFBBtdniFv8nXSM3WLN/p9M
-	Fmeb3rBbXN41h83ic+8RRosnD/vYHNg8fv+axOixeM9LJo++LasYPY7f2M7k8XmTXABrFJdN
-	SmpOZllqkb5dAlfG8a8LGQvWc1Y035/B1sB4gL2LkZNDQsBE4uLyuVC2mMSFe+vZuhi5OIQE
-	FjFKTPg1nwUkISTQwiRxZVs4iM0mYCUxsX0VI4gtIqAncePFEyaQBmaBlYwSO7pOgk0SFoiR
-	mHagFSjBwcEioCrxod0ZJMwroCmxZ04f2ExRAU+JT5OWMoPYnAJaEo++/AIrFxJIlri+2Aqi
-	XFDix+R7YOXMAvIS+/ZPZYWwdST2t05jm8AoMAtJ2SwkZbOQlC1gZF7FKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERzYz6R3MK5qsDjEKMDBqMTD+4A/JEiINbGsuDL3EKMEB7OSCK+JLFCI
-	NyWxsiq1KD++qDQntfgQozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDY+by1TWPD9kL
-	JKycyn51n8/n32a7z8gaWa3wnhjwIT7nvv4W91BZi0Olx29nbDyUJbiX48JHzsfc724+nCri
-	5uCWnt/xZxfDM6Nvct+itWKddgZP7V+y9m2iQaT1rJKTGT96dxjNL/6Q+EjOOrBPO0Tjq5Fh
-	qpva6mdvT36Xcn/+bP/0imPrliixFGckGmoxFxUnAgBX/UIAaAIAAA==
+	Tue, 8 Oct 2013 13:41:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19L3lNT52zrilIfIDaVijPF
+Date: Tue, 8 Oct 2013 10:41:49 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Simon Barth <simon.pe.barth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mach-omap2: board-generic: fix undefined symbol
+Message-ID: <20131008174149.GB8313@atomide.com>
+References: <5253C759.5020406@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5253C759.5020406@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 08, 2013 06:59:19 PM Bartlomiej Zolnierkiewicz wrote:
+* Simon Barth <simon.pe.barth@gmail.com> [131008 01:58]:
+> Since dra7 reuses the  function 'omap5_realtime_timer_init' in
+> arch/arm/mach-omap2/board-generic.c as timer init function, it has to be
+> built for this SoC as well.
 
-[...]
+Thanks applying into omap-for-v3.12/fixes.
 
-> > Restricting drivers to be compiled to specific architecture is a poor
-> > design strategy. Specifically, on the TI Bandgap device driver, as I
-> > already mentioned to you, this is again clear, as it is currently used
-> > on different archs, and the code can be easily reused when other archs,
-> > different than DRA and OMAP, need it.
+Regards,
+
+Tony
+ 
+> Signed-off-by: Simon Barth <Simon.Pe.Barth@gmail.com>
+> ---
+>  arch/arm/mach-omap2/timer.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> It is the correct strategy to restrict hardware specific device drivers
-> (i.e. ARM Exynos thermal driver) to be compiled only for hardware that
-> it is available on (i.e. ARM Exynos SoCs). If TI bandgap driver is not
-> hardware specific and can be used on non TI hardware than you're of
-> course right.
-
-Just small addition. We are not using TI bandgap IP in any current ARM
-Samsung SoCs so TI bandgap IP support should not be available on them
-(=> we should not use ARCH_HAS_BANDGAP at all, usage for EXYNOS_THERMAL
-is incorrect as I already explained in previous mail).
-
-OTOH archs/SoCs that are using such IP can select ARCH_HAS_BANDGAP freely.
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index fa74a06..ead48fa 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -628,7 +628,7 @@ void __init omap4_local_timer_init(void)
+>  #endif /* CONFIG_HAVE_ARM_TWD */
+>  #endif /* CONFIG_ARCH_OMAP4 */
+> 
+> -#ifdef CONFIG_SOC_OMAP5
+> +#if defined(CONFIG_SOC_OMAP5) || defined(CONFIG_SOC_DRA7XX)
+>  void __init omap5_realtime_timer_init(void)
+>  {
+>  	omap4_sync32k_timer_init();
+> @@ -636,7 +636,7 @@ void __init omap5_realtime_timer_init(void)
+> 
+>  	clocksource_of_init();
+>  }
+> -#endif /* CONFIG_SOC_OMAP5 */
+> +#endif /* CONFIG_SOC_OMAP5 || CONFIG_SOC_DRA7XX */
+> 
+>  /**
+>   * omap_timer_init - build and register timer device with an
+> -- 
+> 1.7.9.5
