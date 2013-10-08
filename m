@@ -1,226 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab3JHNZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:25:43 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:56627 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab3JHNZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:25:35 -0400
-Message-ID: <525407B2.9070401@linux.vnet.ibm.com>
-Date: Tue, 08 Oct 2013 18:55:06 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 1/3] SDT markers listing by perf:
-References: <20131007063911.11693.33624.stgit@hemant-fedora> <20131007064707.11693.27056.stgit@hemant-fedora> <5253EF03.5090502@hitachi.com>
-In-Reply-To: <5253EF03.5090502@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100813-5490-0000-0000-00000446FDDE
+	id S1755140Ab3JHN0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:26:36 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:16807 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752214Ab3JHNZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:25:10 -0400
+X-Greylist: delayed 3775 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 09:25:06 EDT
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: [PATCH 01/03] Make non-linear GPIO ranges accesible from gpiolib
+Date: Tue,  8 Oct 2013 14:25:20 +0200
+Message-Id: <1381235122-23730-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20131008122145.GA21985@ab42.lan>
+References: <20131008122145.GA21985@ab42.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 05:09 PM, Masami Hiramatsu wrote:
-> (2013/10/07 15:47), Hemant Kumar wrote:
->> @@ -325,6 +326,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
->>   		     opt_set_filter),
->>   	OPT_CALLBACK('x', "exec", NULL, "executable|path",
->>   			"target executable name or path", opt_set_target),
->> +	OPT_BOOLEAN('S', "markers", &params.sdt, "Show probe-able sdt notes"),
-> BTW, "-S" for short of "--markers" option is a bit odd. Would we better use -M ? :)
+This patch adds the infrastructure required to register non-linear gpio
+ranges through gpiolib and the standard GPIO device tree bindings.
 
-I thought of -S as SDT. :) Anyways, on second thought, will change that 
-to -M.
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+---
+ Documentation/devicetree/bindings/gpio/gpio.txt |   40 +++++++++++++++++++
+ drivers/gpio/gpiolib-of.c                       |   36 +++++++++++++----
+ drivers/gpio/gpiolib.c                          |   47 +++++++++++++++++++++++
+ drivers/pinctrl/core.c                          |   23 +++++++++++
+ include/asm-generic/gpio.h                      |   10 +++++
+ include/linux/gpio.h                            |    9 ++++
+ include/linux/pinctrl/pinctrl.h                 |    3 +
+ 7 files changed, 160 insertions(+), 8 deletions(-)
 
->
-> [...]
->> @@ -355,6 +357,26 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
->>   	 */
->>   	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
->>   
->> +	if (params.sdt) {
->> +		if (params.show_lines) {
->> +			pr_err("Error: Don't use --markers with --lines.\n");
->> +			usage_with_options(probe_usage, options);
->> +		}
->> +		if (params.show_vars) {
->> +			pr_err("Error: Don't use --markers with --vars.\n");
->> +			usage_with_options(probe_usage, options);
->> +		}
->> +		if (params.show_funcs) {
->> +			pr_err("Error: Don't use --markers with --funcs.\n");
->> +			usage_with_options(probe_usage, options);
->> +		}
->> +		ret = show_sdt_notes(params.target);
-> You have to ensure params.target is set before use it.
-
-Yes, will do that.
-
->> +		if (ret < 0) {
->> +			pr_err("  Error : Failed to find SDT markers!"
->> +			       "(%d)\n", ret);
->> +		}
->> +		return ret;
->> +	}
->>   	if (params.list_events) {
->>   		if (params.mod_events) {
->>   			pr_err("  Error: Don't use --list with --add/--del.\n");
-> [...]
->> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
->> index 4b12bf8..6b17260 100644
->> --- a/tools/perf/util/symbol-elf.c
->> +++ b/tools/perf/util/symbol-elf.c
->> @@ -846,6 +846,182 @@ out_elf_end:
->>   	return err;
->>   }
->>   
->> +/*
->> + * Populate the name, type, offset in the SDT note structure and
->> + * ignore the argument fields (for now)
->> + */
->> +static struct sdt_note *populate_sdt_note(Elf **elf, const char *data,
->> +					  size_t len, int type)
->> +{
->> +	const char *provider, *name;
->> +	struct sdt_note *note;
->> +
->> +	/*
->> +	 * Three addresses need to be obtained :
->> +	 * Marker location, address of base section and semaphore location
->> +	 */
->> +	union {
->> +		Elf64_Addr a64[3];
->> +		Elf32_Addr a32[3];
->> +	} buf;
->> +
->> +	/*
->> +	 * dst and src are required for translation from file to memory
->> +	 * representation
->> +	 */
->> +	Elf_Data dst = {
->> +		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
->> +		.d_size = gelf_fsize((*elf), ELF_T_ADDR, 3, EV_CURRENT),
->> +		.d_off = 0, .d_align = 0
->> +	};
->> +
->> +	Elf_Data src = {
->> +		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
->> +		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
->> +		.d_align = 0
->> +	};
->> +
->> +	/* Check the type of each of the notes */
->> +	if (type != SDT_NOTE_TYPE)
->> +		goto out_ret;
->> +
->> +	note = (struct sdt_note *)zalloc(sizeof(struct sdt_note));
->> +	if (note == NULL) {
->> +		pr_err("Memory allocation error\n");
-> No need to state out of memory for each place...
-> If you hit an out of memory for such small piece, you'd better
-> abort execution. For that purpose, I recommend you to return
-> errno from each function, and caller must check it.
-
-Yeah this will be better... will return errno from each function.
-
->> +		goto out_ret;
->> +	}
->> +	INIT_LIST_HEAD(&note->note_list);
->> +
->> +	if (len < dst.d_size + 3)
->> +		goto out_free;
->> +
->> +	/* Translation from file representation to memory representation */
->> +	if (gelf_xlatetom(*elf, &dst, &src,
->> +			  elf_getident(*elf, NULL)[EI_DATA]) == NULL)
->> +		pr_debug("gelf_xlatetom : %s", elf_errmsg(-1));
->> +
->> +	/* Populate the fields of sdt_note */
->> +	provider = data + dst.d_size;
->> +
->> +	name = (const char *)memchr(provider, '\0', data + len - provider);
->> +	if (name++ == NULL)
->> +		goto out_free;
->> +	note->provider = strdup(provider);
->> +	note->name = strdup(name);
->> +
->> +	/* Obtain the addresses and ignore notes with semaphores set*/
->> +	if (gelf_getclass(*elf) == ELFCLASS32) {
->> +		note->addr.a32[0] = buf.a32[0];
->> +		note->addr.a32[1] = buf.a32[1];
->> +		note->addr.a32[2] = buf.a32[2];
->> +		note->bit32 = true;
->> +		if (buf.a32[2] != 0)
->> +			goto out_free;
->> +	} else {
->> +		note->addr.a64[0] = buf.a64[0];
->> +		note->addr.a64[1] = buf.a64[1];
->> +		note->addr.a64[2] = buf.a64[2];
->> +		note->bit32 = false;
->> +		if (buf.a64[2] != 0)
->> +			goto out_free;
->> +	}
->> +	return note;
->> +
->> +out_free:
->> +	free(note);
->> +out_ret:
->> +	return NULL;
->> +}
->> +
->> +static struct list_head *construct_sdt_notes_list(Elf *elf)
-> This also would better return errno.
-
-Ok.
-
->> +{
->> +	GElf_Ehdr ehdr;
->> +	Elf_Scn *scn = NULL;
->> +	Elf_Data *data;
->> +	GElf_Shdr shdr;
->> +	size_t shstrndx;
->> +	size_t next;
->> +	GElf_Nhdr nhdr;
->> +	size_t name_off, desc_off, offset;
->> +	struct sdt_note *tmp = NULL, *note = NULL;
->> +
->> +	if (gelf_getehdr(elf, &ehdr) == NULL) {
->> +		pr_debug("%s: Can't get elf header.\n", __func__);
->> +		goto out_err;
->> +	}
->> +	if (elf_getshdrstrndx(elf, &shstrndx) != 0) {
->> +		pr_debug("getshdrstrndx failed\n");
->> +		goto out_err;
->> +	}
->> +
->> +	/*
->> +	 * Look for section type = SHT_NOTE, flags = no SHF_ALLOC
->> +	 * and name = .note.stapsdt
->> +	 */
->> +	scn = elf_section_by_name(elf, &ehdr, &shdr, NOTE_SCN, NULL);
->> +	if (!scn) {
->> +		printf("SDT markers not present!\n");
-> Why you don't use pr_err() here ? :)
-
-Because, I thought it isn't an error that SDT markers are not present. 
-It won't make much of a difference though. :)
-
-> And also, as I commented, I'd like to know which binary doesn't have SDT markers,
-> at least with -v (verbose) option.
-
-Yes, I guess it would be better to show the binary name even without -v 
-option. Will make the changes.
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+index d933af3..da0e7fb 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+@@ -112,3 +112,43 @@ where,
+ Here, a single GPIO controller has GPIOs 0..9 routed to pin controller
+ pinctrl1's pins 20..29, and GPIOs 10..19 routed to pin controller pinctrl2's
+ pins 50..59.
++
++In addition, named groups of pins can be mapped to pin groups of a given
++pin controller using the gpio-ranges property as described below:
++
++	gpio-range-list ::= <single-gpio-range> [gpio-range-list]
++	single-gpio-range ::= <numeric-gpio-range> | <named-gpio-range>
++	numeric-gpio-range ::=
++			<pinctrl-phandle> <gpio-base> <pinctrl-base> <count>
++	named-gpio-range ::= <pinctrl-phandle> <gpio-base> '<0 0>'
++	pinctrl-phanle : phandle to pin controller node.
++	gpio-base : Base GPIO ID in the GPIO controller
++	pinctrl-base : Base pinctrl pin ID in the pin controller
++	count : The number of GPIOs/pins in this range
++
++In this case, the property gpio-ranges-group-names contains one string for
++every single-gpio-range in gpio-ranges:
++	gpiorange-names-list ::= <gpiorange-name> [gpiorange-names-list]
++	gpiorange-name : Name of the pingroup associated to the GPIO range in
++			the respective pin controller.
++
++Example:
++
++	gpio_pio_i: gpio-controller@14B0 {
++		#gpio-cells = <2>;
++		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
++		reg = <0x1480 0x18>;
++		gpio-controller;
++		gpio-ranges =			<&pinctrl1 0 20 10>,
++						<&pinctrl2 10 0 0>,
++						<&pinctrl1 15 0 10>,
++						<&pinctrl2 25 0 0>;
++		gpio-ranges-group-names =	"",
++						"foo",
++						"",
++						"bar";
++	};
++
++Here, three GPIO ranges are defined wrt. two pin controllers. pinctrl1 GPIO
++ranges are defined using pin numbers whereas the GPIO ranges wrt. pinctrl2
++are named "foo" and "bar".
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index 665f953..07a7b81 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -189,6 +189,7 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
+ 	struct of_phandle_args pinspec;
+ 	struct pinctrl_dev *pctldev;
+ 	int index = 0, ret;
++	const char *name;
+ 
+ 	if (!np)
+ 		return;
+@@ -203,14 +204,33 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
+ 		if (!pctldev)
+ 			break;
+ 
+-		ret = gpiochip_add_pin_range(chip,
+-					     pinctrl_dev_get_devname(pctldev),
+-					     pinspec.args[0],
+-					     pinspec.args[1],
+-					     pinspec.args[2]);
+-
+-		if (ret)
+-			break;
++		if (pinspec.args[2]) {
++			/* npins != 0: linear range */
++			ret = gpiochip_add_pin_range(chip,
++					pinctrl_dev_get_devname(pctldev),
++					pinspec.args[0],
++					pinspec.args[1],
++					pinspec.args[2]);
++			if (ret)
++				break;
++		} else {
++			/* npins == 0: special range */
++			if (pinspec.args[1]) {
++				pr_err("%s: Illegal gpio-range format.\n",
++					np->full_name);
++				break;
++			}
++			ret = of_property_read_string_index(np,
++						"gpio-ranges-group-names",
++						index, &name);
++			if (ret)
++				break;
++
++			ret = gpiochip_add_pingroup_range(chip, pctldev,
++						pinspec.args[0], name);
++			if (ret)
++				break;
++		}
+ 	}
+ }
+ 
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index ff0fd65..c75002b 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1320,6 +1320,53 @@ EXPORT_SYMBOL_GPL(gpiochip_find);
+ #ifdef CONFIG_PINCTRL
+ 
+ /**
++ * gpiochip_add_pingroup_range() - add a range for GPIO <-> pin mapping
++ * @chip: the gpiochip to add the range for
++ * @pinctrl: the dev_name() of the pin controller to map to
++ * @gpio_offset: the start offset in the current gpio_chip number space
++ * @pin_group: name of the pin group inside the pin controller
++ */
++int gpiochip_add_pingroup_range(struct gpio_chip *chip,
++			struct pinctrl_dev *pctldev,
++			unsigned int gpio_offset, const char *pin_group)
++{
++	struct gpio_pin_range *pin_range;
++	int ret;
++
++	pin_range = kzalloc(sizeof(*pin_range), GFP_KERNEL);
++	if (!pin_range) {
++		pr_err("%s: GPIO chip: failed to allocate pin ranges\n",
++				chip->label);
++		return -ENOMEM;
++	}
++
++	/* Use local offset as range ID */
++	pin_range->range.id = gpio_offset;
++	pin_range->range.gc = chip;
++	pin_range->range.name = chip->label;
++	pin_range->range.base = chip->base + gpio_offset;
++	pin_range->pctldev = pctldev;
++
++	ret = pinctrl_add_gpio_pingrp_range(pctldev, &pin_range->range,
++						pin_group);
++	if (ret < 0) {
++		pr_err("%s: GPIO chip: could not create pin range %s\n",
++		       chip->label, pin_group);
++		return ret;
++	}
++
++	pr_debug("GPIO chip %s: created GPIO range %d->%d ==> %s PINGRP %s\n",
++		 chip->label, gpio_offset,
++		 gpio_offset + pin_range->range.npins - 1,
++		 pinctrl_dev_get_devname(pctldev), pin_group);
++
++	list_add_tail(&pin_range->node, &chip->pin_ranges);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(gpiochip_add_pingroup_range);
++
++/**
+  * gpiochip_add_pin_range() - add a range for GPIO <-> pin mapping
+  * @chip: the gpiochip to add the range for
+  * @pinctrl_name: the dev_name() of the pin controller to map to
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 2a00239..52e2e6f 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -456,6 +456,29 @@ struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_find_and_add_gpio_range);
+ 
++int pinctrl_add_gpio_pingrp_range(struct pinctrl_dev *pctldev,
++				struct pinctrl_gpio_range *range,
++				char *pin_group)
++{
++	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
++	int group_selector, ret;
++
++	group_selector = pinctrl_get_group_selector(pctldev, pin_group);
++	if (group_selector < 0)
++		return group_selector;
++
++	ret = pctlops->get_group_pins(pctldev, group_selector,
++				&range->pins,
++				&range->npins);
++	if (ret < 0)
++		return ret;
++
++	pinctrl_add_gpio_range(pctldev, range);
++	return 0;
++
++}
++EXPORT_SYMBOL_GPL(pinctrl_add_gpio_pingrp_range);
++
+ /**
+  * pinctrl_find_gpio_range_from_pin() - locate the GPIO range for a pin
+  * @pctldev: the pin controller device to look in
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index bde6469..523f405 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -228,6 +228,9 @@ struct gpio_pin_range {
+ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+ 			   unsigned int gpio_offset, unsigned int pin_offset,
+ 			   unsigned int npins);
++int gpiochip_add_pingroup_range(struct gpio_chip *chip,
++			struct pinctrl_dev *pctldev,
++			unsigned int gpio_offset, const char *pin_group);
+ void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
+ 
+ #else
+@@ -239,6 +242,13 @@ gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+ {
+ 	return 0;
+ }
++static inline int
++gpiochip_add_pingroup_range(struct gpio_chip *chip,
++			struct pinctrl_dev *pctldev,
++			unsigned int gpio_offset, const char *pin_group)
++{
++	return 0;
++}
+ 
+ static inline void
+ gpiochip_remove_pin_ranges(struct gpio_chip *chip)
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 552e3f4..234b32f 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -220,6 +220,15 @@ gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
+ 	return -EINVAL;
+ }
+ 
++static inline int
++gpiochip_add_pingroup_range(struct gpio_chip *chip,
++			struct pinctrl_dev *pctldev,
++			unsigned int gpio_offset, const char *pin_group)
++{
++	WARN_ON(1);
++	return -EINVAL;
++}
++
+ static inline void
+ gpiochip_remove_pin_ranges(struct gpio_chip *chip)
+ {
+diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+index 5979147..47ab2fb 100644
+--- a/include/linux/pinctrl/pinctrl.h
++++ b/include/linux/pinctrl/pinctrl.h
+@@ -141,6 +141,9 @@ extern void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
+ 
+ extern struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
+ 		struct pinctrl_gpio_range *range);
++extern int pinctrl_add_gpio_pingrp_range(struct pinctrl_dev *pctldev,
++					struct pinctrl_gpio_range *range,
++					char *pin_group);
+ extern struct pinctrl_gpio_range *
+ pinctrl_find_gpio_range_from_pin(struct pinctrl_dev *pctldev,
+ 				 unsigned int pin);
 -- 
-Thanks
-Hemant
+1.7.1
 
