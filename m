@@ -1,112 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3JHU7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:59:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64875 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755449Ab3JHU7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:59:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1058,1371106800"; 
-   d="scan'208";a="390167426"
-Date: Tue, 8 Oct 2013 14:59:42 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>
-cc: axboe@kernel.dk, willy@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH RFC 2/2] NVMe: rfc blk-mq support
-In-Reply-To: <1381224862-5299-3-git-send-email-m@bjorling.me>
-Message-ID: <alpine.LRH.2.03.1310081254150.4763@AMR>
-References: <1381224862-5299-1-git-send-email-m@bjorling.me> <1381224862-5299-3-git-send-email-m@bjorling.me>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1755554Ab3JHVGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 17:06:06 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40995 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab3JHVGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 17:06:01 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1728615850-1381265983=:4763"
+In-Reply-To: <52546E85.3070407@wwwdotorg.org>
+References: <1381238480-18852-1-git-send-email-ldewangan@nvidia.com>
+	<525408B3.1000107@ti.com>
+	<5254193A.70104@nvidia.com>
+	<52542F69.30407@ti.com>
+	<52543C1B.3000403@wwwdotorg.org>
+	<525441DD.2090109@ti.com>
+	<52546E85.3070407@wwwdotorg.org>
+Date: Tue, 8 Oct 2013 16:05:59 -0500
+X-Google-Sender-Auth: gI0plDmpCfyTuY7Q6UkrirKYKDg
+Message-ID: <CAGo_u6p2uHf3f5qdSqfXqqKR4NaMvFyk02qTd7qK3jGOSeZ-Jw@mail.gmail.com>
+Subject: Re: [PATCH V3] clk: palmas: add clock driver for palmas
+From: Nishanth Menon <nm@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        J Keerthy <j-keerthy@ti.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1728615850-1381265983=:4763
-Content-Type: TEXT/PLAIN; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 8 Oct 2013, Matias Bjørling wrote:
-> Convert the driver to blk mq.
+On Tue, Oct 8, 2013 at 3:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 10/08/2013 11:33 AM, Nishanth Menon wrote:
+>> On 10/08/2013 12:08 PM, Stephen Warren wrote:
+>>> On 10/08/2013 10:14 AM, Nishanth Menon wrote:
+>>>> On 10/08/2013 09:39 AM, Laxman Dewangan wrote:
+>>>>> Thanks Nishanth for review.
+>>>>>
+>>>>> On Tuesday 08 October 2013 06:59 PM, Nishanth Menon wrote:
+>>>>>> On 10/08/2013 08:21 AM, Laxman Dewangan wrote:
+>>>>>>> Palmas devices has two clock output CLK32K_KG and CLK32K_KG_AUDIO
+>>>>>> not all palmas devices have 2 clocks - example: tps659038
+>>>>>
+>>>>> This is for generic palmas and I have seen it for TPS65913, TPS65914,
+>>>>> TPS80036. If the generic one is not compatible then it need to add
+>>>>> device specific and at that time, it is require to update the binding
+>>>>> document accordingly.
+>>>>
+>>>> ?? you do have two clocks inside the device they should be represented
+>>>> as two compatible entities - that simplifies everyone's life.
+>>>
+>>> I think the terminology you're using here is quite confusing.
+>>>
+>>> Are you talking about having two different compatible values for two
+>>> different HW designs, where those different designs implement different
+>>> sets of clocks (which makes sense), or two different DT nodes for two
+>>> different clocks (which IMHO doesn't always, unless those different
+>>> clocks *truly* are separate IP blocks with completely independent
+>>> register regions, and where those IP blocks are likely to be re-used
+>>> as-is in other chips).
+>>
+>> clk32k and clk32k_audio are two different resources and since these
+>> are two different resource instances - a "compatible" matching an
+>> actual device is my suggestion.
 >
-> The patch consists of:
+> The fact that two clocks are two different resources isn't at all
+> relevant to DT structure. HW module design is what's relevant.
 >
-> * Initializion of mq data structures.
-> * Convert function calls from bio to request data structures.
-> * IO queues are split into an admin queue and io queues.
-> * bio splits are removed as it should be handled by block layer.
+>> clk32k and clk32k_audio are two different resources because they have
+>> their specific set of controls registers and may even be independently
+>> present in a Palmas variant.
 >
-> Signed-off-by: Matias Bjørling <m@bjorling.me>
+> That's a better argument, assuming that: The registers for those two
+> clocks aren't randomly interleaved with other registers within the HW
+> module. That would imply that the clock registers aren't independant HW
+> blocks.
 
-I have no opinion right now if this is a good idea or not. I'll just
-comment on a couple issues on this implementation. Otherwise I think
-it's pretty neat and gave me a reason to explore multiqueues!
+You would be unpleasantly surprised if register offsets is a standard
+to determine if IP blocks are independent instances or not. it is just
+integration level decision, and unfortunately, not all h/w integration
+guys care a lot about s/w :(.
 
-First a couple minor suggestions:
+>
+>> To highlight this: The example of tps659038 where clk32k is not
+>> present, but clk32k_audio is present (and happens to be disabled by
+>> default - thanks to an OTP on the chip - on platform like DRA7-evm, it
+>> is used to for 32k clk for wlan -currently hacked in u-boot using
+>> plain i2c writes[1] - yes it is yucky).
+>
+> That can easily be handled by having separate compatible values for a
+> monolithic overall Palmas or Palmas-clock node/HW-block. The fact that
+> different chips are different doesn't, in and of itself, need to
+> influence whether the different clocks are represented as different DT
+> nodes.
 
-You might want to use "REQ_END" from the rq->cmd_flags to know if you
-should write the queue doorbell or not. Aggregating these would help
-most devices but we didn't have a good way of knowing before if this
-was the last request or not.
+So, the fact that a clock does not exist on a variation of palmas is
+not sufficient proof that the blocks are independent.
 
-Maybe change nvme_submit_bio_queue to return a BLK_MQ_RQ_QUEUE_ status
-so you don't need that switch statement after calling it.
+I am not sure, given the lack of public documentation, short of
+sharing rtl (which I cant ;) ), i might let this debate flame out..
 
-Must do something about requests that don't align to PRPs. I think you
-mentioned this in the outstanding work in [0/2].
+>
+>> Obviously, there are many ways to implement this. based on the current
+>> implementation, it indicates that if i create a node with
+>> "ti,palmas-clk" -i'd create two clocks - that is wrong for tps659038.
+>>
+>> Now (with the current approach), if I have to create a one clock for
+>> tps659038, i have to fix the for adding clock providers, add up
+>> "ti,tps659038-clk" etc.. it is doable - but IMHO, I dont need to do it
+>> with only the relevant nodes in dts.
+>>
+>> Further, it has no way to indicate that device X uses clock Y using
+>> clocks =<&xyz> either.
+>
+> Sorry, I just don't understand that.
+>
+> If a clock provider provides two clocks, it could number then e.g. 0 and
+> 1. Clock consumers would reference those IDs. If a different chip that
+> uses the same binding only supports one of those two clocks, just have
+> the driver return an error if the DT attempts to use/reference the
+> invalid clock ID; nothign could be simpler.
 
-> struct nvme_queue *get_nvmeq(struct nvme_dev *dev)
-> {
-> -	return dev->queues[get_cpu() + 1];
-> +	get_cpu();
-> +	return dev->admin_queue;
-> }
+fair enough.
 
-get_nvmeq now returns only the admin queue when it used to return only
-IO queues. This breaks NVME_IO and SG_IO ioctl handling.
-
-> +static int nvme_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
-> +			  unsigned int i)
-> +{
-> +	struct nvme_ns *ns = data;
-> +	struct nvme_dev *dev = ns->dev;
-> +	struct nvme_queue *nq;
-> +
-> +	nq = nvme_create_queue(dev, i + 1, hctx->queue_depth, i);
-> +	if (IS_ERR(nq))
-> +		return PTR_ERR(nq);
-> +
-> +	hctx->driver_data = nq;
-> +
-> +	return 0;
-> +}
-
-This right here is the biggest problem with the implemenation. It is
-going to fail for every namespace but the first one since each namespace
-registers a multiqueue and each mulitqueue requires a hw context to
-work. The number of queues is for the device, not namespace, so only
-the first namespace is going to successfully return from nvme_init_hctx;
-the rest will be unable to create an NVMe IO queue for trying to create
-one with already allocated QID.
-
-You should instead create the IO queues on the device like how it was
-done before then just set the hctx->driver_data to dev->queues[i + 1]
-or something like.
-
-> +static enum blk_eh_timer_return nvme_timeout(struct request *rq)
-> +{
-> +	/* Currently the driver handle timeouts by itself */
-> +	return BLK_EH_NOT_HANDLED;
-> +}
-
-Need do something with the command timeouts here or somewhere. You've
-changed the driver to poll only on the admin queue for timed out commands,
-and left the multiqueue timeout a no-op.
---8323328-1728615850-1381265983=:4763--
+Regards,
+Nishanth Menon
