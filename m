@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3JHHbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:31:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7145 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab3JHHbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:31:47 -0400
-Date: Tue, 8 Oct 2013 09:33:02 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131008073301.GC10669@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <20131008043330.GF31666@concordia>
+	id S1754284Ab3JHHgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:36:55 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:49593 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab3JHHgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 03:36:51 -0400
+Date: Tue, 8 Oct 2013 09:36:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
+        zheng.z.yan@intel.com
+Subject: Re: [PATCH v1 1/2] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131008073647.GC4455@gmail.com>
+References: <1381162158-24329-1-git-send-email-eranian@google.com>
+ <1381162158-24329-2-git-send-email-eranian@google.com>
+ <20131007175542.GB3363@tassilo.jf.intel.com>
+ <20131007180810.GJ3081@twins.programming.kicks-ass.net>
+ <20131007192258.GC3363@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131008043330.GF31666@concordia>
+In-Reply-To: <20131007192258.GC3363@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 03:33:30PM +1100, Michael Ellerman wrote:
-> On Wed, Oct 02, 2013 at 12:29:04PM +0200, Alexander Gordeev wrote:
-> > This technique proved to be confusing and error-prone. Vast share
-> > of device drivers simply fail to follow the described guidelines.
+
+* Andi Kleen <ak@linux.intel.com> wrote:
+
+> On Mon, Oct 07, 2013 at 08:08:10PM +0200, Peter Zijlstra wrote:
+> > On Mon, Oct 07, 2013 at 10:55:42AM -0700, Andi Kleen wrote:
+> > > This would in principle allow making it a module later (if perf ever
+> > > supports that)
+> > 
+> > IIRC its a few EXPORTs away from being able to do that.
 > 
-> To clarify "Vast share of device drivers":
-> 
->  - 58 drivers call pci_enable_msix()
->  - 24 try a single allocation and then fallback to MSI/LSI
->  - 19 use the loop style allocation as above
->  - 14 try an allocation, and if it fails retry once
->  - 1  incorrectly continues when pci_enable_msix() returns > 0
-> 
-> So 33 drivers (> 50%) successfully make use of the "confusing and
-> error-prone" return value.
+> Great. With ~700k text that would be a good thing.
 
-Ok, you caught me - 'vast share' is incorrect and is a subject to
-rewording. But out of 19/58 how many drivers tested fallbacks on the
-real hardware? IOW, which drivers are affected by the pSeries quota?
+Nonsense, the real overhead of core perf + PMU drivers on x86-64 is around 
+150k.
 
-> And yes, one is buggy, so obviously the interface is too complex. Thanks
-> drivers/ntb/ntb_hw.c
+The 700k overhead you claimed is not reproducible, at all, and I tested it 
+with your own config:
 
-vmxnet3 would be the best example.
+  https://lkml.org/lkml/2013/10/8/62
 
-> cheers
+700k in perf is nonsensical - it's an obvious lie really, the code sizes 
+of the relevant perf .o objects are nowhere even _close_ to that amount:
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+ hubble:~/tip> size $(find . -name '*perf*.o')
+   text    data     bss     dec     hex filename
+    887       0      32     919     397 ./arch/x86/kernel/cpu/perfctr-watchdog.o
+   2932     680      96    3708     e7c ./arch/x86/kernel/cpu/perf_event_amd_uncore.o
+  14117    6361       1   20479    4fff ./arch/x86/kernel/cpu/perf_event_intel.o
+  23787   19541     264   43592    aa48 ./arch/x86/kernel/cpu/perf_event_intel_uncore.o
+   4531    1572       0    6103    17d7 ./arch/x86/kernel/cpu/perf_event_p4.o
+   1728    1121       0    2849     b21 ./arch/x86/kernel/cpu/perf_event_knc.o
+   4591     811      32    5434    153a ./arch/x86/kernel/cpu/perf_event_amd_ibs.o
+  13394    6797     116   20307    4f53 ./arch/x86/kernel/cpu/perf_event.o
+   3156    1483      32    4671    123f ./arch/x86/kernel/cpu/perf_event_amd_iommu.o
+   5322    4396       0    9718    25f6 ./arch/x86/kernel/cpu/perf_event_intel_ds.o
+  11383       1       0   11384    2c78 ./arch/x86/kernel/cpu/perf_event_intel_lbr.o
+   3636    1125       0    4761    1299 ./arch/x86/kernel/cpu/perf_event_amd.o
+   1282     544       0    1826     722 ./arch/x86/kernel/cpu/perf_event_p6.o
+    278       1       0     279     117 ./arch/x86/kernel/perf_regs.o
+   4844      88      12    4944    1350 ./drivers/acpi/processor_perflib.o
+     77      96       0     173      ad ./drivers/cpufreq/cpufreq_performance.o
+    232      64       0     296     128 ./drivers/devfreq/governor_performance.o
+   1972       4      64    2040     7f8 ./kernel/trace/trace_event_perf.o
+
+So stop making that ridiculous claim without posting exact .config's 
+publicly.
+
+Thanks,
+
+	Ingo
