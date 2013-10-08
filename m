@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3JHIGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:06:08 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:32791 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab3JHIGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:06:03 -0400
+	id S1754840Ab3JHIGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:06:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12116 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754491Ab3JHIGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:06:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1055,1371106800"; 
+   d="scan'208";a="407076073"
+Date: Tue, 8 Oct 2013 16:06:04 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, gthelen@google.com,
+        Dave Anderson <anderson@redhat.com>
+Subject: Re: mm: Export 'pageflag_names' array
+Message-ID: <20131008080604.GA4820@localhost>
+References: <CAOMFOmWbvLCM=a2n_ojnWVeeyvMg=v1T03Q44q-q4jgR7sH+DA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1380370138-3513-11-git-send-email-sachin.kamat@linaro.org>
-References: <1380370138-3513-1-git-send-email-sachin.kamat@linaro.org>
-	<1380370138-3513-11-git-send-email-sachin.kamat@linaro.org>
-Date: Tue, 8 Oct 2013 10:06:03 +0200
-Message-ID: <CACRpkdYr5auasYPCiDniVQZyH7vN+EVrfTMnwuoAZyibizxG0Q@mail.gmail.com>
-Subject: Re: [PATCH 11/11] pinctrl: plgpio: Remove redundant of_match_ptr
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMFOmWbvLCM=a2n_ojnWVeeyvMg=v1T03Q44q-q4jgR7sH+DA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 2:08 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+Hi Anatol,
 
-> The data structure of_match_ptr() protects is always compiled in.
-> Hence of_match_ptr() is not needed.
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+On Mon, Oct 07, 2013 at 10:53:32AM -0700, Anatol Pomozov wrote:
+> Hi Wu
+> 
+> I have a request wrt your old commit 718a38211.
+> 
+> I think it makes sense to export array pageflag_names so kernel dump
+> debug tools (like 'crash') can use it as well. Currently the tool
+> hard-codes flag names but it is suboptimal as flags are different for
+> different configs.
+> 
+> What do you think? (I can send a patch if you are ok).
 
-I have applied this as well, and after that I squashed all 11 commits into
-one.
+I wonder if the KPF_* defined in
 
-I think these 11 patches should have been one from the beginning
-but it's quicker for me to simply squash them than to ask you to
-resubmit a squashed patch.
+        include/uapi/linux/kernel-page-flags.h
 
-Yours,
-Linus Walleij
+fit your needs. These are kernel page flags exported to the user space
+and will be maintained stable and immune to kconfig changes. You can
+find use examples of them in
+
+        fs/proc/page.c
+        tools/vm/page-types.c
+
+Thanks,
+Fengguang
