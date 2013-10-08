@@ -1,197 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3JHLaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 07:30:20 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58286 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab3JHLaQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 07:30:16 -0400
-X-AuditID: cbfee6a4-b7f956d00000525e-39-5253ecc621a1
-Date: Tue, 08 Oct 2013 11:30:14 +0000 (GMT)
-From: Yuan Zhong <yuan.mark.zhong@samsung.com>
-Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when
- do_checkpoint for better performance
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        "linux-f2fs-devel@lists.sourceforge.net" 
-	<linux-f2fs-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        shu tan <shu.tan@samsung.com>
-Reply-to: yuan.mark.zhong@samsung.com
-MIME-version: 1.0
-X-MTR: 20131008111605667@yuan.mark.zhong
-Msgkey: 20131008111605667@yuan.mark.zhong
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20131008111605667@yuan.mark.zhong
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <30722427.272521381231813403.JavaMail.weblogic@epml26>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t/t6brH3gQHGXRPUbK4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZM9a9ZCzosKhYtOIjawPjGbMuRk4OIQEtifc/HjKD2BICJhL3
-	O2exQdhiEhfurQeyuYBq5jNKzL59l7GLkYODRUBFYvNiG5AaNgF9iTv79jGC2MICGRIvJy1m
-	BikREdCQeNHoCdLKLLCcSaJv7l8mkLiQgKrE8bWlIOW8AoISJ2c+YYFYpSFxtXMDG0RcU2JR
-	yz6oE+Qklky9zARh80rMaH/KAhOf9nUN1MnSEudnbWCEOXnx98dQcX6JY7d3gK0F6X1yPxhm
-	zO7NX6DGC0hMPXMQqlVXom3OFahVfBJrFr5lgRmz69RyZpje+1vmgtUwCyhKTOl+yA5hG0gc
-	WTSHFd1bvAJOEivmbmGdwCg3C0lqFpL2WUjakdUsYGRZxSiaWpBcUJyUXmGiV5yYW1yal66X
-	nJ+7iREc48+W7GBsuGB9iFGAg1GJhzfjaFCQEGtiWXFl7iFGCQ5mJRHewOfBQUK8KYmVValF
-	+fFFpTmpxYcYpTlYlMR5n7VaBwoJpCeWpGanphakFsFkmTg4pRoYSy4Imme+PmuULux37aID
-	72TjtIyl77592c5QqSu8gk9hFb+Yy5T3c8V7p1gJvgx1l3ywb/KDlSWFx09yJrmGNuzkXrgp
-	4J/GsuP5b2J8S5J79/HWHFkQx9s9Uct+n+8037/caxmOVpQ9O3o4d9oEfh92k5/KZje4ubLC
-	t08vmXW8uTBo5v8yJZbijERDLeai4kQA5Z5ZSe0CAAA=
+	id S1755032Ab3JHLce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 07:32:34 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752569Ab3JHLcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 07:32:32 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, hskinnemoen@gmail.com,
+        egtvedt@samfundet.no, vapier@gentoo.org, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, rkuo@codeaurora.org, tony.luck@intel.com,
+        fenghua.yu@intel.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu,
+        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
+        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
+        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 06/29] cris: Use get_signal() signal_setup_done()
+Date: Tue,  8 Oct 2013 13:32:19 +0200
+Message-Id: <1381231942-4145-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r98BUR9j003295
 
-Hi Gu,
+Use the more generic functions get_signal() signal_setup_done()
+for signal delivery.
 
-> Hi Yuan,
-> On 10/08/2013 04:30 PM, Yuan Zhong wrote:
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/cris/arch-v10/kernel/signal.c | 79 ++++++++++++++++----------------------
+ arch/cris/arch-v32/kernel/signal.c | 77 +++++++++++++++----------------------
+ 2 files changed, 63 insertions(+), 93 deletions(-)
 
-> > Previously, do_checkpoint() will call congestion_wait() for waiting the pages (previous submitted node/meta/data pages) to be written back.
-> > Because congestion_wait() will set a regular period (e.g. HZ / 50 ) for waiting.
-> > For this reason, there is a situation that after the pages have been written back, 
-> > but the checkpoint thread still wait for congestion_wait to exit.
+diff --git a/arch/cris/arch-v10/kernel/signal.c b/arch/cris/arch-v10/kernel/signal.c
+index 61ce627..12aac1f 100644
+--- a/arch/cris/arch-v10/kernel/signal.c
++++ b/arch/cris/arch-v10/kernel/signal.c
+@@ -228,33 +228,33 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size)
+  * user-mode trampoline.
+  */
+ 
+-static int setup_frame(int sig, struct k_sigaction *ka,
+-		       sigset_t *set, struct pt_regs *regs)
++static int setup_frame(struct ksignal *ksig, sigset_t *set,
++		       struct pt_regs *regs)
+ {
+ 	struct sigframe __user *frame;
+ 	unsigned long return_ip;
+ 	int err = 0;
+ 
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	err |= setup_sigcontext(&frame->sc, regs, set->sig[0]);
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	if (_NSIG_WORDS > 1) {
+ 		err |= __copy_to_user(frame->extramask, &set->sig[1],
+ 				      sizeof(frame->extramask));
+ 	}
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Set up to return from userspace.  If provided, use a stub
+ 	   already in userspace.  */
+-	if (ka->sa.sa_flags & SA_RESTORER) {
+-		return_ip = (unsigned long)ka->sa.sa_restorer;
++	if (ksig->ka.sa.sa_flags & SA_RESTORER) {
++		return_ip = (unsigned long)ksig->ka.sa.sa_restorer;
+ 	} else {
+ 		/* trampoline - the desired return ip is the retcode itself */
+ 		return_ip = (unsigned long)&frame->retcode;
+@@ -265,42 +265,38 @@ static int setup_frame(int sig, struct k_sigaction *ka,
+ 	}
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Set up registers for signal handler */
+ 
+-	regs->irp = (unsigned long) ka->sa.sa_handler;  /* what we enter NOW   */
++	regs->irp = (unsigned long) ksig->ka.sa.sa_handler;  /* what we enter NOW   */
+ 	regs->srp = return_ip;                          /* what we enter LATER */
+-	regs->r10 = sig;                                /* first argument is signo */
++	regs->r10 = ksig->sig;                                /* first argument is signo */
+ 
+ 	/* actually move the usp to reflect the stacked frame */
+ 
+ 	wrusp((unsigned long)frame);
+ 
+ 	return 0;
+-
+-give_sigsegv:
+-	force_sigsegv(sig, current);
+-	return -EFAULT;
+ }
+ 
+-static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-	sigset_t *set, struct pt_regs *regs)
++static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
++			  struct pt_regs *regs)
+ {
+ 	struct rt_sigframe __user *frame;
+ 	unsigned long return_ip;
+ 	int err = 0;
+ 
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	err |= __put_user(&frame->info, &frame->pinfo);
+ 	err |= __put_user(&frame->uc, &frame->puc);
+-	err |= copy_siginfo_to_user(&frame->info, info);
++	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Clear all the bits of the ucontext we don't use.  */
+         err |= __clear_user(&frame->uc, offsetof(struct ucontext, uc_mcontext));
+@@ -312,12 +308,12 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err |= __save_altstack(&frame->uc.uc_stack, rdusp());
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Set up to return from userspace.  If provided, use a stub
+ 	   already in userspace.  */
+-	if (ka->sa.sa_flags & SA_RESTORER) {
+-		return_ip = (unsigned long)ka->sa.sa_restorer;
++	if (ksig->ka.sa.sa_flags & SA_RESTORER) {
++		return_ip = (unsigned long)ksig->ka.sa.sa_restorer;
+ 	} else {
+ 		/* trampoline - the desired return ip is the retcode itself */
+ 		return_ip = (unsigned long)&frame->retcode;
+@@ -329,18 +325,18 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	}
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* TODO what is the current->exec_domain stuff and invmap ? */
+ 
+ 	/* Set up registers for signal handler */
+ 
+ 	/* What we enter NOW   */
+-	regs->irp = (unsigned long) ka->sa.sa_handler;
++	regs->irp = (unsigned long) ksig->ka.sa.sa_handler;
+ 	/* What we enter LATER */
+ 	regs->srp = return_ip;
+ 	/* First argument is signo */
+-	regs->r10 = sig;
++	regs->r10 = ksig->sig;
+ 	/* Second argument is (siginfo_t *) */
+ 	regs->r11 = (unsigned long)&frame->info;
+ 	/* Third argument is unused */
+@@ -350,19 +346,14 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	wrusp((unsigned long)frame);
+ 
+ 	return 0;
+-
+-give_sigsegv:
+-	force_sigsegv(sig, current);
+-	return -EFAULT;
+ }
+ 
+ /*
+  * OK, we're invoking a handler
+  */
+ 
+-static inline void handle_signal(int canrestart, unsigned long sig,
+-	siginfo_t *info, struct k_sigaction *ka,
+-	struct pt_regs *regs)
++static inline void handle_signal(int canrestart, struct ksignal *ksig,
++				 struct pt_regs *regs)
+ {
+ 	sigset_t *oldset = sigmask_to_save();
+ 	int ret;
+@@ -383,7 +374,7 @@ static inline void handle_signal(int canrestart, unsigned long sig,
+ 			/* ERESTARTSYS means to restart the syscall if
+ 			 * there is no handler or the handler was
+ 			 * registered with SA_RESTART */
+-			if (!(ka->sa.sa_flags & SA_RESTART)) {
++			if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
+ 				regs->r10 = -EINTR;
+ 				break;
+ 			}
+@@ -396,13 +387,12 @@ static inline void handle_signal(int canrestart, unsigned long sig,
+ 	}
+ 
+ 	/* Set up the stack frame */
+-	if (ka->sa.sa_flags & SA_SIGINFO)
+-		ret = setup_rt_frame(sig, ka, info, oldset, regs);
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
++		ret = setup_rt_frame(ksig, oldset, regs);
+ 	else
+-		ret = setup_frame(sig, ka, oldset, regs);
++		ret = setup_frame(ksig, oldset, regs);
+ 
+-	if (ret == 0)
+-		signal_delivered(sig, info, ka, regs, 0);
++	signal_setup_done(ret, ksig, 0);
+ }
+ 
+ /*
+@@ -419,9 +409,7 @@ static inline void handle_signal(int canrestart, unsigned long sig,
+ 
+ void do_signal(int canrestart, struct pt_regs *regs)
+ {
+-	siginfo_t info;
+-	int signr;
+-        struct k_sigaction ka;
++	struct ksignal ksig;
+ 
+ 	/*
+ 	 * We want the common case to go fast, which
+@@ -432,10 +420,9 @@ void do_signal(int canrestart, struct pt_regs *regs)
+ 	if (!user_mode(regs))
+ 		return;
+ 
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-	if (signr > 0) {
++	if (get_signal(&ksig)) {
+ 		/* Whee!  Actually deliver the signal.  */
+-		handle_signal(canrestart, signr, &info, &ka, regs);
++		handle_signal(canrestart, &ksig, regs);
+ 		return;
+ 	}
+ 
+diff --git a/arch/cris/arch-v32/kernel/signal.c b/arch/cris/arch-v32/kernel/signal.c
+index 01d1375..cc7a39a 100644
+--- a/arch/cris/arch-v32/kernel/signal.c
++++ b/arch/cris/arch-v32/kernel/signal.c
+@@ -215,23 +215,22 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs * regs, size_t frame_size)
+  * trampoline.
+   */
+ static int
+-setup_frame(int sig, struct k_sigaction *ka,  sigset_t *set,
+-	    struct pt_regs * regs)
++setup_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
+ {
+ 	int err;
+ 	unsigned long return_ip;
+ 	struct signal_frame __user *frame;
+ 
+ 	err = 0;
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	err |= setup_sigcontext(&frame->sc, regs, set->sig[0]);
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	if (_NSIG_WORDS > 1) {
+ 		err |= __copy_to_user(frame->extramask, &set->sig[1],
+@@ -239,14 +238,14 @@ setup_frame(int sig, struct k_sigaction *ka,  sigset_t *set,
+ 	}
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/*
+ 	 * Set up to return from user-space. If provided, use a stub
+ 	 * already located in user-space.
+ 	 */
+-	if (ka->sa.sa_flags & SA_RESTORER) {
+-		return_ip = (unsigned long)ka->sa.sa_restorer;
++	if (ksig->ka.sa.sa_flags & SA_RESTORER) {
++		return_ip = (unsigned long)ksig->ka.sa.sa_restorer;
+ 	} else {
+ 		/* Trampoline - the desired return ip is in the signal return page. */
+ 		return_ip = cris_signal_return_page;
+@@ -264,7 +263,7 @@ setup_frame(int sig, struct k_sigaction *ka,  sigset_t *set,
+ 	}
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/*
+ 	 * Set up registers for signal handler.
+@@ -273,42 +272,37 @@ setup_frame(int sig, struct k_sigaction *ka,  sigset_t *set,
+ 	 * Where the code enter later.
+ 	 * First argument, signo.
+ 	 */
+-	regs->erp = (unsigned long) ka->sa.sa_handler;
++	regs->erp = (unsigned long) ksig->ka.sa.sa_handler;
+ 	regs->srp = return_ip;
+-	regs->r10 = sig;
++	regs->r10 = ksig->sig;
+ 
+ 	/* Actually move the USP to reflect the stacked frame. */
+ 	wrusp((unsigned long)frame);
+ 
+ 	return 0;
+-
+-give_sigsegv:
+-	force_sigsegv(sig, current);
+-	return -EFAULT;
+ }
+ 
+ static int
+-setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-	       sigset_t *set, struct pt_regs * regs)
++setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
+ {
+ 	int err;
+ 	unsigned long return_ip;
+ 	struct rt_signal_frame __user *frame;
+ 
+ 	err = 0;
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* TODO: what is the current->exec_domain stuff and invmap ? */
+ 
+ 	err |= __put_user(&frame->info, &frame->pinfo);
+ 	err |= __put_user(&frame->uc, &frame->puc);
+-	err |= copy_siginfo_to_user(&frame->info, info);
++	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Clear all the bits of the ucontext we don't use.  */
+ 	err |= __clear_user(&frame->uc, offsetof(struct ucontext, uc_mcontext));
+@@ -317,14 +311,14 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err |= __save_altstack(&frame->uc.uc_stack, rdusp());
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/*
+ 	 * Set up to return from user-space. If provided, use a stub
+ 	 * already located in user-space.
+ 	 */
+-	if (ka->sa.sa_flags & SA_RESTORER) {
+-		return_ip = (unsigned long) ka->sa.sa_restorer;
++	if (ksig->ka.sa.sa_flags & SA_RESTORER) {
++		return_ip = (unsigned long) ksig->ka.sa.sa_restorer;
+ 	} else {
+ 		/* Trampoline - the desired return ip is in the signal return page. */
+ 		return_ip = cris_signal_return_page + 6;
+@@ -345,7 +339,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	}
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/*
+ 	 * Set up registers for signal handler.
+@@ -356,9 +350,9 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	 * Second argument is (siginfo_t *).
+ 	 * Third argument is unused.
+ 	 */
+-	regs->erp = (unsigned long) ka->sa.sa_handler;
++	regs->erp = (unsigned long) ksig->ka.sa.sa_handler;
+ 	regs->srp = return_ip;
+-	regs->r10 = sig;
++	regs->r10 = ksig->sig;
+ 	regs->r11 = (unsigned long) &frame->info;
+ 	regs->r12 = 0;
+ 
+@@ -366,17 +360,11 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	wrusp((unsigned long)frame);
+ 
+ 	return 0;
+-
+-give_sigsegv:
+-	force_sigsegv(sig, current);
+-	return -EFAULT;
+ }
+ 
+ /* Invoke a signal handler to, well, handle the signal. */
+ static inline void
+-handle_signal(int canrestart, unsigned long sig,
+-	      siginfo_t *info, struct k_sigaction *ka,
+-              struct pt_regs * regs)
++handle_signal(int canrestart, struct ksignal *ksig, struct pt_regs *regs)
+ {
+ 	sigset_t *oldset = sigmask_to_save();
+ 	int ret;
+@@ -404,7 +392,7 @@ handle_signal(int canrestart, unsigned long sig,
+                                  * there is no handler, or the handler
+                                  * was registered with SA_RESTART.
+ 				 */
+-				if (!(ka->sa.sa_flags & SA_RESTART)) {
++				if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
+ 					regs->r10 = -EINTR;
+ 					break;
+ 				}
+@@ -423,13 +411,12 @@ handle_signal(int canrestart, unsigned long sig,
+         }
+ 
+ 	/* Set up the stack frame. */
+-	if (ka->sa.sa_flags & SA_SIGINFO)
+-		ret = setup_rt_frame(sig, ka, info, oldset, regs);
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
++		ret = setup_rt_frame(ksig, oldset, regs);
+ 	else
+-		ret = setup_frame(sig, ka, oldset, regs);
++		ret = setup_frame(ksig, oldset, regs);
+ 
+-	if (ret == 0)
+-		signal_delivered(sig, info, ka, regs, 0);
++	signal_setup_done(ret, ksig, 0);
+ }
+ 
+ /*
+@@ -446,9 +433,7 @@ handle_signal(int canrestart, unsigned long sig,
+ void
+ do_signal(int canrestart, struct pt_regs *regs)
+ {
+-	int signr;
+-	siginfo_t info;
+-        struct k_sigaction ka;
++	struct ksignal ksig;
+ 
+ 	/*
+ 	 * The common case should go fast, which is why this point is
+@@ -458,11 +443,9 @@ do_signal(int canrestart, struct pt_regs *regs)
+ 	if (!user_mode(regs))
+ 		return;
+ 
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-
+-	if (signr > 0) {
++	if (get_signal(&ksig)) {
+ 		/* Whee!  Actually deliver the signal.  */
+-		handle_signal(canrestart, signr, &info, &ka, regs);
++		handle_signal(canrestart, &ksig, regs);
+ 		return;
+ 	}
+ 
+-- 
+1.8.1.4
 
-> How do you confirm this issue? 
-
-  I traced the execution path.
-  In f2fs_end_io_write, dec_page_count(p->sbi, F2FS_WRITEBACK) will be called.
-  And I found that, when pages of F2FS_WRITEBACK has been zero, but
-  checkpoint thread still congestion_wait for pages of F2FS_WRITEBACK to be zero.	
-  So, I think this point could be improved.
-  And I wrote a simple test case and tested on Micro-SD card, the steps as following:
-      (a) create a fixed-size file (4KB)
-      (b) go on to sync the file 
-      (c) go back to step #a (fixed numbers of cycling:1024)	
-   The results indicated that the execution time is reduced greatly by using this patch.  
-
-
-> I suspect that the block-core does not have a wake-up mechanism
-> when the back device is uncongested.
-
-
-  Yes, you are right.
-  So I wake up the checkpoint thread by myself, when pages of F2FS_WRITEBACK to be zero.
-  In f2fs_end_io_write, f2fs_writeback_wait is called.
-  you cloud find this code in my patch. 
-
-
-> > This is a problem here, especially, when sync a large number of small files or dirs.
-> > In order to avoid this, a wait_list is introduced, 
-> > the checkpoint thread will be dropped into the wait_list if the pages have not been written back, 
-> > and will be waked up by contrast.
-
-> Please pay some attention to the mail form, this mail is out of format in my mail client.
-
-> Regards,
-> Gu
-
-Regards,
-Yuan
-
-> > 
-> > Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
-> > ---  
-> >  fs/f2fs/checkpoint.c |    3 +--
-> >  fs/f2fs/f2fs.h       |   19 +++++++++++++++++++
-> >  fs/f2fs/segment.c    |    1 +
-> >  fs/f2fs/super.c      |    1 +
-> >  4 files changed, 22 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> > index ca39442..5d69ae0 100644
-> > --- a/fs/f2fs/checkpoint.c
-> > +++ b/fs/f2fs/checkpoint.c
-> > @@ -758,8 +758,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
-> >  	f2fs_put_page(cp_page, 1);
-> >  
-> >  	/* wait for previous submitted node/meta pages writeback */
-> > -	while (get_pages(sbi, F2FS_WRITEBACK))
-> > -		congestion_wait(BLK_RW_ASYNC, HZ / 50);
-> > +	f2fs_writeback_wait(sbi);
-> >  
-> >  	filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
-> >  	filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
-> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> > index 7fd99d8..4b0d70e 100644
-> > --- a/fs/f2fs/f2fs.h
-> > +++ b/fs/f2fs/f2fs.h
-> > @@ -18,6 +18,8 @@
-> >  #include <linux/crc32.h>
-> >  #include <linux/magic.h>
-> >  #include <linux/kobject.h>
-> > +#include <linux/wait.h>
-> > +#include <linux/sched.h>
-> >  
-> >  /*
-> >   * For mount options
-> > @@ -368,6 +370,7 @@ struct f2fs_sb_info {
-> >  	struct mutex fs_lock[NR_GLOBAL_LOCKS];	/* blocking FS operations */
-> >  	struct mutex node_write;		/* locking node writes */
-> >  	struct mutex writepages;		/* mutex for writepages() */
-> > +	wait_queue_head_t writeback_wqh;	/* wait_queue for writeback */
-> >  	unsigned char next_lock_num;		/* round-robin global locks */
-> >  	int por_doing;				/* recovery is doing or not */
-> >  	int on_build_free_nids;			/* build_free_nids is doing */
-> > @@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
-> >  	return sb->s_flags & MS_RDONLY;
-> >  }
-> >  
-> > +static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi)
-> > +{
-> > +	DEFINE_WAIT(wait);
-> > +
-> > +	prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
-> > +	if (get_pages(sbi, F2FS_WRITEBACK))
-> > +		io_schedule();
-> > +	finish_wait(&sbi->writeback_wqh, &wait);
-> > +}
-> > +
-> > +static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi)
-> > +{
-> > +	if (!get_pages(sbi, F2FS_WRITEBACK))
-> > +		wake_up_all(&sbi->writeback_wqh);
-> > +}
-> > +
-> >  /*
-> >   * file.c
-> >   */
-> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> > index bd79bbe..0708aa9 100644
-> > --- a/fs/f2fs/segment.c
-> > +++ b/fs/f2fs/segment.c
-> > @@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
-> >  
-> >  	if (p->is_sync)
-> >  		complete(p->wait);
-> > +	f2fs_writeback_wake(p->sbi);
-> >  	kfree(p);
-> >  	bio_put(bio);
-> >  }
-> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> > index 094ccc6..3ac6d85 100644
-> > --- a/fs/f2fs/super.c
-> > +++ b/fs/f2fs/super.c
-> > @@ -835,6 +835,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
-> >  	mutex_init(&sbi->gc_mutex);
-> >  	mutex_init(&sbi->writepages);
-> >  	mutex_init(&sbi->cp_mutex);
-> > +	init_waitqueue_head(&sbi->writeback_wqh);
-> >  	for (i = 0; i < NR_GLOBAL_LOCKS; i++)
-> >  		mutex_init(&sbi->fs_lock[i]);
-> >  	mutex_init(&sbi->node_write);ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
