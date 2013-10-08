@@ -1,348 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab3JHOOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:14:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38621 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3JHOOs (ORCPT
+	id S1755233Ab3JHOPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:15:06 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16105 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126Ab3JHOPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:14:48 -0400
-Message-ID: <52541350.5060807@canonical.com>
-Date: Tue, 08 Oct 2013 16:14:40 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 8 Oct 2013 10:15:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 08 Oct 2013 07:15:01 -0700
+Message-ID: <5254193A.70104@nvidia.com>
+Date: Tue, 8 Oct 2013 20:09:54 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC PATCH] drm/radeon: fixup locking inversion between mmap_sem
- and reservations
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com> <5232A39B.5040205@vmware.com>
-In-Reply-To: <5232A39B.5040205@vmware.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nishanth Menon <nm@ti.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH V3] clk: palmas: add clock driver for palmas
+References: <1381238480-18852-1-git-send-email-ldewangan@nvidia.com> <525408B3.1000107@ti.com>
+In-Reply-To: <525408B3.1000107@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate and copy all kernel memory before doing reservations. This prevents a locking
-inversion between mmap_sem and reservation_class, and allows us to drop the trylocking
-in ttm_bo_vm_fault without upsetting lockdep.
+Thanks Nishanth for review.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
----
-diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
-index 01a3ec8..efa9bca 100644
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -2391,18 +2391,13 @@ int r600_cs_legacy(struct drm_device *dev, void *data, struct drm_file *filp,
- 	ib_chunk = &parser.chunks[parser.chunk_ib_idx];
- 	parser.ib.length_dw = ib_chunk->length_dw;
- 	*l = parser.ib.length_dw;
-+	memcpy(ib, ib_chunk->kdata, ib_chunk->length_dw * 4);
- 	r = r600_cs_parse(&parser);
- 	if (r) {
- 		DRM_ERROR("Invalid command stream !\n");
- 		r600_cs_parser_fini(&parser, r);
- 		return r;
- 	}
--	r = radeon_cs_finish_pages(&parser);
--	if (r) {
--		DRM_ERROR("Invalid command stream !\n");
--		r600_cs_parser_fini(&parser, r);
--		return r;
--	}
- 	r600_cs_parser_fini(&parser, r);
- 	return r;
- }
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index e067024..c52bb5e 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -983,12 +983,7 @@ struct radeon_cs_reloc {
- struct radeon_cs_chunk {
- 	uint32_t		chunk_id;
- 	uint32_t		length_dw;
--	int			kpage_idx[2];
--	uint32_t		*kpage[2];
- 	uint32_t		*kdata;
--	void __user		*user_ptr;
--	int			last_copied_page;
--	int			last_page_index;
- };
- 
- struct radeon_cs_parser {
-@@ -1027,8 +1022,13 @@ struct radeon_cs_parser {
- 	struct radeon_sa_bo	*cpu_sema;
- };
- 
--extern int radeon_cs_finish_pages(struct radeon_cs_parser *p);
--extern u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
-+static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
-+{
-+	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
-+
-+	return ibc->kdata[idx];
-+}
-+
- 
- struct radeon_cs_packet {
- 	unsigned	idx;
-diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
-index 7d7322e..98d8898 100644
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -217,9 +217,7 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
- 			return -EFAULT;
- 		}
- 		p->chunks[i].length_dw = user_chunk.length_dw;
--		p->chunks[i].kdata = NULL;
- 		p->chunks[i].chunk_id = user_chunk.chunk_id;
--		p->chunks[i].user_ptr = (void __user *)(unsigned long)user_chunk.chunk_data;
- 		if (p->chunks[i].chunk_id == RADEON_CHUNK_ID_RELOCS) {
- 			p->chunk_relocs_idx = i;
- 		}
-@@ -242,25 +240,22 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
- 				return -EINVAL;
- 		}
- 
--		cdata = (uint32_t *)(unsigned long)user_chunk.chunk_data;
--		if ((p->chunks[i].chunk_id == RADEON_CHUNK_ID_RELOCS) ||
--		    (p->chunks[i].chunk_id == RADEON_CHUNK_ID_FLAGS)) {
--			size = p->chunks[i].length_dw * sizeof(uint32_t);
--			p->chunks[i].kdata = kmalloc(size, GFP_KERNEL);
--			if (p->chunks[i].kdata == NULL) {
--				return -ENOMEM;
--			}
--			if (DRM_COPY_FROM_USER(p->chunks[i].kdata,
--					       p->chunks[i].user_ptr, size)) {
--				return -EFAULT;
--			}
--			if (p->chunks[i].chunk_id == RADEON_CHUNK_ID_FLAGS) {
--				p->cs_flags = p->chunks[i].kdata[0];
--				if (p->chunks[i].length_dw > 1)
--					ring = p->chunks[i].kdata[1];
--				if (p->chunks[i].length_dw > 2)
--					priority = (s32)p->chunks[i].kdata[2];
--			}
-+		size = p->chunks[i].length_dw;
-+		p->chunks[i].kdata = drm_malloc_ab(size, sizeof(uint32_t));
-+		size *= sizeof(uint32_t);
-+		if (p->chunks[i].kdata == NULL) {
-+			return -ENOMEM;
-+		}
-+		cdata = (void __user *)(unsigned long)user_chunk.chunk_data;
-+		if (DRM_COPY_FROM_USER(p->chunks[i].kdata, cdata, size)) {
-+			return -EFAULT;
-+		}
-+		if (p->chunks[i].chunk_id == RADEON_CHUNK_ID_FLAGS) {
-+			p->cs_flags = p->chunks[i].kdata[0];
-+			if (p->chunks[i].length_dw > 1)
-+				ring = p->chunks[i].kdata[1];
-+			if (p->chunks[i].length_dw > 2)
-+				priority = (s32)p->chunks[i].kdata[2];
- 		}
- 	}
- 
-@@ -283,34 +278,6 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
- 		}
- 	}
- 
--	/* deal with non-vm */
--	if ((p->chunk_ib_idx != -1) &&
--	    ((p->cs_flags & RADEON_CS_USE_VM) == 0) &&
--	    (p->chunks[p->chunk_ib_idx].chunk_id == RADEON_CHUNK_ID_IB)) {
--		if (p->chunks[p->chunk_ib_idx].length_dw > (16 * 1024)) {
--			DRM_ERROR("cs IB too big: %d\n",
--				  p->chunks[p->chunk_ib_idx].length_dw);
--			return -EINVAL;
--		}
--		if (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) {
--			p->chunks[p->chunk_ib_idx].kpage[0] = kmalloc(PAGE_SIZE, GFP_KERNEL);
--			p->chunks[p->chunk_ib_idx].kpage[1] = kmalloc(PAGE_SIZE, GFP_KERNEL);
--			if (p->chunks[p->chunk_ib_idx].kpage[0] == NULL ||
--			    p->chunks[p->chunk_ib_idx].kpage[1] == NULL) {
--				kfree(p->chunks[p->chunk_ib_idx].kpage[0]);
--				kfree(p->chunks[p->chunk_ib_idx].kpage[1]);
--				p->chunks[p->chunk_ib_idx].kpage[0] = NULL;
--				p->chunks[p->chunk_ib_idx].kpage[1] = NULL;
--				return -ENOMEM;
--			}
--		}
--		p->chunks[p->chunk_ib_idx].kpage_idx[0] = -1;
--		p->chunks[p->chunk_ib_idx].kpage_idx[1] = -1;
--		p->chunks[p->chunk_ib_idx].last_copied_page = -1;
--		p->chunks[p->chunk_ib_idx].last_page_index =
--			((p->chunks[p->chunk_ib_idx].length_dw * 4) - 1) / PAGE_SIZE;
--	}
--
- 	return 0;
- }
- 
-@@ -450,13 +417,8 @@ static void radeon_cs_parser_fini(struct radeon_cs_parser *parser, int error, bo
- 	kfree(parser->track);
- 	kfree(parser->relocs);
- 	kfree(parser->relocs_ptr);
--	for (i = 0; i < parser->nchunks; i++) {
--		kfree(parser->chunks[i].kdata);
--		if ((parser->rdev->flags & RADEON_IS_AGP)) {
--			kfree(parser->chunks[i].kpage[0]);
--			kfree(parser->chunks[i].kpage[1]);
--		}
--	}
-+	for (i = 0; i < parser->nchunks; i++)
-+		drm_free_large(parser->chunks[i].kdata);
- 	kfree(parser->chunks);
- 	kfree(parser->chunks_array);
- 	radeon_ib_free(parser->rdev, &parser->ib);
-@@ -483,17 +445,15 @@ static int radeon_cs_ib_chunk(struct radeon_device *rdev,
- 		DRM_ERROR("Failed to get ib !\n");
- 		return r;
- 	}
-+
-+	memcpy(parser->ib.ptr, ib_chunk->kdata, ib_chunk->length_dw * 4);
- 	parser->ib.length_dw = ib_chunk->length_dw;
-+
- 	r = radeon_cs_parse(rdev, parser->ring, parser);
- 	if (r || parser->parser_error) {
- 		DRM_ERROR("Invalid command stream !\n");
- 		return r;
- 	}
--	r = radeon_cs_finish_pages(parser);
--	if (r) {
--		DRM_ERROR("Invalid command stream !\n");
--		return r;
--	}
- 
- 	if (parser->ring == R600_RING_TYPE_UVD_INDEX)
- 		radeon_uvd_note_usage(rdev);
-@@ -555,10 +515,8 @@ static int radeon_cs_ib_vm_chunk(struct radeon_device *rdev,
- 		parser->const_ib.is_const_ib = true;
- 		parser->const_ib.length_dw = ib_chunk->length_dw;
- 		/* Copy the packet into the IB */
--		if (DRM_COPY_FROM_USER(parser->const_ib.ptr, ib_chunk->user_ptr,
--				       ib_chunk->length_dw * 4)) {
--			return -EFAULT;
--		}
-+		memcpy(parser->const_ib.ptr, ib_chunk->kdata,
-+		       ib_chunk->length_dw * 4);
- 		r = radeon_ring_ib_parse(rdev, parser->ring, &parser->const_ib);
- 		if (r) {
- 			return r;
-@@ -578,10 +536,7 @@ static int radeon_cs_ib_vm_chunk(struct radeon_device *rdev,
- 	}
- 	parser->ib.length_dw = ib_chunk->length_dw;
- 	/* Copy the packet into the IB */
--	if (DRM_COPY_FROM_USER(parser->ib.ptr, ib_chunk->user_ptr,
--			       ib_chunk->length_dw * 4)) {
--		return -EFAULT;
--	}
-+	memcpy(parser->ib.ptr, ib_chunk->kdata, ib_chunk->length_dw * 4);
- 	r = radeon_ring_ib_parse(rdev, parser->ring, &parser->ib);
- 	if (r) {
- 		return r;
-@@ -704,97 +659,6 @@ int radeon_cs_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
- 	return r;
- }
- 
--int radeon_cs_finish_pages(struct radeon_cs_parser *p)
--{
--	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
--	int i;
--	int size = PAGE_SIZE;
--
--	for (i = ibc->last_copied_page + 1; i <= ibc->last_page_index; i++) {
--		if (i == ibc->last_page_index) {
--			size = (ibc->length_dw * 4) % PAGE_SIZE;
--			if (size == 0)
--				size = PAGE_SIZE;
--		}
--		
--		if (DRM_COPY_FROM_USER(p->ib.ptr + (i * (PAGE_SIZE/4)),
--				       ibc->user_ptr + (i * PAGE_SIZE),
--				       size))
--			return -EFAULT;
--	}
--	return 0;
--}
--
--static int radeon_cs_update_pages(struct radeon_cs_parser *p, int pg_idx)
--{
--	int new_page;
--	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
--	int i;
--	int size = PAGE_SIZE;
--	bool copy1 = (p->rdev && (p->rdev->flags & RADEON_IS_AGP)) ?
--		false : true;
--
--	for (i = ibc->last_copied_page + 1; i < pg_idx; i++) {
--		if (DRM_COPY_FROM_USER(p->ib.ptr + (i * (PAGE_SIZE/4)),
--				       ibc->user_ptr + (i * PAGE_SIZE),
--				       PAGE_SIZE)) {
--			p->parser_error = -EFAULT;
--			return 0;
--		}
--	}
--
--	if (pg_idx == ibc->last_page_index) {
--		size = (ibc->length_dw * 4) % PAGE_SIZE;
--		if (size == 0)
--			size = PAGE_SIZE;
--	}
--
--	new_page = ibc->kpage_idx[0] < ibc->kpage_idx[1] ? 0 : 1;
--	if (copy1)
--		ibc->kpage[new_page] = p->ib.ptr + (pg_idx * (PAGE_SIZE / 4));
--
--	if (DRM_COPY_FROM_USER(ibc->kpage[new_page],
--			       ibc->user_ptr + (pg_idx * PAGE_SIZE),
--			       size)) {
--		p->parser_error = -EFAULT;
--		return 0;
--	}
--
--	/* copy to IB for non single case */
--	if (!copy1)
--		memcpy((void *)(p->ib.ptr+(pg_idx*(PAGE_SIZE/4))), ibc->kpage[new_page], size);
--
--	ibc->last_copied_page = pg_idx;
--	ibc->kpage_idx[new_page] = pg_idx;
--
--	return new_page;
--}
--
--u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
--{
--	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
--	u32 pg_idx, pg_offset;
--	u32 idx_value = 0;
--	int new_page;
--
--	pg_idx = (idx * 4) / PAGE_SIZE;
--	pg_offset = (idx * 4) % PAGE_SIZE;
--
--	if (ibc->kpage_idx[0] == pg_idx)
--		return ibc->kpage[0][pg_offset/4];
--	if (ibc->kpage_idx[1] == pg_idx)
--		return ibc->kpage[1][pg_offset/4];
--
--	new_page = radeon_cs_update_pages(p, pg_idx);
--	if (new_page < 0) {
--		p->parser_error = new_page;
--		return 0;
--	}
--
--	idx_value = ibc->kpage[new_page][pg_offset/4];
--	return idx_value;
--}
--
- /**
-  * radeon_cs_packet_parse() - parse cp packet and point ib index to next packet
-  * @parser:	parser structure holding parsing context.
+On Tuesday 08 October 2013 06:59 PM, Nishanth Menon wrote:
+> On 10/08/2013 08:21 AM, Laxman Dewangan wrote:
+>> Palmas devices has two clock output CLK32K_KG and CLK32K_KG_AUDIO
+> not all palmas devices have 2 clocks - example: tps659038
+
+This is for generic palmas and I have seen it for TPS65913, TPS65914, 
+TPS80036. If the generic one is not compatible then it need to add  
+device specific and at that time, it is require to update the binding 
+document accordingly.
+
+>           |    7 +
+>   drivers/clk/Makefile                               |    1 +
+>   drivers/clk/clk-palmas.c                           |  340 ++++++++++++++++++++
+>
+> http://www.spinics.net/lists/devicetree/msg04855.html
+> Do we do 2 patches now? one seperate for binding and implementation?
+> What is our current preference now a days?
+
+Currently it is implementation + binding doc in one patch.
+
+>
+>>   Palmas device has two clock output pins for 32KHz, KG and KG_AUDIO.
+>> +
+>> +This binding uses the common clock binding ./clock-bindings.txt.
+> proper link would be to provide
+> Documentation/devicetree/bindings/clock/clock-bindings.txt ?
+
+Hmm, other patch I got feedback from DT maintainers to do not use the 
+absolute path as document directory may change
+
+>> +
+>> +Clock 32KHz KG is output 0 of the driver and clock 32KHz is output 1.
+>> +
+>> +Required properties:
+>> +- compatible : shall be "ti,palmas-clk".
+> To handle variants of Palmas chips in production, you'd want to be
+> specific here clk32k_kg and clk32k_kg_audio.
+
+The compatible is the device sub module level, not the clock level. Same 
+thing we are following on regulators.
+
+
+>
+>> +
+>> +     Optional subnode properties:
+>> +     ti,clock-boot-enable: Enable clock at the time of booting.
+> Dumb question: Why is this needed? should'nt relevant drivers do a
+> clk_get to enable the relevant clocks?
+
+If some board needs this clock to be always available for rest of system 
+to work without any specific driver then this flag is useful.
+
+
+>
+>> +     ti,external-sleep-control: The clock is enable/disabled by state
+>> +             of external enable input pins ENABLE, ENABLE2 and NSLEEP.
+>> +             The valid value for the external pins are:
+>> +                     1 for ENABLE1
+>> +                     2 for ENABLE2
+>> +                     3 for NSLEEP.
+> could we not have macros for readability?
+
+I am thinking of adding the palmas for dt-binding and then change on 
+multiple places. I will post patches for this.
+the patch will go on dt tree as include/dt-bindings and then on 
+documents file and then on actually DTS. I will work towards this but 
+scoping out of this patch.
+
+
+>
+>> +
+>> +
+>> +enum PALMAS_CLOCK32K {
+>> +     PALMAS_CLOCK32KG,
+>> +     PALMAS_CLOCK32KG_AUDIO,
+>> +
+>> +     /* Last entry */
+>> +     PALMAS_CLOCK32K_NR,
+>> +};
+> you should be able to get rid of this entirely
+
+Probably yes but it is easy to read (atleast for me).
+
+
+>
+> +             cinfo->clk = clk;
+> +             palmas_clks->clk_data.clks[i] = clk;
+> +             palmas_clks->clk_data.clk_num++;
+> +             palmas_clks_init_configure(cinfo);
+> we dont handle error here?
+
+Intentionally I ignore error, just print and continue the registration.
+
+
+>
+>> +
+>> +MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
+>> +MODULE_LICENSE("GPL v2");
+>>
+> I wonder if we can simplify this with CLK_OF_DECLARE - I suppose it
+> wont work if of_clk_init(NULL); was invoked previously.
+
+This driver has dependency over the mfd driver and hence until mfd 
+driver invoked and get registered, this driver should not be called. The 
+platform driver registration is done in mfd.
+As per my understanding and referring the other code, CLK_OF_DECLARE is 
+useful if there is no such dependency. Please correct me if this is not 
+true.
 
