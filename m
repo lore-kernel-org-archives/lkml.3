@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3JHIrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:47:09 -0400
+	id S1755250Ab3JHIrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:47:13 -0400
 Received: from mga09.intel.com ([134.134.136.24]:59651 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958Ab3JHIrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:47:05 -0400
+	id S1754961Ab3JHIrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:47:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
-   d="scan'208";a="389469221"
+   d="scan'208";a="389469274"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,83 +17,202 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V5 0/9] perf tools: kcore improvements
-Date: Tue,  8 Oct 2013 11:45:47 +0300
-Message-Id: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V5 1/9] perf tools: make a separate function to parse /proc/modules
+Date: Tue,  8 Oct 2013 11:45:48 +0300
+Message-Id: <1381221956-16699-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
+References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Make a separate function to parse /proc/modules
+so that it can be reused.
 
-Here are some improvements for using kcore (version 5).  There are 3
-improvements:
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/machine.c | 67 +++++++++++++----------------------------------
+ tools/perf/util/symbol.c  | 58 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h  |  3 +++
+ 3 files changed, 79 insertions(+), 49 deletions(-)
 
-	- validate that kcore matches the perf.data modules
-	- workaround objdump difficulties with kcore
-	- add kcore to the build-id cache
-
-Changes in V5:
-	perf tools: make a separate function to parse /proc/modules
-		Use scnprintf not snprintf
-	perf tools: validate kcore module addresses
-		Fix check for mi->name not allocated
-	perf buildid-cache: add ability to add kcore to the cache
-		Use scnprintf not snprintf
-	perf tools: add ability to find kcore in build-id cache
-		Use scnprintf not snprintf
-
-Changes in V4:
-	perf tools: fix path unpopulated in machine__create_modules()
-		Dropped because it has been applied
-	perf buildid-cache: add ability to add kcore to the cache
-		Tweaked Documentation/perf-buildid-cache.txt
-	perf tools: add ability to find kcore in build-id cache
-		Changed to check read access to /proc/kcore before
-		skipping the buildid cache
-
-Changes in V3:
-	perf tools: workaround objdump difficulties with kcore
-		change strncpy to strlcpy
-	perf buildid-cache: add ability to add kcore to the cache
-		change strncpy to strlcpy
-	perf tools: add ability to find kcore in build-id cache
-		change strncpy to strlcpy
-Changes in V2:
-	perf tools: fix buildid cache handling of kallsyms with kcore
-		Dropped because it has been applied
-	perf tools: fix path unpopulated in machine__create_modules()
-		Use 'modules' pointer
-
-Adrian Hunter (9):
-      perf tools: make a separate function to parse /proc/modules
-      perf tools: validate kcore module addresses
-      perf tools: workaround objdump difficulties with kcore
-      perf tools: add map__find_other_map_symbol()
-      perf tools: fix annotate_browser__callq()
-      perf tools: find kcore symbols on other maps
-      perf tools: add copyfile_mode()
-      perf buildid-cache: add ability to add kcore to the cache
-      perf tools: add ability to find kcore in build-id cache
-
- tools/perf/Documentation/perf-buildid-cache.txt |  13 +
- tools/perf/builtin-buildid-cache.c              | 148 +++++-
- tools/perf/ui/browsers/annotate.c               |  10 +-
- tools/perf/util/annotate.c                      |  36 +-
- tools/perf/util/machine.c                       |  67 +--
- tools/perf/util/map.c                           |  27 ++
- tools/perf/util/map.h                           |   2 +
- tools/perf/util/symbol-elf.c                    | 579 ++++++++++++++++++++++++
- tools/perf/util/symbol-minimal.c                |  15 +
- tools/perf/util/symbol.c                        | 442 +++++++++++++++---
- tools/perf/util/symbol.h                        |  20 +
- tools/perf/util/util.c                          |  18 +-
- tools/perf/util/util.h                          |   1 +
- 13 files changed, 1244 insertions(+), 134 deletions(-)
-
-
-Regards
-Adrian
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 40083df..a36419e 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -776,12 +776,22 @@ static int machine__set_modules_path(struct machine *machine)
+ 	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
+ }
+ 
+-static int machine__create_modules(struct machine *machine)
++static int machine__create_module(void *arg, const char *name, u64 start)
+ {
+-	char *line = NULL;
+-	size_t n;
+-	FILE *file;
++	struct machine *machine = arg;
+ 	struct map *map;
++
++	map = machine__new_module(machine, start, name);
++	if (map == NULL)
++		return -1;
++
++	dso__kernel_module_get_build_id(map->dso, machine->root_dir);
++
++	return 0;
++}
++
++static int machine__create_modules(struct machine *machine)
++{
+ 	const char *modules;
+ 	char path[PATH_MAX];
+ 
+@@ -795,56 +805,15 @@ static int machine__create_modules(struct machine *machine)
+ 	if (symbol__restricted_filename(path, "/proc/modules"))
+ 		return -1;
+ 
+-	file = fopen(modules, "r");
+-	if (file == NULL)
++	if (modules__parse(modules, machine, machine__create_module))
+ 		return -1;
+ 
+-	while (!feof(file)) {
+-		char name[PATH_MAX];
+-		u64 start;
+-		char *sep;
+-		int line_len;
+-
+-		line_len = getline(&line, &n, file);
+-		if (line_len < 0)
+-			break;
+-
+-		if (!line)
+-			goto out_failure;
+-
+-		line[--line_len] = '\0'; /* \n */
+-
+-		sep = strrchr(line, 'x');
+-		if (sep == NULL)
+-			continue;
+-
+-		hex2u64(sep + 1, &start);
+-
+-		sep = strchr(line, ' ');
+-		if (sep == NULL)
+-			continue;
+-
+-		*sep = '\0';
+-
+-		snprintf(name, sizeof(name), "[%s]", line);
+-		map = machine__new_module(machine, start, name);
+-		if (map == NULL)
+-			goto out_delete_line;
+-		dso__kernel_module_get_build_id(map->dso, machine->root_dir);
+-	}
++	if (!machine__set_modules_path(machine))
++		return 0;
+ 
+-	free(line);
+-	fclose(file);
++	pr_debug("Problems setting modules path maps, continuing anyway...\n");
+ 
+-	if (machine__set_modules_path(machine) < 0) {
+-		pr_debug("Problems setting modules path maps, continuing anyway...\n");
+-	}
+ 	return 0;
+-
+-out_delete_line:
+-	free(line);
+-out_failure:
+-	return -1;
+ }
+ 
+ int machine__create_kernel_maps(struct machine *machine)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 48c3879..5fd9513 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -500,6 +500,64 @@ out_failure:
+ 	return -1;
+ }
+ 
++int modules__parse(const char *filename, void *arg,
++		   int (*process_module)(void *arg, const char *name,
++					 u64 start))
++{
++	char *line = NULL;
++	size_t n;
++	FILE *file;
++	int err = 0;
++
++	file = fopen(filename, "r");
++	if (file == NULL)
++		return -1;
++
++	while (1) {
++		char name[PATH_MAX];
++		u64 start;
++		char *sep;
++		ssize_t line_len;
++
++		line_len = getline(&line, &n, file);
++		if (line_len < 0) {
++			if (feof(file))
++				break;
++			err = -1;
++			goto out;
++		}
++
++		if (!line) {
++			err = -1;
++			goto out;
++		}
++
++		line[--line_len] = '\0'; /* \n */
++
++		sep = strrchr(line, 'x');
++		if (sep == NULL)
++			continue;
++
++		hex2u64(sep + 1, &start);
++
++		sep = strchr(line, ' ');
++		if (sep == NULL)
++			continue;
++
++		*sep = '\0';
++
++		scnprintf(name, sizeof(name), "[%s]", line);
++
++		err = process_module(arg, name, start);
++		if (err)
++			break;
++	}
++out:
++	free(line);
++	fclose(file);
++	return err;
++}
++
+ struct process_kallsyms_args {
+ 	struct map *map;
+ 	struct dso *dso;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2d4ee9a..a2543f0 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -223,6 +223,9 @@ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
+ int kallsyms__parse(const char *filename, void *arg,
+ 		    int (*process_symbol)(void *arg, const char *name,
+ 					  char type, u64 start));
++int modules__parse(const char *filename, void *arg,
++		   int (*process_module)(void *arg, const char *name,
++					 u64 start));
+ int filename__read_debuglink(const char *filename, char *debuglink,
+ 			     size_t size);
+ 
+-- 
+1.7.11.7
 
