@@ -1,99 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab3JHF74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:59:56 -0400
-Received: from mx5.zte.com.cn ([63.217.80.70]:39982 "EHLO mx5.zte.com.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771Ab3JHF7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:59:55 -0400
-In-Reply-To: <1380295947.32071.69.camel@dvhart-mobl4.amr.corp.intel.com>
-References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>	 <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
-	 <OFFC4F71E6.FCD3279D-ON48257BF3.000E2A58-48257BF3.00251AFA@zte.com.cn> <1380295947.32071.69.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: Re: Re: [PATCH] futex: Remove the owner check when waking task in
- handle_futex_death
-X-KeepSent: 77F96D5F:776C09BF-48257BFE:00106C94;
- type=4; name=$KeepSent
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OF77F96D5F.776C09BF-ON48257BFE.00106C94-48257BFE.0020EF59@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Tue, 8 Oct 2013 13:59:36 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-10-08 13:59:39
+	id S1753842Ab3JHGEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 02:04:06 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46517 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab3JHGEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 02:04:04 -0400
+Message-ID: <5253A04E.4020809@hitachi.com>
+Date: Tue, 08 Oct 2013 15:03:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: mse02.zte.com.cn r985xeQL056329
+To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] Perf support to SDT markers
+References: <20131007063911.11693.33624.stgit@hemant-fedora>
+In-Reply-To: <20131007063911.11693.33624.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+(2013/10/07 15:46), Hemant Kumar wrote:
+> This patchset helps in probing dtrace style markers(SDT) present in user space
+> applications through perf. Notes/markes are placed at important places by the
+> developers. They have a negligible overhead when not enabled. We can enable
+> them and probe at these places and find some important information like the
+> arguments' values, etc.
 
-Darren Hart <dvhart@linux.intel.com> wrote on 2013/09/27 23:32:27:
+Thank you for updating!
+By the way, could you rebase this series to the latest -tip kernel next time?
+It is more convenient for us to test & merge it.
 
->
-> Re: Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
->
-> >
-> > The earlier patch cannot solve another problem:
-> > The owner wakes the next waiter through normal unlocking which make the
-> > futex value as zero, the waked task exits before actually locking the mutex.
-> > In this case, the owner doesn't call handle_futex_death() and the waked task
-> > doesn't call futex_wake() when they are dying. The rest waiters will still
-> > block as the same.
-> >
-> > This is also the reason that I drop the owner and FUTEX_WAITERS check,
-> > because the futex value can be zero at that time.
-> >
->
-> If the FUTEX_WAITERS bit is not set, there are no waiters, and thus no
-> need to wake. I understand why you dropped the OWNER check, but I'm not
-> following this one. Where would the futex word be set from having
-> waiters to zero when there might still be waiters pending?
->
->
-> --
-> Darren Hart
-> Intel Open Source Technology Center
-> Yocto Project - Linux Kernel
->
->
+[...]
+> - Now use perf to list the markers in the app:
+> # perf probe --markers -x ./user_app
+> 
+> %user_app:foo_start
+> %user_app:fun_start
 
-I have drawn a diagram as below:
+Here, what I got.
 
-               process1                     |      process2
-   -------------------------------------------------------------
-  |       thread1       |      thread2      |      thread3
-   -------------------------------------------------------------
-t1|pthread_mutex_lock:  |                   |
-  |  __lock=self        |                   |
-  |                     |                   |
-t2|                     |pthread_mutex_lock:|
-  |                     |__lock|=FUTEX_WAITERS
-  |                     | syscall futex_wait|
-  |                     |                   |
-t3|                     |                   |pthrea_mutex_lock:
-  |                     |                   |__lock|=FUTEX_WAITERS
-  |                     |                   | syscall futex_wait
-  |                     |                   |
-t4|pthread_mutex_unlock:|                   |
-  |  __lock=0           |                   |
-  |  syscall futex_wake | waked             |
-  |                     |                   |
-t5| exit                |exit:              |
-  |                     | handle_futex_death|
----------------------------------------------------------------
-t6|                     |pthread_mutex_lock:|
-  |                     |__lock=self|FUTEX_WAITERS
+$ ./perf probe --markers -x /lib64/librt.so
+%librt:lll_futex_wake
 
+OK, it lists up markers.
 
-1, At time t4, in the unlocking process of glibc, it clears the FUTEX_WAITERS bit before
-calling futex_wake syscall.
+$ ./perf probe --markers -x ./perf
+SDT markers not present!
+  Error : Failed to find SDT markers!(-1)
 
-2, At time t5, thread2 cannot know if the FUTEX_WAITERS bit was set.
+OK, this shows an error, INHO, it'd better show which binary doesn't have markers.
 
-3, Time t6 is expected but can never be true.
+$ ./perf probe --markers
+Failed to open (null)
+  Error : Failed to find SDT markers!(-1)
+
+Hmm, it's a bit odd error. It should check if there is an elf binary is specified.
+
+$ ./perf probe --markers /lib64/librt.so
+%librt:lll_futex_wake
+
+It seems to work without -x. However, that is only when the path is started with /.
+And also the usage is not described by --help.
+
+$ ./perf probe --markers ./perf
+Semantic error :File always requires line number or lazy pattern.
+  Error: Parse Error.  (-22)
+
+So, to avoid confusion, --markers should abort without -x(--exec) option.
+
+> - And  then use perf probe to add a probe point :
+> 
+> # perf probe -x ./user_app -a '%user_app:foo_start'
+
+And also, without -x, -a also exits with an odd error message.
+
+$ ./perf probe -a %libm:slowexp_p6
+Failed to open (null)
+  Error: Failed to add events. (-1)
+
+I'll review each patch soon.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
