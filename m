@@ -1,54 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3JHQv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:51:28 -0400
-Received: from smtprelay0206.hostedemail.com ([216.40.44.206]:46885 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755255Ab3JHQvY (ORCPT
+	id S1756571Ab3JHQxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:53:11 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:36717 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442Ab3JHQxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:51:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1801:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3872:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: girl96_bd06a3b4cf50
-X-Filterd-Recvd-Size: 1927
-Message-ID: <1381251080.2081.243.camel@joe-AO722>
-Subject: Re: [PATCH] core: Catch overflows in do_div() function
-From: Joe Perches <joe@perches.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, rdunlap@infradead.org
-Date: Tue, 08 Oct 2013 09:51:20 -0700
-In-Reply-To: <CAFLxGvzrEQGE8+QAFCQL=z2hwe578pBdWOu4B+DkJDjxkM0=hw@mail.gmail.com>
-References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
-	 <1381248622-27809-1-git-send-email-anatol.pomozov@gmail.com>
-	 <1381249090.2081.240.camel@joe-AO722>
-	 <CAFLxGvzrEQGE8+QAFCQL=z2hwe578pBdWOu4B+DkJDjxkM0=hw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Oct 2013 12:53:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380143572-11741-1-git-send-email-abrestic@chromium.org>
+References: <1380046016-5811-1-git-send-email-abrestic@chromium.org>
+	<1380143572-11741-1-git-send-email-abrestic@chromium.org>
+Date: Tue, 8 Oct 2013 09:53:02 -0700
+X-Google-Sender-Auth: hbcppvNlqZDZw7MQdSYZLCfcB1k
+Message-ID: <CAL1qeaE2Y2EkRtbGQUqsxyci6PSSNihObPju-xquy39fV4zOMw@mail.gmail.com>
+Subject: Re: [PATCH V4 1/6] clk: exynos-audss: convert to platform device
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Padmavathi Venna <padma.v@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Bresticker <abrestic@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 18:45 +0200, Richard Weinberger wrote:
-> On Tue, Oct 8, 2013 at 6:18 PM, Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2013-10-08 at 09:10 -0700, Anatol Pomozov wrote:
-> >> If second parameter passed to this function was 64 then it silently
-> >> truncates to 32 bits. Catch such situation.
-> > []
-> >> diff --git a/include/asm-generic/div64.h b/include/asm-generic/div64.h
-> > []
-> >> @@ -25,6 +26,7 @@
-> >>  # define do_div(n,base) ({                                   \
-> >>       uint32_t __base = (base);                               \
-> >>       uint32_t __rem;                                         \
-> >> +     BUG_ON(sizeof(base) > 4 && base >= (1UL<<32));          \
-> >
-> > I think this would be better as a BUILD_BUG_ON
-> 
-> No. BUILD_BUG_ON works only for constants.
+Hi Mike and Kukjin,
 
-Add __builtin_constant_p(base).
+Any decisions regarding this patchset?  I believe all comments have
+been addressed.
 
+Thanks,
+Andrew
 
+On Wed, Sep 25, 2013 at 2:12 PM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
+> The Exynos AudioSS clock controller will later be modified to allow
+> input clocks to be specified via device-tree in order to support
+> multiple Exynos SoCs.  This will introduce a dependency on the core
+> SoC clock controller being initialized first so that the AudioSS driver
+> can look up its input clocks, but the order in which clock providers
+> are probed in of_clk_init() is not guaranteed.  Since deferred probing
+> is not supported in of_clk_init() and the AudioSS block is not the core
+> controller, we can initialize it later as a platform device.
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Acked-by: Tomasz Figa <t.figa@samsung.com>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> ---
+> Changes since v3:
+>  - __init -> __exit for module exit function
+>  - fixed nits from Sylwester
+> Changes since v2:
+>  - add error handling to probe callback
+>  - fixed ordering of of_clk_{add,del}_provider
+>  - fixed nits from Tomasz and Sylwester
+> Changes since v1:
+>  - add clk_unregister() calls to remove callback
+>  - fixed minor nits from Tomasz
+> ---
+>  drivers/clk/samsung/clk-exynos-audss.c | 104 ++++++++++++++++++++++++++++-----
+>  1 file changed, 88 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
+> index 39b40aa..742dabc 100644
+> --- a/drivers/clk/samsung/clk-exynos-audss.c
+> +++ b/drivers/clk/samsung/clk-exynos-audss.c
+> @@ -14,6 +14,8 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/of_address.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+>
+>  #include <dt-bindings/clk/exynos-audss-clk.h>
+>
+> @@ -62,24 +64,26 @@ static struct syscore_ops exynos_audss_clk_syscore_ops = {
+>  #endif /* CONFIG_PM_SLEEP */
+>
+>  /* register exynos_audss clocks */
+> -static void __init exynos_audss_clk_init(struct device_node *np)
+> +static int exynos_audss_clk_probe(struct platform_device *pdev)
+>  {
+> -       reg_base = of_iomap(np, 0);
+> -       if (!reg_base) {
+> -               pr_err("%s: failed to map audss registers\n", __func__);
+> -               return;
+> +       int i, ret = 0;
+> +       struct resource *res;
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       reg_base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(reg_base)) {
+> +               dev_err(&pdev->dev, "failed to map audss registers\n");
+> +               return PTR_ERR(reg_base);
+>         }
+>
+> -       clk_table = kzalloc(sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
+> +       clk_table = devm_kzalloc(&pdev->dev,
+> +                               sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
+>                                 GFP_KERNEL);
+> -       if (!clk_table) {
+> -               pr_err("%s: could not allocate clk lookup table\n", __func__);
+> -               return;
+> -       }
+> +       if (!clk_table)
+> +               return -ENOMEM;
+>
+>         clk_data.clks = clk_table;
+>         clk_data.clk_num = EXYNOS_AUDSS_MAX_CLKS;
+> -       of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+>
+>         clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
+>                                 mout_audss_p, ARRAY_SIZE(mout_audss_p),
+> @@ -123,13 +127,81 @@ static void __init exynos_audss_clk_init(struct device_node *np)
+>                                 "div_pcm0", CLK_SET_RATE_PARENT,
+>                                 reg_base + ASS_CLK_GATE, 5, 0, &lock);
+>
+> +       for (i = 0; i < clk_data.clk_num; i++) {
+> +               if (IS_ERR(clk_table[i])) {
+> +                       dev_err(&pdev->dev, "failed to register clock %d\n", i);
+> +                       ret = PTR_ERR(clk_table[i]);
+> +                       goto unregister;
+> +               }
+> +       }
+> +
+> +       ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get,
+> +                                       &clk_data);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to add clock provider\n");
+> +               goto unregister;
+> +       }
+> +
+>  #ifdef CONFIG_PM_SLEEP
+>         register_syscore_ops(&exynos_audss_clk_syscore_ops);
+>  #endif
+>
+> -       pr_info("Exynos: Audss: clock setup completed\n");
+> +       dev_info(&pdev->dev, "setup completed\n");
+> +
+> +       return 0;
+> +
+> +unregister:
+> +       for (i = 0; i < clk_data.clk_num; i++) {
+> +               if (!IS_ERR(clk_table[i]))
+> +                       clk_unregister(clk_table[i]);
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+> +static int exynos_audss_clk_remove(struct platform_device *pdev)
+> +{
+> +       int i;
+> +
+> +       of_clk_del_provider(pdev->dev.of_node);
+> +
+> +       for (i = 0; i < clk_data.clk_num; i++) {
+> +               if (!IS_ERR(clk_table[i]))
+> +                       clk_unregister(clk_table[i]);
+> +       }
+> +
+> +       return 0;
+>  }
+> -CLK_OF_DECLARE(exynos4210_audss_clk, "samsung,exynos4210-audss-clock",
+> -               exynos_audss_clk_init);
+> -CLK_OF_DECLARE(exynos5250_audss_clk, "samsung,exynos5250-audss-clock",
+> -               exynos_audss_clk_init);
+> +
+> +static const struct of_device_id exynos_audss_clk_of_match[] = {
+> +       { .compatible = "samsung,exynos4210-audss-clock", },
+> +       { .compatible = "samsung,exynos5250-audss-clock", },
+> +       {},
+> +};
+> +
+> +static struct platform_driver exynos_audss_clk_driver = {
+> +       .driver = {
+> +               .name = "exynos-audss-clk",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = exynos_audss_clk_of_match,
+> +       },
+> +       .probe = exynos_audss_clk_probe,
+> +       .remove = exynos_audss_clk_remove,
+> +};
+> +
+> +static int __init exynos_audss_clk_init(void)
+> +{
+> +       return platform_driver_register(&exynos_audss_clk_driver);
+> +}
+> +core_initcall(exynos_audss_clk_init);
+> +
+> +static void __exit exynos_audss_clk_exit(void)
+> +{
+> +       platform_driver_unregister(&exynos_audss_clk_driver);
+> +}
+> +module_exit(exynos_audss_clk_exit);
+> +
+> +MODULE_AUTHOR("Padmavathi Venna <padma.v@samsung.com>");
+> +MODULE_DESCRIPTION("Exynos Audio Subsystem Clock Controller");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:exynos-audss-clk");
+> --
+> 1.8.4
+>
