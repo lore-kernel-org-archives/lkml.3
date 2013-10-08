@@ -1,48 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab3JHOIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:08:12 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25857 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682Ab3JHOIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:08:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+r9QdGmhbt5vWkcrje+ARIt6hfrgZv+C4=
-Date: Tue, 8 Oct 2013 10:08:07 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: manual merge of the mvebu tree
-Message-ID: <20131008140807.GG5402@titan.lakedaemon.net>
-References: <1381239855-16314-1-git-send-email-treding@nvidia.com>
- <1381239855-16314-3-git-send-email-treding@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754925Ab3JHONQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:13:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22926 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752623Ab3JHONP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 10:13:15 -0400
+Date: Tue, 08 Oct 2013 10:11:40 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Message-ID: <1381241500-bfdgpu61-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131008090236.951114091@gmail.com>
+References: <20131008090019.527108154@gmail.com>
+ <20131008090236.951114091@gmail.com>
+Subject: Re: [patch 1/3] [PATCH] mm: migration -- Do not loose soft dirty bit
+ if page is in migration state
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1381239855-16314-3-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mutt-References: <20131008090236.951114091@gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 03:44:13PM +0200, Thierry Reding wrote:
-> Today's linux-next merge of the mvebu tree got conflicts in:
+On Tue, Oct 08, 2013 at 01:00:20PM +0400, Cyrill Gorcunov wrote:
+> If page migration is turne on in the config and the page is migrating,
+> we may loose soft dirty bit. If fork and mprotect if called on migrating
+> pages (once migration is complete) pages do not obtain soft dirty bit
+> in correspond pte entries. Fix it adding appropriate test on swap
+> entries.
 > 
-> 	arch/arm/mach-dove/board-dt.c
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  mm/memory.c   |    2 ++
+>  mm/migrate.c  |    2 ++
+>  mm/mprotect.c |    7 +++++--
+>  3 files changed, 9 insertions(+), 2 deletions(-)
 > 
-> caused by commits ffe195c (ARM: dove: remove legacy pcie and clock init),
-> e3730b4 (ARM: dove: switch to DT probed mbus address windows), and 51e40f5
-> (ARM: dove: remove custom .init_time hook).
+> Index: linux-2.6.git/mm/memory.c
+> ===================================================================
+> --- linux-2.6.git.orig/mm/memory.c
+> +++ linux-2.6.git/mm/memory.c
+> @@ -837,6 +837,8 @@ copy_one_pte(struct mm_struct *dst_mm, s
+>  					 */
+>  					make_migration_entry_read(&entry);
+>  					pte = swp_entry_to_pte(entry);
+> +					if (pte_swp_soft_dirty(*src_pte))
+> +						pte = pte_swp_mksoft_dirty(pte);
+>  					set_pte_at(src_mm, addr, src_pte, pte);
+>  				}
+>  			}
+
+When we convert pte to swap_entry, we convert soft-dirty bit in
+pte_to_swp_entry(). So I think that it's better to convert it back
+in swp_entry_to_pte() when we do swap_entry-to-pte conversion.
+
+Thanks,
+Naoya Horiguchi
+
+> Index: linux-2.6.git/mm/migrate.c
+> ===================================================================
+> --- linux-2.6.git.orig/mm/migrate.c
+> +++ linux-2.6.git/mm/migrate.c
+> @@ -161,6 +161,8 @@ static int remove_migration_pte(struct p
+>  
+>  	get_page(new);
+>  	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
+> +	if (pte_swp_soft_dirty(*ptep))
+> +		pte = pte_mksoft_dirty(pte);
+>  	if (is_write_migration_entry(entry))
+>  		pte = pte_mkwrite(pte);
+>  #ifdef CONFIG_HUGETLB_PAGE
+> Index: linux-2.6.git/mm/mprotect.c
+> ===================================================================
+> --- linux-2.6.git.orig/mm/mprotect.c
+> +++ linux-2.6.git/mm/mprotect.c
+> @@ -94,13 +94,16 @@ static unsigned long change_pte_range(st
+>  			swp_entry_t entry = pte_to_swp_entry(oldpte);
+>  
+>  			if (is_write_migration_entry(entry)) {
+> +				pte_t newpte;
+>  				/*
+>  				 * A protection check is difficult so
+>  				 * just be safe and disable write
+>  				 */
+>  				make_migration_entry_read(&entry);
+> -				set_pte_at(mm, addr, pte,
+> -					swp_entry_to_pte(entry));
+> +				newpte = swp_entry_to_pte(entry);
+> +				if (pte_swp_soft_dirty(oldpte))
+> +					newpte = pte_swp_mksoft_dirty(newpte);
+> +				set_pte_at(mm, addr, pte, newpte);
+>  			}
+>  			pages++;
+>  		}
 > 
-> I fixed them up (see below). Please verify that the resolution looks
-> correct.
-
-Looks good to me, thanks!
-
-thx,
-
-Jason.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
