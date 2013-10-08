@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab3JHF6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:58:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652Ab3JHF6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:58:03 -0400
-References: <8761tilrl0.fsf@redhat.com>
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Madper Xie <cxie@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [Bug] 12.864681  BUG: lock held when returning to user space!
-cc: vaughan.cao@oracle.com
-In-reply-to: <8761tilrl0.fsf@redhat.com>
-Date: Tue, 08 Oct 2013 13:57:52 +0800
-Message-ID: <874n8s2tjz.fsf@redhat.com>
+	id S1754250Ab3JHF6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:58:17 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:47577 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab3JHF6K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 01:58:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131008143217.0611fba0c0d27d9c622759f3@ops.dti.ne.jp>
+References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
+	<20131008143217.0611fba0c0d27d9c622759f3@ops.dti.ne.jp>
+Date: Tue, 8 Oct 2013 14:58:08 +0900
+Message-ID: <CANqRtoRZM=5FYG7+fq5c+TQEuHtJRmcGP1CmMq5kO5Ayvg=W6w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] clk: emev2: Add support for emev2 SMU clocks with DT
+From: Magnus Damm <magnus.damm@gmail.com>
+To: takasi-y@ops.dti.ne.jp
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Vaughan Cao,
-   I can't meet this issue on both 3.11 and 3.11.4. There are only four
-   patches between 3.11 and 3.12-rc2 and you are the author. Will you
-   please check them if you have time. 
-
-cxie@redhat.com writes:
-
-> Hi all,
->    With kernel3.12-rc2 the dmesg shows following logs:
-> [   12.864680] ================================================
-> [   12.864681] [ BUG: lock held when returning to user space! ]
-> [   12.864682] 3.12.0-rc2 #1 Not tainted
-> [   12.864683] ------------------------------------------------
-> [   12.864684] iprinit/719 is leaving the kernel with locks still held!
-> [   12.864685] 1 lock held by iprinit/719:
-> [   12.864686]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffffa050de05>] sg_open+0x4b5/0x644 [sg]
-> [   12.934954] ath9k 0000:01:00.0: enabling device (0000 -> 0002)
-> [   12.940346] ath: phy0: timeout (1000 us) on reg 0x15f18: 0x00000000 & 0x00000007 != 0x00000004
-> [   12.943125] ath: EEPROM regdomain: 0x60
-> [   12.943127] ath: EEPROM indicates we should expect a direct regpair map
-> [   12.943129] ath: Country alpha2 being used: 00
-> [   12.943130] ath: Regpair used: 0x60
-> [   12.960202] r8169 0000:02:00.0 p3p1: link down
-> [   12.960236] r8169 0000:02:00.0 p3p1: link down
-> [   12.960256] IPv6: ADDRCONF(NETDEV_UP): p3p1: link is not ready
-> [   13.003523] ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
-> [   13.003886] ieee80211 phy0: Atheros AR9485 Rev:1 mem=0xffffc9000bc80000, irq=16
-> [   13.012120] ip6_tables: (C) 2000-2006 Netfilter Core Team
-> [   13.023667] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
-> [   13.055802] Ebtables v2.0 registered
-> [   13.192291] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
-> [   15.906392] r8169 0000:02:00.0 p3p1: link up
-> [   15.906416] IPv6: ADDRCONF(NETDEV_CHANGE): p3p1: link becomes ready
-> [   17.121989] systemd-udevd (334) used greatest stack depth: 3352 bytes left
+On Tue, Oct 8, 2013 at 2:32 PM,  <takasi-y@ops.dti.ne.jp> wrote:
+> Device tree clock binding document for EMMA Mobile EV2 SMU,
+> And Common clock framework based implementation of it.
+> Following nodes are defined to describe clock tree.
+> - renesas,emev2-smu
+> - renesas,emev2-smu-clkdiv
+> - renesas,emev2-smu-gclk
 >
-> I'm working on finding which version bring this bug in.
+> These bindings are designed manually based on
+>  19UH0037EJ1000_SMU : System Management Unit User's Manual
+>
+> So far, reparent is not implemented, and is fixed to index #0.
+> Clock tree description is not included, and should be provided
+> by device-tree.
+>
+> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+> ---
+>  .../devicetree/bindings/clock/emev2-clock.txt      |  98 +++++++++++++++++++
+>  drivers/clk/Makefile                               |   1 +
+>  drivers/clk/shmobile/Makefile                      |   3 +
+>  drivers/clk/shmobile/clk-emev2.c                   | 104 +++++++++++++++++++++
+>  4 files changed, 206 insertions(+)
 
+Thanks for cleaning up the Makefile bits, Yoshii-san.
 
--- 
-Best,
-Madper Xie.
+This patch and the bindings look fine to me from a SoC point of view.
+Using these together with the topology information in emev2.dtsi makes
+it possible for us to use CCF and multiplatform as expected on the
+EMEV2 SoC.
+
+Acked-by: Magnus Damm <damm@opensource.se>
