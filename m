@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab3JHAHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:07:35 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:35242 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3JHAHe (ORCPT
+	id S1753635Ab3JHAJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:09:20 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:37691 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab3JHAJT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:07:34 -0400
-Message-ID: <52534CC1.1090009@linaro.org>
-Date: Mon, 07 Oct 2013 17:07:29 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 7 Oct 2013 20:09:19 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <20131008000357.GC25780@bbox>
-In-Reply-To: <20131008000357.GC25780@bbox>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1381185204.2081.221.camel@joe-AO722>
+References: <1381184340-11190-1-git-send-email-geyslan@gmail.com>
+	<1381185204.2081.221.camel@joe-AO722>
+Date: Mon, 7 Oct 2013 21:09:18 -0300
+Message-ID: <CAGG-pURYyCV4waC8Z+5qAd1mAB2ZHhEkRaGspFuyEDrvj_dTdQ@mail.gmail.com>
+Subject: Re: [PATCH] 9p: unsigned/signed wrap in p9/unix modes.
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, rminnich@sandia.gov,
+        lucho@ionkov.net, v9fs-developer@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, kernel-br <kernel-br@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 05:03 PM, Minchan Kim wrote:
-> Hello, John and Peter
->
-> On Mon, Oct 07, 2013 at 04:14:21PM -0700, John Stultz wrote:
->> On 10/07/2013 03:56 PM, H. Peter Anvin wrote:
->>> I see from the change history of the patch that this was an madvise() at
->>> some point, but was changed into a separate system call at some point,
->>> does anyone remember why that was?  A quick look through my LKML
->>> archives doesn't really make it clear.
->> The reason we can't use madvise, is that to properly handle error cases
->> and report the pruge state, we need an extra argument.
+Joe,
+
+Thank you for reply.
+
+What do you think about:
+
+                 strncpy(ext, stat->extension, sizeof(ext));
++                 if (sscanf(ext, "%c %u %u", &type, &major, &minor) < 3) {
++                                  p9_debug(P9_DEBUG_ERROR,
++                                  "It's necessary define type, major
+and minor values when using P9_DMDEVICE");
++                                  return res;
++                 }
+                 switch (type) {
+                 case 'c':
+                         res |= S_IFCHR;
+                         break;
+...
+                 *rdev = MKDEV(major, minor);
+
+Geyslan Gregório Bem
+hackingbits.com
+
+
+2013/10/7 Joe Perches <joe@perches.com>:
+> On Mon, 2013-10-07 at 19:19 -0300, Geyslan G. Bem wrote:
+>> Changes the sign type to unsigned, avoiding the possibility of
+>> wrap when ORing the p9 or unix bit modes.
+> []
+>> diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+> []
+>> @@ -144,7 +144,7 @@ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
+>>       else if ((mode & P9_DMDEVICE) && (v9fs_proto_dotu(v9ses))
+>>                && (v9ses->nodev == 0)) {
+>>               char type = 0, ext[32];
+>> -             int major = -1, minor = -1;
+>> +             u32 major = 0, minor = 0;
 >>
->> In much earlier versions, we just returned an error when setting
->> NONVOLATILE if the data was purged. However, since we have to possibly
->> do allocations when marking a range as non-volatile, we needed a way to
->> properly handle that allocation failing. We can't just return ENOMEM, as
->> we may have already marked purged memory as non-volatile.
->>
->> Thus, that's why with vrange, we return the number of bytes modified,
->> along with the purge state. That way, if an error does occur we can
->> return the purge state of the bytes successfully modified, and only
->> return an error if nothing was changed, much like when a write fails.
-> As well, we might need addtional argument VRANGE_FULL/VRANGE_PARTIAL
-> for vrange system call. I discussed it long time ago but omitted it
-> for early easy review phase. It is requested by Mozilla fork and of course
-> I think it makes sense to me.
+>>               strlcpy(ext, stat->extension, sizeof(ext));
+>>               sscanf(ext, "%c %u %u", &type, &major, &minor);
 >
-> https://lkml.org/lkml/2013/3/22/20
+> This bit changes the MKDEV below it.
 >
-> In short, if you mark a range with VRANGE_FULL, kernel can discard all
-> of pages within the range if memory is tight while kernel can discard
-> part of pages in the vrange if you mark the range with VRANGE_PARTIAL.
-
-Yea, I'm still not particularly fond of userland being able to specify
-the purging semantics, but as we discussed earlier, this can be debated
-in finer detail as an extension to the merged interface. :)
-
-thanks
--john
-
+> I would think that the sscanf return should be
+> checked for 3 and maybe MKDEV should not be
+> constructed when it's not.
+>
+>
