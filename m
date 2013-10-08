@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3JHU3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:29:52 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:47455 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002Ab3JHU3s convert rfc822-to-8bit (ORCPT
+	id S1755674Ab3JHUee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:34:34 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:42416 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3JHUec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:29:48 -0400
+	Tue, 8 Oct 2013 16:34:32 -0400
+Date: Tue, 8 Oct 2013 22:34:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Thoughts on this RCU idle entry/exit patch?
+Message-ID: <20131008203427.GE8392@localhost.localdomain>
+References: <20131007153955.GA30925@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <201309182120.30950.heiko@sntech.de>
-References: <201309182118.28391.heiko@sntech.de>
-	<201309182120.30950.heiko@sntech.de>
-Date: Tue, 8 Oct 2013 13:29:47 -0700
-Message-ID: <CAOesGMjK5ZMkK8mj_+HSEjZCtfZUiLmVZThBAHacW8kp1=ThFw@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] ARM: S3C24XX: add platform-devices for new dma
- driver for s3c2412 and s3c2443
-From: Olof Johansson <olof@lixom.net>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>, LinusW <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131007153955.GA30925@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Oct 07, 2013 at 08:39:55AM -0700, Paul E. McKenney wrote:
+> Hello, Frederic!
+> 
+> The following patch seems to me to be a good idea to better handle
+> task nesting.  Any reason why it would be a bad thing?
+> 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Allow task-level idle entry/exit nesting
+> 
+> The current task-level idle entry/exit code forces an entry/exit on
+> each call, regardless of the nesting level.  This commit therefore
+> properly accounts for nesting.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-On Wed, Sep 18, 2013 at 12:20 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> This includes defining the mapping for the request sources.
->
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> changes since v1:
-> - follow new pdata definition
+Looks good. In fact, the current code is even buggy because two nesting rcu_user_eqs()
+as in:
 
-This showed up in -next today, and introduced:
+        rcu_eqs_enter()
+            rcu_eqs_enter()
+            rcu_eqs_exit()
+        rcu_eqs_exit()
 
-arch/arm/mach-s3c24xx/common.c:337:24: warning: 's3c2410_dma_resource'
-defined but not used [-Wunused-variable]
+would result in rdtp->dynticks wrong increment, right?
 
-> +#if defined(CONFIG_CPU_S3C2410) || defined(CONFIG_CPU_S3C2412) || \
-> +    defined(CONFIG_CPU_S3C2440) || defined(CONFIG_CPU_S3C2442)
-> +static struct resource s3c2410_dma_resource[] = {
-> +       [0] = DEFINE_RES_MEM(S3C24XX_PA_DMA, S3C24XX_SZ_DMA),
-> +       [1] = DEFINE_RES_IRQ(IRQ_DMA0),
-> +       [2] = DEFINE_RES_IRQ(IRQ_DMA1),
-> +       [3] = DEFINE_RES_IRQ(IRQ_DMA2),
-> +       [4] = DEFINE_RES_IRQ(IRQ_DMA3),
-> +};
-> +#endif
-> +
+So that's even a bug fix. I wonder if it's a regression. That said rcu_eqs_enter_common()
+should warn on such miscount, so may be these functions actually don't nest in practice
+or you would have received such warnings.
 
-Log at:
+So I wonder, do we want to continue to allow this nesting? I remember that DYNTICK_TASK_NEST_*
+stuff is there to protects against non finishing interrupts on some archs (I also remember that
+this, or at least a practical scenario for this, was hard to really define though :o)
+But then wouldn't it involve other kind of scenario like this?
 
-http://arm-soc.lixom.net/buildlogs/next-thierry/v3.12-rc4-4340-g56a7390/buildall.arm.mini2440_defconfig.log.passed
+       rcu_irq_enter()
+           rcu_eqs_enter()
+           rcu_eqs_exit()
+           ...
 
+Anyway, that's just random thougths on further simplifications, in any case, this
+patch looks good.
 
--Olof
+Thanks.
+
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 106f7f5cdd1d..f0be20886617 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -411,11 +411,12 @@ static void rcu_eqs_enter(bool user)
+>  	rdtp = this_cpu_ptr(&rcu_dynticks);
+>  	oldval = rdtp->dynticks_nesting;
+>  	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
+> -	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
+> +	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE) {
+>  		rdtp->dynticks_nesting = 0;
+> -	else
+> +		rcu_eqs_enter_common(rdtp, oldval, user);
+> +	} else {
+>  		rdtp->dynticks_nesting -= DYNTICK_TASK_NEST_VALUE;
+> -	rcu_eqs_enter_common(rdtp, oldval, user);
+> +	}
+>  }
+>  
+>  /**
+> @@ -533,11 +534,12 @@ static void rcu_eqs_exit(bool user)
+>  	rdtp = this_cpu_ptr(&rcu_dynticks);
+>  	oldval = rdtp->dynticks_nesting;
+>  	WARN_ON_ONCE(oldval < 0);
+> -	if (oldval & DYNTICK_TASK_NEST_MASK)
+> +	if (oldval & DYNTICK_TASK_NEST_MASK) {
+>  		rdtp->dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
+> -	else
+> +	} else {
+>  		rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+> -	rcu_eqs_exit_common(rdtp, oldval, user);
+> +		rcu_eqs_exit_common(rdtp, oldval, user);
+> +	}
+>  }
+>  
+>  /**
+> 
