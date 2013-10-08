@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab3JHSUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 14:20:03 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:35933 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab3JHST7 (ORCPT
+	id S1755829Ab3JHS23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 14:28:29 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:64422 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab3JHS22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 14:19:59 -0400
-Message-ID: <52544CC1.6010502@gmail.com>
-Date: Tue, 08 Oct 2013 20:19:45 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Jean-Francois Moine <moinejf@free.fr>, Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] ARM: Dove: fix bad properties of the si5351 clkout2
- used by Cubox audio
-References: <20131008202027.6d9f0bd2@armhf>
-In-Reply-To: <20131008202027.6d9f0bd2@armhf>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Oct 2013 14:28:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1745634600.2780529.1381236014344.JavaMail.root@redhat.com>
+References: <CAOMFOmWbvLCM=a2n_ojnWVeeyvMg=v1T03Q44q-q4jgR7sH+DA@mail.gmail.com>
+	<20131008080604.GA4820@localhost>
+	<1745634600.2780529.1381236014344.JavaMail.root@redhat.com>
+Date: Tue, 8 Oct 2013 11:28:26 -0700
+Message-ID: <CAOMFOmUXxZNCTcoYOu_-aLPWUQ10jNoa3dDb4RUs2DCmGHqfKQ@mail.gmail.com>
+Subject: Re: mm: Export 'pageflag_names' array
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Dave Anderson <anderson@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        gthelen@google.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 08:20 PM, Jean-Francois Moine wrote:
-> As defined in the DT, clkout2 is not allowed to change the pll inside
-> si5351.
->
-> This patch extends the properties of clkout2 so that it works as the
-> external clock of the audio device in the Cubox.
->
-> Also, as the second si5351 clock is not used in the Cubox, its
-> definition is removed.
->
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+Hi
 
-Already gave my
-
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-
-which you should add to help us keep track of them next time.
-
-> ---
-> v2:
-> - remove clkout1 which is not used in the Cubox (Sebastian Hesselbarth)
-> ---
->   arch/arm/boot/dts/dove-cubox.dts | 10 ++--------
->   1 file changed, 2 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
-> index bb38a24..3dd8844 100644
-> --- a/arch/arm/boot/dts/dove-cubox.dts
-> +++ b/arch/arm/boot/dts/dove-cubox.dts
-> @@ -99,18 +99,12 @@
->   			silabs,pll-master;
->   		};
->
-> -		clkout1 {
-> -			reg = <1>;
-> -			silabs,drive-strength = <8>;
-> -			silabs,multisynth-source = <1>;
-> -			silabs,clock-source = <0>;
-> -			silabs,pll-master;
-> -		};
-> -
->   		clkout2 {
->   			reg = <2>;
-> +			silabs,drive-strength = <8>;
->   			silabs,multisynth-source = <1>;
->   			silabs,clock-source = <0>;
-> +			silabs,pll-master;
->   		};
->   	};
->   };
+On Tue, Oct 8, 2013 at 5:40 AM, Dave Anderson <anderson@redhat.com> wrote:
 >
 >
+> ----- Original Message -----
+>> Hi Anatol,
+>>
+>> On Mon, Oct 07, 2013 at 10:53:32AM -0700, Anatol Pomozov wrote:
+>> > Hi Wu
+>> >
+>> > I have a request wrt your old commit 718a38211.
+>> >
+>> > I think it makes sense to export array pageflag_names so kernel dump
+>> > debug tools (like 'crash') can use it as well. Currently the tool
+>> > hard-codes flag names but it is suboptimal as flags are different for
+>> > different configs.
+>> >
+>> > What do you think? (I can send a patch if you are ok).
+>>
+>> I wonder if the KPF_* defined in
+>>
+>>         include/uapi/linux/kernel-page-flags.h
+>>
+>> fit your needs. These are kernel page flags exported to the user space
+>> and will be maintained stable and immune to kconfig changes. You can
+>> find use examples of them in
+>>
+>>         fs/proc/page.c
+>>         tools/vm/page-types.c
+>>
+>> Thanks,
+>> Fengguang
+>>
+>
+> Nothing is required for the crash utility.  The pageflag_names array (as well
+> as the pageflags enumerator) are readily available in the kernel debuginfo
+> data.
 
+D'oh. You are right Dave. Everyone, please ignore my original question
+I mislooked this variable in symbols map (or maybe looked at an old
+kernel map).
+
+Dave, do you think 'crash' should use pageflag_names to output flag names?
