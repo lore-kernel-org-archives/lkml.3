@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3JHB0p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 21:26:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33886 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746Ab3JHB0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 21:26:44 -0400
-Message-ID: <52535EE1.3060700@zytor.com>
-Date: Mon, 07 Oct 2013 18:24:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <52534331.2060402@zytor.com> <52534692.7010400@linaro.org> <525347BE.7040606@zytor.com> <525349AE.1070904@linaro.org> <52534AEC.5040403@zytor.com> <20131008001306.GD25780@bbox>
-In-Reply-To: <20131008001306.GD25780@bbox>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753429Ab3JHB2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 21:28:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:56455 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab3JHB2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 21:28:31 -0400
+X-AuditID: cbfee68e-b7f756d000004512-fc-52535fbbae2c
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: fix writing incorrect orphan blocks
+Date: Tue, 08 Oct 2013 10:28:00 +0900
+Message-id: <1381195680-30955-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zA93d8cFBBgvapC2u7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyljy9wdrwR+uiksd
+	q5kaGM+ydzFyckgImEjcu9/PBmGLSVy4tx7I5uIQEljGKLHl5RY2mKLGk0fZIRKLGCU2/2ll
+	hXCamSRu7ZvF2MXIwcEmoC2xeb8BSIOIALPEgqnnGUFqmAUmMEr8X/SeBSQhLGAlsXPzerCp
+	LAKqEq9aVjKC2LwC7hLTvn5mgtimLbHt+USwZgmBx2wSi441s0I0CEh8m3yIBWSZhICsxKYD
+	zBD1khIHV9xgmcAouICRYRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGSBD27WC8ecD6EGMy
+	0LiJzFKiyfnAIM4riTc0NjOyMDUxNTYytzQjTVhJnFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4
+	ECMTB6dUAyP7Pbalz+ROTX/bdHnf6aciAt98t99cxVu97slayZC6DZmC0Xfn/M3UDPtQNnO9
+	XwPr1N3PAsokS9qtr0R/fe80tfJRpK91+Q6dxzPP9rOd7NsjWeb38KiZZArHy+4MTa9Pk9hO
+	zN21pfRXye1msysf2jdEeq04dLHsWmuPd73lY+E1ve8k8oSUWIozEg21mIuKEwGVKZ0iWAIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAd3d8cFBBrMXiFtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5ix5O8P1oI/XBWXOlYzNTCeZe9i5OSQEDCRaDx5FMoWk7hwbz1bFyMXh5DA
+	IkaJzX9aWSGcZiaJW/tmMXYxcnCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9ZwFJCAtY
+	SezcDDKJk4NFQFXiVctKRhCbV8BdYtrXz0wQ27Qltj2fyDiBkXsBI8MqRtHUguSC4qT0XEO9
+	4sTc4tK8dL3k/NxNjOAQfya1g3Flg8UhRgEORiUeXoHDQUFCrIllxZW5hxglOJiVRHgFjIKD
+	hHhTEiurUovy44tKc1KLDzEmA22fyCwlmpwPjL+8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtFoH
+	CgmkJ5akZqemFqQWwWxh4uCUamBUK8lM+v7xx+YtBl8uacU/P7zyyZHkr9t3CWhNdj9QPMVW
+	z6Q0IsH5U2wn9/wEtcsqDh7v/hs/X3o7vs9E8Z9v9dx6r1ZxXn3jAJF8i9o5gTNutk1Zrfyw
+	5t4KsQv1t66n1t0/O/P7000K2y/v7+ebl+AieFTun0CbXfjvWVFz9tt57tr57J6kEktxRqKh
+	FnNRcSIAdRXnabUCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 05:13 PM, Minchan Kim wrote:
->>
->> The point is that MADV_DONTNEED is very similar in that sense,
->> especially if allowed to be lazy.  It makes a lot of sense to permit
->> both scrubbing modes orthogonally.
->>
->> The point you're making has to do with withdrawal of permission to flush
->> on demand, which is a result of having the lazy mode (ongoing
->> permission) and having to be able to withdraw such permission.
-> 
-> I'm sorry I could not understand what you wanted to say.
-> Could you elaborate a bit?
-> 
+Previously, there was a erroneous scenario like below.
+thread 1:                       thread 2:
+ f2fs_unlink
+  - acquire_orphan_inode
+    : sbi->n_orphans++           write_checkpoint
+                                 - block_operations
+                                  : f2fs_lock_all
+                                 - do_checkpoint
+                                  : write orphan blocks with sbi->n_orphans
+                                 - unblock_operations
+  - f2fs_lock_op
+  - release_orphan_inode
+  - f2fs_unlock_op
 
-Basically, you need this because of MADV_LAZY or the equivalent, so it
-would be applicable to a similar variant of madvise().
+During the checkpoint by thread 2, f2fs stores a wrong orphan block according
+to the wrong sbi->n_orphans.
+To avoid this, simply we should make cover acquire_orphan_inode too with
+f2fs_lock_op.
 
-As such I would suggest that an madvise4() call would be appropriate.
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/namei.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-	-hpa
-
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 29f73fd..575adac 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -228,14 +228,14 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 	if (!de)
+ 		goto fail;
+ 
++	f2fs_lock_op(sbi);
+ 	err = acquire_orphan_inode(sbi);
+ 	if (err) {
++		f2fs_unlock_op(sbi);
+ 		kunmap(page);
+ 		f2fs_put_page(page, 0);
+ 		goto fail;
+ 	}
+-
+-	f2fs_lock_op(sbi);
+ 	f2fs_delete_entry(de, page, inode);
+ 	f2fs_unlock_op(sbi);
+ 
+-- 
+1.8.4.474.g128a96c
 
