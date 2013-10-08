@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab3JHKp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:45:27 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:61758 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611Ab3JHKoi (ORCPT
+	id S1755573Ab3JHKry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:47:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33932 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569Ab3JHKrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:44:38 -0400
+	Tue, 8 Oct 2013 06:47:53 -0400
+Date: Tue, 8 Oct 2013 12:47:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of
+ dwarf parsing feature
+Message-ID: <20131008104740.GU3081@twins.programming.kicks-ass.net>
+References: <1380195398-4402-1-git-send-email-jean.pihet@linaro.org>
+ <1380195398-4402-4-git-send-email-jean.pihet@linaro.org>
+ <20130926124829.GA3284@krava.brq.redhat.com>
+ <CAFrcx1nDe6mhxEuU4ROJGOmGFaYtVnnhXYirkmhRb1NEecNhtw@mail.gmail.com>
 MIME-Version: 1.0
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Tue, 8 Oct 2013 12:44:16 +0200
-Message-ID: <CACQ1gAhNFTdG_2OCTnsOCaBozHnGb9EwAGHT5+f=cARRpC_WBg@mail.gmail.com>
-Subject: [BUG] spi/spi-atmel: DMA rx buffer corruption with SPI_IOC_MESSAGE
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, Mark Brown <broonie@kernel.org>,
-        Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFrcx1nDe6mhxEuU4ROJGOmGFaYtVnnhXYirkmhRb1NEecNhtw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Oct 08, 2013 at 12:44:32PM +0200, Jean Pihet wrote:
+> Hi,
+> 
+> On 26 September 2013 14:48, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Thu, Sep 26, 2013 at 01:36:37PM +0200, Jean Pihet wrote:
+> >> The newly added dwarf unwinding feature [1] requires:
+> >> . a recent version (>= 1.1) of libunwind,
+> >> . libunwind to be configured with --enable-debug-frame.
+> >>
+> >> [1] http://www.spinics.net/lists/kernel/msg1598951.html
+> >>
+> >> Add the corresponding API tests in the feature check list.
+> >
+> > Acked-by: Jiri Olsa <jolsa@redhat.com>
+> >
+> > thanks,
+> > jirka
+> 
+> Thanks for the ack!
+> 
+> Is it possible to get an ack from the perf core maintainers?
+> Also, is the patch going in Will's tree?
 
-I finally found the bug I saw months ago, before "[PATCH v8 3/8]
-spi/spi-atmel: add dmaengine support" was merged.
-
-Here it is:
-
-When the ioctl SPI_IOC_MESSAGE is used with small and big buffers,
-the big RX buffer is corrupted with bytes from the big TX buffer.
-(Small means size < DMA_MIN_BYTES, Big means size > DMA_MIN_BYTES)
-
-I'm attaching the test software that I used ( ./spi_test /dev/spidevx.x )
-
-It fills 3 TX buffers with 0xAA pattern: a small, a big and a small again.
-It reads in return 3 RX buffers.
-The MISO pin has to be on 3.3v.
-
-It checks if the received buffers are filled with 0xFF (they should
-be, as MISO is high).
-And I've got a lot of buffers filled partially with 0xAA bytes.
-
-BUT, if you apply this patch:
----8<----
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 83cf609..cde42a4 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -187,7 +187,7 @@
- /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
-  * cache operations; better heuristics consider wordsize and bitrate.
-  */
--#define DMA_MIN_BYTES  16
-+#define DMA_MIN_BYTES  0
-
- struct atmel_spi_dma {
-        struct dma_chan                 *chan_rx;
----8<----
-There's no error any more.
-So there's something wrong happening when switching from/to pio
-transfer to/from DMA.
-
-We didn't saw that at the time of the merge because we did the test
-with a loop on MISO/MOSI,
-so the RX buffer was corrupted with identical bytes.
-
-Best regards,
-Richard.
+This being a tools patch you'd have to ask acme; also I know next to
+nothing about all this unwind business except that its stupid expensive
+;-)
