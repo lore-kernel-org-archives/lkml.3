@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab3JHCQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:16:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35977 "EHLO
+	id S1754415Ab3JHCRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:17:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35999 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab3JHCQy (ORCPT
+	with ESMTP id S1754343Ab3JHCRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:16:54 -0400
+	Mon, 7 Oct 2013 22:17:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alex Dubov <oakad@yahoo.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 6/8] tifm: convert bus code to use dev_groups
-Date: Mon,  7 Oct 2013 18:27:40 -0700
-Message-Id: <1381195662-28009-7-git-send-email-gregkh@linuxfoundation.org>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 7/8] memstick: convert bus code to use dev_groups
+Date: Mon,  7 Oct 2013 18:27:41 -0700
+Message-Id: <1381195662-28009-8-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <1381195662-28009-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1381195662-28009-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,46 +22,53 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct bus_type is going away soon, dev_groups
-should be used instead.  This converts the tifm bus code to use the
+should be used instead.  This converts the memstick bus code to use the
 correct field.
 
-Cc: Alex Dubov <oakad@yahoo.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ drivers/memstick/core/memstick.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-Alex, I can take this through my driver-core tree if you don't want to
-take it through yours, just let me know what works best for you.
-
- drivers/misc/tifm_core.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/misc/tifm_core.c b/drivers/misc/tifm_core.c
-index 0ab7c92..a511b2a 100644
---- a/drivers/misc/tifm_core.c
-+++ b/drivers/misc/tifm_core.c
-@@ -145,15 +145,17 @@ static ssize_t type_show(struct device *dev, struct device_attribute *attr,
- 	struct tifm_dev *sock = container_of(dev, struct tifm_dev, dev);
- 	return sprintf(buf, "%x", sock->type);
- }
-+static DEVICE_ATTR_RO(type);
+diff --git a/drivers/memstick/core/memstick.c b/drivers/memstick/core/memstick.c
+index ffcb10a..bbf4aea 100644
+--- a/drivers/memstick/core/memstick.c
++++ b/drivers/memstick/core/memstick.c
+@@ -153,24 +153,24 @@ static ssize_t name##_show(struct device *dev, struct device_attribute *attr, \
+ 	struct memstick_dev *card = container_of(dev, struct memstick_dev,    \
+ 						 dev);                        \
+ 	return sprintf(buf, format, card->id.name);                           \
+-}
++}                                                                             \
++static DEVICE_ATTR_RO(name);
  
--static struct device_attribute tifm_dev_attrs[] = {
--	__ATTR(type, S_IRUGO, type_show, NULL),
+ MEMSTICK_ATTR(type, "%02X");
+ MEMSTICK_ATTR(category, "%02X");
+ MEMSTICK_ATTR(class, "%02X");
+ 
+-#define MEMSTICK_ATTR_RO(name) __ATTR(name, S_IRUGO, name##_show, NULL)
+-
+-static struct device_attribute memstick_dev_attrs[] = {
+-	MEMSTICK_ATTR_RO(type),
+-	MEMSTICK_ATTR_RO(category),
+-	MEMSTICK_ATTR_RO(class),
 -	__ATTR_NULL
-+static struct attribute *tifm_dev_attrs[] = {
++static struct attribute *memstick_dev_attrs[] = {
 +	&dev_attr_type.attr,
++	&dev_attr_category.attr,
++	&dev_attr_class.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(tifm_dev);
++ATTRIBUTE_GROUPS(memstick_dev);
  
- static struct bus_type tifm_bus_type = {
- 	.name      = "tifm",
--	.dev_attrs = tifm_dev_attrs,
-+	.dev_groups = tifm_dev_groups,
- 	.match     = tifm_bus_match,
- 	.uevent    = tifm_uevent,
- 	.probe     = tifm_device_probe,
+ static struct bus_type memstick_bus_type = {
+ 	.name           = "memstick",
+-	.dev_attrs      = memstick_dev_attrs,
++	.dev_groups	= memstick_dev_groups,
+ 	.match          = memstick_bus_match,
+ 	.uevent         = memstick_uevent,
+ 	.probe          = memstick_device_probe,
 -- 
 1.8.4.6.g82e253f.dirty
 
