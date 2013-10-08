@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab3JHECn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 00:02:43 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:39938 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3JHECl convert rfc822-to-8bit (ORCPT
+	id S1752080Ab3JHEOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 00:14:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36675 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3JHEOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 00:02:41 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page table out of vcpu thread
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-In-Reply-To: <20131008012355.GA3588@amt.cnet>
-Date: Tue, 8 Oct 2013 12:02:32 +0800
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131008012355.GA3588@amt.cnet>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-X-Mailer: Apple Mail (2.1510)
+	Tue, 8 Oct 2013 00:14:05 -0400
+Date: Mon, 7 Oct 2013 21:13:20 -0700
+From: Greg KH <gregkh@linux-foundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: torvalds@linux-foundation.org, Andy Whitcroft <apw@canonical.com>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] checkpatch: Make the 80-character limit a --strict
+ check only
+Message-ID: <20131008041320.GA23838@kroah.com>
+References: <20131007191835.GA28737@jtriplet-mobl1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131007191835.GA28737@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Marcelo,
-
-On Oct 8, 2013, at 9:23 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-
->> 
->> +	if (kvm->arch.rcu_free_shadow_page) {
->> +		kvm_mmu_isolate_pages(invalid_list);
->> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
->> +		list_del_init(invalid_list);
->> +		call_rcu(&sp->rcu, free_pages_rcu);
->> +		return;
->> +	}
+On Mon, Oct 07, 2013 at 12:18:43PM -0700, Josh Triplett wrote:
+> The 80-character limit is not a hard-and-fast rule, nor should it be
+> applied blindly by people running checkpatch and fixing its warnings.
+> Sometimes it's better to violate the 80-character "limit" in the name of
+> readability, and when it isn't, it's often better to refactor into a
+> function or otherwise restructure the code rather than just finding
+> increasingly awkward places to break lines.
 > 
-> This is unbounded (there was a similar problem with early fast page fault
-> implementations):
+> Thus, change checkpatch's LONG_LINE warning to a --strict CHK instead.
+> Anyone wanting to use checkpatch to check for this can easily enough
+> enable --strict or turn on LONG_LINE explicitly, but it shouldn't be
+> part of the default warnings.
 > 
-> From RCU/checklist.txt:
-> 
-> "        An especially important property of the synchronize_rcu()
->        primitive is that it automatically self-limits: if grace periods
->        are delayed for whatever reason, then the synchronize_rcu()
->        primitive will correspondingly delay updates.  In contrast,
->        code using call_rcu() should explicitly limit update rate in
->        cases where grace periods are delayed, as failing to do so can
->        result in excessive realtime latencies or even OOM conditions.
-> "
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
-I understand what you are worrying about… Hmm, can it be avoided by
-just using kvm->arch.rcu_free_shadow_page in a small window? - Then
-there are slight chance that the page need to be freed by call_rcu.
-
-> 
-> Moreover, freeing pages differently depending on some state should 
-> be avoided.
-> 
-> Alternatives:
-> 
-> - Disable interrupts at write protect sites.
-
-The write-protection can be triggered by KVM ioctl that is not in the VCPU
-context, if we do this, we also need to send IPI to the KVM thread when do
-TLB flush. And we can not do much work while interrupt is disabled due to
-interrupt latency.
-
-> - Rate limit the number of pages freed via call_rcu
-> per grace period.
-
-Seems complex. :(
-
-> - Some better alternative.
-
-Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
-and encodes the page-level into the spte (since we need to check if the spte
-is the last-spte. ).  How about this?
-
-I planned to do it after this patchset merged, if you like it and if you think
-that "using kvm->arch.rcu_free_shadow_page in a small window" can not avoid
-the issue, i am happy to do it in the next version. :)
-
-Thanks, Marcelo!
-
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
