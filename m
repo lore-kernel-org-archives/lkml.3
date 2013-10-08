@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3JHTlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 15:41:36 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:56040 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3JHTld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 15:41:33 -0400
-Date: Tue, 8 Oct 2013 21:41:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-Message-ID: <20131008194129.GC7315@gmail.com>
-References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
- <52541556.5060907@gmail.com>
+	id S1755902Ab3JHTmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:42:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754600Ab3JHTmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 15:42:11 -0400
+Date: Tue, 8 Oct 2013 21:35:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+Message-ID: <20131008193507.GA10145@redhat.com>
+References: <20131005234430.GA22485@localhost> <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com> <20131008075151.GA15689@localhost> <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com> <20131008185154.GA8258@redhat.com> <20131008190523.GW30970@tucnak.zalov.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52541556.5060907@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131008190523.GW30970@tucnak.zalov.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Ahern <dsahern@gmail.com> wrote:
-
-> Stephane:
-> 
-> On 9/30/13 9:44 AM, Stephane Eranian wrote:
-> >I was alerted by people trying to use the PERF_RECORD_MMAP2
-> >record to disambiguate virtual address mappings that there is a case
-> >where the record does not contain enough information.
+On 10/08, Jakub Jelinek wrote:
+>
+> On Tue, Oct 08, 2013 at 08:51:54PM +0200, Oleg Nesterov wrote:
 > >
-> >As you know, the MMAP2 record adds the major, minor, ino number,
-> >inode generation numbers to a mapping. But it does that only for
-> >file or pseudo -file backed mappings. That covers file mmaps and also
-> >SYSV shared memory segments.
+> > I do not really understand inline assembly constraints, but I'll ask
+> > anyway.
 > >
-> >However there is a another kind of situation that arises in some
-> >multi-process benchmarks where a region of memory is cloned
-> >using VM_CLONE. As such, the virtual addresses match between
-> >the processes but the major, minor, inode, inode generation  fields
-> >are all zeroes because there is no inode associated with the mapping.
-> >Yet, it is important for the tool to know the mappings between the
-> >processes are pointing to the same physical data.
+> > 	+#define __GEN_RMWcc(fullop, var, cc, ...) \
+> > 	+do { \
+> > 	+ asm volatile goto (fullop "; j" cc " %l[cc_label]" \
+> > 	+ : : "m" (var), ## __VA_ARGS__ \
+> > 	      ^^^^^^^^^
 > >
-> >We need to cover this case and I am seeking for advice on how to
-> >best address this need given that we discarded using the plain physical
-> >address for disambiguation.
-> 
-> 
-> If the current MMAP2 is not a complete solution for what you (Google) 
-> need, should support be reverted before 3.12 is released? No sense in 
-> making this part of the forever API if more work is needed on it.
+> > don't we need
+> >
+> > 	"+m" (var)
+> >
+> > here?
+>
+> You actually can't have output operands with asm goto, only inputs
+> and clobbers.  But the "memory" clobber should be enough here.
 
-Instead of a full revert we could just turn off the ABI portion minimally 
-and not recognize it for now. Assuming a more complete solution is in the 
-works for v3.13.
+Thanks Jakub and Linus.
 
-Thanks,
+Cough... sorry for off-topic question,
 
-	Ingo
+	static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
+	{
+		int oldbit;
+
+		asm volatile(LOCK_PREFIX "bts %2,%1\n\t"
+			     "sbb %0,%0" : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+
+doesn't this mean that "ADDR" doesn't need "+" as well?
+
+
+> If you suspect a compiler bug, can somebody please narrow it down to
+> a single object file (if I've skimmed the patch right, it is just an
+> optimization, where object files compiled without and with the patch
+> should actually coexist fine in the same kernel), ideally to a single
+> routine if possible and post a preprocessed source + gcc command line
+> + version of gcc?
+
+Or at least, perhaps it makes sense to identify the include file which
+makes the difference. Say, revert the changes in bitops.h, retest, then
+in atomic.h if the kernel still fails, etc.
+
+Oleg.
+
