@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3JHFNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:13:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15352 "EHLO mx1.redhat.com"
+	id S1754787Ab3JHFPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:15:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509Ab3JHFMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:12:35 -0400
+	id S1753630Ab3JHFNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 01:13:01 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, linux-m68k@vger.kernel.org
-Subject: [PATCH v2 05/14] m68k: select ARCH_MAY_HAVE_PC_PARPORT
-Date: Tue,  8 Oct 2013 01:10:21 -0400
-Message-Id: <1381209030-351-6-git-send-email-msalter@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 03/14] arm: select ARCH_MAY_HAVE_PC_PARPORT
+Date: Tue,  8 Oct 2013 01:10:19 -0400
+Message-Id: <1381209030-351-4-git-send-email-msalter@redhat.com>
 In-Reply-To: <1381209030-351-1-git-send-email-msalter@redhat.com>
 References: <1381209030-351-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,24 +23,24 @@ Architectures which support CONFIG_PARPORT_PC should select
 ARCH_MAY_HAVE_PC_PARPORT.
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked by: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-m68k@lists.linux-m68k.org
+CC: Russell King <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org
 ---
- arch/m68k/Kconfig | 1 +
+ arch/arm/Kconfig | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 311a300..0d88a0b 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -1,6 +1,7 @@
- config M68K
- 	bool
- 	default y
-+	select ARCH_MAY_HAVE_PC_PARPORT if ISA
- 	select HAVE_IDE
- 	select HAVE_AOUT if MMU
- 	select HAVE_DEBUG_BUGVERBOSE
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 1ad6fb6..2734ec1 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -5,6 +5,7 @@ config ARM
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
++	select ARCH_MAY_HAVE_PC_PARPORT
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_EXTABLE_SORT if MMU
+ 	select CLONE_BACKWARDS
 -- 
 1.8.3.1
 
