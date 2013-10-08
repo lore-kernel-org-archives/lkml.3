@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab3JHUfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:35:55 -0400
-Received: from sauhun.de ([89.238.76.85]:52197 "EHLO pokefinder.org"
+	id S1756904Ab3JHUhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:37:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48955 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755116Ab3JHUfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:35:51 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Subject: [PATCH 0/9] fix deferred probing issue of platform_driver_probe
-Date: Tue,  8 Oct 2013 22:35:32 +0200
-Message-Id: <1381264542-29396-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1751896Ab3JHUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 16:37:48 -0400
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>
+Subject: [PATCH] arm64: add PAGE_ALIGNED_DATA to linker script
+Date: Tue,  8 Oct 2013 16:37:39 -0400
+Message-Id: <1381264659-11132-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had some issues with deferred probing in the I2C subsystem. This series
-attempts to fix a part of it. From the patch description:
+The arm64 linker script doesn't use the PAGE_ALIGNED_DATA macro which
+leads to a ".data..page_aligned" section being placed between the end
+of .data and start of .bss:
 
-===
+ % readelf -e vmlinux
+   ...
+ Section to Segment mapping:
+  Segment Sections...
+   00     .head.text .text .text.init .rodata __ksymtab __ksymtab_gpl \
+          __ksymtab_strings __param __modver __ex_table .notes \
+          .init.text .init.data .data..percpu .data .data..page_aligned .bss
 
-Subsystems like pinctrl and gpio rightfully make use of deferred probing at
-core level. Now, deferred drivers won't be retried if they don't have a .probe
-function specified in the driver struct. Fix this driver to have that, so the
-devices it supports won't get lost in a deferred probe.
+This causes problems for the EFI stub which may have to relocate the
+kernel image based on stext and _edata symbols.
 
-===
+This patch adds PAGE_ALIGNED_DATA() to the linker script inside the
+the .data section.
 
-I think it makes sense to remove platform_driver_probe from bus masters like
-i2c and spi (especially since they are dependant on pinctrl these days). This
-is what this series does. I had a look at dma drivers as well, but there are
-more things to be considered, so delayed for now.
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/arm64/kernel/vmlinux.lds.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-Please comment. If no objections are raised, I'd like to bring at least the I2C
-patches into v3.12, so deferred devices will then be correctly probed. The
-series is based on 3.12-rc4 and was compile-tested. It is available at
-
-git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git platform_driver_probe_drop
-
-Regards,
-
-   Wolfram
-
-
-Wolfram Sang (9):
-  i2c: i2c-designware-platdrv: replace platform_driver_probe to support
-    deferred probing
-  i2c: i2c-imx: replace platform_driver_probe to support deferred
-    probing
-  i2c: i2c-mxs: replace platform_driver_probe to support deferred
-    probing
-  i2c: i2c-stu300: replace platform_driver_probe to support deferred
-    probing
-  spi: spi-au1550: replace platform_driver_probe to support deferred
-    probing
-  spi: spi-bfin5xx: replace platform_driver_probe to support deferred
-    probing
-  spi: spi-omap-uwire: replace platform_driver_probe to support deferred
-    probing
-  spi: spi-s3c64xx: replace platform_driver_probe to support deferred
-    probing
-  spi: spi-txx9: replace platform_driver_probe to support deferred
-    probing
-
- drivers/i2c/busses/i2c-designware-platdrv.c |  5 +++--
- drivers/i2c/busses/i2c-imx.c                | 11 ++++++-----
- drivers/i2c/busses/i2c-mxs.c                |  3 ++-
- drivers/i2c/busses/i2c-stu300.c             | 11 +++++------
- drivers/spi/spi-au1550.c                    |  3 ++-
- drivers/spi/spi-bfin5xx.c                   |  5 +++--
- drivers/spi/spi-omap-uwire.c                |  5 +++--
- drivers/spi/spi-s3c64xx.c                   |  3 ++-
- drivers/spi/spi-txx9.c                      |  3 ++-
- 9 files changed, 28 insertions(+), 21 deletions(-)
-
+diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+index f8ab9d8..e441556 100644
+--- a/arch/arm64/kernel/vmlinux.lds.S
++++ b/arch/arm64/kernel/vmlinux.lds.S
+@@ -110,6 +110,7 @@ SECTIONS
+ 		 */
+ 		INIT_TASK_DATA(THREAD_SIZE)
+ 		NOSAVE_DATA
++		PAGE_ALIGNED_DATA(PAGE_SIZE)
+ 		CACHELINE_ALIGNED_DATA(64)
+ 		READ_MOSTLY_DATA(64)
+ 
 -- 
-1.8.4.rc3
+1.8.3.1
 
