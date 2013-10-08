@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab3JHHPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:15:32 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:53221 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab3JHHPb (ORCPT
+	id S1754703Ab3JHHPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:15:45 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49410 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab3JHHPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:15:31 -0400
+	Tue, 8 Oct 2013 03:15:44 -0400
+X-AuditID: 9c93017d-b7c3aae000004019-85-5253b11dfb74
+Date: Tue, 8 Oct 2013 16:17:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
+Message-ID: <20131008071700.GC29509@bbox>
+References: <525347BE.7040606@zytor.com>
+ <525349AE.1070904@linaro.org>
+ <52534AEC.5040403@zytor.com>
+ <20131008001306.GD25780@bbox>
+ <52535EE1.3060700@zytor.com>
+ <20131008020847.GH25780@bbox>
+ <52537326.7000505@gmail.com>
+ <20131008030736.GA29509@bbox>
+ <52538B95.6080208@gmail.com>
+ <20131008071202.GB29509@bbox>
 MIME-Version: 1.0
-In-Reply-To: <20131008065449.GL3081@twins.programming.kicks-ass.net>
-References: <CABPqkBTeJarBCkVBMGex+g32ak8vzH__x1V0aq4c22dyWJKhGA@mail.gmail.com>
-	<CAGXu5jJPtfXd47fG2OR5MW1tZ_MMrv5s5NR9nMvnhnFvcuNWtA@mail.gmail.com>
-	<CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
-	<CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
-	<20131002190001.GX3081@twins.programming.kicks-ass.net>
-	<CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
-	<20131002203107.GY3081@twins.programming.kicks-ass.net>
-	<CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
-	<20131003090347.GB3081@twins.programming.kicks-ass.net>
-	<CABPqkBSmYBdBx1vXj3ZJycM311eQPeK6kFxvtm3jtovp-qgm+w@mail.gmail.com>
-	<20131008065449.GL3081@twins.programming.kicks-ass.net>
-Date: Tue, 8 Oct 2013 09:15:30 +0200
-Message-ID: <CABPqkBROM9jZfkU7suD-7=N=M38BCcVgdbgKoe-GE1RhY0puEg@mail.gmail.com>
-Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008071202.GB29509@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 8:54 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Oct 07, 2013 at 11:04:38PM +0200, Stephane Eranian wrote:
->> Peter,
->>
->> Ok, so I tried this. It does not cover shmat() cases unfortunately.
->> We need that same ++global_mm_id somewhere on that code path.
->> Haven't looked at it in details just yet.
->
-> shmat() is a regular shared memory thingy right? So that should be
-> covered by the regular inode,dev bits, right?
+On Tue, Oct 08, 2013 at 04:12:02PM +0900, Minchan Kim wrote:
+> On Tue, Oct 08, 2013 at 12:35:33AM -0400, KOSAKI Motohiro wrote:
+> > (10/7/13 11:07 PM), Minchan Kim wrote:
+> > >Hi KOSAKI,
+> > >
+> > >On Mon, Oct 07, 2013 at 10:51:18PM -0400, KOSAKI Motohiro wrote:
+> > >>>Maybe, int madvise5(addr, length, MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS,
+> > >>>         &purged, &ret);
+> > >>>
+> > >>>Another reason to make it hard is that madvise(2) is tight coupled with
+> > >>>with vmas split/merge. It needs mmap_sem's write-side lock and it hurt
+> > >>>anon-vrange test performance much heavily and userland might want to
+> > >>>make volatile range with small unit like "page size" so it's undesireable
+> > >>>to make it with vma. Then, we should filter out to avoid vma split/merge
+> > >>>in implementation if only MADV_LAZY case? Doable but it could make code
+> > >>>complicated and lost consistency with other variant of madvise.
+> > >>
+> > >>I haven't seen your performance test result. Could please point out URLs?
+> > >
+> > >https://lkml.org/lkml/2013/3/12/105
+> > 
+> > It's not comparison with and without vma merge. I'm interest how much benefit
+> > vmas operation avoiding have.
+> 
+> I had an number but lost it so I should set up it in my KVM machine :(
+> And I needed old kernel 3.7.0 for testing vma-based approach.
+> 
+> DRAM:2G, CPU : 12 
+> 
+> kernel 3.7.0
+> 
+> jemalloc: 20527 records/s
+> jemalloc vma based approach : 5360 records/s
+> 
+> vrange call made worse because every thread stuck with mmap_sem.
+> 
+> kernel 3.11.0
+> 
+> jemalloc: 21176 records/s
+> jemalloc vroot tree approach: 103637 records/s
+> 
+> It could enhance 5 times.
 
-Yes, it is but I am trying to see whether or not we could unify that and
-use a single u64 number to uniquely identify each mapping.
+And please keep in mind that vrange's user might want to small vrange
+like PAGE_SIZE. If we go with vma-based approach, we would consume memory
+with lots of vm_area_struct.
+
+-- 
+Kind regards,
+Minchan Kim
