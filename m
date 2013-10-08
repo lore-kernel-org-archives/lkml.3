@@ -1,202 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3JHPZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:25:19 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:22034 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab3JHPZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:25:15 -0400
-X-Greylist: delayed 1379 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 11:25:11 EDT
-From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Chiau Ee Chew <chiau.ee.chew@intel.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Romain Baeriswyl <romainba@abilis.com>
-Subject: [PATCH 1/2] i2c designware make SCL and SDA falling time configurable
-Date: Tue,  8 Oct 2013 17:00:54 +0200
-Message-Id: <1381244455-3836-1-git-send-email-romainba@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20130828153429.GB7066@ab42.lan>
-References: <20130828153429.GB7066@ab42.lan>
+	id S1755589Ab3JHP2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:28:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40785 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752452Ab3JHP2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 11:28:14 -0400
+Date: Tue, 8 Oct 2013 16:28:12 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Nishanth Menon <nm@ti.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH V3] clk: palmas: add clock driver for palmas
+Message-ID: <20131008152812.GA4981@e106331-lin.cambridge.arm.com>
+References: <1381238480-18852-1-git-send-email-ldewangan@nvidia.com>
+ <525408B3.1000107@ti.com>
+ <5254193A.70104@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5254193A.70104@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows to set independantly SCL and SDA falling times. 
-The tLOW period is computed by taking into account the SCL falling time.
-The tHIGH period is computed by taking into account the SDA falling time.
+On Tue, Oct 08, 2013 at 03:39:54PM +0100, Laxman Dewangan wrote:
+> Thanks Nishanth for review.
+> 
+> On Tuesday 08 October 2013 06:59 PM, Nishanth Menon wrote:
+> > On 10/08/2013 08:21 AM, Laxman Dewangan wrote:
+> >> Palmas devices has two clock output CLK32K_KG and CLK32K_KG_AUDIO
+> > not all palmas devices have 2 clocks - example: tps659038
+> 
+> This is for generic palmas and I have seen it for TPS65913, TPS65914, 
+> TPS80036. If the generic one is not compatible then it need to add  
+> device specific and at that time, it is require to update the binding 
+> document accordingly.
 
-For instance in case the margin on tLOW is considered too small, it can 
-be increased by increasing the SCL falling time which is by default set 
-at 300ns.
+We've just been given an example of where it's not compatible.
 
-The same applies for tHIGH period with the help of SDA falling time.
+> 
+> >           |    7 +
+> >   drivers/clk/Makefile                               |    1 +
+> >   drivers/clk/clk-palmas.c                           |  340 ++++++++++++++++++++
+> >
+> > http://www.spinics.net/lists/devicetree/msg04855.html
+> > Do we do 2 patches now? one seperate for binding and implementation?
+> > What is our current preference now a days?
+> 
+> Currently it is implementation + binding doc in one patch.
 
-Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
-Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- .../devicetree/bindings/i2c/i2c-designware.txt     |    8 +++++
- drivers/i2c/busses/i2c-designware-core.c           |   34 +++++++++++++------
- drivers/i2c/busses/i2c-designware-core.h           |    2 +
- drivers/i2c/busses/i2c-designware-platdrv.c        |    7 ++++
- 4 files changed, 40 insertions(+), 11 deletions(-)
+I believe the general consensus is that separate DT patches are
+preferred.
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-index 7fd7fa2..5199b0c 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-@@ -14,6 +14,12 @@ Optional properties :
-  - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
-    This option is only supported in hardware blocks version 1.11a or newer.
- 
-+ - i2c-scl-falling-time : should contain the SCL falling time in nanoseconds.
-+   This value which is by default 300ns is used to compute the tLOW period.
-+
-+ - i2c-sda-falling-time : should contain the SDA falling time in nanoseconds.
-+   This value which is by default 300ns is used to compute the tHIGH period.
-+
- Example :
- 
- 	i2c@f0000 {
-@@ -34,4 +40,6 @@ Example :
- 		interrupts = <12 1>;
- 		clock-frequency = <400000>;
- 		i2c-sda-hold-time-ns = <300>;
-+		i2c-sda-falling-time-ns = <300>;
-+		i2c-scl-falling-time-ns = <300>;
- 	};
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 3525fc7..50c35f9 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -217,7 +217,7 @@ i2c_dw_scl_hcnt(u32 ic_clk, u32 tSYMBOL, u32 tf, int cond, int offset)
- 		 *
- 		 * If your hardware is free from tHD;STA issue, try this one.
- 		 */
--		return (ic_clk * tSYMBOL + 5000) / 10000 - 8 + offset;
-+		return (ic_clk * tSYMBOL + 500000) / 1000000 - 8 + offset;
- 	else
- 		/*
- 		 * Conditional expression:
-@@ -233,7 +233,8 @@ i2c_dw_scl_hcnt(u32 ic_clk, u32 tSYMBOL, u32 tf, int cond, int offset)
- 		 * The reason why we need to take into account "tf" here,
- 		 * is the same as described in i2c_dw_scl_lcnt().
- 		 */
--		return (ic_clk * (tSYMBOL + tf) + 5000) / 10000 - 3 + offset;
-+		return (ic_clk * (tSYMBOL + tf) + 500000) / 1000000
-+			- 3 + offset;
- }
- 
- static u32 i2c_dw_scl_lcnt(u32 ic_clk, u32 tLOW, u32 tf, int offset)
-@@ -249,7 +250,7 @@ static u32 i2c_dw_scl_lcnt(u32 ic_clk, u32 tLOW, u32 tf, int offset)
- 	 * account the fall time of SCL signal (tf).  Default tf value
- 	 * should be 0.3 us, for safety.
- 	 */
--	return ((ic_clk * (tLOW + tf) + 5000) / 10000) - 1 + offset;
-+	return ((ic_clk * (tLOW + tf) + 500000) / 1000000) - 1 + offset;
- }
- 
- static void __i2c_dw_enable(struct dw_i2c_dev *dev, bool enable)
-@@ -286,6 +287,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	u32 input_clock_khz;
- 	u32 hcnt, lcnt;
- 	u32 reg;
-+	u32 sda_falling_time, scl_falling_time;
- 
- 	input_clock_khz = dev->get_clk_rate_khz(dev);
- 
-@@ -307,15 +309,25 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 
- 	/* set standard and fast speed deviders for high/low periods */
- 
-+	if (dev->sda_falling_time)
-+		sda_falling_time = dev->sda_falling_time;
-+	else
-+		sda_falling_time = 300; /* ns */
-+
-+	if (dev->scl_falling_time)
-+		scl_falling_time = dev->scl_falling_time;
-+	else
-+		scl_falling_time = 300; /* ns */
-+
- 	/* Standard-mode */
- 	hcnt = i2c_dw_scl_hcnt(input_clock_khz,
--				40,	/* tHD;STA = tHIGH = 4.0 us */
--				3,	/* tf = 0.3 us */
-+				4000,	/* tHD;STA = tHIGH = 4.0 us */
-+				sda_falling_time,
- 				0,	/* 0: DW default, 1: Ideal */
- 				0);	/* No offset */
- 	lcnt = i2c_dw_scl_lcnt(input_clock_khz,
--				47,	/* tLOW = 4.7 us */
--				3,	/* tf = 0.3 us */
-+				4700,	/* tLOW = 4.7 us */
-+				scl_falling_time,
- 				0);	/* No offset */
- 
- 	/* Allow platforms to specify the ideal HCNT and LCNT values */
-@@ -323,13 +335,13 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 
- 	/* Fast-mode */
- 	hcnt = i2c_dw_scl_hcnt(input_clock_khz,
--				6,	/* tHD;STA = tHIGH = 0.6 us */
--				3,	/* tf = 0.3 us */
-+				600,	/* tHD;STA = tHIGH = 0.6 us */
-+				sda_falling_time,
- 				0,	/* 0: DW default, 1: Ideal */
- 				0);	/* No offset */
- 	lcnt = i2c_dw_scl_lcnt(input_clock_khz,
--				13,	/* tLOW = 1.3 us */
--				3,	/* tf = 0.3 us */
-+				1300,	/* tLOW = 1.3 us */
-+				scl_falling_time,
- 				0);	/* No offset */
- 
- 	if (dev->fs_hcnt && dev->fs_lcnt) {
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index 912aa22..8b9397e 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -91,6 +91,8 @@ struct dw_i2c_dev {
- 	unsigned int		rx_fifo_depth;
- 	int			rx_outstanding;
- 	u32			sda_hold_time;
-+	u32			sda_falling_time;
-+	u32			scl_falling_time;
- 	u16			ss_hcnt;
- 	u16			ss_lcnt;
- 	u16			fs_hcnt;
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index 8b9d3f1..0d6fe47 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -129,6 +129,13 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 					"i2c-sda-hold-time-ns", &ht);
- 		dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000,
- 					     1000000);
-+
-+		of_property_read_u32(pdev->dev.of_node,
-+				     "i2c-sda-falling-time-ns",
-+				     &dev->sda_falling_time);
-+		of_property_read_u32(pdev->dev.of_node,
-+				     "i2c-scl-falling-time-ns",
-+				     &dev->scl_falling_time);
- 	}
- 
- 	dev->functionality =
--- 
-1.7.1
+> 
+> >
+> >>   Palmas device has two clock output pins for 32KHz, KG and KG_AUDIO.
+> >> +
+> >> +This binding uses the common clock binding ./clock-bindings.txt.
+> > proper link would be to provide
+> > Documentation/devicetree/bindings/clock/clock-bindings.txt ?
+> 
+> Hmm, other patch I got feedback from DT maintainers to do not use the 
+> absolute path as document directory may change
 
+I'd not seen this, but I don't have a strong preference either way. This
+document will go under Documentation/devicetree/bindings/clock, so a
+relative path seems Ok.
+
+> 
+> >> +
+> >> +Clock 32KHz KG is output 0 of the driver and clock 32KHz is output 1.
+> >> +
+> >> +Required properties:
+> >> +- compatible : shall be "ti,palmas-clk".
+> > To handle variants of Palmas chips in production, you'd want to be
+> > specific here clk32k_kg and clk32k_kg_audio.
+> 
+> The compatible is the device sub module level, not the clock level. Same 
+> thing we are following on regulators.
+
+Yes, we don't need a separate compatible string for each clock within a
+block providing those clocks.
+
+> 
+> 
+> >
+> >> +
+> >> +     Optional subnode properties:
+> >> +     ti,clock-boot-enable: Enable clock at the time of booting.
+> > Dumb question: Why is this needed? should'nt relevant drivers do a
+> > clk_get to enable the relevant clocks?
+> 
+> If some board needs this clock to be always available for rest of system 
+> to work without any specific driver then this flag is useful.
+
+Do we _actually_ need this right now, or is this hypothetical?
+
+If we don't need it now, remove it. If you think we need it know, please
+describe exactly why (i.e. what device needs the clock to work, why does
+this affect the rest of the board if we don't ahve a driver for that
+device, why don't we just write a driver for that device).
+
+> 
+> 
+> >
+> >> +     ti,external-sleep-control: The clock is enable/disabled by state
+> >> +             of external enable input pins ENABLE, ENABLE2 and NSLEEP.
+> >> +             The valid value for the external pins are:
+> >> +                     1 for ENABLE1
+> >> +                     2 for ENABLE2
+> >> +                     3 for NSLEEP.
+
+I asked this on the last version (before having noticed this one). What
+actually drives those pins to control the clock(s)?
+
+Is this for setting the clock to be controlled by the external pin, or
+is the clock hard-wired to a particular pin?
+
+Thanks,
+Mark.
