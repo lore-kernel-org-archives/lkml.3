@@ -1,31 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3JHQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:30:59 -0400
-Received: from na01-by2-ndr.ptr.protection.outlook.com ([207.46.108.104]:31670
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754569Ab3JHQaz convert rfc822-to-8bit (ORCPT
+	id S1756669Ab3JHQbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:31:15 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57926 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab3JHQbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:30:55 -0400
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 8 Oct 2013 12:31:11 -0400
+Date: Tue, 8 Oct 2013 09:30:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] rcusync: Add the CONFIG_PROVE_RCU checks
+Message-ID: <20131008163058.GZ5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131008102505.404025673@infradead.org>
+ <20131008103830.347463501@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: 
-To: Recipients <post00@carnelled.onmicrosoft.com>
-From: "Mrs. Lisa Joe" <post00@carnelled.onmicrosoft.com>
-Date: Tue, 8 Oct 2013 22:00:30 +0530
-Reply-To: <larrymaxwellfinance@admin.in.th>
-Message-ID: <8311cf4f-09c2-4b58-8267-235f645703a8@BLUPR03MB035.namprd03.prod.outlook.com>
-X-Originating-IP: [123.63.112.124]
-X-ClientProxiedBy: SINPR02CA018.apcprd02.prod.outlook.com (10.141.109.13) To
- BLUPR03MB035.namprd03.prod.outlook.com (10.255.209.147)
-X-Forefront-PRVS: 0993689CD1
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(49866001)(47736001)(47976001)(50986001)(31686002)(76576001)(33646001)(43066001)(54316002)(74706001)(56776001)(76482001)(50466002)(4396001)(69226001)(85306002)(80976001)(509001);DIR:OUT;SFP:1501;SCL:5;SRVR:BLUPR03MB035;H:[10.212.93.187];CLIP:123.63.112.124;FPR:;RD:InfoNoRecords;A:0;MX:1;UriScan:(11306347001);LANG:en;
-X-OriginatorOrg: carnelled.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008103830.347463501@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100816-9332-0000-0000-000001B07B3A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are you looking for a loan? We give out all kinds of loans , such as company loan,business loan,personal loan commercial loan, investment loan, home loan, student loan and many more. With short and long term services schedule and also with an affordable interest rate. If you are interested , kindly contact us via email  larrymaxwellfinance@admin.in.th
+On Tue, Oct 08, 2013 at 12:25:10PM +0200, Peter Zijlstra wrote:
+> From: Oleg Nesterov <oleg@redhat.com>
+> 
+> It would be nice to validate that the caller of rcu_sync_is_idle()
+> holds the corresponding type of RCU read-side lock. Add the new
+> rcu_sync_ops->held() method and change rcu_sync_is_idle() to
+> WARN() if it returns false.
+> 
+> This obviously penalizes the readers (fast-path), but only if
+> CONFIG_PROVE_RCU.
+> 
+> Suggested-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Link: http://lkml.kernel.org/r/20131004184633.GA17557@redhat.com
+> ---
+>  include/linux/rcusync.h |    6 ++++++
+>  kernel/rcusync.c        |   21 +++++++++++++++++++++
+>  2 files changed, 27 insertions(+)
+> 
+> --- a/include/linux/rcusync.h
+> +++ b/include/linux/rcusync.h
+> @@ -17,9 +17,15 @@ struct rcu_sync_struct {
+>  	enum rcu_sync_type	gp_type;
+>  };
+> 
+> +extern bool __rcu_sync_is_idle(struct rcu_sync_struct *);
+> +
+>  static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
+>  {
+> +#ifdef CONFIG_PROVE_RCU
+> +	return __rcu_sync_is_idle(rss);
+> +#else
+>  	return !rss->gp_state; /* GP_IDLE */
+> +#endif
+>  }
+> 
+>  extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
+> --- a/kernel/rcusync.c
+> +++ b/kernel/rcusync.c
+> @@ -1,21 +1,33 @@
+>  #include <linux/rcusync.h>
+>  #include <linux/sched.h>
+> 
+> +#ifdef CONFIG_PROVE_RCU
+> +#define __INIT_HELD(func)	.held = func,
+> +#else
+> +#define __INIT_HELD(func)
+> +#endif
+> +
+>  static const struct {
+>  	void (*sync)(void);
+>  	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> +#ifdef CONFIG_PROVE_RCU
+> +	int  (*held)(void);
+> +#endif
+>  } gp_ops[] = {
+>  	[RCU_SYNC] = {
+>  		.sync = synchronize_rcu,
+>  		.call = call_rcu,
+> +		__INIT_HELD(rcu_read_lock_held)
+>  	},
+>  	[RCU_SCHED_SYNC] = {
+>  		.sync = synchronize_sched,
+>  		.call = call_rcu_sched,
+> +		__INIT_HELD(rcu_read_lock_sched_held)
+>  	},
+>  	[RCU_BH_SYNC] = {
+>  		.sync = synchronize_rcu_bh,
+>  		.call = call_rcu_bh,
+> +		__INIT_HELD(rcu_read_lock_bh_held)
+>  	},
+>  };
+> 
+> @@ -24,6 +36,15 @@ enum { CB_IDLE = 0, CB_PENDING, CB_REPLA
+> 
+>  #define	rss_lock	gp_wait.lock
+> 
+> +#ifdef CONFIG_PROVE_RCU
+> +bool __rcu_sync_is_idle(struct rcu_sync_struct *rss)
+> +{
+> +	WARN_ON(!gp_ops[rss->gp_type].held());
+> +	return rss->gp_state == GP_IDLE;
+> +}
+> +EXPORT_SYMBOL_GPL(__rcu_sync_is_idle);
+> +#endif
+> +
+>  void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
+>  {
+>  	memset(rss, 0, sizeof(*rss));
+> 
+> 
+
