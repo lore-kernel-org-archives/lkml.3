@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335Ab3JHKOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:14:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62711 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756408Ab3JHKOS (ORCPT
+	id S1756233Ab3JHKOB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:14:01 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:34963 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756040Ab3JHKMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:14:18 -0400
-Message-ID: <1381227252.15686.9.camel@marge.simpson.net>
-Subject: Re: perf: perf sched lat segfault - bisected
-From: Mike Galbraith <bitbucket@online.de>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Tue, 08 Oct 2013 12:14:12 +0200
-In-Reply-To: <CABPqkBRMa7rawfvQ2Sunc2tr87s_WqT_7GYac6+x=SNZoJSueg@mail.gmail.com>
-References: <1381221715.15686.3.camel@marge.simpson.net>
-	 <CABPqkBRMa7rawfvQ2Sunc2tr87s_WqT_7GYac6+x=SNZoJSueg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:5IFqXAHzFxFDv8f7nxR0vdfBsg6itkrEVqpP+xdlAlV
- irA5ON7yBhK8Uf+OBMT09YPY74juDH1QtoN7FN+XYtAoXaFc8e
- 1JXtu1nmxOZ9uBVtGn0w+iVz3zEWci+f0YIH1vusUz/QQZtoWn
- KaV0NQsMcZnspGFUgvAhaLUlqc2lA5QhvGljoRWtd5tejMkeWd
- Egpx8j1RBRTTOoI4VCgCJnoQQDwZsOOlvOgXSEB1eXEbSuEDOj
- vlY8NZ/TFMMRKNv0/9P0hzbhCmmS+mhB1LKAujTSi5et81puXo
- rBxE20G2DoBpJMdrw99SZKmUknwLBsqc5oOGJq55DTB2ZlcagT
- xx70EwcEcVbB2fLoeD+Lea+yT4FwIUoZh86PCvWUyGBiLNt6F6
- y10YcS/oeNTTw==
+	Tue, 8 Oct 2013 06:12:46 -0400
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 47/52] tools/perf/build: Make sure autodep feature binaries honor the O= setting
+Date: Tue,  8 Oct 2013 12:11:17 +0200
+Message-Id: <1381227082-22039-48-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 11:23 +0200, Stephane Eranian wrote: 
-> On Tue, Oct 8, 2013 at 10:41 AM, Mike Galbraith <bitbucket@online.de> wrote:
-> > Box: Q6600
-> >
-> > Reproducer:
-> > perf sched record -- sleep 1
-> > perf sched lat (boom)
-> >
-> I don't understand the test case here.
-> If I do this, perf sched lat complains of no trace records
-> and no kernel crash. Could you provide the full cmdline?
+Arnaldo noticed that the feature-check binaries are generated in the
+config/check-features/ directory even if O= is specified.
 
-Hm.  That was it, just like so.
+Implement $(OUTPUT) logic for config/check-features/Makefile.
 
-marge:/usr/local/src/kernel/linux-3.x.git/tools/perf # ./perf sched record -- sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.763 MB perf.data (~33348 samples) ]
-marge:/usr/local/src/kernel/linux-3.x.git/tools/perf # ./perf sched lat
-Segmentation fault
-marge:/usr/local/src/kernel/linux-3.x.git/tools/perf #
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-NLwlnv5prsubuey0vfocebym@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-	-Mike
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 132cf82..593983f 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -88,9 +88,14 @@ CFLAGS += -std=gnu99
+ 
+ EXTLIBS = -lelf -lpthread -lrt -lm -ldl
+ 
++ifneq ($(OUTPUT),)
++  OUTPUT_FEATURES = $(OUTPUT)config/feature-checks/
++  $(shell mkdir -p $(OUTPUT_FEATURES))
++endif
++
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
+ 
+ feature_set = $(eval $(feature_set_code))
+@@ -138,7 +143,7 @@ CORE_FEATURE_TESTS =			\
+ # to skip the print-out of the long features list if the file
+ # existed before and after it was built:
+ #
+-ifeq ($(wildcard config/feature-checks/test-all),)
++ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
+   test-all-failed := 1
+ else
+   test-all-failed := 0
+@@ -168,7 +173,7 @@ ifeq ($(feature-all), 1)
+   #
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+ else
+-  $(shell $(MAKE) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
++  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
+ 
+-- 
+1.8.3.1
 
