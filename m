@@ -1,193 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab3JHQuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:50:12 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755930Ab3JHQuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:50:07 -0400
-Message-ID: <525437B5.8060907@nod.at>
-Date: Tue, 08 Oct 2013 18:49:57 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
-        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
-        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
-        monstr@monstr.eu, yasutake.koichi@jp.panasonic.com,
-        ralf@linux-mips.org, jonas@southpole.se, jejb@parisc-linux.org,
-        deller@gmx.de, benh@kernel.crashing.org, paulus@samba.org,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        liqin.linux@gmail.com, lennox.wu@gmail.com, lethal@linux-sh.org,
-        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
-        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
-        oleg@redhat.com, tj@kernel.org
-Subject: Re: [PATCH 10/29] ia64: Use get_signal() signal_setup_done()
-References: <1381231994-4192-1-git-send-email-richard@nod.at>
-In-Reply-To: <1381231994-4192-1-git-send-email-richard@nod.at>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1756395Ab3JHQv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:51:28 -0400
+Received: from smtprelay0206.hostedemail.com ([216.40.44.206]:46885 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755255Ab3JHQvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 12:51:24 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1801:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3872:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: girl96_bd06a3b4cf50
+X-Filterd-Recvd-Size: 1927
+Message-ID: <1381251080.2081.243.camel@joe-AO722>
+Subject: Re: [PATCH] core: Catch overflows in do_div() function
+From: Joe Perches <joe@perches.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, rdunlap@infradead.org
+Date: Tue, 08 Oct 2013 09:51:20 -0700
+In-Reply-To: <CAFLxGvzrEQGE8+QAFCQL=z2hwe578pBdWOu4B+DkJDjxkM0=hw@mail.gmail.com>
+References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
+	 <1381248622-27809-1-git-send-email-anatol.pomozov@gmail.com>
+	 <1381249090.2081.240.camel@joe-AO722>
+	 <CAFLxGvzrEQGE8+QAFCQL=z2hwe578pBdWOu4B+DkJDjxkM0=hw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.10.2013 13:33, schrieb Richard Weinberger:
-> Use the more generic functions get_signal() signal_setup_done()
-> for signal delivery.
-> This inverts also the return codes of force_sigsegv_info()
-> and setup_frame() to follow the kernel convention.
+On Tue, 2013-10-08 at 18:45 +0200, Richard Weinberger wrote:
+> On Tue, Oct 8, 2013 at 6:18 PM, Joe Perches <joe@perches.com> wrote:
+> > On Tue, 2013-10-08 at 09:10 -0700, Anatol Pomozov wrote:
+> >> If second parameter passed to this function was 64 then it silently
+> >> truncates to 32 bits. Catch such situation.
+> > []
+> >> diff --git a/include/asm-generic/div64.h b/include/asm-generic/div64.h
+> > []
+> >> @@ -25,6 +26,7 @@
+> >>  # define do_div(n,base) ({                                   \
+> >>       uint32_t __base = (base);                               \
+> >>       uint32_t __rem;                                         \
+> >> +     BUG_ON(sizeof(base) > 4 && base >= (1UL<<32));          \
+> >
+> > I think this would be better as a BUILD_BUG_ON
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+> No. BUILD_BUG_ON works only for constants.
 
-This one does not build, the patch is corrupted.
-An updated version will be in v2.
+Add __builtin_constant_p(base).
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-
-Thanks,
-//richard
-
-> ---
->  arch/ia64/kernel/signal.c | 42 +++++++++++++++++++-----------------------
->  1 file changed, 19 insertions(+), 23 deletions(-)
-> 
-> diff --git a/arch/ia64/kernel/signal.c b/arch/ia64/kernel/signal.c
-> index 3637e03..b995dbf 100644
-> --- a/arch/ia64/kernel/signal.c
-> +++ b/arch/ia64/kernel/signal.c
-> @@ -309,12 +309,11 @@ force_sigsegv_info (int sig, void __user *addr)
->  	si.si_uid = from_kuid_munged(current_user_ns(), current_uid());
->  	si.si_addr = addr;
->  	force_sig_info(SIGSEGV, &si, current);
-> -	return 0;
-> +	return 1;
->  }
->  
->  static long
-> -setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
-> -	     struct sigscratch *scr)
-> +setup_frame(struct ksignal *ksig, sigset_t *set, struct sigscratch *scr)
->  {
->  	extern char __kernel_sigtramp[];
->  	unsigned long tramp_addr, new_rbs = 0, new_sp;
-> @@ -323,7 +322,7 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
->  
->  	new_sp = scr->pt.r12;
->  	tramp_addr = (unsigned long) __kernel_sigtramp;
-> -	if (ka->sa.sa_flags & SA_ONSTACK) {
-> +	if (ksig->ka.sa.sa_flags & SA_ONSTACK) {
->  		int onstack = sas_ss_flags(new_sp);
->  
->  		if (onstack == 0) {
-> @@ -347,7 +346,7 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
->  			 */
->  			check_sp = (new_sp - sizeof(*frame)) & -STACK_ALIGN;
->  			if (!likely(on_sig_stack(check_sp)))
-> -				return force_sigsegv_info(sig, (void __user *)
-> +				return force_sigsegv_info(ksig->sig, (void __user *)
->  							  check_sp);
->  		}
->  	}
-> @@ -356,14 +355,14 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
->  	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
->  		return force_sigsegv_info(sig, frame);
->  
-> -	err  = __put_user(sig, &frame->arg0);
-> +	err  = __put_user(ksig->sig, &frame->arg0);
->  	err |= __put_user(&frame->info, &frame->arg1);
->  	err |= __put_user(&frame->sc, &frame->arg2);
->  	err |= __put_user(new_rbs, &frame->sc.sc_rbs_base);
->  	err |= __put_user(0, &frame->sc.sc_loadrs);	/* initialize to zero */
-> -	err |= __put_user(ka->sa.sa_handler, &frame->handler);
-> +	err |= __put_user(ksig->ka.sa.sa_handler, &frame->handler);
->  
-> -	err |= copy_siginfo_to_user(&frame->info, info);
-> +	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
->  
->  	err |= __save_altstack(&frame->sc.sc_stack, scr->pt.r12);
->  	err |= setup_sigcontext(&frame->sc, set, scr);
-> @@ -394,22 +393,20 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
->  
->  #if DEBUG_SIG
->  	printk("SIG deliver (%s:%d): sig=%d sp=%lx ip=%lx handler=%p\n",
-> -	       current->comm, current->pid, sig, scr->pt.r12, frame->sc.sc_ip, frame->handler);
-> +	       current->comm, current->pid, ksig->sig, scr->pt.r12, frame->sc.sc_ip, frame->handler);
->  #endif
-> -	return 1;
-> +	return 0;
->  }
->  
->  static long
-> -handle_signal (unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
-> -	       struct sigscratch *scr)
-> +handle_signal (struct ksignal *ksig, struct sigscratch *scr)
->  {
-> -	if (!setup_frame(sig, ka, info, sigmask_to_save(), scr))
-> -		return 0;
-> +	int ret = setup_frame(ksig, sigmask_to_save(), scr);
->  
-> -	signal_delivered(sig, info, ka, &scr->pt,
-> -				 test_thread_flag(TIF_SINGLESTEP));
-> +	if (!ret)
-> +		signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
->  
-> -	return 1;
-> +	return ret;
->  }
->  
->  /*
-> @@ -419,17 +416,16 @@ handle_signal (unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
->  void
->  ia64_do_signal (struct sigscratch *scr, long in_syscall)
->  {
-> -	struct k_sigaction ka;
-> -	siginfo_t info;
->  	long restart = in_syscall;
->  	long errno = scr->pt.r8;
-> +	struct ksignal ksig;
->  
->  	/*
->  	 * This only loops in the rare cases of handle_signal() failing, in which case we
->  	 * need to push through a forced SIGSEGV.
->  	 */
->  	while (1) {
-> -		int signr = get_signal_to_deliver(&info, &ka, &scr->pt, NULL);
-> +		get_signal(&ksig);
->  
->  		/*
->  		 * get_signal_to_deliver() may have run a debugger (via notify_parent())
-> @@ -446,7 +442,7 @@ ia64_do_signal (struct sigscratch *scr, long in_syscall)
->  			 */
->  			restart = 0;
->  
-> -		if (signr <= 0)
-> +		if (ksig.sig <= 0)
->  			break;
->  
->  		if (unlikely(restart)) {
-> @@ -458,7 +454,7 @@ ia64_do_signal (struct sigscratch *scr, long in_syscall)
->  				break;
->  
->  			      case ERESTARTSYS:
-> -				if ((ka.sa.sa_flags & SA_RESTART) == 0) {
-> +				if ((ksig.ka.sa.sa_flags & SA_RESTART) == 0) {
->  					scr->pt.r8 = EINTR;
->  					/* note: scr->pt.r10 is already -1 */
->  					break;
-> @@ -473,7 +469,7 @@ ia64_do_signal (struct sigscratch *scr, long in_syscall)
->  		 * Whee!  Actually deliver the signal.  If the delivery failed, we need to
->  		 * continue to iterate in this loop so we can deliver the SIGSEGV...
->  		 */
-> -		if (handle_signal(signr, &ka, &info, scr))
-> +		if (handle_signal(&ksig, scr))
->  			return;
->  	}
->  
-> 
 
