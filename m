@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3JHKHY (ORCPT <rfc822;w@1wt.eu>);
+	id S1755496Ab3JHKHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:07:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42819 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755312Ab3JHKHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Oct 2013 06:07:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55001 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab3JHKHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:07:18 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 3/6] ARM: dts: omap4-panda: Provide USB PHY clock
-Date: Tue, 8 Oct 2013 13:06:36 +0300
-Message-ID: <1381226799-29158-4-git-send-email-rogerq@ti.com>
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Tero Kristo <t-kristo@ti.com>
+Subject: [PATCH v2 6/6] mfd: omap-usb: prepare/unprepare clock while enable/disable
+Date: Tue, 8 Oct 2013 13:06:39 +0300
+Message-ID: <1381226799-29158-7-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1381226799-29158-1-git-send-email-rogerq@ti.com>
 References: <1381226799-29158-1-git-send-email-rogerq@ti.com>
@@ -24,32 +25,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB PHY gets its clock from AUXCLK3. Provide this
-information.
+This should fix the following warning at boot on OMAP5 uEVM
+[    8.783155] WARNING: CPU: 0 PID: 1 at drivers/clk/clk.c:883 __clk_enable+0x94/0xa4()
 
+CC: Samuel Ortiz <sameo@linux.intel.com>
+CC: Lee Jones <lee.jones@linaro.org>
+CC: Tero Kristo <t-kristo@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap4-panda-common.dtsi |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/mfd/omap-usb-host.c |   16 ++++++++--------
+ drivers/mfd/omap-usb-tll.c  |    4 ++--
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 3e6801c..f90a1d4 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -83,12 +83,8 @@
- 		compatible = "usb-nop-xceiv";
- 		reset-gpios = <&gpio2 30 GPIO_ACTIVE_LOW>;   /* gpio_62 */
- 		vcc-supply = <&hsusb1_power>;
--	/**
--	 * FIXME:
--	 * put the right clock phandle here when available
--	 *	clocks = <&auxclk3>;
--	 *	clock-names = "main_clk";
--	 */
-+		clocks = <&auxclk3_ck>;
-+		clock-names = "main_clk";
- 		clock-frequency = <19200000>;
- 	};
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 29ee54d..a5b91f1 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -328,13 +328,13 @@ static int usbhs_runtime_resume(struct device *dev)
+ 	omap_tll_enable(pdata);
+ 
+ 	if (!IS_ERR(omap->ehci_logic_fck))
+-		clk_enable(omap->ehci_logic_fck);
++		clk_prepare_enable(omap->ehci_logic_fck);
+ 
+ 	for (i = 0; i < omap->nports; i++) {
+ 		switch (pdata->port_mode[i]) {
+ 		case OMAP_EHCI_PORT_MODE_HSIC:
+ 			if (!IS_ERR(omap->hsic60m_clk[i])) {
+-				r = clk_enable(omap->hsic60m_clk[i]);
++				r = clk_prepare_enable(omap->hsic60m_clk[i]);
+ 				if (r) {
+ 					dev_err(dev,
+ 					 "Can't enable port %d hsic60m clk:%d\n",
+@@ -343,7 +343,7 @@ static int usbhs_runtime_resume(struct device *dev)
+ 			}
+ 
+ 			if (!IS_ERR(omap->hsic480m_clk[i])) {
+-				r = clk_enable(omap->hsic480m_clk[i]);
++				r = clk_prepare_enable(omap->hsic480m_clk[i]);
+ 				if (r) {
+ 					dev_err(dev,
+ 					 "Can't enable port %d hsic480m clk:%d\n",
+@@ -354,7 +354,7 @@ static int usbhs_runtime_resume(struct device *dev)
+ 
+ 		case OMAP_EHCI_PORT_MODE_TLL:
+ 			if (!IS_ERR(omap->utmi_clk[i])) {
+-				r = clk_enable(omap->utmi_clk[i]);
++				r = clk_prepare_enable(omap->utmi_clk[i]);
+ 				if (r) {
+ 					dev_err(dev,
+ 					 "Can't enable port %d clk : %d\n",
+@@ -382,15 +382,15 @@ static int usbhs_runtime_suspend(struct device *dev)
+ 		switch (pdata->port_mode[i]) {
+ 		case OMAP_EHCI_PORT_MODE_HSIC:
+ 			if (!IS_ERR(omap->hsic60m_clk[i]))
+-				clk_disable(omap->hsic60m_clk[i]);
++				clk_disable_unprepare(omap->hsic60m_clk[i]);
+ 
+ 			if (!IS_ERR(omap->hsic480m_clk[i]))
+-				clk_disable(omap->hsic480m_clk[i]);
++				clk_disable_unprepare(omap->hsic480m_clk[i]);
+ 		/* Fall through as utmi_clks were used in HSIC mode */
+ 
+ 		case OMAP_EHCI_PORT_MODE_TLL:
+ 			if (!IS_ERR(omap->utmi_clk[i]))
+-				clk_disable(omap->utmi_clk[i]);
++				clk_disable_unprepare(omap->utmi_clk[i]);
+ 			break;
+ 		default:
+ 			break;
+@@ -398,7 +398,7 @@ static int usbhs_runtime_suspend(struct device *dev)
+ 	}
+ 
+ 	if (!IS_ERR(omap->ehci_logic_fck))
+-		clk_disable(omap->ehci_logic_fck);
++		clk_disable_unprepare(omap->ehci_logic_fck);
+ 
+ 	omap_tll_disable(pdata);
+ 
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index e59ac4c..1e57712 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -429,7 +429,7 @@ int omap_tll_enable(struct usbhs_omap_platform_data *pdata)
+ 			if (IS_ERR(tll->ch_clk[i]))
+ 				continue;
+ 
+-			r = clk_enable(tll->ch_clk[i]);
++			r = clk_prepare_enable(tll->ch_clk[i]);
+ 			if (r) {
+ 				dev_err(tll_dev,
+ 				 "Error enabling ch %d clock: %d\n", i, r);
+@@ -460,7 +460,7 @@ int omap_tll_disable(struct usbhs_omap_platform_data *pdata)
+ 	for (i = 0; i < tll->nch; i++) {
+ 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+ 			if (!IS_ERR(tll->ch_clk[i]))
+-				clk_disable(tll->ch_clk[i]);
++				clk_disable_unprepare(tll->ch_clk[i]);
+ 		}
+ 	}
  
 -- 
 1.7.4.1
