@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3JHPOW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:14:22 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45738 "EHLO e7.ny.us.ibm.com"
+	id S1755327Ab3JHPUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:20:05 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:20250 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab3JHPOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:14:18 -0400
-Message-ID: <1381245279.20801.13.camel@buffalo>
-Subject: Re: [tpmdd-devel] [PATCH] tpm: xen-tpmfront: fix missing
- declaration of xen_domain
-From: Ashley D Lai <adlai@linux.vnet.ibm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        stefano.stabellini@eu.citrix.com,
-        Rob Herring <rob.herring@calxeda.com>, Rajiv Andrade <mail@srajiv.net>,
-        tpmdd-devel@lists.sourceforge.net, Sirrix AG <tpmdd@sirrix.com>
-Date: Tue, 08 Oct 2013 10:14:39 -0500
-In-Reply-To: <1381182353-12449-1-git-send-email-robherring2@gmail.com>
-References: <1381182353-12449-1-git-send-email-robherring2@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100815-5806-0000-0000-000022FDF79D
+	id S1753013Ab3JHPUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 11:20:03 -0400
+X-Greylist: delayed 1070 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 11:20:02 EDT
+From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+To: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Romain Baeriswyl <romainba@abilis.com>
+Subject: [RFC] net: stmmac: keep RXC running in LPI mode to avoid system overload
+Date: Tue,  8 Oct 2013 17:06:35 +0200
+Message-Id: <1381244795-3922-1-git-send-email-romainba@abilis.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-07 at 16:45 -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> xen-tpmfront fails to build on arm64 with the following error:
-> 
+In order to avoid system overload, the clock RXC from the Phy should not be 
+stopped when in LPI mode.
 
-Reviewed-by: Ashley Lai <adlai@linux.vnet.ibm.com>
-Acked-by: Ashley Lai <adlai@linux.vnet.ibm.com>
+With the RTL8211E PHY which support EEE mode and with Apple Airport Extreme that 
+supports it also, the kernel get frozen as soon as some Ethernet transfers are 
+on-going. System seems to be overloaded with too many interrupts. The 'top' 
+command reports often around ~80% irq.
 
-Thanks,
---Ashley Lai
+By letting the RXC clock running even in LPI mode as proposed below, the issue 
+seems solved. Is it the right way to proceed?  
+
+What is the power impact to not stop RXC in LPI mode?
+
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index e9eab29..d40d26b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -314,7 +314,8 @@ bool stmmac_eee_init(struct stmmac_priv *priv)
+ 	/* MAC core supports the EEE feature. */
+ 	if (priv->dma_cap.eee) {
+ 		/* Check if the PHY supports EEE */
+-		if (phy_init_eee(priv->phydev, 1))
++		/* Keeps RXC running in LPI mode to avoid stability issue */
++		if (phy_init_eee(priv->phydev, 0))
+ 			goto out;
+ 
+ 		if (!priv->eee_active) {
+@@ -770,7 +771,8 @@ static void stmmac_adjust_link(struct net_device *dev)
+ 	/* At this stage, it could be needed to setup the EEE or adjust some
+ 	 * MAC related HW registers.
+ 	 */
+-	priv->eee_enabled = stmmac_eee_init(priv);
++	if (new_state)
++		priv->eee_enabled = stmmac_eee_init(priv);
+ 
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ }
+-- 
+1.7.1
 
