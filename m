@@ -1,117 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab3JHMyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:54:13 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:34299 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab3JHMyM (ORCPT
+	id S1754397Ab3JHMyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:54:49 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:42137 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab3JHMyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:54:12 -0400
-Message-ID: <5254005F.4010103@linux.vnet.ibm.com>
-Date: Tue, 08 Oct 2013 18:23:51 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] Perf support to SDT markers
-References: <20131007063911.11693.33624.stgit@hemant-fedora> <5253A04E.4020809@hitachi.com>
-In-Reply-To: <5253A04E.4020809@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100812-0260-0000-0000-000003BF15F9
+	Tue, 8 Oct 2013 08:54:46 -0400
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: platform-driver-x86@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
+        linux-pm@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH v2] platform: x86: asus-wmi: add fan control
+Date: Tue,  8 Oct 2013 07:48:44 -0500
+Message-Id: <1381236524-19633-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.8.4-fc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 11:33 AM, Masami Hiramatsu wrote:
-> Hi,
+Simple driver to enable control of the fan in ASUS laptops. So far this
+has only been tested in ASUS Zenbook Prime UX31A, but according to some
+online reference [1], it should work in other models as well.
 
-Hi Masami and thanks a lot for testing these patches.
+The implementation is very straight-forward, the only caveat is that the
+fan speed needs to be saved after it has been manually changed because
+it won't be reported properly until it goes back to 'auto' mode.
 
->
-> (2013/10/07 15:46), Hemant Kumar wrote:
->> This patchset helps in probing dtrace style markers(SDT) present in user space
->> applications through perf. Notes/markes are placed at important places by the
->> developers. They have a negligible overhead when not enabled. We can enable
->> them and probe at these places and find some important information like the
->> arguments' values, etc.
-> Thank you for updating!
-> By the way, could you rebase this series to the latest -tip kernel next time?
-> It is more convenient for us to test & merge it.
+[1] http://forum.notebookreview.com/asus/705656-fan-control-asus-prime-ux31-ux31a-ux32a-ux32vd.html
 
-Yes, I will rebase this series next time.
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+---
+ drivers/platform/x86/asus-wmi.c | 105 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 105 insertions(+)
 
->
-> [...]
->> - Now use perf to list the markers in the app:
->> # perf probe --markers -x ./user_app
->>
->> %user_app:foo_start
->> %user_app:fun_start
-> Here, what I got.
->
-> $ ./perf probe --markers -x /lib64/librt.so
-> %librt:lll_futex_wake
->
-> OK, it lists up markers.
->
-> $ ./perf probe --markers -x ./perf
-> SDT markers not present!
->    Error : Failed to find SDT markers!(-1)
->
-> OK, this shows an error, INHO, it'd better show which binary doesn't have markers.
-
-OK, will include the binary name too.
-
->
-> $ ./perf probe --markers
-> Failed to open (null)
->    Error : Failed to find SDT markers!(-1)
->
-> Hmm, it's a bit odd error. It should check if there is an elf binary is specified.
-
-Yeah, correct.
-
->
-> $ ./perf probe --markers /lib64/librt.so
-> %librt:lll_futex_wake
->
-> It seems to work without -x. However, that is only when the path is started with /.
-> And also the usage is not described by --help.
->
-> $ ./perf probe --markers ./perf
-> Semantic error :File always requires line number or lazy pattern.
->    Error: Parse Error.  (-22)
->
-> So, to avoid confusion, --markers should abort without -x(--exec) option.
-
-Yes, we can restrict action of --markers for -x option only. I thought 
-of keeping the same behavior as in case of function listing but I guess 
-restricting it would be better since, --markers should only be available 
-in user space.
-
->
->> - And  then use perf probe to add a probe point :
->>
->> # perf probe -x ./user_app -a '%user_app:foo_start'
-> And also, without -x, -a also exits with an odd error message.
->
-> $ ./perf probe -a %libm:slowexp_p6
-> Failed to open (null)
->    Error: Failed to add events. (-1)
-
-Ok, will rectify this behavior.
-
->
-> I'll review each patch soon.
-
-Thanks, looking forward to that.
-
-- Hemant
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 19c313b..5fdfed6 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -78,6 +78,7 @@ MODULE_LICENSE("GPL");
+ #define ASUS_WMI_METHODID_GPID		0x44495047 /* Get Panel ID?? (Resol) */
+ #define ASUS_WMI_METHODID_QMOD		0x444F4D51 /* Quiet MODe */
+ #define ASUS_WMI_METHODID_SPLV		0x4C425053 /* Set Panel Light Value */
++#define ASUS_WMI_METHODID_AGFN		0x4E464741
+ #define ASUS_WMI_METHODID_SFUN		0x4E554653 /* FUNCtionalities */
+ #define ASUS_WMI_METHODID_SDSP		0x50534453 /* Set DiSPlay output */
+ #define ASUS_WMI_METHODID_GDSP		0x50534447 /* Get DiSPlay output */
+@@ -155,6 +156,16 @@ struct bios_args {
+ 	u32 arg1;
+ } __packed;
+ 
++struct fan_args {
++	u16 mfun;
++	u16 sfun;
++	u16 len;
++	u8 stas;
++	u8 err;
++	u8 fan;
++	u32 speed;
++} __packed;
++
+ /*
+  * <platform>/    - debugfs root directory
+  *   dev_id      - current dev_id
+@@ -205,6 +216,9 @@ struct asus_wmi {
+ 	struct asus_rfkill gps;
+ 	struct asus_rfkill uwb;
+ 
++	struct thermal_cooling_device *fan;
++	int fan_speed;
++
+ 	struct hotplug_slot *hotplug_slot;
+ 	struct mutex hotplug_lock;
+ 	struct mutex wmi_lock;
+@@ -1022,6 +1036,90 @@ exit:
+ }
+ 
+ /*
++ * Fan
++ */
++
++static int fan_speed(struct asus_wmi *asus, int write, int fan, unsigned long *speed)
++{
++	struct fan_args args = {
++		.len = sizeof(args),
++		.mfun = 0x13,
++		.sfun = write ? 0x07 : 0x06,
++		.fan = fan,
++		.speed = write ? *speed : 0,
++	};
++	int r;
++	u32 value;
++
++	if (!write && asus->fan_speed >= 0) {
++		*speed = asus->fan_speed;
++		return 0;
++	}
++
++	r = asus_wmi_evaluate_method(ASUS_WMI_METHODID_AGFN, virt_to_phys(&args), 0, &value);
++	if (r || value || args.err)
++		return -1;
++
++	if (write)
++		asus->fan_speed = fan > 0 ? *speed : -1;
++	else
++		*speed = args.speed;
++
++	return 0;
++}
++
++static int fan_set_auto(struct asus_wmi *asus)
++{
++	unsigned long speed = 0;
++	return fan_speed(asus, 1, 0, &speed);
++}
++
++static int fan_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
++{
++	*state = 0xff;
++	return 0;
++}
++
++static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
++{
++	return fan_speed(cdev->devdata, 0, 1, state);
++}
++
++static int fan_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
++{
++	return fan_speed(cdev->devdata, 1, 1, &state);
++}
++
++static const struct thermal_cooling_device_ops fan_cooling_ops = {
++	.get_max_state = fan_get_max_state,
++	.get_cur_state = fan_get_cur_state,
++	.set_cur_state = fan_set_cur_state,
++};
++
++static int asus_wmi_fan_init(struct asus_wmi *asus)
++{
++	struct thermal_cooling_device *cdev;
++
++	if (fan_set_auto(asus))
++		return 0;
++
++	cdev = thermal_cooling_device_register("Fan", asus, &fan_cooling_ops);
++	if (IS_ERR(cdev))
++		return PTR_ERR(cdev);
++	asus->fan = cdev;
++	return 0;
++}
++
++static void asus_wmi_fan_exit(struct asus_wmi *asus)
++{
++	if (!asus->fan)
++		return;
++	fan_set_auto(asus);
++	thermal_cooling_device_unregister(asus->fan);
++	asus->fan = NULL;
++}
++
++/*
+  * Hwmon device
+  */
+ static ssize_t asus_hwmon_pwm1(struct device *dev,
+@@ -1796,6 +1894,10 @@ static int asus_wmi_add(struct platform_device *pdev)
+ 	if (err)
+ 		goto fail_rfkill;
+ 
++	err = asus_wmi_fan_init(asus);
++	if (err)
++		goto fail_fan;
++
+ 	if (asus->driver->quirks->wmi_backlight_power)
+ 		acpi_video_dmi_promote_vendor();
+ 	if (!acpi_video_backlight_support()) {
+@@ -1830,6 +1932,8 @@ fail_debugfs:
+ fail_wmi_handler:
+ 	asus_wmi_backlight_exit(asus);
+ fail_backlight:
++	asus_wmi_fan_exit(asus);
++fail_fan:
+ 	asus_wmi_rfkill_exit(asus);
+ fail_rfkill:
+ 	asus_wmi_led_exit(asus);
+@@ -1855,6 +1959,7 @@ static int asus_wmi_remove(struct platform_device *device)
+ 	asus_wmi_hwmon_exit(asus);
+ 	asus_wmi_led_exit(asus);
+ 	asus_wmi_rfkill_exit(asus);
++	asus_wmi_fan_exit(asus);
+ 	asus_wmi_debugfs_exit(asus);
+ 	asus_wmi_platform_exit(asus);
+ 
+-- 
+1.8.4-fc
 
