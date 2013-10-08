@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab3JHTsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 15:48:37 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39537 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab3JHTse (ORCPT
+	id S1756200Ab3JHTtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:49:31 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:33874 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab3JHTta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 15:48:34 -0400
-Date: Tue, 8 Oct 2013 14:48:19 -0500
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: [PATCH 1/2] vmsplice: unmap gifted pages for recipient
-Message-ID: <20131008194819.GB6129@linux.vnet.ibm.com>
-Mail-Followup-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Rik van Riel <riel@redhat.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Matt Helsley <matt.helsley@gmail.com>,
-	Anthony Liguori <anthony@codemonkey.ws>,
-	Michael Roth <mdroth@linux.vnet.ibm.com>,
-	Lei Li <lilei@linux.vnet.ibm.com>,
-	Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
-	Vlastimil Babka <vbabka@suse.cz>
-References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com>
- <1381177293-27125-2-git-send-email-rcj@linux.vnet.ibm.com>
- <52542F53.4020807@sr71.net>
+	Tue, 8 Oct 2013 15:49:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52542F53.4020807@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100819-1618-0000-0000-000004C16C9B
+In-Reply-To: <20131008193507.GA10145@redhat.com>
+References: <20131005234430.GA22485@localhost>
+	<CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+	<20131008075151.GA15689@localhost>
+	<CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	<20131008185154.GA8258@redhat.com>
+	<20131008190523.GW30970@tucnak.zalov.cz>
+	<20131008193507.GA10145@redhat.com>
+Date: Tue, 8 Oct 2013 12:49:29 -0700
+X-Google-Sender-Auth: I2cgxbtjutmv4paYlEpjU1gpNOw
+Message-ID: <CA+55aFxsp-kiHxbp5gFKbGW7KJJyW=53pXnEP1O5q8LVYY6G0g@mail.gmail.com>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dave Hansen (dave@sr71.net) wrote:
-> On 10/07/2013 01:21 PM, Robert C Jennings wrote:
-> > +					} else {
-> > +						if (vma)
-> > +							zap_page_range(vma,
-> > +								user_start,
-> > +								(user_end -
-> > +								 user_start),
-> > +								NULL);
-> > +						vma = find_vma_intersection(
-> > +								current->mm,
-> > +								useraddr,
-> > +								(useraddr +
-> > +								 PAGE_SIZE));
-> > +						if (!IS_ERR_OR_NULL(vma)) {
-> > +							user_start = useraddr;
-> > +							user_end = (useraddr +
-> > +								    PAGE_SIZE);
-> > +						} else
-> > +							vma = NULL;
-> > +					}
-> 
-> This is pretty unspeakably hideous.  Was there truly no better way to do
-> this?
+On Tue, Oct 8, 2013 at 12:35 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Cough... sorry for off-topic question,
+>
+>         static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
+>         {
+>                 int oldbit;
+>
+>                 asm volatile(LOCK_PREFIX "bts %2,%1\n\t"
+>                              "sbb %0,%0" : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+>
+> doesn't this mean that "ADDR" doesn't need "+" as well?
 
-I was hoping to find a better way to coalesce pipe buffers and zap
-entire VMAs (and it needs better documentation but your argument is with
-structure and I agree). I would love suggestions for improving this but
-that is not to say that I've abandoned it; I'm still looking for ways
-to make this cleaner.
+We use ADDR for some of the non-barrier ones too, that don't have the
+barrier. See clear_bit() and friends..
 
-Doing find_vma() on a single page in the VMA rather than on each and
-then zapping once provides a 50% runtime reduction for the writer when
-tested with a 256MB vmsplice operation.  Based on the result I felt that
-coalescing was justfied but the implementation is ugly.
+> Or at least, perhaps it makes sense to identify the include file which
+> makes the difference. Say, revert the changes in bitops.h, retest, then
+> in atomic.h if the kernel still fails, etc.
 
+Yeah, except Fengguang is the only one seeing this in his automated tests..
+
+              Linus
