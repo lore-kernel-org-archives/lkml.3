@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab3JHJlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:41:52 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39636 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754310Ab3JHJlu (ORCPT
+	id S1755369Ab3JHJmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:42:11 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:52894 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802Ab3JHJmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:41:50 -0400
-Date: Tue, 8 Oct 2013 02:41:44 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: Akira Hayakawa <ruby.wktk@gmail.com>, devel@driverdev.osuosl.org,
-        thornber@redhat.com, snitzer@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, mpatocka@redhat.com,
-        dan.carpenter@oracle.com, joe@perches.com, akpm@linux-foundation.org,
-        m.chehab@samsung.com, ejt@redhat.com, agk@redhat.com,
-        cesarb@cesarb.net
-Subject: Re: [dm-devel] Reworking dm-writeboost [was: Re: staging: Add
- dm-writeboost]
-Message-ID: <20131008094144.GA10261@infradead.org>
-References: <52384E66.6050101@gmail.com>
- <20130917205936.GB12001@redhat.com>
- <523E3522.2060607@gmail.com>
- <524183A2.9050301@gmail.com>
- <20130926034325.GO26872@dastard>
- <20131001082654.GA10326@debian>
- <alpine.LRH.2.02.1310021956130.22612@file01.intranet.prod.int.rdu2.redhat.com>
- <20131004020417.GF4446@dastard>
- <524FC4F4.6050401@gmail.com>
- <20131007234307.GP4446@dastard>
+	Tue, 8 Oct 2013 05:42:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007234307.GP4446@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20131008093638.GO3081@twins.programming.kicks-ass.net>
+References: <CABPqkBR428rdck2Q6_HZAKHeWg3qc5W3nXZchnew1V7oDq+Z2Q@mail.gmail.com>
+	<CAGXu5jLPJRCX2G31khiMyn5eRuAMchF=k3j0qH0MdL7mXUCCrg@mail.gmail.com>
+	<20131002190001.GX3081@twins.programming.kicks-ass.net>
+	<CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
+	<20131002203107.GY3081@twins.programming.kicks-ass.net>
+	<CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
+	<20131003090347.GB3081@twins.programming.kicks-ass.net>
+	<CABPqkBSmYBdBx1vXj3ZJycM311eQPeK6kFxvtm3jtovp-qgm+w@mail.gmail.com>
+	<20131008065449.GL3081@twins.programming.kicks-ass.net>
+	<CABPqkBROM9jZfkU7suD-7=N=M38BCcVgdbgKoe-GE1RhY0puEg@mail.gmail.com>
+	<20131008093638.GO3081@twins.programming.kicks-ass.net>
+Date: Tue, 8 Oct 2013 11:42:06 +0200
+Message-ID: <CABPqkBQgnqhHwAo9hgg5b-UUV1Zwfs=9TC+-xb3BTP6GqJg8Ag@mail.gmail.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 10:43:07AM +1100, Dave Chinner wrote:
-> > Maybe, writeboost should disable deferring barriers
-> > if barrier_deadline_ms parameter is especially 0.
-> > Linux kernel's layered architecture is obviously not always perfect
-> > so there are similar cases in other boundaries
-> > such as O_DIRECT to bypass the page cache.
-> 
-> Right - but you can't detect O_DIRECT at the dm layer. IOWs, you're
-> relying on the user tweaking the corect knobs for their workload.
+On Tue, Oct 8, 2013 at 11:36 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Oct 08, 2013 at 09:15:30AM +0200, Stephane Eranian wrote:
+>> Yes, it is but I am trying to see whether or not we could unify that and
+>> use a single u64 number to uniquely identify each mapping.
+>
+> No you cannot; two unrelated executables which have distinct mm_ids can
+> easily mmap() the same shared file.
 
-You can detect O_DIRECT writes by second guession a special combination
-of REQ_ flags only used there, as cfg tries to treat it special:
-
-#define WRITE_SYNC              (WRITE | REQ_SYNC | REQ_NOIDLE)
-#define WRITE_ODIRECT           (WRITE | REQ_SYNC)
-
-the lack of REQ_NOIDLE when REQ_SYNC is set gives it away.  Not related
-to the FLUSH or FUA flags in any way, though.
-
-Akira, can you explain the workloads where your delay of FLUSH or FUA
-requests helps you in any way?  I very much agree with Dave's reasoning,
-but if you found workloads where your hack helps we should make sure we
-fix them at the place where they are issued.
+That seems to indicate the mm_ids is not attached to the right level of VM
+data structure. But I am okay with keeping it that way and stashing the mm_id
+as a pseudo inode number for the case of non file-backed mappings. If we
+say maj=min=ino=gen=0 means no "info", then any other combinations can
+be used to identify identical mappings. We use actual min,maj, ino, gen
+for file backed, and maj=min=gen=0 + ino = mm_ids for the other cases.
+That should work, shouldn't it?
