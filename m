@@ -1,88 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab3JHOZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:25:46 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:55490 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab3JHOZo (ORCPT
+	id S1755187Ab3JHO03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:26:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36386 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab3JHO00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:25:44 -0400
+	Tue, 8 Oct 2013 10:26:26 -0400
+Message-ID: <525415C2.7000302@ti.com>
+Date: Tue, 8 Oct 2013 10:25:06 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1381198450-2202-1-git-send-email-phillip@squashfs.org.uk>
-References: <1381198450-2202-1-git-send-email-phillip@squashfs.org.uk>
-Date: Tue, 8 Oct 2013 23:25:42 +0900
-X-Google-Sender-Auth: cuYADk0goMk8Qa7ipZrnPI9pfUY
-Message-ID: <CAEwNFnAx5YVkTFgKu++Q1u5CXJ5-Pr6ti1x5JOjqan9WwnkJ3g@mail.gmail.com>
-Subject: Re: [PATCH] Squashfs: Refactor decompressor interface and code
-From: Minchan Kim <minchan@kernel.org>
-To: Phillip Lougher <phillip@squashfs.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>,
+        <joe@perches.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCHv6 02/16] drivers: thermal: introduce device tree parser
+References: <1379537849-28425-1-git-send-email-eduardo.valentin@ti.com> <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com> <52428D13.7080007@freescale.com> <5242F011.4090607@ti.com> <5253C63D.5030904@freescale.com>
+In-Reply-To: <5253C63D.5030904@freescale.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 11:14 AM, Phillip Lougher
-<phillip@squashfs.org.uk> wrote:
-> The decompressor interface and code was written from
-> the point of view of single-threaded operation.  In doing
-> so it mixed a lot of single-threaded implementation specific
-> aspects into the decompressor code and elsewhere which makes it
-> difficult to seamlessly support multiple different decompressor
-> implementations.
->
-> This patch does the following:
->
-> 1.  It removes compressor_options parsing from the decompressor
->     init() function.  This allows the decompressor init() function
->     to be dynamically called to instantiate multiple decompressors,
->     without the compressor options needing to be read and parsed each
->     time.
->
-> 2.  It moves threading and all sleeping operations out of the
->     decompressors.  In doing so, it makes the decompressors
->     non-blocking wrappers which only deal with interfacing with
->     the decompressor implementation.
->
-> 3. It splits decompressor.[ch] into decompressor generic functions
->    in decompressor.[ch], and moves the single threaded
->    decompressor implementation into decompressor_single.c.
->
-> The result of this patch is Squashfs should now be able to
-> support multiple decompressors by adding new decompressor_xxx.c
-> files with specialised implementations of the functions in
-> decompressor_single.c
->
-> This has the following functions
->
-> decompressor_create()
->   - Called at mount time to initialise internal decompressor state.
->   - An opaque pointer to the decompressor private state is returned (or error).
->   - The function is called with a pointer to the parsed and swapped comp_opts
->     structure returned by the new decompressor comp_opts() call.
->
-> decompressor_destroy()
->   - Destroy all decompressor private state
->   - kfree the comp_opts buffer
->
-> decompress()
->   - Select a decompressor or create a new decompressor
->   - Call using whatever locking scheme is necessary
->
-> All decompressor implementation specific private state has been moved from the
-> squashfs_sb_info structure into the opaque private state returned by
-> decompressor_create().   This is deliberate, now all implementation specific
-> code has been moved to decompressor_xxx.c, no other code needs to/or should need
-> to access anything within it.
->
-> Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
+--0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+On 08-10-2013 04:45, Hongbo Zhang wrote:
+> On 09/25/2013 10:15 PM, Eduardo Valentin wrote:
+>> On 25-09-2013 03:13, Hongbo Zhang wrote:
+>>> On 09/19/2013 05:35 AM, Eduardo Valentin wrote:
+>>>>    [...]
+>>>> +
+>>>> +/***   sensor API   ***/
+>>>> +
+>>> You are introducing new concept here, the original framework and driv=
+ers
+>>> cannot use this, right? any further plan to update original framework=
 
-It's a really fantastic clean up. I will implement
-decompressor_multi.c after holiday.
-Thanks for your help!
+>>> for this new feature?
+>>>
+>> Well, not new as such. Just a specific way to register sensors to
+>> thermal framework. What is really new is the fact that we really need =
+to
+>> have sensors decoupled from thermal zone devices, and today we have
+>> these concepts pretty merged together.
+>> To answer your question, for now I am more concerned with the bindings=
 
--- 
-Kind regards,
-Minchan Kim
+>> definition. Once that is at least agreed, then we can follow up with t=
+he
+>> migration of existing drivers. For now, there are two examples in this=
+
+>> series, first one is using one existing thermal driver, which is the T=
+I
+>> SoC thermal driver, and the second one is the hwmon drivers, which are=
+
+>> existing sensor drivers, but are not thermal drivers.
+>>
+>> The plan forward, once this series is accepted is to migrate existing
+>> drivers, yes, so that they can use device tree uniformly. Of course,
+>> this needs help from driver authors.
+>>
+>> My proposal will be to follow up this series with a two fold migration=
+=2E
+>> First step to change the existing thermal drivers to have both, the
+>> current support and the device tree support. And second step, for thos=
+e
+>> who wish to, we could remove the old code containing thermal data and
+>> have only dt support. Of course, this requires drivers authors input.
+>>
+>>
+>>
+>>>> +static struct thermal_zone_device *
+>>>> +thermal_zone_of_add_sensor(struct device_node *zone,
+>>>> +               struct device_node *sensor, void *data,
+>>>> +               int (*get_temp)(void *, long *),
+>>>> +               int (*get_trend)(void *, long *))
+>>>> +{
+>>>> +    struct thermal_zone_device *tzd;
+>>>> +    struct __thermal_zone *tz;
+>>>> +
+>>>> +    tzd =3D thermal_zone_get_zone_by_name(zone->name);
+>>>> +    if (IS_ERR(tzd))
+>>>> +        return ERR_PTR(-EPROBE_DEFER);
+>>>> +
+>>>> [...]
+>>>> +
+>>>> +/*
+>>>> + * Here are the thermal trip types. This must
+>>>> + * match with enum thermal_trip_type at
+>>>> + * include/linux/thermal.h
+>>>> + */
+>>>> +#define THERMAL_TRIP_ACTIVE        0
+>>>> +#define THERMAL_TRIP_PASSIVE        1
+>>>> +#define THERMAL_TRIP_HOT        2
+>>>> +#define THERMAL_TRIP_CRITICAL        3
+>>>> +
+>>> These macros seem duplicated with enum thermal_trip_type in thermal.h=
+,
+>>> do you have further plan to merge them?
+>>> Or by using string "active",  "passive" etc in the dts, then you can
+>>> reuse the original enum definition.
+>> I am changing this so that in DT we have string constants, and we keep=
+ a
+>> map from string to enum, just like we have for phy-mode, as suggested =
+by
+>> Mark.
+>>
+>> You can have a taste of it here:
+>> https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux.git/commit=
+/?h=3Dthermal_work/thermal_core/dt_parser_rfc_v4&id=3D73f16c27fc763495188=
+fba7d6e17b9c986efc6ac
+>>
+>>
+>> I will be reposting this version once we are done with this thread
+>> discussion and I am finished with my current test.
+>>
+>> If you have the time, I would appreciate if you could try the series o=
+n
+>> your board, as I am don't have access to your hardware. It would be
+>> really nice to see how this work is behaving in other environments the=
+n
+>> the one I have.
+>=20
+> We have thermal management plan in next year, currently I don't have
+> proper board to test this.
+> I would like to do it when I have time and board, but I will track thes=
+e
+> thermal treads.
+
+OK Zhang, no worries then.
+
+>>
+>> Thanks for your interest in this work.
+>>
+>>>> +/* On cooling devices upper and lower limits */
+>>>> +#define THERMAL_NO_LIMIT        (-1UL)
+>>>> +
+>>>> +#endif
+>>>> [...]
+>>>
+>>>
+>>>
+>>
+>=20
+>=20
+>=20
+>=20
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJUFcYACgkQCXcVR3XQvP0k8wD+MjEa/5LMbrPDrFTLIppk2Lfd
+ZgQxeYEmhkvE55VVlKwBAJt/vomBnCgYT3HFvxScyx2wg1hRN+yKtXd/EQ1EuD/2
+=K6Op
+-----END PGP SIGNATURE-----
+
+--0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj--
