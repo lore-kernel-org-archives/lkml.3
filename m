@@ -1,227 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab3JHQ2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:28:24 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60692 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3JHQ2W (ORCPT
+	id S1756553Ab3JHQ2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:28:32 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:63903 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab3JHQ22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:28:22 -0400
-Date: Tue, 8 Oct 2013 09:28:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] hotplug: Optimize cpu_hotplug_{begin,done}() using
- rcu_sync
-Message-ID: <20131008162814.GX5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131008102505.404025673@infradead.org>
- <20131008103830.235989898@infradead.org>
+	Tue, 8 Oct 2013 12:28:28 -0400
+Message-ID: <525432A7.9030104@atmel.com>
+Date: Tue, 8 Oct 2013 18:28:23 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008103830.235989898@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100816-0928-0000-0000-0000023E9682
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 18/19] ARM: at91: move pit timer to common clk framework
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375949844-10545-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1375949844-10545-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 12:25:08PM +0200, Peter Zijlstra wrote:
-> Use the fancy new rcu_sync bits from Oleg to optimize the fancy new
-> hotplug lock implementation.
-> 
-> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+On 08/08/2013 10:17, Boris BREZILLON :
+> Use device tree to get the source clock of the PIT (Periodic Interval Timer).
+> If the clock is not found in device tree (or dt is not enabled) we'll try to
+> get it using clk_lookup definitions.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
 > ---
->  include/linux/cpu.h |    7 +++---
->  kernel/cpu.c        |   54 +++++++++++++++++++++++-----------------------------
->  2 files changed, 28 insertions(+), 33 deletions(-)
-> 
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -18,6 +18,7 @@
->  #include <linux/cpumask.h>
->  #include <linux/percpu.h>
->  #include <linux/sched.h>
-> +#include <linux/rcusync.h>
-> 
->  struct device;
-> 
-> @@ -180,7 +181,7 @@ extern void cpu_hotplug_init_task(struct
->  extern void cpu_hotplug_begin(void);
->  extern void cpu_hotplug_done(void);
-> 
-> -extern int __cpuhp_state;
-> +extern struct rcu_sync_struct __cpuhp_rss;
->  DECLARE_PER_CPU(unsigned int, __cpuhp_refcount);
-> 
->  extern void __get_online_cpus(void);
-> @@ -204,7 +205,7 @@ static inline void get_online_cpus(void)
->  	 * writer will see anything we did within this RCU-sched read-side
->  	 * critical section.
->  	 */
-> -	if (likely(!__cpuhp_state))
-> +	if (likely(rcu_sync_is_idle(&__cpuhp_rss)))
->  		__this_cpu_inc(__cpuhp_refcount);
->  	else
->  		__get_online_cpus(); /* Unconditional memory barrier. */
-> @@ -231,7 +232,7 @@ static inline void put_online_cpus(void)
->  	/*
->  	 * Same as in get_online_cpus().
->  	 */
-> -	if (likely(!__cpuhp_state))
-> +	if (likely(rcu_sync_is_idle(&__cpuhp_rss)))
->  		__this_cpu_dec(__cpuhp_refcount);
->  	else
->  		__put_online_cpus(); /* Unconditional memory barrier. */
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -49,14 +49,15 @@ static int cpu_hotplug_disabled;
-> 
->  #ifdef CONFIG_HOTPLUG_CPU
-> 
-> -enum { readers_fast = 0, readers_slow, readers_block };
-> +enum { readers_slow, readers_block };
-> 
-> -int __cpuhp_state;
-> -EXPORT_SYMBOL_GPL(__cpuhp_state);
-> +DEFINE_RCU_SCHED_SYNC(__cpuhp_rss);
-> +EXPORT_SYMBOL_GPL(__cpuhp_rss);
-> 
->  DEFINE_PER_CPU(unsigned int, __cpuhp_refcount);
->  EXPORT_PER_CPU_SYMBOL_GPL(__cpuhp_refcount);
-> 
-> +static int cpuhp_state = readers_slow;
->  static atomic_t cpuhp_waitcount;
->  static DECLARE_WAIT_QUEUE_HEAD(cpuhp_readers);
->  static DECLARE_WAIT_QUEUE_HEAD(cpuhp_writer);
-> @@ -68,7 +69,6 @@ void cpu_hotplug_init_task(struct task_s
-> 
->  void __get_online_cpus(void)
->  {
-> -again:
->  	__this_cpu_inc(__cpuhp_refcount);
-> 
->  	/*
-> @@ -77,7 +77,7 @@ void __get_online_cpus(void)
->  	 * increment-on-one-CPU-and-decrement-on-another problem.
->  	 *
->  	 * And yes, if the reader misses the writer's assignment of
-> -	 * readers_block to __cpuhp_state, then the writer is
-> +	 * readers_block to cpuhp_state, then the writer is
->  	 * guaranteed to see the reader's increment.  Conversely, any
->  	 * readers that increment their __cpuhp_refcount after the
->  	 * writer looks are guaranteed to see the readers_block value,
-> @@ -88,7 +88,7 @@ void __get_online_cpus(void)
-> 
->  	smp_mb(); /* A matches D */
-> 
-> -	if (likely(__cpuhp_state != readers_block))
-> +	if (likely(cpuhp_state != readers_block))
->  		return;
-> 
->  	/*
-> @@ -108,19 +108,19 @@ void __get_online_cpus(void)
->  	 * and reschedule on the preempt_enable() in get_online_cpus().
->  	 */
->  	preempt_enable_no_resched();
-> -	__wait_event(cpuhp_readers, __cpuhp_state != readers_block);
-> +	__wait_event(cpuhp_readers, cpuhp_state != readers_block);
->  	preempt_disable();
-> 
-> +	__this_cpu_inc(__cpuhp_refcount);
+>   arch/arm/mach-at91/at91sam926x_time.c |   14 +++++++++++++-
+>   1 file changed, 13 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
+> index 3a4bc2e..8ac976a 100644
+> --- a/arch/arm/mach-at91/at91sam926x_time.c
+> +++ b/arch/arm/mach-at91/at91sam926x_time.c
+> @@ -39,6 +39,7 @@
+>   static u32 pit_cycle;		/* write-once */
+>   static u32 pit_cnt;		/* access only w/system irq blocked */
+>   static void __iomem *pit_base_addr __read_mostly;
+> +static struct clk *mck;
+>
+>   static inline unsigned int pit_read(unsigned int reg_offset)
+>   {
+> @@ -195,10 +196,14 @@ static int __init of_at91sam926x_pit_init(void)
+>   	if (!pit_base_addr)
+>   		goto node_err;
+>
+> +	mck = of_clk_get(np, 0);
 > +
->  	/*
-> -	 * Given we've still got preempt_disabled and new cpu_hotplug_begin()
-> -	 * must do a synchronize_sched() we're guaranteed a successfull
-> -	 * acquisition this time -- even if we wake the current
-> -	 * cpu_hotplug_end() now.
-> +	 * cpu_hotplug_done() waits until all pending readers are gone;
-> +	 * this means that a new cpu_hotplug_begin() must observe our
-> +	 * refcount increment and wait for it to go away.
->  	 */
-> -	if (atomic_dec_and_test(&cpuhp_waitcount))
-> -		wake_up(&cpuhp_writer);
-> 
-> -	goto again;
-> +	if (atomic_dec_and_test(&cpuhp_waitcount)) /* A */
-> +		wake_up(&cpuhp_writer);
->  }
->  EXPORT_SYMBOL_GPL(__get_online_cpus);
-> 
-> @@ -186,21 +186,18 @@ void cpu_hotplug_begin(void)
->  	current->cpuhp_ref++;
-> 
->  	/* Notify readers to take the slow path. */
-> -	__cpuhp_state = readers_slow;
-> -
-> -	/* See percpu_down_write(); guarantees all readers take the slow path */
-> -	synchronize_sched();
-> +	rcu_sync_enter(&__cpuhp_rss);
-> 
->  	/*
->  	 * Notify new readers to block; up until now, and thus throughout the
-> -	 * longish synchronize_sched() above, new readers could still come in.
-> +	 * longish rcu_sync_enter() above, new readers could still come in.
->  	 */
-> -	__cpuhp_state = readers_block;
-> +	cpuhp_state = readers_block;
-> 
->  	smp_mb(); /* D matches A */
-> 
->  	/*
-> -	 * If they don't see our writer of readers_block to __cpuhp_state,
-> +	 * If they don't see our writer of readers_block to cpuhp_state,
->  	 * then we are guaranteed to see their __cpuhp_refcount increment, and
->  	 * therefore will wait for them.
->  	 */
-> @@ -218,26 +215,23 @@ void cpu_hotplug_done(void)
->  	 * that new readers might fail to see the results of this writer's
->  	 * critical section.
->  	 */
-> -	__cpuhp_state = readers_slow;
-> +	cpuhp_state = readers_slow;
->  	wake_up_all(&cpuhp_readers);
-> 
->  	/*
->  	 * The wait_event()/wake_up_all() prevents the race where the readers
-> -	 * are delayed between fetching __cpuhp_state and blocking.
-> +	 * are delayed between fetching cpuhp_state and blocking.
->  	 */
-> 
-> -	/* See percpu_up_write(); readers will no longer attempt to block. */
-> -	synchronize_sched();
-> -
-> -	/* Let 'em rip */
-> -	__cpuhp_state = readers_fast;
->  	current->cpuhp_ref--;
-> 
->  	/*
-> -	 * Wait for any pending readers to be running. This ensures readers
-> -	 * after writer and avoids writers starving readers.
-> +	 * Wait for any pending readers to be running. This avoids writers
-> +	 * starving readers.
->  	 */
->  	wait_event(cpuhp_writer, !atomic_read(&cpuhp_waitcount));
+>   	/* Get the interrupts property */
+>   	ret = irq_of_parse_and_map(np, 0);
+>   	if (!ret) {
+>   		pr_crit("AT91: PIT: Unable to get IRQ from DT\n");
+> +		if (!IS_ERR(mck))
+> +			clk_put(mck);
+>   		goto ioremap_err;
+>   	}
+>   	at91sam926x_pit_irq.irq = ret;
+> @@ -230,6 +235,8 @@ void __init at91sam926x_pit_init(void)
+>   	unsigned	bits;
+>   	int		ret;
+>
+> +	mck = ERR_PTR(-ENOENT);
 > +
-> +	rcu_sync_exit(&__cpuhp_rss);
->  }
-> 
->  /*
-> 
-> 
+>   	/* For device tree enabled device: initialize here */
+>   	of_at91sam926x_pit_init();
+>
+> @@ -237,7 +244,12 @@ void __init at91sam926x_pit_init(void)
+>   	 * Use our actual MCK to figure out how many MCK/16 ticks per
+>   	 * 1/HZ period (instead of a compile-time constant LATCH).
+>   	 */
+> -	pit_rate = clk_get_rate(clk_get(NULL, "mck")) / 16;
+> +	if (IS_ERR(mck))
+> +		mck = clk_get(NULL, "mck");
+> +
+> +	if (IS_ERR(mck))
+> +		panic("AT91: PIT: Unable to get mck clk\n");
+> +	pit_rate = clk_get_rate(mck) / 16;
+>   	pit_cycle = (pit_rate + HZ/2) / HZ;
+>   	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
+>
+>
 
+
+-- 
+Nicolas Ferre
