@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3JHS23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 14:28:29 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:64422 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3JHS22 (ORCPT
+	id S1756045Ab3JHS34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 14:29:56 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19385 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab3JHS3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 14:28:28 -0400
+	Tue, 8 Oct 2013 14:29:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18dtah7Tn5Ror/wJlU76Dsl
+Date: Tue, 8 Oct 2013 11:29:45 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: joerg Reisenweber <joerg@openmoko.org>
+Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] RX-51: Add missing max_current to
+ rx51_lp5523_led_config
+Message-ID: <20131008182945.GI8313@atomide.com>
+References: <1379541145-25934-1-git-send-email-pali.rohar@gmail.com>
+ <201309200020.58671@pali>
+ <201309231450.12171@pali>
+ <201309231506.37942.joerg@openmoko.org>
 MIME-Version: 1.0
-In-Reply-To: <1745634600.2780529.1381236014344.JavaMail.root@redhat.com>
-References: <CAOMFOmWbvLCM=a2n_ojnWVeeyvMg=v1T03Q44q-q4jgR7sH+DA@mail.gmail.com>
-	<20131008080604.GA4820@localhost>
-	<1745634600.2780529.1381236014344.JavaMail.root@redhat.com>
-Date: Tue, 8 Oct 2013 11:28:26 -0700
-Message-ID: <CAOMFOmUXxZNCTcoYOu_-aLPWUQ10jNoa3dDb4RUs2DCmGHqfKQ@mail.gmail.com>
-Subject: Re: mm: Export 'pageflag_names' array
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Dave Anderson <anderson@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        gthelen@google.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309231506.37942.joerg@openmoko.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+* joerg Reisenweber <joerg@openmoko.org> [130923 06:14]:
+> On Mon 23 September 2013 14:50:12 Pali Rohár wrote:
+> > Hi Tony,
+> > 
+> > here is new version (v2) of patch which adding max_current values to rx51
+> > board data. According to joerg safe value for max_current is 100 (10 mA).
+> > 
+> > 
+> > RX-51: Add missing max_current to rx51_lp5523_led_config
+> > 
+> > File drivers/leds/leds-lp55xx-common.c refuse to change led_current sysfs
+> > attribute if value is higher than max_current specified in board file. By
+> > default global C variables are zero, so changing always failed. This patch
+> > adding missing max_current and setting it to max safe value 100 (10 mA).
+...
+ 
+> Reviewed and found logically and technically correct
+> Signed-off-by: Joerg Reisenweber <joerg AT openmoko DOT org>
 
-On Tue, Oct 8, 2013 at 5:40 AM, Dave Anderson <anderson@redhat.com> wrote:
->
->
-> ----- Original Message -----
->> Hi Anatol,
->>
->> On Mon, Oct 07, 2013 at 10:53:32AM -0700, Anatol Pomozov wrote:
->> > Hi Wu
->> >
->> > I have a request wrt your old commit 718a38211.
->> >
->> > I think it makes sense to export array pageflag_names so kernel dump
->> > debug tools (like 'crash') can use it as well. Currently the tool
->> > hard-codes flag names but it is suboptimal as flags are different for
->> > different configs.
->> >
->> > What do you think? (I can send a patch if you are ok).
->>
->> I wonder if the KPF_* defined in
->>
->>         include/uapi/linux/kernel-page-flags.h
->>
->> fit your needs. These are kernel page flags exported to the user space
->> and will be maintained stable and immune to kconfig changes. You can
->> find use examples of them in
->>
->>         fs/proc/page.c
->>         tools/vm/page-types.c
->>
->> Thanks,
->> Fengguang
->>
->
-> Nothing is required for the crash utility.  The pageflag_names array (as well
-> as the pageflags enumerator) are readily available in the kernel debuginfo
-> data.
+Thanks, I'll apply this into omap-for-v3.12/fixes as it's a
+regression.
 
-D'oh. You are right Dave. Everyone, please ignore my original question
-I mislooked this variable in symbols map (or maybe looked at an old
-kernel map).
+Regards,
 
-Dave, do you think 'crash' should use pageflag_names to output flag names?
+Tony
