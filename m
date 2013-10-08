@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab3JHUUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:20:07 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:52102 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752488Ab3JHUUE (ORCPT
+	id S1755265Ab3JHUUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:20:22 -0400
+Received: from mail-ye0-f170.google.com ([209.85.213.170]:58147 "EHLO
+	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab3JHUUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:20:04 -0400
-Date: Tue, 8 Oct 2013 16:19:59 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Dave Jones <davej@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
-Subject: Re: [PATCH 6/6] x86: Allow disabling HW_BREAKPOINTS and PERF_EVENTS
-Message-ID: <20131008201959.GC15214@home.goodmis.org>
-References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
- <1380922788-23112-7-git-send-email-andi@firstfloor.org>
- <20131006164934.GA15167@gmail.com>
- <20131008065938.GA4333@gmail.com>
- <20131008155131.GA31975@redhat.com>
- <5254313F.4030409@gmail.com>
- <20131008162451.GA1848@redhat.com>
- <20131008193613.GA7315@gmail.com>
+	Tue, 8 Oct 2013 16:20:13 -0400
+Subject: [PATCH 0/2] Remove ksets from sysfs eagerly
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>
+Date: Tue, 08 Oct 2013 14:20:07 -0600
+Message-ID: <20131008201915.19377.34185.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008193613.GA7315@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 09:36:13PM +0200, Ingo Molnar wrote:
-> 
-> Peter is working on it - but it's slow. Could you try to disable 
-> sys_perf_open, ptrace and the NMI watchdog? No perf functionality should 
-> be used in that case. If you disable CONFIG_FTRACE then no ftrace 
-> functionality should be used.
-> 
+With CONFIG_DEBUG_KOBJECT_RELEASE=y, kobject release is delayed even after
+the last reference to the object is dropped.
 
-Dave,
+With this turned on, Veaceslav and Zdenek noticed that when we enable,
+disable, and re-enable MSIs, we often see errors like "sysfs: cannot create
+duplicate filename '/devices/pci0000:00/.../msi_irqs'".  This happens
+when we unload and reload drivers that use MSI.
 
-The ftrace oops you've been seeing is from the function tracer, you don't
-need to disable all of ftrace, just CONFIG_FUNCTION_TRACER (and anything
-that selects it: CONFIG_STACK_TRACER).
+The reason is that the MSI disable path uses kset_unregister(dev->msi_kset),
+which doesn't remove the kset from sysfs until the the kobject release
+function is called.  With CONFIG_DEBUG_KOBJECT_RELEASE, the release is
+obviously delayed, but even without it, the release will be delayed if
+somebody has the kset sysfs file open when kset_unregister() is called.
 
--- Steve
+We could work around this by explicitly calling
+"kobject_del(&dev->msi_kset->kobj)", but that seems clunky and other
+kset_unregister() users are likely to have similar problems.
 
+The idea of this patch is to make kset_unregister() unlink the kset from
+sysfs immediately, before dropping the kset reference.
+
+---
+
+Bjorn Helgaas (2):
+      kobject: remove kset from sysfs immediately in kset_unregister()
+      kobject: fix kset sample error path
+
+
+ Documentation/kobject.txt      |    3 ++-
+ lib/kobject.c                  |    1 +
+ samples/kobject/kset-example.c |    1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
