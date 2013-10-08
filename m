@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab3JHS7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 14:59:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab3JHS7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 14:59:10 -0400
-Date: Tue, 8 Oct 2013 20:51:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Richard Henderson <rth@twiddle.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-Message-ID: <20131008185154.GA8258@redhat.com>
-References: <20131005234430.GA22485@localhost> <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com> <20131008075151.GA15689@localhost> <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	id S1754597Ab3JHTDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:03:12 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:40751 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3JHTDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 15:03:10 -0400
+Date: Tue, 8 Oct 2013 21:03:08 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: Mike Frysinger <vapier@gentoo.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: warn about headers using __[us]{8, 16, 32, 64}
+ types w/out linux/types.h
+In-Reply-To: <20081230104303.GA486@uranus.ravnborg.org>
+Message-ID: <alpine.DEB.2.02.1310082100020.2894@ayla.of.borg>
+References: <1230553127-953-1-git-send-email-vapier@gentoo.org> <20081229132456.GA6938@uranus.ravnborg.org> <200812291527.53317.vapier@gentoo.org> <20081230104303.GA486@uranus.ravnborg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08, Linus Torvalds wrote:
->
-> (not yet merged), see:
->
->     http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=0c44c2d0f459cd7e275242b72f500137c4fa834d
+On Tue, 30 Dec 2008, Sam Ravnborg wrote:
+> Subject: [PATCH] kbuild: add checks for include of linux/types in userspace headers
 
-I do not really understand inline assembly constraints, but I'll ask
-anyway.
+> If we see __[us](8|16|32|64) then we must include <linux/types.h>
 
-	+#define __GEN_RMWcc(fullop, var, cc, ...) \
-	+do { \
-	+ asm volatile goto (fullop "; j" cc " %l[cc_label]" \
-	+ : : "m" (var), ## __VA_ARGS__ \
-	      ^^^^^^^^^
+> +	if ($line =~ m/__[us](8|16|32|64)\b/) {
+> +		printf STDERR "$filename:$lineno: " .
+> +		              "found __[us]{8,16,32,64} type " .
+> +		              "without #include <linux/types.h>\n";
+> +		$linux_types = 2;
+> +		# Warn until headers are all fixed
+> +		#$ret = 1;
+> +	}
 
-don't we need
+FWIW, this also triggers on __[us]{8,16,32,64} in comments instead of in
+actual code (just got caught ;-).
 
-	"+m" (var)
+Gr{oetje,eeting}s,
 
-here?
+						Geert
 
-Oleg.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
