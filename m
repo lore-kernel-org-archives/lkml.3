@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab3JHCvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:51:47 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:63402 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab3JHCvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:51:38 -0400
+	id S1753778Ab3JHCvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:51:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753253Ab3JHCvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 22:51:35 -0400
+Message-ID: <525372EF.9090307@redhat.com>
+Date: Tue, 08 Oct 2013 10:50:23 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131008021452.GA6456@localhost>
-References: <20131006082340.GA24568@localhost>
-	<CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
-	<20131007021118.GA27927@localhost>
-	<20131007051038.GA9764@localhost>
-	<CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
-	<20131007083505.GA22585@localhost>
-	<CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
-	<CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
-	<20131008020918.GA1220@localhost>
-	<20131008021452.GA6456@localhost>
-Date: Mon, 7 Oct 2013 19:51:37 -0700
-X-Google-Sender-Auth: eto4HSbwSWygf_I9SGurPRDPY-A
-Message-ID: <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] tun: don't look at current when non-blocking
+References: <20131006182512.GA16504@redhat.com>
+In-Reply-To: <20131006182512.GA16504@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 7, 2013 at 7:14 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+On 10/07/2013 02:25 AM, Michael S. Tsirkin wrote:
+> We play with a wait queue even if socket is
+> non blocking. This is an obvious waste.
+> Besides, it will prevent calling the non blocking
+> variant when current is not valid.
 >
-> I got a call trace containing parport_pc_probe_port() (is it the
-> culprit?) after recompiling kernel with
->
-> CONFIG_DEBUG_OBJECTS_TIMERS=y
->
-> and booting with "ignore_loglevel". Here is the log for two kernel boots.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
 
-Ok, so it's definitely parport_pc. I don't see what it would do wrong, though.
+Acked-by: Jason Wang <jasowang@redhat.com>
+>  drivers/net/tun.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 807815f..7cb105c 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -1293,7 +1293,8 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+>  	if (unlikely(!noblock))
+>  		add_wait_queue(&tfile->wq.wait, &wait);
+>  	while (len) {
+> -		current->state = TASK_INTERRUPTIBLE;
+> +		if (unlikely(!noblock))
+> +			current->state = TASK_INTERRUPTIBLE;
+>  
+>  		/* Read frames from the queue */
+>  		if (!(skb = skb_dequeue(&tfile->socket.sk->sk_receive_queue))) {
+> @@ -1320,9 +1321,10 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+>  		break;
+>  	}
+>  
+> -	current->state = TASK_RUNNING;
+> -	if (unlikely(!noblock))
+> +	if (unlikely(!noblock)) {
+> +		current->state = TASK_RUNNING;
+>  		remove_wait_queue(&tfile->wq.wait, &wait);
+> +	}
+>  
+>  	return ret;
+>  }
 
-               Linus
