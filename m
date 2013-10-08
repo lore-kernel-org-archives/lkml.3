@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab3JHCzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:55:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64350 "EHLO mx1.redhat.com"
+	id S1753469Ab3JHC5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:57:21 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48985 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab3JHCzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:55:38 -0400
-Date: Mon, 07 Oct 2013 22:54:54 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, linux-mm@kvack.org,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
-Message-ID: <1381200894-g4p1jfd3-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20131007175125.7bb300853d37b6a64eba248d@linux-foundation.org>
-References: <1380913335-17466-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <5252B56C.8030903@parallels.com>
- <1381155304-2ro6e10t-mutt-n-horiguchi@ah.jp.nec.com>
- <20131007175125.7bb300853d37b6a64eba248d@linux-foundation.org>
-Subject: Re: [PATCH 1/2 v2] smaps: show VM_SOFTDIRTY flag in VmFlags line
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20131007175125.7bb300853d37b6a64eba248d@linux-foundation.org>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1751431Ab3JHC5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 22:57:19 -0400
+From: Kees Cook <keescook@chromium.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, joe@perches.com,
+        keescook@chromium.org
+Subject: [PATCH 3/3] vsprintf: ignore %n again
+Date: Mon,  7 Oct 2013 19:56:51 -0700
+Message-Id: <1381201011-4230-3-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381201011-4230-1-git-send-email-keescook@chromium.org>
+References: <1381201011-4230-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 05:51:25PM -0700, Andrew Morton wrote:
-> On Mon, 07 Oct 2013 10:15:04 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> 
-> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Date: Fri, 4 Oct 2013 13:42:13 -0400
-> > Subject: [PATCH] smaps: show VM_SOFTDIRTY flag in VmFlags line
-> > 
-> > This flag shows that the VMA is "newly created" and thus represents
-> > "dirty" in the task's VM.
-> > You can clear it by "echo 4 > /proc/pid/clear_refs."
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  fs/proc/task_mmu.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > index 7366e9d..c591928 100644
-> > --- a/fs/proc/task_mmu.c
-> > +++ b/fs/proc/task_mmu.c
-> > @@ -561,6 +561,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
-> >  		[ilog2(VM_NONLINEAR)]	= "nl",
-> >  		[ilog2(VM_ARCH_1)]	= "ar",
-> >  		[ilog2(VM_DONTDUMP)]	= "dd",
-> > +#ifdef CONFIG_MEM_SOFT_DIRTY
-> > +		[ilog2(VM_SOFTDIRTY)]	= "sd",
-> > +#endif
-> >  		[ilog2(VM_MIXEDMAP)]	= "mm",
-> >  		[ilog2(VM_HUGEPAGE)]	= "hg",
-> >  		[ilog2(VM_NOHUGEPAGE)]	= "nh",
-> 
-> Documentation/filesystems/proc.txt needs updating, please.
+This ignores %n in printf again, as was originally documented. Implementing
+%n poses a greater security risk than utility, so it should stay ignored.
+To help anyone attempting to use %n, a warning will be emitted if it is
+encountered.
 
-OK. Here's the revised one.
+Based on earlier patch by Joe Perches.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Joe Perches <joe@perches.com>
 ---
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Mon, 7 Oct 2013 22:52:00 -0400
-Subject: [PATCH] smaps: show VM_SOFTDIRTY flag in VmFlags line
+ lib/vsprintf.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
-This flag shows that the VMA is "newly created" and thus represents
-"dirty" in the task's VM.
-You can clear it by "echo 4 > /proc/pid/clear_refs."
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- Documentation/filesystems/proc.txt | 1 +
- fs/proc/task_mmu.c                 | 3 +++
- 2 files changed, 4 insertions(+)
-
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 823c95f..22d89aa3 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -460,6 +460,7 @@ flags associated with the particular virtual memory area in two letter encoded
-     nl  - non-linear mapping
-     ar  - architecture specific flag
-     dd  - do not include area into core dump
-+    sd  - soft-dirty flag
-     mm  - mixed map area
-     hg  - huge page advise flag
-     nh  - no-huge page advise flag
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 7366e9d..c591928 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -561,6 +561,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
- 		[ilog2(VM_NONLINEAR)]	= "nl",
- 		[ilog2(VM_ARCH_1)]	= "ar",
- 		[ilog2(VM_DONTDUMP)]	= "dd",
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+		[ilog2(VM_SOFTDIRTY)]	= "sd",
-+#endif
- 		[ilog2(VM_MIXEDMAP)]	= "mm",
- 		[ilog2(VM_HUGEPAGE)]	= "hg",
- 		[ilog2(VM_NOHUGEPAGE)]	= "nh",
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 26559bd..478c30e 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1683,18 +1683,16 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+ 			break;
+ 
+ 		case FORMAT_TYPE_NRCHARS: {
+-			u8 qualifier = spec.qualifier;
++			/*
++			 * Since %n poses a greater security risk than
++			 * utility, ignore %n and skip its argument.
++			 */
++			void *skip_arg;
+ 
+-			if (qualifier == 'l') {
+-				long *ip = va_arg(args, long *);
+-				*ip = (str - buf);
+-			} else if (_tolower(qualifier) == 'z') {
+-				size_t *ip = va_arg(args, size_t *);
+-				*ip = (str - buf);
+-			} else {
+-				int *ip = va_arg(args, int *);
+-				*ip = (str - buf);
+-			}
++			WARN_ONCE(1, "Please remove ignored %%n in '%s'\n",
++					old_fmt);
++
++			skip_arg = va_arg(args, void *);
+ 			break;
+ 		}
+ 
 -- 
-1.8.3.1
-
-
-
-
+1.7.9.5
 
