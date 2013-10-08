@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab3JHR4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 13:56:34 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:51967 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775Ab3JHR4c convert rfc822-to-8bit (ORCPT
+	id S1755949Ab3JHR5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 13:57:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38892 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab3JHR5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 13:56:32 -0400
-Date: Tue, 8 Oct 2013 19:59:49 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: Dove: Add the audio device to the Cubox DT
-Message-ID: <20131008195949.0673f83e@armhf>
-In-Reply-To: <20131008161145.GJ5402@titan.lakedaemon.net>
-References: <20130828113521.35c53365@armhf>
-	<521DCD80.9010105@gmail.com>
-	<20130831125128.0e3a23c7@armhf>
-	<140d8d8a23f.2784.107cef0f820c2f5d7b7f41463071c310@gmail.com>
-	<20130926101147.217015e1@armhf>
-	<5243F0CE.9000301@gmail.com>
-	<20130926132859.04ad4407@armhf>
-	<5246E747.6020103@gmail.com>
-	<20131003181716.6d03d576@armhf>
-	<20131008161145.GJ5402@titan.lakedaemon.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Oct 2013 13:57:40 -0400
+Message-ID: <52544792.1080005@codeaurora.org>
+Date: Tue, 08 Oct 2013 10:57:38 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Andi Shyti <andi@etezian.org>, Kumar Gala <galak@codeaurora.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Use of drivers/platform and matching include?
+References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org> <20131007064852.GC5896@jack.whiskey>
+In-Reply-To: <20131007064852.GC5896@jack.whiskey>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Oct 2013 12:11:45 -0400
-Jason Cooper <jason@lakedaemon.net> wrote:
+On 10/6/2013 11:48 PM, Andi Shyti wrote:
+> Hi,
+>
+>> As we look at upstreaming more support for the Qualcomm MSM SoCs there are a number of drivers or library like routines that are unique to the MSM platform, we are thinking that putting them under:
+> just a question, is this code the one you have already in
+> codeaurora for 8974/8226/8626/8610 etc?
 
-> Jean-Francois,
-> 
-> On Thu, Oct 03, 2013 at 06:17:16PM +0200, Jean-Francois Moine wrote:
-> > It seems that my patch about adding s/pdif to the kirkwood audio driver
-> > has not been accepted yet...
-> 
-> Looking over that conversation does not give the impression that
-> concerns were resolved.  I'm a little short on time atm, all I can add
-> definitively is that I agree with Thomas wrt the compatible strings.
-> They should be named after the first compatible IP block (in this case,
-> kirkwood).
-> 
-> Please submit a fix for v3.12-rc cleaning up what Mark Brown accepted so
-> we don't have to maintain it indefinitely, and we'll see if we can work
-> out the rest in fairly short order.  Posting a new version of series
-> would help kick off that conversation... ;-)
+Yes.
+> Thanks,
+> Andi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Jason,
 
-Thank you, I had forgotten this patch series. New submit done.
-
-As it is a new development, it may go to 3.13. The compatible string
-has been updated by Thomas and it is present in 3.12-rc1.
-
-In my quoted message, I was thinking about the patch:
-
-[PATCH] ASoC: kirkwood: add S/PDIF support
-
-dated 24 Sep 2013.
+Thanks,
+Rohit Vaswani
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+
