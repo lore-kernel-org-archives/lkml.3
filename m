@@ -1,75 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab3JHAJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:09:20 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:37691 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3JHAJT convert rfc822-to-8bit (ORCPT
+	id S1753897Ab3JHAKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:10:37 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:60017 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab3JHAKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:09:19 -0400
+	Mon, 7 Oct 2013 20:10:35 -0400
+Message-ID: <52534D7B.9060003@gmail.com>
+Date: Mon, 07 Oct 2013 20:10:35 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1381185204.2081.221.camel@joe-AO722>
-References: <1381184340-11190-1-git-send-email-geyslan@gmail.com>
-	<1381185204.2081.221.camel@joe-AO722>
-Date: Mon, 7 Oct 2013 21:09:18 -0300
-Message-ID: <CAGG-pURYyCV4waC8Z+5qAd1mAB2ZHhEkRaGspFuyEDrvj_dTdQ@mail.gmail.com>
-Subject: Re: [PATCH] 9p: unsigned/signed wrap in p9/unix modes.
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, rminnich@sandia.gov,
-        lucho@ionkov.net, v9fs-developer@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, kernel-br <kernel-br@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jan Kara <jack@suse.cz>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 18/26] mm: Convert process_vm_rw_pages() to use get_user_pages_unlocked()
+References: <1380724087-13927-1-git-send-email-jack@suse.cz> <1380724087-13927-19-git-send-email-jack@suse.cz> <524C4AA1.7000409@gmail.com> <20131002193631.GB16998@quack.suse.cz> <524DF246.9050309@gmail.com> <20131007205508.GE30441@quack.suse.cz>
+In-Reply-To: <20131007205508.GE30441@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe,
-
-Thank you for reply.
-
-What do you think about:
-
-                 strncpy(ext, stat->extension, sizeof(ext));
-+                 if (sscanf(ext, "%c %u %u", &type, &major, &minor) < 3) {
-+                                  p9_debug(P9_DEBUG_ERROR,
-+                                  "It's necessary define type, major
-and minor values when using P9_DMDEVICE");
-+                                  return res;
-+                 }
-                 switch (type) {
-                 case 'c':
-                         res |= S_IFCHR;
-                         break;
-...
-                 *rdev = MKDEV(major, minor);
-
-Geyslan Gregório Bem
-hackingbits.com
-
-
-2013/10/7 Joe Perches <joe@perches.com>:
-> On Mon, 2013-10-07 at 19:19 -0300, Geyslan G. Bem wrote:
->> Changes the sign type to unsigned, avoiding the possibility of
->> wrap when ORing the p9 or unix bit modes.
-> []
->> diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-> []
->> @@ -144,7 +144,7 @@ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
->>       else if ((mode & P9_DMDEVICE) && (v9fs_proto_dotu(v9ses))
->>                && (v9ses->nodev == 0)) {
->>               char type = 0, ext[32];
->> -             int major = -1, minor = -1;
->> +             u32 major = 0, minor = 0;
+(10/7/13 4:55 PM), Jan Kara wrote:
+> On Thu 03-10-13 18:40:06, KOSAKI Motohiro wrote:
+>> (10/2/13 3:36 PM), Jan Kara wrote:
+>>> On Wed 02-10-13 12:32:33, KOSAKI Motohiro wrote:
+>>>> (10/2/13 10:27 AM), Jan Kara wrote:
+>>>>> Signed-off-by: Jan Kara <jack@suse.cz>
+>>>>> ---
+>>>>>    mm/process_vm_access.c | 8 ++------
+>>>>>    1 file changed, 2 insertions(+), 6 deletions(-)
+>>>>>
+>>>>> diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
+>>>>> index fd26d0433509..c1bc47d8ed90 100644
+>>>>> --- a/mm/process_vm_access.c
+>>>>> +++ b/mm/process_vm_access.c
+>>>>> @@ -64,12 +64,8 @@ static int process_vm_rw_pages(struct task_struct *task,
+>>>>>    	*bytes_copied = 0;
+>>>>>
+>>>>>    	/* Get the pages we're interested in */
+>>>>> -	down_read(&mm->mmap_sem);
+>>>>> -	pages_pinned = get_user_pages(task, mm, pa,
+>>>>> -				      nr_pages_to_copy,
+>>>>> -				      vm_write, 0, process_pages, NULL);
+>>>>> -	up_read(&mm->mmap_sem);
+>>>>> -
+>>>>> +	pages_pinned = get_user_pages_unlocked(task, mm, pa, nr_pages_to_copy,
+>>>>> +					       vm_write, 0, process_pages);
+>>>>>    	if (pages_pinned != nr_pages_to_copy) {
+>>>>>    		rc = -EFAULT;
+>>>>>    		goto end;
+>>>>
+>>>> This is wrong because original code is wrong. In this function, page may
+>>>> be pointed to anon pages. Then, you should keep to take mmap_sem until
+>>>> finish to copying. Otherwise concurrent fork() makes nasty COW issue.
+>>>    Hum, can you be more specific? I suppose you are speaking about situation
+>>> when the remote task we are copying data from/to does fork while
+>>> process_vm_rw_pages() runs. If we are copying data from remote task, I
+>>> don't see how COW could cause any problem. If we are copying to remote task
+>>> and fork happens after get_user_pages() but before copy_to_user() then I
+>>> can see we might be having some trouble. copy_to_user() would then copy
+>>> data into both original remote process and its child thus essentially
+>>> bypassing COW. If the child process manages to COW some of the pages before
+>>> copy_to_user() happens, it can even see only some of the pages. Is that what
+>>> you mean?
 >>
->>               strlcpy(ext, stat->extension, sizeof(ext));
->>               sscanf(ext, "%c %u %u", &type, &major, &minor);
+>> scenario 1: vm_write==0
+>>
+>> Process P1 call get_user_pages(pa, process_pages) in process_vm_rw_pages
+>> P1 unlock mmap_sem.
+>> Process P2 call fork(). and make P3.
+>> P2 write memory pa. now the "process_pages" is owned by P3 (the child process)
+>> P3 write memory pa. and then the content of "process_pages" is changed.
+>> P1 read process_pages as P2's page. but actually, it is P3's data. Then,
+>>    P1 observe garbage, at least unintended, data was read.
+>    Yeah, this really looks buggy because P1 can see data in (supposedly)
+> P2's address space which P2 never wrote there.
 >
-> This bit changes the MKDEV below it.
+>> scenario 2: vm_write==1
+>>
+>> Process P1 call get_user_pages(pa, process_pages) in process_vm_rw_pages.
+>> It makes COW break and any anon page sharing broke.
+>> P1 unlock mmap_sem.
+>> P2 call fork(). and make P3. And, now COW page sharing is restored.
+>> P2 write memory pa. now the "process_pages" is owned by P3.
+>> P3 write memory pa. it mean P3 changes "process_pages".
+>> P1 write process_pages as P2's page. but actually, it is P3's. It
+>> override above P3's write and then P3 observe data corruption.
+>    Yep, this is a similar problem as above. Thanks for pointing this out.
 >
-> I would think that the sscanf return should be
-> checked for 3 and maybe MKDEV should not be
-> constructed when it's not.
->
->
+>> The solution is to keep holding mmap_sem until finishing process_pages
+>> access because mmap_sem prevent fork. and then race never be happen. I
+>> mean you cann't use get_user_pages_unlock() if target address point to
+>> anon pages.
+>    Yeah, if you are accessing third party mm,
+
+one correction. the condition is,
+
+  - third party mm, or
+  - current process have multiple threads and other threads makes fork() and COW break
+
+>you've convinced me you
+> currently need mmap_sem to avoid problems with COW on anon pages. I'm just
+> thinking that this "hold mmap_sem to prevent fork" is somewhat subtle
+> (definitely would deserve a comment) and if it would be needed in more
+> places we might be better off if we have a more explicit mechanism for that
+> (like a special lock, fork sequence count, or something like that).
+
+Hmm..
+
+Actually, I tried this several years ago. But MM people disliked it because
+they prefer faster kernel than simple code. Any additional lock potentially
+makes slower the kernel.
+
+However, I fully agree the current mechanism is too complex and misleading,
+or at least, very hard to understanding. So, any improvement idea is welcome.
+
+> Anyway
+> I'll have this in mind and if I see other places that need this, I'll try
+> to come up with some solution. Thanks again for explanation.
+
+NP.
+
+I tried to explain this at MM summit. but my English is too poor and I couldn't
+explain enough to you. Sorry about that.
+
+
+Anyway, I'd like to fix process_vm_rw_pages() before my memory will be flushed again.
+Thank you for helping remember this bug.
+
