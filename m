@@ -1,34 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab3JHHCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:02:13 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:58096 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3JHHCL (ORCPT
+	id S1754014Ab3JHHKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:10:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44649 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3JHHKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:02:11 -0400
-Date: Tue, 8 Oct 2013 09:02:09 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH v2 07/14] mips: select ARCH_MAY_HAVE_PC_PARPORT
-Message-ID: <20131008070209.GF1615@linux-mips.org>
-References: <1381209030-351-1-git-send-email-msalter@redhat.com>
- <1381209030-351-8-git-send-email-msalter@redhat.com>
+	Tue, 8 Oct 2013 03:10:46 -0400
+X-AuditID: 9c930197-b7bd9ae000006889-8a-5253aff42985
+Date: Tue, 8 Oct 2013 16:12:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
+Message-ID: <20131008071202.GB29509@bbox>
+References: <52534692.7010400@linaro.org>
+ <525347BE.7040606@zytor.com>
+ <525349AE.1070904@linaro.org>
+ <52534AEC.5040403@zytor.com>
+ <20131008001306.GD25780@bbox>
+ <52535EE1.3060700@zytor.com>
+ <20131008020847.GH25780@bbox>
+ <52537326.7000505@gmail.com>
+ <20131008030736.GA29509@bbox>
+ <52538B95.6080208@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381209030-351-8-git-send-email-msalter@redhat.com>
+In-Reply-To: <52538B95.6080208@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 01:10:23AM -0400, Mark Salter wrote:
+On Tue, Oct 08, 2013 at 12:35:33AM -0400, KOSAKI Motohiro wrote:
+> (10/7/13 11:07 PM), Minchan Kim wrote:
+> >Hi KOSAKI,
+> >
+> >On Mon, Oct 07, 2013 at 10:51:18PM -0400, KOSAKI Motohiro wrote:
+> >>>Maybe, int madvise5(addr, length, MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS,
+> >>>         &purged, &ret);
+> >>>
+> >>>Another reason to make it hard is that madvise(2) is tight coupled with
+> >>>with vmas split/merge. It needs mmap_sem's write-side lock and it hurt
+> >>>anon-vrange test performance much heavily and userland might want to
+> >>>make volatile range with small unit like "page size" so it's undesireable
+> >>>to make it with vma. Then, we should filter out to avoid vma split/merge
+> >>>in implementation if only MADV_LAZY case? Doable but it could make code
+> >>>complicated and lost consistency with other variant of madvise.
+> >>
+> >>I haven't seen your performance test result. Could please point out URLs?
+> >
+> >https://lkml.org/lkml/2013/3/12/105
+> 
+> It's not comparison with and without vma merge. I'm interest how much benefit
+> vmas operation avoiding have.
 
-> Architectures which support CONFIG_PARPORT_PC should select
-> ARCH_MAY_HAVE_PC_PARPORT.
+I had an number but lost it so I should set up it in my KVM machine :(
+And I needed old kernel 3.7.0 for testing vma-based approach.
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+DRAM:2G, CPU : 12 
 
-  Ralf
+kernel 3.7.0
+
+jemalloc: 20527 records/s
+jemalloc vma based approach : 5360 records/s
+
+vrange call made worse because every thread stuck with mmap_sem.
+
+kernel 3.11.0
+
+jemalloc: 21176 records/s
+jemalloc vroot tree approach: 103637 records/s
+
+It could enhance 5 times.
+
+-- 
+Kind regards,
+Minchan Kim
