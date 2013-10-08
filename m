@@ -1,66 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3JHHzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:55:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566Ab3JHHzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:55:48 -0400
-Date: Tue, 8 Oct 2013 09:56:59 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 05/77] PCI/MSI: Convert pci_msix_table_size() to a
- public interface
-Message-ID: <20131008075658.GE10669@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <e8b51bd48c24d0fc4ee8adea5c138c9bf84191e9.1380703262.git.agordeev@redhat.com>
- <20131007181043.GA27396@htj.dyndns.org>
+	id S1754944Ab3JHH4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:56:08 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:37745 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3JHH4G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 03:56:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007181043.GA27396@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380370138-3513-3-git-send-email-sachin.kamat@linaro.org>
+References: <1380370138-3513-1-git-send-email-sachin.kamat@linaro.org>
+	<1380370138-3513-3-git-send-email-sachin.kamat@linaro.org>
+Date: Tue, 8 Oct 2013 09:56:05 +0200
+Message-ID: <CACRpkda62m9pRyJRNsytJY08d+YR-vv+-vLc3MCE1FWk7DSU-Q@mail.gmail.com>
+Subject: Re: [PATCH 03/11] pinctrl: imx35: Remove redundant of_match_ptr
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 02:10:43PM -0400, Tejun Heo wrote:
-> On Wed, Oct 02, 2013 at 12:48:21PM +0200, Alexander Gordeev wrote:
-> > Make pci_msix_table_size() to return a error code if the device
-> > does not support MSI-X. This update is needed to facilitate a
-> > forthcoming re-design MSI/MSI-X interrupts enabling pattern.
-> > 
-> > Device drivers will use this interface to obtain maximum number
-> > of MSI-X interrupts the device supports and use that value in
-> > the following call to pci_enable_msix() interface.
-> 
-> Hmmm... I probably missed something but why is this necessary?  To
-> discern between -EINVAL and -ENOSPC?  If so, does that really matter?
+On Sat, Sep 28, 2013 at 2:08 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
 
-pci_msix_table_size() is kind of helper and returns 0 if a device does
-not have MSI-X table. If we want drivers to use it we need return -EINVAL
-for MSI-X incapable/disabled devices. Nothing about -ENOSPC.
+> The data structure of_match_ptr() protects is always compiled in.
+> Hence of_match_ptr() is not needed.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-> tejun
+Patch applied.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Yours,
+Linus Walleij
