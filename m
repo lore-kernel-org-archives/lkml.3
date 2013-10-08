@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3JHNZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:25:21 -0400
+	id S1754966Ab3JHNZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:25:46 -0400
 Received: from mail.abilis.ch ([195.70.19.74]:16807 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754788Ab3JHNZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:25:13 -0400
+	id S1754831Ab3JHNZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:25:17 -0400
 X-Greylist: delayed 3775 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 09:25:06 EDT
 From: Christian Ruppert <christian.ruppert@abilis.com>
 To: Linus Walleij <linus.walleij@linaro.org>
@@ -20,9 +20,9 @@ Cc: Stephen Warren <swarren@wwwdotorg.org>,
         Alexandre Courbot <acourbot@nvidia.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH 03/03] GPIO: Add TB10x GPIO driver
-Date: Tue,  8 Oct 2013 14:25:22 +0200
-Message-Id: <1381235122-23730-3-git-send-email-christian.ruppert@abilis.com>
+Subject: [PATCH 02/03] pinmux: Add TB10x pinmux driver
+Date: Tue,  8 Oct 2013 14:25:21 +0200
+Message-Id: <1381235122-23730-2-git-send-email-christian.ruppert@abilis.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20131008122145.GA21985@ab42.lan>
 References: <20131008122145.GA21985@ab42.lan>
@@ -30,102 +30,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO driver for the Abilis Systems TB10x series of SOCs based on ARC700
-CPUs. It supports GPIO control and GPIO interrupt generation. This driver
-works in conjunction with the TB10x pinctrl driver.
+The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
+Used to control the pinmux and is a prerequisite for the GPIO driver.
 
-Signed-off-by: Sascha Leuenberger <sascha.leuenberger@abilis.com>
 Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
 ---
- .../devicetree/bindings/gpio/abilis,tb10x-gpio.txt |   36 ++
- drivers/gpio/Kconfig                               |    4 +
- drivers/gpio/Makefile                              |    1 +
- drivers/gpio/gpio-tb10x.c                          |  341 ++++++++++++++++++++
- 4 files changed, 382 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
- create mode 100644 drivers/gpio/gpio-tb10x.c
+ .../bindings/pinctrl/abilis,tb10x-iomux.txt        |   79 ++
+ drivers/pinctrl/Kconfig                            |    4 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-tb10x.c                    |  878 ++++++++++++++++++++
+ 4 files changed, 962 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
+ create mode 100644 drivers/pinctrl/pinctrl-tb10x.c
 
-diff --git a/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt b/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
+diff --git a/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt b/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
 new file mode 100644
-index 0000000..00611ac
+index 0000000..f8ccd6c
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
-@@ -0,0 +1,36 @@
-+* Abilis TB10x GPIO controller
++++ b/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
+@@ -0,0 +1,80 @@
++Abilis Systems TB10x pin controller
++===================================
 +
-+Required Properties:
-+- compatible: Should be "abilis,tb10x-gpio"
-+- reg: Address and length of the register set for the device
-+- gpio-controller: Marks the device node as a gpio controller.
-+- #gpio-cells: Should be <2>. The first cell is the pin number and the
-+  second cell is used to specify optional parameters:
-+   - bit 0 specifies polarity (0 for normal, 1 for inverted).
-+- abilis,ngpio: the number of GPIO pins this driver controls.
++Required properties
++-------------------
 +
-+Optional Properties:
-+- interrupt-controller: Marks the device node as an interrupt controller.
-+- #interrupt-cells: Should be <1>. Interrupts are triggered on both edges.
-+- interrupts: Defines the interrupt line connecting this GPIO controller to
-+  its parent interrupt controller.
-+- interrupt-parent: Defines the parent interrupt controller.
++- compatible: should be "abilis,tb10x-iomux";
++- reg: should contain the physical address and size of the pin controller's
++  register range.
 +
-+GPIO ranges are specified as described in
-+Documentation/devicetree/bindings/gpio/gpio.txt
 +
-+Example:
++Function definitions
++--------------------
 +
-+	gpioa: gpio@FF140000 {
-+		compatible = "abilis,tb10x-gpio";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		interrupt-parent = <&tb10x_ictl>;
-+		interrupts = <27 2>;
-+		reg = <0xFF140000 0x1000>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		abilis,ngpio = <3>;
-+		gpio-ranges = <&iomux 0 0 0>;
-+		gpio-ranges-group-names = "gpioa_pins";
++Functions are defined (and referenced) by sub-nodes of the pin controller.
++Every sub-node defines exactly one function (implying a set of pins).
++Every function is associated to one named pin group inside the pin controller
++driver and these names are used to associate pin group predefinitions to pin
++controller sub-nodes.
++
++Required function definition subnode properties:
++  - abilis,function: should be set to the name of the function's pin group.
++
++The following pin groups are available:
++  - GPIO ports: gpioa, gpiob, gpioc, gpiod, gpioe, gpiof, gpiog,
++                gpioh, gpioi, gpioj, gpiok, gpiol, gpiom, gpion
++  - Serial TS input ports: mis0, mis1, mis2, mis3, mis4, mis5, mis6, mis7
++  - Parallel TS input ports: mip1, mip3, mip5, mip7
++  - Serial TS output ports: mos0, mos1, mos2, mos3
++  - Parallel TS output port: mop
++  - CI+ port: ciplus
++  - CableCard (Mcard) port: mcard
++  - Smart card ports: stc0, stc1
++  - UART ports: uart0, uart1
++  - SPI ports: spi1, spi3
++  - JTAG: jtag
++
++All other ports of the chip are not multiplexed and thus not managed by this
++driver.
++
++
++GPIO ranges definition
++----------------------
++
++The named pin groups of GPIO ports can be used to define GPIO ranges as
++explained in Documentation/devicetree/bindings/gpio/gpio.txt.
++
++
++Example
++-------
++
++iomux: iomux@FF10601c {
++	compatible = "abilis,tb10x-iomux";
++	reg = <0xFF10601c 0x4>;
++	pctl_gpio_a: pctl-gpio-a {
++		abilis,function = "gpioa";
 +	};
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index b2450ba..79be382 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -327,6 +327,10 @@ config GPIO_GRGPIO
- 	  Select this to support Aeroflex Gaisler GRGPIO cores from the GRLIB
- 	  VHDL IP core library.
++	pctl_uart0: pctl-uart0 {
++		abilis,function = "uart0";
++	};
++};
++uart@FF100000 {
++	compatible = "snps,dw-apb-uart";
++	reg = <0xFF100000 0x100>;
++	clock-frequency = <166666666>;
++	interrupts = <25 1>;
++	reg-shift = <2>;
++	reg-io-width = <4>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pctl_uart0>;
++};
++gpioa: gpio@FF140000 {
++	compatible = "abilis,tb10x-gpio";
++	reg = <0xFF140000 0x1000>;
++	gpio-controller;
++	#gpio-cells = <2>;
++	ngpio = <3>;
++	gpio-ranges = <&iomux 0 0>;
++	gpio-ranges-group-names = "gpioa";
++};
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 5a8ad51..e9ede63 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -281,6 +281,10 @@ config PINCTRL_XWAY
+ 	depends on SOC_TYPE_XWAY
+ 	depends on PINCTRL_LANTIQ
  
-+config GPIO_TB10X
++config PINCTRL_TB10X
 +	bool
-+	select OF_GPIO
++	depends on ARC_PLAT_TB10X
 +
- comment "I2C GPIO expanders:"
+ endmenu
  
- config GPIO_ARIZONA
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index ef3e983..f2956e1 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -68,6 +68,7 @@ obj-$(CONFIG_GPIO_STA2X11)	+= gpio-sta2x11.o
- obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
- obj-$(CONFIG_GPIO_STP_XWAY)	+= gpio-stp-xway.o
- obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
-+obj-$(CONFIG_GPIO_TB10X)	+= gpio-tb10x.o
- obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
- obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
- obj-$(CONFIG_GPIO_TIMBERDALE)	+= gpio-timberdale.o
-diff --git a/drivers/gpio/gpio-tb10x.c b/drivers/gpio/gpio-tb10x.c
+ endif
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index d64563b..b740a85 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -51,6 +51,7 @@ obj-$(CONFIG_PINCTRL_S3C24XX)	+= pinctrl-s3c24xx.o
+ obj-$(CONFIG_PINCTRL_S3C64XX)	+= pinctrl-s3c64xx.o
+ obj-$(CONFIG_PINCTRL_XWAY)	+= pinctrl-xway.o
+ obj-$(CONFIG_PINCTRL_LANTIQ)	+= pinctrl-lantiq.o
++obj-$(CONFIG_PINCTRL_TB10X)	+= pinctrl-tb10x.o
+ obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
+ obj-$(CONFIG_PINCTRL_VF610)	+= pinctrl-vf610.o
+ 
+diff --git a/drivers/pinctrl/pinctrl-tb10x.c b/drivers/pinctrl/pinctrl-tb10x.c
 new file mode 100644
-index 0000000..833d0f4
+index 0000000..1889967
 --- /dev/null
-+++ b/drivers/gpio/gpio-tb10x.c
-@@ -0,0 +1,341 @@
-+/* Abilis Systems MODULE DESCRIPTION
++++ b/drivers/pinctrl/pinctrl-tb10x.c
+@@ -0,0 +1,879 @@
++/*
++ * Abilis Systems TB10x pin control driver
 + *
-+ * Copyright (C) Abilis Systems 2013
++ * Copyright (C) Abilis Systems 2012
 + *
-+ * Authors: Sascha Leuenberger <sascha.leuenberger@abilis.com>
-+ *          Christian Ruppert <christian.ruppert@abilis.com>
++ * Author: Christian Ruppert <christian.ruppert@abilis.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -141,326 +184,864 @@ index 0000000..833d0f4
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
++#include <linux/stringify.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pinctrl/machine.h>
 +#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/err.h>
 +#include <linux/io.h>
 +#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
-+#include <linux/spinlock.h>
-+#include <linux/bitops.h>
-+#include <linux/pinctrl/consumer.h>
++#include <linux/slab.h>
 +
-+#define TB10X_GPIO_DIR_IN	(0x00000000)
-+#define TB10X_GPIO_DIR_OUT	(0x00000001)
-+#define OFFSET_TO_REG_DDR	(0x00)
-+#define OFFSET_TO_REG_DATA	(0x04)
-+#define OFFSET_TO_REG_INT_EN	(0x08)
-+#define OFFSET_TO_REG_CHANGE	(0x0C)
-+#define OFFSET_TO_REG_WRMASK	(0x10)
-+#define OFFSET_TO_REG_INT_TYPE	(0x14)
++#define TB10X_PORT1 (0)
++#define TB10X_PORT2 (16)
++#define TB10X_PORT3 (32)
++#define TB10X_PORT4 (48)
++#define TB10X_PORT5 (128)
++#define TB10X_PORT6 (64)
++#define TB10X_PORT7 (80)
++#define TB10X_PORT8 (96)
++#define TB10X_PORT9 (112)
++#define TB10X_GPIOS (256)
 +
++#define PCFG_PORT_BITWIDTH (2)
++#define PCFG_PORT_MASK(PORT) \
++	(((1 << PCFG_PORT_BITWIDTH) - 1) << (PCFG_PORT_BITWIDTH * (PORT)))
 +
-+/**
-+ * @spinlock: used for atomic read/modify/write of registers
-+ * @base: register base address
-+ * @domain: IRQ domain of GPIO generated interrupts managed by this controller
-+ * @irq: Interrupt line of parent interrupt controller
-+ * @gc: gpio_chip structure associated to this GPIO controller
-+ */
-+struct tb10x_gpio {
-+	spinlock_t spinlock;
-+	void __iomem *base;
-+	struct irq_domain *domain;
-+	int irq;
-+	struct gpio_chip gc;
++static const struct pinctrl_pin_desc tb10x_pins[] = {
++	/* Port 1 */
++	PINCTRL_PIN(TB10X_PORT1 +  0, "MICLK_S0"),
++	PINCTRL_PIN(TB10X_PORT1 +  1, "MISTRT_S0"),
++	PINCTRL_PIN(TB10X_PORT1 +  2, "MIVAL_S0"),
++	PINCTRL_PIN(TB10X_PORT1 +  3, "MDI_S0"),
++	PINCTRL_PIN(TB10X_PORT1 +  4, "GPIOA0"),
++	PINCTRL_PIN(TB10X_PORT1 +  5, "GPIOA1"),
++	PINCTRL_PIN(TB10X_PORT1 +  6, "GPIOA2"),
++	PINCTRL_PIN(TB10X_PORT1 +  7, "MDI_S1"),
++	PINCTRL_PIN(TB10X_PORT1 +  8, "MIVAL_S1"),
++	PINCTRL_PIN(TB10X_PORT1 +  9, "MISTRT_S1"),
++	PINCTRL_PIN(TB10X_PORT1 + 10, "MICLK_S1"),
++	/* Port 2 */
++	PINCTRL_PIN(TB10X_PORT2 +  0, "MICLK_S2"),
++	PINCTRL_PIN(TB10X_PORT2 +  1, "MISTRT_S2"),
++	PINCTRL_PIN(TB10X_PORT2 +  2, "MIVAL_S2"),
++	PINCTRL_PIN(TB10X_PORT2 +  3, "MDI_S2"),
++	PINCTRL_PIN(TB10X_PORT2 +  4, "GPIOC0"),
++	PINCTRL_PIN(TB10X_PORT2 +  5, "GPIOC1"),
++	PINCTRL_PIN(TB10X_PORT2 +  6, "GPIOC2"),
++	PINCTRL_PIN(TB10X_PORT2 +  7, "MDI_S3"),
++	PINCTRL_PIN(TB10X_PORT2 +  8, "MIVAL_S3"),
++	PINCTRL_PIN(TB10X_PORT2 +  9, "MISTRT_S3"),
++	PINCTRL_PIN(TB10X_PORT2 + 10, "MICLK_S3"),
++	/* Port 3 */
++	PINCTRL_PIN(TB10X_PORT3 +  0, "MICLK_S4"),
++	PINCTRL_PIN(TB10X_PORT3 +  1, "MISTRT_S4"),
++	PINCTRL_PIN(TB10X_PORT3 +  2, "MIVAL_S4"),
++	PINCTRL_PIN(TB10X_PORT3 +  3, "MDI_S4"),
++	PINCTRL_PIN(TB10X_PORT3 +  4, "GPIOE0"),
++	PINCTRL_PIN(TB10X_PORT3 +  5, "GPIOE1"),
++	PINCTRL_PIN(TB10X_PORT3 +  6, "GPIOE2"),
++	PINCTRL_PIN(TB10X_PORT3 +  7, "MDI_S5"),
++	PINCTRL_PIN(TB10X_PORT3 +  8, "MIVAL_S5"),
++	PINCTRL_PIN(TB10X_PORT3 +  9, "MISTRT_S5"),
++	PINCTRL_PIN(TB10X_PORT3 + 10, "MICLK_S5"),
++	/* Port 4 */
++	PINCTRL_PIN(TB10X_PORT4 +  0, "MICLK_S6"),
++	PINCTRL_PIN(TB10X_PORT4 +  1, "MISTRT_S6"),
++	PINCTRL_PIN(TB10X_PORT4 +  2, "MIVAL_S6"),
++	PINCTRL_PIN(TB10X_PORT4 +  3, "MDI_S6"),
++	PINCTRL_PIN(TB10X_PORT4 +  4, "GPIOG0"),
++	PINCTRL_PIN(TB10X_PORT4 +  5, "GPIOG1"),
++	PINCTRL_PIN(TB10X_PORT4 +  6, "GPIOG2"),
++	PINCTRL_PIN(TB10X_PORT4 +  7, "MDI_S7"),
++	PINCTRL_PIN(TB10X_PORT4 +  8, "MIVAL_S7"),
++	PINCTRL_PIN(TB10X_PORT4 +  9, "MISTRT_S7"),
++	PINCTRL_PIN(TB10X_PORT4 + 10, "MICLK_S7"),
++	/* Port 5 */
++	PINCTRL_PIN(TB10X_PORT5 +  0, "PC_CE1N"),
++	PINCTRL_PIN(TB10X_PORT5 +  1, "PC_CE2N"),
++	PINCTRL_PIN(TB10X_PORT5 +  2, "PC_REGN"),
++	PINCTRL_PIN(TB10X_PORT5 +  3, "PC_INPACKN"),
++	PINCTRL_PIN(TB10X_PORT5 +  4, "PC_OEN"),
++	PINCTRL_PIN(TB10X_PORT5 +  5, "PC_WEN"),
++	PINCTRL_PIN(TB10X_PORT5 +  6, "PC_IORDN"),
++	PINCTRL_PIN(TB10X_PORT5 +  7, "PC_IOWRN"),
++	PINCTRL_PIN(TB10X_PORT5 +  8, "PC_RDYIRQN"),
++	PINCTRL_PIN(TB10X_PORT5 +  9, "PC_WAITN"),
++	PINCTRL_PIN(TB10X_PORT5 + 10, "PC_A0"),
++	PINCTRL_PIN(TB10X_PORT5 + 11, "PC_A1"),
++	PINCTRL_PIN(TB10X_PORT5 + 12, "PC_A2"),
++	PINCTRL_PIN(TB10X_PORT5 + 13, "PC_A3"),
++	PINCTRL_PIN(TB10X_PORT5 + 14, "PC_A4"),
++	PINCTRL_PIN(TB10X_PORT5 + 15, "PC_A5"),
++	PINCTRL_PIN(TB10X_PORT5 + 16, "PC_A6"),
++	PINCTRL_PIN(TB10X_PORT5 + 17, "PC_A7"),
++	PINCTRL_PIN(TB10X_PORT5 + 18, "PC_A8"),
++	PINCTRL_PIN(TB10X_PORT5 + 19, "PC_A9"),
++	PINCTRL_PIN(TB10X_PORT5 + 20, "PC_A10"),
++	PINCTRL_PIN(TB10X_PORT5 + 21, "PC_A11"),
++	PINCTRL_PIN(TB10X_PORT5 + 22, "PC_A12"),
++	PINCTRL_PIN(TB10X_PORT5 + 23, "PC_A13"),
++	PINCTRL_PIN(TB10X_PORT5 + 24, "PC_A14"),
++	PINCTRL_PIN(TB10X_PORT5 + 25, "PC_D0"),
++	PINCTRL_PIN(TB10X_PORT5 + 26, "PC_D1"),
++	PINCTRL_PIN(TB10X_PORT5 + 27, "PC_D2"),
++	PINCTRL_PIN(TB10X_PORT5 + 28, "PC_D3"),
++	PINCTRL_PIN(TB10X_PORT5 + 29, "PC_D4"),
++	PINCTRL_PIN(TB10X_PORT5 + 30, "PC_D5"),
++	PINCTRL_PIN(TB10X_PORT5 + 31, "PC_D6"),
++	PINCTRL_PIN(TB10X_PORT5 + 32, "PC_D7"),
++	PINCTRL_PIN(TB10X_PORT5 + 33, "PC_MOSTRT"),
++	PINCTRL_PIN(TB10X_PORT5 + 34, "PC_MOVAL"),
++	PINCTRL_PIN(TB10X_PORT5 + 35, "PC_MDO0"),
++	PINCTRL_PIN(TB10X_PORT5 + 36, "PC_MDO1"),
++	PINCTRL_PIN(TB10X_PORT5 + 37, "PC_MDO2"),
++	PINCTRL_PIN(TB10X_PORT5 + 38, "PC_MDO3"),
++	PINCTRL_PIN(TB10X_PORT5 + 39, "PC_MDO4"),
++	PINCTRL_PIN(TB10X_PORT5 + 40, "PC_MDO5"),
++	PINCTRL_PIN(TB10X_PORT5 + 41, "PC_MDO6"),
++	PINCTRL_PIN(TB10X_PORT5 + 42, "PC_MDO7"),
++	PINCTRL_PIN(TB10X_PORT5 + 43, "PC_MISTRT"),
++	PINCTRL_PIN(TB10X_PORT5 + 44, "PC_MIVAL"),
++	PINCTRL_PIN(TB10X_PORT5 + 45, "PC_MDI0"),
++	PINCTRL_PIN(TB10X_PORT5 + 46, "PC_MDI1"),
++	PINCTRL_PIN(TB10X_PORT5 + 47, "PC_MDI2"),
++	PINCTRL_PIN(TB10X_PORT5 + 48, "PC_MDI3"),
++	PINCTRL_PIN(TB10X_PORT5 + 49, "PC_MDI4"),
++	PINCTRL_PIN(TB10X_PORT5 + 50, "PC_MDI5"),
++	PINCTRL_PIN(TB10X_PORT5 + 51, "PC_MDI6"),
++	PINCTRL_PIN(TB10X_PORT5 + 52, "PC_MDI7"),
++	PINCTRL_PIN(TB10X_PORT5 + 53, "PC_MICLK"),
++	/* Port 6 */
++	PINCTRL_PIN(TB10X_PORT6 + 0, "T_MOSTRT_S0"),
++	PINCTRL_PIN(TB10X_PORT6 + 1, "T_MOVAL_S0"),
++	PINCTRL_PIN(TB10X_PORT6 + 2, "T_MDO_S0"),
++	PINCTRL_PIN(TB10X_PORT6 + 3, "T_MOSTRT_S1"),
++	PINCTRL_PIN(TB10X_PORT6 + 4, "T_MOVAL_S1"),
++	PINCTRL_PIN(TB10X_PORT6 + 5, "T_MDO_S1"),
++	PINCTRL_PIN(TB10X_PORT6 + 6, "T_MOSTRT_S2"),
++	PINCTRL_PIN(TB10X_PORT6 + 7, "T_MOVAL_S2"),
++	PINCTRL_PIN(TB10X_PORT6 + 8, "T_MDO_S2"),
++	PINCTRL_PIN(TB10X_PORT6 + 9, "T_MOSTRT_S3"),
++	/* Port 7 */
++	PINCTRL_PIN(TB10X_PORT7 + 0, "UART0_TXD"),
++	PINCTRL_PIN(TB10X_PORT7 + 1, "UART0_RXD"),
++	PINCTRL_PIN(TB10X_PORT7 + 2, "UART0_CTS"),
++	PINCTRL_PIN(TB10X_PORT7 + 3, "UART0_RTS"),
++	PINCTRL_PIN(TB10X_PORT7 + 4, "UART1_TXD"),
++	PINCTRL_PIN(TB10X_PORT7 + 5, "UART1_RXD"),
++	PINCTRL_PIN(TB10X_PORT7 + 6, "UART1_CTS"),
++	PINCTRL_PIN(TB10X_PORT7 + 7, "UART1_RTS"),
++	/* Port 8 */
++	PINCTRL_PIN(TB10X_PORT8 + 0, "SPI3_CLK"),
++	PINCTRL_PIN(TB10X_PORT8 + 1, "SPI3_MISO"),
++	PINCTRL_PIN(TB10X_PORT8 + 2, "SPI3_MOSI"),
++	PINCTRL_PIN(TB10X_PORT8 + 3, "SPI3_SSN"),
++	/* Port 9 */
++	PINCTRL_PIN(TB10X_PORT9 + 0, "SPI1_CLK"),
++	PINCTRL_PIN(TB10X_PORT9 + 1, "SPI1_MISO"),
++	PINCTRL_PIN(TB10X_PORT9 + 2, "SPI1_MOSI"),
++	PINCTRL_PIN(TB10X_PORT9 + 3, "SPI1_SSN0"),
++	PINCTRL_PIN(TB10X_PORT9 + 4, "SPI1_SSN1"),
++	/* Unmuxed GPIOs */
++	PINCTRL_PIN(TB10X_GPIOS +  0, "GPIOB0"),
++	PINCTRL_PIN(TB10X_GPIOS +  1, "GPIOB1"),
++
++	PINCTRL_PIN(TB10X_GPIOS +  2, "GPIOD0"),
++	PINCTRL_PIN(TB10X_GPIOS +  3, "GPIOD1"),
++
++	PINCTRL_PIN(TB10X_GPIOS +  4, "GPIOF0"),
++	PINCTRL_PIN(TB10X_GPIOS +  5, "GPIOF1"),
++
++	PINCTRL_PIN(TB10X_GPIOS +  6, "GPIOH0"),
++	PINCTRL_PIN(TB10X_GPIOS +  7, "GPIOH1"),
++
++	PINCTRL_PIN(TB10X_GPIOS +  8, "GPIOI0"),
++	PINCTRL_PIN(TB10X_GPIOS +  9, "GPIOI1"),
++	PINCTRL_PIN(TB10X_GPIOS + 10, "GPIOI2"),
++	PINCTRL_PIN(TB10X_GPIOS + 11, "GPIOI3"),
++	PINCTRL_PIN(TB10X_GPIOS + 12, "GPIOI4"),
++	PINCTRL_PIN(TB10X_GPIOS + 13, "GPIOI5"),
++	PINCTRL_PIN(TB10X_GPIOS + 14, "GPIOI6"),
++	PINCTRL_PIN(TB10X_GPIOS + 15, "GPIOI7"),
++	PINCTRL_PIN(TB10X_GPIOS + 16, "GPIOI8"),
++	PINCTRL_PIN(TB10X_GPIOS + 17, "GPIOI9"),
++	PINCTRL_PIN(TB10X_GPIOS + 18, "GPIOI10"),
++	PINCTRL_PIN(TB10X_GPIOS + 19, "GPIOI11"),
++
++	PINCTRL_PIN(TB10X_GPIOS + 20, "GPION0"),
++	PINCTRL_PIN(TB10X_GPIOS + 21, "GPION1"),
++	PINCTRL_PIN(TB10X_GPIOS + 22, "GPION2"),
++	PINCTRL_PIN(TB10X_GPIOS + 23, "GPION3"),
++#define MAX_PIN (TB10X_GPIOS + 24)
++	PINCTRL_PIN(MAX_PIN,  "GPION4"),
 +};
 +
-+static inline u32 tb10x_reg_read(struct tb10x_gpio *gpio, unsigned int offs)
++
++/* Port 1 */
++static const unsigned mis0_pins[]  = {	TB10X_PORT1 + 0, TB10X_PORT1 + 1,
++					TB10X_PORT1 + 2, TB10X_PORT1 + 3};
++static const unsigned gpioa_pins[] = {	TB10X_PORT1 + 4, TB10X_PORT1 + 5,
++					TB10X_PORT1 + 6};
++static const unsigned mis1_pins[]  = {	TB10X_PORT1 + 7, TB10X_PORT1 + 8,
++					TB10X_PORT1 + 9, TB10X_PORT1 + 10};
++static const unsigned mip1_pins[]  = {	TB10X_PORT1 + 0, TB10X_PORT1 + 1,
++					TB10X_PORT1 + 2, TB10X_PORT1 + 3,
++					TB10X_PORT1 + 4, TB10X_PORT1 + 5,
++					TB10X_PORT1 + 6, TB10X_PORT1 + 7,
++					TB10X_PORT1 + 8, TB10X_PORT1 + 9,
++					TB10X_PORT1 + 10};
++
++/* Port 2 */
++static const unsigned mis2_pins[]  = {	TB10X_PORT2 + 0, TB10X_PORT2 + 1,
++					TB10X_PORT2 + 2, TB10X_PORT2 + 3};
++static const unsigned gpioc_pins[] = {	TB10X_PORT2 + 4, TB10X_PORT2 + 5,
++					TB10X_PORT2 + 6};
++static const unsigned mis3_pins[]  = {	TB10X_PORT2 + 7, TB10X_PORT2 + 8,
++					TB10X_PORT2 + 9, TB10X_PORT2 + 10};
++static const unsigned mip3_pins[]  = {	TB10X_PORT2 + 0, TB10X_PORT2 + 1,
++					TB10X_PORT2 + 2, TB10X_PORT2 + 3,
++					TB10X_PORT2 + 4, TB10X_PORT2 + 5,
++					TB10X_PORT2 + 6, TB10X_PORT2 + 7,
++					TB10X_PORT2 + 8, TB10X_PORT2 + 9,
++					TB10X_PORT2 + 10};
++
++/* Port 3 */
++static const unsigned mis4_pins[]  = {	TB10X_PORT3 + 0, TB10X_PORT3 + 1,
++					TB10X_PORT3 + 2, TB10X_PORT3 + 3};
++static const unsigned gpioe_pins[] = {	TB10X_PORT3 + 4, TB10X_PORT3 + 5,
++					TB10X_PORT3 + 6};
++static const unsigned mis5_pins[]  = {	TB10X_PORT3 + 7, TB10X_PORT3 + 8,
++					TB10X_PORT3 + 9, TB10X_PORT3 + 10};
++static const unsigned mip5_pins[]  = {	TB10X_PORT3 + 0, TB10X_PORT3 + 1,
++					TB10X_PORT3 + 2, TB10X_PORT3 + 3,
++					TB10X_PORT3 + 4, TB10X_PORT3 + 5,
++					TB10X_PORT3 + 6, TB10X_PORT3 + 7,
++					TB10X_PORT3 + 8, TB10X_PORT3 + 9,
++					TB10X_PORT3 + 10};
++
++/* Port 4 */
++static const unsigned mis6_pins[]  = {	TB10X_PORT4 + 0, TB10X_PORT4 + 1,
++					TB10X_PORT4 + 2, TB10X_PORT4 + 3};
++static const unsigned gpiog_pins[] = {	TB10X_PORT4 + 4, TB10X_PORT4 + 5,
++					TB10X_PORT4 + 6};
++static const unsigned mis7_pins[]  = {	TB10X_PORT4 + 7, TB10X_PORT4 + 8,
++					TB10X_PORT4 + 9, TB10X_PORT4 + 10};
++static const unsigned mip7_pins[]  = {	TB10X_PORT4 + 0, TB10X_PORT4 + 1,
++					TB10X_PORT4 + 2, TB10X_PORT4 + 3,
++					TB10X_PORT4 + 4, TB10X_PORT4 + 5,
++					TB10X_PORT4 + 6, TB10X_PORT4 + 7,
++					TB10X_PORT4 + 8, TB10X_PORT4 + 9,
++					TB10X_PORT4 + 10};
++
++/* Port 6 */
++static const unsigned mop_pins[] = {	TB10X_PORT6 + 0, TB10X_PORT6 + 1,
++					TB10X_PORT6 + 2, TB10X_PORT6 + 3,
++					TB10X_PORT6 + 4, TB10X_PORT6 + 5,
++					TB10X_PORT6 + 6, TB10X_PORT6 + 7,
++					TB10X_PORT6 + 8, TB10X_PORT6 + 9};
++static const unsigned mos0_pins[] = {	TB10X_PORT6 + 0, TB10X_PORT6 + 1,
++					TB10X_PORT6 + 2};
++static const unsigned mos1_pins[] = {	TB10X_PORT6 + 3, TB10X_PORT6 + 4,
++					TB10X_PORT6 + 5};
++static const unsigned mos2_pins[] = {	TB10X_PORT6 + 6, TB10X_PORT6 + 7,
++					TB10X_PORT6 + 8};
++static const unsigned mos3_pins[] = {	TB10X_PORT6 + 9};
++
++/* Port 7 */
++static const unsigned uart0_pins[] = {	TB10X_PORT7 + 0, TB10X_PORT7 + 1,
++					TB10X_PORT7 + 2, TB10X_PORT7 + 3};
++static const unsigned uart1_pins[] = {	TB10X_PORT7 + 4, TB10X_PORT7 + 5,
++					TB10X_PORT7 + 6, TB10X_PORT7 + 7};
++static const unsigned gpiol_pins[] = {	TB10X_PORT7 + 0, TB10X_PORT7 + 1,
++					TB10X_PORT7 + 2, TB10X_PORT7 + 3};
++static const unsigned gpiom_pins[] = {	TB10X_PORT7 + 4, TB10X_PORT7 + 5,
++					TB10X_PORT7 + 6, TB10X_PORT7 + 7};
++
++/* Port 8 */
++static const unsigned spi3_pins[] = {	TB10X_PORT8 + 0, TB10X_PORT8 + 1,
++					TB10X_PORT8 + 2, TB10X_PORT8 + 3};
++static const unsigned jtag_pins[] = {	TB10X_PORT8 + 0, TB10X_PORT8 + 1,
++					TB10X_PORT8 + 2, TB10X_PORT8 + 3};
++
++/* Port 9 */
++static const unsigned spi1_pins[] = {	TB10X_PORT9 + 0, TB10X_PORT9 + 1,
++					TB10X_PORT9 + 2, TB10X_PORT9 + 3,
++					TB10X_PORT9 + 4};
++static const unsigned gpion_pins[] = {	TB10X_PORT9 + 0, TB10X_PORT9 + 1,
++					TB10X_PORT9 + 2, TB10X_PORT9 + 3,
++					TB10X_PORT9 + 4};
++
++/* Port 5 */
++static const unsigned gpioj_pins[] = {	TB10X_PORT5 + 0, TB10X_PORT5 + 1,
++					TB10X_PORT5 + 2, TB10X_PORT5 + 3,
++					TB10X_PORT5 + 4, TB10X_PORT5 + 5,
++					TB10X_PORT5 + 6, TB10X_PORT5 + 7,
++					TB10X_PORT5 + 8, TB10X_PORT5 + 9,
++					TB10X_PORT5 + 10, TB10X_PORT5 + 11,
++					TB10X_PORT5 + 12, TB10X_PORT5 + 13,
++					TB10X_PORT5 + 14, TB10X_PORT5 + 15,
++					TB10X_PORT5 + 16, TB10X_PORT5 + 17,
++					TB10X_PORT5 + 18, TB10X_PORT5 + 19,
++					TB10X_PORT5 + 20, TB10X_PORT5 + 21,
++					TB10X_PORT5 + 22, TB10X_PORT5 + 23,
++					TB10X_PORT5 + 24, TB10X_PORT5 + 25,
++					TB10X_PORT5 + 26, TB10X_PORT5 + 27,
++					TB10X_PORT5 + 28, TB10X_PORT5 + 29,
++					TB10X_PORT5 + 30, TB10X_PORT5 + 31};
++static const unsigned gpiok_pins[] = {	TB10X_PORT5 + 32, TB10X_PORT5 + 33,
++					TB10X_PORT5 + 34, TB10X_PORT5 + 35,
++					TB10X_PORT5 + 36, TB10X_PORT5 + 37,
++					TB10X_PORT5 + 38, TB10X_PORT5 + 39,
++					TB10X_PORT5 + 40, TB10X_PORT5 + 41,
++					TB10X_PORT5 + 42, TB10X_PORT5 + 43,
++					TB10X_PORT5 + 44, TB10X_PORT5 + 45,
++					TB10X_PORT5 + 46, TB10X_PORT5 + 47,
++					TB10X_PORT5 + 48, TB10X_PORT5 + 49,
++					TB10X_PORT5 + 50, TB10X_PORT5 + 51,
++					TB10X_PORT5 + 52, TB10X_PORT5 + 53};
++static const unsigned ciplus_pins[] = {	TB10X_PORT5 + 0, TB10X_PORT5 + 1,
++					TB10X_PORT5 + 2, TB10X_PORT5 + 3,
++					TB10X_PORT5 + 4, TB10X_PORT5 + 5,
++					TB10X_PORT5 + 6, TB10X_PORT5 + 7,
++					TB10X_PORT5 + 8, TB10X_PORT5 + 9,
++					TB10X_PORT5 + 10, TB10X_PORT5 + 11,
++					TB10X_PORT5 + 12, TB10X_PORT5 + 13,
++					TB10X_PORT5 + 14, TB10X_PORT5 + 15,
++					TB10X_PORT5 + 16, TB10X_PORT5 + 17,
++					TB10X_PORT5 + 18, TB10X_PORT5 + 19,
++					TB10X_PORT5 + 20, TB10X_PORT5 + 21,
++					TB10X_PORT5 + 22, TB10X_PORT5 + 23,
++					TB10X_PORT5 + 24, TB10X_PORT5 + 25,
++					TB10X_PORT5 + 26, TB10X_PORT5 + 27,
++					TB10X_PORT5 + 28, TB10X_PORT5 + 29,
++					TB10X_PORT5 + 30, TB10X_PORT5 + 31,
++					TB10X_PORT5 + 32, TB10X_PORT5 + 33,
++					TB10X_PORT5 + 34, TB10X_PORT5 + 35,
++					TB10X_PORT5 + 36, TB10X_PORT5 + 37,
++					TB10X_PORT5 + 38, TB10X_PORT5 + 39,
++					TB10X_PORT5 + 40, TB10X_PORT5 + 41,
++					TB10X_PORT5 + 42, TB10X_PORT5 + 43,
++					TB10X_PORT5 + 44, TB10X_PORT5 + 45,
++					TB10X_PORT5 + 46, TB10X_PORT5 + 47,
++					TB10X_PORT5 + 48, TB10X_PORT5 + 49,
++					TB10X_PORT5 + 50, TB10X_PORT5 + 51,
++					TB10X_PORT5 + 52, TB10X_PORT5 + 53};
++static const unsigned mcard_pins[] = {	TB10X_PORT5 + 3, TB10X_PORT5 + 10,
++					TB10X_PORT5 + 11, TB10X_PORT5 + 12,
++					TB10X_PORT5 + 22, TB10X_PORT5 + 23,
++					TB10X_PORT5 + 33, TB10X_PORT5 + 35,
++					TB10X_PORT5 + 36, TB10X_PORT5 + 37,
++					TB10X_PORT5 + 38, TB10X_PORT5 + 39,
++					TB10X_PORT5 + 40, TB10X_PORT5 + 41,
++					TB10X_PORT5 + 42, TB10X_PORT5 + 43,
++					TB10X_PORT5 + 45, TB10X_PORT5 + 46,
++					TB10X_PORT5 + 47, TB10X_PORT5 + 48,
++					TB10X_PORT5 + 49, TB10X_PORT5 + 50,
++					TB10X_PORT5 + 51, TB10X_PORT5 + 52,
++					TB10X_PORT5 + 53};
++static const unsigned stc0_pins[] = {	TB10X_PORT5 + 34, TB10X_PORT5 + 35,
++					TB10X_PORT5 + 36, TB10X_PORT5 + 37,
++					TB10X_PORT5 + 38, TB10X_PORT5 + 39,
++					TB10X_PORT5 + 40};
++static const unsigned stc1_pins[] = {	TB10X_PORT5 + 25, TB10X_PORT5 + 26,
++					TB10X_PORT5 + 27, TB10X_PORT5 + 28,
++					TB10X_PORT5 + 29, TB10X_PORT5 + 30,
++					TB10X_PORT5 + 44};
++
++/* Unmuxed GPIOs */
++static const unsigned gpiob_pins[] = {	TB10X_GPIOS + 0, TB10X_GPIOS + 1};
++static const unsigned gpiod_pins[] = {	TB10X_GPIOS + 2, TB10X_GPIOS + 3};
++static const unsigned gpiof_pins[] = {	TB10X_GPIOS + 4, TB10X_GPIOS + 5};
++static const unsigned gpioh_pins[] = {	TB10X_GPIOS + 6, TB10X_GPIOS + 7};
++static const unsigned gpioi_pins[] = {	TB10X_GPIOS + 8, TB10X_GPIOS + 9,
++					TB10X_GPIOS + 10, TB10X_GPIOS + 11,
++					TB10X_GPIOS + 12, TB10X_GPIOS + 13,
++					TB10X_GPIOS + 14, TB10X_GPIOS + 15,
++					TB10X_GPIOS + 16, TB10X_GPIOS + 17,
++					TB10X_GPIOS + 18, TB10X_GPIOS + 19};
++
++struct tb10x_pinfuncgrp {
++	const char *name;
++	const unsigned int *pins;
++	const unsigned int pincnt;
++	const int port;
++	const unsigned int mode;
++	const int isgpio;
++};
++#define DEFPINFUNCGRP(NAME, PORT, MODE, ISGPIO) { \
++		.name = __stringify(NAME), \
++		.pins = NAME##_pins, .pincnt = ARRAY_SIZE(NAME##_pins), \
++		.port = (PORT), .mode = (MODE), \
++		.isgpio = (ISGPIO), \
++	}
++static const struct tb10x_pinfuncgrp tb10x_pingroups[] = {
++	DEFPINFUNCGRP(mis0,   0, 0, 0),
++	DEFPINFUNCGRP(gpioa,  0, 0, 1),
++	DEFPINFUNCGRP(mis1,   0, 0, 0),
++	DEFPINFUNCGRP(mip1,   0, 1, 0),
++	DEFPINFUNCGRP(mis2,   1, 0, 0),
++	DEFPINFUNCGRP(gpioc,  1, 0, 1),
++	DEFPINFUNCGRP(mis3,   1, 0, 0),
++	DEFPINFUNCGRP(mip3,   1, 1, 0),
++	DEFPINFUNCGRP(mis4,   2, 0, 0),
++	DEFPINFUNCGRP(gpioe,  2, 0, 1),
++	DEFPINFUNCGRP(mis5,   2, 0, 0),
++	DEFPINFUNCGRP(mip5,   2, 1, 0),
++	DEFPINFUNCGRP(mis6,   3, 0, 0),
++	DEFPINFUNCGRP(gpiog,  3, 0, 1),
++	DEFPINFUNCGRP(mis7,   3, 0, 0),
++	DEFPINFUNCGRP(mip7,   3, 1, 0),
++	DEFPINFUNCGRP(gpioj,  4, 0, 1),
++	DEFPINFUNCGRP(gpiok,  4, 0, 1),
++	DEFPINFUNCGRP(ciplus, 4, 1, 0),
++	DEFPINFUNCGRP(mcard,  4, 2, 0),
++	DEFPINFUNCGRP(stc0,   4, 3, 0),
++	DEFPINFUNCGRP(stc1,   4, 3, 0),
++	DEFPINFUNCGRP(mop,    5, 0, 0),
++	DEFPINFUNCGRP(mos0,   5, 1, 0),
++	DEFPINFUNCGRP(mos1,   5, 1, 0),
++	DEFPINFUNCGRP(mos2,   5, 1, 0),
++	DEFPINFUNCGRP(mos3,   5, 1, 0),
++	DEFPINFUNCGRP(uart0,  6, 0, 0),
++	DEFPINFUNCGRP(uart1,  6, 0, 0),
++	DEFPINFUNCGRP(gpiol,  6, 1, 1),
++	DEFPINFUNCGRP(gpiom,  6, 1, 1),
++	DEFPINFUNCGRP(spi3,   7, 0, 0),
++	DEFPINFUNCGRP(jtag,   7, 1, 0),
++	DEFPINFUNCGRP(spi1,   8, 0, 0),
++	DEFPINFUNCGRP(gpion,  8, 1, 1),
++	DEFPINFUNCGRP(gpiob, -1, 0, 1),
++	DEFPINFUNCGRP(gpiod, -1, 0, 1),
++	DEFPINFUNCGRP(gpiof, -1, 0, 1),
++	DEFPINFUNCGRP(gpioh, -1, 0, 1),
++	DEFPINFUNCGRP(gpioi, -1, 0, 1),
++};
++#undef DEFPINFUNCGRP
++
++struct tb10x_of_pinfunc {
++	const char *name;
++	const char *group;
++};
++
++#define TB10X_PORTS (9)
++
++/**
++ * struct tb10x_port - state of an I/O port
++ * @mode: Node this port is currently in.
++ * @count: Number of enabled functions which require this port to be
++ *         configured in @mode.
++ */
++struct tb10x_port {
++	unsigned int mode;
++	unsigned int count;
++};
++
++/**
++ * struct tb10x_pinctrl - TB10x pin controller internal state
++ * @pctl: pointer to the pinctrl_dev structure of this pin controller.
++ * @base: register set base address.
++ * @pingroups: pointer to an array of the pin groups this driver manages.
++ * @pinfuncgrpcnt: number of pingroups in @pingroups.
++ * @pinfuncs: pointer to an array of pin functions this driver manages.
++ * @pinfuncnt: number of pin functions in @pinfuncs.
++ * @mutex: mutex for exclusive access to a pin controller's state.
++ * @ports: current state of each port.
++ * @gpios: Indicates if a given pin is currently used as GPIO (1) or not (0).
++ */
++struct tb10x_pinctrl {
++	struct pinctrl_dev *pctl;
++	void *base;
++	const struct tb10x_pinfuncgrp *pingroups;
++	unsigned int pinfuncgrpcnt;
++	struct tb10x_of_pinfunc *pinfuncs;
++	unsigned int pinfuncnt;
++	struct mutex mutex;
++	struct tb10x_port ports[TB10X_PORTS];
++	DECLARE_BITMAP(gpios, MAX_PIN + 1);
++};
++
++static inline void tb10x_pinctrl_set_config(struct tb10x_pinctrl *state,
++				unsigned int port, unsigned int mode)
 +{
-+	return ioread32(gpio->base + offs);
++	u32 pcfg;
++
++	if (state->ports[port].count)
++		return;
++
++	state->ports[port].mode = mode;
++
++	pcfg = ioread32(state->base) & ~(PCFG_PORT_MASK(port));
++	pcfg |= (mode << (PCFG_PORT_BITWIDTH * port)) & PCFG_PORT_MASK(port);
++	iowrite32(pcfg, state->base);
 +}
 +
-+static inline void tb10x_reg_write(struct tb10x_gpio *gpio, unsigned int offs,
-+				u32 val)
++static inline unsigned int tb10x_pinctrl_get_config(
++				struct tb10x_pinctrl *state,
++				unsigned int port)
 +{
-+	iowrite32(val, gpio->base + offs);
++	return (ioread32(state->base) & PCFG_PORT_MASK(port))
++		>> (PCFG_PORT_BITWIDTH * port);
 +}
 +
-+static inline void tb10x_set_bits(struct tb10x_gpio *gpio, unsigned int offs,
-+				u32 mask, u32 val)
++static int tb10x_get_groups_count(struct pinctrl_dev *pctl)
 +{
-+	u32 r;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&gpio->spinlock, flags);
-+
-+	r = tb10x_reg_read(gpio, offs);
-+	r = (r & ~mask) | (val & mask);
-+
-+	tb10x_reg_write(gpio, offs, r);
-+
-+	spin_unlock_irqrestore(&gpio->spinlock, flags);
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	return state->pinfuncgrpcnt;
 +}
 +
-+static inline struct tb10x_gpio *to_tb10x_gpio(struct gpio_chip *chip)
++static const char *tb10x_get_group_name(struct pinctrl_dev *pctl, unsigned n)
 +{
-+	return container_of(chip, struct tb10x_gpio, gc);
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	return state->pingroups[n].name;
 +}
 +
-+static int tb10x_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
++static int tb10x_get_group_pins(struct pinctrl_dev *pctl, unsigned n,
++				unsigned const **pins,
++				unsigned * const num_pins)
 +{
-+	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
-+	int mask = BIT(offset);
-+	int val = TB10X_GPIO_DIR_IN << offset;
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
 +
-+	tb10x_set_bits(tb10x_gpio, OFFSET_TO_REG_DDR, mask, val);
++	*pins = state->pingroups[n].pins;
++	*num_pins = state->pingroups[n].pincnt;
 +
 +	return 0;
 +}
 +
-+static int tb10x_gpio_get(struct gpio_chip *chip, unsigned offset)
++static int tb10x_dt_node_to_map(struct pinctrl_dev *pctl,
++				struct device_node *np_config,
++				struct pinctrl_map **map, unsigned *num_maps)
 +{
-+	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
-+	int val;
++	struct pinctrl_map *m;
++	const char *string;
 +
-+	val = tb10x_reg_read(tb10x_gpio, OFFSET_TO_REG_DATA);
-+
-+	if (val & BIT(offset))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static void tb10x_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
-+	int mask = BIT(offset);
-+	int val = value << offset;
-+
-+	tb10x_set_bits(tb10x_gpio, OFFSET_TO_REG_DATA, mask, val);
-+}
-+
-+static int tb10x_gpio_direction_out(struct gpio_chip *chip,
-+					unsigned offset, int value)
-+{
-+	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
-+	int mask = BIT(offset);
-+	int val = TB10X_GPIO_DIR_OUT << offset;
-+
-+	tb10x_set_bits(tb10x_gpio, OFFSET_TO_REG_DDR, mask, val);
-+
-+	return 0;
-+}
-+
-+static int tb10x_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void tb10x_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+}
-+
-+static int tb10x_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct tb10x_gpio *tb10x_gpio = to_tb10x_gpio(chip);
-+
-+	return irq_create_mapping(tb10x_gpio->domain, offset);
-+}
-+
-+static int tb10x_gpio_irq_set_type(struct irq_data *data, unsigned int type)
-+{
-+	if ((type & IRQF_TRIGGER_MASK) != IRQ_TYPE_EDGE_BOTH) {
-+		pr_err("Only (both) edge triggered interrupts supported.\n");
++	if (of_property_read_string(np_config, "abilis,function", &string)) {
++		pr_err("%s: No abilis,function property in device tree.\n",
++			np_config->full_name);
 +		return -EINVAL;
 +	}
 +
-+	irqd_set_trigger_type(data, type);
-+
-+	return IRQ_SET_MASK_OK;
-+}
-+
-+static irqreturn_t tb10x_gpio_irq_cascade(int irq, void *data)
-+{
-+	struct tb10x_gpio *tb10x_gpio = data;
-+	u32 r = tb10x_reg_read(tb10x_gpio, OFFSET_TO_REG_CHANGE);
-+	u32 m = tb10x_reg_read(tb10x_gpio, OFFSET_TO_REG_INT_EN);
-+	const unsigned long bits = r & m;
-+	int i;
-+
-+	for_each_set_bit(i, &bits, 32)
-+		generic_handle_irq(irq_find_mapping(tb10x_gpio->domain, i));
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int tb10x_gpio_probe(struct platform_device *pdev)
-+{
-+	struct tb10x_gpio *tb10x_gpio;
-+	struct resource *mem;
-+	struct device_node *dn = pdev->dev.of_node;
-+	int ret = -EBUSY;
-+	u32 ngpio;
-+
-+	if (!dn)
-+		return -EINVAL;
-+
-+	if (of_property_read_u32(dn, "abilis,ngpio", &ngpio))
-+		return -EINVAL;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "No memory resource defined.\n");
-+		return -EINVAL;
-+	}
-+
-+	tb10x_gpio = devm_kzalloc(&pdev->dev, sizeof(*tb10x_gpio), GFP_KERNEL);
-+	if (tb10x_gpio == NULL)
++	m = kzalloc(sizeof(struct pinctrl_map), GFP_KERNEL);
++	if (!m)
 +		return -ENOMEM;
 +
-+	spin_lock_init(&tb10x_gpio->spinlock);
++	m->type = PIN_MAP_TYPE_MUX_GROUP;
++	m->data.mux.group = string;
++	m->data.mux.function = np_config->name;
++	*map = m;
++	*num_maps = 1;
 +
-+	tb10x_gpio->base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (!tb10x_gpio->base) {
-+		dev_err(&pdev->dev, "Could not remap reg space.\n");
-+		goto fail_ioremap;
++	return 0;
++}
++
++static void tb10x_dt_free_map(struct pinctrl_dev *pctldev,
++				struct pinctrl_map *map, unsigned num_maps)
++{
++	kfree(map);
++}
++
++static struct pinctrl_ops tb10x_pinctrl_ops = {
++	.get_groups_count = tb10x_get_groups_count,
++	.get_group_name   = tb10x_get_group_name,
++	.get_group_pins   = tb10x_get_group_pins,
++	.dt_node_to_map   = tb10x_dt_node_to_map,
++	.dt_free_map      = tb10x_dt_free_map,
++};
++
++static int tb10x_get_functions_count(struct pinctrl_dev *pctl)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	return state->pinfuncnt;
++}
++
++static const char *tb10x_get_function_name(struct pinctrl_dev *pctl,
++					unsigned n)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	return state->pinfuncs[n].name;
++}
++
++static int tb10x_get_function_groups(struct pinctrl_dev *pctl,
++				unsigned n, const char * const **groups,
++				unsigned * const num_groups)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++
++	*groups = &state->pinfuncs[n].group;
++	*num_groups = 1;
++
++	return 0;
++}
++
++static int tb10x_gpio_request_enable(struct pinctrl_dev *pctl,
++					struct pinctrl_gpio_range *range,
++					unsigned pin)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	int muxport = -1;
++	int muxmode = -1;
++	int i;
++
++	mutex_lock(&state->mutex);
++
++	/* Figure out to which port the requested GPIO belongs and how to
++	 * configure that port.
++	 * This loop also checks for pin conflicts between GPIOs and other
++	 * functions.
++	 */
++	for (i = 0; i < state->pinfuncgrpcnt; i++) {
++		const struct tb10x_pinfuncgrp *pfg = &state->pingroups[i];
++		unsigned int port = pfg->port;
++		unsigned int mode = pfg->mode;
++		int j;
++
++		/* Skip pin groups which are always mapped and don't need
++		 * to be configured.
++		 */
++		if (port < 0)
++			continue;
++
++		for (j = 0; j < pfg->pincnt; j++) {
++			if (pin == pfg->pins[j]) {
++				if (pfg->isgpio) {
++					/* Remember the GPIO-only setting of
++					 * the port this pin belongs to.
++					 */
++					muxport = port;
++					muxmode = mode;
++				} else if (state->ports[port].count
++					&& (state->ports[port].mode == mode)) {
++					/* Error: The requested pin is already
++					 * used for something else.
++					 */
++					mutex_unlock(&state->mutex);
++					return -EBUSY;
++				}
++				break;
++			}
++		}
 +	}
 +
-+	tb10x_gpio->gc.label		= of_node_full_name(dn);
-+	tb10x_gpio->gc.dev		= &pdev->dev;
-+	tb10x_gpio->gc.owner		= THIS_MODULE;
-+	tb10x_gpio->gc.direction_input	= tb10x_gpio_direction_in;
-+	tb10x_gpio->gc.get		= tb10x_gpio_get;
-+	tb10x_gpio->gc.direction_output	= tb10x_gpio_direction_out;
-+	tb10x_gpio->gc.set		= tb10x_gpio_set;
-+	tb10x_gpio->gc.request		= tb10x_gpio_request;
-+	tb10x_gpio->gc.free		= tb10x_gpio_free;
-+	tb10x_gpio->gc.base		= -1;
-+	tb10x_gpio->gc.ngpio		= ngpio;
-+	tb10x_gpio->gc.can_sleep	= 0;
++	/* If we haven't returned an error at this point, the GPIO pin is not
++	 * used by another function and the GPIO request can be granted:
++	 * Register pin as being used as GPIO so we don't allocate it to
++	 * another function later.
++	 */
++	set_bit(pin, state->gpios);
 +
++	/* Potential conflicts between GPIOs and pin functions were caught
++	 * earlier in this function and tb10x_pinctrl_set_config will do the
++	 * Right Thing, either configure the port in GPIO only mode or leave
++	 * another mode compatible with this GPIO request untouched.
++	 */
++	if (muxport >= 0)
++		tb10x_pinctrl_set_config(state, muxport, muxmode);
 +
-+	ret = gpiochip_add(&tb10x_gpio->gc);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not add gpiochip.\n");
-+		goto fail_gpiochip_registration;
++	mutex_unlock(&state->mutex);
++
++	return 0;
++}
++
++static void tb10x_gpio_disable_free(struct pinctrl_dev *pctl,
++					struct pinctrl_gpio_range *range,
++					unsigned pin)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++
++	mutex_lock(&state->mutex);
++
++	clear_bit(pin, state->gpios);
++
++	mutex_unlock(&state->mutex);
++}
++
++static int tb10x_pctl_enable(struct pinctrl_dev *pctl,
++			unsigned func_selector, unsigned group_selector)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	const struct tb10x_pinfuncgrp *grp = &state->pingroups[group_selector];
++	int i;
++
++	if (grp->port < 0)
++		return 0;
++
++	mutex_lock(&state->mutex);
++
++	/* Check if the requested function is compatible with previously
++	 * requested functions.
++	 */
++	if (state->ports[grp->port].count
++			&& (state->ports[grp->port].mode != grp->mode)) {
++		mutex_unlock(&state->mutex);
++		return -EBUSY;
 +	}
 +
-+	platform_set_drvdata(pdev, tb10x_gpio);
-+
-+	if (of_find_property(dn, "interrupt-controller", NULL)) {
-+		struct irq_chip_generic *gc;
-+
-+		ret = platform_get_irq(pdev, 0);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "No interrupt specified.\n");
-+			goto fail_get_irq;
++	/* Check if the requested function is compatible with previously
++	 * requested GPIOs.
++	 */
++	for (i = 0; i < grp->pincnt; i++)
++		if (test_bit(grp->pins[i], state->gpios)) {
++			mutex_unlock(&state->mutex);
++			return -EBUSY;
 +		}
 +
-+		tb10x_gpio->gc.to_irq	= tb10x_gpio_to_irq;
-+		tb10x_gpio->irq		= ret;
++	tb10x_pinctrl_set_config(state, grp->port, grp->mode);
 +
-+		ret = devm_request_irq(&pdev->dev, ret, tb10x_gpio_irq_cascade,
-+				IRQF_TRIGGER_NONE | IRQF_SHARED,
-+				dev_name(&pdev->dev), tb10x_gpio);
-+		if (ret != 0)
-+			goto fail_request_irq;
++	state->ports[grp->port].count++;
 +
-+		tb10x_gpio->domain = irq_domain_add_linear(dn,
-+						tb10x_gpio->gc.ngpio,
-+						&irq_generic_chip_ops, NULL);
-+		if (!tb10x_gpio->domain) {
-+			ret = -ENOMEM;
-+			goto fail_irq_domain;
++	mutex_unlock(&state->mutex);
++
++	return 0;
++}
++
++static void tb10x_pctl_disable(struct pinctrl_dev *pctl,
++			unsigned func_selector, unsigned group_selector)
++{
++	struct tb10x_pinctrl *state = pinctrl_dev_get_drvdata(pctl);
++	const struct tb10x_pinfuncgrp *grp = &state->pingroups[group_selector];
++
++	if (grp->port < 0)
++		return;
++
++	mutex_lock(&state->mutex);
++
++	state->ports[grp->port].count--;
++
++	mutex_unlock(&state->mutex);
++}
++
++static struct pinmux_ops tb10x_pinmux_ops = {
++	.get_functions_count = tb10x_get_functions_count,
++	.get_function_name = tb10x_get_function_name,
++	.get_function_groups = tb10x_get_function_groups,
++	.gpio_request_enable = tb10x_gpio_request_enable,
++	.gpio_disable_free = tb10x_gpio_disable_free,
++	.enable = tb10x_pctl_enable,
++	.disable = tb10x_pctl_disable,
++};
++
++static struct pinctrl_desc tb10x_pindesc = {
++	.name = "TB10x",
++	.pins = tb10x_pins,
++	.npins = ARRAY_SIZE(tb10x_pins),
++	.owner = THIS_MODULE,
++	.pctlops = &tb10x_pinctrl_ops,
++	.pmxops  = &tb10x_pinmux_ops,
++};
++
++static int tb10x_pinctrl_probe(struct platform_device *pdev)
++{
++	int ret = -EINVAL;
++	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	struct device *dev = &pdev->dev;
++	struct device_node *of_node = dev->of_node;
++	struct device_node *child;
++	struct tb10x_pinctrl *state;
++	int i;
++
++	if (!of_node) {
++		dev_err(dev, "No device tree node found.\n");
++		return -EINVAL;
++	}
++
++	if (!mem) {
++		dev_err(dev, "No memory resource defined.\n");
++		return -EINVAL;
++	}
++
++	state = devm_kzalloc(dev, sizeof(struct tb10x_pinctrl) +
++					of_get_child_count(of_node)
++					* sizeof(struct tb10x_of_pinfunc),
++				GFP_KERNEL);
++	if (!state)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, state);
++	state->pinfuncs = (struct tb10x_of_pinfunc *)(state + 1);
++	mutex_init(&state->mutex);
++
++	state->base = devm_ioremap_resource(dev, mem);
++	if (!state->base) {
++		dev_err(dev, "Request register region failed.\n");
++		ret = -EBUSY;
++		goto fail;
++	}
++
++	state->pingroups = tb10x_pingroups;
++	state->pinfuncgrpcnt = ARRAY_SIZE(tb10x_pingroups);
++
++	for (i = 0; i < TB10X_PORTS; i++)
++		state->ports[i].mode = tb10x_pinctrl_get_config(state, i);
++
++	for_each_child_of_node(of_node, child) {
++		const char *name;
++
++		if (!of_property_read_string(child, "abilis,function",
++						&name)) {
++			state->pinfuncs[state->pinfuncnt].name = child->name;
++			state->pinfuncs[state->pinfuncnt].group = name;
++			state->pinfuncnt++;
 +		}
++	}
 +
-+		ret = irq_alloc_domain_generic_chips(tb10x_gpio->domain,
-+				tb10x_gpio->gc.ngpio, 1, tb10x_gpio->gc.label,
-+				handle_edge_irq, IRQ_NOREQUEST, IRQ_NOPROBE,
-+				IRQ_GC_INIT_MASK_CACHE);
-+		if (ret)
-+			goto fail_irq_domain;
-+
-+		gc = tb10x_gpio->domain->gc->gc[0];
-+		gc->reg_base                         = tb10x_gpio->base;
-+		gc->chip_types[0].type               = IRQ_TYPE_EDGE_BOTH;
-+		gc->chip_types[0].chip.irq_ack       = irq_gc_ack_set_bit;
-+		gc->chip_types[0].chip.irq_mask      = irq_gc_mask_clr_bit;
-+		gc->chip_types[0].chip.irq_unmask    = irq_gc_mask_set_bit;
-+		gc->chip_types[0].chip.irq_set_type  = tb10x_gpio_irq_set_type;
-+		gc->chip_types[0].regs.ack           = OFFSET_TO_REG_CHANGE;
-+		gc->chip_types[0].regs.mask          = OFFSET_TO_REG_INT_EN;
++	state->pctl = pinctrl_register(&tb10x_pindesc, dev, state);
++	if (IS_ERR(state->pctl)) {
++		dev_err(dev, "could not register TB10x pin driver\n");
++		ret = PTR_ERR(state->pctl);
++		goto fail;
 +	}
 +
 +	return 0;
 +
-+fail_irq_domain:
-+fail_request_irq:
-+fail_get_irq:
-+	gpiochip_remove(&tb10x_gpio->gc);
-+fail_gpiochip_registration:
-+fail_ioremap:
++fail:
++	mutex_destroy(&state->mutex);
 +	return ret;
 +}
 +
-+static int __exit tb10x_gpio_remove(struct platform_device *pdev)
++static int tb10x_pinctrl_remove(struct platform_device *pdev)
 +{
-+	struct tb10x_gpio *tb10x_gpio = platform_get_drvdata(pdev);
-+	int ret;
++	struct tb10x_pinctrl *state = platform_get_drvdata(pdev);
 +
-+	if (tb10x_gpio->gc.to_irq) {
-+		irq_remove_generic_chip(tb10x_gpio->domain->gc->gc[0],
-+					BIT(tb10x_gpio->gc.ngpio) - 1, 0, 0);
-+		kfree(tb10x_gpio->domain->gc);
-+		irq_domain_remove(tb10x_gpio->domain);
-+		free_irq(tb10x_gpio->irq, tb10x_gpio);
-+	}
-+	ret = gpiochip_remove(&tb10x_gpio->gc);
-+	if (ret)
-+		return ret;
++	pinctrl_unregister(state->pctl);
++	mutex_destroy(&state->mutex);
 +
 +	return 0;
 +}
 +
-+static const struct of_device_id tb10x_gpio_dt_ids[] = {
-+	{ .compatible = "abilis,tb10x-gpio" },
++
++static const struct of_device_id tb10x_pinctrl_dt_ids[] = {
++	{ .compatible = "abilis,tb10x-iomux" },
 +	{ }
 +};
-+MODULE_DEVICE_TABLE(of, tb10x_gpio_dt_ids);
++MODULE_DEVICE_TABLE(of, tb10x_pinctrl_dt_ids);
 +
-+static struct platform_driver tb10x_gpio_driver = {
-+	.probe		= tb10x_gpio_probe,
-+	.remove		= tb10x_gpio_remove,
-+	.driver = {
-+		.name	= "tb10x-gpio",
-+		.of_match_table = of_match_ptr(tb10x_gpio_dt_ids),
-+		.owner	= THIS_MODULE,
++static struct platform_driver tb10x_pinctrl_pdrv = {
++	.probe   = tb10x_pinctrl_probe,
++	.remove  = tb10x_pinctrl_remove,
++	.driver  = {
++		.name  = "tb10x_pinctrl",
++		.of_match_table = of_match_ptr(tb10x_pinctrl_dt_ids),
++		.owner = THIS_MODULE
 +	}
 +};
 +
-+static int __init ab_gpio_init(void)
++static int __init tb10x_iopinctrl_init(void)
 +{
-+	return platform_driver_register(&tb10x_gpio_driver);
++	return platform_driver_register(&tb10x_pinctrl_pdrv);
 +}
 +
-+static void __exit ab_gpio_exit(void)
++static void __exit tb10x_iopinctrl_exit(void)
 +{
-+	platform_driver_unregister(&tb10x_gpio_driver);
++	platform_driver_unregister(&tb10x_pinctrl_pdrv);
 +}
 +
-+module_init(ab_gpio_init);
-+module_exit(ab_gpio_exit);
++MODULE_AUTHOR("Christian Ruppert <christian.ruppert@abilis.com>");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("tb10x gpio.");
-+MODULE_VERSION("0.0.1");
++module_init(tb10x_iopinctrl_init);
++module_exit(tb10x_iopinctrl_exit);
 -- 
 1.7.1
 
