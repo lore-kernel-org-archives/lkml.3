@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3JHCUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:20:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36057 "EHLO
+	id S1754754Ab3JHCUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:20:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36062 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3JHCUK (ORCPT
+	with ESMTP id S1754060Ab3JHCUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:20:10 -0400
-Date: Mon, 7 Oct 2013 19:13:04 -0700
+	Mon, 7 Oct 2013 22:20:21 -0400
+Date: Mon, 7 Oct 2013 19:19:41 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linville@tuxdriver.com, Alex Dubov <oakad@yahoo.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH V2] memstick: Fix memory leak in memstick_check() error
- path
-Message-ID: <20131008021304.GB32733@kroah.com>
-References: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-msm@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: Use of drivers/platform and matching include?
+Message-ID: <20131008021941.GA9427@kroah.com>
+References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org>
+ <CAOesGMjJ6Uj0uGFJqtnWQyDW+tr6eLVWoHZ+B7uFna+L8N6E8Q@mail.gmail.com>
+ <20131004114128.GL12758@n2100.arm.linux.org.uk>
+ <20131004132209.GB23923@kroah.com>
+ <CAOesGMjxwmr0Vo0Puc-nZntgXLy6D1PTohz=C+fFukP_Eu1iQg@mail.gmail.com>
+ <20131005171323.GB5780@kroah.com>
+ <52535151.2000508@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
+In-Reply-To: <52535151.2000508@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 06, 2013 at 10:21:51PM -0500, Larry Finger wrote:
-> With kernel 3.12-rc3, kmemleak reports the following leak:
+On Mon, Oct 07, 2013 at 05:26:57PM -0700, Rohit Vaswani wrote:
+> On 10/5/2013 10:13 AM, Greg Kroah-Hartman wrote:
+> > On Fri, Oct 04, 2013 at 09:48:41AM -0700, Olof Johansson wrote:
+> >> On Fri, Oct 4, 2013 at 6:22 AM, Greg Kroah-Hartman
+> >> <gregkh@linuxfoundation.org> wrote:
+> >>> On Fri, Oct 04, 2013 at 12:41:28PM +0100, Russell King - ARM Linux wrote:
+> >>>> So, no, there will be no new drivers under arch/arm.  They must be in the
+> >>>> drivers subtree somewhere.
+> >>> I have no objection with this, and encourage it.
+> >> Ok, so these are some of the requirements as far as I see it:
+> >>
+> >> * No per-vendor driver dumping ground under drivers/* (i.e. no
+> >> drivers/platform/<soc vendor>/)
+> > Yes.
 > 
-> > unreferenced object 0xffff8800ae85c190 (size 16):
-> >   comm "kworker/u4:3", pid 685, jiffies 4294916336 (age 2831.760s)
-> >   hex dump (first 16 bytes):
-> >     6d 65 6d 73 74 69 63 6b 30 00 00 00 00 00 00 00  memstick0.......
-> >   backtrace:
-> >     [<ffffffff8146a0d1>] kmemleak_alloc+0x21/0x50
-> >     [<ffffffff81160720>] __kmalloc_track_caller+0x160/0x2f0
-> >     [<ffffffff81237b9b>] kvasprintf+0x5b/0x90
-> >     [<ffffffff8122c0c1>] kobject_set_name_vargs+0x21/0x60
-> >     [<ffffffff812e7f5c>] dev_set_name+0x3c/0x40
-> >     [<ffffffffa02bf918>] memstick_check+0xb8/0x340 [memstick]
-> >     [<ffffffff81069862>] process_one_work+0x1d2/0x670
-> >     [<ffffffff8106a88a>] worker_thread+0x11a/0x370
-> >     [<ffffffff81072ea6>] kthread+0xd6/0xe0
-> >     [<ffffffff81478bbc>] ret_from_fork+0x7c/0xb0
+> We agree that there is no need for a dump *all* drivers under 
+> arm/mach-foo in drivers/platform/foo/. The msm bus driver would be added 
+> under drivers/bus/. But, we still have some drivers which are quite SoC 
+> specific and not in the general category of the sub-directories present 
+> under drivers.
+> As Kumar mentioned earlier -
 > 
-> This problem was introduced by commit 0252c3b "memstick: struct device -
-> replace bus_id with dev_name(), dev_set_name()" where the name is not freed
-> in the error path. The name is also leaked in memstick_free_card(). 
+> An example driver would be the means we utilize to communicate memory
+> regions between various HW blocks on the SoC.  So a video/media core
+> driver might need access to a header/functions from the memory region
+> driver.
 > 
-> Thanks to Catalin Marinas for suggesting the fix.
-> 
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: Alex Dubov <oakad@yahoo.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> ---
-> 
-> V2 fixes the typos in the commit message, and frees the name in
-> memstick_free_card() as well as the error path in memstick_check().
+> Would drivers/misc/qcom-* or drivers/misc/qcom/* be a reasonable place
+> to add them ? and the headers could go into include/linux/qcom-*.h
 
-Looking back at this, to try to figure out why the kmemleak report shows
-up, shows that this is a mess.  Why would we be erroring out _before_ we
-try to register the struct device with the driver core, yet we had
-already initialized the struct device structure?  Only set up the
-structure right before sending it to driver core, don't delay in
-allocation, only problems can happen (like here.)
-
-To fix this up, will take some major work, which I can't do, sorry, but
-this patch will not work either.
+That seems reasonable, but I'd have to see the code to verify this.
 
 greg k-h
