@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab3JIMoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:44:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44422 "EHLO mga14.intel.com"
+	id S1753990Ab3JIMra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:47:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21883 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab3JIMoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:44:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1063,1371106800"; 
-   d="scan'208";a="305614733"
-Message-ID: <52554F5E.2090200@intel.com>
-Date: Wed, 09 Oct 2013 15:43:10 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752292Ab3JIMr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 08:47:26 -0400
+Date: Tue, 8 Oct 2013 10:39:14 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: chai wen <chaiw.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [RFC/query] kvm async_pf anon pined pages migration
+Message-ID: <20131008073914.GA3574@redhat.com>
+References: <1380535387-26237-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+ <20130930125158.GA11993@redhat.com>
+ <BLU0-SMTP3062A22F7A685B9214BB05AE0150@phx.gbl>
+ <5253AD0E.6060209@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V5 3/9] perf tools: workaround objdump difficulties with
- kcore
-References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com> <1381221956-16699-4-git-send-email-adrian.hunter@intel.com> <20131008140236.GD1348@krava.redhat.com> <525506C5.3020101@intel.com> <20131009101249.GC1005@krava.redhat.com> <5255320C.9020009@intel.com> <20131009121624.GA5459@krava.redhat.com>
-In-Reply-To: <20131009121624.GA5459@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5253AD0E.6060209@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/13 15:16, Jiri Olsa wrote:
-> On Wed, Oct 09, 2013 at 01:38:04PM +0300, Adrian Hunter wrote:
->> On 09/10/13 13:12, Jiri Olsa wrote:
->>> On Wed, Oct 09, 2013 at 10:33:25AM +0300, Adrian Hunter wrote:
->>>> On 08/10/13 17:02, Jiri Olsa wrote:
->>>>> On Tue, Oct 08, 2013 at 11:45:50AM +0300, Adrian Hunter wrote:
+On Tue, Oct 08, 2013 at 02:58:22PM +0800, chai wen wrote:
+> On 10/02/2013 12:04 AM, chaiwen wrote:
+> >On 09/30/2013 08:51 PM, Gleb Natapov wrote:
+> >>On Mon, Sep 30, 2013 at 06:03:07PM +0800, chai wen wrote:
+> >>>Hi all
+> >>>
+> >>>Async page fault in kvm currently pin user pages via get_user_pages.
+> >>>when doing page migration,the method can be found via
+> >>>page->mmapping->a_ops->migratepage to offline old pages and migrate to
+> >>>new pages. As to anonymous page there is no file mapping but a anon_vma.So
+> >>>the migration will fall back to some *default* migration method.Anon pages
+> >>>that have been pined in memory by some reasons could be failed in the migration
+> >>>processing because of some reasons like ref-count checking.
+> >>>(or I misunderstand some thing?)
+> >>>
+> >>>Now we want to make these anon pages in async_pf can be migrated, I try some
+> >>>ways.But there are still many problems. The following is one that replaceing
+> >>>the mapping of anon page arbitrarily and doing some thing based on it.
+> >>>Kvm-based virtual machine can works on this patch,but have no experience of
+> >>>offline pages because of the limitaion of resouces.I'll check it later.
+> >>>
+> >>>I don't know weather it is a right direction of this issue.
+> >>>All comments/criticize are welcomed.
+> >>The pinning is not mandatory and can (and probably should) be dropped, but
+> >>pinning that is done by async page faults is short lived. What problems
+> >>are you seeing that warrant the complexity of handling their migration?
+> Hi Gleb
 > 
-> SNIP
+> As to this issue, I still have some thing not very clear.
+> If pages pinning is successfully holding (although not mandatory) by
+> async page fault.
+> And at the same time page migration happens because of memory
+> hot-remove action.
+> It has 120*hz timeout setting in common page offline processing,
+> could it fail with
+> these async_pf pined pages migration ?
+> What's your opinion about this ?   If it may fail under this
+> circumstance, should we do
+> some thing on it ?
 > 
->>>
->>> so.. the name of the section, name of the <function> plus the first
->>> instruction decode seem wrong.. I can see that in every symbol I
->>> annotate in the report and in annotate command as well.
->>
->> If you use the --asm-raw option you can see the bytes:
->>
->> 	66 66 66 90 
->>
->> That looks like a "nop" e.g. K8_NOP4 in arch/x86/include/asm/nops.h
->>
-> 
-> hum, wierd for all those functions to start with nop
+120 seconds is more than enough time for pinning to go away, but as I
+said the pinning is not even necessary. Patch to remove it is welcomed.
 
-I guess it is for ftrace.
-
-> 
-> ok, how about the '<load0>' function name?
-
-That is because kcore (and its copies) have no symbols
-so objdump has nothing meaningful to put there.  The function
-name and file appear at the top of the screen instead.
-
+--
+			Gleb.
