@@ -1,39 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab3JHWke (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 18:40:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33515 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab3JHWkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 18:40:15 -0400
-Message-ID: <525487C7.6080103@wwwdotorg.org>
-Date: Tue, 08 Oct 2013 16:31:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756721Ab3JHWle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 18:41:34 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6936 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754699Ab3JHWlc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 18:41:32 -0400
+From: "Bird, Tim" <Tim.Bird@sonymobile.com>
+To: "Bird, Tim" <Tim.Bird@sonymobile.com>, "cl@linux.com" <cl@linux.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        =?iso-8859-1?Q?=22Andersson=2C_Bj=F6rn=22?= 
+	<Bjorn.Andersson@sonymobile.com>,
+        "frowand.list@gmail.com" <frowand.list@gmail.com>,
+        "tbird20d@gmail.com" <tbird20d@gmail.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>
+Date: Wed, 9 Oct 2013 00:40:00 +0200
+Subject: revert! RE: [PATCH] slub: proper kmemleak tracking if
+ CONFIG_SLUB_DEBUG disabled
+Thread-Topic: revert! RE: [PATCH] slub: proper kmemleak tracking if
+ CONFIG_SLUB_DEBUG disabled
+Thread-Index: AQHOxHeHa6al28Wa9kGkJElOQLj1Iw==
+Message-ID: <F5184659D418E34EA12B1903EE5EF5FD8538E86653@seldmbx02.corpusers.net>
+References: <1381271832-13047-1-git-send-email-tim.bird@sonymobile.com>
+In-Reply-To: <1381271832-13047-1-git-send-email-tim.bird@sonymobile.com>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, sv-SE
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 4/5] clk: tegra124: Add new peripheral clocks
-References: <1380878014-22088-1-git-send-email-pdeschrijver@nvidia.com> <1380878014-22088-5-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1380878014-22088-5-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2013 03:12 AM, Peter De Schrijver wrote:
-> Tegra124 introduces a number of new peripheral clocks. This patch adds those
-> to the common peripheral clock code.
+Oh crud.  Please ignore.  I send the wrong patch.  Real one coming very soon.
+ -- Tim
+________________________________________
+From: Tim Bird [tim.bird@sonymobile.com]
+Sent: Tuesday, October 08, 2013 3:37 PM
+To: cl@linux.com; catalin.marinas@arm.com; Andersson, Björn; frowand.list@gmail.com; Bird, Tim; tbird20d@gmail.com
+Cc: linux-mm@kvack.org; linux-kernel@vger.kernel.org; Bobniev, Roman
+Subject: [PATCH] slub: proper kmemleak tracking if CONFIG_SLUB_DEBUG disabled
 
-Don't you need to add AFC[0..5] in this patch and/or patch 5?
+From: Roman Bobniev <Roman.Bobniev@sonymobile.com>
+
+Move more kmemleak calls into hook functions, and make it so
+that all hooks (both inside and outside of #ifdef CONFIG_SLUB_DEBUG_ON)
+call the appropriate kmemleak routines.  This allows for
+kmemleak to be configured independently of slub debug features.
+
+It also fixes a bug where kmemleak was only partially enabled
+in some configurations.
+
+Signed-off-by: Roman Bobniev <Roman.Bobniev@sonymobile.com>
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+---
+ mm/slub.c | 40 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 36 insertions(+), 4 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index c3eb3d3..95e170e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -933,6 +933,11 @@ static void trace(struct kmem_cache *s, struct page *page, void *object,
+  * Hooks for other subsystems that check memory allocations. In a typical
+  * production configuration these hooks all should produce no code at all.
+  */
++static inline post_alloc_hook(void *ptr, size_t size, gfp_t flags)
++{
++       kmemleak_alloc(ptr, size, 1, flags);
++}
++
+ static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+ {
+        flags &= gfp_allowed_mask;
+@@ -973,6 +978,11 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
+                debug_check_no_obj_freed(x, s->object_size);
+ }
+
++static inline void free_hook(void *x)
++{
++       kmemleak_free(x);
++}
++
+ /*
+  * Tracking of fully allocated slabs for debugging purposes.
+  *
+@@ -1260,13 +1270,35 @@ static inline void inc_slabs_node(struct kmem_cache *s, int node,
+ static inline void dec_slabs_node(struct kmem_cache *s, int node,
+                                                        int objects) {}
+
++/*
++ * Define the hook functions as empty of most debug code.
++ * However, leave the kmemleak calls so they can be configured
++ * independently of CONFIG_SLUB_DEBUG_ON.
++ */
++static inline post_alloc_hook(void *ptr, size_t size, gfp_t flags)
++{
++       kmemleak_alloc(ptr, size, 1, flags);
++}
++
+ static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+                                                        { return 0; }
+
+ static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
+-               void *object) {}
++               void *object)
++{
++       kmemleak_alloc_recursive(object, s->object_size, 1, s->flags,
++               flags & gfp_allowed_mask);
++}
+
+-static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
++static inline void slab_free_hook(struct kmem_cache *s, void *x)
++{
++       kmemleak_free_recursive(x, s->flags);
++}
++
++static inline void free_hook(void *x)
++{
++       kmemleak_free(x);
++}
+
+ #endif /* CONFIG_SLUB_DEBUG */
+
+@@ -3272,7 +3304,7 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
+        if (page)
+                ptr = page_address(page);
+
+-       kmemleak_alloc(ptr, size, 1, flags);
++       post_alloc_hook(ptr, size, flags);
+        return ptr;
+ }
+
+@@ -3336,7 +3368,7 @@ void kfree(const void *x)
+        page = virt_to_head_page(x);
+        if (unlikely(!PageSlab(page))) {
+                BUG_ON(!PageCompound(page));
+-               kmemleak_free(x);
++               free_hook(x);
+                __free_memcg_kmem_pages(page, compound_order(page));
+                return;
+        }
+--
+1.8.2.2
+
