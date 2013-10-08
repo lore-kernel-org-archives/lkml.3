@@ -1,208 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3JHIrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:47:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12893 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754927Ab3JHIrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:47:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
-   d="scan'208";a="389469559"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V5 9/9] perf tools: add ability to find kcore in build-id cache
-Date: Tue,  8 Oct 2013 11:45:56 +0300
-Message-Id: <1381221956-16699-10-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
-References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755421Ab3JHIrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:47:45 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:62905 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362Ab3JHIre (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:47:34 -0400
+Date: Tue, 8 Oct 2013 10:47:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 44/50] tools/perf/build: Collapse the test-all.c testcase
+Message-ID: <20131008084730.GC3295@gmail.com>
+References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
+ <1381147003-2574-45-git-send-email-mingo@kernel.org>
+ <20131007222505.GG2900@krava.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131007222505.GG2900@krava.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When no vmlinux is found, tools will use kallsyms and,
-if possible, kcore.  Add the ability to find kcore in
-the build-id cache.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/symbol.c | 147 +++++++++++++++++++++++++++++++++--------------
- 1 file changed, 103 insertions(+), 44 deletions(-)
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index dc5783c..9049f62 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1442,6 +1442,105 @@ out:
- 	return err;
- }
- 
-+static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
-+{
-+	char kallsyms_filename[PATH_MAX];
-+	struct dirent *dent;
-+	int ret = -1;
-+	DIR *d;
-+
-+	d = opendir(dir);
-+	if (!d)
-+		return -1;
-+
-+	while (1) {
-+		dent = readdir(d);
-+		if (!dent)
-+			break;
-+		if (dent->d_type != DT_DIR)
-+			continue;
-+		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
-+			  "%s/%s/kallsyms", dir, dent->d_name);
-+		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+			strlcpy(dir, kallsyms_filename, dir_sz);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	closedir(d);
-+
-+	return ret;
-+}
-+
-+static char *dso__find_kallsyms(struct dso *dso, struct map *map)
-+{
-+	u8 host_build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+	bool is_host = false;
-+	char path[PATH_MAX];
-+
-+	if (!dso->has_build_id) {
-+		/*
-+		 * Last resort, if we don't have a build-id and couldn't find
-+		 * any vmlinux file, try the running kernel kallsyms table.
-+		 */
-+		goto proc_kallsyms;
-+	}
-+
-+	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
-+				 sizeof(host_build_id)) == 0)
-+		is_host = dso__build_id_equal(dso, host_build_id);
-+
-+	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
-+
-+	/* Use /proc/kallsyms if possible */
-+	if (is_host) {
-+		DIR *d;
-+		int fd;
-+
-+		/* If no cached kcore go with /proc/kallsyms */
-+		scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
-+			  buildid_dir, sbuild_id);
-+		d = opendir(path);
-+		if (!d)
-+			goto proc_kallsyms;
-+		closedir(d);
-+
-+		/*
-+		 * Do not check the build-id cache, until we know we cannot use
-+		 * /proc/kcore.
-+		 */
-+		fd = open("/proc/kcore", O_RDONLY);
-+		if (fd != -1) {
-+			close(fd);
-+			/* If module maps match go with /proc/kallsyms */
-+			if (!validate_kcore_modules("/proc/kallsyms", map))
-+				goto proc_kallsyms;
-+		}
-+
-+		/* Find kallsyms in build-id cache with kcore */
-+		if (!find_matching_kcore(map, path, sizeof(path)))
-+			return strdup(path);
-+
-+		goto proc_kallsyms;
-+	}
-+
-+	scnprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
-+		  buildid_dir, sbuild_id);
-+
-+	if (access(path, F_OK)) {
-+		pr_err("No kallsyms or vmlinux with build-id %s was found\n",
-+		       sbuild_id);
-+		return NULL;
-+	}
-+
-+	return strdup(path);
-+
-+proc_kallsyms:
-+	return strdup("/proc/kallsyms");
-+}
-+
- static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 				symbol_filter_t filter)
- {
-@@ -1490,51 +1589,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (symbol_conf.symfs[0] != 0)
- 		return -1;
- 
--	/*
--	 * Say the kernel DSO was created when processing the build-id header table,
--	 * we have a build-id, so check if it is the same as the running kernel,
--	 * using it if it is.
--	 */
--	if (dso->has_build_id) {
--		u8 kallsyms_build_id[BUILD_ID_SIZE];
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
--					 sizeof(kallsyms_build_id)) == 0) {
--			if (dso__build_id_equal(dso, kallsyms_build_id)) {
--				kallsyms_filename = "/proc/kallsyms";
--				goto do_kallsyms;
--			}
--		}
--		/*
--		 * Now look if we have it on the build-id cache in
--		 * $HOME/.debug/[kernel.kallsyms].
--		 */
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--
--		if (asprintf(&kallsyms_allocated_filename,
--			     "%s/.debug/[kernel.kallsyms]/%s",
--			     getenv("HOME"), sbuild_id) == -1) {
--			pr_err("Not enough memory for kallsyms file lookup\n");
--			return -1;
--		}
--
--		kallsyms_filename = kallsyms_allocated_filename;
-+	kallsyms_allocated_filename = dso__find_kallsyms(dso, map);
-+	if (!kallsyms_allocated_filename)
-+		return -1;
- 
--		if (access(kallsyms_filename, F_OK)) {
--			pr_err("No kallsyms or vmlinux with build-id %s "
--			       "was found\n", sbuild_id);
--			free(kallsyms_allocated_filename);
--			return -1;
--		}
--	} else {
--		/*
--		 * Last resort, if we don't have a build-id and couldn't find
--		 * any vmlinux file, try the running kernel kallsyms table.
--		 */
--		kallsyms_filename = "/proc/kallsyms";
--	}
-+	kallsyms_filename = kallsyms_allocated_filename;
- 
- do_kallsyms:
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
--- 
-1.7.11.7
+> On Mon, Oct 07, 2013 at 01:56:37PM +0200, Ingo Molnar wrote:
+> 
+> SNIP
+> 
+> > diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
+> > index 6a5fd96..5b33bcf 100644
+> > --- a/tools/perf/config/feature-checks/test-backtrace.c
+> > +++ b/tools/perf/config/feature-checks/test-backtrace.c
+> > @@ -9,8 +9,6 @@ int main(void)
+> >  	entries = backtrace(backtrace_fns, 10);
+> >  	backtrace_symbols_fd(backtrace_fns, entries, 1);
+> >  
+> > -	printf("backtrace entries: %d\n", entries);
+> > - 
+> >  	return 0;
+> 
+> belongs to previous patch?
 
+Yes.
+
+> 
+> >  }
+> >  
+> > diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
+> > index 088fc59..43b9369 100644
+> > --- a/tools/perf/config/feature-checks/test-libunwind.c
+> > +++ b/tools/perf/config/feature-checks/test-libunwind.c
+> > @@ -18,9 +18,10 @@ int main(void)
+> >  
+> >  	addr_space = unw_create_addr_space(&accessors, 0);
+> >  	if (addr_space)
+> > -		return;
+> > +		return 0;
+> >  
+> >  	unw_init_remote(NULL, addr_space, NULL);
+> >  	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+> > +
+> 
+> ditto
+
+Thanks, fixed.
+
+	Ingo
