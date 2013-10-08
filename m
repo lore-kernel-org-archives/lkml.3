@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab3JHJXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:23:38 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:63418 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3JHJXg (ORCPT
+	id S1752957Ab3JHJdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:33:40 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41907 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3JHJdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:23:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1381221715.15686.3.camel@marge.simpson.net>
-References: <1381221715.15686.3.camel@marge.simpson.net>
-Date: Tue, 8 Oct 2013 11:23:35 +0200
-Message-ID: <CABPqkBRMa7rawfvQ2Sunc2tr87s_WqT_7GYac6+x=SNZoJSueg@mail.gmail.com>
-Subject: Re: perf: perf sched lat segfault - bisected
-From: Stephane Eranian <eranian@google.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Oct 2013 05:33:39 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-82-5253d17209f3
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc/legacy_serial: fix incorrect placement of
+ __initdata tag
+Date: Tue, 08 Oct 2013 11:33:29 +0200
+Message-id: <2241214.NPvmYhqHCQ@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20131008035623.GA31666@concordia>
+References: <35419229.o6Cv8JYbpg@amdc1032> <1600459.LJx7sBeEJs@amdc1032>
+ <20131008035623.GA31666@concordia>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jQd2ii8FBBr/2s1t8aGpltjjb9Ibd
+	4vKuOWwWv7//Y7W4PGklk8WaI4vZHdg8Fr1sYPHoedPC6nF+xkJGj7m7+hg9+rasYvT4vEku
+	gC2KyyYlNSezLLVI3y6BK2PT1ZVMBTO5K/r6j7A0MH7n6GLk5JAQMJF4seoeG4QtJnHh3nog
+	m4tDSGA6o8STE2eYIJwWJomGpm52kCo2ASuJie2rGEFsEQFdiXeXroJ1MAscYZS4++oo2Chh
+	gXCJV69esIDYLAKqEte3HgZr5hXQlOj/Nx3MFhXwlPg0aSkziM0poC/xd9pTsHohgVyJc38O
+	M0HUC0r8mHwPLM4sIC+xb/9UVghbS2L9zuNMExgFZiEpm4WkbBaSsgWMzKsYRVMLkguKk9Jz
+	jfSKE3OLS/PS9ZLzczcxggP9mfQOxlUNFocYBTgYlXh4BQ4HBQmxJpYVV+YeYpTgYFYS4RUw
+	Cg4S4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwLjA/6Zp
+	+OvGiXNLr0qfMAzIevTiY73Lr8Y/fiqPlqz6fUdg00aeLoZph17WzZ1wM2FfeuvWlt//wy7I
+	54SnXRPJLGC2tubY03Hic0fQk0zN17dOVX4J+RdgKbVC7edvBf+nkxavaY65aDT3eJnaUanS
+	E813eYTC1/wUvLxa+L/O3w4XHU7NxZOVWIozEg21mIuKEwECUY1YcAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 10:41 AM, Mike Galbraith <bitbucket@online.de> wrote:
-> Box: Q6600
->
-> Reproducer:
-> perf sched record -- sleep 1
-> perf sched lat (boom)
->
-I don't understand the test case here.
-If I do this, perf sched lat complains of no trace records
-and no kernel crash. Could you provide the full cmdline?
+On Tuesday, October 08, 2013 02:56:23 PM Michael Ellerman wrote:
+> On Thu, Oct 03, 2013 at 01:51:27PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> > On Tuesday, October 01, 2013 04:13:25 PM Michael Ellerman wrote:
+> > > On Mon, Sep 30, 2013 at 03:11:42PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> > > > __initdata tag should be placed between the variable name and equal
+> > > > sign for the variable to be placed in the intended .init.data section.
+> > > 
+> > > I see lots of other occurences of that in arch/powerpc. Why not send a
+> > > single patch to update them all?
+> > 
+> > The other occurences while not following the preferred kernel coding style
+> > are (probably) working OK with gcc. This particular occurence just doesn't
+> > work as it should.
+> 
+> Why would the other occurrences work but not this one?
 
+Because gcc seems to generate the correct code for things like i.e. this one:
 
-> The bisect winner:
->
-> marge:/usr/local/src/kernel/linux-3.x.git # git bisect good
-> 5c5e854bc760a2e2c878df3cfcf2afa4febcd511 is the first bad commit
-> commit 5c5e854bc760a2e2c878df3cfcf2afa4febcd511
-> Author: Stephane Eranian <eranian@google.com>
-> Date:   Wed Aug 21 12:10:25 2013 +0200
->
->     perf tools: Add attr->mmap2 support
->
->     This patch adds support for the new PERF_RECORD_MMAP2 record type
->     exposed by the kernel. This is an extended PERF_RECORD_MMAP record.
->
->     It adds for each file-backed mapping the device major, minor number and
->     the inode number and generation.
->
->     This triplet uniquely identifies the source of a file-backed mapping. It
->     can be used to detect identical virtual mappings between processes, for
->     instance.
->
->     The patch will prefer MMAP2 over MMAP.
->
->     Signed-off-by: Stephane Eranian <eranian@google.com>
->     Cc: Andi Kleen <ak@linux.intel.com>
->     Cc: David Ahern <dsahern@gmail.com>
->     Cc: Ingo Molnar <mingo@elte.hu>
->     Cc: Jiri Olsa <jolsa@redhat.com>
->     Cc: Namhyung Kim <namhyung.kim@lge.com>
->     Cc: Peter Zijlstra <peterz@infradead.org>
->     Link: http://lkml.kernel.org/r/1377079825-19057-3-git-send-email-eranian@google.com
->     [ Cope with 314add6 "Change machine__findnew_thread() to set thread pid",
->       fix 'perf test' regression test entry affected,
->       use perf_missing_features.mmap2 to fallback to not using .mmap2 in older kernels,
->       so that new tools can work with kernels where this feature is not present ]
->     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
->
-> :040000 040000 2d600afbdd11b323bbcd00a4c6b50ee82a604acc d2a81503d08aeea994e203245358ae939eb5e787 M      tools
->
->
-> git bisect start
-> # bad: [8b5ede69d24db939f52b47effff2f6fe1e83e08b] powerpc/irq: Don't switch to irq stack from softirq stack
-> git bisect bad 8b5ede69d24db939f52b47effff2f6fe1e83e08b
-> # good: [6e4664525b1db28f8c4e1130957f70a94c19213e] Linux 3.11
-> git bisect good 6e4664525b1db28f8c4e1130957f70a94c19213e
-> # good: [57d730924d5cc2c3e280af16a9306587c3a511db] Merge branch 'timers-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good 57d730924d5cc2c3e280af16a9306587c3a511db
-> # good: [d8cacd3a259bf522ea5e6c4c60eba67ba22f599c] Merge tag 'virtio-next-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux
-> git bisect good d8cacd3a259bf522ea5e6c4c60eba67ba22f599c
-> # good: [b55ee2816ed6d8f8a00d4badab0e3642ffbac19f] Merge branch 'sched-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good b55ee2816ed6d8f8a00d4badab0e3642ffbac19f
-> # bad: [d45004f9947e521fc9e812bc7937ed6e0328793b] Merge tag 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost
-> git bisect bad d45004f9947e521fc9e812bc7937ed6e0328793b
-> # bad: [9bf12df31f282e845b3dfaac1e5d5376a041da22] Merge git://git.kvack.org/~bcrl/aio-next
-> git bisect bad 9bf12df31f282e845b3dfaac1e5d5376a041da22
-> # bad: [26935fb06ee88f1188789807687c03041f3c70d9] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
-> git bisect bad 26935fb06ee88f1188789807687c03041f3c70d9
-> # bad: [5223161dc0f5e44fbf3d5e42d23697b6796cdf4e] Merge branch 'for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds
-> git bisect bad 5223161dc0f5e44fbf3d5e42d23697b6796cdf4e
-> # bad: [02b9735c12892e04d3e101b06e4c6d64a814f566] Merge tag 'pm+acpi-fixes-3.12-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm
-> git bisect bad 02b9735c12892e04d3e101b06e4c6d64a814f566
-> # good: [0df03a30c333d67ee9b4c37f32d423624f48fe05] Merge branch 'pm-cpufreq'
-> git bisect good 0df03a30c333d67ee9b4c37f32d423624f48fe05
-> # bad: [5c5e854bc760a2e2c878df3cfcf2afa4febcd511] perf tools: Add attr->mmap2 support
-> git bisect bad 5c5e854bc760a2e2c878df3cfcf2afa4febcd511
-> # good: [41817815666e4a6f302dad1fea47cbe64cc45e40] perf trace: Check if MAP_32BIT is defined
-> git bisect good 41817815666e4a6f302dad1fea47cbe64cc45e40
-> # good: [ccf53eac2097fb47bc40875ffb22c2d10fa8c46c] perf trace: Handle perf.data files with no tracepoints
-> git bisect good ccf53eac2097fb47bc40875ffb22c2d10fa8c46c
-> # good: [e71aa28312b208a14cd87fa61e941ac8c85072f4] perf kvm: Fix sample_type manipulation
-> git bisect good e71aa28312b208a14cd87fa61e941ac8c85072f4
-> # first bad commit: [5c5e854bc760a2e2c878df3cfcf2afa4febcd511] perf tools: Add attr->mmap2 support
->
->
+struct of_device_id __initdata legacy_serial_parents[]
+
+but not for ones like this:
+
+struct __initdata of_device_id legacy_serial_parents[]
+
+> Regardless, why don't we just do a single patch to clean them all up to
+> match coding style and (probably) do what they're intended.
+
+Because:
+
+- fixing this occurence changes runtime, fixing others won't
+
+- there were no such request from powerpc Maintainers
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
