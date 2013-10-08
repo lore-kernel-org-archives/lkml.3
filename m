@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab3JHKMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:12:34 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52091 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab3JHKMX (ORCPT
+	id S1756008Ab3JHKMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:12:38 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:39409 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894Ab3JHKM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:12:23 -0400
+	Tue, 8 Oct 2013 06:12:27 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 18/52] tools/perf/build: Split out feature check: 'libunwind'
-Date: Tue,  8 Oct 2013 12:10:48 +0200
-Message-Id: <1381227082-22039-19-git-send-email-mingo@kernel.org>
+Subject: [PATCH 23/52] tools/perf/build: Split out feature check: 'libperl'
+Date: Tue,  8 Oct 2013 12:10:53 +0200
+Message-Id: <1381227082-22039-24-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1381227082-22039-1-git-send-email-mingo@kernel.org>
 References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
@@ -28,98 +28,79 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-vTiatsVyva3tfgh3vhxaidxl@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ggucqbwFwpxyuxde6dm7itHq@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                        | 13 +++----------
- tools/perf/config/feature-checks/Makefile         |  4 ++++
- tools/perf/config/feature-checks/test-libunwind.c | 20 ++++++++++++++++++++
- 3 files changed, 27 insertions(+), 10 deletions(-)
+ tools/perf/config/Makefile                      |  3 ++-
+ tools/perf/config/feature-checks/Makefile       | 13 +++++++++++++
+ tools/perf/config/feature-checks/test-libperl.c |  9 +++++++++
+ 3 files changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 0d75587..c3f73be 100644
+index ca59b56..145b519 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -113,6 +113,7 @@ FEATURE_TESTS =				\
- 	dwarf				\
- 	libelf-mmap			\
- 	libelf-getphdrnum		\
-+	libunwind			\
+@@ -118,6 +118,7 @@ FEATURE_TESTS =				\
+ 	libslang			\
+ 	gtk2				\
+ 	gtk2-infobar			\
++	libperl				\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -240,15 +241,7 @@ ifneq ($(ARCH),x86)
- endif
+@@ -311,7 +312,7 @@ else
+   PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+   FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
  
- ifndef NO_LIBUNWIND
--  # for linking with debug library, run like:
--  # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
--  ifdef LIBUNWIND_DIR
--    LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
--    LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
--  endif
--
--  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
--  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
-+  ifneq ($(feature-libunwind), 1)
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
-     NO_LIBUNWIND := 1
-   endif
-@@ -259,7 +252,7 @@ ifndef NO_LIBUNWIND
-   EXTLIBS += $(LIBUNWIND_LIBS)
-   CFLAGS += $(LIBUNWIND_CFLAGS)
-   LDFLAGS += $(LIBUNWIND_LDFLAGS)
--endif # NO_LIBUNWIND
-+endif
- 
- ifndef NO_LIBAUDIT
-   FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+-  ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
++  ifneq ($(feature-libperl), 1)
+     CFLAGS += -DNO_LIBPERL
+     NO_LIBPERL := 1
+   else
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 83b3a02..d6d9570 100644
+index 017918f..3033c25 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -11,6 +11,7 @@ FILES=					\
- 	test-dwarf			\
- 	test-libelf-mmap		\
- 	test-libelf-getphdrnum		\
-+	test-libunwind			\
+@@ -16,6 +16,7 @@ FILES=					\
+ 	test-libslang			\
+ 	test-gtk2			\
+ 	test-gtk2-infobar		\
++	test-libperl			\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -57,6 +58,9 @@ test-libelf-getphdrnum:
- test-libnuma:
- 	$(BUILD) -lnuma
+@@ -77,6 +78,18 @@ test-gtk2:
+ test-gtk2-infobar:
+ 	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
  
-+test-libunwind:
-+	$(BUILD) -lunwind -lunwind-x86_64 -lelf
++grep-libs  = $(filter -l%,$(1))
++strip-libs = $(filter-out -l%,$(1))
++
++PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
++PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
++PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
++PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
++
++test-libperl:
++	$(BUILD) $(FLAGS_PERL_EMBED)
 +
  -include *.d */*.d
  
  ###############################
-diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
+diff --git a/tools/perf/config/feature-checks/test-libperl.c b/tools/perf/config/feature-checks/test-libperl.c
 new file mode 100644
-index 0000000..5622746
+index 0000000..8871f6a
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libunwind.c
-@@ -0,0 +1,20 @@
-+#include <libunwind.h>
-+#include <stdlib.h>
-+
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
-+
-+
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++++ b/tools/perf/config/feature-checks/test-libperl.c
+@@ -0,0 +1,9 @@
++#include <EXTERN.h>
++#include <perl.h>
 +
 +int main(void)
 +{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	perl_alloc();
++
 +	return 0;
 +}
 -- 
