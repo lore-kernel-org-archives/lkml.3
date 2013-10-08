@@ -1,119 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3JHVtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 17:49:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44617 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756736Ab3JHVt0 (ORCPT
+	id S1755723Ab3JHVyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 17:54:45 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43000 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab3JHVyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 17:49:26 -0400
-Date: Tue, 8 Oct 2013 14:44:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alan Tull <atull@altera.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, monstr@monstr.eu,
-        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-Message-ID: <20131008214401.GC11941@kroah.com>
-References: <20131003064915.GB17155@amd.pavel.ucw.cz>
- <524EC965.70701@monstr.eu>
- <20131004141646.GA9396@kroah.com>
- <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
- <524ED081.1040600@monstr.eu>
- <524EF0CE.4040002@zytor.com>
- <524EFE76.70200@monstr.eu>
- <524F04FD.5020804@zytor.com>
- <20131004233341.GA4028@kroah.com>
- <1381251614.6062.9.camel@atx-linux-37>
+	Tue, 8 Oct 2013 17:54:43 -0400
+Date: Tue, 8 Oct 2013 14:54:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: xfs lockdep trace after unlink
+Message-ID: <20131008215439.GA5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131008212056.GA7467@redhat.com>
+ <20131008213742.GB4446@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381251614.6062.9.camel@atx-linux-37>
+In-Reply-To: <20131008213742.GB4446@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100821-1344-0000-0000-0000024536D4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 12:00:14PM -0500, Alan Tull wrote:
-> On Fri, 2013-10-04 at 16:33 -0700, Greg Kroah-Hartman wrote:
-> > On Fri, Oct 04, 2013 at 11:12:13AM -0700, H. Peter Anvin wrote:
-> > > On 10/04/2013 10:44 AM, Michal Simek wrote:
-> > > > 
-> > > > If you look at it in general I believe that there is wide range of 
-> > > > applications which just contain one bitstream per fpga and the 
-> > > > bitstream is replaced by newer version in upgrade. For them 
-> > > > firmware interface should be pretty useful. Just setup firmware 
-> > > > name with bitstream and it will be automatically loaded in startup 
-> > > > phase.
-> > > > 
-> > > > Then there is another set of applications especially in connection 
-> > > > to partial reconfiguration where this can be done statically by 
-> > > > pregenerated partial bitstreams or automatically generated on 
-> > > > target cpu. For doing everything on the target firmware interface 
-> > > > is not the best because everything can be handled by user 
-> > > > application and it is easier just to push this bitstream to do 
-> > > > device and not to save it to the fs.
-> > > > 
-> > > > I think the question here is if this subsystem could have several 
-> > > > interfaces. For example Alan is asking for adding char support. 
-> > > > Does it even make sense to have more interfaces with the same 
-> > > > backend driver? When this is answered then we can talk which one 
-> > > > make sense to have. In v2 is sysfs and firmware one. Adding char
-> > > > is also easy to do.
-> > > > 
-> > > 
-> > > Greg, what do you think?
-> > > 
-> > > I agree that the firmware interface makes sense when the use of the
-> > > FPGA is an implementation detail in a fixed hardware configuration,
-> > > but that is a fairly restricted use case all things considered.
+On Wed, Oct 09, 2013 at 08:37:42AM +1100, Dave Chinner wrote:
+> On Tue, Oct 08, 2013 at 05:20:56PM -0400, Dave Jones wrote:
+> > I was deleting a kernel tree, when this happened..
+> > RCU, or xfs ?
 > > 
-> > Ideally I thought this would be just like "firmware", you dump the file
-> > to the FPGA, it validates it and away you go with a new image running in
-> > the chip.
-> > 
-> > But, it sounds like this is much more complicated, so much so that
-> > configfs might be the correct interface for it, as you can do lots of
-> > things there, and it is very flexible (some say too flexible...)
-> > 
-> > A char device, with a zillion different custom ioctls is also a way to
-> > do it, but one that I really want to avoid as that gets messy really
-> > quickly.
+> > BUG: MAX_LOCKDEP_CHAINS too low!
 > 
-> Hi Greg,
+> Or lockdep?
 > 
-> We are discussing a char device that has very few interfaces:
->  - a way of writing the image to fpga
->  - a way of getting fpga manager status
->  - a way of setting fpga manager state
+> > turning off the locking correctness validator.
+> > Please attach the output of /proc/lock_stat to the bug report
+> > CPU: 2 PID: 8109 Comm: rm Not tainted 3.12.0-rc4+ #96 
+> >  ffffffff824bc2e0 ffff880026f416a8 ffffffff8172d798 41e619a2e5098827
+> >  ffff880026f41768 ffffffff810cc91f 0000000000000002 000010a02977b643
+> >  ffff880026f416d8 0000000000000212 ffff880026f416f8 ffffffff810c7329
+> > Call Trace:
+> >  [<ffffffff8172d798>] dump_stack+0x4e/0x82
+> >  [<ffffffff810cc91f>] __lock_acquire+0x1b7f/0x1be0
+> >  [<ffffffff810c7329>] ? get_lock_stats+0x19/0x60
+> >  [<ffffffff810c7f5d>] ? lock_release_holdtime.part.29+0x9d/0x160
+> >  [<ffffffff810cd133>] lock_acquire+0x93/0x200
+> >  [<ffffffff81097d0a>] ? try_to_wake_up+0x22a/0x350
+> >  [<ffffffff817373c0>] _raw_spin_lock+0x40/0x80
+> >  [<ffffffff81097d0a>] ? try_to_wake_up+0x22a/0x350
+> >  [<ffffffff81097d0a>] try_to_wake_up+0x22a/0x350
+> >  [<ffffffff81097ea2>] default_wake_function+0x12/0x20
+> >  [<ffffffff81084c38>] autoremove_wake_function+0x18/0x40
+> >  [<ffffffff81090083>] ? __wake_up+0x23/0x50
+> >  [<ffffffff8108eb78>] __wake_up_common+0x58/0x90
+> >  [<ffffffff81090099>] __wake_up+0x39/0x50
+> >  [<ffffffff8110dc38>] rcu_report_qs_rsp+0x48/0x70
+> >  [<ffffffff8110f7d4>] rcu_report_unblock_qs_rnp+0x84/0x90
+> >  [<ffffffff81117fcf>] ? rcu_read_unlock_special+0x9f/0x4e0
+> >  [<ffffffff81118264>] rcu_read_unlock_special+0x334/0x4e0
+> >  [<ffffffff810c720f>] ? trace_hardirqs_off_caller+0x1f/0xc0
+> >  [<ffffffff8107f16c>] __rcu_read_unlock+0x8c/0x90
+> >  [<ffffffffa027084e>] xfs_perag_get+0xde/0x2a0 [xfs]
+> >  [<ffffffffa0270775>] ? xfs_perag_get+0x5/0x2a0 [xfs]
+> >  [<ffffffffa01f72f6>] _xfs_buf_find+0xd6/0x480 [xfs]
+> >  [<ffffffffa01f780a>] xfs_buf_get_map+0x2a/0x260 [xfs]
+> >  [<ffffffffa01f8fcc>] xfs_buf_read_map+0x2c/0x200 [xfs]
+> >  [<ffffffffa0281019>] xfs_trans_read_buf_map+0x4b9/0xa70 [xfs]
+> >  [<ffffffffa0245578>] xfs_da_read_buf+0xb8/0x340 [xfs]
+> >  [<ffffffff810ca84b>] ? mark_held_locks+0xbb/0x140
+> >  [<ffffffffa024a3b9>] xfs_dir3_block_read+0x39/0x80 [xfs]
+> >  [<ffffffffa024a440>] xfs_dir2_block_lookup_int+0x40/0x260 [xfs]
+> >  [<ffffffffa024b49d>] xfs_dir2_block_removename+0x3d/0x390 [xfs]
+> >  [<ffffffffa022d0da>] ? xfs_bmap_last_offset+0x4a/0xa0 [xfs]
+> >  [<ffffffffa024991c>] xfs_dir_removename+0x11c/0x180 [xfs]
+> >  [<ffffffffa0262085>] xfs_remove+0x2e5/0x510 [xfs]
+> >  [<ffffffffa020ab8b>] xfs_vn_unlink+0x4b/0x90 [xfs]
+> >  [<ffffffff811d4fd0>] vfs_unlink+0x90/0x100
+> >  [<ffffffff811d51bf>] do_unlinkat+0x17f/0x240
+> >  [<ffffffff81010b45>] ? syscall_trace_enter+0x145/0x2a0
+> >  [<ffffffff811d830b>] SyS_unlinkat+0x1b/0x40
+> >  [<ffffffff817408e4>] tracesys+0xdd/0xe2
 > 
-> This all looks like standard char driver interface to me.  Writing the
-> image could be writing to the devnode (cat image.bin > /dev/fpga0). The
-> status stuff would be sysfs attributes.  All normal stuff any char
-> driver in the kernel would do.  Why not just go with that?
+> It's hard to see what in XFS is causing this. You're reading a
+> single block directory, which means we're holding two inode locks
+> here, and then we've done a lookup on a radix tree under
+> rcu_read_lock(). Hence I can't see how we've overrun the lockdep
+> chain depth in the XFS code path. FWIW, it's thrown this warning
+> when calling rcu_read_unlock() here:
+> 
+> struct xfs_perag *
+> xfs_perag_get(
+>         struct xfs_mount        *mp,
+>         xfs_agnumber_t          agno)
+> {
+>         struct xfs_perag        *pag;
+>         int                     ref = 0;
+> 
+>         rcu_read_lock();
+>         pag = radix_tree_lookup(&mp->m_perag_tree, agno);
+>         if (pag) {
+>                 ASSERT(atomic_read(&pag->pag_ref) >= 0);
+>                 ref = atomic_inc_return(&pag->pag_ref);
+>         }
+> >>>>>>  rcu_read_unlock();
 
-Because we really hate to add new ioctls to the kernel if at all
-possible.  Using sysfs (and it's one-value-per-file rule), makes
-userspace tools easier, and managing the different devices in the system
-easier (you know _exactly_ which device you are talking to, you don't
-have to guess based on minor number).
+Would xfs be holding one of the scheduler's rq or pi locks at this
+point?  That could result in deadlock.
 
-thanks,
+But I doubt that this is the problem, unless radix_tree_lookup() grabs
+one and returns with it held.  Otherwise, you have interrupts disabled
+throughout the RCU read-side critical section, and thus are guaranteed
+to take the lockless fastpath through rcu_read_unlock().  (As opposed
+to merely having extremely high probability of taking that fastpath.)
 
-greg k-h
+							Thanx, Paul
+
+>         trace_xfs_perag_get(mp, agno, ref, _RET_IP_);
+>         return pag;
+> }
+> 
+> So I'd be looking at RCU or lockdep at this point....
+> 
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> 
+
