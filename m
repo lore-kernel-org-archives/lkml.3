@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab3JHFPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:15:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab3JHFNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:13:01 -0400
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 03/14] arm: select ARCH_MAY_HAVE_PC_PARPORT
-Date: Tue,  8 Oct 2013 01:10:19 -0400
-Message-Id: <1381209030-351-4-git-send-email-msalter@redhat.com>
-In-Reply-To: <1381209030-351-1-git-send-email-msalter@redhat.com>
-References: <1381209030-351-1-git-send-email-msalter@redhat.com>
+	id S1752665Ab3JHF0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:26:48 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19420 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab3JHF0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 01:26:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 07 Oct 2013 22:22:39 -0700
+Message-ID: <525396AB.4010804@nvidia.com>
+Date: Tue, 8 Oct 2013 08:22:51 +0300
+From: Arto Merilainen <amerilainen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Erik Faye-Lund <kusmabite@gmail.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpu: host1x: check relocs after all gathers are consumed
+References: <1380917913-20482-1-git-send-email-kusmabite@gmail.com>
+In-Reply-To: <1380917913-20482-1-git-send-email-kusmabite@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Architectures which support CONFIG_PARPORT_PC should select
-ARCH_MAY_HAVE_PC_PARPORT.
+On 10/04/2013 11:18 PM, Erik Faye-Lund wrote:
+> The num_relocs count are passed to the kernel per job, not per gather.
+>
+> For multi-gather jobs, we would previously fail if there were relocs in
+> other gathers aside from the first one.
+>
+> Fix this by simply moving the check until all gathers have been
+> consumed.
+>
+> Signed-off-by: Erik Faye-Lund <kusmabite@gmail.com>
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org
----
- arch/arm/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+Reviewed-by: Arto Merilainen <amerilainen@nvidia.com>
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 1ad6fb6..2734ec1 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -5,6 +5,7 @@ config ARM
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-+	select ARCH_MAY_HAVE_PC_PARPORT
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT if MMU
- 	select CLONE_BACKWARDS
--- 
-1.8.3.1
-
+- Arto
