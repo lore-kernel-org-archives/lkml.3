@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab3JHKl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:41:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37615 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab3JHKlt (ORCPT
+	id S1756885Ab3JHKmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:42:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64280 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab3JHKlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:41:49 -0400
-Date: Tue, 8 Oct 2013 03:41:00 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-z7ryi3r1b9dn9smbfnab0fdc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Fix installation of libexec components
-Git-Commit-ID: 027a7e86a17fb2d172f4eb17cd6b0e9f139224fd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 08 Oct 2013 03:41:06 -0700 (PDT)
+	Tue, 8 Oct 2013 06:41:15 -0400
+Message-ID: <1381228870.15686.15.camel@marge.simpson.net>
+Subject: Re: perf: perf sched lat segfault - bisected
+From: Mike Galbraith <bitbucket@online.de>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Tue, 08 Oct 2013 12:41:10 +0200
+In-Reply-To: <CABPqkBQD9TE7RbP-auXO060aU1QNU=RUw2QZvoF39CCqpzdC4w@mail.gmail.com>
+References: <1381221715.15686.3.camel@marge.simpson.net>
+	 <CABPqkBRMa7rawfvQ2Sunc2tr87s_WqT_7GYac6+x=SNZoJSueg@mail.gmail.com>
+	 <1381227252.15686.9.camel@marge.simpson.net>
+	 <1381227659.15686.11.camel@marge.simpson.net>
+	 <CABPqkBQD9TE7RbP-auXO060aU1QNU=RUw2QZvoF39CCqpzdC4w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:XCU169HhD4eIaZ21PwKFndxbHp3KcDBojkJMYp6WHk3
+ azPad2nLxF5/LsNJywUFsE2dsxFiTfYBUiTQVCVGwvtF1OSD9H
+ dE66nh9V7uTqDTPoklpn6Ezh4yX6fxnGHvBVWFkSwCZt0F+c8Z
+ gRVVdu+Yi6O6fv2/ftV1Gsv58MVHHVO2HNYZpaZPSCTrAUi8sS
+ xTbUpTJdLnPCSrgVt9AWLTmITZ5vdFSGnzPlwWY/G9lwUeB2jy
+ M70XMuYVN32DUB398HRAAhE+gEfUl2GsZ0sy+rvY0IHY0QOVqn
+ wKA4moiQRzYlyqPDQIbuOPO7y1hv0fWsKrlFsbjpZH3cEf3n+L
+ F6m63cJ1DhNwH4mT6eNR3bx/muMyL7gG9BXO9ulOMUyzg0SfKX
+ 2fFSqdyLmzJjw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  027a7e86a17fb2d172f4eb17cd6b0e9f139224fd
-Gitweb:     http://git.kernel.org/tip/027a7e86a17fb2d172f4eb17cd6b0e9f139224fd
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 4 Oct 2013 10:24:17 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 4 Oct 2013 15:16:05 -0300
+On Tue, 2013-10-08 at 12:25 +0200, Stephane Eranian wrote: 
+> Mike,
+> 
+> Ok, I missed the sched record, let me track this down.
+> Note that there was a second commit to fix this one
+> by Arnaldo. Do you also have it in your kernel?
+> 
+> 51131c4 perf: Fix up MMAP2 buffer space reservation
 
-perf tools: Fix installation of libexec components
+Not with that commit id, but..
 
-Doing a fresh install on a user home directory needs to first make sure
-that the ~/libexec/perf-core/ directory is present so that
-'perf-archive' like scripts, 'perf test' attr config files and 'perf
-script' scripts can be installed.
+commit d008d5258e9c1a1b7ee6547b8d444323aef331b3
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Tue Sep 10 10:24:05 2013 -0300
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-z7ryi3r1b9dn9smbfnab0fdc@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+    perf: Fix up MMAP2 buffer space reservation
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3a0ff7f..64c043b 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -770,6 +770,7 @@ check: $(OUTPUT)common-cmds.h
- install-bin: all
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
-+	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- 	$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- ifndef NO_LIBPERL
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+-Mike
+
