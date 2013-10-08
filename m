@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab3JHHKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:10:48 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44649 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3JHHKq (ORCPT
+	id S1754568Ab3JHHN0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:13:26 -0400
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:37494 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab3JHHNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:10:46 -0400
-X-AuditID: 9c930197-b7bd9ae000006889-8a-5253aff42985
-Date: Tue, 8 Oct 2013 16:12:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-Message-ID: <20131008071202.GB29509@bbox>
-References: <52534692.7010400@linaro.org>
- <525347BE.7040606@zytor.com>
- <525349AE.1070904@linaro.org>
- <52534AEC.5040403@zytor.com>
- <20131008001306.GD25780@bbox>
- <52535EE1.3060700@zytor.com>
- <20131008020847.GH25780@bbox>
- <52537326.7000505@gmail.com>
- <20131008030736.GA29509@bbox>
- <52538B95.6080208@gmail.com>
+	Tue, 8 Oct 2013 03:13:25 -0400
+Message-ID: <5253B08C.4020305@codethink.co.uk>
+Date: Tue, 08 Oct 2013 09:13:16 +0200
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52538B95.6080208@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Dave Martin <Dave.Martin@arm.com>, tony@atomide.com, nm@ti.com,
+        linux@arm.linux.org.uk, aaro.koskinen@iki.fi, pdeschrijver@nvidia.com,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgA==?=
+	 =?UTF-8?B?0L7Qsg==?= <freemangordon@abv.bg>,
+        santosh.shilimkar@ti.com, pavel@ucw.cz, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/2] ARM: OMAP: Add secure function omap_smc3() which
+ calling instruction smc #1
+References: <20130904124303.GA2369@localhost.localdomain> <201309080943.30542@pali>
+In-Reply-To: <201309080943.30542@pali>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 12:35:33AM -0400, KOSAKI Motohiro wrote:
-> (10/7/13 11:07 PM), Minchan Kim wrote:
-> >Hi KOSAKI,
-> >
-> >On Mon, Oct 07, 2013 at 10:51:18PM -0400, KOSAKI Motohiro wrote:
-> >>>Maybe, int madvise5(addr, length, MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS,
-> >>>         &purged, &ret);
-> >>>
-> >>>Another reason to make it hard is that madvise(2) is tight coupled with
-> >>>with vmas split/merge. It needs mmap_sem's write-side lock and it hurt
-> >>>anon-vrange test performance much heavily and userland might want to
-> >>>make volatile range with small unit like "page size" so it's undesireable
-> >>>to make it with vma. Then, we should filter out to avoid vma split/merge
-> >>>in implementation if only MADV_LAZY case? Doable but it could make code
-> >>>complicated and lost consistency with other variant of madvise.
-> >>
-> >>I haven't seen your performance test result. Could please point out URLs?
-> >
-> >https://lkml.org/lkml/2013/3/12/105
-> 
-> It's not comparison with and without vma merge. I'm interest how much benefit
-> vmas operation avoiding have.
+On 08/09/13 09:43, Pali Rohár wrote:
+> Here is new version (v4) of omap secure part patch:
+>
+> Other secure functions omap_smc1() and omap_smc2() calling instruction smc #0
+> but Nokia RX-51 board needs to call smc #1 for PPA access.
+>
+> Signed-off-by: Ivaylo Dimitrov<freemangordon@abv.bg>
+> Signed-off-by: Pali Rohár<pali.rohar@gmail.com>
+> ---
+> diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+> index 0e72917..c4586f4 100644
+> --- a/arch/arm/mach-omap2/omap-secure.h
+> +++ b/arch/arm/mach-omap2/omap-secure.h
+> @@ -51,6 +51,7 @@
+>   extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
+>   				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+>   extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
+> +extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
+>   extern phys_addr_t omap_secure_ram_mempool_base(void);
+>   extern int omap_secure_ram_reserve_memblock(void);
+>
+> diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
+> index f6441c1..fd90125 100644
+> --- a/arch/arm/mach-omap2/omap-smc.S
+> +++ b/arch/arm/mach-omap2/omap-smc.S
+> @@ -1,9 +1,11 @@
+>   /*
+> - * OMAP44xx secure APIs file.
+> + * OMAP34xx and OMAP44xx secure APIs file.
+>    *
+>    * Copyright (C) 2010 Texas Instruments, Inc.
+>    * Written by Santosh Shilimkar<santosh.shilimkar@ti.com>
+>    *
+> + * Copyright (C) 2012 Ivaylo Dimitrov<freemangordon@abv.bg>
+> + * Copyright (C) 2013 Pali Rohár<pali.rohar@gmail.com>
+>    *
+>    * This program is free software,you can redistribute it and/or modify
+>    * it under the terms of the GNU General Public License version 2 as
+> @@ -54,6 +56,23 @@ ENTRY(omap_smc2)
+>   	ldmfd   sp!, {r4-r12, pc}
+>   ENDPROC(omap_smc2)
+>
+> +/**
+> + * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
+> + * Low level common routine for secure HAL and PPA APIs via smc #1
+> + * r0 - @service_id: Secure Service ID
+> + * r1 - @process_id: Process ID
+> + * r2 - @flag: Flag to indicate the criticality of operation
+> + * r3 - @pargs: Physical address of parameter list
+> + */
+> +ENTRY(omap_smc3)
+> +	stmfd	sp!, {r4-r11, lr}
+> +	mov	r12, r0		@ Copy the secure service ID
 
-I had an number but lost it so I should set up it in my KVM machine :(
-And I needed old kernel 3.7.0 for testing vma-based approach.
+I think you should save r12 in the call.
 
-DRAM:2G, CPU : 12 
-
-kernel 3.7.0
-
-jemalloc: 20527 records/s
-jemalloc vma based approach : 5360 records/s
-
-vrange call made worse because every thread stuck with mmap_sem.
-
-kernel 3.11.0
-
-jemalloc: 21176 records/s
-jemalloc vroot tree approach: 103637 records/s
-
-It could enhance 5 times.
 
 -- 
-Kind regards,
-Minchan Kim
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
