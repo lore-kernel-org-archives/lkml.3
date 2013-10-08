@@ -1,64 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3JHA3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:29:09 -0400
-Received: from smtprelay0117.hostedemail.com ([216.40.44.117]:59617 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751591Ab3JHA3G (ORCPT
+	id S1752802Ab3JHAdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:33:15 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59027 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3JHAdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:29:06 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3315:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:6117:7652:7903:8603:10004:10400:10450:10455:10848:10967:11232:11658:11914:12050:12517:12519:12740:13069:13311:13357:13523:13524:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crook33_14b8998d9e64c
-X-Filterd-Recvd-Size: 2127
-Message-ID: <1381192140.2081.235.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: Add check for sscanf without return use
-From: Joe Perches <joe@perches.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 07 Oct 2013 17:29:00 -0700
-In-Reply-To: <CAErSpo75uQL5woms175LR4KCAmqT_SWpQcXGdbKccgVPdh6xhg@mail.gmail.com>
-References: <1381189523.2081.225.camel@joe-AO722>
-	 <20131007165626.be437f74a4ba39e2be21af55@linux-foundation.org>
-	 <1381190594.2081.228.camel@joe-AO722>
-	 <CAErSpo75uQL5woms175LR4KCAmqT_SWpQcXGdbKccgVPdh6xhg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Oct 2013 20:33:14 -0400
+X-AuditID: 9c930179-b7b7fae000002758-b8-525352c890f9
+Date: Tue, 8 Oct 2013 09:34:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
+Message-ID: <20131008003430.GE25780@bbox>
+References: <1380761503-14509-6-git-send-email-john.stultz@linaro.org>
+ <52533C12.9090007@zytor.com>
+ <5253404D.2030503@linaro.org>
+ <52534331.2060402@zytor.com>
+ <52534692.7010400@linaro.org>
+ <525347BE.7040606@zytor.com>
+ <525349AE.1070904@linaro.org>
+ <52534AEC.5040403@zytor.com>
+ <20131008001306.GD25780@bbox>
+ <52534F60.9030500@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52534F60.9030500@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-07 at 18:10 -0600, Bjorn Helgaas wrote:
-> On Mon, Oct 7, 2013 at 6:03 PM, Joe Perches <joe@perches.com> wrote:
-> > On Mon, 2013-10-07 at 16:56 -0700, Andrew Morton wrote:
-> >> On Mon, 07 Oct 2013 16:45:23 -0700 Joe Perches <joe@perches.com> wrote:
-> >>
-> >> > Naked use sscanf can be troublesome.
-> >>
-> >> It would be helpful to expand on "troublesome"?
+On Mon, Oct 07, 2013 at 05:18:40PM -0700, John Stultz wrote:
+> On 10/07/2013 05:13 PM, Minchan Kim wrote:
+> > Hello Peter,
 > >
-> > Dunno, you either know or the couple of paragraphs
-> > it takes to explain with examples won't really be
-> > too helpful in a commit log.
+> > On Mon, Oct 07, 2013 at 04:59:40PM -0700, H. Peter Anvin wrote:
+> >> On 10/07/2013 04:54 PM, John Stultz wrote:
+> >>>> And wouldn't this apply to MADV_DONTNEED just as well?  Perhaps what we
+> >>>> should do is an enhanced madvise() call?
+> >>> Well, I think MADV_DONTNEED doesn't *have* do to anything at all. Its
+> >>> advisory after all. So it may immediately wipe out any data, but it may not.
+> >>>
+> >>> Those advisory semantics work fine w/ VRANGE_VOLATILE. However,
+> >>> VRANGE_NONVOLATILE is not quite advisory, its telling the system that it
+> >>> requires the memory at the specified range to not be volatile, and we
+> >>> need to correctly inform userland how much was changed and if any of the
+> >>> memory we did change to non-volatile was purged since being set volatile.
+> >>>
+> >>> In that way it is sort of different from madvise. Some sort of an
+> >>> madvise2 could be done, but then the extra purge state argument would be
+> >>> oddly defined for any other mode.
+> >>>
+> >>> Is your main concern here just wanting to have a zero-fill mode with
+> >>> volatile ranges? Or do you really want to squeeze this in to the madvise
+> >>> call interface?
+> >> The point is that MADV_DONTNEED is very similar in that sense,
+> >> especially if allowed to be lazy.  It makes a lot of sense to permit
+> >> both scrubbing modes orthogonally.
+> >>
+> >> The point you're making has to do with withdrawal of permission to flush
+> >> on demand, which is a result of having the lazy mode (ongoing
+> >> permission) and having to be able to withdraw such permission.
+> > I'm sorry I could not understand what you wanted to say.
+> > Could you elaborate a bit?
+> My understanding of his point is that VRANGE_VOLATILE is like a lazy
+> MADV_DONTNEED (with sigbus, rather then zero fill on fault), suggests
+> that we should find a way to have VRANGE_VOLATILE be something like
+> MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS_FAULT, instead of adding a new
+> syscall.  This would provide more options, since one could instead just
+> do MADV_DONTNEED|MADV_LAZY if they wanted zero-fill faults.
+
+Hmm, actually, I have thought VRANGE_SIGBUS option because Address/Thread
+sanitizer people wanted it as you know and someone might want it, too.
+
+I agree it's orthogonal but not sure MADV_LAZY and MADV_SIGBUS_FAULT can be
+used for other combination of advise except MADV_DONTNEED so it might
+confuse userland without benefit.
+
 > 
-> It would be helpful to me, since I don't write code with sscanf every
-> day.  A URL to an LKML description or something would be enough if the
-> commit log size is the concern.
+> And indeed, for the VRANGE_VOLATILE case, we could do something like
+> that, but the unresolved problem I see is that that we still need to
+> handle the VRANGE_NONVOLATILE case, and the madvise() interface doesn't
+> seem to accomodate the needed semantics well.
 
-I sent a V2 patch to Andrew and mm using this commit log:
-
-Naked use sscanf can be troublesome because the pointed
-to variables may not have been set.
-
-Add a warning when the sscanf return value is not used.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-V2: Use the $Compare variable instead of just == or !=
-    There are some tests that use < and >
+VRANGE_VOLATILE case could be a problem. In my mind, I had an idea to
+return purged state when we call vrange(VRANGE_VOLATILE) because kernel
+could purge them as soon as vrange(VRANGE_VOLATILE) called if memory is
+really tight so userland can notice "purging" earlier and kernel can
+discard them more efficiently.
 
 
+> 
+> thanks
+> -john
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
