@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab3JHKho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:37:44 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38429 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab3JHKhn (ORCPT
+	id S1756501Ab3JHKhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:37:54 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47985 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab3JHKht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:37:43 -0400
-Message-ID: <5253E06C.6040101@gmail.com>
-Date: Tue, 08 Oct 2013 19:37:32 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: hch@infradead.org
-CC: dm-devel@redhat.com, devel@driverdev.osuosl.org, thornber@redhat.com,
-        snitzer@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, mpatocka@redhat.com,
-        dan.carpenter@oracle.com, joe@perches.com, akpm@linux-foundation.org,
-        m.chehab@samsung.com, ejt@redhat.com, agk@redhat.com,
-        cesarb@cesarb.net, ruby.wktk@gmail.com
-Subject: Re: [dm-devel] Reworking dm-writeboost [was: Re: staging: Add dm-writeboost]
-References: <52384E66.6050101@gmail.com> <20130917205936.GB12001@redhat.com> <523E3522.2060607@gmail.com> <524183A2.9050301@gmail.com> <20130926034325.GO26872@dastard> <20131001082654.GA10326@debian> <alpine.LRH.2.02.1310021956130.22612@file01.intranet.prod.int.rdu2.redhat.com> <20131004020417.GF4446@dastard> <524FC4F4.6050401@gmail.com> <20131007234307.GP4446@dastard> <20131008094144.GA10261@infradead.org>
-In-Reply-To: <20131008094144.GA10261@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Oct 2013 06:37:49 -0400
+From: Majunath Goudar <csmanjuvijay@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: nataraja.km@lge.com, Majunath Goudar <csmanjuvijay@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] INPUT/MISC: Fix input/misc PWM related undefined reference errors.
+Date: Tue,  8 Oct 2013 16:07:34 +0530
+Message-Id: <1381228654-21947-1-git-send-email-csmanjuvijay@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph,
+This patch adds a PWM dependency to configure the INPUT_MAX8997_HAPTIC
+and INPUT_PWM_BEEPER. Without this patch, build system can lead to build
+failure. This was observed during randconfig testing, in which
+INPUT_MAX8997_HAPTIC or INPUT_PWM_BEEPER was enabled w/o PWM being
+enabled. leading to the following error:
 
-> You can detect O_DIRECT writes by second guession a special combination
-> of REQ_ flags only used there, as cfg tries to treat it special:
-> 
-> #define WRITE_SYNC              (WRITE | REQ_SYNC | REQ_NOIDLE)
-> #define WRITE_ODIRECT           (WRITE | REQ_SYNC)
-> 
-> the lack of REQ_NOIDLE when REQ_SYNC is set gives it away.  Not related
-> to the FLUSH or FUA flags in any way, though.
-Thanks.
-But, our problem is to detect the bio may or may not be deferred.
-The flag REQ_NOIDLE is the one?
+init/built-in.o
+drivers/built-in.o: In function `max8997_haptic_disable':
+:(.text+0x1073a0): undefined reference to `pwm_disable'
+drivers/built-in.o: In function `max8997_haptic_remove':
+:(.text+0x1073fc): undefined reference to `pwm_free'
+drivers/built-in.o: In function `max8997_haptic_play_effect_work':
+:(.text+0x1074f0): undefined reference to `pwm_config'
+:(.text+0x1075b0): undefined reference to `pwm_enable'
+drivers/built-in.o: In function `max8997_haptic_probe':
+:(.text+0x1076f8): undefined reference to `pwm_request'
+:(.text+0x1077e8): undefined reference to `pwm_free'
+drivers/built-in.o: In function `pwm_beeper_resume':
+:(.text+0x1081a4): undefined reference to `pwm_config'
+make: *** [vmlinux] Error 1
 
-> Akira, can you explain the workloads where your delay of FLUSH or FUA
-> requests helps you in any way?  I very much agree with Dave's reasoning,
-> but if you found workloads where your hack helps we should make sure we
-> fix them at the place where they are issued.
-One of the examples is a fileserver accessed by multiple users.
-A barrier is submitted when a user closes a file for example.
+Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/input/misc/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-As I said in my previous post
-https://lkml.org/lkml/2013/10/4/186
-writeboost has RAM buffer and we want one to be
-fulfilled with writes and then flushed to the cache device
-that takes all the barriers away with the completion.
-In that case we pay the minimum penalty for the barriers.
-Interestingly, writeboost is happy with a lot of writes.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index aa51baa..265240b 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -156,7 +156,7 @@ config INPUT_MAX8925_ONKEY
+ 
+ config INPUT_MAX8997_HAPTIC
+ 	tristate "MAXIM MAX8997 haptic controller support"
+-	depends on HAVE_PWM && MFD_MAX8997
++	depends on HAVE_PWM && MFD_MAX8997 && PWM
+ 	select INPUT_FF_MEMLESS
+ 	help
+ 	  This option enables device driver support for the haptic controller
+@@ -461,7 +461,7 @@ config INPUT_PCF8574
+ 
+ config INPUT_PWM_BEEPER
+ 	tristate "PWM beeper support"
+-	depends on HAVE_PWM || PWM
++	depends on HAVE_PWM && PWM
+ 	help
+ 	  Say Y here to get support for PWM based beeper devices.
+ 
+-- 
+1.7.9.5
 
-By deferring these barriers (FLUSH and FUA)
-multiple barriers are likely to be merged on a RAM buffer
-and then processed by replacing with only one FLUSH.
-
-Merging the barriers and replacing it with a single FLUSH
-by accepting a lot of writes
-is the reason for deferring barriers in writeboost.
-If you want to know further I recommend you to
-look at the source code to see
-how queue_barrier_io() is used and
-how the barriers are kidnapped in queue_flushing().
-
-Akira
