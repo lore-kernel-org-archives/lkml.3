@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab3JHUFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:05:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48650 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3JHUFd (ORCPT
+	id S1756071Ab3JHUG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:06:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44066 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3JHUGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:05:33 -0400
-Date: Tue, 8 Oct 2013 22:05:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 6/6] x86: Allow disabling HW_BREAKPOINTS and PERF_EVENTS
-Message-ID: <20131008200521.GE13848@laptop.programming.kicks-ass.net>
-References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
- <1380922788-23112-7-git-send-email-andi@firstfloor.org>
- <20131005070806.GA16922@gmail.com>
- <20131005170552.GI6882@two.firstfloor.org>
- <20131008195556.GD8392@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008195556.GD8392@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 8 Oct 2013 16:06:25 -0400
+Date: Tue, 8 Oct 2013 13:06:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/3] Soft dirty tracking fixes
+Message-Id: <20131008130624.d7c50cef20d968e8c0484a41@linux-foundation.org>
+In-Reply-To: <20131008200224.GB19040@moon>
+References: <20131008090019.527108154@gmail.com>
+	<20131008125013.85dcccf418260d43b6cb120a@linux-foundation.org>
+	<20131008200224.GB19040@moon>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 09:55:59PM +0200, Frederic Weisbecker wrote:
-> 1) make breakpoints independant from perf. The drawback is that we must then
-> add seperate hooks on context switch for ptrace breakpoints. OTOH we get
-> rid of the perf -> breakpoint -> perf circular dependency, which is the very
-> controversial thing.
+On Wed, 9 Oct 2013 00:02:24 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-we used to have this in __switch_to_xtra(), right?
+> On Tue, Oct 08, 2013 at 12:50:13PM -0700, Andrew Morton wrote:
+> > 
+> > Do you consider the problems which patches 1 and 2 address to be
+> > sufficiently serious to justify backporting into -stable?
+> 
+> Good question! Yeah, since dirty bit traking is in 3.11 already,
+> it would be great to merge these two patches into -stable.
+
+OK.
+
+> Should I resend them with stable team CC'ed?
+
+Nope, I added cc:stable to the changelogs so they should receive
+consideration by Greg automatically.
+
