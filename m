@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3JHBGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 21:06:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47611 "EHLO mx1.redhat.com"
+	id S1753572Ab3JHBGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 21:06:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751706Ab3JHBGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751733Ab3JHBGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Oct 2013 21:06:19 -0400
-Message-Id: <20131008010552.779616517@amt.cnet>
+Message-Id: <20131008010552.713337492@amt.cnet>
 User-Agent: quilt/0.60-1
-Date: Mon, 07 Oct 2013 22:05:17 -0300
+Date: Mon, 07 Oct 2013 22:05:16 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: kvm@vger.kernel.org
 Cc: dzickus@redhat.com, pbonzini@redhat.com, gleb@redhat.com,
         linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [patch 2/3] pvclock: detect watchdog reset at pvclock read
+Subject: [patch 1/3] hung_task: add method to reset detector
 References: <20131008010515.516032211@amt.cnet>
-Content-Disposition: inline; filename=02-kvmclock-touch-watchdog-on-kvmclock-read
+Content-Disposition: inline; filename=01-hung-task-watchdog-reset
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement reset of kernel watchdogs at pvclock read time. This avoids
-adding special code to every watchdog.
+In certain occasions it is possible for a hung task detector
+positive to be false: continuation from a paused VM, for example.
 
-This is possible for watchdogs which measure time based on sched_clock() or 
-ktime_get() variants.
-
-Suggested by Don Zickus.
+Add a method to reset detection, similar as is done
+with other kernel watchdogs.
 
 Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-Index: kvm/arch/x86/kernel/kvmclock.c
+Index: kvm/kernel/hung_task.c
 ===================================================================
---- kvm.orig/arch/x86/kernel/kvmclock.c
-+++ kvm/arch/x86/kernel/kvmclock.c
-@@ -139,6 +139,7 @@ bool kvm_check_and_clear_guest_paused(vo
- 	src = &hv_clock[cpu].pvti;
- 	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
- 		src->flags &= ~PVCLOCK_GUEST_STOPPED;
-+		pvclock_touch_watchdogs();
- 		ret = true;
- 	}
- 
-Index: kvm/arch/x86/kernel/pvclock.c
-===================================================================
---- kvm.orig/arch/x86/kernel/pvclock.c
-+++ kvm/arch/x86/kernel/pvclock.c
-@@ -21,6 +21,7 @@
- #include <linux/sched.h>
- #include <linux/gfp.h>
- #include <linux/bootmem.h>
-+#include <linux/hung_task.h>
- #include <asm/fixmap.h>
- #include <asm/pvclock.h>
- 
-@@ -43,6 +44,14 @@ unsigned long pvclock_tsc_khz(struct pvc
- 	return pv_tsc_khz;
+--- kvm.orig/kernel/hung_task.c
++++ kvm/kernel/hung_task.c
+@@ -203,6 +203,14 @@ int proc_dohung_task_timeout_secs(struct
+ 	return ret;
  }
  
-+void pvclock_touch_watchdogs(void)
++static atomic_t reset_hung_task = ATOMIC_INIT(0);
++
++void reset_hung_task_detector(void)
 +{
-+	touch_softlockup_watchdog_sync();
-+	clocksource_touch_watchdog();
-+	rcu_cpu_stall_reset();
-+	reset_hung_task_detector();
++	atomic_set(&reset_hung_task, 1);
 +}
-+
- static atomic64_t last_value = ATOMIC64_INIT(0);
- 
- void pvclock_resume(void)
-@@ -74,6 +83,11 @@ cycle_t pvclock_clocksource_read(struct
- 		version = __pvclock_read_cycles(src, &ret, &flags);
- 	} while ((src->version & 1) || version != src->version);
- 
-+	if (unlikely((flags & PVCLOCK_GUEST_STOPPED) != 0)) {
-+		src->flags &= ~PVCLOCK_GUEST_STOPPED;
-+		pvclock_touch_watchdogs();
-+	}
-+
- 	if ((valid_flags & PVCLOCK_TSC_STABLE_BIT) &&
- 		(flags & PVCLOCK_TSC_STABLE_BIT))
- 		return ret;
-Index: kvm/arch/x86/include/asm/pvclock.h
-===================================================================
---- kvm.orig/arch/x86/include/asm/pvclock.h
-+++ kvm/arch/x86/include/asm/pvclock.h
-@@ -14,6 +14,8 @@ void pvclock_read_wallclock(struct pvclo
- 			    struct timespec *ts);
- void pvclock_resume(void);
- 
-+void pvclock_touch_watchdogs(void);
++EXPORT_SYMBOL_GPL(reset_hung_task_detector);
 +
  /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-  * yielding a 64-bit result.
+  * kthread which checks for tasks stuck in D state
+  */
+@@ -216,6 +224,9 @@ static int watchdog(void *dummy)
+ 		while (schedule_timeout_interruptible(timeout_jiffies(timeout)))
+ 			timeout = sysctl_hung_task_timeout_secs;
+ 
++		if (atomic_xchg(&reset_hung_task, 0))
++			continue;
++
+ 		check_hung_uninterruptible_tasks(timeout);
+ 	}
+ 
+Index: kvm/include/linux/hung_task.h
+===================================================================
+--- /dev/null
++++ kvm/include/linux/hung_task.h
+@@ -0,0 +1,15 @@
++/*
++ *  linux/include/linux/hung_task.h
++ */
++#ifndef LINUX_HUNG_TASK_H
++#define LINUX_HUNG_TASK_H
++
++#ifdef CONFIG_DETECT_HUNG_TASK
++void reset_hung_task_detector(void);
++#else
++static inline void reset_hung_task_detector(void)
++{
++}
++#endif
++
++#endif
 
 
