@@ -1,102 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3JHQuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:50:03 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:7909
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751926Ab3JHQt7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:49:59 -0400
-X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(z551bizbb2dI98dI9371I936eI1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh2a8h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
-Message-ID: <1381250986.6062.3.camel@atx-linux-37>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-From: Alan Tull <atull@altera.com>
-To: Michal Simek <monstr@monstr.eu>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@denx.de>, Michal Simek <michal.simek@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, <linux-doc@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 8 Oct 2013 11:49:46 -0500
-In-Reply-To: <52540208.3090406@monstr.eu>
-References: <524EC965.70701@monstr.eu> <20131004141646.GA9396@kroah.com>
-	 <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
-	 <524ED081.1040600@monstr.eu> <524EF0CE.4040002@zytor.com>
-	 <524EFE76.70200@monstr.eu> <524F04FD.5020804@zytor.com>
-	 <20131004233341.GA4028@kroah.com>
-	 <20131004234929.GB3652@obsidianresearch.com>
-	 <875b2a01-be5a-47d1-b89a-9385d54b9b64@email.android.com>
-	 <20131005051056.GA7698@obsidianresearch.com>
-	 <1c9db96e-7a36-4ec9-ab16-885780ce6de5@email.android.com>
-	 <524FB756.3040203@monstr.eu>
-	 <c59c68b8-2565-45c5-bfe9-574b76f3f9bc@email.android.com>
-	 <5252B2F4.7050600@monstr.eu>
-	 <ea858a91-1149-44cc-b2e1-bab1f579915e@email.android.com>
-	 <5252CD30.3070305@monstr.eu>
-	 <708b6f80-97a7-41a7-9d5c-fa8bd2a8e0c5@email.android.com>
-	 <52540208.3090406@monstr.eu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1756527Ab3JHQuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:50:12 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755930Ab3JHQuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 12:50:07 -0400
+Message-ID: <525437B5.8060907@nod.at>
+Date: Tue, 08 Oct 2013 18:49:57 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OriginatorOrg: altera.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Richard Weinberger <richard@nod.at>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
+        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
+        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
+        monstr@monstr.eu, yasutake.koichi@jp.panasonic.com,
+        ralf@linux-mips.org, jonas@southpole.se, jejb@parisc-linux.org,
+        deller@gmx.de, benh@kernel.crashing.org, paulus@samba.org,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        liqin.linux@gmail.com, lennox.wu@gmail.com, lethal@linux-sh.org,
+        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org
+Subject: Re: [PATCH 10/29] ia64: Use get_signal() signal_setup_done()
+References: <1381231994-4192-1-git-send-email-richard@nod.at>
+In-Reply-To: <1381231994-4192-1-git-send-email-richard@nod.at>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 15:00 +0200, Michal Simek wrote:
-> On 10/07/2013 05:07 PM, H. Peter Anvin wrote:
-> > Special soft IP presenting a PCI device to the host.
+Am 08.10.2013 13:33, schrieb Richard Weinberger:
+> Use the more generic functions get_signal() signal_setup_done()
+> for signal delivery.
+> This inverts also the return codes of force_sigsegv_info()
+> and setup_frame() to follow the kernel convention.
 > 
-> ok. It means that you should need just different backend for this device
-> which is able to communicate over PCI.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+
+This one does not build, the patch is corrupted.
+An updated version will be in v2.
+
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+
+Thanks,
+//richard
+
+> ---
+>  arch/ia64/kernel/signal.c | 42 +++++++++++++++++++-----------------------
+>  1 file changed, 19 insertions(+), 23 deletions(-)
 > 
-> I still can't see why this case should be problematic for this fpga
-> manager.
-> As Jason pointed if this is just about JTAG emulation and your
-> data is in different format then you have to create your backend
-> which will support this configuration.
-> I will want to look at gpio jtag emulation to be able to program
-> different board. We have this support for u-boot and doing in Linux
-> should be also possible.
+> diff --git a/arch/ia64/kernel/signal.c b/arch/ia64/kernel/signal.c
+> index 3637e03..b995dbf 100644
+> --- a/arch/ia64/kernel/signal.c
+> +++ b/arch/ia64/kernel/signal.c
+> @@ -309,12 +309,11 @@ force_sigsegv_info (int sig, void __user *addr)
+>  	si.si_uid = from_kuid_munged(current_user_ns(), current_uid());
+>  	si.si_addr = addr;
+>  	force_sig_info(SIGSEGV, &si, current);
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static long
+> -setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
+> -	     struct sigscratch *scr)
+> +setup_frame(struct ksignal *ksig, sigset_t *set, struct sigscratch *scr)
+>  {
+>  	extern char __kernel_sigtramp[];
+>  	unsigned long tramp_addr, new_rbs = 0, new_sp;
+> @@ -323,7 +322,7 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
+>  
+>  	new_sp = scr->pt.r12;
+>  	tramp_addr = (unsigned long) __kernel_sigtramp;
+> -	if (ka->sa.sa_flags & SA_ONSTACK) {
+> +	if (ksig->ka.sa.sa_flags & SA_ONSTACK) {
+>  		int onstack = sas_ss_flags(new_sp);
+>  
+>  		if (onstack == 0) {
+> @@ -347,7 +346,7 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
+>  			 */
+>  			check_sp = (new_sp - sizeof(*frame)) & -STACK_ALIGN;
+>  			if (!likely(on_sig_stack(check_sp)))
+> -				return force_sigsegv_info(sig, (void __user *)
+> +				return force_sigsegv_info(ksig->sig, (void __user *)
+>  							  check_sp);
+>  		}
+>  	}
+> @@ -356,14 +355,14 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
+>  	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+>  		return force_sigsegv_info(sig, frame);
+>  
+> -	err  = __put_user(sig, &frame->arg0);
+> +	err  = __put_user(ksig->sig, &frame->arg0);
+>  	err |= __put_user(&frame->info, &frame->arg1);
+>  	err |= __put_user(&frame->sc, &frame->arg2);
+>  	err |= __put_user(new_rbs, &frame->sc.sc_rbs_base);
+>  	err |= __put_user(0, &frame->sc.sc_loadrs);	/* initialize to zero */
+> -	err |= __put_user(ka->sa.sa_handler, &frame->handler);
+> +	err |= __put_user(ksig->ka.sa.sa_handler, &frame->handler);
+>  
+> -	err |= copy_siginfo_to_user(&frame->info, info);
+> +	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+>  
+>  	err |= __save_altstack(&frame->sc.sc_stack, scr->pt.r12);
+>  	err |= setup_sigcontext(&frame->sc, set, scr);
+> @@ -394,22 +393,20 @@ setup_frame (int sig, struct k_sigaction *ka, siginfo_t *info, sigset_t *set,
+>  
+>  #if DEBUG_SIG
+>  	printk("SIG deliver (%s:%d): sig=%d sp=%lx ip=%lx handler=%p\n",
+> -	       current->comm, current->pid, sig, scr->pt.r12, frame->sc.sc_ip, frame->handler);
+> +	       current->comm, current->pid, ksig->sig, scr->pt.r12, frame->sc.sc_ip, frame->handler);
+>  #endif
+> -	return 1;
+> +	return 0;
+>  }
+>  
+>  static long
+> -handle_signal (unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+> -	       struct sigscratch *scr)
+> +handle_signal (struct ksignal *ksig, struct sigscratch *scr)
+>  {
+> -	if (!setup_frame(sig, ka, info, sigmask_to_save(), scr))
+> -		return 0;
+> +	int ret = setup_frame(ksig, sigmask_to_save(), scr);
+>  
+> -	signal_delivered(sig, info, ka, &scr->pt,
+> -				 test_thread_flag(TIF_SINGLESTEP));
+> +	if (!ret)
+> +		signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
+>  
+> -	return 1;
+> +	return ret;
+>  }
+>  
+>  /*
+> @@ -419,17 +416,16 @@ handle_signal (unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+>  void
+>  ia64_do_signal (struct sigscratch *scr, long in_syscall)
+>  {
+> -	struct k_sigaction ka;
+> -	siginfo_t info;
+>  	long restart = in_syscall;
+>  	long errno = scr->pt.r8;
+> +	struct ksignal ksig;
+>  
+>  	/*
+>  	 * This only loops in the rare cases of handle_signal() failing, in which case we
+>  	 * need to push through a forced SIGSEGV.
+>  	 */
+>  	while (1) {
+> -		int signr = get_signal_to_deliver(&info, &ka, &scr->pt, NULL);
+> +		get_signal(&ksig);
+>  
+>  		/*
+>  		 * get_signal_to_deliver() may have run a debugger (via notify_parent())
+> @@ -446,7 +442,7 @@ ia64_do_signal (struct sigscratch *scr, long in_syscall)
+>  			 */
+>  			restart = 0;
+>  
+> -		if (signr <= 0)
+> +		if (ksig.sig <= 0)
+>  			break;
+>  
+>  		if (unlikely(restart)) {
+> @@ -458,7 +454,7 @@ ia64_do_signal (struct sigscratch *scr, long in_syscall)
+>  				break;
+>  
+>  			      case ERESTARTSYS:
+> -				if ((ka.sa.sa_flags & SA_RESTART) == 0) {
+> +				if ((ksig.ka.sa.sa_flags & SA_RESTART) == 0) {
+>  					scr->pt.r8 = EINTR;
+>  					/* note: scr->pt.r10 is already -1 */
+>  					break;
+> @@ -473,7 +469,7 @@ ia64_do_signal (struct sigscratch *scr, long in_syscall)
+>  		 * Whee!  Actually deliver the signal.  If the delivery failed, we need to
+>  		 * continue to iterate in this loop so we can deliver the SIGSEGV...
+>  		 */
+> -		if (handle_signal(signr, &ka, &info, scr))
+> +		if (handle_signal(&ksig, scr))
+>  			return;
+>  	}
+>  
 > 
-> I think the question is if we can live with 2/3 user interfaces.
-> I tend to keep firmware one because it is covering a lot of common
-> use cases and it can be easily to use.
-> And then I don't have any preference if sysfs or char device
-
-The sysfs and char device interface are equal, except I don't think it
-is right to write binary data to a sysfs attribute.
-
-The difference between these 3 options is that firmware will work for
-some fixed use cases, but either the sysfs or char interface will work
-for all the use cases.
-
-Alan
-
-
-> is better.
-> 
-> Thanks,
-> Michal
-> 
-
 
